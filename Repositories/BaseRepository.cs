@@ -17,9 +17,6 @@ public class BaseRepository(IDbContextFactory<DespatchContext> contextFactory) :
     public async Task AddEntityAsync<T>(T entity)
         where T : class => await Context.Set<T>().AddAsync(entity);  
     
-    public async Task AddEntityRangeAsync<T>(List<T> entities)
-        where T : class => await Context.Set<T>().AddRangeAsync(entities);
-    
     public async Task<T> GetByIdAsync<T>(int id) where T : class => await Context.Set<T>().FindAsync(id);
 
     public async Task SaveChangesAsync() => await Context.SaveChangesAsync();

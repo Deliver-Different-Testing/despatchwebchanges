@@ -301,17 +301,6 @@ public class NationwideJobRepository(
             .ToList();
     }
 
-    public async Task<string> GetSingleAirportCodeByIdAsync(int airportId)
-    {
-        var airportCode = await Context.TblAirports
-            .Where(a => a.AirportId == airportId)
-            .Select(a => a.AirportCode)
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
-
-        return airportCode;
-    }
-
     public async Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId)
     {
         var airportCodes = await Context.TucJobs

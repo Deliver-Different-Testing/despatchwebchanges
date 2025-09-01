@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
@@ -14,6 +15,7 @@ using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using CourierLocation = DespatchWeb.Models.Response.CourierLocation;
 
 namespace DespatchWeb.Repositories;
 
@@ -21,7 +23,6 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     : BaseJobRepository(contextFactory, infoService), IJobRepository
 {
     private readonly ITenantInfoService _infoService = infoService;
-    private const string Space = " ";
 
     public async Task<List<Suggestion>> RelatedJobsAsync(int parentId, int clientId)
     {
@@ -1348,7 +1349,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
         await UpdateJobDisplayInDespatchAsync(jobId);
     }
-    
+
     private async Task UpdateJobDisplayInDespatchAsync(int jobId)
     {
         await Context.TucJobs
@@ -2636,5 +2637,474 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         await Context.TucEvents
             .Where(t => jobIds.Contains(t.UcevJobId.Value) && !t.UcevClosed)
             .ExecuteUpdateAsync(t => t.SetProperty(e => e.UcevClosed, true));
+    }
+
+    public async Task BulkUpdateReadStatusAsync(BulkReadUpdateRequestModel data)
+    {
+        var jobIds = data.JobIds;
+        if (jobIds == null || jobIds.Count == 0) return;
+
+        var currentTenantTime = _infoService.GetCurrentTenantTime();
+        var staffId = _infoService.GetStaffId();
+
+        // Use ExecuteUpdate for existing records - single SQL statement, no entity tracking
+        await Context.TucJobReadTrackers
+            .Where(t => jobIds.Contains(t.JobId))
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(t => t.HasBeenRead, data.ShouldMarkAsRead)
+                .SetProperty(t => t.ReadTimestamp, currentTenantTime)
+                .SetProperty(t => t.ReadByStaffId, staffId));
+
+        // Get job IDs that already have trackers to exclude from insert
+        var existingJobIds = await Context.TucJobReadTrackers
+            .Where(t => jobIds.Contains(t.JobId))
+            .Select(t => t.JobId)
+            .ToListAsync();
+
+        var newJobIds = jobIds.Except(existingJobIds).ToList();
+
+        // Bulk insert new records if any
+        if (newJobIds.Count != 0)
+        {
+            var newTrackers = newJobIds.Select(jobId => new TucJobReadTracker
+            {
+                JobId = jobId,
+                HasBeenRead = true,
+                ReadTimestamp = currentTenantTime,
+                ReadByStaffId = staffId
+            });
+
+            Context.AddRange(newTrackers);
+            await Context.SaveChangesAsync();
+        }
+    }
+
+    public async Task<bool> JobNumberExistsAsync(string jobNumber) =>
+        await Context.TucJobs.AnyAsync(j => j.UcjbNumber == jobNumber);
+
+    public async Task<decimal> GetNationwideServiceRawPriceAsync(int? clientId, int? fromSuburbId,
+        int? toSuburbId, int? speed, int? size, float? weight, int? quantity, int? type)
+    {
+        var result = await Context.TucJobs
+            .Select(j => DespatchContext.UTL_fncS_GetNationwideService_RawPrice(
+                clientId,
+                fromSuburbId,
+                toSuburbId,
+                speed,
+                size,
+                weight,
+                quantity,
+                type))
+            .FirstOrDefaultAsync();
+
+        return result ?? 0m;
+    }
+
+    public async Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId)
+    {
+        var job = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(JobMappings.JobDispatchMapping)
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+        return job;
+    }
+
+    public async Task UpdateJobRateAsync(int jobId, decimal rate, string noteText)
+    {
+        try
+        {
+            var rowsAffected = await Context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.UcjbAmount, rate));
+
+            if (rowsAffected == 0) throw new ArgumentException($"Job with ID {jobId} not found", nameof(jobId));
+
+            // Record change in note
+            await SaveNoteAsync(jobId, noteText);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred updating the rate for job {JobId}", jobId);
+            throw;
+        }
+    }
+
+    public async Task AddNewTucNoteTypeAsync(NoteTypeViewModel noteType)
+    {
+        var newType = new TucNoteType
+        {
+            IsActive = true,
+            IsPublic = noteType.IsPublic,
+            NoteTypeName = noteType.Text,
+            Description = noteType.Description
+        };
+
+        await Context.TucNoteTypes.AddAsync(newType);
+        await Context.SaveChangesAsync();
+    }
+
+    public async Task<bool> IsJobParentAsync(int jobId)
+    {
+        var jobInfo = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new { HasParent = j.ParentId.HasValue })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        if (jobInfo != null)
+            return jobInfo.HasParent;
+
+        var bookingInfo = await Context.TucJobBookings
+            .Where(j => j.UcbkId == jobId)
+            .Select(j => new { HasParent = j.ParentId.HasValue })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        return bookingInfo?.HasParent ?? false;
+    }
+
+    public async Task<List<NoteTypeViewModel>> GetNoteTypesAsync()
+    {
+        var noteTypes = await Context.TucNoteTypes
+            .Where(x => x.IsActive)
+            .Select(x => new NoteTypeViewModel
+            {
+                Id = x.NoteTypeId,
+                Text = x.NoteTypeName,
+                IsPublic = x.IsPublic
+            })
+            .AsNoTracking()
+            .ToListAsync();
+
+        return noteTypes;
+    }
+
+    public async Task UpdatePackagesForJobAsync(int jobId, List<ParcelDimensions> parcels)
+    {
+        if (parcels == null || parcels.Count == 0) return;
+
+        try
+        {
+            var effectiveJobId = await GetJobRelationshipInfoAsync(jobId);
+            var childJobId = await IsStopJob(jobId) ? jobId : (int?)null;
+
+            // Process existing and new parcels separately
+            var newParcels = new List<TucJobItem>();
+            var existingParcelIds = new List<int>();
+
+            var existingCount = await GetJobItemCount(effectiveJobId);
+
+            // Get next ItemId for new parcels
+            foreach (var parcel in parcels)
+            {
+                if (parcel.ItemId == null)
+                {
+                    var newItem = new TucJobItem
+                    {
+                        JobId = effectiveJobId,
+                        ChildJobId = childJobId,
+                        Height = parcel.Height ?? 0,
+                        Length = parcel.Length ?? 0,
+                        Depth = parcel.Depth ?? 0,
+                        Notes = parcel.ItemName,
+                        ItemId = existingCount + newParcels.Count + 1
+                    };
+
+                    newParcels.Add(newItem);
+                }
+                else existingParcelIds.Add(parcel.ItemId.Value);
+            }
+
+            if (newParcels.Count > 0) await Context.TucJobItems.AddRangeAsync(newParcels);
+
+            if (existingParcelIds.Count != 0)
+            {
+                var existingItems = await Context.TucJobItems
+                    .Where(i => existingParcelIds.Contains(i.ItemId))
+                    .ToListAsync();
+
+                var existingItemsLookup = existingItems.ToDictionary(i => i.ItemId);
+
+                // Update existing items
+                foreach (var p in parcels.Where(p => p.ItemId != null))
+                {
+                    if (!p.ItemId.HasValue) continue;
+                    if (existingItemsLookup.TryGetValue(p.ItemId.Value, out var existingItem))
+                        UpdateTucJobItem(existingItem, p);
+                }
+            }
+
+            await Context.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository),
+                    nameof(UpdatePackagesForJobAsync)));
+            throw;
+        }
+    }
+
+    private async Task<bool> IsStopJob(int jobId)
+    {
+        var jobNumber = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => j.UcjbNumber)
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        ArgumentNullException.ThrowIfNull(jobNumber);
+        return char.IsLetter(jobNumber.Last());
+    }
+
+
+    private static void UpdateTucJobItem(TucJobItem item, ParcelDimensions parcel)
+    {
+        item.Height = parcel.Height ?? 0;
+        item.Length = parcel.Length ?? 0;
+        item.Depth = parcel.Depth ?? 0;
+        item.Notes = parcel.ItemName;
+    }
+
+    public async Task AddPackagesToJobAsync(int effectiveJobId, List<TucJobItem> items)
+    {
+        var existingCount = await GetJobItemCount(effectiveJobId);
+
+        for (var i = 0; i < items.Count; i++) items[i].ItemId = existingCount + i + 1;
+
+        await Context.TucJobItems.AddRangeAsync(items);
+        await Context.SaveChangesAsync();
+    }
+
+    private async Task<int> GetJobItemCount(int effectiveJobId) =>
+        await Context.TucJobItems.Where(i => i.JobId == effectiveJobId).CountAsync();
+
+    public async Task<List<MegaMapResponse>> GetJobsForMegaMapAsync()
+    {
+        // Get active jobs to display on a map
+        var jobs = await Context
+            .TucJobs.Where(j =>
+                j.UcjbStatus.HasValue
+                && JobStatusGroups.Active.Contains(j.UcjbStatus.Value)
+                && !j.UcjbVoid
+            )
+            .Select(j => new MegaMapResponse
+            {
+                JobId = j.UcjbId,
+                JobNumber = j.UcjbNumber,
+                JobStatus = j.UcjbStatus != null ? j.UcjbStatusNavigation.UcjsName : "New",
+                EstimatedDelivery =
+                    j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
+                    && j.TucJobNationwides.Count != 0
+                        ? j.TucJobNationwides.FirstOrDefault().UcnwEta.Value
+                        : j
+                            .UcjbDate.Date.Add(j.UcjbTime.Value.TimeOfDay)
+                            .AddMinutes(j.UcjbSpeedNavigation.Minutes ?? 180),
+                IsFlightJob = j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight,
+                PickupLocation = new AddressViewModel
+                {
+                    Latitude = j.PickUpLatitude ?? 0,
+                    Longitude = j.PickUpLongitude ?? 0,
+                    AddressLine1 = j.PickupAddressLine1,
+                    AddressLine2 = j.PickupAddressLine2,
+                    AddressLine3 = j.PickupAddressLine3,
+                    AddressLine4 = j.PickupAddressLine4,
+                    AddressLine5 = j.PickupAddressLine5,
+                    AddressLine6 = j.PickupAddressLine6,
+                    AddressLine7 = j.PickupAddressLine7,
+                    AddressLine8 = j.PickupAddressLine8
+                },
+                DeliveryLocation = new AddressViewModel
+                {
+                    Latitude = j.DeliveryLatitude ?? 0,
+                    Longitude = j.DeliveryLongitude ?? 0,
+                    AddressLine1 = j.DeliveryAddressLine1,
+                    AddressLine2 = j.DeliveryAddressLine2,
+                    AddressLine3 = j.DeliveryAddressLine3,
+                    AddressLine4 = j.DeliveryAddressLine4,
+                    AddressLine5 = j.DeliveryAddressLine5,
+                    AddressLine6 = j.DeliveryAddressLine6,
+                    AddressLine7 = j.DeliveryAddressLine7,
+                    AddressLine8 = j.DeliveryAddressLine8
+                },
+                CourierLocation = j.UcjbCourierId.HasValue
+                    ? new CourierLocation
+                    {
+                        CourierId = j.UcjbCourier.UccrId,
+                        CourierName =
+                            $"{j.UcjbCourier.UccrName} {j.UcjbCourier.UccrSurname}".Trim(),
+                        Coordinates = j.UcjbCourier.CourierGpsid.HasValue
+                            ? new Coordinates
+                            {
+                                Lat = (decimal)j.UcjbCourier.CourierGps.Latitude,
+                                Lng = (decimal)j.UcjbCourier.CourierGps.Longitude
+                            }
+                            : null
+                    }
+                    : null,
+                FlightInfo =
+                    j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
+                        ? j
+                            .TucJobNationwides.Select(n => new AssignedFlight
+                            {
+                                FlightNumber = n.UcnwFlightNo,
+                                ExpectedArrival = n.UcnwEta,
+                                ExpectedDeparture = n.UcnwEtd
+                            })
+                            .FirstOrDefault()
+                        : null
+            })
+            .AsNoTracking()
+            .ToListAsync();
+
+        return jobs;
+    }
+
+    private async Task MarkJobAsReadAsync(int jobId)
+    {
+        var alreadyOpened = await Context.TucJobReadTrackers.AnyAsync(x => x.JobId == jobId);
+        if (alreadyOpened) return;
+
+        var isLiveJob = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
+        if (!isLiveJob) return;
+
+        var staffId = _infoService.GetStaffId();
+        var currentTenantTime = _infoService.GetCurrentTenantTime();
+
+        var readTracker = new TucJobReadTracker
+        {
+            JobId = jobId,
+            HasBeenRead = true,
+            ReadByStaffId = staffId,
+            ReadTimestamp = currentTenantTime
+        };
+
+        await Context.TucJobReadTrackers.AddAsync(readTracker);
+        await Context.SaveChangesAsync();
+    }
+
+    public async Task UpdateJobNoteAsync(int jobId, string note)
+    {
+        try
+        {
+            Log.Information("Starting note update for job {JobId}", jobId);
+
+            var rowsAffected = await Context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.UcjbNotes, note));
+
+            if (rowsAffected == 0)
+            {
+                Log.Warning("Job {JobId} not found", jobId);
+                throw new KeyNotFoundException($"Job with ID {jobId} not found");
+            }
+
+            Log.Information(
+                "Successfully updated note for job {JobId}. New note length: {NewLength}",
+                jobId,
+                note?.Length ?? 0
+            );
+        }
+        catch (KeyNotFoundException ex)
+        {
+            Log.Error(ex, "Job not found when updating note for job {JobId}", jobId);
+            throw;
+        }
+        catch (DbUpdateException ex)
+        {
+            Log.Error(ex, "Database error occurred while updating note for job {JobId}", jobId);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Unexpected error updating note for job {JobId}", jobId);
+            throw;
+        }
+    }
+
+    public async Task<JobViewModel> GetJobByIdAsync(int jobId)
+    {
+        try
+        {
+            // Mark the job as ready
+            await MarkJobAsReadAsync(jobId);
+
+            // Check for a live job first
+            var isLiveJob = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
+            if (isLiveJob)
+            {
+                var liveJob = await Context.TucJobs
+                    .Where(j => j.UcjbId == jobId)
+                    .Select(JobMappings.JobMapping)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync();
+                return liveJob;
+            }
+
+            // Check for an archived job
+            var archivedJob = await Context.TucJobArchives
+                .Where(j => j.UcjbId == jobId)
+                .Select(JobMappings.JobArchiveMapping)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+            ArgumentNullException.ThrowIfNull(archivedJob);
+
+            return archivedJob;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error occurred getting job {JobId}. Please see exception.", jobId);
+            throw;
+        }
+    }
+
+    public async Task<List<AddressWithAgent>> GetClosestAirportsAsync(
+        decimal latitude,
+        decimal longitude
+    )
+    {
+        try
+        {
+            var latRad = (double)latitude / 57.3;
+
+            var closestAirports = await Context
+                .TblAirports.Where(a => a.Active)
+                .Select(a => new AddressWithAgent
+                {
+                    AirportId = a.AirportId,
+                    AirportCode = a.AirportCode,
+                    StreetAddress = a.StreetAddress,
+                    City = a.Name,
+                    AgentId = a.AgentId ?? 0,
+                    Latitude = a.Latitude,
+                    Longitude = a.Longitude,
+                    Distance = (decimal)
+                        Math.Sqrt(
+                            Math.Pow(110.574 * ((double)latitude - (double)a.Latitude), 2)
+                            + Math.Pow(
+                                110.574
+                                * ((double)a.Longitude - (double)longitude)
+                                * Math.Cos(latRad),
+                                2
+                            )
+                        )
+                })
+                .OrderBy(a => a.Distance)
+                .Take(3)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return closestAirports;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository),
+                    nameof(GetClosestAirportsAsync)));
+            throw;
+        }
     }
 }

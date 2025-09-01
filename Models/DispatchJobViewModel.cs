@@ -24,7 +24,7 @@ public class DispatchJobViewModel
     public string Status { get; set; }
     public DateTime? Time { get; set; }
     public DateTime? Booked { get; set; }
-    public int? Remain { get; set; }
+    public double? Remain { get; set; }
 
     // Courier information
     public string Courier { get; set; }
@@ -96,4 +96,9 @@ public class DispatchJobViewModel
     public string ConNote {get;set;}
     public DateTime? FollowupTime { get; set; }
     public bool Van { get; set; }
-    public bool Truck { get; set; } }
+    public bool Truck { get; set; } 
+    
+    public DateTime? DeliverByTime { get; set; }
+    public DateTime? RequiredDeliveryTime { get; set; }
+    public int? JobTypeMins { get; set; }
+}
