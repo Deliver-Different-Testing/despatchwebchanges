@@ -1363,11 +1363,16 @@ md-dialog {
     border-bottom: 1px solid #f0f0f0;
     margin-bottom: 8px;
 
+    .button-row {
+      display: flex;
+      gap: 8px;
+    }
+
     .clear-button {
-      width: 100%;
+      flex: 1;
       min-height: 40px;
       margin: 0;
-      padding: 8px 16px;
+      padding: 8px 12px;
       background: #f8f9fa;
       border: 1px solid #e9ecef;
       border-radius: 6px;
@@ -1384,12 +1389,12 @@ md-dialog {
       }
 
       .clear-icon {
-        margin-right: 8px;
+        margin-right: 6px;
         font-size: 20px;
       }
     }
   }
-
+  
   .view-list {
     padding: 0 8px;
 

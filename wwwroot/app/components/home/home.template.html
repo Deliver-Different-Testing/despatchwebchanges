@@ -108,11 +108,19 @@
 
                         <div ng-if="ctrl.views && ctrl.views.length > 0">
                             <div class="menu-header">
-                                <md-button aria-label="Clear all views" class="clear-button"
-                                           ng-click="ctrl.clearAllViews()">
-                                    <md-icon class="clear-icon" md-font-set="material-symbols-outlined">clear_all</md-icon>
-                                    Clear All Views
-                                </md-button>
+                                <div class="button-row">
+                                    <md-button aria-label="select all views" class="clear-button"
+                                               ng-click="ctrl.selectAllViews()">
+                                        <md-icon class="clear-icon" md-font-set="material-symbols-outlined">select_all</md-icon>
+                                        Select All
+                                    </md-button>
+
+                                    <md-button aria-label="Clear all views" class="clear-button"
+                                               ng-click="ctrl.clearAllViews()">
+                                        <md-icon class="clear-icon" md-font-set="material-symbols-outlined">clear_all</md-icon>
+                                        Unselect All
+                                    </md-button>
+                                </div>
                             </div>
 
                             <md-divider class="menu-divider"></md-divider>
