@@ -122,13 +122,14 @@ public class TaskRepository(
 
     public async Task<List<EventGroupViewModel>> GetEventTypeGroupsAsync(int eventGroupId)
     {
+        var now = infoService.GetCurrentTenantTime();
         var eventGroups = await Context
             .TucEventTypeEventTypeGroups.Where(x => x.EventTypeGroupId == eventGroupId)
             .Select(x => new EventGroupViewModel
             {
                 EventTypeGroupTypeGroupId = x.Id,
                 Active = x.IsActive,
-                DueTime = x.DueTime != null ? DateTime.Now.AddMinutes((double)x.DueTime) : null,
+                DueTime = x.DueTime != null ? now.AddMinutes((double)x.DueTime) : null,
                 EventType = new Suggestion
                 {
                     Id = x.EventType.UcetId,

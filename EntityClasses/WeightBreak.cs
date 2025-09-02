@@ -25,6 +25,10 @@ public partial class WeightBreak
 
     public DateTime? LastModified { get; set; }
 
+    public decimal? IncrementUnit { get; set; }
+
+    public decimal? IncrementRate { get; set; }
+
     public virtual ICollection<WeightBreakGroup> WeightBreakGroupFifthWeightBreakNavigations { get; set; } = new List<WeightBreakGroup>();
 
     public virtual ICollection<WeightBreakGroup> WeightBreakGroupFirstWeightBreakNavigations { get; set; } = new List<WeightBreakGroup>();

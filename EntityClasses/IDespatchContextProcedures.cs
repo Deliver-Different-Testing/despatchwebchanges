@@ -41,7 +41,7 @@ namespace DespatchWeb.EntityClasses
         Task<List<uspReassignJobResult>> uspReassignJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<uspReDespatchJobResult>> uspReDespatchJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> uspReDespatchJobByCourierIDAsync(int? courierID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<List<uspRestoreJobResult>> uspRestoreJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<int> uspRestoreJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> UTL_stpCourier_ResetClearListAreaOrderAsync(int? courierID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> UTL_stpPPD_ExclusiveAmountAsync(int? clientID, decimal? amount, OutputParameter<decimal?> pPD, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
     }

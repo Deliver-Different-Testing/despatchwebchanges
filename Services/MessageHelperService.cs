@@ -6,10 +6,11 @@ using DespatchWeb.Models.MessageModels;
 
 namespace DespatchWeb.Services;
 
-public class MessageHelperService : IMessageHelperService
+public class MessageHelperService(ITenantInfoService infoService) : IMessageHelperService
 {
     public MessageParticipant GetOtherParty(TucManualMessage message, int currentStaffId)
     {
+        var now = infoService.GetCurrentTenantTime();
         if (message.UcmmSendFromStaffId == currentStaffId)
         {
             // Message is FROM current staff, so another party is the recipient
@@ -21,7 +22,7 @@ public class MessageHelperService : IMessageHelperService
                     Type = OtherMessagePartyType.Courier,
                     Name = GetParticipantName(courier: message.UcmmSendToCourier),
                     Initials = GetParticipantInitials(courier: message.UcmmSendToCourier),
-                    Status = GetCourierStatus(message.UcmmSendToCourier, DateTime.Now)
+                    Status = GetCourierStatus(message.UcmmSendToCourier, now)
                 };
             }
 
@@ -48,7 +49,7 @@ public class MessageHelperService : IMessageHelperService
                     Type = OtherMessagePartyType.Courier,
                     Name = GetParticipantName(courier: message.UcmmSendFromCourier),
                     Initials = GetParticipantInitials(courier: message.UcmmSendFromCourier),
-                    Status = GetCourierStatus(message.UcmmSendFromCourier, DateTime.Now)
+                    Status = GetCourierStatus(message.UcmmSendFromCourier, now)
                 };
             }
 

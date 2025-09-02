@@ -587,6 +587,21 @@ public class JobController(
             Log.Error(ex, "An unexpected error occured");
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
+    } 
+    
+    public async Task<IActionResult> DispatchBulkJobDetail(int bulkJobId)
+    {
+        try
+        {
+            var job = await jobRepository.GetBulkDispatchJobDetailAsync(bulkJobId);
+            return Json(job);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(DispatchBulkJobDetail)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
     }
 
     public async Task<IActionResult> Related(int parentId, int clientId)
@@ -597,7 +612,7 @@ public class JobController(
 
     public async Task<IActionResult> BulkDetail(int bulkJobId)
     {
-        var result = await jobRepository.BulkJobDetailAsync(bulkJobId);
+        var result = await jobRepository.GetBulkJobDetailAsync(bulkJobId);
         return Json(result);
     }
 
@@ -625,12 +640,13 @@ public class JobController(
     {
         try
         {
-            var result = await jobRepository.PodSearch(data);
+            var result = await jobRepository.PodSearchAsync(data);
             return Json(result);
         }
         catch (Exception e)
         {
-            Log.Error(e, "An error occured getting POD for: {JobNumber}", data.Job);
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(PodSearch)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -805,7 +821,7 @@ public class JobController(
 
     public async Task<IActionResult> ValidateSwapPod(string job)
     {
-        var fromDate = DateTime.Today;
+        var fromDate = infoService.GetCurrentTenantTime();
 
         var searchRequest = new PodSearchRequest
         {
@@ -814,14 +830,11 @@ public class JobController(
             Wild = string.Empty,
             Job = job,
             FromDate = fromDate.ResetTimeToStartOfDay(),
-            ToDate = fromDate.ResetTimeToEndOfDay(),
-            PageIndex = 1,
-            PageSize = 5
+            ToDate = fromDate.ResetTimeToEndOfDay()
         };
 
-        var result = await jobRepository.PodSearch(searchRequest);
-
-        return result.Item1 == 0 ? Json(false) : Json(result.Item2.First().Id);
+        var result = await jobRepository.PodSearchAsync(searchRequest);
+        return result.Count == 0 ? Json(false) : Json(true);
     }
 
     public async Task<IActionResult> SwapPod(string job1, string job2)
@@ -830,29 +843,19 @@ public class JobController(
         return Ok();
     }
 
-    public async Task<IActionResult> BulkSearch(
-        int? courierId,
-        int? clientId,
-        string job,
-        string wild,
-        DateTime fromDate,
-        DateTime toDate,
-        int pageIndex,
-        int pageSize
-    )
+    public async Task<IActionResult> BulkSearch(PodSearchRequest data )
     {
-        var result = await jobRepository.BulkSearchAsync(
-            courierId,
-            job ?? string.Empty,
-            wild ?? string.Empty,
-            fromDate.ResetTimeToStartOfDay(),
-            toDate.ResetTimeToEndOfDay(),
-            clientId,
-            pageIndex,
-            pageSize
-        );
-
-        return Json(result);
+        try
+        {
+            var result = await jobRepository.BulkSearchAsync(data);
+            return Json(result);
+        }
+        catch (Exception e)
+        {
+         Log.Error(e, "{Message}", 
+             ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(BulkSearch)));
+         return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
     }
 
     public async Task<IActionResult> PreBookSearch(

@@ -36,92 +36,91 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     }
 
     /* Bulk Job Detail*/
-    public async Task<JobViewModel> BulkJobDetailAsync(int bulkJobId)
+    public async Task<JobViewModel> GetBulkJobDetailAsync(int bulkJobId)
     {
-        var today = DateTime.Today.ResetTimeToStartOfDay();
+        var today = _infoService.GetCurrentTenantTime().ResetTimeToStartOfDay();
 
         return await (
-            from j in Context.TblBulkJobs
-            join c in Context.TblCouriers on j.CourierId equals c.CourierId into courierJoin
+            from b in Context.TblBulkJobs
+            join c in Context.TblCouriers on b.CourierId equals c.CourierId into courierJoin
             from co in courierJoin.DefaultIfEmpty()
-            join t in Context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
+            join t in Context.TucJobTypes on b.Speed equals t.UcjtId into speedJoin
             from to in speedJoin.DefaultIfEmpty()
-            join cl in Context.TblClients on j.ClientId equals cl.ClientId into clientJoin
+            join cl in Context.TblClients on b.ClientId equals cl.ClientId into clientJoin
             from client in clientJoin.DefaultIfEmpty()
-            join s in Context.TucJobStatuses on j.JobStatus equals s.UcjsId into statusJoin
+            join s in Context.TucJobStatuses on b.JobStatus equals s.UcjsId into statusJoin
             from status in statusJoin.DefaultIfEmpty()
             join l in Context.TblJobLeaveNotHomes
-                on j.DeliverToLeaveId equals l.LeaveNotHomeId
+                on b.DeliverToLeaveId equals l.LeaveNotHomeId
                 into leaveNotHomeJoin
             from leave in leaveNotHomeJoin.DefaultIfEmpty()
             join sc in Context.TblBulkRunSchedules
-                on j.ScheduleId equals sc.BulkRunScheduleId
+                on b.ScheduleId equals sc.BulkRunScheduleId
                 into scheduleJoin
             from schedule in scheduleJoin.DefaultIfEmpty()
             join con in Context.TblContacts
-                on j.LoggedInContactId equals con.ContactId
+                on b.LoggedInContactId equals con.ContactId
                 into contactJoin
             from contact in contactJoin.DefaultIfEmpty()
-            join sou in Context.TucSources on j.SourceId equals sou.SourceId into sourceJoin
+            join sou in Context.TucSources on b.SourceId equals sou.SourceId into sourceJoin
             from source in sourceJoin.DefaultIfEmpty()
-            where j.BulkJobId == bulkJobId
+            where b.BulkJobId == bulkJobId
             select new JobViewModel
             {
-                Id = j.BulkJobId,
-                JobRelationshipTypeId = j.JobRelationshipTypeId,
-                Time = j.BookTime,
-                BookedDate = j.BookDate,
-                Date = j.BookDate.ToString("dd/MM/yyyy"),
+                Id = b.BulkJobId,
+                JobRelationshipTypeId = b.JobRelationshipTypeId,
+                Time = b.BookTime,
+                BookedDate = b.BookDate,
+                Date = b.BookDate.ToString("dd/MM/yyyy"),
                 Booked = DateTime.Parse(
-                    j.BookDate.ToString("yyyy-MM-dd") + Space + j.BookDate.ToString("HH:mm:ss")
+                    b.BookDate.ToString("yyyy-MM-dd") + Space + b.BookDate.ToString("HH:mm:ss")
                 ),
-                Void = j.Void,
-                JobNo = j.JobNumber,
+                Void = b.Void,
+                JobNo = b.JobNumber,
                 Speed = to.ShortName,
                 SpeedName = to.UcjtName,
-                SpeedId = j.Speed,
-                Client = j.ClientCode,
-                ClientId = j.ClientId,
+                SpeedId = b.Speed,
+                Client = b.ClientCode,
+                ClientId = b.ClientId,
                 ClientName = client.Name,
-                From = j.FromSuburb,
-                FromSuburbName = j.FromSuburb,
-                FromPostCode = j.FromPostCode.ToString(),
-                FromAddress = j.FromAddress,
-                FromContactName = j.Contact,
-                To = j.ToSuburb,
-                ToSuburbName = j.ToSuburb,
-                ToPostCode = j.ToPostCode.ToString(),
-                ToAddress = j.ToAddress,
+                From = b.FromSuburb,
+                FromSuburbName = b.FromSuburb,
+                FromPostCode = b.FromPostCode.ToString(),
+                FromAddress = b.FromAddress,
+                FromContactName = b.Contact,
+                To = b.ToSuburb,
+                ToSuburbName = b.ToSuburb,
+                ToPostCode = b.ToPostCode.ToString(),
+                ToAddress = b.ToAddress,
                 Courier = co.Code,
                 Status = status.UcjsCode,
-                ContactName = j.Contact,
-                ToContactPhone = j.DeliverToPhone,
-                Weight = (double?)j.Weight,
-                Items = j.Qty,
-                RefA = j.ClientRefa,
-                RefB = j.ClientRefb,
-                OurRef = j.OurRef,
+                ContactName = b.Contact,
+                ToContactPhone = b.DeliverToPhone,
+                Weight = (double?)b.Weight,
+                Items = b.Qty,
+                RefA = b.ClientRefa,
+                RefB = b.ClientRefb,
+                OurRef = b.OurRef,
                 SigNotRequired = leave.Name ?? string.Empty,
-                Charge = $"{j.Amount:C}",
-                PickUpLatitude = decimal.Parse(j.PickUpLatitude),
-                PickUpLongitude = decimal.Parse(j.PickUpLongitude),
-                DeliveryLatitude = decimal.Parse(j.DeliveryLatitude),
-                DeliveryLongitude = decimal.Parse(j.DeliveryLongitude),
+                Charge = $"{b.Amount:C}",
+                PickUpLatitude = decimal.Parse(b.PickUpLatitude),
+                PickUpLongitude = decimal.Parse(b.PickUpLongitude),
+                DeliveryLatitude = decimal.Parse(b.DeliveryLatitude),
+                DeliveryLongitude = decimal.Parse(b.DeliveryLongitude),
                 CourierData = new CourierData
                 {
                     Courier = co.Code + Space + co.FirstName + Space + co.Surname,
                     CourierId = co.CourierId
                 },
-
-                DeliverToContact = j.DeliverToContact,
-                TrackingMethod = j.TrackingMethod,
-                TrackingMobile = j.TrackingMobile,
-                TrackingEmail = j.TrackingEmail,
+                DeliverToContact = b.DeliverToContact,
+                TrackingMethod = b.TrackingMethod,
+                TrackingMobile = b.TrackingMobile,
+                TrackingEmail = b.TrackingEmail,
                 PreBook = false,
                 BulkJob = true,
-                Locked = (j.RunName ?? string.Empty).Length > 1 || j.BookDate < today,
-                RunName = j.RunName,
-                Done = j.Done,
+                Locked = (b.RunName ?? string.Empty).Length > 1 || b.BookDate < today,
+                RunName = b.RunName,
+                Done = b.Done,
                 ScheduleName = schedule.Name,
                 LoggedInContactName = $"{contact.Firstname} {contact.Surname ?? string.Empty}",
                 Source = source.Name,
@@ -130,282 +129,362 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         ).FirstOrDefaultAsync();
     }
 
-    public async Task<Tuple<int, List<JobViewModel>>> BulkSearchAsync(
-        int? courierId,
-        string job,
-        string wild,
-        DateTime fromDate,
-        DateTime toDate,
-        int? clientId,
-        int pageIndex,
-        int pageSize
-    )
+    public async Task<DispatchJobViewModel> GetBulkDispatchJobDetailAsync(int bulkJobId)
     {
-        var clientSet = clientId.HasValue;
-        var courierSet = courierId.HasValue;
-        var jobParam = $"%{job}%";
-        var wildParam = $"%{wild}%";
-
-        var jobsQuery =
-            from x in Context.TblBulkJobs
-            join c in Context.TblCouriers on x.CourierId equals c.CourierId into courierJoin
-            from courier in courierJoin.DefaultIfEmpty()
-            join t in Context.TucJobTypes on x.Speed equals t.UcjtId into speedJoin
-            from speed in speedJoin.DefaultIfEmpty()
-            join s in Context.TucJobStatuses on x.JobStatus equals s.UcjsId into statusJoin
-            from status in statusJoin.DefaultIfEmpty()
-            where
-                x.BookDate >= fromDate
-                && x.BookDate <= toDate
-                && (!clientSet || x.ClientId == clientId)
-                && (!courierSet || x.CourierId == courierId)
-                && (job == string.Empty || EF.Functions.Like(x.JobNumber.ToLower(), jobParam))
-                && (
-                    wild == string.Empty
-                    || EF.Functions.Like(
-                        x.FromAddress
+        var bulkJob = await (
+                from j in Context.TblBulkJobs
+                join c in Context.TblCouriers on j.CourierId equals c.CourierId into courierJoin
+                from courier in courierJoin.DefaultIfEmpty()
+                join t in Context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
+                from speed in speedJoin.DefaultIfEmpty()
+                join s in Context.TucJobStatuses on j.JobStatus equals s.UcjsId into statusJoin
+                from status in statusJoin.DefaultIfEmpty()
+                where j.BulkJobId == bulkJobId
+                select new DispatchJobViewModel
+                {
+                    Id = j.BulkJobId,
+                    Time = j.BookTime,
+                    ClientId = j.ClientId,
+                    Client = j.ClientCode,
+                    PickupAddress = new AddressViewModel
+                    {
+                        AddressLine1 = j.PickupAddressLine1,
+                        AddressLine2 = j.PickupAddressLine2,
+                        AddressLine3 = j.PickupAddressLine3,
+                        AddressLine4 = j.PickupAddressLine4,
+                        AddressLine5 = j.PickupAddressLine5,
+                        AddressLine6 = j.PickupAddressLine6,
+                        AddressLine7 = j.PickupAddressLine7,
+                        AddressLine8 = j.PickupAddressLine8,
+                        Latitude = decimal.Parse(j.PickUpLatitude),
+                        Longitude = decimal.Parse(j.PickUpLongitude)
+                    },
+                    DeliveryAddress = new AddressViewModel
+                    {
+                        AddressLine1 = j.DeliveryAddressLine1,
+                        AddressLine2 = j.DeliveryAddressLine2,
+                        AddressLine3 = j.DeliveryAddressLine3,
+                        AddressLine4 = j.DeliveryAddressLine4,
+                        AddressLine5 = j.DeliveryAddressLine5,
+                        AddressLine6 = j.DeliveryAddressLine6,
+                        AddressLine7 = j.DeliveryAddressLine7,
+                        AddressLine8 = j.DeliveryAddressLine8,
+                        Latitude = decimal.Parse(j.DeliveryLatitude),
+                        Longitude = decimal.Parse(j.DeliveryLongitude)
+                    },
+                    JobNo = j.JobNumber,
+                    Courier = courier.Code,
+                    StatusId = j.JobStatus,
+                    Status = status.UcjsCode,
+                    Speed = speed.ShortName,
+                    SpeedId = j.Speed,
+                    Booked = DateTime.Parse(
+                        j.BookDate.ToString("yyyy-MM-dd")
                         + Space
-                        + x.Contact
-                        + Space
-                        + x.FromSuburb
-                        + Space
-                        + x.ToAddress
-                        + Space
-                        + x.DeliverToContact
-                        + Space
-                        + x.ToSuburb
-                        + Space
-                        + (x.ClientRefa ?? string.Empty)
-                        + Space
-                        + (x.ClientRefb ?? string.Empty)
-                        + Space
-                        + (x.OurRef ?? string.Empty)
-                        + Space
-                        + x.JobNumber.ToLower(),
-                        wildParam
+                        + j.BookTime.ToString("HH:mm:ss")
                     )
-                )
-            select new JobViewModel
-            {
-                Id = x.BulkJobId,
-                Time = x.BookTime,
-                ClientId = x.ClientId,
-                Client = x.ClientCode,
-                PickupAddress = new AddressViewModel
-                {
-                    AddressLine1 = x.PickupAddressLine1,
-                    AddressLine2 = x.PickupAddressLine2,
-                    AddressLine3 = x.PickupAddressLine3,
-                    AddressLine4 = x.PickupAddressLine4,
-                    AddressLine5 = x.PickupAddressLine5,
-                    AddressLine6 = x.PickupAddressLine6,
-                    AddressLine7 = x.PickupAddressLine7,
-                    AddressLine8 = x.PickupAddressLine8,
-                    Latitude = decimal.Parse(x.PickUpLatitude),
-                    Longitude = decimal.Parse(x.PickUpLongitude)
-                },
-                DeliveryAddress = new AddressViewModel
-                {
-                    AddressLine1 = x.DeliveryAddressLine1,
-                    AddressLine2 = x.DeliveryAddressLine2,
-                    AddressLine3 = x.DeliveryAddressLine3,
-                    AddressLine4 = x.DeliveryAddressLine4,
-                    AddressLine5 = x.DeliveryAddressLine5,
-                    AddressLine6 = x.DeliveryAddressLine6,
-                    AddressLine7 = x.DeliveryAddressLine7,
-                    AddressLine8 = x.DeliveryAddressLine8,
-                    Latitude = decimal.Parse(x.DeliveryLatitude),
-                    Longitude = decimal.Parse(x.DeliveryLongitude)
-                },
-                JobNo = x.JobNumber,
-                Courier = courier.Code,
-                StatusId = x.JobStatus,
-                Status = status.UcjsCode,
-                Speed = speed.ShortName,
-                SpeedId = x.Speed,
-                BookedDate = x.BookDate
-            };
+                })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
 
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
-        var total = await jobsQuery.CountAsync();
-        stopwatch.Stop();
-        Console.WriteLine(stopwatch.ElapsedMilliseconds);
-        stopwatch.Reset();
-        stopwatch.Start();
+        return bulkJob;
+    }
 
-        var jobs = await jobsQuery
-            .OrderBy(a => a.BookedDate)
-            .ThenBy(v => v.Time)
-            .Skip((pageIndex - 1) * pageSize)
-            .Take(pageSize)
+    public async Task<List<DispatchJobViewModel>> BulkSearchAsync(PodSearchRequest data)
+    {
+        var jobSearch = (data.Job ?? string.Empty).ToLower();
+        var wildSearch = (data.Wild ?? string.Empty).ToLower();
+
+        var bulkJobs = await (
+                from j in Context.TblBulkJobs
+                join c in Context.TblCouriers on j.CourierId equals c.CourierId into courierJoin
+                from courier in courierJoin.DefaultIfEmpty()
+                join t in Context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
+                from speed in speedJoin.DefaultIfEmpty()
+                join s in Context.TucJobStatuses on j.JobStatus equals s.UcjsId into statusJoin
+                from status in statusJoin.DefaultIfEmpty()
+                join rt in Context.TucJobReadTrackers on j.JobId equals rt.JobId into rtJoin
+                from readTracker in rtJoin.DefaultIfEmpty()
+                join vs in Context.VehicleSizes on j.Size equals vs.VehicleSizeId into vsJoin
+                from vehicleSize in vsJoin.DefaultIfEmpty()
+                join cl in Context.TucClients on j.ClientId equals cl.UcclId into clientJoin
+                from client in clientJoin.DefaultIfEmpty()
+
+                where
+                    j.BookDate >= data.FromDate
+                    && j.BookDate <= data.ToDate
+                    && (!data.ClientSet || j.ClientId == data.ClientId)
+                    && (!data.CourierSet || j.CourierId == data.CourierId)
+                    && (!data.JobSet || EF.Functions.Like(j.JobNumber.ToLower(), jobSearch))
+                    && (
+                        !data.WildSet
+                        || EF.Functions.Like(
+                            (j.FromAddress ?? string.Empty)
+                            + " "
+                            + (j.Contact ?? string.Empty)
+                            + " "
+                            + (j.FromSuburb ?? string.Empty)
+                            + " "
+                            + (j.ToAddress ?? string.Empty)
+                            + " "
+                            + (j.DeliverToContact ?? string.Empty)
+                            + " "
+                            + (j.ToSuburb ?? string.Empty)
+                            + " "
+                            + (j.ClientRefa ?? string.Empty)
+                            + " "
+                            + (j.ClientRefb ?? string.Empty)
+                            + " "
+                            + (j.OurRef ?? string.Empty)
+                            + " "
+                            + j.JobNumber.ToLower(),
+                            wildSearch
+                        )
+                    )
+                select new DispatchJobViewModel
+                {
+                    Id = j.BulkJobId,
+                    HasBeenRead = readTracker != null  && readTracker.HasBeenRead,
+                    IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.JobId,
+                    ParentId = j.ParentId,
+                    
+                    IsFlightJob = speed != null
+                                  && speed.GroupingId == (int)SpeedGrouping.Flight,
+                    IsAgentJob = speed != null
+                                 && speed.GroupingId == (int)SpeedGrouping.Agent,
+                    
+                    Vehicle = vehicleSize != null 
+                        ? new Suggestion
+                        {
+                            Id = vehicleSize.VehicleSizeId,
+                            Text = vehicleSize.VehicleName
+                        } 
+                        : null,
+                    
+                    Time = j.BookTime,
+                    ClientId = j.ClientId,
+                    Client = j.ClientCode,
+                    ClientName = client != null ? client.UcclName : string.Empty,
+                    PickupAddress = new AddressViewModel
+                    {
+                        AddressLine1 = j.PickupAddressLine1,
+                        AddressLine2 = j.PickupAddressLine2,
+                        AddressLine3 = j.PickupAddressLine3,
+                        AddressLine4 = j.PickupAddressLine4,
+                        AddressLine5 = j.PickupAddressLine5,
+                        AddressLine6 = j.PickupAddressLine6,
+                        AddressLine7 = j.PickupAddressLine7,
+                        AddressLine8 = j.PickupAddressLine8,
+                        Latitude = !string.IsNullOrEmpty(j.PickUpLatitude)
+                            ? decimal.Parse(j.PickUpLatitude)
+                            : null,
+                        Longitude = !string.IsNullOrEmpty(j.PickUpLongitude)
+                            ? decimal.Parse(j.PickUpLongitude)
+                            : null
+                    },
+                    DeliveryAddress = new AddressViewModel
+                    {
+                        AddressLine1 = j.DeliveryAddressLine1,
+                        AddressLine2 = j.DeliveryAddressLine2,
+                        AddressLine3 = j.DeliveryAddressLine3,
+                        AddressLine4 = j.DeliveryAddressLine4,
+                        AddressLine5 = j.DeliveryAddressLine5,
+                        AddressLine6 = j.DeliveryAddressLine6,
+                        AddressLine7 = j.DeliveryAddressLine7,
+                        AddressLine8 = j.DeliveryAddressLine8,
+                        Latitude = !string.IsNullOrEmpty(j.DeliveryLatitude)
+                            ? decimal.Parse(j.DeliveryLatitude)
+                            : null,
+                        Longitude = !string.IsNullOrEmpty(j.DeliveryLongitude)
+                            ? decimal.Parse(j.DeliveryLongitude)
+                            : null
+                    },
+                    JobNo = j.JobNumber,
+                    Courier = courier != null ? courier.Code : null,
+                    StatusId = j.JobStatus,
+                    Status = status != null ? status.UcjsCode : null,
+                    Speed = speed != null ? speed.ShortName : null,
+                    SpeedId = j.Speed,
+                    Booked = new DateTime(
+                            j.BookDate.Year,
+                            j.BookDate.Month,
+                            j.BookDate.Day,
+                            j.BookTime.Hour,
+                            j.BookTime.Minute,
+                            j.BookTime.Second
+                        ),
+                    IsBulkJob = true
+                })
+            .AsNoTracking()
             .ToListAsync();
 
-        stopwatch.Stop();
-        Console.WriteLine(stopwatch.ElapsedMilliseconds);
-        stopwatch.Reset();
-        stopwatch.Start();
-        var jobList = jobs.Select(v => new JobViewModel
-            {
-                Id = v.Id,
-                Time = v.Time,
-                ClientId = v.ClientId,
-                Client = v.Client,
-                PickupAddress = v.PickupAddress,
-                DeliveryAddress = v.DeliveryAddress,
-                JobNo = v.JobNo,
-                Courier = v.Courier,
-                StatusId = v.StatusId,
-                Status = v.Status,
-                Speed = v.Speed,
-                PreBook = false,
-                SpeedId = v.SpeedId,
-                Booked = v.BookedDate.HasValue && v.Time.HasValue
-                    ? DateTime.Parse(
-                        v.BookedDate.Value.ToString("yyyy-MM-dd")
-                        + Space
-                        + v.Time.Value.ToString("HH:mm:ss")
-                    )
-                    : DateTime.MinValue
-            })
-            .ToList();
-        stopwatch.Stop();
-        Console.WriteLine(stopwatch.ElapsedMilliseconds);
-        return Tuple.Create(total, jobList);
+        return bulkJobs;
     }
 
-    public async Task<Tuple<int, List<JobViewModel>>> PodSearch(PodSearchRequest data)
+    public async Task<List<DispatchJobViewModel>> PodSearchAsync(PodSearchRequest data)
     {
-        var clientSet = data.ClientId.HasValue;
-        var courierSet = data.CourierId.HasValue;
-        var jobParam = $"%{data.Job}%";
-        var wildParam = $"%{data.Wild}%";
+        try
+        {
+            var jobSearch = $"%{data.Job}%";
+            var wildSearch = $"%{data.Wild}%";
 
-        var jobsQuery =
-            from j in Context.TblJobs
-            join c in Context.TblCouriers on j.CourierId equals c.CourierId into courierJoin
-            from co in courierJoin.DefaultIfEmpty()
-            join y in Context.TucSuburbs on j.FromSuburbId equals y.UcsuId into fromJoin
-            from fs in fromJoin.DefaultIfEmpty()
-            join z in Context.TucSuburbs on j.ToSuburbId equals z.UcsuId into toJoin
-            from ts in toJoin.DefaultIfEmpty()
-            join t in Context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
-            from speed in speedJoin.DefaultIfEmpty()
-            join s in Context.TucJobStatuses on j.Status equals s.UcjsId into statusJoin
-            from status in statusJoin.DefaultIfEmpty()
-            join nw in Context.TucJobNationwides on j.JobId equals nw.UcnwJobId into nationwideJoin
-            from nationwide in nationwideJoin.DefaultIfEmpty()
-            where
-                j.Date >= data.FromDate
-                && j.Date <= data.ToDate
-                && (!clientSet || j.ClientId == data.ClientId)
-                && (!courierSet || j.CourierId == data.CourierId)
-                && (data.Job == string.Empty || EF.Functions.Like(j.Number.ToLower(), jobParam))
-                && (
-                    data.Wild == string.Empty
-                    || Context.TucJobNationwides
-                        .Where(nw => nw.UcnwJobId == j.JobId)
-                        .Any(nw => EF.Functions.Like(
-                            nw.UcnwFlightNo
-                            + Space
-                            + nw.AircraftName
-                            + Space
-                            + nw.CarrierFsCode
-                            + Space
-                            + nw.DepartureAirportName
-                            + Space
-                            + nw.ArrivalAirportName,
-                            wildParam))
-                    || EF.Functions.Like(
-                        j.FromAddress
-                        + Space
-                        + j.PickupFromContact
-                        + Space
-                        + fs.UcsuName
-                        + Space
-                        + j.ToAddress
-                        + Space
-                        + j.DeliverToContact
-                        + Space
-                        + ts.UcsuName
-                        + Space
-                        + (j.ClientReferenceA ?? string.Empty)
-                        + Space
-                        + (j.ClientReferenceB ?? string.Empty)
-                        + Space
-                        + (j.OurRef ?? string.Empty)
-                        + Space
-                        + j.Number.ToLower(),
-                        wildParam
-                    )
-                )
-            select new JobViewModel
-            {
-                Id = j.JobId,
-                Time = j.Time,
-                ClientId = j.ClientId,
-                Client = j.ClientCode,
-                From = fs.UcsuName,
-                FromSuburbId = j.FromSuburbId,
-                To = ts.UcsuName,
-                ToSuburbId = j.ToSuburbId,
-                JobNo = j.Number,
-                FromAddress = j.FromAddress,
-                ToAddress = j.ToAddress,
-                PickupAddress = new AddressViewModel
-                {
-                    AddressLine1 = j.PickupAddressLine1,
-                    AddressLine2 = j.PickupAddressLine2,
-                    AddressLine3 = j.PickupAddressLine3,
-                    AddressLine4 = j.PickupAddressLine4,
-                    AddressLine5 = j.PickupAddressLine5,
-                    AddressLine6 = j.PickupAddressLine6,
-                    AddressLine7 = j.PickupAddressLine7,
-                    AddressLine8 = j.PickupAddressLine8,
-                    Latitude = j.PickUpLatitude,
-                    Longitude = j.PickUpLongitude
-                },
-                DeliveryAddress = new AddressViewModel
-                {
-                    AddressLine1 = j.DeliveryAddressLine1,
-                    AddressLine2 = j.DeliveryAddressLine2,
-                    AddressLine3 = j.DeliveryAddressLine3,
-                    AddressLine4 = j.DeliveryAddressLine4,
-                    AddressLine5 = j.DeliveryAddressLine5,
-                    AddressLine6 = j.DeliveryAddressLine6,
-                    AddressLine7 = j.DeliveryAddressLine7,
-                    AddressLine8 = j.DeliveryAddressLine8,
-                    Latitude = j.DeliveryLatitude,
-                    Longitude = j.DeliveryLongitude
-                },
-                Courier = co.Code,
-                StatusId = j.Status,
-                Status = status.UcjsCode,
-                Speed = speed.ShortName,
-                SpeedId = j.Speed,
-                PreBook = false,
-                PickUpLatitude = j.PickUpLatitude,
-                PickUpLongitude = j.PickUpLongitude,
-                DeliveryLatitude = j.DeliveryLatitude,
-                DeliveryLongitude = j.DeliveryLongitude,
-                BookedDate = j.Date,
-                Booked = DateTime.Parse(
-                    j.Date.Value.ToString("yyyy-MM-dd") + Space + j.Time.Value.ToString("HH:mm:ss")
-                ),
-                IsArchived = j.Archived ?? false,
-                Locked = j.Locked.HasValue ? j.Locked != 0 : null
-            };
+            var jobSearchResults = await (
+                    from j in Context.TblJobs
+                    join c in Context.TucCouriers on j.CourierId equals c.UccrId into courierJoin
+                    from co in courierJoin.DefaultIfEmpty()
+                    join y in Context.TucSuburbs on j.FromSuburbId equals y.UcsuId into fromJoin
+                    from fs in fromJoin.DefaultIfEmpty()
+                    join z in Context.TucSuburbs on j.ToSuburbId equals z.UcsuId into toJoin
+                    from ts in toJoin.DefaultIfEmpty()
+                    join t in Context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
+                    from speed in speedJoin.DefaultIfEmpty()
+                    join s in Context.TucJobStatuses on j.Status equals s.UcjsId into statusJoin
+                    from status in statusJoin.DefaultIfEmpty()
+                    join nw in Context.TucJobNationwides on j.JobId equals nw.UcnwJobId into nationwideJoin
+                    from nationwide in nationwideJoin.DefaultIfEmpty()
+                    join rt in Context.TucJobReadTrackers on j.JobId equals rt.JobId into rtJoin
+                    from readTracker in rtJoin.DefaultIfEmpty()
+                    join vs in Context.VehicleSizes on j.Size equals vs.VehicleSizeId into vsJoin
+                    from vehicleSize in vsJoin.DefaultIfEmpty()
+                    join cl in Context.TucClients on j.ClientId equals cl.UcclId into clientJoin
+                    from client in clientJoin.DefaultIfEmpty()
+                    
+                    where
+                        j.Date >= data.FromDate
+                        && j.Date <= data.ToDate
+                        && (!data.ClientSet || j.ClientId == data.ClientId)
+                        && (!data.CourierSet || j.CourierId == data.CourierId)
+                        && (!data.JobSet || EF.Functions.Like(j.Number.ToLower(), jobSearch))
+                        && (
+                            !data.WildSet
+                            || Context.TucJobNationwides
+                                .Where(nw => nw.UcnwJobId == j.JobId)
+                                .Any(nw => EF.Functions.Like(
+                                    (nw.UcnwFlightNo ?? string.Empty)
+                                    + " "
+                                    + (nw.AircraftName ?? string.Empty)
+                                    + " "
+                                    + (nw.CarrierFsCode ?? string.Empty)
+                                    + " "
+                                    + (nw.DepartureAirportName ?? string.Empty)
+                                    + " "
+                                    + (nw.ArrivalAirportName ?? string.Empty),
+                                    wildSearch))
+                            || EF.Functions.Like(
+                                (j.FromAddress ?? string.Empty)
+                                + " "
+                                + (j.PickupFromContact ?? string.Empty)
+                                + " "
+                                + (fs.UcsuName ?? string.Empty)
+                                + " "
+                                + (j.ToAddress ?? string.Empty)
+                                + " "
+                                + (j.DeliverToContact ?? string.Empty)
+                                + " "
+                                + (ts.UcsuName ?? string.Empty)
+                                + " "
+                                + (j.ClientReferenceA ?? string.Empty)
+                                + " "
+                                + (j.ClientReferenceB ?? string.Empty)
+                                + " "
+                                + (j.OurRef ?? string.Empty)
+                                + " "
+                                + j.Number.ToLower(),
+                                wildSearch
+                            )
+                        )
+                    select new DispatchJobViewModel
+                    {
+                        Id = j.JobId,
+                        HasBeenRead = readTracker != null  && readTracker.HasBeenRead,
+                        IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.JobId,
+                        ParentId = j.ParentId,
+                        
+                        DeliverByTime = j.DeliverByTime,
+                        IsFlightJob = speed != null
+                                      && speed.GroupingId == (int)SpeedGrouping.Flight,
+                        IsAgentJob = speed != null
+                                     && speed.GroupingId == (int)SpeedGrouping.Agent,
+                        
+                        Vehicle = vehicleSize != null 
+                            ? new Suggestion
+                            {
+                                Id = vehicleSize.VehicleSizeId,
+                                Text = vehicleSize.VehicleName
+                            } 
+                            : null,
+                        Time = j.Time,
+                        ClientId = j.ClientId,
+                        Client = j.ClientCode,
+                        ClientName = client != null ? client.UcclName : string.Empty,
+                        
+                        From = fs != null ? fs.UcsuName : null,
+                        ToSuburbId = j.ToSuburbId,
+                        JobNo = j.Number,
+                        ToAddress = j.ToAddress,
+                        PickupAddress = new AddressViewModel
+                        {
+                            AddressLine1 = j.PickupAddressLine1,
+                            AddressLine2 = j.PickupAddressLine2,
+                            AddressLine3 = j.PickupAddressLine3,
+                            AddressLine4 = j.PickupAddressLine4,
+                            AddressLine5 = j.PickupAddressLine5,
+                            AddressLine6 = j.PickupAddressLine6,
+                            AddressLine7 = j.PickupAddressLine7,
+                            AddressLine8 = j.PickupAddressLine8,
+                            Latitude = j.PickUpLatitude,
+                            Longitude = j.PickUpLongitude
+                        },
+                        DeliveryAddress = new AddressViewModel
+                        {
+                            AddressLine1 = j.DeliveryAddressLine1,
+                            AddressLine2 = j.DeliveryAddressLine2,
+                            AddressLine3 = j.DeliveryAddressLine3,
+                            AddressLine4 = j.DeliveryAddressLine4,
+                            AddressLine5 = j.DeliveryAddressLine5,
+                            AddressLine6 = j.DeliveryAddressLine6,
+                            AddressLine7 = j.DeliveryAddressLine7,
+                            AddressLine8 = j.DeliveryAddressLine8,
+                            Latitude = j.DeliveryLatitude,
+                            Longitude = j.DeliveryLongitude
+                        },
+                        Courier = co != null ? co.Code : null,
+                        StatusId = j.Status,
+                        Status = status != null ? status.UcjsCode : null,
+                        Speed = speed != null ? speed.ShortName : null,
+                        SpeedId = j.Speed,
+                        PreBook = false,
+                        PickUpLatitude = j.PickUpLatitude,
+                        PickUpLongitude = j.PickUpLongitude,
+                        DeliveryLatitude = j.DeliveryLatitude,
+                        DeliveryLongitude = j.DeliveryLongitude,
+                        Booked = j.Date.HasValue && j.Time.HasValue
+                            ? new DateTime(
+                                j.Date.Value.Year,
+                                j.Date.Value.Month,
+                                j.Date.Value.Day,
+                                j.Time.HasValue ? j.Time.Value.Hour : 0,
+                                j.Time.HasValue ? j.Time.Value.Minute : 0,
+                                j.Time.HasValue ? j.Time.Value.Second : 0
+                            )
+                            : DateTime.MinValue,
+                        IsArchived = j.Archived ?? false,
+                        Locked = j.Locked.HasValue ? j.Locked != 0 : null,
+                        ToAirportId = j.ToAirportId,
+                        FromAirportId = j.FromAirportId,
+                    })
+                .AsNoTracking()
+                .ToListAsync();
 
-        var orderedQuery = jobsQuery
-            .OrderBy(a => a.BookedDate)
-            .ThenBy(v => v.Time);
-
-        var total = orderedQuery.Count();
-        var jobs = await orderedQuery.Skip((data.PageIndex - 1) * data.PageSize).Take(data.PageSize).ToListAsync();
-
-        return Tuple.Create(total, jobs);
+            return jobSearchResults;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(PodSearchAsync)));
+            throw;
+        }
     }
-
 
     public async Task UpdateManualPriceAsync(List<JobManualPriceModel> data)
     {
@@ -3105,6 +3184,75 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository),
                     nameof(GetClosestAirportsAsync)));
             throw;
+        }
+    }
+
+    public async Task<TucJobType> GetJobTypeByIdAsync(int speedId)
+    {
+        var jobType = await Context.TucJobTypes
+            .Include(s => s.Grouping)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.UcjtId == speedId);
+
+        return jobType ?? throw new KeyNotFoundException($"Job type with ID {speedId} not found");
+    }
+
+    public async Task<OverviewStatsViewModel> GetOverviewStatsAsync()
+    {
+        var baseQuery = Context.TucJobs.Where(j => j.InverseParent.Count != 0);
+
+        var stats = await baseQuery
+            .GroupBy(j => true) // Group all records together
+            .Select(g => new OverviewStatsViewModel
+            {
+                Active = g.Count(j =>
+                    j.UcjbStatus.HasValue
+                    && JobStatusGroups.Active.Contains(j.UcjbStatus.Value)
+                    && !j.UcjbVoid
+                ),
+                Completed = g.Count(j =>
+                    j.UcjbStatus.HasValue
+                    && JobStatusGroups.Completed.Contains(j.UcjbStatus.Value)
+                    && !j.UcjbVoid
+                ),
+                Inactive = g.Count(j => j.UcjbVoid)
+            })
+            .FirstOrDefaultAsync();
+
+        return stats
+               ?? new OverviewStatsViewModel
+               {
+                   Active = 0,
+                   Inactive = 0,
+                   Completed = 0
+               };
+    }
+
+    public async Task UpdateJobReadStatusAsync(int jobId, bool hasBeenRead)
+    {
+        var staffId = _infoService.GetStaffId();
+        var currentTenantTime = _infoService.GetCurrentTenantTime();
+
+        var rowsAffected = await Context.TucJobReadTrackers
+            .Where(x => x.JobId == jobId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(x => x.HasBeenRead, hasBeenRead)
+                .SetProperty(x => x.ReadByStaffId, staffId)
+                .SetProperty(x => x.ReadTimestamp, currentTenantTime));
+
+        if (rowsAffected == 0)
+        {
+            // Record doesn't exist, create a new one
+            var data = new TucJobReadTracker
+            {
+                JobId = jobId,
+                HasBeenRead = hasBeenRead,
+                ReadByStaffId = staffId,
+                ReadTimestamp = currentTenantTime
+            };
+
+            await Context.AddAsync(data);
+            await Context.SaveChangesAsync();
         }
     }
 }

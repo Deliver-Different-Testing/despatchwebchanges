@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
@@ -368,8 +366,10 @@ public class BaseJobRepository(
         }
 
         return isAscending
-            ? query.OrderBy(j => j.UcjbDispTime).ThenBy(j => j.UcjbTime)
-            : query.OrderByDescending(j => j.UcjbDispTime).ThenByDescending(j => j.UcjbTime);
+            ? query.OrderBy(j => j.UcjbDispTime)
+                .ThenBy(j => j.UcjbTime)
+            : query.OrderByDescending(j => j.UcjbDispTime)
+                .ThenByDescending(j => j.UcjbTime);
     }
 
     private static IQueryable<TucJob> ApplyToOrdering(
@@ -521,78 +521,7 @@ public class BaseJobRepository(
             ? query.OrderBy(j => j.UcjbCourier.UccrName)
             : query.OrderByDescending(j => j.UcjbCourier.UccrName);
     }
-
-    public async Task UpdateJobReadStatusAsync(int jobId, bool hasBeenRead)
-    {
-        var staffId = infoService.GetStaffId();
-        var currentTenantTime = infoService.GetCurrentTenantTime();
-
-        var rowsAffected = await Context.TucJobReadTrackers
-            .Where(x => x.JobId == jobId)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(x => x.HasBeenRead, hasBeenRead)
-                .SetProperty(x => x.ReadByStaffId, staffId)
-                .SetProperty(x => x.ReadTimestamp, currentTenantTime));
-
-        if (rowsAffected == 0)
-        {
-            // Record doesn't exist, create a new one
-            var data = new TucJobReadTracker
-            {
-                JobId = jobId,
-                HasBeenRead = hasBeenRead,
-                ReadByStaffId = staffId,
-                ReadTimestamp = currentTenantTime
-            };
-
-            await Context.AddAsync(data);
-            await Context.SaveChangesAsync();
-        }
-    }
-
-
-    public async Task<OverviewStatsViewModel> GetOverviewStatsAsync()
-    {
-        var baseQuery = Context.TucJobs.Where(j => j.InverseParent.Count != 0);
-
-        var stats = await baseQuery
-            .GroupBy(j => true) // Group all records together
-            .Select(g => new OverviewStatsViewModel
-            {
-                Active = g.Count(j =>
-                    j.UcjbStatus.HasValue
-                    && JobStatusGroups.Active.Contains(j.UcjbStatus.Value)
-                    && !j.UcjbVoid
-                ),
-                Completed = g.Count(j =>
-                    j.UcjbStatus.HasValue
-                    && JobStatusGroups.Completed.Contains(j.UcjbStatus.Value)
-                    && !j.UcjbVoid
-                ),
-                Inactive = g.Count(j => j.UcjbVoid)
-            })
-            .FirstOrDefaultAsync();
-
-        return stats
-               ?? new OverviewStatsViewModel
-               {
-                   Active = 0,
-                   Inactive = 0,
-                   Completed = 0
-               };
-    }
-
-    public async Task<TucJobType> GetJobTypeByIdAsync(int speedId)
-    {
-        var jobType = await Context.TucJobTypes
-            .Include(s => s.Grouping)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.UcjtId == speedId);
-
-        return jobType ?? throw new KeyNotFoundException($"Job type with ID {speedId} not found");
-    }
-
-
+    
     public async Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(
         List<int> selectedViewIds)
     {

@@ -10,8 +10,7 @@
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "node",
     "typeRoots": [
-      "./node_modules/@types",
-      "./wwwroot/types"
+      "./node_modules/@types"
     ]
   },
   "include": [

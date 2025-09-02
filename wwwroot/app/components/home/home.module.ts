@@ -54,7 +54,6 @@ homeModule
     .service("additionalServicesDialogService", AdditionalServicesDialogService)
     .service("interCourierChargeDialogService", InterCourierChargeDialogService)
     .service("dispatchJobService", DispatchExecutorService)
-    .service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService)
     .service("jobContextMenuService", JobContextMenuService)
     .service("jobHighlightService", JobHighlightService)
     .service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService);

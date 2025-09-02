@@ -3,7 +3,7 @@ import DispatchExecutorService from "../../services/dispatch-executor.service";
 import ToastrService from "../../services/toastr.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import {AppConfig} from "../../interfaces/app-config.interface";
-import {BulkScanDetail, IDispatchJob, IJob, Suggestion} from "../../interfaces/job.interface";
+import {BulkScanDetail, IDispatchJob, Suggestion} from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
 import BaseController from "../base-controller";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
@@ -19,12 +19,12 @@ import {IDeliveryHistoryConfig} from "../common/task-history/task-history.interf
 import DensityMode from "../../enums/densityMode";
 import ISearchCriteria from "./interfaces/ISearchCriteria";
 import dayjs from "dayjs";
+import JobListType from "../common/job-list/enums/jobListType";
 
 class JobSearchController extends BaseController {
     static $inject = [
         '$scope',
         'uCSData',
-        '$filter',
         '$mdDialog',
         '$document',
         '$timeout',
@@ -43,17 +43,9 @@ class JobSearchController extends BaseController {
     readonly isAdmin: boolean;
     mapCenter: Coordinates;
     mapZoom: number;
-    jobs: IDispatchJob[];
     jobDetailFabIsOpen: boolean = false;
     dateSearchRange: number;
     searchBox: any;
-    maxSize: number;
-    totalCount: number;
-    pageIndex: number;
-    pageSizeSelected: any;
-    bulkTotalCount: number;
-    bulkPageIndex: number;
-    bulkPageSizeSelected: any;
     scanList: BulkScanDetail[];
     jobRecordSearchText: string;
     sort: any;
@@ -65,26 +57,25 @@ class JobSearchController extends BaseController {
     showInput: any;
     inputWidth: any;
     followupClient: any;
-    jobQuery: any;
-    bulkJobQuery: any;
     jobPromise: any;
     bulkJobPromise: any;
     scanPromise: any;
     options: any;
     boxes: any;
 
+    jobListType = JobListType.JobSearchMainList;
+    bulkJobListType = JobListType.JobSearchBulkList;
+    
     layouts: ILayout[] = [];
     defaultLayout?: ILayout;
     currentLayoutName?: string;
     layout?: { columns: IColumn[] };
 
     timeZone: string = TimeZone;
-    selectJob: any;
-    jobList?: IJob[];
+    jobList?: IDispatchJob[];
+    bulkJobList?: IDispatchJob[];
     pickRegions?: Suggestion[];
-    currentJob?: IJob;
-    jobListLoading: any;
-    bulkJobList: any;
+    currentJob?: IDispatchJob;
     currentSelection?: string;
     currentJobId?: number;
     boxSortableOptions: {
@@ -110,7 +101,6 @@ class JobSearchController extends BaseController {
     constructor(
         $scope: angular.IScope,
         private uCSData: JobSearchService,
-        private $filter: angular.IFilterService,
         private $mdDialog: angular.material.IDialogService,
         private $document: angular.IDocumentService,
         $timeout: angular.ITimeoutService,
@@ -136,19 +126,11 @@ class JobSearchController extends BaseController {
             appConfig.US_Coordinates_Center :
             appConfig.NZ_Coordinates_Center;
         this.mapZoom = 12;
-        this.jobs = [];
 
         this.jobDetailFabIsOpen = false;
         this.dateSearchRange = 1; // Set to a fortnight
 
         this.searchBox = "";
-        this.maxSize = 5;
-        this.totalCount = 0;
-        this.pageIndex = 1;
-        this.pageSizeSelected = 50;
-        this.bulkTotalCount = 0;
-        this.bulkPageIndex = 1;
-        this.bulkPageSizeSelected = 50;
         this.scanList = [];
 
         this.jobRecordSearchText = "";
@@ -175,14 +157,6 @@ class JobSearchController extends BaseController {
 
         this.followupClient = {
             name: "All"
-        };
-
-        this.jobQuery = {
-            order: 'booked', limit: 50, page: 1
-        };
-
-        this.bulkJobQuery = {
-            order: 'booked', limit: 50, page: 1
         };
 
         this.jobPromise = null;
@@ -236,28 +210,24 @@ class JobSearchController extends BaseController {
                 "title": "Filters",
                 "icon": "filter_list",
                 "templateUrl": "app/components/jobSearch/partials/pickDate.html",
-                "showSearch": 0,
                 "showRefresh": 0
             },
             [JobSearchBoxes.JobList]: {
                 "title": "Live Job Data",
                 "icon": "list_alt",
                 "templateUrl": "app/components/jobSearch/partials/jobList.html",
-                "showSearch": 1,
                 "showRefresh": 1
             },
             [JobSearchBoxes.BulkJobList]: {
                 "title": "Bulk Job Data",
                 "icon": "format_list_bulleted",
                 "templateUrl": "app/components/jobSearch/partials/bulkJobList.html",
-                "showSearch": 1,
                 "showRefresh": 1
             },
             [JobSearchBoxes.JobDetail]: {
                 "title": "Detail",
                 "icon": "assignment",
                 "templateUrl": "app/components/jobSearch/partials/jobDetail.html",
-                "showSearch": 0,
                 "showDetailButtons": 1,
                 "showRefresh": 1
             },
@@ -265,14 +235,12 @@ class JobSearchController extends BaseController {
                 "title": "Scan Detail",
                 "icon": "document_scanner",
                 "templateUrl": "app/components/jobSearch/partials/scanList.html",
-                "showSearch": 0,
                 "showRefresh": 0
             },
             [JobSearchBoxes.Map]: {
                 "title": "Map",
                 "icon": "pin_drop",
                 "templateUrl": "app/components/jobSearch/partials/map.html",
-                "showSearch": 0,
                 "showRefresh": 0
             },
             [JobSearchBoxes.DeliveryJourney]: {
@@ -595,6 +563,11 @@ class JobSearchController extends BaseController {
         }
     }
 
+    async selectJob(job: IDispatchJob | undefined) {
+        if (!job) return;
+        return this.selectJobDetail(job.id);
+    }
+    
     async createNewJob($event: MouseEvent) {
         try {
             // Dialog
@@ -714,46 +687,6 @@ class JobSearchController extends BaseController {
             this.inputWidth[boxID] = 200;
             this.showInput[boxID] = true;
         }
-    }
-
-    //Column Sorting
-    orderList(list: string, prop: string): void {
-        const targetList = list === 'jobList' ? this.jobList : this.bulkJobList;
-
-        if (!targetList) return; // Guard against undefined
-
-        if (this.sort[list] !== prop) {
-            this.sort[list] = prop;
-            const sortedList = this.$filter('orderBy')(targetList, prop);
-            this.updateList(list, sortedList);
-        } else {
-            this.sort[list] = "d-" + prop;
-            const sortedList = this.$filter('orderBy')(targetList, "-" + prop);
-            this.updateList(list, sortedList);
-        }
-    }
-
-    private updateList(listName: string, sortedList: any[]) {
-        if (listName === 'jobList') {
-            this.jobList = sortedList;
-        } else if (listName === 'bulkJobList') {
-            this.bulkJobList = sortedList;
-        }
-    }
-
-    jobRecordSearch(searchText: string) {
-        if (!this.jobList) return [];
-
-        return this.jobList
-            .filter(job => job.jobNo.toLowerCase().includes(searchText.toLowerCase()))
-            .map(job => ({id: job.id, text: job.jobNo}));
-    }
-
-    JobRecordSelected(selectedJobId: number) {
-        if (!this.jobList) return [];
-
-        const selectedJob = this.jobList.find(job => job.id === selectedJobId);
-        return this.selectJob(selectedJob);
     }
 
     async filterRegion(region: Suggestion) {
@@ -910,16 +843,6 @@ class JobSearchController extends BaseController {
         if (!this.currentJob) return;
 
         try {
-            if (!this.currentJob.podPhoto) {
-                await this.$mdDialog.show(this.$mdDialog.alert()
-                    .clickOutsideToClose(true)
-                    .title('No Photo')
-                    .textContent('Sorry no photo for this job.')
-                    .ok('OK'));
-                console.log("Alert closed.");
-                return;
-            }
-
             const confirm = this.$mdDialog.prompt()
                 .title('Email the photo POD')
                 .textContent('Please enter an email address to send the POD.')
@@ -952,50 +875,38 @@ class JobSearchController extends BaseController {
     async refreshData() {
         try {
             this.isJobListLoading = true;
-
-            this.jobListLoading = this.uCSData.getPodJobs(
+            this.jobList = await this.uCSData.getPodJobs(
                 this.searchCriteria.from_date,
                 this.searchCriteria.to_date,
-                this.jobQuery.page,
-                this.jobQuery.limit,
                 this.searchCriteria.courier,
                 this.searchCriteria.client,
                 this.searchCriteria.wild,
                 this.searchCriteria.job,
             );
-
-            const data = await this.jobListLoading;
-            this.jobList = data.item2;
-            this.totalCount = data.item1;
         } catch (error) {
             this.handleError(error);
         } finally {
             this.isJobListLoading = false;
+            this.applyScope();
         }
     }
 
     async refreshBulkData() {
         try {
             this.isBulkJobListLoading = true;
-
-            this.bulkJobPromise = this.uCSData.searchBulkJobs(
+            this.bulkJobList = await this.uCSData.searchBulkJobs(
                 this.searchCriteria.from_date,
                 this.searchCriteria.to_date,
-                this.bulkJobQuery.page,
-                this.bulkJobQuery.limit,
                 this.searchCriteria.courier,
                 this.searchCriteria.client,
-                (this.searchCriteria.job || ""),
-                (this.searchCriteria.wild || ""),
+                this.searchCriteria.job,
+                this.searchCriteria.wild,
             );
-
-            const data = await this.bulkJobPromise;
-            this.bulkJobList = data.item2;
-            this.bulkTotalCount = data.item1;
         } catch (error) {
             console.error('Error in refreshBulkData:', error);
         } finally {
             this.isBulkJobListLoading = false;
+            this.applyScope();
         }
     }
 
@@ -1036,6 +947,8 @@ class JobSearchController extends BaseController {
             }
         } catch (error) {
             console.error("Failed to download jobs:", error);
+        } finally {
+            this.applyScope();
         }
     }
 
@@ -1074,7 +987,7 @@ class JobSearchController extends BaseController {
         try {
             console.log("select Job  " + jobId);
 
-            this.currentJob = await this.DispatchData.getJobDetail(jobId);
+            this.currentJob = await this.DispatchData.getDispatchJobDetail(jobId);
             this.currentJobId = jobId;
             this.currentSelection = " for Job " + this.currentJob?.jobNo;
 
@@ -1084,14 +997,16 @@ class JobSearchController extends BaseController {
                     lat: this.currentJob.pickupAddress.latitude,
                     lng: this.currentJob.pickupAddress.longitude
                 };
-                this.jobs = [this.currentJob as any];
+                this.jobList = [this.currentJob as any];
             }
 
-            if (!this.currentJob?.bookedDate) return;
-            this.scanPromise = this.uCSData.getScanDetail(this.currentJob.bookedDate, this.currentJob.jobNo);
+            if (!this.currentJob?.booked) return;
+            this.scanPromise = this.uCSData.getScanDetail(this.currentJob.booked, this.currentJob.jobNo);
             this.scanList = await this.scanPromise;
         } catch (error) {
             console.error('Error in selectJobDetail:', error);
+        } finally {
+            this.applyScope();
         }
     }
 
@@ -1099,55 +1014,26 @@ class JobSearchController extends BaseController {
         try {
             console.log("select Bulk Job  " + bulkJobId);
 
-            this.currentJob = await this.uCSData.getBulkJobDetail(bulkJobId);
+            this.currentJob = await this.uCSData.getDispatchBulkJobDetail(bulkJobId);
             this.currentSelection = " for Bulk Job " + this.currentJob.jobNo;
 
-            // Update map with just this job
+            // Update the map with just this job
             if (this.currentJob.pickupAddress?.latitude && this.currentJob.pickupAddress?.longitude) {
                 this.mapCenter = {
                     lat: this.currentJob.pickupAddress.latitude,
                     lng: this.currentJob.pickupAddress.longitude
                 };
-                this.jobs = [this.currentJob as any];
+                this.jobList = [this.currentJob as any];
             }
 
-            if (!this.currentJob?.bookedDate) return;
-            this.scanPromise = this.uCSData.getScanDetail(this.currentJob.bookedDate, this.currentJob.jobNo);
+            if (!this.currentJob?.booked) return;
+            this.scanPromise = this.uCSData.getScanDetail(this.currentJob.booked, this.currentJob.jobNo);
             this.scanList = await this.scanPromise;
         } catch (error) {
             console.error('Error in selectBulkJobDetail:', error);
         }
     }
-
-    async jobPageChanged(page: number, limit: number): Promise<void> {
-        this.jobQuery.page = page;
-        this.jobQuery.limit = limit;
-        await this.refreshData();
-    }
-
-    async bulkJobPageChanged(page: number, limit: number) {
-        this.bulkJobQuery.page = page;
-        this.bulkJobQuery.limit = limit;
-        await this.refreshBulkData();
-    }
-
-    async changeBulkPageSize(index: number) {
-        this.bulkPageIndex = index;
-        this.bulkPageSizeSelected = index;
-        await this.refreshBulkData();
-    }
-
-    async bulkPageChanged(index: number) {
-        this.bulkPageIndex = index;
-        await this.refreshBulkData();
-    }
-
-    async changePageSize(index: number) {
-        this.pageIndex = index;
-        this.pageSizeSelected = index;
-        await this.refreshData();
-    }
-
+    
     clientQuerySearch(searchText: string) {
         return this.uCSData.getActiveClients(searchText);
     }
@@ -1234,16 +1120,31 @@ class JobSearchController extends BaseController {
                 break;
             case JobSearchBoxes.JobDetail:
                 if(!this.currentJobId) return;
-                
-                // Clear job
+
+                // Store the job ID and determine if it's a bulk job
                 const jobIdToRefresh = this.currentJobId;
+                const isBulkJob = this.bulkJobList?.some((job: IDispatchJob) => job.id === jobIdToRefresh);
+
+                // Clear current job state
                 this.currentJobId = undefined;
                 this.currentJob = undefined;
-                
-                // Reselect to trigger refresh
-                await this.selectJobDetail(jobIdToRefresh);
+                this.scanList = [];
+
+                // Reselect to trigger refresh based on a job type
+                if (isBulkJob) {
+                    await this.selectBulkJobDetail(jobIdToRefresh);
+                } else {
+                    await this.selectJobDetail(jobIdToRefresh);
+                }
                 break;
         }
+    }
+    async onJobSelect(job: IDispatchJob): Promise<void> {
+        await this.selectJobDetail(job.id);
+    }
+
+    async onBulkJobSelect(job: IDispatchJob): Promise<void> {
+        await this.selectBulkJobDetail(job.id);
     }
 }
 

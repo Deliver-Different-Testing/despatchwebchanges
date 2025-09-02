@@ -1,5 +1,4 @@
-import {IJob} from "../../interfaces/job.interface";
-import PodSearchResponse from "./enums/podSearchResponse";
+import {IDispatchJob} from "../../interfaces/job.interface";
 import dayjs from "dayjs";
 
 class JobSearchService implements angular.IServiceProvider {
@@ -16,28 +15,24 @@ class JobSearchService implements angular.IServiceProvider {
     $get() {
         return this;
     }
-    
+
     async getPodJobs(
         fromDate: Date,
         toDate: Date,
-        pageIndex: number,
-        pageSize: number,
         courierId?: number,
         clientId?: number,
         wild?: string,
         job?: string,
-    ): Promise<PodSearchResponse> {
-        const response = await this.$http.get<PodSearchResponse>(
+    ): Promise<IDispatchJob[]> {
+        const response = await this.$http.get<IDispatchJob[]>(
             `/Job/PODSearch`, {
                 params: {
                     courierId: courierId,
                     clientId: clientId,
                     wild: wild,
                     job: job,
-                    fromDate: fromDate.toISOString(),
-                    toDate: toDate.toISOString(),
-                    pageIndex: pageIndex,
-                    pageSize: pageSize
+                    fromDate: dayjs(fromDate).format(),
+                    toDate: dayjs(toDate).format(),
                 }
             }
         );
@@ -81,14 +76,12 @@ class JobSearchService implements angular.IServiceProvider {
     async searchBulkJobs(
         fromDate: Date,
         toDate: Date,
-        pageIndex: number,
-        pageSize: number,
         courierId?: number,
         clientId?: number,
         job?: string,
         wild?: string,
-    ) {
-        const response = await this.$http.get(
+    ): Promise<IDispatchJob[]> {
+        const response = await this.$http.get<IDispatchJob[]>(
             `/Job/BulkSearch`,
             {
                 params: {
@@ -97,9 +90,7 @@ class JobSearchService implements angular.IServiceProvider {
                     job,
                     wild,
                     fromDate: dayjs(fromDate).format(),
-                    toDate: dayjs(toDate).format(),
-                    pageIndex,
-                    pageSize
+                    toDate: dayjs(toDate).format()
                 }
             }
         );
@@ -118,15 +109,15 @@ class JobSearchService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getBulkJobDetail(bulkJobId: number) {
-        const response = await this.$http.get<IJob>(`/Job/BulkDetail`, {
+    async getDispatchBulkJobDetail(bulkJobId: number): Promise<IDispatchJob> {
+        const response = await this.$http.get<IDispatchJob>(`/Job/DispatchBulkJobDetail`, {
             params: {
                 bulkJobId
             }
         });
         return response.data;
     }
-    
+
     async validateSwapPOD(jobNumber: string) {
         const response = await this.$http.post<number>(`Job/ValidateSwapPOD`, null, {
             params: {
@@ -135,6 +126,7 @@ class JobSearchService implements angular.IServiceProvider {
         });
         return response.data;
     }
+
     async swapPOD(jobNumber1: string, jobNumber2: string) {
         const response = await this.$http.post(
             `Job/SwapPOD`, null, {
@@ -146,7 +138,7 @@ class JobSearchService implements angular.IServiceProvider {
         );
         return response.data;
     }
-    
+
     async reSendJobs(jobIds: number[]) {
         const response = await this.$http.post(`job/ReSendSelected`, null, {
             params: {
@@ -183,7 +175,7 @@ class JobSearchService implements angular.IServiceProvider {
         });
         return response.data;
     }
-    
+
     async getActiveClients(searchTerm: string) {
         const response = await this.$http.get(`/home/ActiveClients`, {
             params: {

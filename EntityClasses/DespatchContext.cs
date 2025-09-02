@@ -1158,8 +1158,6 @@ public partial class DespatchContext : DbContext
                     tb.HasTrigger("tblBulkJob_Update");
                 });
 
-            entity.HasIndex(e => e.BookDate, "BookDate-NonClusteredIndex-20190824-120700");
-
             entity.HasIndex(e => e.BookDate, "DespatchWebSearch2");
 
             entity.HasIndex(e => e.ImportId, "FK_ImportId").IsDescending();
@@ -6394,6 +6392,8 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Created).HasColumnType("datetime");
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.ExtraWeightRate).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.IncrementRate).HasColumnType("decimal(10, 4)");
+            entity.Property(e => e.IncrementUnit).HasColumnType("decimal(10, 4)");
             entity.Property(e => e.LastModified).HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
         });

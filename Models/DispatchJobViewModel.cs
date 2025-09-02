@@ -11,6 +11,8 @@ public class DispatchJobViewModel
     
     public bool IsFlightJob { get; set; }
     public bool IsAgentJob { get; set; }
+    public bool IsArchived { get; set; }
+    public bool IsBulkJob { get; set; }
 
     public bool HasBeenRead { get; set; }
     public bool IsParentOrSingle { get; set; }
