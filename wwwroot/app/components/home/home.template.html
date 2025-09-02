@@ -111,13 +111,15 @@
                                 <div class="button-row">
                                     <md-button aria-label="select all views" class="clear-button"
                                                ng-click="ctrl.selectAllViews()">
-                                        <md-icon class="clear-icon" md-font-set="material-symbols-outlined">select_all</md-icon>
+                                        <md-icon class="clear-icon" md-font-set="material-symbols-outlined">select_all
+                                        </md-icon>
                                         Select All
                                     </md-button>
 
                                     <md-button aria-label="Clear all views" class="clear-button"
                                                ng-click="ctrl.clearAllViews()">
-                                        <md-icon class="clear-icon" md-font-set="material-symbols-outlined">clear_all</md-icon>
+                                        <md-icon class="clear-icon" md-font-set="material-symbols-outlined">clear_all
+                                        </md-icon>
                                         Unselect All
                                     </md-button>
                                 </div>
@@ -287,11 +289,6 @@
 
                                 <div flex></div>
 
-                                <md-button class="md-icon-button" ng-click="ctrl.getData()"
-                                           ng-if="::ctrl.boxes[box.name].showRefresh">
-                                    <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
-                                </md-button>
-
                                 <!-- Detail Buttons-->
                                 <div class="row-overflow"
                                      ng-if="ctrl.boxes[box.name].showDetailButtons && ctrl.currentJob">
@@ -370,6 +367,33 @@
                                                 <md-tooltip md-direction="bottom">Swap POD</md-tooltip>
                                                 <md-icon md-font-set="material-symbols-outlined">
                                                     swap_calls
+                                                </md-icon>
+                                            </md-button>
+                                        </md-fab-actions>
+                                    </md-fab-speed-dial>
+                                </div>
+
+                                <div class="row-overflow" ng-if="::box.name === 'currentWork'">
+                                    <md-fab-speed-dial class="md-scale"
+                                                       md-direction="left"
+                                                       md-open="ctrl.courierListFabIsOpen"
+                                                       ng-class="{ 'md-hover-full': true }"
+                                                       ng-mouseenter="ctrl.courierListFabIsOpen=true"
+                                                       ng-mouseleave="ctrl.courierListFabIsOpen=false">
+                                        <md-fab-trigger>
+                                            <md-button aria-label="menu" class="md-fab md-mini md-primary">
+                                                <md-tooltip md-direction="bottom">Options</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">page_info</md-icon>
+                                            </md-button>
+                                        </md-fab-trigger>
+
+                                        <md-fab-actions>
+                                            <md-button
+                                                    class="md-fab md-raised md-mini"
+                                                    ng-click="ctrl.openTruckLoadingStatus($event)">
+                                                <md-tooltip md-direction="bottom">Truck Loading Status</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">
+                                                    forklift
                                                 </md-icon>
                                             </md-button>
                                         </md-fab-actions>
@@ -484,6 +508,11 @@
                                         </md-menu-content>
                                     </md-menu>
                                 </div>
+
+                                <md-button class="md-icon-button" ng-click="ctrl.getData()"
+                                           ng-if="::ctrl.boxes[box.name].showRefresh">
+                                    <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+                                </md-button>
 
                                 <div class="box-handle md-icon-button">
                                     <md-icon class="md-drag-button" md-font-set="material-symbols-outlined">
