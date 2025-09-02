@@ -14,20 +14,12 @@ namespace DespatchWeb.Interfaces;
 public interface IJobRepository
 {
     Task<List<Suggestion>> RelatedJobsAsync(int parentId, int clientId);
-    Task<JobViewModel> BulkJobDetailAsync(int bulkJobId);
+    Task<JobViewModel> GetBulkJobDetailAsync(int bulkJobId);
+    Task<DispatchJobViewModel> GetBulkDispatchJobDetailAsync(int bulkJobId);
 
-    Task<Tuple<int, List<JobViewModel>>> BulkSearchAsync(
-        int? courierId,
-        string job,
-        string wild,
-        DateTime fromDate,
-        DateTime toDate,
-        int? clientId,
-        int pageIndex,
-        int pageSize
-    );
+    Task<List<DispatchJobViewModel>> BulkSearchAsync(PodSearchRequest data);
 
-    Task<Tuple<int, List<JobViewModel>>> PodSearch(PodSearchRequest data);
+    Task<List<DispatchJobViewModel>> PodSearchAsync(PodSearchRequest data);
 
     Task UpdateManualPriceAsync(List<JobManualPriceModel> data);
 

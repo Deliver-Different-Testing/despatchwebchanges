@@ -7,14 +7,22 @@
 <div class="job-detail-page" ng-if="ctrl.job">
     <md-card
             class="warning-section md-whiteframe-1dp"
-            ng-if="::ctrl.job.isArchived || ctrl.job.preBook">
+            ng-if="::ctrl.job.isArchived || ctrl.job.preBook || ctrl.job.isBulkJob">
         <md-card-content>
             <div layout="row" layout-align="start center">
                 <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
                 <span class="warning-text"
-                      ng-if="::ctrl.job.isArchived">Job archived. Some fields can't be edited</span>
+                      ng-if="::ctrl.job.isArchived">
+                    Job archived. Some fields can't be edited
+                </span>
                 <span class="warning-text"
-                      ng-if="::ctrl.job.preBook">Recurring job. Some fields may require confirmation</span>
+                      ng-if="::ctrl.job.preBook">
+                    Recurring job. Some fields may require confirmation
+                </span> 
+                <span class="warning-text"
+                      ng-if="::ctrl.job.isBulkJob">
+                Bulk job. Changes will be applied to all matching records. Confirm your selections before submitting.
+                </span>
             </div>
         </md-card-content>
     </md-card>
@@ -67,15 +75,6 @@
             </md-menu>
 
             <div flex></div>
-
-            <md-button
-                    ng-click="ctrl.editFollowUpTime($event, ctrl.job)">
-                <md-icon
-                        md-font-set="material-symbols-outlined"
-                        style="margin-right: 5px">schedule
-                </md-icon>
-                <span>Follow Up</span>
-            </md-button>
 
             <md-chip
                     class="status {{ctrl.job.statusName | lowercase | replace:' ':'-'}}"

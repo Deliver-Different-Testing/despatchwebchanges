@@ -264,6 +264,7 @@
     <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\feature-in-development-dialog\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.template.html" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\feature-in-development-dialog\flight-agent-conformation-dialog\flight-agent-conformation-dialog.controller.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\feature-in-development-dialog\flight-agent-conformation-dialog\flight-agent-conformation-dialog.interfaces.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\types\html.d.ts" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
@@ -457,7 +458,6 @@
     <TypeScriptCompile Include="wwwroot\app\services\messaging.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\notes.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\tasks.service.ts" />
-    <TypeScriptCompile Include="wwwroot\types\html.d.ts" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\app\components\dialogs\event-group-dialog\" />

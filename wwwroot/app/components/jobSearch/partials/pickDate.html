@@ -92,7 +92,7 @@
             <input class="form-control focusMe"
                    id="Job"
                    name="Job"
-                   ng-keyup="$event.keyCode === 13 && ctrl.refreshAllData(true)"
+                   ng-keyup="$event.keyCode === 13 && ctrl.refreshAllData()"
                    ng-model="ctrl.searchCriteria.job"
                    type="text"/>
         </div>
@@ -102,13 +102,13 @@
             <input class="form-control focusMe"
                    id="Wild"
                    name="Wild"
-                   ng-keyup="$event.keyCode === 13 && ctrl.refreshAllData(true)"
+                   ng-keyup="$event.keyCode === 13 && ctrl.refreshAllData()"
                    ng-model="ctrl.searchCriteria.wild"
                    type="text"/>
         </div>
 
         <section layout="row" layout-sm="column" layout-align="center center" layout-wrap class="space">
-            <md-button class="md-raised md-primary" ng-click="ctrl.refreshAllData(true)">
+            <md-button class="md-raised md-primary" ng-click="ctrl.refreshAllData()">
                 <md-icon md-font-set="material-symbols-outlined">
                     search
                 </md-icon>

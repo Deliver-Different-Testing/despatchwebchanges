@@ -477,16 +477,14 @@ class JobsListController extends BaseController {
 
     private static matchesSearch(job: IDispatchJob, query: string): boolean {
         if (!query || query.trim() === '') return true;
-
+        
         query = query.toLowerCase().trim();
 
-        // Helper function to safely check if a value includes the query
         const safeIncludes = (value: any): boolean => {
             if (value === null || value === undefined) return false;
             return String(value).toLowerCase().includes(query);
         };
 
-        // Helper function to search in address objects
         const searchAddress = (address?: AddressViewModel): boolean => {
             if (!address) return false;
             return (
@@ -974,12 +972,13 @@ class JobsListController extends BaseController {
 
     sortBy(column: string): void {
         if (this.sortState.column === column) {
-            // Toggle direction: asc -> desc -> none -> asc
-            if (this.sortState.direction === 'asc') {
-                this.sortState.direction = 'desc';
-            } else if (this.sortState.direction === 'desc') {
-                this.sortState.column = null;
-                this.sortState.direction = null;
+            switch (this.sortState.direction) {
+                case 'asc':
+                    this.sortState.direction = 'desc';
+                    break;
+                case 'desc':
+                    this.sortState.direction = 'asc';
+                    break;
             }
         } else {
             // New column, start with ascending

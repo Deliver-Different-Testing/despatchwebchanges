@@ -28,7 +28,7 @@ import InterCourierChargeDialogService
 import {Coordinates} from "../overview/overview.interfaces";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {ContactID, FirstName} from "../../contants";
-import {DispatchState, ResendJobsRequest} from "./home.interfaces";
+import {DispatchState} from "./home.interfaces";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
 import {JobProperty} from "../../enums/job-property.enum";
 import NavigationService from "../../services/navigation.service";
@@ -128,7 +128,6 @@ class HomeController extends BaseController {
     map: any;
     courierSearchText: string;
     inputWidth: Record<string, number> = {};
-    jobListPromise: any;
     currentCourier: any;
     courier: any;
     jobsCurrentList?: IDispatchJob[];
@@ -764,14 +763,14 @@ class HomeController extends BaseController {
         this.selectedViews = this.views;
 
         this.saveViewsToStorage(this.selectedViews);
-        this.updateMapForSelectedViews(); 
+        this.updateMapForSelectedViews();
 
         await Promise.all([
             this.getData(),
             this.fetchDriverLocations()
         ]);
-    }  
-    
+    }
+
     async clearAllViews() {
         this.views.forEach((view: DfrntPageViewModel) => {
             view.selected = false;
@@ -780,14 +779,14 @@ class HomeController extends BaseController {
         this.selectedViews = [];
 
         this.saveViewsToStorage(this.selectedViews);
-        this.updateMapForSelectedViews(); 
+        this.updateMapForSelectedViews();
 
         await Promise.all([
             this.getData(),
             this.fetchDriverLocations()
         ]);
     }
-    
+
     async toggleView(view: DfrntPageViewModel) {
         if (view.selected) {
             if (!this.selectedViews.some((v: DfrntPageViewModel) => v.id === view.id)) {
@@ -934,22 +933,21 @@ class HomeController extends BaseController {
     }
 
     private async processClearListJobs(clearListId: number) {
-        const envelope = await this.getClearListEnvelope(clearListId);
-        if (!envelope) {
-            throw new Error(`Failed to retrieve envelope for clear list ID: ${clearListId}`);
-        }
-
-        const selectedClients = this.pickService.clients.map((client: { id: number }) => client.id);
-        this.jobListPromise = this.DispatchData.getClearListJobs(
-            this.queryParams,
-            selectedClients,
-            ClientInternal ?? false,
-            this.selectedViews,
-            envelope
-        );
-
         try {
-            const jobs = await this.jobListPromise;
+            const envelope = await this.getClearListEnvelope(clearListId);
+            if (!envelope) {
+                throw new Error(`Failed to retrieve envelope for clear list ID: ${clearListId}`);
+            }
+
+            const selectedClients = this.pickService.clients.map((client: { id: number }) => client.id);
+            const jobs = await this.DispatchData.getClearListJobs(
+                this.queryParams,
+                selectedClients,
+                ClientInternal ?? false,
+                this.selectedViews,
+                envelope
+            );
+
             this.jobList = this.initializeJobSearchFields(jobs);
         } catch (error) {
             console.error("Error fetching jobs for clear list:", error);
@@ -1187,7 +1185,7 @@ class HomeController extends BaseController {
         this.courier = {gpsCourier: data};
         await this.searchCourier();
     }
-    
+
     async splitJob($event: MouseEvent, job: IDispatchJob) {
         if (!job.allowSplit) {
             await this.showAlert("Unable to split job", `Can not split ${job.jobNo}.`);
@@ -1646,7 +1644,7 @@ class HomeController extends BaseController {
         this.truckMode = mode;
         await this.getData();
     }
-    
+
     private initializeJobSearchFields(jobs: IDispatchJob[]) {
         if (!Array.isArray(jobs)) {
             return jobs;
@@ -1720,13 +1718,12 @@ class HomeController extends BaseController {
                 params.endDate = this.endDate;
             }
 
-            this.jobListPromise = this.dispatchJobService.getJobListWithCourierData(
+            const result = await this.dispatchJobService.getJobListWithCourierData(
                 params,
                 selectedClients,
                 ClientInternal ?? false,
                 this.selectedViews
             );
-            const result = await this.jobListPromise;
 
             if (result.items?.length > 0) {
                 this.jobList = this.initializeJobSearchFields(result.items);

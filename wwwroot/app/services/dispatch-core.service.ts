@@ -1155,6 +1155,15 @@ class DispatchCoreService implements angular.IServiceProvider {
 
         await this.$http.post('job/BulkUpdateReadStatus', data);
     }
+
+    async getBulkJobDetail(bulkJobId: number): Promise<IJob> {
+        const response = await this.$http.get<IJob>(`/Job/BulkDetail`, {
+            params: {
+                bulkJobId
+            }
+        });
+        return response.data;
+    }
 }
 
 export default DispatchCoreService;

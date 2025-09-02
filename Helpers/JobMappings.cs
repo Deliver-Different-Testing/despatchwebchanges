@@ -33,11 +33,9 @@ public static class JobMappings
             Time = j.UcjbTime,
             Booked = CombineDateAndTime(j.UcjbDate, j.UcjbTime),
             IsFlightJob = j.UcjbSpeedNavigation != null
-                          && j.UcjbSpeedNavigation.Grouping != null
-                          && j.UcjbSpeedNavigation.Grouping.GroupingId == (int)SpeedGrouping.Flight,
+                          && j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight,
             IsAgentJob = j.UcjbSpeedNavigation != null
-                         && j.UcjbSpeedNavigation.Grouping != null
-                         && j.UcjbSpeedNavigation.Grouping.GroupingId == (int)SpeedGrouping.Agent,
+                         && j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Agent,
 
             Courier = j.UcjbCourierId != null ? j.UcjbCourier.Code : null,
             CourierData =
@@ -93,7 +91,6 @@ public static class JobMappings
             DeliveryLongitude = j.DeliveryLongitude,
             PickupContact = j.PickupFromContact,
             DeliveryContact = j.DeliverToContact,
-
 
             Direct = j.Direct,
             Speed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : null,
