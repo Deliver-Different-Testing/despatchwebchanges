@@ -1024,9 +1024,9 @@ class JobsListController extends BaseController {
             case 'courier':
                 return this.getCourierName(job) || '';
             case 'remaining':
-                const now = dayjs();
-                const deliveryTime = dayjs(job.time || job.booked);
-                return deliveryTime.diff(now, 'minutes');
+                return job.remain !== undefined && job.remain !== null
+                    ? job.remain
+                    : Number.MAX_SAFE_INTEGER;
             case 'status':
                 return job.status || job.statusName || '';
             case 'priority':
