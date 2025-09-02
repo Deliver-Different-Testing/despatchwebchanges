@@ -573,6 +573,10 @@ class JobsListController extends BaseController {
     getCourierName(job: IDispatchJob): string {
         return job.courierData?.courierName || job.assignedCourier?.text || '';
     }
+    
+    getCourierNumber(job: IDispatchJob): number | string {
+        return job.courierData?.courierNumber || job.assignedCourier?.id || ''
+    }
 
     getCourierCode(job: IDispatchJob): string {
         return job.courierData?.courier || '';
@@ -1022,7 +1026,9 @@ class JobsListController extends BaseController {
             case 'delivery':
                 return this.getDeliveryAddress(job) || '';
             case 'courier':
-                return this.getCourierName(job) || '';
+                return this.isUsCustomer
+                    ? this.getCourierName(job) 
+                    : this.getCourierNumber;
             case 'remaining':
                 return job.remain !== undefined && job.remain !== null
                     ? job.remain

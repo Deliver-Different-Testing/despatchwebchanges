@@ -338,7 +338,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getDriverLocations(selectedViews: DfrntPageViewModel[]) {
+    async getDriverLocations(selectedViews: DfrntPageViewModel[]): Promise<ClearListViewModel> {
         const filteredViews = selectedViews.filter((view) => view.selected);
         const despatchViewIds = filteredViews.map(view => view.id);
 
@@ -353,7 +353,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getDriverDestinationEnvelope(clearListId: number) {
+    async getDriverDestinationEnvelope(clearListId: number): Promise<ClearListEnvelopeViewModel> {
         const countryId = this.isUsCustomer ? 2 : 1;
 
         const response = await this.$http.get<ClearListEnvelopeViewModel>(
@@ -367,14 +367,14 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getActiveCouriers() {
+    async getActiveCouriers(): Promise<ActiveCourierViewModel[]> {
         const response = await this.$http.get<ActiveCourierViewModel[]>(
             "courier/active"
         );
         return response.data;
     }
 
-    async getAllCouriers() {
+    async getAllCouriers(): Promise<ActiveCourierViewModel[]> {
         const response = await this.$http.get<ActiveCourierViewModel[]>(
             "courier/AllActive"
         );
