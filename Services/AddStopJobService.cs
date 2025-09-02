@@ -128,7 +128,7 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
                 DeliverByTimeZoneId = job.DeliverByTimeZoneId,
                 TotalDistance = null,
                 RatedManually = true,
-                DisplayInDespatch = false,
+                DisplayInDespatch = false
             };
 
             // Insert the new job stop

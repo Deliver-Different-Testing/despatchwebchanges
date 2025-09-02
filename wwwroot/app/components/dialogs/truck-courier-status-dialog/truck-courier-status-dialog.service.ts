@@ -21,17 +21,15 @@ class TruckCourierStatusDialogService implements angular.IServiceProvider {
     async showTruckLoadingStatus($event: MouseEvent, truckCourierStatus: TruckCourierStatusViewModel) {
         await this.$mdDialog
             .show({
+                template: require("./truck-courier-status-dialog.html"),
                 controller: TruckCourierStatusDialogController,
                 controllerAs: "ctrl",
                 parent: this.$document.parent(),
                 targetEvent: $event,
-                templateUrl: require("./truck-courier-status-dialog.html"),
                 clickOutsideToClose: false,
-                fullscreen: false,
                 locals: {
                     truckCourierStatus,
-                },
-                bindToController: true,
+                }
             });
     }
 }

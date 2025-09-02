@@ -56,6 +56,7 @@ class JobDetailController extends BaseController {
     ];
 
     readonly isRecurringJob: boolean = false;
+    readonly isBulkJob: boolean = false;
     readonly isUsCustomer: boolean = false;
     jobId?: number;
     job?: IJob;
@@ -223,9 +224,13 @@ class JobDetailController extends BaseController {
         this.isLoading = true;
 
         try {
-            this.job = this.isRecurringJob
-                ? await this.DispatchData.getRecurringJobDetail(jobId)
-                : await this.DispatchData.getJobDetail(jobId);
+            if (this.isBulkJob) {
+                this.job = await this.DispatchData.getBulkJobDetail(jobId);
+            } else if (this.isRecurringJob) {
+                this.job = await this.DispatchData.getRecurringJobDetail(jobId);
+            } else {
+                this.job = await this.DispatchData.getJobDetail(jobId);
+            }
 
             this.initializeJobData();
 
@@ -1946,6 +1951,7 @@ const JobDetailComponent: angular.IComponentOptions = {
         appPage: "<",
         onStatusChange: "&",
         isRecurringJob: "<",
+        isBulkJob: "<",
     },
     controller: JobDetailController,
     controllerAs: "ctrl",

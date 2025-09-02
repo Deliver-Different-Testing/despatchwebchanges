@@ -19,7 +19,9 @@ public partial class TimeZone
 
     public string OffsetString { get; set; }
 
-    public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; } = new List<TblBulkJob>();
+    public virtual ICollection<TblBulkJob> TblBulkJobDeliverByTimeZones { get; set; } = new List<TblBulkJob>();
+
+    public virtual ICollection<TblBulkJob> TblBulkJobPickupTimeZones { get; set; } = new List<TblBulkJob>();
 
     public virtual ICollection<TucJobArchive> TucJobArchiveDeliverByTimeZones { get; set; } = new List<TucJobArchive>();
 

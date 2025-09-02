@@ -38,95 +38,13 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     /* Bulk Job Detail*/
     public async Task<JobViewModel> GetBulkJobDetailAsync(int bulkJobId)
     {
-        var today = _infoService.GetCurrentTenantTime().ResetTimeToStartOfDay();
+        var bulkJob = await Context.TblBulkJobs
+            .Where(j => j.BulkJobId == bulkJobId)
+            .Select(JobMappings.BulkJobMapping)
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
 
-        return await (
-            from b in Context.TblBulkJobs
-            join c in Context.TblCouriers on b.CourierId equals c.CourierId into courierJoin
-            from co in courierJoin.DefaultIfEmpty()
-            join t in Context.TucJobTypes on b.Speed equals t.UcjtId into speedJoin
-            from to in speedJoin.DefaultIfEmpty()
-            join cl in Context.TblClients on b.ClientId equals cl.ClientId into clientJoin
-            from client in clientJoin.DefaultIfEmpty()
-            join s in Context.TucJobStatuses on b.JobStatus equals s.UcjsId into statusJoin
-            from status in statusJoin.DefaultIfEmpty()
-            join l in Context.TblJobLeaveNotHomes
-                on b.DeliverToLeaveId equals l.LeaveNotHomeId
-                into leaveNotHomeJoin
-            from leave in leaveNotHomeJoin.DefaultIfEmpty()
-            join sc in Context.TblBulkRunSchedules
-                on b.ScheduleId equals sc.BulkRunScheduleId
-                into scheduleJoin
-            from schedule in scheduleJoin.DefaultIfEmpty()
-            join con in Context.TblContacts
-                on b.LoggedInContactId equals con.ContactId
-                into contactJoin
-            from contact in contactJoin.DefaultIfEmpty()
-            join sou in Context.TucSources on b.SourceId equals sou.SourceId into sourceJoin
-            from source in sourceJoin.DefaultIfEmpty()
-            where b.BulkJobId == bulkJobId
-            select new JobViewModel
-            {
-                Id = b.BulkJobId,
-                JobRelationshipTypeId = b.JobRelationshipTypeId,
-                Time = b.BookTime,
-                BookedDate = b.BookDate,
-                Date = b.BookDate.ToString("dd/MM/yyyy"),
-                Booked = DateTime.Parse(
-                    b.BookDate.ToString("yyyy-MM-dd") + Space + b.BookDate.ToString("HH:mm:ss")
-                ),
-                Void = b.Void,
-                JobNo = b.JobNumber,
-                Speed = to.ShortName,
-                SpeedName = to.UcjtName,
-                SpeedId = b.Speed,
-                Client = b.ClientCode,
-                ClientId = b.ClientId,
-                ClientName = client.Name,
-                From = b.FromSuburb,
-                FromSuburbName = b.FromSuburb,
-                FromPostCode = b.FromPostCode.ToString(),
-                FromAddress = b.FromAddress,
-                FromContactName = b.Contact,
-                To = b.ToSuburb,
-                ToSuburbName = b.ToSuburb,
-                ToPostCode = b.ToPostCode.ToString(),
-                ToAddress = b.ToAddress,
-                Courier = co.Code,
-                Status = status.UcjsCode,
-                ContactName = b.Contact,
-                ToContactPhone = b.DeliverToPhone,
-                Weight = (double?)b.Weight,
-                Items = b.Qty,
-                RefA = b.ClientRefa,
-                RefB = b.ClientRefb,
-                OurRef = b.OurRef,
-                SigNotRequired = leave.Name ?? string.Empty,
-                Charge = $"{b.Amount:C}",
-                PickUpLatitude = decimal.Parse(b.PickUpLatitude),
-                PickUpLongitude = decimal.Parse(b.PickUpLongitude),
-                DeliveryLatitude = decimal.Parse(b.DeliveryLatitude),
-                DeliveryLongitude = decimal.Parse(b.DeliveryLongitude),
-                CourierData = new CourierData
-                {
-                    Courier = co.Code + Space + co.FirstName + Space + co.Surname,
-                    CourierId = co.CourierId
-                },
-                DeliverToContact = b.DeliverToContact,
-                TrackingMethod = b.TrackingMethod,
-                TrackingMobile = b.TrackingMobile,
-                TrackingEmail = b.TrackingEmail,
-                PreBook = false,
-                BulkJob = true,
-                Locked = (b.RunName ?? string.Empty).Length > 1 || b.BookDate < today,
-                RunName = b.RunName,
-                Done = b.Done,
-                ScheduleName = schedule.Name,
-                LoggedInContactName = $"{contact.Firstname} {contact.Surname ?? string.Empty}",
-                Source = source.Name,
-                StatusName = status.UcjsName
-            }
-        ).FirstOrDefaultAsync();
+        return bulkJob;
     }
 
     public async Task<DispatchJobViewModel> GetBulkDispatchJobDetailAsync(int bulkJobId)
@@ -209,7 +127,6 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 from vehicleSize in vsJoin.DefaultIfEmpty()
                 join cl in Context.TucClients on j.ClientId equals cl.UcclId into clientJoin
                 from client in clientJoin.DefaultIfEmpty()
-
                 where
                     j.BookDate >= data.FromDate
                     && j.BookDate <= data.ToDate
@@ -315,6 +232,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                         ),
                     IsBulkJob = true
                 })
+            .Distinct()
             .AsNoTracking()
             .ToListAsync();
 
@@ -348,7 +266,6 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     from vehicleSize in vsJoin.DefaultIfEmpty()
                     join cl in Context.TucClients on j.ClientId equals cl.UcclId into clientJoin
                     from client in clientJoin.DefaultIfEmpty()
-                    
                     where
                         j.Date >= data.FromDate
                         && j.Date <= data.ToDate
@@ -471,8 +388,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                         IsArchived = j.Archived ?? false,
                         Locked = j.Locked.HasValue ? j.Locked != 0 : null,
                         ToAirportId = j.ToAirportId,
-                        FromAirportId = j.FromAirportId,
+                        FromAirportId = j.FromAirportId
                     })
+                .Distinct()
                 .AsNoTracking()
                 .ToListAsync();
 
