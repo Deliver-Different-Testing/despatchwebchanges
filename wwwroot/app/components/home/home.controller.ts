@@ -1914,7 +1914,7 @@ class HomeController extends BaseController {
         return this.getJobList();
     }
 
-    async truckLoadingStatus($event: MouseEvent) {
+    async openTruckLoadingStatus($event: MouseEvent) {
         if (!this.truckCourierStatus) return;
         await this.truckCourierStatusDialogService.showTruckLoadingStatus($event, this.truckCourierStatus);
     }

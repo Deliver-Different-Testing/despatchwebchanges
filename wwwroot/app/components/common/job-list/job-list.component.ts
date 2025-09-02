@@ -166,9 +166,6 @@ class JobsListController extends BaseController {
                 this.allowSearch = true;
                 break;
             case JobListType.CurrentWorkList:
-                this.allowDispatch = false;
-                this.allowSearch = false;
-                break;
             case JobListType.NationwideJobList:
             case JobListType.NationwidePodJobList:
             case JobListType.NationwideRepriceJobList:
