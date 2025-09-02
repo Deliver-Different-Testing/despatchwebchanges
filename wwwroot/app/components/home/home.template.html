@@ -373,8 +373,43 @@
                                     </md-fab-speed-dial>
                                 </div>
 
-                                <div class="row-overflow" ng-if="::box.name === 'currentWork'">
-                                    <md-button class="md-icon-button" 
+                                <div class="row-overflow" ng-if="box.name === 'currentWork' && ctrl.jobsCurrentList.length > 0">
+                                    
+                                    <md-autocomplete
+                                            ng-if="ctrl.courierSearchOpen"
+                                            md-input-name="courierSearch"
+                                            md-autoselect
+                                            md-select-on-focus
+                                            md-escape-options="clear"
+                                            md-item-text="item.text"
+                                            md-items="item in ctrl.getCourierOptions(ctrl.courierSearchText)"
+                                            md-min-length="2"
+                                            md-search-text="ctrl.courierSearchText"
+                                            md-selected-item-change="ctrl.onCourierSearchSelect(item)"
+                                            placeholder="Search Courier...">
+                                        <md-item-template>
+                                            <md-icon
+                                                    md-font-set="material-symbols-outlined"
+                                                    style="margin-right: 5px;">
+                                                assignment_ind
+                                            </md-icon>
+                                            <span md-highlight-flags="^i"
+                                                  md-highlight-text="ctrl.courierSearchText">
+                                                {{item.text}}
+                                            </span>
+                                        </md-item-template>
+                                        <md-not-found>
+                                            No couriers matching "{{ctrl.courierSearchText}}" were found.
+                                        </md-not-found>
+                                    </md-autocomplete>
+
+                                    <md-button class="md-icon-button"
+                                               ng-click="ctrl.courierSearchOpen = !ctrl.courierSearchOpen">
+                                        <md-icon md-font-set="material-symbols-outlined">{{ ctrl.courierSearchOpen ? 'close' : 'search' }}</md-icon>
+                                        <md-tooltip md-direction="bottom">{{ ctrl.courierSearchOpen ? 'Close Search' : 'Open Search' }}</md-tooltip>
+                                    </md-button>  
+                                    
+                                    <md-button class="md-icon-button"
                                                ng-click="ctrl.openTruckLoadingStatus($event)">
                                         <md-icon md-font-set="material-symbols-outlined">forklift</md-icon>
                                         <md-tooltip md-direction="bottom">Truck Loading Status</md-tooltip>

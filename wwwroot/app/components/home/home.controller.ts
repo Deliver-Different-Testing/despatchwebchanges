@@ -10,7 +10,7 @@ import {
     CourierData,
     IDispatchJob, IJob,
     JobQueryParams,
-    Suggestion,
+    Suggestion, TimeZoneSuggestion,
 } from "../../interfaces/job.interface";
 import {ActiveCourierViewModel, TruckCourierStatusViewModel} from "../../interfaces/courier.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
@@ -84,6 +84,7 @@ class HomeController extends BaseController {
 
     private readonly currentAppPage: AppPages = AppPages.Dispatch;
     private readonly refreshDurationIntervalKey: string = `refreshInterval-${AppPages.Dispatch}`;
+    private readonly COURIER_URL: string = "/courier/AllActiveSearch";
 
     isLoadingData: boolean = false;
     showDriverLocationsNoData: boolean = false;
@@ -99,11 +100,11 @@ class HomeController extends BaseController {
     showInput: any;
     queryParams: JobQueryParams;
     isUsCustomer: boolean;
-    selectedCourier: any;
-    jobDetailFabIsOpen: boolean;
-    courierListFabIsOpen: boolean;
-    isCheckingAttachments: boolean;
-    hasAttachedFile: boolean;
+    selectedCourier?: Suggestion;
+    jobDetailFabIsOpen: boolean = false;
+    courierListFabIsOpen: boolean = false;
+    isCheckingAttachments: boolean = false;
+    hasAttachedFile: boolean = false;
     views: DfrntPageViewModel[];
     selectedViews: DfrntPageViewModel[];
     viewsInitialized: boolean = false;
@@ -126,7 +127,8 @@ class HomeController extends BaseController {
     currentLayoutName?: string;
     layout?: { columns: IColumn[] };
     map: any;
-    courierSearchText: string;
+    courierSearchText?: string;
+    courierSearchOpen: boolean = false;
     inputWidth: Record<string, number> = {};
     currentCourier: any;
     courier: any;
@@ -297,14 +299,6 @@ class HomeController extends BaseController {
 
         this.jobCutoffDate = new Date();
         this.isUsCustomer = this.APP_CONFIG.US_Customer;
-        this.selectedCourier = null;
-
-        this.courierSearchText = "";
-
-        this.jobDetailFabIsOpen = false;
-        this.courierListFabIsOpen = false;
-        this.isCheckingAttachments = false;
-        this.hasAttachedFile = false;
 
         this.views = [];
         this.selectedViews = [];
@@ -1281,6 +1275,10 @@ class HomeController extends BaseController {
         } catch (error: any) {
             console.error("Error fetching truck courier status:", error);
         }
+    }
+
+    async getCourierOptions(searchTerm: string): Promise<Suggestion[]> {
+        return await this.DispatchData.autocompleteSearch(searchTerm, this.COURIER_URL);
     }
 
     async searchCourier() {
@@ -2500,6 +2498,18 @@ class HomeController extends BaseController {
         return this.isAutoRefreshEnabled &&
             !!this.selectedRefreshInterval &&
             this.selectedRefreshInterval.id > 0;
+    }
+
+    async onCourierSearchSelect(selectedCourier: Suggestion) {
+        try {
+            await this.getCurrentJobs(selectedCourier.id);
+            this.courierSearchText = undefined;
+            this.courierSearchOpen = false;
+        } catch (error) {
+            console.error("Error in onCourierSearchClick:", error);
+        } finally {
+            this.applyScope();
+        }
     }
 }
 
