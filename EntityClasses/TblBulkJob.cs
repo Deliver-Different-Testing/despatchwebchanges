@@ -227,6 +227,16 @@ public partial class TblBulkJob
 
     public int? DeliverByTimeZoneId { get; set; }
 
+    public virtual TucClient Client { get; set; }
+
+    public virtual TucCourier Courier { get; set; }
+
+    public virtual TimeZone DeliverByTimeZone { get; set; }
+
+    public virtual TblJobLeaveNotHome DeliverToLeave { get; set; }
+
+    public virtual TucJobStatus JobStatusNavigation { get; set; }
+
     public virtual TimeZone PickupTimeZone { get; set; }
 
     public virtual TblBulkRegion Region { get; set; }

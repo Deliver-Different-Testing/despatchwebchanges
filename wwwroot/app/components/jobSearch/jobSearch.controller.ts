@@ -78,6 +78,8 @@ class JobSearchController extends BaseController {
     currentJob?: IDispatchJob;
     currentSelection?: string;
     currentJobId?: number;
+    isBulkJob: boolean = false;
+
     boxSortableOptions: {
         handle: string;
         connectWith: string;
@@ -987,6 +989,7 @@ class JobSearchController extends BaseController {
         try {
             console.log("select Job  " + jobId);
 
+            this.isBulkJob = false;
             this.currentJob = await this.DispatchData.getDispatchJobDetail(jobId);
             this.currentJobId = jobId;
             this.currentSelection = " for Job " + this.currentJob?.jobNo;
@@ -1014,6 +1017,7 @@ class JobSearchController extends BaseController {
         try {
             console.log("select Bulk Job  " + bulkJobId);
 
+            this.isBulkJob = true;
             this.currentJob = await this.uCSData.getDispatchBulkJobDetail(bulkJobId);
             this.currentSelection = " for Bulk Job " + this.currentJob.jobNo;
 

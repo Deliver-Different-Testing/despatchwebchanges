@@ -1260,7 +1260,29 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Weight).HasColumnType("decimal(6, 2)");
             entity.Property(e => e.Width).HasColumnType("numeric(18, 0)");
 
-            entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TblBulkJobs)
+            entity.HasOne(d => d.Client).WithMany(p => p.TblBulkJobs)
+                .HasForeignKey(d => d.ClientId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_tblBulkJob_tucClient");
+
+            entity.HasOne(d => d.Courier).WithMany(p => p.TblBulkJobs)
+                .HasForeignKey(d => d.CourierId)
+                .HasConstraintName("FK_tblBulkJob_tucCourier");
+
+            entity.HasOne(d => d.DeliverByTimeZone).WithMany(p => p.TblBulkJobDeliverByTimeZones)
+                .HasForeignKey(d => d.DeliverByTimeZoneId)
+                .HasConstraintName("FK_tblBulkJob_TimeZone");
+
+            entity.HasOne(d => d.DeliverToLeave).WithMany(p => p.TblBulkJobs)
+                .HasForeignKey(d => d.DeliverToLeaveId)
+                .HasConstraintName("FK_tblBulkJob_TblJobLeaveNotHome");
+
+            entity.HasOne(d => d.JobStatusNavigation).WithMany(p => p.TblBulkJobs)
+                .HasForeignKey(d => d.JobStatus)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_tblBulkJob_tucJobStatus");
+
+            entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TblBulkJobPickupTimeZones)
                 .HasForeignKey(d => d.PickupTimeZoneId)
                 .HasConstraintName("FK__tblBulkJo__Picku__3652C63E");
 

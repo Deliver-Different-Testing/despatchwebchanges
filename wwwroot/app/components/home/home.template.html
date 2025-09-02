@@ -374,30 +374,11 @@
                                 </div>
 
                                 <div class="row-overflow" ng-if="::box.name === 'currentWork'">
-                                    <md-fab-speed-dial class="md-scale"
-                                                       md-direction="left"
-                                                       md-open="ctrl.courierListFabIsOpen"
-                                                       ng-class="{ 'md-hover-full': true }"
-                                                       ng-mouseenter="ctrl.courierListFabIsOpen=true"
-                                                       ng-mouseleave="ctrl.courierListFabIsOpen=false">
-                                        <md-fab-trigger>
-                                            <md-button aria-label="menu" class="md-fab md-mini md-primary">
-                                                <md-tooltip md-direction="bottom">Options</md-tooltip>
-                                                <md-icon md-font-set="material-symbols-outlined">page_info</md-icon>
-                                            </md-button>
-                                        </md-fab-trigger>
-
-                                        <md-fab-actions>
-                                            <md-button
-                                                    class="md-fab md-raised md-mini"
-                                                    ng-click="ctrl.openTruckLoadingStatus($event)">
-                                                <md-tooltip md-direction="bottom">Truck Loading Status</md-tooltip>
-                                                <md-icon md-font-set="material-symbols-outlined">
-                                                    forklift
-                                                </md-icon>
-                                            </md-button>
-                                        </md-fab-actions>
-                                    </md-fab-speed-dial>
+                                    <md-button class="md-icon-button" 
+                                               ng-click="ctrl.openTruckLoadingStatus($event)">
+                                        <md-icon md-font-set="material-symbols-outlined">forklift</md-icon>
+                                        <md-tooltip md-direction="bottom">Truck Loading Status</md-tooltip>
+                                    </md-button>
                                 </div>
 
                                 <div class="row-overflow" ng-if="::box.name === 'driverLocations'">
@@ -512,6 +493,7 @@
                                 <md-button class="md-icon-button" ng-click="ctrl.getData()"
                                            ng-if="::ctrl.boxes[box.name].showRefresh">
                                     <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+                                    <md-tooltip md-direction="bottom">Refresh {{ box.name }}</md-tooltip>
                                 </md-button>
 
                                 <div class="box-handle md-icon-button">

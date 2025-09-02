@@ -554,6 +554,139 @@ public static class JobMappings
                 : null,
 
         Locked = j.UcjbLocked ?? false
+    };   
+    
+    public static readonly Expression<Func<TblBulkJob, JobViewModel>> BulkJobMapping = j => new JobViewModel
+    {
+        ClientId = j.ClientId,
+        Id = j.BulkJobId,
+        JobNo = j.JobNumber,
+        Time = j.BookTime,
+        RootParentId = j.RootParentId,
+        Date = FormatDate(j.BookDate),
+        Booked = CombineDateAndTime(j.BookDate, j.BookTime),
+        CreatedDate = j.BookDate,
+        ScheduleName = j.ScheduleName,
+        Void = j.Void,
+
+        PickupTime = j.SpeedNavigation != null ? j.SpeedNavigation.PickupTime : null,
+        DeliveryTime = j.SpeedNavigation != null ? j.SpeedNavigation.DeliveryTime : null,
+
+        // Courier
+        Courier = j.Courier != null ? j.Courier.Code : null,
+        CourierData =
+            j.Courier != null
+                ? new CourierData
+                {
+                    Courier = j.Courier.Code,
+                    CourierId = j.Courier.UccrId,
+                    CourierMobile = j.Courier.UccrMobile,
+                    CourierName = j.Courier.UccrName + " " + j.Courier.UccrSurname
+                }
+                : null,
+        AssignedCourier =
+            j.Courier != null
+                ? new Suggestion
+                {
+                    Id = j.Courier.UccrId,
+                    Text = j.Courier.UccrName + " " + j.Courier.UccrSurname
+                }
+                : null,
+
+        // Address information
+        PickupAddress = new AddressViewModel
+        {
+            AddressLine1 = j.PickupAddressLine1,
+            AddressLine2 = j.PickupAddressLine2,
+            AddressLine3 = j.PickupAddressLine3,
+            AddressLine4 = j.PickupAddressLine4,
+            AddressLine5 = j.PickupAddressLine5,
+            AddressLine6 = j.PickupAddressLine6,
+            AddressLine7 = j.PickupAddressLine7,
+            AddressLine8 = j.PickupAddressLine8,
+            Latitude = decimal.Parse(j.PickUpLatitude),
+            Longitude = decimal.Parse(j.PickUpLongitude)
+        },
+        DeliveryAddress = new AddressViewModel
+        {
+            AddressLine1 = j.DeliveryAddressLine1,
+            AddressLine2 = j.DeliveryAddressLine2,
+            AddressLine3 = j.DeliveryAddressLine3,
+            AddressLine4 = j.DeliveryAddressLine4,
+            AddressLine5 = j.DeliveryAddressLine5,
+            AddressLine6 = j.DeliveryAddressLine6,
+            AddressLine7 = j.DeliveryAddressLine7,
+            AddressLine8 = j.DeliveryAddressLine8,
+            Latitude = decimal.Parse(j.DeliveryLatitude),
+            Longitude = decimal.Parse(j.DeliveryLongitude)
+        },
+        
+        // Tracking info
+        TrackingMethod = j.TrackingMethod,
+        TrackingMobile = j.TrackingMobile,
+        TrackingEmail = j.TrackingEmail,
+
+        // Delivery details
+        PrivateRes = j.DeliverToPrivateBusiness,
+        SigNotRequired = j.DeliverToLeave != null ? j.DeliverToLeave.Name : string.Empty,
+        DeliverToLeaveId = j.DeliverToLeaveId,
+        DeliverToContact = j.DeliverToContact,
+
+        // Location data
+        PickUpLatitude = decimal.Parse(j.PickUpLatitude),
+        PickUpLongitude = decimal.Parse(j.PickUpLongitude),
+        DeliveryLatitude = decimal.Parse(j.DeliveryLatitude),
+        DeliveryLongitude = decimal.Parse(j.DeliveryLongitude),
+
+        // Client information
+        Client = j.ClientCode,
+        ClientName = j.Client != null ? j.Client.UcclName : string.Empty,
+        ToContactPhone = j.DeliverToPhone,
+
+        // Job characteristics
+        Weight = j.Weight.HasValue ? (double)j.Weight : null,
+        ToAddress = j.ToAddress,
+        JobType = j.JobRelationshipTypeId ?? 0,
+        JobTypeDescription = GetJobTypeDescription(j.JobRelationshipTypeId ?? 0),
+
+        // Job status and details
+        Done = j.Done,
+        AlertLatePickup = j.Client != null ? j.Client.AlertLatePickUp : null,
+        AlertLateDelivery = j.Client != null ? j.Client.AlertLateDelivery : null,
+        Items = j.Qty,
+        
+        FromContactName = j.PickupFromContact,
+        FromContactNumber = j.PickupFromPhone,
+
+        // Speed and job type information
+        Speed = j.SpeedNavigation != null ? j.SpeedNavigation.ShortName : null,
+        SpeedName = j.SpeedNavigation != null ? j.SpeedNavigation.UcjtName : null,
+        SpeedId = j.Speed,
+
+        // References and amounts
+        RefA = j.ClientRefa,
+        RefB = j.ClientRefb,
+        Charge = j.Amount != null ? $"{j.Amount:C}" : null,
+        OurRef = j.OurRef,
+
+        // Status
+        StatusId = j.JobStatus,
+        Status = j.JobStatusNavigation != null ? j.JobStatusNavigation.UcjsCode : null,
+        StatusName = j.JobStatusNavigation != null ? j.JobStatusNavigation.UcjsName : null,
+        
+        IsArchived = false,
+        PreBook = false,
+        IsBulkJob = true,
+        
+        // Timezones
+        PickUpTimeZone =
+            j.PickupTimeZone != null
+                ? new Suggestion { Id = j.PickupTimeZone.Id, Text = j.PickupTimeZone.Name }
+                : null,
+        DeliveryTimeZone =
+            j.DeliverByTimeZoneId != null
+                ? new Suggestion { Id = j.DeliverByTimeZone.Id, Text = j.DeliverByTimeZone.Name }
+                : null
     };
 
     public static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping =
