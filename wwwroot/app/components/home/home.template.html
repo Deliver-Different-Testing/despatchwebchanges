@@ -374,7 +374,6 @@
                                 </div>
 
                                 <div class="row-overflow" ng-if="box.name === 'currentWork' && ctrl.jobsCurrentList.length > 0">
-                                    
                                     <md-autocomplete
                                             ng-if="ctrl.courierSearchOpen"
                                             md-input-name="courierSearch"
@@ -404,7 +403,7 @@
                                     </md-autocomplete>
 
                                     <md-button class="md-icon-button"
-                                               ng-click="ctrl.courierSearchOpen = !ctrl.courierSearchOpen">
+                                               ng-click="ctrl.controlCourierSearchBox()">
                                         <md-icon md-font-set="material-symbols-outlined">{{ ctrl.courierSearchOpen ? 'close' : 'search' }}</md-icon>
                                         <md-tooltip md-direction="bottom">{{ ctrl.courierSearchOpen ? 'Close Search' : 'Open Search' }}</md-tooltip>
                                     </md-button>  
