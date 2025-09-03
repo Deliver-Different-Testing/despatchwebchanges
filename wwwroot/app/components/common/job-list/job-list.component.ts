@@ -1030,9 +1030,13 @@ class JobsListController extends BaseController {
                     ? this.getCourierName(job) 
                     : this.getCourierNumber;
             case 'remaining':
-                return job.remain !== undefined && job.remain !== null
+                const hasNoCourier = !this.hasAssignedCourier(job);
+                const remainValue = job.remain !== undefined && job.remain !== null
                     ? job.remain
                     : Number.MAX_SAFE_INTEGER;
+                
+                if (hasNoCourier) return remainValue - 1000000;
+                return remainValue;
             case 'status':
                 return job.status || job.statusName || '';
             case 'priority':
