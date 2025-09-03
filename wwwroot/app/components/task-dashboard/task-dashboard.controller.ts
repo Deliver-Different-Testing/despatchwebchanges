@@ -112,7 +112,7 @@ class TaskDashboardController extends BaseController {
         });
     }
 
-    private async loadLists() {
+    private async loadLists(): Promise<void> {
         try {
             const [staffList, eventTypesList] = await Promise.all([
                 this.DispatchService.getActiveStaff(),
@@ -127,7 +127,7 @@ class TaskDashboardController extends BaseController {
         }
     }
 
-    toggleSidenav() {
+    toggleSidenav(): void {
         try {
             this.$mdSidenav("right").toggle();
         } catch (error) {
@@ -151,7 +151,7 @@ class TaskDashboardController extends BaseController {
         }
     }
 
-    private async getTasks() {
+    private async getTasks(): Promise<void> {
         if (this.isFirstLoad) {
             this.tasksLoading = true;
         }
@@ -233,15 +233,15 @@ class TaskDashboardController extends BaseController {
         });
     }
 
-    async onFilterChange() {
+    async onFilterChange(): Promise<void> {
         await this.getTasks();
     }
 
-    setStatusFilter(status: string) {
+   async setStatusFilter(status: string): Promise<void> {
         this.statusFilter = status;
 
         if (status === StatusFilter.Done) {
-            return this.getTasks();
+            await this.getTasks();
         } else {
             this.registerTimeout(() => {
                 this.applyFilters();
@@ -269,7 +269,7 @@ class TaskDashboardController extends BaseController {
         }
     }
 
-    getStatusCounts() {
+    getStatusCounts(): { active: number; overdue: number; todo: number; done: number } {
         let active = 0, overdue = 0, todo = 0, done = 0;
 
         for (const task of this.tasks) {
@@ -289,7 +289,7 @@ class TaskDashboardController extends BaseController {
         return {active, overdue, todo, done};
     }
 
-    refreshTasks() {
+    refreshTasks(): Promise<void> {
         return this.getTasks();
     }
 
@@ -306,7 +306,7 @@ class TaskDashboardController extends BaseController {
         return this.$filter('date')(dayjs(dateString).toDate(), 'h:mm a').toLowerCase();
     }
 
-    handleTaskCompletion(task: ExtendedTask) {
+    handleTaskCompletion(task: ExtendedTask): void {
         this.refreshTasks().then(() => {
             if (this.statusFilter === StatusFilter.Done) {
                 this.registerTimeout(() => {
@@ -316,7 +316,7 @@ class TaskDashboardController extends BaseController {
         });
     }
 
-    async changeDate(days: number) {
+    async changeDate(days: number): Promise<void> {
         this.selectedDate = dayjs(this.selectedDate).add(days, 'day').toDate();
 
         if (this.dateSearchRange == 2) {
@@ -330,7 +330,7 @@ class TaskDashboardController extends BaseController {
         await this.refreshDashboard();
     }
 
-    async goToToday() {
+    async goToToday(): Promise<void> {
         this.selectedDate = dayjs().toDate();
 
         if (this.dateSearchRange == 2) {
@@ -345,15 +345,15 @@ class TaskDashboardController extends BaseController {
         await this.refreshDashboard();
     }
 
-    async refreshDashboard() {
+    async refreshDashboard(): Promise<void> {
         await this.getTasks();
     }
 
-    selectTaskJobDetail(task: ExtendedTask) {
+    selectTaskJobDetail(task: ExtendedTask): void {
         this.selectTaskForHistory(task);
     }
 
-    async onSearchRangeChange(optionSelected: number) {
+    async onSearchRangeChange(optionSelected: number): Promise<void> {
         console.log(`Search range changed to: ${optionSelected}`);
 
         this.dateSearchRange = optionSelected;
@@ -441,11 +441,11 @@ class TaskDashboardController extends BaseController {
         await this.updateDateRangeFromCalendar(startDate, endDate);
     }
 
-    async openMessagingDialog($event: MouseEvent) {
+    async openMessagingDialog($event: MouseEvent): Promise<void> {
         await this.messagingDialogService.openMessagingDialog($event);
     }
 
-    selectTaskForHistory(task: ExtendedTask) {
+    selectTaskForHistory(task: ExtendedTask): void {
         this.selectedTask = task;
         this.currentJobId = task.jobId;
         this.currentSelection = "for Job " + task.jobNumber;

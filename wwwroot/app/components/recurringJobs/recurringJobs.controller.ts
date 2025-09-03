@@ -1,5 +1,5 @@
 import {AppConfig} from "../../interfaces/app-config.interface";
-import {IJob} from "../../interfaces/job.interface";
+import {IJob, Suggestion} from "../../interfaces/job.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import {ClientInternal, ContactID} from "../../contants";
@@ -8,6 +8,7 @@ import {IPrebookListModel, IRecurringJobQuery} from "./recurringJobs.interface";
 import ToastrService from "../../services/toastr.service";
 import greetUser from "../../functions/greetUser";
 import JobContextMenuService from "../../services/job-context-menu.service";
+import IContextMenuOption from "../../interfaces/context-menu-option.interface";
 
 class RecurringJobsController extends BaseController {
     static $inject = [
@@ -144,7 +145,7 @@ class RecurringJobsController extends BaseController {
             });
     }
 
-    deleteLayout(index: number) {
+    deleteLayout(index: number): void {
         if (index === 0) return; // Prevent deleting default layout
 
         this.$mdDialog
@@ -215,7 +216,7 @@ class RecurringJobsController extends BaseController {
         return greetUser(FirstName);
     }
 
-    toggleSidenav() {
+    toggleSidenav(): void {
         try {
             this.$mdSidenav("right").toggle();
         } catch (error) {
@@ -259,7 +260,7 @@ class RecurringJobsController extends BaseController {
         }
     }
 
-    jobRecordSearch(searchText: string): { text: string; id: number }[] {
+    jobRecordSearch(searchText: string): Suggestion[] {
         if (!searchText) {
             return [];
         }
@@ -275,7 +276,7 @@ class RecurringJobsController extends BaseController {
     }
 
 
-    loadLayout(index: number) {
+    loadLayout(index: number): void {
         const layout: ILayout = this.layouts[index] || this.layouts[0];
         this.currentLayoutName = layout.name;
         this.layout = angular.copy(layout.layout);
@@ -290,7 +291,7 @@ class RecurringJobsController extends BaseController {
         });
     }
 
-    private applyLayoutDimensions() {
+    private applyLayoutDimensions(): void {
         if (!this.layout || !this.layout.columns) return;
 
         this.layout.columns.forEach((column: IColumn) => {
@@ -558,7 +559,7 @@ class RecurringJobsController extends BaseController {
         }
     }
 
-    getContextMenuOptions(job: IPrebookListModel) {
+    getContextMenuOptions(job: IPrebookListModel): any[] | IContextMenuOption[] {
         if (!job) return [];
 
         const callbacks = {

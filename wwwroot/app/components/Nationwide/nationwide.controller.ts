@@ -16,7 +16,7 @@ import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interfa
 import AddEventDialogService from "../dialogs/add-event-dialog/add-event-dialog.service";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 import JobContextMenuService from "../../services/job-context-menu.service";
-import {ExtendedTask, TaskTableFiltersRequest, TaskViewModel} from "../task-dashboard/task-dashboard.interfaces";
+import {ExtendedTask, TaskViewModel} from "../task-dashboard/task-dashboard.interfaces";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
 import {JobProperty} from "../../enums/job-property.enum";
 import FlightDetailsDialogService from "../dialogs/flight-details-dialog/flight-details-dialog.service";
@@ -41,6 +41,7 @@ import JobListType from "../common/job-list/enums/jobListType";
 import RecoveryAgentManagementService
     from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.service";
 import {formatFullDate} from "../../functions/formatDates";
+import IContextMenuOption from "../../interfaces/context-menu-option.interface";
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -481,7 +482,7 @@ class NationwideControl extends BaseController {
         this.initializeTaskService();
     }
 
-    $onInit() {
+    $onInit(): void {
         const jobId = this.$stateParams.jobId;
         if (jobId) {
             this.loadPageViews()
@@ -506,7 +507,7 @@ class NationwideControl extends BaseController {
         }, 10000);
     }
 
-    $onDestroy() {
+    $onDestroy(): void {
         super.$onDestroy();
         this.stopAutoRefresh();
     }
@@ -529,7 +530,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    private initializeTaskService() {
+    private initializeTaskService(): void {
         try {
             this.tasksService.loadLists().then(({staffList, eventTypesList}) => {
                 this.staffList = staffList;
@@ -545,7 +546,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    private updateBoxMetrics() {
+    private updateBoxMetrics(): void {
         if (!this.layout || !this.layout.columns) return;
 
         this.layout.columns.forEach((column: IColumn) => {
@@ -563,7 +564,7 @@ class NationwideControl extends BaseController {
         });
     }
 
-    private saveCurrentLayout() {
+    private saveCurrentLayout(): void {
         if (!this.currentLayoutName || this.currentLayoutName === 'Default') {
             return;
         }
@@ -582,7 +583,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    initHereMaps() {
+    initHereMaps(): void {
         this.configService.getHereMapsKey().then((response: string) => {
             this.hereCredentials = {
                 apiKey: response
@@ -598,7 +599,7 @@ class NationwideControl extends BaseController {
         };
     }
 
-    toggleSidenav() {
+    toggleSidenav(): void {
         try {
             this.$mdSidenav("right").toggle();
         } catch (error) {
@@ -613,7 +614,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async loadPageViews() {
+    async loadPageViews(): Promise<void> {
         try {
             this.views = await this.DispatchData.getSelectedViews(ContactID, AppPages.Domestic);
             this.initializeViews();
@@ -630,9 +631,9 @@ class NationwideControl extends BaseController {
         }
     }
 
-    initializeViews() {
+    initializeViews(): void {
         if (this.views && this.views.length > 0) {
-            this.selectedViews = this.loadViewsFromStorage();
+            this.selectedViews = NationwideControl.loadViewsFromStorage();
 
             this.views = this.views.map(view => ({
                 ...view, selected: this.selectedViews.some((v: DfrntPageViewModel) => v.id === view.id)
@@ -641,20 +642,20 @@ class NationwideControl extends BaseController {
             if (this.selectedViews.length === 0) {
                 this.views[0].selected = true;
                 this.selectedViews.push(this.views[0]);
-                this.saveViewsToStorage(this.selectedViews);
+                NationwideControl.saveViewsToStorage(this.selectedViews);
             }
 
             this.viewsInitialized = true;
         }
     }
 
-    async selectAllViews() {
+    async selectAllViews(): Promise<void> {
         this.views.forEach((view: DfrntPageViewModel) => {
             view.selected = true;
         });
 
         this.selectedViews = this.views;
-        this.saveViewsToStorage(this.selectedViews);
+        NationwideControl.saveViewsToStorage(this.selectedViews);
         await this.getData();
     }
     
@@ -664,11 +665,11 @@ class NationwideControl extends BaseController {
         });
 
         this.selectedViews = [];
-        this.saveViewsToStorage(this.selectedViews);
+        NationwideControl.saveViewsToStorage(this.selectedViews);
         await this.getData();
     }
     
-    async toggleView(view: DfrntPageViewModel) {
+    async toggleView(view: DfrntPageViewModel): Promise<void> {
         if (view.selected) {
             if (!this.selectedViews.some((v: DfrntPageViewModel) => v.id === view.id)) {
                 this.selectedViews.push(view);
@@ -680,12 +681,12 @@ class NationwideControl extends BaseController {
             }
         }
 
-        this.saveViewsToStorage(this.selectedViews);
+        NationwideControl.saveViewsToStorage(this.selectedViews);
         await this.getData();
     }
 
-    async jobRecordSearch(searchText: string) {
-        if (!this.jobList) return;
+    async jobRecordSearch(searchText: string): Promise<Suggestion[]> {
+        if (!this.jobList) return [];
 
         return this.jobList
             .filter(job => job.jobNo.toLowerCase().includes(searchText.toLowerCase()))
@@ -704,7 +705,7 @@ class NationwideControl extends BaseController {
         return this.selectJob(selectedJob);
     }
 
-    loadLayout(index: number) {
+    loadLayout(index: number): void {
         const layout: ILayout = this.layouts[index] || this.layouts[0];
         this.currentLayoutName = layout.name;
         this.currentLayoutIndex = index;
@@ -719,7 +720,7 @@ class NationwideControl extends BaseController {
         this.applyScope();
     }
 
-    async saveLayout() {
+    async saveLayout(): Promise<ILayout | null> {
         try {
             const layoutName = await this.$mdDialog.show(
                 this.$mdDialog
@@ -770,7 +771,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async deleteLayout(index: number) {
+    async deleteLayout(index: number): Promise<void> {
         if (index === 0) return; // Prevent deleting default layout
 
         try {
@@ -796,12 +797,12 @@ class NationwideControl extends BaseController {
             this.applyScope();
             this.toastrService.showSuccessToast("Layout deleted successfully");
         } catch (error) {
-            this.handleError(error);
+            NationwideControl.handleError(error);
             this.applyScope();
         }
     }
 
-    private applyLayoutDimensions() {
+    private applyLayoutDimensions(): void {
         if (!this.layout || !this.layout.columns) return;
 
         const updates: (() => void)[] = [];
@@ -826,13 +827,13 @@ class NationwideControl extends BaseController {
         this.applyScope();
     }
 
-    saveViewsToStorage(views: any) {
+    static saveViewsToStorage(views: any): void {
         if (Modernizr.localstorage) {
             localStorage.setItem(`selectedViews-NW-${ContactID}`, JSON.stringify(views));
         }
     }
 
-    loadViewsFromStorage() {
+    static loadViewsFromStorage(): any {
         if (Modernizr.localstorage) {
             try {
                 const savedViews = JSON.parse(localStorage.getItem(`selectedViews-NW-${ContactID}`) || '[]');
@@ -845,7 +846,7 @@ class NationwideControl extends BaseController {
         return [];
     }
 
-    async handleStatusChange(event: StatusChangeEvent) {
+    async handleStatusChange(event: StatusChangeEvent): Promise<void> {
         try {
             console.log('Handle status change triggered!', {
                 jobId: event.jobId,
@@ -886,7 +887,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    openSearch(boxName: string, index: number) {
+    openSearch(boxName: string, index: number): void {
         const boxID = boxName + '-' + index;
         if (this.showInput[boxID]) {
             this.showInput[boxID] = false;
@@ -897,15 +898,15 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async unlockJob(currentJob: IDispatchJob) {
+    async unlockJob(currentJob: IDispatchJob): Promise<void> {
         await this.DispatchData.updateJobDetail(currentJob.id, JobProperty.Locked, false, currentJob.preBook ?? false)
     }
 
-    async lockJob(currentJob: IDispatchJob) {
+    async lockJob(currentJob: IDispatchJob): Promise<void> {
         await this.DispatchData.updateJobDetail(currentJob.id, JobProperty.Locked, true, currentJob.preBook ?? false)
     }
 
-    async restoreJob(job: IDispatchJob) {
+    async restoreJob(job: IDispatchJob): Promise<void> {
         try {
             await this.nationwideService.restoreJob(job.id);
             await this.getData();
@@ -914,7 +915,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async reAllocateJobs(job: IDispatchJob) {
+    async reAllocateJobs(job: IDispatchJob): Promise<void> {
         try {
             if (!job) return;
 
@@ -925,7 +926,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async loadRelatedJobDetail(jobId: number, jobNumber: string) {
+    async loadRelatedJobDetail(jobId: number, jobNumber: string): Promise<void> {
         try {
             console.log(`Loading related job detail for ID: ${jobId}, Number: ${jobNumber}`);
 
@@ -944,7 +945,7 @@ class NationwideControl extends BaseController {
         }
     }
     
-    async sendQuoteRequest($event: MouseEvent, agent: IAgent, job: IDispatchJob) {
+    async sendQuoteRequest($event: MouseEvent, agent: IAgent, job: IDispatchJob): Promise<void> {
         try {
             // Show confirmation dialog
             const confirm = this.$mdDialog.confirm()
@@ -967,7 +968,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async selectJob(job: IDispatchJob) {
+    async selectJob(job: IDispatchJob): Promise<void> {
         try {
             if (!job) return;
 
@@ -1039,7 +1040,7 @@ class NationwideControl extends BaseController {
         }, this.nationwidePageId, effectiveJobId);
     }
 
-    private async handleJobSelectionRelatedData(job: IDispatchJob) {
+    private async handleJobSelectionRelatedData(job: IDispatchJob): Promise<void> {
         // Reset data
         this.flightOptions = [];
         this.agentOptions = [];
@@ -1084,11 +1085,9 @@ class NationwideControl extends BaseController {
         this.updateUIState(job);
     }
 
-    private displayJobOnMap(job: IDispatchJob) {
+    private displayJobOnMap(job: IDispatchJob): void {
         try {
             if (!job) {
-
-
                 console.warn('No job provided to displayJobOnMap');
                 return;
             }
@@ -1179,7 +1178,7 @@ class NationwideControl extends BaseController {
         return '';
     }
 
-    private async processAgents(job: IDispatchJob) {
+    private async processAgents(job: IDispatchJob): Promise<void> {
         console.log('Getting agents');
 
         // Clear existing agents while loading new ones
@@ -1350,7 +1349,7 @@ class NationwideControl extends BaseController {
             const successMessage = `Successfully assigned flight ${flight.flightNumber} to job ${job.jobNo}`;
             this.toastrService.showSuccessToast(successMessage);
         } catch (error) {
-            this.handleError(error);
+            NationwideControl.handleError(error);
         } finally {
             this.isDataLoading = false;
             this.applyScope();
@@ -1406,7 +1405,7 @@ class NationwideControl extends BaseController {
             const successMessage = (`Successfully assigned agent ${agent.text} to job ${job.jobNo}`)
             this.toastrService.showSuccessToast(successMessage);
         } catch (error) {
-            this.handleError(error);
+            NationwideControl.handleError(error);
             this.isDataLoading = false;
             this.applyScope();
         }
@@ -1430,7 +1429,7 @@ class NationwideControl extends BaseController {
     async getJobList(dataTypes: JobDataType | JobDataType[] = JobDataType.ALL): Promise<void> {
         if (!this.viewsInitialized && this.selectedViews.length === 0) {
             console.log('Views not initialized yet, loading defaults');
-            this.selectedViews = this.loadViewsFromStorage();
+            this.selectedViews = NationwideControl.loadViewsFromStorage();
 
             // If still no views, add at least one default view
             if (this.selectedViews.length === 0 && this.views.length > 0) {
@@ -1546,7 +1545,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async getData() {
+    async getData(): Promise<void> {
         // Clear data at once
         this.jobList = [];
         this.jobListPOD = [];
@@ -1559,7 +1558,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    private handleError(error: any) {
+    private static handleError(error: any) {
         if (!error) {
             console.log('User canceled!');
         } else {
@@ -1571,7 +1570,7 @@ class NationwideControl extends BaseController {
         await this.addEventDialogService.openAddEventDialog($event, job);
     }
 
-    getContextMenuOptions(job: IDispatchJob) {
+    getContextMenuOptions(job: IDispatchJob): any[] | IContextMenuOption[] {
         if (!job) return [];
 
         const callbacks = {
@@ -1585,7 +1584,7 @@ class NationwideControl extends BaseController {
         return this.jobContextMenuService.getMenuOptions(job, callbacks, AppPages.Domestic);
     }
 
-    async handleSplitJob(job: IDispatchJob) {
+    async handleSplitJob(job: IDispatchJob): Promise<void> {
         if (!job) return;
 
         try {
@@ -1607,7 +1606,7 @@ class NationwideControl extends BaseController {
         await this.loadTasks(statusType);
     }
 
-    async loadTasks(filterType: string = this.tasksFilter) {
+    async loadTasks(filterType: string = this.tasksFilter): Promise<void> {
         try {
             this.tasksLoading = true;
 
@@ -1679,7 +1678,7 @@ class NationwideControl extends BaseController {
 
             this.updateCurrentSelection(attachedJob.jobNo);
         } catch (error) {
-            this.handleError(error);
+            NationwideControl.handleError(error);
         }
     }
 
@@ -1751,7 +1750,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    private markJobReadStatus(jobId: number, isRead: boolean) {
+    private markJobReadStatus(jobId: number, isRead: boolean): void {
         const updateJobList = (list?: IDispatchJob[]) => {
             if (!list) return;
 
@@ -1768,7 +1767,7 @@ class NationwideControl extends BaseController {
         this.applyScope();
     }
 
-    async refreshJobLists(currentJobId?: number) {
+    async refreshJobLists(currentJobId?: number): Promise<void> {
         try {
             console.log("[NationwideRefresh] - Refreshing job lists");
 
@@ -1794,7 +1793,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    formatAirportCodeForDropdown(text: string) {
+    static formatAirportCodeForDropdown(text: string): string {
         if (!text) return '';
 
         const spaceIndex = text.indexOf(' ');
@@ -1821,7 +1820,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async openHubUrl() {
+    async openHubUrl(): Promise<void> {
         await this.navigationService.openHubUrl();
     }
 
@@ -1833,18 +1832,18 @@ class NationwideControl extends BaseController {
         return !!job.assignedAgent;
     }
 
-    async openAgentSearchDialog($event: MouseEvent, job: IDispatchJob) {
+    async openAgentSearchDialog($event: MouseEvent, job: IDispatchJob): Promise<void> {
         try {
             const url = "nationwideJob/GetAllAgentsSearch";
             const selectedAgent = await this.autoCompleteDialogService.showAutocompleteDialog($event, url, "Search all Agents", "Agent", "Agents", undefined);
 
             await this.addSelectedAgentToJob($event, selectedAgent, job);
         } catch (error) {
-            this.handleError(error);
+            NationwideControl.handleError(error);
         }
     }
 
-    private updateUIState(job?: IDispatchJob) {
+    private updateUIState(job?: IDispatchJob): void {
         // Reset all flags first
         this.resetAllFlags();
 
@@ -1883,7 +1882,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    private resetAllFlags() {
+    private resetAllFlags(): void {
         // Flight section flags
         this.showNoJobSelectedMessage = false;
         this.showJobHasAssignedFlightMessage = false;
@@ -1899,7 +1898,7 @@ class NationwideControl extends BaseController {
         this.showAgentList = false;
     }
 
-    async refreshAction(boxName: string) {
+    async refreshAction(boxName: string): Promise<void> {
         console.log('[NationwideController] refreshing ', boxName);
         switch (boxName) {
             case NationwideBoxes.Tasks:
@@ -1931,7 +1930,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async onSearchRangeChange(optionSelected: number) {
+    async onSearchRangeChange(optionSelected: number): Promise<void> {
         if (optionSelected != 1) return;
 
         // Set for 24 hours
@@ -1969,11 +1968,11 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async openAgentMoreInfo($event: MouseEvent, agent: IAgent) {
+    async openAgentMoreInfo($event: MouseEvent, agent: IAgent): Promise<void> {
         await this.agentInfoDialogService.openAgentInfoDialog($event, agent.agentId);
     }
 
-    refreshMap() {
+    refreshMap(): void {
         if (this.currentJob) {
             console.log('Manually refreshing map for current job');
             this.displayJobOnMap(this.currentJob);
@@ -1982,16 +1981,16 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async openMessagingDialog($event: MouseEvent) {
+    async openMessagingDialog($event: MouseEvent): Promise<void> {
         await this.messagingDialogService.openMessagingDialog($event);
     }
 
-    private async getUnreadMessageCount() {
+    private async getUnreadMessageCount(): Promise<void> {
         this.unReadMessageCount = await this.messagingService.getUnreadMessageCount();
         this.applyScope();
     }
 
-    async filterByStaff(selectedStaff: string | Suggestion) {
+    async filterByStaff(selectedStaff: string | Suggestion): Promise<void> {
         if (typeof selectedStaff === 'string') {
             this.staffFilter = selectedStaff;
         } else {
@@ -2003,7 +2002,7 @@ class NationwideControl extends BaseController {
     }
 
 
-    async filterBySupportType(selectedType: string | Suggestion) {
+    async filterBySupportType(selectedType: string | Suggestion): Promise<void> {
         if (typeof selectedType === 'string') {
             this.eventTypeFilter = selectedType;
         } else {
@@ -2023,11 +2022,11 @@ class NationwideControl extends BaseController {
         );
     }
 
-    handleJobSelection(job: IDispatchJob) {
+    handleJobSelection(job: IDispatchJob): Promise<void> {
         return this.selectJob(job);
     }
 
-    async handleJobAction(action: string, job: IDispatchJob, _params?: any) {
+    async handleJobAction(action: string, job: IDispatchJob, _params?: any): Promise<void> {
         switch (action) {
             case 'restore':
                 return await this.restoreJob(job);
@@ -2038,11 +2037,11 @@ class NationwideControl extends BaseController {
         }
     }
 
-    getJobContextMenuOptions() {
+    getJobContextMenuOptions(): (data: any) => any[] | IContextMenuOption[] {
         return (data: any) => this.getContextMenuOptions(data.job);
     }
 
-    async openRecoveryAgentDialog($event: MouseEvent, job: IDispatchJob) {
+    async openRecoveryAgentDialog($event: MouseEvent, job: IDispatchJob): Promise<void> {
         await this.recoveryAgentManagementService.openRecoveryAgentManagementDialog($event, job.id);
     }
 
@@ -2059,14 +2058,14 @@ class NationwideControl extends BaseController {
         for (let seconds = 30; seconds <= maxSeconds; seconds += 30) {
             options.push({
                 id: seconds,
-                text: this.formatDuration(seconds)
+                text: NationwideControl.formatDuration(seconds)
             });
         }
 
         this.refreshIntervalOptions = options;
     }
 
-    private formatDuration(seconds: number) {
+    private static formatDuration(seconds: number): string {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = seconds % 60;
 

@@ -179,22 +179,22 @@ class StickyNoteController extends BaseController {
     formatDate(date: Date | string): string {
         if (!date) return '';
 
-        const momentDate = dayjs(date);
+        const dayjsDate = dayjs(date);
         const now = dayjs();
-        const diffDays = now.diff(momentDate, 'days');
+        const diffDays = now.diff(dayjsDate, 'days');
 
         // Get the formatted timezone using the filter
         const timezoneShort = this.$filter<(timezone: string) => string>('timezoneShort')(TimeZone);
         const timezoneDisplay = timezoneShort ? ` (${timezoneShort})` : '';
 
         if (diffDays === 0) {
-            return 'Today ' + momentDate.format('HH:mm') + timezoneDisplay;
+            return 'Today ' + dayjsDate.format('HH:mm') + timezoneDisplay;
         } else if (diffDays === 1) {
-            return 'Yesterday ' + momentDate.format('HH:mm') + timezoneDisplay;
+            return 'Yesterday ' + dayjsDate.format('HH:mm') + timezoneDisplay;
         } else if (diffDays < 7) {
             return diffDays + ' days ago';
         } else {
-            return momentDate.format('MM/DD/YYYY HH:mm') + timezoneDisplay;
+            return dayjsDate.format('MM/DD/YYYY HH:mm') + timezoneDisplay;
         }
     }
 
