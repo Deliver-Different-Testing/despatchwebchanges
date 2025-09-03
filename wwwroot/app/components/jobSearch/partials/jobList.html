@@ -1,5 +1,5 @@
 <jobs-list
-        ng-if="ctrl.jobList && ctrl.jobList.length > 0"
+        ng-if="ctrl.jobList || ctrl.jobList.length > 0"
         jobs="ctrl.jobList"
         selected-job="ctrl.currentJob"
         on-job-select="ctrl.onJobSelect(job)"

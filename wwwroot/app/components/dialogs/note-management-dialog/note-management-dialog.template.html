@@ -59,7 +59,7 @@
 
                     <!-- Public Note Warning -->
                     <div ng-if="ctrl.isSelectedNoteTypePublic()" class="alert alert-info">
-                        <md-icon md-font-set="material-symbols-outlined">visibility</md-icon>
+                        <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">visibility</md-icon>
                         <span>This is a public note that will be visible to clients</span>
                     </div>
                 </div>
@@ -93,7 +93,7 @@
                                         aria-label="Public Note Type">
                                     Is Public Note Type
                                 </md-checkbox>
-
+ 
                                 <div ng-if="ctrl.newNoteType.isPublic" class="alert alert-warning">
                                     <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
                                     <span>Public note types are visible to clients</span>

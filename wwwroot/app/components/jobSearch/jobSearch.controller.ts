@@ -1,3 +1,4 @@
+import "./jobSearch.styles.less";
 import JobSearchService from "./jobSearch.service";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
 import ToastrService from "../../services/toastr.service";
@@ -102,7 +103,7 @@ class JobSearchController extends BaseController {
 
     constructor(
         $scope: angular.IScope,
-        private uCSData: JobSearchService,
+        private jobSearchService: JobSearchService,
         private $mdDialog: angular.material.IDialogService,
         private $document: angular.IDocumentService,
         $timeout: angular.ITimeoutService,
@@ -727,7 +728,7 @@ class JobSearchController extends BaseController {
                 this.toastrService.showErrorToast('Please select a job to un-split.');
                 return;
             }
-            const msg = await this.uCSData.unSplitJob(this.currentJob.id);
+            const msg = await this.jobSearchService.unSplitJob(this.currentJob.id);
 
             if ((msg || "").length > 2) {
                 const alert = this.$mdDialog.alert()
@@ -785,7 +786,7 @@ class JobSearchController extends BaseController {
                 .cancel('Cancel');
 
             const jobNumber = await this.$mdDialog.show(jobNumberPrompt);
-            const secondJobId = await this.uCSData.validateSwapPOD(jobNumber);
+            const secondJobId = await this.jobSearchService.validateSwapPOD(jobNumber);
 
             if (!secondJobId) {
                 await this.$mdDialog.show(this.$mdDialog.alert()
@@ -817,7 +818,7 @@ class JobSearchController extends BaseController {
 
             await this.$mdDialog.show(confirmSwap);
 
-            await this.uCSData.swapPOD(this.currentJob.jobNo, jobNumber);
+            await this.jobSearchService.swapPOD(this.currentJob.jobNo, jobNumber);
 
             await this.$mdDialog.show(this.$mdDialog.alert()
                 .clickOutsideToClose(true)
@@ -825,9 +826,9 @@ class JobSearchController extends BaseController {
                 .textContent('POD Swap Completed Successfully')
                 .ok('OK'));
 
-            await this.uCSData.reSendJobs([secondJobId]);
-            await this.uCSData.reAssignJobs([firstJobId]);
-            await this.uCSData.reSendJobs([firstJobId]);
+            await this.jobSearchService.reSendJobs([secondJobId]);
+            await this.jobSearchService.reAssignJobs([firstJobId]);
+            await this.jobSearchService.reSendJobs([firstJobId]);
             await this.refreshData();
 
         } catch (error) {
@@ -857,7 +858,7 @@ class JobSearchController extends BaseController {
 
             const email = await this.$mdDialog.show(confirm);
 
-            await this.uCSData.sendPOD(this.currentJob.id, email);
+            await this.jobSearchService.sendPOD(this.currentJob.id, email);
 
             await this.$mdDialog.show(this.$mdDialog.alert()
                 .clickOutsideToClose(true)
@@ -877,7 +878,7 @@ class JobSearchController extends BaseController {
     async refreshData() {
         try {
             this.isJobListLoading = true;
-            this.jobList = await this.uCSData.getPodJobs(
+            this.jobList = await this.jobSearchService.getPodJobs(
                 this.searchCriteria.from_date,
                 this.searchCriteria.to_date,
                 this.searchCriteria.courier,
@@ -896,7 +897,7 @@ class JobSearchController extends BaseController {
     async refreshBulkData() {
         try {
             this.isBulkJobListLoading = true;
-            this.bulkJobList = await this.uCSData.searchBulkJobs(
+            this.bulkJobList = await this.jobSearchService.searchBulkJobs(
                 this.searchCriteria.from_date,
                 this.searchCriteria.to_date,
                 this.searchCriteria.courier,
@@ -914,7 +915,7 @@ class JobSearchController extends BaseController {
 
     async downloadJobList() {
         try {
-            const response: any = await this.uCSData.podJobsDownload(
+            const response: any = await this.jobSearchService.podJobsDownload(
                 this.searchCriteria.from_date,
                 this.searchCriteria.to_date,
                 this.searchCriteria.courier,
@@ -976,7 +977,7 @@ class JobSearchController extends BaseController {
         }
 
         try {
-            await this.uCSData.uploadJobList(file);
+            await this.jobSearchService.uploadJobList(file);
             this.toastrService.showSuccessToast("Job list uploaded successfully.");
         } catch {
             this.toastrService.showErrorToast("Job list uploaded unsuccessfully.");
@@ -1004,7 +1005,7 @@ class JobSearchController extends BaseController {
             }
 
             if (!this.currentJob?.booked) return;
-            this.scanPromise = this.uCSData.getScanDetail(this.currentJob.booked, this.currentJob.jobNo);
+            this.scanPromise = this.jobSearchService.getScanDetail(this.currentJob.booked, this.currentJob.jobNo);
             this.scanList = await this.scanPromise;
         } catch (error) {
             console.error('Error in selectJobDetail:', error);
@@ -1015,11 +1016,12 @@ class JobSearchController extends BaseController {
 
     async selectBulkJobDetail(bulkJobId: number) {
         try {
-            console.log("select Bulk Job  " + bulkJobId);
+            console.log("select Job  " + bulkJobId);
 
             this.isBulkJob = true;
-            this.currentJob = await this.uCSData.getDispatchBulkJobDetail(bulkJobId);
-            this.currentSelection = " for Bulk Job " + this.currentJob.jobNo;
+            this.currentJob = await this.jobSearchService.getDispatchBulkJobDetail(bulkJobId);
+            this.currentJobId = bulkJobId;
+            this.currentSelection = " for Bulk Job " + this.currentJob?.jobNo;
 
             // Update the map with just this job
             if (this.currentJob.pickupAddress?.latitude && this.currentJob.pickupAddress?.longitude) {
@@ -1031,15 +1033,17 @@ class JobSearchController extends BaseController {
             }
 
             if (!this.currentJob?.booked) return;
-            this.scanPromise = this.uCSData.getScanDetail(this.currentJob.booked, this.currentJob.jobNo);
+            this.scanPromise = this.jobSearchService.getScanDetail(this.currentJob.booked, this.currentJob.jobNo);
             this.scanList = await this.scanPromise;
         } catch (error) {
-            console.error('Error in selectBulkJobDetail:', error);
+            console.error('Error in selectJobDetail:', error);
+        } finally {
+            this.applyScope();
         }
     }
     
     clientQuerySearch(searchText: string) {
-        return this.uCSData.getActiveClients(searchText);
+        return this.jobSearchService.getActiveClients(searchText);
     }
 
     async selectedClientChange(item: Suggestion) {
@@ -1053,7 +1057,7 @@ class JobSearchController extends BaseController {
     }
 
     courierQuerySearch(searchText: string) {
-        return this.uCSData.getActiveCouriersSearch(searchText);
+        return this.jobSearchService.getActiveCouriersSearch(searchText);
     }
 
     async selectedCourierChange(item: Suggestion) {
@@ -1127,7 +1131,7 @@ class JobSearchController extends BaseController {
 
                 // Store the job ID and determine if it's a bulk job
                 const jobIdToRefresh = this.currentJobId;
-                const isBulkJob = this.bulkJobList?.some((job: IDispatchJob) => job.id === jobIdToRefresh);
+                const isBulkJob = this.bulkJobList?.some((job: IDispatchJob) => job.id === jobIdToRefresh) ?? false;
 
                 // Clear current job state
                 this.currentJobId = undefined;
