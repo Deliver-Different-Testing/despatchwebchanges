@@ -551,7 +551,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
             try
             {
-                // Check if price is actually changing
+                // Check if the price is actually changing
                 if (d.Amount.HasValue && d.Ppd.HasValue && d.Fuel.HasValue && d.CourierPayment.HasValue &&
                     d.CourierFuel.HasValue && d.CourierBonus.HasValue)
                 {
