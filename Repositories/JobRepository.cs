@@ -38,13 +38,22 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     /* Bulk Job Detail*/
     public async Task<JobViewModel> GetBulkJobDetailAsync(int bulkJobId)
     {
-        var bulkJob = await Context.TblBulkJobs
-            .Where(j => j.BulkJobId == bulkJobId)
-            .Select(JobMappings.BulkJobMapping)
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
+        try
+        {
+            var bulkJob = await Context.TblBulkJobs
+                .Where(j => j.BulkJobId == bulkJobId)
+                .Select(JobMappings.BulkJobMapping)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
 
-        return bulkJob;
+            return bulkJob;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(GetBulkJobDetailAsync)));
+            throw;
+        }
     }
 
     public async Task<DispatchJobViewModel> GetBulkDispatchJobDetailAsync(int bulkJobId)
@@ -57,13 +66,37 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 from speed in speedJoin.DefaultIfEmpty()
                 join s in Context.TucJobStatuses on j.JobStatus equals s.UcjsId into statusJoin
                 from status in statusJoin.DefaultIfEmpty()
+                join rt in Context.TucJobReadTrackers on j.JobId equals rt.JobId into rtJoin
+                from readTracker in rtJoin.DefaultIfEmpty()
+                join vs in Context.VehicleSizes on j.Size equals vs.VehicleSizeId into vsJoin
+                from vehicleSize in vsJoin.DefaultIfEmpty()
+                join cl in Context.TucClients on j.ClientId equals cl.UcclId into clientJoin
+                from client in clientJoin.DefaultIfEmpty()
                 where j.BulkJobId == bulkJobId
                 select new DispatchJobViewModel
                 {
-                    Id = j.BulkJobId,
+                     Id = j.BulkJobId,
+                    HasBeenRead = readTracker != null && readTracker.HasBeenRead,
+                    IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.JobId,
+                    ParentId = j.ParentId,
+
+                    IsFlightJob = speed != null
+                                  && speed.GroupingId == (int)SpeedGrouping.Flight,
+                    IsAgentJob = speed != null
+                                 && speed.GroupingId == (int)SpeedGrouping.Agent,
+
+                    Vehicle = vehicleSize != null
+                        ? new Suggestion
+                        {
+                            Id = vehicleSize.VehicleSizeId,
+                            Text = vehicleSize.VehicleName
+                        }
+                        : null,
+
                     Time = j.BookTime,
                     ClientId = j.ClientId,
                     Client = j.ClientCode,
+                    ClientName = client != null ? client.UcclName : string.Empty,
                     PickupAddress = new AddressViewModel
                     {
                         AddressLine1 = j.PickupAddressLine1,
@@ -74,8 +107,12 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                         AddressLine6 = j.PickupAddressLine6,
                         AddressLine7 = j.PickupAddressLine7,
                         AddressLine8 = j.PickupAddressLine8,
-                        Latitude = decimal.Parse(j.PickUpLatitude),
-                        Longitude = decimal.Parse(j.PickUpLongitude)
+                        Latitude = !string.IsNullOrEmpty(j.PickUpLatitude)
+                            ? decimal.Parse(j.PickUpLatitude)
+                            : null,
+                        Longitude = !string.IsNullOrEmpty(j.PickUpLongitude)
+                            ? decimal.Parse(j.PickUpLongitude)
+                            : null
                     },
                     DeliveryAddress = new AddressViewModel
                     {
@@ -87,20 +124,28 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                         AddressLine6 = j.DeliveryAddressLine6,
                         AddressLine7 = j.DeliveryAddressLine7,
                         AddressLine8 = j.DeliveryAddressLine8,
-                        Latitude = decimal.Parse(j.DeliveryLatitude),
-                        Longitude = decimal.Parse(j.DeliveryLongitude)
+                        Latitude = !string.IsNullOrEmpty(j.DeliveryLatitude)
+                            ? decimal.Parse(j.DeliveryLatitude)
+                            : null,
+                        Longitude = !string.IsNullOrEmpty(j.DeliveryLongitude)
+                            ? decimal.Parse(j.DeliveryLongitude)
+                            : null
                     },
                     JobNo = j.JobNumber,
-                    Courier = courier.Code,
+                    Courier = courier != null ? courier.Code : null,
                     StatusId = j.JobStatus,
-                    Status = status.UcjsCode,
-                    Speed = speed.ShortName,
+                    Status = status != null ? status.UcjsCode : null,
+                    Speed = speed != null ? speed.ShortName : null,
                     SpeedId = j.Speed,
-                    Booked = DateTime.Parse(
-                        j.BookDate.ToString("yyyy-MM-dd")
-                        + Space
-                        + j.BookTime.ToString("HH:mm:ss")
-                    )
+                    Booked = new DateTime(
+                        j.BookDate.Year,
+                        j.BookDate.Month,
+                        j.BookDate.Day,
+                        j.BookTime.Hour,
+                        j.BookTime.Minute,
+                        j.BookTime.Second
+                    ),
+                    IsBulkJob = true
                 })
             .AsNoTracking()
             .FirstOrDefaultAsync();
@@ -161,23 +206,23 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 select new DispatchJobViewModel
                 {
                     Id = j.BulkJobId,
-                    HasBeenRead = readTracker != null  && readTracker.HasBeenRead,
+                    HasBeenRead = readTracker != null && readTracker.HasBeenRead,
                     IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.JobId,
                     ParentId = j.ParentId,
-                    
+
                     IsFlightJob = speed != null
                                   && speed.GroupingId == (int)SpeedGrouping.Flight,
                     IsAgentJob = speed != null
                                  && speed.GroupingId == (int)SpeedGrouping.Agent,
-                    
-                    Vehicle = vehicleSize != null 
+
+                    Vehicle = vehicleSize != null
                         ? new Suggestion
                         {
                             Id = vehicleSize.VehicleSizeId,
                             Text = vehicleSize.VehicleName
-                        } 
+                        }
                         : null,
-                    
+
                     Time = j.BookTime,
                     ClientId = j.ClientId,
                     Client = j.ClientCode,
@@ -223,13 +268,13 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     Speed = speed != null ? speed.ShortName : null,
                     SpeedId = j.Speed,
                     Booked = new DateTime(
-                            j.BookDate.Year,
-                            j.BookDate.Month,
-                            j.BookDate.Day,
-                            j.BookTime.Hour,
-                            j.BookTime.Minute,
-                            j.BookTime.Second
-                        ),
+                        j.BookDate.Year,
+                        j.BookDate.Month,
+                        j.BookDate.Day,
+                        j.BookTime.Hour,
+                        j.BookTime.Minute,
+                        j.BookTime.Second
+                    ),
                     IsBulkJob = true
                 })
             .Distinct()
@@ -313,28 +358,28 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     select new DispatchJobViewModel
                     {
                         Id = j.JobId,
-                        HasBeenRead = readTracker != null  && readTracker.HasBeenRead,
+                        HasBeenRead = readTracker != null && readTracker.HasBeenRead,
                         IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.JobId,
                         ParentId = j.ParentId,
-                        
+
                         DeliverByTime = j.DeliverByTime,
                         IsFlightJob = speed != null
                                       && speed.GroupingId == (int)SpeedGrouping.Flight,
                         IsAgentJob = speed != null
                                      && speed.GroupingId == (int)SpeedGrouping.Agent,
-                        
-                        Vehicle = vehicleSize != null 
+
+                        Vehicle = vehicleSize != null
                             ? new Suggestion
                             {
                                 Id = vehicleSize.VehicleSizeId,
                                 Text = vehicleSize.VehicleName
-                            } 
+                            }
                             : null,
                         Time = j.Time,
                         ClientId = j.ClientId,
                         Client = j.ClientCode,
                         ClientName = client != null ? client.UcclName : string.Empty,
-                        
+
                         From = fs != null ? fs.UcsuName : null,
                         ToSuburbId = j.ToSuburbId,
                         JobNo = j.Number,

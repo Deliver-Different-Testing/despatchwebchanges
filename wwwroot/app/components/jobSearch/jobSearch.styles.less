@@ -1,0 +1,117 @@
+﻿.job-search-view {
+  .dateService {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 100vh;
+    max-width: 100%;
+    padding: 16px;
+
+    .container-fluid {
+      min-width: 100%;
+
+      &.space {
+        margin-bottom: 20px;
+      }
+    }
+
+    // Label styles
+    .label-padding {
+      padding: 10px;
+      display: block;
+      font-weight: 500;
+    }
+
+    // Spacing utility
+    .space {
+      margin-bottom: 20px;
+    }
+
+    // Form elements
+    .form-control {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+
+      &.focusMe:focus {
+        outline: none;
+        border-color: #2196F3;
+        box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+      }
+    }
+
+    // Material Design components adjustments
+    md-autocomplete {
+      width: 100%;
+    }
+
+    md-datepicker {
+      width: 100%;
+    }
+
+    md-radio-group {
+      .md-radio-button {
+        margin-right: 16px;
+        margin-bottom: 8px;
+      }
+    }
+
+    // Button section
+    section[layout="row"] {
+      flex-wrap: wrap;
+      gap: 8px;
+
+      md-button {
+        min-width: 120px;
+        margin: 4px;
+
+        md-icon {
+          margin-right: 8px;
+        }
+      }
+    }
+
+    // Hidden file input
+    .inputfile {
+      position: absolute;
+      left: -9999px;
+      visibility: hidden;
+      width: 0;
+      height: 0;
+    }
+
+    // Responsive design
+    @media (max-width: 768px) {
+      padding: 12px;
+
+      .label-padding {
+        padding: 8px 0;
+      }
+
+      .space {
+        margin-bottom: 16px;
+      }
+
+      section[layout="row"] {
+        md-button {
+          min-width: 100px;
+          font-size: 13px;
+        }
+      }
+    }
+
+    @media (max-width: 480px) {
+      padding: 8px;
+      max-height: calc(100vh - 20px); // Account for smaller screens
+      section[layout="row"] {
+        flex-direction: column;
+
+        md-button {
+          width: 100%;
+          margin: 4px 0;
+        }
+      }
+    }
+  }
+}
