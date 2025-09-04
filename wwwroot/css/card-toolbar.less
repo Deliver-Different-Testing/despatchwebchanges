@@ -1,0 +1,78 @@
+﻿// Toolbar override for white background with black text/icons
+md-toolbar.widget-toolbar {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+
+  // Style the toolbar tools container
+  .md-toolbar-tools {
+    background-color: transparent !important;
+    color: inherit !important;
+
+    // Override text elements
+    span, .md-title, .greeting-message {
+      color: #000000 !important;
+    }
+
+    // Override Material Design icons
+    md-icon {
+      color: #000000 !important;
+      fill: #000000 !important;
+    }
+
+    // Override Material Symbols Outlined icons
+    .material-symbols-outlined {
+      color: #000000 !important;
+    }
+
+    // Override buttons
+    .md-button, .md-icon-button {
+      color: #000000 !important;
+
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.08) !important;
+      }
+
+      &:focus {
+        background-color: rgba(0, 0, 0, 0.12) !important;
+      }
+
+      md-icon, .material-symbols-outlined {
+        color: #000000 !important;
+      }
+    }
+
+    // Override dividers
+    md-divider, .vertical-divider {
+      border-right-color: rgba(0, 0, 0, 0.12) !important;
+      background-color: rgba(0, 0, 0, 0.12) !important;
+    }
+
+    // Override badge
+    .custom-badge {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+    }
+
+    // Override progress circular
+    md-progress-circular {
+      path {
+        stroke: #000000 !important;
+      }
+    }
+
+    // Override logo
+    .toolbar-logo {
+      // May need to add filter if logo is not already dark
+      filter: brightness(0) saturate(100%);
+    }
+  }
+
+  // Also handle any nested menus that might inherit toolbar styles
+  md-menu-content {
+    md-toolbar {
+      // Keep nested toolbars in menus with their own styling
+      background-color: inherit;
+      color: inherit;
+    }
+  }
+}
