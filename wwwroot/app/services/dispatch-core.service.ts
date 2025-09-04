@@ -1,18 +1,18 @@
 import {AppConfig} from "../interfaces/app-config.interface";
 import {
-    AddressViewModel,
-    ClearListViewModel,
+    IAddressViewModel,
+    IClearListViewModel,
     ClientItemsViewModel,
-    EditAddressDialogViewModel, IBulkReadUpdateRequest, IClearListEnvelope,
+    IEditAddressDialogViewModel, IBulkReadUpdateRequest, IClearListEnvelope,
     IDispatchJob,
     IJob,
     ILateCallRequest,
     InternalStatus,
-    JobQueryParams,
-    ParcelDimensions,
+    IJobQueryParams,
+    IParcelDimensions,
     PriceBreakdown,
     SuburbLookup,
-    Suggestion,
+    ISuggestion,
     VoidJobRequest,
 } from "../interfaces/job.interface";
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
@@ -66,13 +66,13 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getEventTypes(): Promise<Suggestion[]> {
-        const response = await this.$http.get<Suggestion[]>("job/EventTypeList");
+    async getEventTypes(): Promise<ISuggestion[]> {
+        const response = await this.$http.get<ISuggestion[]>("job/EventTypeList");
         return response.data;
     }
 
-    async getEventGroups(): Promise<Suggestion[]> {
-        const response = await this.$http.get<Suggestion[]>("task/GetEventGroups");
+    async getEventGroups(): Promise<ISuggestion[]> {
+        const response = await this.$http.get<ISuggestion[]>("task/GetEventGroups");
         return response.data;
     }
 
@@ -87,8 +87,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getActiveStaff(): Promise<Suggestion[]> {
-        const response = await this.$http.get<Suggestion[]>("task/GetStaff");
+    async getActiveStaff(): Promise<ISuggestion[]> {
+        const response = await this.$http.get<ISuggestion[]>("task/GetStaff");
         return response.data;
     }
 
@@ -315,7 +315,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getRelatedJobs(parentId: number, clientId: number) {
-        const response = await this.$http.get<Suggestion[]>(
+        const response = await this.$http.get<ISuggestion[]>(
             `job/Related`, {
                 params: {
                     parentId,
@@ -338,11 +338,11 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getDriverLocations(selectedViews: DfrntPageViewModel[]): Promise<ClearListViewModel> {
+    async getDriverLocations(selectedViews: DfrntPageViewModel[]): Promise<IClearListViewModel> {
         const filteredViews = selectedViews.filter((view) => view.selected);
         const despatchViewIds = filteredViews.map(view => view.id);
 
-        const response = await this.$http.get<ClearListViewModel>(
+        const response = await this.$http.get<IClearListViewModel>(
             `courier`, {
                 params: {
                     despatchViewIds,
@@ -439,13 +439,13 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getSpeedList(): Promise<Suggestion[]> {
-        const response = await this.$http.get<Suggestion[]>("job/SpeedList");
+    async getSpeedList(): Promise<ISuggestion[]> {
+        const response = await this.$http.get<ISuggestion[]>("job/SpeedList");
         return response.data;
     }
 
     async getContactList(clientId: number) {
-        const response = await this.$http.get<Suggestion[]>(
+        const response = await this.$http.get<ISuggestion[]>(
             `job/ContactList`, {
                 params: {
                     clientId
@@ -456,7 +456,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getLeaveList() {
-        const response = await this.$http.get<Suggestion[]>("job/LeaveList");
+        const response = await this.$http.get<ISuggestion[]>("job/LeaveList");
         return response.data;
     }
 
@@ -468,7 +468,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getStatusList() {
-        const response = await this.$http.get<Suggestion[]>("job/StatusList");
+        const response = await this.$http.get<ISuggestion[]>("job/StatusList");
         return response.data;
     }
 
@@ -574,7 +574,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         jobId: number,
         despatcherName: string,
         prebook: boolean,
-        addressData: AddressViewModel
+        addressData: IAddressViewModel
     ) {
         try {
             let endpoint = prebook
@@ -624,7 +624,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         jobId: number,
         despatcherName: string,
         prebook: boolean,
-        addressData: AddressViewModel
+        addressData: IAddressViewModel
     ) {
         try {
             let endpoint = prebook
@@ -785,10 +785,10 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getJobsWithFilters(
-        queryParams: JobQueryParams,
+        queryParams: IJobQueryParams,
         selectedClients: string[],
         internal: boolean,
-        selectedAreas: Suggestion[]
+        selectedAreas: ISuggestion[]
     ): Promise<IDispatchJob[]> {
         const despatchViewIds = selectedAreas.map(area => area.id);
 
@@ -823,7 +823,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getClearListJobs(
-        queryParams: JobQueryParams,
+        queryParams: IJobQueryParams,
         selectedClients: string[],
         internal: boolean,
         selectedAreas: DfrntPageViewModel[],
@@ -877,7 +877,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getGeoCodeInformation(item: Suggestion) {
+    async getGeoCodeInformation(item: ISuggestion) {
         const hereMapsConfig = await this.configService.getHereMapsConfig();
 
         const response = await this.$http.get("https://geocoder.cit.api.here.com/6.2/geocode.json", {
@@ -894,8 +894,8 @@ class DispatchCoreService implements angular.IServiceProvider {
     async autocompleteSearch(
         searchTerm: string,
         url: string
-    ): Promise<Suggestion[]> {
-        const response = await this.$http.get<Suggestion[]>(url, {
+    ): Promise<ISuggestion[]> {
+        const response = await this.$http.get<ISuggestion[]>(url, {
             params: {
                 searchTerm: searchTerm,
             },
@@ -915,14 +915,14 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getVehicleSizes(): Promise<Suggestion[]> {
-        const response = await this.$http.get<Suggestion[]>(
+    async getVehicleSizes(): Promise<ISuggestion[]> {
+        const response = await this.$http.get<ISuggestion[]>(
             `courier/GetVehicleSizes`
         );
         return response.data;
     }
 
-    async updatePackages(jobId: number, parcels: ParcelDimensions[]) {
+    async updatePackages(jobId: number, parcels: IParcelDimensions[]) {
         try {
             const response = await this.$http.post("job/UpdateJobPackages", {
                 jobId: jobId,
@@ -1084,8 +1084,8 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async addStopToJob(
         jobId: number,
-        pickUpAddress?: EditAddressDialogViewModel,
-        deliveryAddress?: EditAddressDialogViewModel
+        pickUpAddress?: IEditAddressDialogViewModel,
+        deliveryAddress?: IEditAddressDialogViewModel
     ): Promise<number> {
         try {
             const response = await this.$http.post<number>("job/AddStopToJob", {
@@ -1103,8 +1103,8 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async addStopToRecurringJob(
         jobId: number,
-        pickUpAddress?: EditAddressDialogViewModel,
-        deliveryAddress?: EditAddressDialogViewModel
+        pickUpAddress?: IEditAddressDialogViewModel,
+        deliveryAddress?: IEditAddressDialogViewModel
     ): Promise<number> {
         try {
             const response = await this.$http.post<number>("job/AddStopToRecurringJob", {

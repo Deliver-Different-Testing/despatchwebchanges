@@ -5,7 +5,7 @@ import OverviewFiltersService from "./services/overview-filters.service";
 import {OverviewQueryParams, OverviewTableChildJob, OverviewTableParentJob} from "./overview.interfaces";
 import "./overview.styles.less";
 import BaseController from "../base-controller";
-import {Suggestion} from "../../interfaces/job.interface";
+import {ISuggestion} from "../../interfaces/job.interface";
 import greetUser from "../../functions/greetUser";
 import dayjs, {Dayjs} from "dayjs";
 import {DateRangeDialogController} from "../dialogs/date-range-dialog/date-range-dialog.controller";
@@ -42,16 +42,16 @@ class OverviewController extends BaseController {
     isOverviewCardCollapsed: boolean;
 
     deliveries: any[];
-    regions: Suggestion[];
-    speeds: Suggestion[];
+    regions: ISuggestion[];
+    speeds: ISuggestion[];
     promise: Promise<any> | null;
 
     search: string;
 
     dateRange: { start: Dayjs | null; end: Dayjs | null };
-    selectedRegions: Suggestion[];
+    selectedRegions: ISuggestion[];
     allRegionsSelected: boolean;
-    selectedSpeeds: Suggestion[];
+    selectedSpeeds: ISuggestion[];
     allSpeedsSelected: boolean;
 
     activeTab: number;
@@ -234,7 +234,7 @@ class OverviewController extends BaseController {
         }
     }
 
-    async toggleRegion(region: Suggestion) {
+    async toggleRegion(region: ISuggestion) {
         const idx = this.selectedRegions.indexOf(region);
 
         if (region.selected && idx === -1) {
@@ -282,7 +282,7 @@ class OverviewController extends BaseController {
         }
     }
 
-    async toggleSpeed(speed: Suggestion) {
+    async toggleSpeed(speed: ISuggestion) {
         const idx = this.selectedSpeeds.indexOf(speed);
 
         if (speed.selected && idx === -1) {

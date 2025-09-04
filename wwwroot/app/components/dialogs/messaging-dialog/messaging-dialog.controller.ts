@@ -9,7 +9,7 @@ import {
     SendMessageRequest, SendMultipleMessageRequest
 } from "./messaging-dialog.interfaces";
 import MessagingService from "../../../services/messaging.service";
-import {Suggestion} from "../../../interfaces/job.interface";
+import {ISuggestion} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import {OtherMessagePartyType} from "./messaging-dailog.enums";
@@ -58,7 +58,7 @@ class MessagingDialogController extends BaseController {
     // Quick 
     isLoadingQuickResponses: boolean = false;
     showQuickResponses: boolean = false;
-    quickResponses: Suggestion[] = [];
+    quickResponses: ISuggestion[] = [];
     showSaveAsQuickResponse: boolean = false;
     isSavingQuickResponse: boolean = false;
     
@@ -289,7 +289,7 @@ class MessagingDialogController extends BaseController {
             const newId = await this.messagingService.addQuickResponse(request);
 
             // Add to local list
-            const newResponse: Suggestion = {
+            const newResponse: ISuggestion = {
                 id: newId,
                 text: this.newMessage.trim()
             };
@@ -307,7 +307,7 @@ class MessagingDialogController extends BaseController {
         }
     }
 
-    async deleteQuickResponse(response: Suggestion): Promise<void> {
+    async deleteQuickResponse(response: ISuggestion): Promise<void> {
         // Prevent deleting default responses (negative IDs)
         if (response.id < 0) {
             this.toastrService.showWarningToast('Cannot delete default quick responses');
@@ -382,7 +382,7 @@ class MessagingDialogController extends BaseController {
     }
 
     // === Quick Responses ===
-    selectQuickResponse(response: Suggestion): void {
+    selectQuickResponse(response: ISuggestion): void {
         this.newMessage = response.text;
         this.showQuickResponses = false;
         this.showSaveAsQuickResponse = false; // Hide save option when using existing response
@@ -407,12 +407,12 @@ class MessagingDialogController extends BaseController {
     }
 
     // Filter quick responses based on search
-    getFilteredQuickResponses(): Suggestion[] {
+    getFilteredQuickResponses(): ISuggestion[] {
         return this.quickResponses;
     }
 
     // Check if response is deletable (custom responses only)
-    canDeleteResponse(response: Suggestion): boolean {
+    canDeleteResponse(response: ISuggestion): boolean {
         return response.id > 0; // Positive IDs are custom, negative are defaults
     }
 

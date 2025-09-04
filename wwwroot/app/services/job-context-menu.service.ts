@@ -2,7 +2,7 @@ import DispatchCoreService from "./dispatch-core.service";
 import ToastrService from "./toastr.service";
 import {EventGroupDialogService} from "../components/dialogs/event-group-dialog/event-group-dialog.service";
 import AddEventDialogService from "../components/dialogs/add-event-dialog/add-event-dialog.service";
-import {IDispatchJob, ILateCallRequest, Suggestion,} from "../interfaces/job.interface";
+import {IDispatchJob, ILateCallRequest, ISuggestion,} from "../interfaces/job.interface";
 import IContextMenuOption from "../interfaces/context-menu-option.interface";
 import InternalJobStatus from "../enums/job-internal-status.enum";
 import JobInternalStatusEnum from "../enums/job-internal-status.enum";
@@ -29,7 +29,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         "voidJobConfirmationDialogService",
     ];
 
-    private eventGroupsCache: Suggestion[] = [];
+    private eventGroupsCache: ISuggestion[] = [];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -218,7 +218,7 @@ class JobContextMenuService implements angular.IServiceProvider {
 
     private preloadEventGroups(): void {
         this.DispatchData.getEventGroups()
-            .then((groups: Suggestion[]) => {
+            .then((groups: ISuggestion[]) => {
                 this.eventGroupsCache = groups || [];
                 console.log("Event groups preloaded:", this.eventGroupsCache.length);
             })
@@ -241,7 +241,7 @@ class JobContextMenuService implements angular.IServiceProvider {
             }
 
             return this.DispatchData.getEventGroups()
-                .then((groups: Suggestion[]) => {
+                .then((groups: ISuggestion[]) => {
                     this.eventGroupsCache = groups || [];
                     return this.eventGroupsCache.map((group) => ({
                         text: group.text,

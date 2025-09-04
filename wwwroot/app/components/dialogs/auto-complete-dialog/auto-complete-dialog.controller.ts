@@ -1,6 +1,6 @@
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
-import {Suggestion} from "../../../interfaces/job.interface";
+import {ISuggestion} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 
 export class AutoCompleteDialogController extends BaseController {
@@ -24,14 +24,25 @@ export class AutoCompleteDialogController extends BaseController {
         public fieldName: string,
         public title: string,
         private options: any,
-        public selectedItem: Suggestion | undefined,
+        public selectedItem: ISuggestion | undefined,
         public showRerateOption: boolean
     ) {
         super();
         console.log('AutoCompleteDialogController: Controller instantiated');
     }
+    
+    $onInit(): void {
+        this.registerTimeout(() => {
+            const inputField = angular.element('input[name="autocompleteInput"]');
+            if (inputField.length > 0) {
+                const element = inputField[0] as HTMLInputElement;
+                element.focus();
+                element.select();
+            }
+        });
+    }
 
-    async querySearch(searchTerm: string): Promise<Suggestion[] | undefined> {
+    async querySearch(searchTerm: string): Promise<ISuggestion[] | undefined> {
         try {
             const url: string = this.options.searchUrl;
             return await this.dispatchData.autocompleteSearch(searchTerm, url);
@@ -40,7 +51,7 @@ export class AutoCompleteDialogController extends BaseController {
         }
     }
 
-    async submit(selectedOption: Suggestion): Promise<void> {
+    async submit(selectedOption: ISuggestion): Promise<void> {
             this.$mdDialog.hide(selectedOption);
         }
 

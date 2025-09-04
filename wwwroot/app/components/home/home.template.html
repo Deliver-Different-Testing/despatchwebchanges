@@ -373,7 +373,7 @@
                                     </md-fab-speed-dial>
                                 </div>
 
-                                <div class="row-overflow" ng-if="box.name === 'currentWork' && ctrl.jobsCurrentList.length > 0">
+                                <div class="row-overflow" ng-if="box.name === 'currentWork'">
                                     <md-autocomplete
                                             ng-if="ctrl.courierSearchOpen"
                                             md-input-name="courierSearch"
@@ -410,7 +410,7 @@
                                     
                                     <md-button class="md-icon-button"
                                                ng-click="ctrl.openTruckLoadingStatus($event)">
-                                        <md-icon md-font-set="material-symbols-outlined">forklift</md-icon>
+                                        <md-icon md-font-set="material-symbols-outlined">person_search</md-icon>
                                         <md-tooltip md-direction="bottom">Truck Loading Status</md-tooltip>
                                     </md-button>
                                 </div>

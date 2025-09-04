@@ -1,5 +1,5 @@
 import ToastrService from "../../../services/toastr.service";
-import {DfrntEvent, IJob, Suggestion, IJobNote} from "../../../interfaces/job.interface";
+import {DfrntEvent, IJob, ISuggestion, IJobNote} from "../../../interfaces/job.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import BaseController from "../../base-controller";
 import NoteService from "../../../services/notes.service";
@@ -22,8 +22,8 @@ class AddEventDialogController extends BaseController {
     ];
 
     isLoading: boolean;
-    eventTypes?: Suggestion[];
-    selectedEventType?: Suggestion;
+    eventTypes?: ISuggestion[];
+    selectedEventType?: ISuggestion;
     eventForm?: any;
     event?: DfrntEvent;
     browserTimeZone: string;
@@ -56,7 +56,7 @@ class AddEventDialogController extends BaseController {
     }
 
     $onInit() {
-        this.DispatchData.getEventTypes().then((data: Suggestion[]) => {
+        this.DispatchData.getEventTypes().then((data: ISuggestion[]) => {
             this.eventTypes = data;
 
             // Default selects other

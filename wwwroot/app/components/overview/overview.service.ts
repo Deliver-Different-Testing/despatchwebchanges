@@ -1,5 +1,5 @@
 import {IPaginatedResponse} from "../../interfaces/paginated-response.interface";
-import {Suggestion} from "../../interfaces/job.interface";
+import {ISuggestion} from "../../interfaces/job.interface";
 import {
     MapConfig,
     MegaMapResponse, OpenJobResponse,
@@ -43,13 +43,13 @@ class OverviewService implements angular.IServiceProvider {
         };
     }
 
-    async getAllRegions(): Promise<Suggestion[]> {
-        const response = await this.$http.get<Suggestion[]>("/overview/GetAllRegions");
+    async getAllRegions(): Promise<ISuggestion[]> {
+        const response = await this.$http.get<ISuggestion[]>("/overview/GetAllRegions");
         return response.data;
     }
 
-    async getAllSpeeds(): Promise<Suggestion[]> {
-        const response = await this.$http.get<Suggestion[]>("/overview/GetAllSpeeds");
+    async getAllSpeeds(): Promise<ISuggestion[]> {
+        const response = await this.$http.get<ISuggestion[]>("/overview/GetAllSpeeds");
         return response.data;
     }
 

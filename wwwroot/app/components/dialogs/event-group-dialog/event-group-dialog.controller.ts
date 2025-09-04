@@ -1,5 +1,5 @@
 import "./event-group-dialog.styles.less";
-import {Suggestion} from "../../../interfaces/job.interface";
+import {ISuggestion} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
 import {EventGroupViewModel} from "../../../interfaces/event-group-view-model.interface";
 import BaseController from "../../base-controller";
@@ -33,7 +33,7 @@ export class EventGroupDialogController extends BaseController {
         $interval: angular.IIntervalService,
         public jobId: number,
         public events: EventGroupViewModel[],
-        public users: Suggestion[],
+        public users: ISuggestion[],
     ) {
         super();
         this.initServices($timeout, $interval);
@@ -78,8 +78,8 @@ export class EventGroupDialogController extends BaseController {
         }
     }
 
-    querySearch(text: string): Suggestion[] {
-        let results: Suggestion[];
+    querySearch(text: string): ISuggestion[] {
+        let results: ISuggestion[];
 
         if (!text) {
             results = this.users;
@@ -94,7 +94,7 @@ export class EventGroupDialogController extends BaseController {
         return results.length > 0 ? results : this.users;
     }
 
-    selectedUserChange(user: Suggestion, index: number): void {
+    selectedUserChange(user: ISuggestion, index: number): void {
         if (user && user.text) {
             if (!this.events[index].assignTo) {
                 this.events[index].assignTo = {text: '', id: 0};

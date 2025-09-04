@@ -1322,6 +1322,135 @@
             </div>
         </div>
 
+        <!-- Pallet Table Section -->
+        <div class="pallet-table-section" ng-if="ctrl.job">
+            <md-toolbar class="pallet-table-header md-primary">
+                <div class="md-toolbar-tools">
+                    <span class="material-symbols-outlined">inventory_2</span>
+                    <span class="pallet-header-title" flex>Pallet Information</span>
+                    <span class="pallet-count-badge">
+                {{ctrl.job.palletInfo.length}} {{ctrl.job.palletInfo.length === 1 ? 'Pallet' : 'Pallets'}}
+            </span>
+                </div>
+            </md-toolbar>
+
+            <div class="pallet-table-content">
+                <div class="pallet-table-wrapper">
+                    <table class="pallet-data-table">
+                        <thead class="pallet-table-head">
+                        <tr>
+                            <th class="pallet-col-item">Item ID</th>
+                            <th class="pallet-col-qty">Qty</th>
+                            <th class="pallet-col-weight">Weight</th>
+                            <th class="pallet-col-dims">Dimensions (L×D×H)</th>
+                            <th class="pallet-col-status">Status</th>
+                            <th class="pallet-col-dg">DG Class</th>
+                            <th class="pallet-col-notes">Notes</th>
+                        </tr>
+                        </thead>
+                        <tbody class="pallet-table-body">
+                        <tr ng-repeat="pallet in ctrl.job.palletInfo track by $index"
+                            class="pallet-row"
+                            ng-class-odd="'pallet-row-alt'">
+
+                            <td class="pallet-cell-item">
+                                <span class="pallet-item-id">{{pallet.itemId || 'N/A'}}</span>
+                            </td>
+
+                            <td class="pallet-cell-qty">
+                                <span class="pallet-qty-badge">{{pallet.quantity || 0}}</span>
+                            </td>
+
+                            <td class="pallet-cell-weight">
+                                <span class="pallet-weight-value">{{pallet.weight || 0}}</span>
+                                <span class="pallet-weight-unit">{{ctrl.isUsCustomer ? 'lbs' : 'kg'}}</span>
+                            </td>
+
+                            <td class="pallet-cell-dims">
+                            <span class="pallet-dims-values">
+                                {{pallet.length || 0}} × {{pallet.depth || 0}} × {{pallet.height || 0}}
+                            </span>
+                                <span class="pallet-dims-unit">{{ctrl.isUsCustomer ? 'in' : 'cm'}}</span>
+                            </td>
+
+                            <td class="pallet-cell-status">
+                                <div class="pallet-status-group">
+                                <span class="pallet-status-chip" ng-class="{'pallet-status-active': pallet.pu}">
+                                    <md-icon md-font-set="material-symbols-outlined"
+                                             ng-if="pallet.pu"
+                                             class="pallet-status-icon">local_shipping</md-icon>
+                                    <span>PU</span>
+                                </span>
+                                    <span class="pallet-status-chip" ng-class="{'pallet-status-active': pallet.do}">
+                                    <md-icon md-font-set="material-symbols-outlined"
+                                             ng-if="pallet.do"
+                                             class="pallet-status-icon">done_all</md-icon>
+                                    <span>DO</span>
+                                </span>
+                                </div>
+                            </td>
+
+                            <td class="pallet-cell-dg">
+                            <span class="pallet-dg-badge"
+                                  ng-if="pallet.dgClass"
+                                  ng-class="'pallet-dg-' + pallet.dgClass">
+                                {{pallet.dgClass}}
+                            </span>
+                                <span ng-if="!pallet.dgClass" class="pallet-no-data">—</span>
+                            </td>
+
+                            <td class="pallet-cell-notes">
+                                <div class="pallet-notes-text" ng-attr-title="{{pallet.notes}}">
+                                    {{pallet.notes || '—'}}
+                                </div>
+                            </td>
+                        </tr>
+
+                        <tr ng-if="!ctrl.job.palletInfo || ctrl.job.palletInfo.length === 0" class="pallet-empty-row">
+                            <td colspan="7">
+                                <div class="pallet-empty-state">
+                                    <md-icon md-font-set="material-symbols-outlined">inventory_2</md-icon>
+                                    <p>No pallet information available</p>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Summary Footer -->
+                <div class="pallet-summary-footer">
+                    <div class="pallet-summary-item">
+                        <md-icon md-font-set="material-symbols-outlined">inventory</md-icon>
+                        <div class="pallet-summary-details">
+                            <span class="pallet-summary-label">Total Items</span>
+                            <span class="pallet-summary-value">{{ctrl.getTotalPalletQuantity()}}</span>
+                        </div>
+                    </div>
+
+                    <div class="pallet-summary-item">
+                        <md-icon md-font-set="material-symbols-outlined">scale</md-icon>
+                        <div class="pallet-summary-details">
+                            <span class="pallet-summary-label">Total Weight</span>
+                            <span class="pallet-summary-value">
+                        {{ctrl.getTotalPalletWeight()}} {{ctrl.isUsCustomer ? 'lbs' : 'kg'}}
+                    </span>
+                        </div>
+                    </div>
+
+                    <div class="pallet-summary-item">
+                        <md-icon md-font-set="material-symbols-outlined">aspect_ratio</md-icon>
+                        <div class="pallet-summary-details">
+                            <span class="pallet-summary-label">Total Volume</span>
+                            <span class="pallet-summary-value">
+                        {{ctrl.getTotalPalletVolume()}} {{ctrl.isUsCustomer ? 'in³' : 'cm³'}}
+                    </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Footer Section -->
         <div class="timing-section" style="margin: 0 8px">
             <div layout="row" layout-align="space-between center">

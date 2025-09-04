@@ -1,5 +1,5 @@
 import "./edit-address-dialog.styles.less";
-import {EditAddressDialogViewModel, ShipmentDetails,} from "../../../interfaces/job.interface";
+import {IEditAddressDialogViewModel, IShipmentDetails,} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import ToastrService from "../../../services/toastr.service";
 import {AppConfig} from "../../../interfaces/app-config.interface";
@@ -42,7 +42,7 @@ class EditAddressDialogController extends BaseController {
 
     // Contact Card
     isContactCardExpanded: boolean = false;
-    shipmentDetails?: ShipmentDetails;
+    shipmentDetails?: IShipmentDetails;
     private readonly useUsFormat: boolean;
 
     constructor(
@@ -54,7 +54,7 @@ class EditAddressDialogController extends BaseController {
         private appConfig: AppConfig,
         private configService: ConfigService,
         private addressLookupService: AddressLookupService,
-        public addressDetails: EditAddressDialogViewModel,
+        public addressDetails: IEditAddressDialogViewModel,
         public title: string,
         public submitLabel: string,
         public showContactInfo: boolean,
@@ -247,7 +247,7 @@ class EditAddressDialogController extends BaseController {
         }
     }
 
-    constructFullAddress(addressDetails: EditAddressDialogViewModel): string {
+    constructFullAddress(addressDetails: IEditAddressDialogViewModel): string {
         return [
             addressDetails.addressLine1,
             addressDetails.addressLine2,
@@ -389,7 +389,7 @@ class EditAddressDialogController extends BaseController {
     }
 
     private validateUsAddress(
-        addressDetails: EditAddressDialogViewModel
+        addressDetails: IEditAddressDialogViewModel
     ): boolean {
         if (
             !addressDetails.addressLine4 ||
@@ -411,7 +411,7 @@ class EditAddressDialogController extends BaseController {
         return true;
     }
 
-    async submit(addressDetails: EditAddressDialogViewModel): Promise<void> {
+    async submit(addressDetails: IEditAddressDialogViewModel): Promise<void> {
         console.log("Starting submit with address details:", addressDetails);
         this.isLoading = true;
 

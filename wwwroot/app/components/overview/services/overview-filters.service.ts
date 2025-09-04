@@ -1,9 +1,9 @@
-import {Suggestion} from "../../../interfaces/job.interface";
+import {ISuggestion} from "../../../interfaces/job.interface";
 import {Dayjs} from "dayjs";
 
 class OverviewFiltersService implements angular.IServiceProvider {
-    selectedRegions: Suggestion[];
-    selectedSpeeds: Suggestion[];
+    selectedRegions: ISuggestion[];
+    selectedSpeeds: ISuggestion[];
     dateRange: { start: Dayjs | null, end: Dayjs | null };
     filterChangeCallbacks: Array<() => void>;
 

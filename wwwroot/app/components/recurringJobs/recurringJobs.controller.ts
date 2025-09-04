@@ -1,5 +1,5 @@
 import {AppConfig} from "../../interfaces/app-config.interface";
-import {IJob, Suggestion} from "../../interfaces/job.interface";
+import {IJob, ISuggestion} from "../../interfaces/job.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import {ClientInternal, ContactID} from "../../contants";
@@ -260,7 +260,7 @@ class RecurringJobsController extends BaseController {
         }
     }
 
-    jobRecordSearch(searchText: string): Suggestion[] {
+    jobRecordSearch(searchText: string): ISuggestion[] {
         if (!searchText) {
             return [];
         }

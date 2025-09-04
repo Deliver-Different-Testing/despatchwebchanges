@@ -1,7 +1,7 @@
 import "./edit-parcel-dimensions-dialog.styles.less";
 import ToastrService from "../../../services/toastr.service";
 import DispatchCoreService from "../../../services/dispatch-core.service";
-import {ParcelDimensions} from "../../../interfaces/job.interface";
+import {IParcelDimensions} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 
 export class EditParcelDimensionsDialogController extends BaseController {
@@ -30,7 +30,7 @@ export class EditParcelDimensionsDialogController extends BaseController {
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
         public jobId: number,
-        public parcels: ParcelDimensions[]
+        public parcels: IParcelDimensions[]
     ) {
         super();
     }
@@ -58,7 +58,7 @@ export class EditParcelDimensionsDialogController extends BaseController {
         this.isFormDirty = true;
     }
 
-    private initializeParcel(): ParcelDimensions {
+    private initializeParcel(): IParcelDimensions {
         return {
             itemName: "",
             length: undefined,
@@ -85,7 +85,7 @@ export class EditParcelDimensionsDialogController extends BaseController {
         this.isFormDirty = true;
     }
 
-    getCurrentParcel(): ParcelDimensions | null {
+    getCurrentParcel(): IParcelDimensions | null {
         return this.parcels[this.selectedParcelIndex] || null;
     }
 
@@ -140,7 +140,7 @@ export class EditParcelDimensionsDialogController extends BaseController {
         let isValid = true;
 
         fields.forEach(field => {
-            const error = this.validateField(field, currentParcel[field as keyof ParcelDimensions]);
+            const error = this.validateField(field, currentParcel[field as keyof IParcelDimensions]);
             if (error) {
                 this.validationErrors[field] = error;
                 isValid = false;

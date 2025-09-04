@@ -1,6 +1,6 @@
 import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interfaces";
 import {EditDateTimeDialogController} from "./edit-date-time-dialog.controller";
-import {Suggestion} from "../../../interfaces/job.interface";
+import {ISuggestion} from "../../../interfaces/job.interface";
 import {JobProperty} from "../../../enums/job-property.enum";
 
 export class EditDateTimeDialogService implements angular.IServiceProvider {
@@ -24,7 +24,7 @@ export class EditDateTimeDialogService implements angular.IServiceProvider {
                                  title: string,
                                  fieldName: JobProperty | string,
                                  dateTime?: Date,
-                                 defaultTimeZone?: Suggestion) {
+                                 defaultTimeZone?: ISuggestion) {
         return {
             controller: EditDateTimeDialogController,
             controllerAs: "ctrl",
@@ -43,7 +43,7 @@ export class EditDateTimeDialogService implements angular.IServiceProvider {
         };
     }
 
-    async showEditTimeDialog($event: MouseEvent, title: string, fieldName: JobProperty | string, dateTime?: Date, defaultTimeZone?: Suggestion) {
+    async showEditTimeDialog($event: MouseEvent, title: string, fieldName: JobProperty | string, dateTime?: Date, defaultTimeZone?: ISuggestion) {
         const config = {
             ...this._getBaseDialogConfig($event, title, fieldName, dateTime, defaultTimeZone),
             locals: {
@@ -57,7 +57,7 @@ export class EditDateTimeDialogService implements angular.IServiceProvider {
         return result;
     }
 
-    async showEditDateDialog($event: MouseEvent, title: string, fieldName: JobProperty | string, dateTime?: Date, defaultTimeZone?: Suggestion) {
+    async showEditDateDialog($event: MouseEvent, title: string, fieldName: JobProperty | string, dateTime?: Date, defaultTimeZone?: ISuggestion) {
         const config = {
             ...this._getBaseDialogConfig($event, title, fieldName, dateTime, defaultTimeZone),
             locals: {
@@ -71,7 +71,7 @@ export class EditDateTimeDialogService implements angular.IServiceProvider {
         return result;
     }
 
-    async showEditDateAndTimeDialog($event: MouseEvent, title: string, fieldName: JobProperty | string, dateTime?: Date, defaultTimeZone?: Suggestion) {
+    async showEditDateAndTimeDialog($event: MouseEvent, title: string, fieldName: JobProperty | string, dateTime?: Date, defaultTimeZone?: ISuggestion) {
         const config = {
             ...this._getBaseDialogConfig($event, title, fieldName, dateTime, defaultTimeZone),
             locals: {

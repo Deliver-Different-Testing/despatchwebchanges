@@ -3,7 +3,7 @@ import {
     TaskTableFiltersRequest,
     TaskViewModel
 } from "../components/task-dashboard/task-dashboard.interfaces";
-import {Suggestion} from "../interfaces/job.interface";
+import {ISuggestion} from "../interfaces/job.interface";
 import {StatusFilter} from "../components/task-dashboard/enums/status-filter";
 import {AppPages} from "../enums/app-pages.enum";
 import {ContactID} from "../contants";
@@ -51,10 +51,10 @@ class TasksService implements angular.IServiceProvider {
         }
     };
 
-    private staffListCache?: Suggestion[];
-    private eventTypesListCache?: Suggestion[];
-    private staffListPromise?: Promise<Suggestion[]>;
-    private eventTypesPromise?: Promise<Suggestion[]>;
+    private staffListCache?: ISuggestion[];
+    private eventTypesListCache?: ISuggestion[];
+    private staffListPromise?: Promise<ISuggestion[]>;
+    private eventTypesPromise?: Promise<ISuggestion[]>;
 
     private loadTasksDebounced?: ReturnType<typeof setTimeout>;
     private backgroundLoadingStates: Record<AppPages, boolean> = {} as Record<AppPages, boolean>;
@@ -119,7 +119,7 @@ class TasksService implements angular.IServiceProvider {
             });
     }
 
-    async getStaffList(): Promise<Suggestion[] | undefined> {
+    async getStaffList(): Promise<ISuggestion[] | undefined> {
         if (this.staffListCache) {
             return this.staffListCache;
         }
@@ -129,7 +129,7 @@ class TasksService implements angular.IServiceProvider {
         }
 
         this.staffListPromise = this.DispatchData.getActiveStaff()
-            .then((staff: Suggestion[]) => {
+            .then((staff: ISuggestion[]) => {
                 this.staffListCache = staff;
                 return staff;
             })
@@ -142,7 +142,7 @@ class TasksService implements angular.IServiceProvider {
         return this.staffListPromise;
     }
 
-    async getEventTypesList(): Promise<Suggestion[] | undefined> {
+    async getEventTypesList(): Promise<ISuggestion[] | undefined> {
         if (this.eventTypesListCache) {
             return this.eventTypesListCache;
         }
@@ -152,7 +152,7 @@ class TasksService implements angular.IServiceProvider {
         }
 
         this.eventTypesPromise = this.DispatchData.getEventTypes()
-            .then((eventTypes: Suggestion[]) => {
+            .then((eventTypes: ISuggestion[]) => {
                 this.eventTypesListCache = eventTypes;
                 return eventTypes;
             })
@@ -165,7 +165,7 @@ class TasksService implements angular.IServiceProvider {
         return this.eventTypesPromise;
     }
 
-    async loadLists(): Promise<{ staffList: Suggestion[] | undefined, eventTypesList: Suggestion[] | undefined }> {
+    async loadLists(): Promise<{ staffList: ISuggestion[] | undefined, eventTypesList: ISuggestion[] | undefined }> {
         try {
             const [staffList, eventTypesList] = await Promise.all([
                 this.getStaffList(),
@@ -375,8 +375,8 @@ class TasksService implements angular.IServiceProvider {
     getActiveFilterNames(
         staffFilter: string,
         eventTypeFilter: string,
-        staffList?: Suggestion[],
-        eventTypesList?: Suggestion[]
+        staffList?: ISuggestion[],
+        eventTypesList?: ISuggestion[]
     ): string {
         if (staffFilter === StatusFilter.All && eventTypeFilter === StatusFilter.All) {
             return ' - (All Tasks)';

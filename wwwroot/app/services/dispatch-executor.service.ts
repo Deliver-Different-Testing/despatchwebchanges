@@ -1,4 +1,4 @@
-import {IDispatchJob, JobQueryParams} from "../interfaces/job.interface";
+import {IDispatchJob, IJobQueryParams} from "../interfaces/job.interface";
 import {ActiveCourierViewModel} from "../interfaces/courier.interface";
 import {JobListResponse} from "../interfaces/job-list-response.interface";
 import DispatchCoreService from "./dispatch-core.service";
@@ -50,7 +50,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
     }
 
     async getJobListWithCourierData(
-        queryParams: JobQueryParams,
+        queryParams: IJobQueryParams,
         selectedClients: Array<any>,
         isInternal: boolean,
         selectedAreas: Array<any>

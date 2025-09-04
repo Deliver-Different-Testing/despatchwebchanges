@@ -1,6 +1,6 @@
-import {Suggestion} from "../interfaces/job.interface";
+import {ISuggestion} from "../interfaces/job.interface";
 
-function countSubJobs(jobNumber: string, relatedJobs: Suggestion[]): number {
+function countSubJobs(jobNumber: string, relatedJobs: ISuggestion[]): number {
     console.log('[CountSubJobs] input: ', { jobNumber, relatedJobs });
 
     if (!relatedJobs || relatedJobs.length === 0) {

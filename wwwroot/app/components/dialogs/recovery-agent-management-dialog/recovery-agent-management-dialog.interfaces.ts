@@ -1,11 +1,11 @@
-﻿import {AddressViewModel, Suggestion} from "../../../interfaces/job.interface";
+﻿import {IAddressViewModel, ISuggestion} from "../../../interfaces/job.interface";
 
 export interface RecoveryAgentJobViewModel {
     jobId: number;
     jobNumber: string;
-    assignedAgent: Suggestion;
-    pickUpAddress: AddressViewModel;
-    deliveryAddress: AddressViewModel;
+    assignedAgent: ISuggestion;
+    pickUpAddress: IAddressViewModel;
+    deliveryAddress: IAddressViewModel;
     packageType: string;
     priority: string;
     lastKnownLocation: string;
@@ -15,7 +15,7 @@ export interface RecoveryAgentJobViewModel {
 
 export interface RecoveryJobViewModel {
     jobId: number;
-    assignedAgent: Suggestion;
+    assignedAgent: ISuggestion;
     recoveryAgents: RecoveryAgentViewModel[];
 }
 

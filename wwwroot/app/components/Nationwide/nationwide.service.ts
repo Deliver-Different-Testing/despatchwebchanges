@@ -1,4 +1,4 @@
-import {IAgent, IAgentInfoDialog, IDispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
+import {IAgent, IAgentInfoDialog, IDispatchJob, IJobQueryParams, ISuggestion} from "../../interfaces/job.interface";
 import {AssignFlightToJobRequest, IFlightViewModel} from "./nationwide.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {
@@ -28,7 +28,7 @@ class NationwideService implements angular.IServiceProvider {
 
     async getNationwideJobs(
         endpoint: string,
-        queryParams: JobQueryParams,
+        queryParams: IJobQueryParams,
         selectedClients: string[],
         isInternal: boolean,
         selectedAreas: DfrntPageViewModel[]
@@ -57,15 +57,15 @@ class NationwideService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getNationwideJobsNew(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[]) {
+    async getNationwideJobsNew(queryParams: IJobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[]) {
         return await this.getNationwideJobs("nationwideJobListNew", queryParams, selectedClients, internal, selectedAreas);
     }
 
-    async getNationwideJobsPOD(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[]) {
+    async getNationwideJobsPOD(queryParams: IJobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[]) {
         return await this.getNationwideJobs("NationwideJobListPod", queryParams, selectedClients, internal, selectedAreas);
     }
 
-    async getNationwideJobsReprice(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[]) {
+    async getNationwideJobsReprice(queryParams: IJobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[]) {
         return await this.getNationwideJobs("nationwideJobListReprice", queryParams, selectedClients, internal, selectedAreas);
     }
 
@@ -170,13 +170,13 @@ class NationwideService implements angular.IServiceProvider {
         });
     }
 
-    async getActiveAirlines(): Promise<Suggestion[]> {
-        const response = await this.$http.get<Suggestion[]>("nationwideJob/GetActiveAirlines");
+    async getActiveAirlines(): Promise<ISuggestion[]> {
+        const response = await this.$http.get<ISuggestion[]>("nationwideJob/GetActiveAirlines");
         return response.data;
     }
 
-    async getNearbyAirports(jobId: number, usePickup: boolean = true): Promise<Suggestion[]> {
-        const response = await this.$http.get<Suggestion[]>("nationwideJob/GetNearbyAirports", {
+    async getNearbyAirports(jobId: number, usePickup: boolean = true): Promise<ISuggestion[]> {
+        const response = await this.$http.get<ISuggestion[]>("nationwideJob/GetNearbyAirports", {
             params: {
                 jobId,
                 usePickup
@@ -222,8 +222,8 @@ class NationwideService implements angular.IServiceProvider {
         await this.$http.post("nationwideJob/AddAgentRecoveryJob", data);
     }
 
-    async getAgentOptionsByAirport(airportId: number): Promise<Suggestion[]> {
-        const response = await this.$http.get<Suggestion[]>("nationwideJob/GetAgentOptionsByAirport", {
+    async getAgentOptionsByAirport(airportId: number): Promise<ISuggestion[]> {
+        const response = await this.$http.get<ISuggestion[]>("nationwideJob/GetAgentOptionsByAirport", {
             params: {
                 airportId,
             }
@@ -232,8 +232,8 @@ class NationwideService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getAllActiveAirports(): Promise<Suggestion[]> {
-        const response = await this.$http.get<Suggestion[]>("nationwideJob/GetAllActiveAirports");
+    async getAllActiveAirports(): Promise<ISuggestion[]> {
+        const response = await this.$http.get<ISuggestion[]>("nationwideJob/GetAllActiveAirports");
         return response.data;
     }
 

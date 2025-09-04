@@ -1,4 +1,4 @@
-import {Suggestion} from "../../../interfaces/job.interface";
+import {ISuggestion} from "../../../interfaces/job.interface";
 import {ISelectDialogResult} from "../../../interfaces/dialog-result.interfaces";
 import {SelectDialogController} from "./select-dialog.controller";
 
@@ -19,7 +19,7 @@ export class SelectDialogService implements angular.IServiceProvider {
             return this;
         }
 
-    async showSelectDialog($event: MouseEvent, data: Suggestion[],
+    async showSelectDialog($event: MouseEvent, data: ISuggestion[],
                            fieldName: string, title: string, initialValue: string | null | number = null,
                            showCheckbox: boolean = false, checkboxLabel: string = "") {
         const options = {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -244,12 +245,14 @@ public class RateJobService(
                 int.Parse(tenantId),
                 connectionString,
                 timeZone);
-        
+            
+            var requestToken = new JwtSecurityTokenHandler().WriteToken(token);
+            
             // Call DFRNT API
             var baseUrl = Environment.GetEnvironmentVariable("WebAPIUrl");
         
             var request = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/rates/getRerateAmount");
-            request.Headers.Add("Authorization", $"Bearer {token}");
+            request.Headers.Add("Authorization", $"Bearer {requestToken}");
             request.Content = JsonContent.Create(jobObject);
         
             var response = await httpClient.SendAsync(request);

@@ -3,7 +3,7 @@ import {
     RecentMessageViewModel,
     SendMessageRequest, SaveQuickResponseRequest, MessageContactOption, SendMultipleMessageRequest
 } from "../components/dialogs/messaging-dialog/messaging-dialog.interfaces";
-import {Suggestion} from "../interfaces/job.interface";
+import {ISuggestion} from "../interfaces/job.interface";
 import {OtherMessagePartyType} from "../components/dialogs/messaging-dialog/messaging-dailog.enums";
 
 class MessagingService implements angular.IServiceProvider {
@@ -78,8 +78,8 @@ class MessagingService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getQuickResponses(): Promise<Suggestion[]> {
-        const response = await this.$http.get<Suggestion[]>(`messages/GetQuickResponses`);
+    async getQuickResponses(): Promise<ISuggestion[]> {
+        const response = await this.$http.get<ISuggestion[]>(`messages/GetQuickResponses`);
         return response.data;
     }
 

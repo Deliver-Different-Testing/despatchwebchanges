@@ -1,4 +1,4 @@
-import {Suggestion} from "../../interfaces/job.interface";
+import {ISuggestion} from "../../interfaces/job.interface";
 
 export interface TaskViewModel {
     id: number;
@@ -6,7 +6,7 @@ export interface TaskViewModel {
     description: string;
     dueDate: string;
     closed: boolean;
-    assignee: Suggestion;
+    assignee: ISuggestion;
     jobId: number;
     eventType: string;
     jobNumber: string;

@@ -1,5 +1,5 @@
 ﻿import "./recovery-agent-management.styles.less";
-import {Suggestion} from "../../../interfaces/job.interface";
+import {ISuggestion} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import NationwideService from "../../Nationwide/nationwide.service";
 import ToastrService from "../../../services/toastr.service";
@@ -19,8 +19,8 @@ class RecoveryAgentManagementController extends BaseController {
         'job',
     ];
 
-    selectedAirport?: Suggestion;
-    selectedAgent?:  Suggestion;
+    selectedAirport?: ISuggestion;
+    selectedAgent?:  ISuggestion;
     showAssignForm: boolean = false;
     showEditForm: boolean = false;
     isPrimaryRecoveryAgent: boolean = false;
@@ -28,8 +28,8 @@ class RecoveryAgentManagementController extends BaseController {
     editingAgent?: RecoveryAgentViewModel;
     selectedRecoveryJob?: RecoveryJobViewModel;
 
-    agentOptions?: Suggestion[];
-    airportOptions?: Suggestion[];
+    agentOptions?: ISuggestion[];
+    airportOptions?: ISuggestion[];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -50,7 +50,7 @@ class RecoveryAgentManagementController extends BaseController {
         });
     }
 
-    async getAgentOptionsForAirport(airport: Suggestion) {
+    async getAgentOptionsForAirport(airport: ISuggestion) {
         if (!airport) {
             this.agentOptions = [];
             return;

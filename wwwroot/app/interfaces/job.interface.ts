@@ -33,7 +33,7 @@ export interface IJob {
     acceptedName: string;
     speedId?: number;
     notify: string;
-    vehicle: Suggestion;
+    vehicle: ISuggestion;
     clientId?: number;
     jobType?: number;
     jobTypeDescription?: string;
@@ -78,7 +78,7 @@ export interface IJob {
     speedAccepted: string;
     acceptedJobTypeId?: number;
     notifiedJobTypeId?: number;
-    size: Suggestion;
+    size: ISuggestion;
     weight?: number;
     items?: number;
     refA: string;
@@ -101,12 +101,12 @@ export interface IJob {
     pickUpLatitude?: number;
     deliveryLongitude?: number;
     deliveryLatitude?: number;
-    palletInfo: PalletInfo[];
-    relatedJobs: Suggestion[];
+    palletInfo: IPalletInfo[];
+    relatedJobs: ISuggestion[];
     courierLatitude?: number;
     courierLongitude?: number;
     runOrder?: number;
-    courierData: CourierData;
+    courierData: ICourierData;
     allowDispatch?: boolean;
     dgDocumentation?: boolean;
     dgClass?: number;
@@ -131,14 +131,14 @@ export interface IJob {
     hasNationwide?: boolean;
     dispatcherName: string;
     createdDate?: Date;
-    pickupAddress: AddressViewModel;
-    deliveryAddress: AddressViewModel;
+    pickupAddress: IAddressViewModel;
+    deliveryAddress: IAddressViewModel;
     toAirportId?: number;
     fromAirportId?: number;
-    assignedFlight: AssignedFlight;
+    assignedFlight: IAssignedFlight;
     assignedAgent: IAgent;
-    assignedCourier: Suggestion;
-    parcelDimensions: ParcelDimensions[];
+    assignedCourier: ISuggestion;
+    parcelDimensions: IParcelDimensions[];
     deliverToLeaveId?: number;
     isActive: boolean;
     isArchived: boolean;
@@ -147,7 +147,7 @@ export interface IJob {
     deliverByTime?: Date;
     distance: number;
     readTrackerInfo: IReadTrackerInfoViewModel;
-    inActiveBy?: Suggestion;
+    inActiveBy?: ISuggestion;
     inActiveDate?: Date;
     firstDue?: Date;
     nextDue?: Date;
@@ -160,13 +160,13 @@ export interface IJob {
     holidayDeliveryOption: HolidayDeliveryOptions,
     pickUpWindowMins?: number;
     deliverByWindowMins?: number;
-    pickUpTimeZone?: Suggestion;
-    deliveryTimeZone?: Suggestion;
+    pickUpTimeZone?: ISuggestion;
+    deliveryTimeZone?: ISuggestion;
     hasDgDocsString?: string;
     calculateDimsOncePerJob: boolean;
 }
 
-export interface ParcelDimensions {
+export interface IParcelDimensions {
     itemId?: number;
     itemName: string;
     height?: number;
@@ -175,7 +175,7 @@ export interface ParcelDimensions {
     dimensions: string;
 }
 
-export interface AssignedFlight {
+export interface IAssignedFlight {
     flightNumber: string;
     expectedDeparture?: Date;
     departureTimeZone: string;
@@ -185,7 +185,7 @@ export interface AssignedFlight {
     flightSegments?: FlightSegmentViewModel[];
 }
 
-export interface PalletInfo {
+export interface IPalletInfo {
     id: number;
     quantity: number;
     weight: number;
@@ -199,7 +199,7 @@ export interface PalletInfo {
     itemId: number;
 }
 
-export interface AddressViewModel {
+export interface IAddressViewModel {
     addressLine1: string;
     addressLine2: string;
     addressLine3: string;
@@ -217,12 +217,12 @@ export interface AddressViewModel {
     our_suburb?: string;
 }
 
-export interface EditAddressDialogViewModel extends AddressViewModel {
+export interface IEditAddressDialogViewModel extends IAddressViewModel {
     stateAbbreviation?: string;
-    shipmentDetails?: ShipmentDetails;
+    shipmentDetails?: IShipmentDetails;
 }
 
-export interface ShipmentDetails {
+export interface IShipmentDetails {
     contactName?: string;
     contactMobile?: string;
     weight?: number;
@@ -233,39 +233,39 @@ export interface ShipmentDetails {
     jobNotes?: string;
 }
 
-export interface Suggestion {
+export interface ISuggestion {
     id: number;
     text: string;
     selected?: boolean;
 }
 
-export interface TimeZoneSuggestion extends Suggestion {
+export interface ITimeZoneSuggestion extends ISuggestion {
     timeZoneIana: string;
 }
 
-export interface ClearListViewModel {
-    areas: AreaClearList[];
+export interface IClearListViewModel {
+    areas: IAreaClearList[];
 }
 
-export interface AreaClearList {
+export interface IAreaClearList {
     id: number;
     name: string;
     order: number;
     percentHeight: number;
-    top: ClearListSection[];
-    middle: ClearListSection[];
-    bottom: ClearListSection[];
+    top: IClearListSection[];
+    middle: IClearListSection[];
+    bottom: IClearListSection[];
     totalRemaining: number;
     isActive: boolean;
 }
 
-export interface ClearListSection {
+export interface IClearListSection {
     courierNumber: string;
-    courierData: CourierData;
-    destinations: Destination[];
+    courierData: ICourierData;
+    destinations: IDestination[];
 }
 
-export interface CourierData {
+export interface ICourierData {
     courier: string;
     location?: string;
     pu?: string;
@@ -280,7 +280,7 @@ export interface CourierData {
     longitude?: number;
 }
 
-export interface Destination {
+export interface IDestination {
     id: number;
     label: string;
 }
@@ -297,10 +297,10 @@ export interface IAgent {
 
 export interface IAgentInfoDialog extends  IAgent {
     airports?: AirportViewModel[];
-    address?: AddressViewModel;
+    address?: IAddressViewModel;
 }
 
-export interface JobQueryParams {
+export interface IJobQueryParams {
     order?: string;
     orderDirection?: string;
     dateCutoff?: Date;
@@ -338,10 +338,10 @@ export interface ClientItemsViewModel {
     selected: boolean;
 }
 
-export interface SelectOption extends Suggestion {
+export interface SelectOption extends ISuggestion {
 }
 
-export interface INoteType extends Suggestion {
+export interface INoteType extends ISuggestion {
     isPublic: boolean;
     description?: string;
 }
@@ -350,8 +350,8 @@ export interface JobCreateViewModel {
     clientId: number;
     deliverToContact: string;
     podName: string;
-    pickUpAddress: AddressViewModel;
-    deliveryAddress: AddressViewModel;
+    pickUpAddress: IAddressViewModel;
+    deliveryAddress: IAddressViewModel;
     date: Date;
     fromContactName: string;
     refA: string;
@@ -376,11 +376,11 @@ export interface JobCreateViewModel {
     vehicleId: number;
 }
 
-export interface SuburbLookup extends Suggestion {
+export interface SuburbLookup extends ISuggestion {
     alias: string;
 }
 
-export interface InternalStatus extends Suggestion {
+export interface InternalStatus extends ISuggestion {
     defaultSchedule: string;
     defaultMins: number | null;
 }
@@ -429,15 +429,15 @@ export interface IDispatchJob {
     // Courier information
     courier?: string;
     courierSearchLoading: boolean;
-    assignedCourier?: Suggestion;
-    courierData?: CourierData;
+    assignedCourier?: ISuggestion;
+    courierData?: ICourierData;
 
     // Addresses
     from?: string;
     toAddress?: string;
     toSuburbID?: number;
-    pickupAddress?: AddressViewModel;
-    deliveryAddress?: AddressViewModel;
+    pickupAddress?: IAddressViewModel;
+    deliveryAddress?: IAddressViewModel;
     pickUpLongitude?: number;
     pickUpLatitude?: number;
     deliveryLongitude?: number;
@@ -449,7 +449,7 @@ export interface IDispatchJob {
     direct?: boolean;
     speed?: string;
     notify?: string;
-    vehicle?: Suggestion;
+    vehicle?: ISuggestion;
 
     // Job properties
     client?: string;
@@ -477,7 +477,7 @@ export interface IDispatchJob {
     preBook?: boolean;
 
     // Special delivery options
-    size?: Suggestion;
+    size?: ISuggestion;
     return?: boolean;
     dgClass?: number;
     saturdayDelivery?: boolean;
@@ -490,9 +490,9 @@ export interface IDispatchJob {
 
     // UI helper fields
     searchText?: string;
-    relatedJobs?: Suggestion[];
+    relatedJobs?: ISuggestion[];
 
-    assignedFlight?: AssignedFlight;
+    assignedFlight?: IAssignedFlight;
     assignedAgent?: IAgent;
 
     conNote?: string;
@@ -536,8 +536,8 @@ export interface BulkScanDetail {
 }
 
 export interface JobGroup {
-    job: Suggestion;
-    subJobs: Suggestion[];
+    job: ISuggestion;
+    subJobs: ISuggestion[];
 }
 
 export interface VoidJobRequest {
