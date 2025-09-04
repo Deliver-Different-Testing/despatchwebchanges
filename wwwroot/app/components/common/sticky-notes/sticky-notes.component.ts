@@ -39,13 +39,13 @@ class StickyNoteController extends BaseController {
         })
     }
 
-    $onInit() {
+    $onInit(): void {
         if (this.jobId) {
             this.loadNotes();
         }
     }
 
-    $onChanges(changes: angular.IOnChangesObject) {
+    $onChanges(changes: angular.IOnChangesObject): void {
         console.log('StickyNoteController - $onChanges called with changes:', JSON.stringify(changes));
 
         if (changes['jobId']) {
@@ -67,7 +67,7 @@ class StickyNoteController extends BaseController {
         }
     }
 
-    loadNotes() {
+    loadNotes(): void {
         if (!this.jobId) return;
 
         this.loading = true;
@@ -85,7 +85,7 @@ class StickyNoteController extends BaseController {
             });
     }
 
-    filterByCategory(category: string | INoteType) {
+    filterByCategory(category: string | INoteType): void {
         if (typeof category === 'string') {
             this.selectedCategory = category;
         } else {
@@ -95,7 +95,7 @@ class StickyNoteController extends BaseController {
         this.applyFilter();
     }
 
-    private applyFilter() {
+    private applyFilter(): void {
         if (!this.notes) {
             this.filteredNotes = [];
             return;
@@ -116,7 +116,7 @@ class StickyNoteController extends BaseController {
         return this.filteredNotes !== undefined ? this.filteredNotes : (this.notes || []);
     }
 
-    async addNote($event: MouseEvent) {
+    async addNote($event: MouseEvent): Promise<void> {
         const emptyNote: IJobNote = {
             noteId: 0,
             noteTypeId: 0,
@@ -138,7 +138,7 @@ class StickyNoteController extends BaseController {
         }
     }
 
-    async editNote($event: MouseEvent, note: IJobNote) {
+    async editNote($event: MouseEvent, note: IJobNote): Promise<void> {
         try {
             await this.noteManagementDialogService.openNoteDialog($event, note, ContactID);
             this.loadNotes();
@@ -149,7 +149,7 @@ class StickyNoteController extends BaseController {
         }
     }
 
-    async deleteNote($event: MouseEvent, note: IJobNote) {
+    async deleteNote($event: MouseEvent, note: IJobNote): Promise<void> {
         $event.stopPropagation();
 
         try {
