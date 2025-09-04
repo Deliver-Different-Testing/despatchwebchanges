@@ -404,15 +404,22 @@
 
                                     <md-button class="md-icon-button"
                                                ng-click="ctrl.controlCourierSearchBox()">
-                                        <md-icon md-font-set="material-symbols-outlined">{{ ctrl.courierSearchOpen ? 'close' : 'search' }}</md-icon>
-                                        <md-tooltip md-direction="bottom">{{ ctrl.courierSearchOpen ? 'Close Search' : 'Open Search' }}</md-tooltip>
-                                    </md-button>  
-                                    
-                                    <md-button class="md-icon-button"
-                                               ng-click="ctrl.openTruckLoadingStatus($event)">
-                                        <md-icon md-font-set="material-symbols-outlined">person_search</md-icon>
-                                        <md-tooltip md-direction="bottom">Truck Loading Status</md-tooltip>
+                                        <md-icon md-font-set="material-symbols-outlined">
+                                            {{ ctrl.courierSearchOpen ? 'close' : 'person_search' }}
+                                        </md-icon>
+                                        <md-tooltip md-direction="bottom">
+                                            {{ ctrl.courierSearchOpen ? 'Close Courier Search' : 'Open Courier Search' }}
+                                        </md-tooltip>
                                     </md-button>
+
+                                    <div ng-if="ctrl.jobsCurrentList.length > 0">
+                                        <md-button class="md-icon-button"
+                                                   ng-click="ctrl.openTruckLoadingStatus($event)">
+                                            <md-icon md-font-set="material-symbols-outlined">forklift</md-icon>
+                                            <md-tooltip md-direction="bottom">Truck Loading Status</md-tooltip>
+                                        </md-button>
+                                    </div>
+
                                 </div>
 
                                 <div class="row-overflow" ng-if="::box.name === 'driverLocations'">

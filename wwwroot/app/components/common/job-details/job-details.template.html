@@ -1408,10 +1408,11 @@
 
                         <tr ng-if="!ctrl.job.palletInfo || ctrl.job.palletInfo.length === 0" class="pallet-empty-row">
                             <td colspan="7">
-                                <div class="pallet-empty-state">
-                                    <md-icon md-font-set="material-symbols-outlined">inventory_2</md-icon>
-                                    <p>No pallet information available</p>
-                                </div>
+                                <no-data
+                                        title="No pallet information available"
+                                        message="This job does not have any pallet information."
+                                        icon="inventory_2">
+                                </no-data>
                             </td>
                         </tr>
                         </tbody>
