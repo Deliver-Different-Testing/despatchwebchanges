@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using DespatchWeb.Helpers;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 
@@ -14,33 +15,44 @@ public static class AuthenticationExtensions
 {
     public static JwtSecurityToken CreateApiToken(string name, int tenantId, string connection, string timeZone)
     {
-
-        var symmetricSecurityKey =
-            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSecretKey") ?? string.Empty));
-
-        var sensitiveClaims = JsonSerializer.Serialize(new
+        try
         {
-            TenantId = tenantId.ToString(),
-            Connection = connection,
-            TimeZone = timeZone
-        });
-        var encryptedClaims = EncryptClaims(sensitiveClaims, Environment.GetEnvironmentVariable("ClaimsKey"));
-        var claims = new Claim[]
+            var symmetricSecurityKey =
+                new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSecretKey") ?? string.Empty));
+
+            var sensitiveClaims = JsonSerializer.Serialize(new
+            {
+                TenantId = tenantId.ToString(),
+                Connection = connection,
+                TimeZone = timeZone
+            });
+            var encryptedClaims = EncryptClaims(sensitiveClaims, Environment.GetEnvironmentVariable("ClaimsKey"));
+            var claims = new Claim[]
+            {
+                new(ClaimTypes.Name, name),
+                new("SC", encryptedClaims)
+            };
+            Log.Debug("JWT token create process");
+            Log.Debug("JWT Issuer: {Issuer}, Audience: {Audience}", Environment.GetEnvironmentVariable("Issuer"),
+                Environment.GetEnvironmentVariable("Audience"));
+            return new JwtSecurityToken(
+                issuer: Environment.GetEnvironmentVariable("Issuer"),
+                audience: Environment.GetEnvironmentVariable("Audience"),
+                claims: claims,
+                expires: DateTime.UtcNow
+                    .AddDays(7), // expires in 7 days by default, but we don't validate the expiry date
+                signingCredentials: new SigningCredentials(symmetricSecurityKey, SecurityAlgorithms.HmacSha256)
+            );
+        }
+        catch (Exception e)
         {
-            new(ClaimTypes.Name, name),
-            new("SC", encryptedClaims)
-        };
-        Log.Debug("JWT token create process");
-        Log.Debug("JWT Issuer: {Issuer}, Audience: {Audience}", Environment.GetEnvironmentVariable("Issuer"), Environment.GetEnvironmentVariable("Audience"));
-        return new JwtSecurityToken(
-            issuer: Environment.GetEnvironmentVariable("Issuer"),
-            audience: Environment.GetEnvironmentVariable("Audience"),
-            claims: claims,
-            expires: DateTime.UtcNow.AddDays(7), // expires in 7 days by default, but we don't validate the expiry date
-            signingCredentials: new SigningCredentials(symmetricSecurityKey, SecurityAlgorithms.HmacSha256)
-        );
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(AuthenticationExtensions),
+                    nameof(CreateApiToken)));
+            throw;
+        }
     }
-
 
     private static string EncryptClaims(string claims, string key)
     {
@@ -60,6 +72,7 @@ public static class AuthenticationExtensions
         {
             swEncrypt.Write(claims);
         }
+
         return Convert.ToBase64String(msEncrypt.ToArray());
     }
 }

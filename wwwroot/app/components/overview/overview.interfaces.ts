@@ -1,4 +1,4 @@
-import {AddressViewModel, AssignedFlight} from "../../interfaces/job.interface";
+import {IAddressViewModel, IAssignedFlight} from "../../interfaces/job.interface";
 import {Dayjs} from "dayjs";
 
 export interface OverviewQueryParams {
@@ -52,11 +52,11 @@ export interface MegaMapResponse {
     jobNumber: string;
     jobStatus: string;
     estimatedDelivery: Date;
-    pickupLocation: AddressViewModel;
-    deliveryLocation: AddressViewModel;
+    pickupLocation: IAddressViewModel;
+    deliveryLocation: IAddressViewModel;
     courierLocation: CourierLocation;
     isFlightJob: boolean;
-    flightInfo: AssignedFlight;
+    flightInfo: IAssignedFlight;
 }
 
 export interface CourierLocation {

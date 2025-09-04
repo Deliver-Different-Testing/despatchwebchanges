@@ -1,7 +1,7 @@
 import "./edit-date-time-dialog.less";
 import ToastrService from "../../../services/toastr.service";
 import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interfaces";
-import {Suggestion, TimeZoneSuggestion} from "../../../interfaces/job.interface";
+import {ISuggestion, ITimeZoneSuggestion} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import {JobProperty} from "../../../enums/job-property.enum";
 import {findWindows} from "windows-iana";
@@ -36,7 +36,7 @@ export class EditDateTimeDialogController extends BaseController {
         public readonly title: string,
         public readonly fieldName: JobProperty,
         public dateTime?: Date,
-        defaultTimeZone?: Suggestion,
+        defaultTimeZone?: ISuggestion,
         public showDate: boolean = true,
         public showTime: boolean = true,
     ) {

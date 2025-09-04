@@ -5,7 +5,7 @@ import DispatchCoreService from "../../services/dispatch-core.service";
 import {AppPages} from "../../enums/app-pages.enum";
 import {AppConfig} from "../../interfaces/app-config.interface";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
-import {IAgent, IDispatchJob, IJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
+import {IAgent, IDispatchJob, IJob, IJobQueryParams, ISuggestion} from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
 import {AssignFlightToJobRequest, IFlightViewModel, StatusChangeEvent} from "./nationwide.interfaces";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
@@ -116,15 +116,15 @@ class NationwideControl extends BaseController {
     podListLoading: boolean = false;
     repriceListLoading: boolean = false;
     selected: any;
-    jobFilters: JobQueryParams = {
+    jobFilters: IJobQueryParams = {
         order: 'time',
         orderDirection: 'asc',
     };
-    jobPodFilters: JobQueryParams = {
+    jobPodFilters: IJobQueryParams = {
         order: 'time',
         orderDirection: 'asc',
     };
-    jobRepriceFilters: JobQueryParams = {
+    jobRepriceFilters: IJobQueryParams = {
         order: 'time',
         orderDirection: 'asc',
     };
@@ -148,13 +148,13 @@ class NationwideControl extends BaseController {
         onTaskClick: true
     };
     currentSupport: any;
-    activeAirlineOptions?: Suggestion[];
+    activeAirlineOptions?: ISuggestion[];
     timeZone: string;
     lastDepartureTime?: Date;
-    outboundAirportOptions?: Suggestion[];
-    inboundAirportOptions?: Suggestion[];
-    selectedOutboundAirport?: Suggestion;
-    selectedInboundAirport?: Suggestion;
+    outboundAirportOptions?: ISuggestion[];
+    inboundAirportOptions?: ISuggestion[];
+    selectedOutboundAirport?: ISuggestion;
+    selectedInboundAirport?: ISuggestion;
     isDeliveryJobType: boolean = false;
 
 // Flight section visibility flags
@@ -178,14 +178,14 @@ class NationwideControl extends BaseController {
 
     unReadMessageCount: number = 0;
 
-    refreshIntervalOptions?: Suggestion[];
-    selectedRefreshInterval?: Suggestion;
+    refreshIntervalOptions?: ISuggestion[];
+    selectedRefreshInterval?: ISuggestion;
     private refreshIntervalPromise?: angular.IPromise<any>;
     private isAutoRefreshEnabled: boolean = false;
 
     // supportFilters
-    staffList?: Suggestion[];
-    eventTypesList?: Suggestion[];
+    staffList?: ISuggestion[];
+    eventTypesList?: ISuggestion[];
     staffFilter: string = StatusFilter.All;
     eventTypeFilter: string = StatusFilter.All;
     tasksLoading: boolean = false;
@@ -685,7 +685,7 @@ class NationwideControl extends BaseController {
         await this.getData();
     }
 
-    async jobRecordSearch(searchText: string): Promise<Suggestion[]> {
+    async jobRecordSearch(searchText: string): Promise<ISuggestion[]> {
         if (!this.jobList) return [];
 
         return this.jobList
@@ -1357,14 +1357,14 @@ class NationwideControl extends BaseController {
     }
 
     async addAgentToJob($event: MouseEvent, agent: IAgent, job: IDispatchJob): Promise<void> {
-        const selectedAgent: Suggestion = {
+        const selectedAgent: ISuggestion = {
             id: agent.agentId, text: agent.agentName
         };
 
         await this.addSelectedAgentToJob($event, selectedAgent, job)
     }
 
-    async addSelectedAgentToJob($event: MouseEvent, agent: Suggestion, job: IDispatchJob): Promise<void> {
+    async addSelectedAgentToJob($event: MouseEvent, agent: ISuggestion, job: IDispatchJob): Promise<void> {
         try {
             // Check flight is assigned first
             const isAllowedToAssignAgent = await this.nationwideService.relatedJobHasFlightAssigned(job.id);
@@ -1990,7 +1990,7 @@ class NationwideControl extends BaseController {
         this.applyScope();
     }
 
-    async filterByStaff(selectedStaff: string | Suggestion): Promise<void> {
+    async filterByStaff(selectedStaff: string | ISuggestion): Promise<void> {
         if (typeof selectedStaff === 'string') {
             this.staffFilter = selectedStaff;
         } else {
@@ -2002,7 +2002,7 @@ class NationwideControl extends BaseController {
     }
 
 
-    async filterBySupportType(selectedType: string | Suggestion): Promise<void> {
+    async filterBySupportType(selectedType: string | ISuggestion): Promise<void> {
         if (typeof selectedType === 'string') {
             this.eventTypeFilter = selectedType;
         } else {
@@ -2046,10 +2046,10 @@ class NationwideControl extends BaseController {
     }
 
     initRefreshIntervalOptions(): void {
-        const disabledOption: Suggestion = {id: 0, text: "Disabled"};
+        const disabledOption: ISuggestion = {id: 0, text: "Disabled"};
         this.selectedRefreshInterval = disabledOption;
 
-        const options: Suggestion[] = [
+        const options: ISuggestion[] = [
             disabledOption
         ];
 
@@ -2079,7 +2079,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    onRefreshIntervalChange(selectedInterval: Suggestion): void {
+    onRefreshIntervalChange(selectedInterval: ISuggestion): void {
         console.log('Refresh interval changed to:', selectedInterval, 'seconds');
 
         this.selectedRefreshInterval = selectedInterval;

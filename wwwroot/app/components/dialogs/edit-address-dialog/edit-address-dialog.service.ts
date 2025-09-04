@@ -1,4 +1,4 @@
-import {AddressViewModel, EditAddressDialogViewModel} from "../../../interfaces/job.interface";
+import {IAddressViewModel, IEditAddressDialogViewModel} from "../../../interfaces/job.interface";
 import EditAddressDialogController from "./edit-address-dialog.controller";
 import {IDocumentService, IServiceProvider, material} from "angular";
 
@@ -19,11 +19,11 @@ export class EditAddressDialogService implements IServiceProvider {
         return this;
     }
 
-    async openEditAddressDialog(addressDetails: AddressViewModel, $event?: MouseEvent,
+    async openEditAddressDialog(addressDetails: IAddressViewModel, $event?: MouseEvent,
                                 title: string = 'Edit Address', submitLabel: string = 'Save',
-                                showContactInfo: boolean = false): Promise<EditAddressDialogViewModel | undefined> {
+                                showContactInfo: boolean = false): Promise<IEditAddressDialogViewModel | undefined> {
         try {
-            const newAddress: EditAddressDialogViewModel = await this.$mdDialog.show({
+            const newAddress: IEditAddressDialogViewModel = await this.$mdDialog.show({
                 controller: EditAddressDialogController,
                 controllerAs: 'ctrl',
                 template: require("./edit-address-dialog.html"),

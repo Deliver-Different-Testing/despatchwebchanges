@@ -1,5 +1,5 @@
 import {IFlightViewModel} from "../../Nationwide/nationwide.interfaces";
-import {IDispatchJob, Suggestion} from "../../../interfaces/job.interface";
+import {IDispatchJob, ISuggestion} from "../../../interfaces/job.interface";
 import FlightAgentConformationDialogController from "./flight-agent-conformation-dialog.controller";
 import {FlightAgentConfirmationDialogResult} from "../../../interfaces/dialog-result.interfaces";
 import countSubJobs from "../../../functions/countSubJobs";
@@ -68,7 +68,7 @@ class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
         });
     }
 
-    async agentConfirmationDialog($event: MouseEvent, job: IDispatchJob, agent: Suggestion) {
+    async agentConfirmationDialog($event: MouseEvent, job: IDispatchJob, agent: ISuggestion) {
       const stopJobCount = job.relatedJobs ? countSubJobs(job.jobNo, job.relatedJobs) : 0;
 
         return this.showConfirmationDialog($event, {

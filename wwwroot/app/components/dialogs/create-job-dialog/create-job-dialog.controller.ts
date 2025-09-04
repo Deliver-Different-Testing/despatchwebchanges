@@ -2,7 +2,7 @@ import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 import DispatchExecutorService from "../../../services/dispatch-executor.service";
 import {AppConfig} from "../../../interfaces/app-config.interface";
-import {AddressViewModel, JobCreateViewModel, SelectOption, Suggestion} from "../../../interfaces/job.interface";
+import {IAddressViewModel, JobCreateViewModel, SelectOption, ISuggestion} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import {getStateByAbbreviation, getStates} from "../../../functions/usStates";
 
@@ -45,10 +45,10 @@ export class CreateJobDialogController extends BaseController {
     selectedClient: any = null;
     selectedVehicle: any = null;
     selectedSpeed: any = null;
-    speedOptions: Suggestion[] = [];
+    speedOptions: ISuggestion[] = [];
     jobDate: Date = new Date();
     job: any;
-    vehicleSizes: Suggestion[] = [];
+    vehicleSizes: ISuggestion[] = [];
 
     constructor(
         $scope: CreateJobDialogControllerScope,
@@ -124,21 +124,21 @@ export class CreateJobDialogController extends BaseController {
         };
     }
 
-    vehicleSearch(searchText: string): Suggestion[] {
+    vehicleSearch(searchText: string): ISuggestion[] {
         searchText = searchText.toLowerCase();
         return this.vehicleSizes.filter(item => item.text.toLowerCase().includes(searchText));
     }
 
-    onVehicleSelect(item: Suggestion): void {
+    onVehicleSelect(item: ISuggestion): void {
         this.selectedVehicle = item;
     }
 
-    speedSearch(searchText: string): Suggestion[] {
+    speedSearch(searchText: string): ISuggestion[] {
         searchText = searchText.toLowerCase();
         return this.speedOptions.filter(item => item.text.toLowerCase().includes(searchText));
     }
 
-    onSpeedSelect(item: Suggestion): void {
+    onSpeedSelect(item: ISuggestion): void {
         this.selectedSpeed = item;
     }
 
@@ -276,7 +276,7 @@ export class CreateJobDialogController extends BaseController {
 
         // Ensure fullAddress is up-to-date for both pickup and delivery addresses
         ["pickupAddress", "deliveryAddress"].forEach(addressType => {
-            const address = job[addressType as keyof JobCreateViewModel] as AddressViewModel;
+            const address = job[addressType as keyof JobCreateViewModel] as IAddressViewModel;
             address.fullAddress = [
                 address.addressLine1,
                 address.addressLine2,

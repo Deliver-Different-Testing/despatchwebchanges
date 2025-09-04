@@ -1,6 +1,6 @@
-﻿import {Suggestion} from "../../../interfaces/job.interface";
+﻿import {ISuggestion} from "../../../interfaces/job.interface";
 
-export const DEFAULT_QUICK_RESPONSES: Suggestion[] = [
+export const DEFAULT_QUICK_RESPONSES: ISuggestion[] = [
     {
         id: -1,
         text: 'On my way!'

@@ -9,7 +9,7 @@ import ConfigService from "../../services/config.service";
 import OverviewService from "../overview/overview.service";
 import {AppConfig} from "../../interfaces/app-config.interface";
 import GreetUser from "../../functions/greetUser";
-import {AssignedFlight} from "../../interfaces/job.interface";
+import {IAssignedFlight} from "../../interfaces/job.interface";
 
 class MegaMapController extends BaseController {
     static $inject = [
@@ -400,7 +400,7 @@ class MegaMapController extends BaseController {
             .filter(route => route !== null);
     }
 
-    calculateFlightPosition(startLat: number, startLng: number, endLat: number, endLng: number, flightInfo: AssignedFlight): {
+    calculateFlightPosition(startLat: number, startLng: number, endLat: number, endLng: number, flightInfo: IAssignedFlight): {
         lat: number;
         lng: number;
         progress: number;

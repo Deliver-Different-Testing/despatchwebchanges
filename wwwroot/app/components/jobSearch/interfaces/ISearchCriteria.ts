@@ -1,4 +1,4 @@
-﻿import {Suggestion} from "../../../interfaces/job.interface";
+﻿import {ISuggestion} from "../../../interfaces/job.interface";
 
 interface ISearchCriteria {
     client?: number;
@@ -10,7 +10,7 @@ interface ISearchCriteria {
     includeClosed: boolean;
     wild?: string;
     job?: string;
-    regions?: Suggestion[];
+    regions?: ISuggestion[];
 }
 
 export default ISearchCriteria;

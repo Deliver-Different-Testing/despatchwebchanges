@@ -1,5 +1,5 @@
 import ToastrService from "../../../services/toastr.service";
-import {Suggestion} from "../../../interfaces/job.interface";
+import {ISuggestion} from "../../../interfaces/job.interface";
 import {ISelectDialogResult} from "../../../interfaces/dialog-result.interfaces";
 import {JobProperty} from "../../../enums/job-property.enum";
 import BaseController from "../../base-controller";
@@ -46,7 +46,7 @@ export class SelectDialogController extends BaseController {
         ) ?? null;
     }
 
-    async submit(selectedOption: Suggestion): Promise<void> {
+    async submit(selectedOption: ISuggestion): Promise<void> {
         try {
             this.isLoading = true;
 

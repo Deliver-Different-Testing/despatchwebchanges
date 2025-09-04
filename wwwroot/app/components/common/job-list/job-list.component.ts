@@ -1,8 +1,8 @@
 ﻿import "./job-list.styles.less";
 import {
-    AddressViewModel,
-    AssignedFlight, IDispatchJob,
-    Suggestion
+    IAddressViewModel,
+    IAssignedFlight, IDispatchJob,
+    ISuggestion
 } from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
@@ -482,7 +482,7 @@ class JobsListController extends BaseController {
             return String(value).toLowerCase().includes(query);
         };
 
-        const searchAddress = (address?: AddressViewModel): boolean => {
+        const searchAddress = (address?: IAddressViewModel): boolean => {
             if (!address) return false;
             return (
                 safeIncludes(address.addressLine1) ||
@@ -500,7 +500,7 @@ class JobsListController extends BaseController {
         };
 
         // Helper function to search in flight information
-        const searchFlight = (flight?: AssignedFlight): boolean => {
+        const searchFlight = (flight?: IAssignedFlight): boolean => {
             if (!flight) return false;
             return (
                 safeIncludes(flight.flightNumber) ||
@@ -702,6 +702,15 @@ class JobsListController extends BaseController {
     showCourierAssignment(job: IDispatchJob) {
         if (!this.allowDispatch) return;
         job.showCourierSearch = true;
+
+        this.registerTimeout(() => {
+            const inputField = angular.element(`input[name="courierSearch_${job.id}"]`);
+            if (inputField.length > 0) {
+                const element = inputField[0] as HTMLInputElement;
+                element.focus();
+                element.select();
+            }
+        });
     }
 
     hideCourierAssignment(job: IDispatchJob) {
@@ -741,7 +750,7 @@ class JobsListController extends BaseController {
         }
     }
 
-    async handleDispatchSelection(selectedCourier: Suggestion, job: IDispatchJob) {
+    async handleDispatchSelection(selectedCourier: ISuggestion, job: IDispatchJob) {
         if (!selectedCourier || !selectedCourier.id) return;
 
         try {
@@ -810,7 +819,7 @@ class JobsListController extends BaseController {
         return `Last updated: ${dayjs().format('h:mm A')}`;
     }
 
-    async performCourierSearch(searchText: string): Promise<Suggestion[]> {
+    async performCourierSearch(searchText: string): Promise<ISuggestion[]> {
         if (!searchText || searchText.length < 2) return [];
 
         try {

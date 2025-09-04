@@ -368,6 +368,7 @@
                              ng-if="!ctrl.hasAssignedCourier(job) && job.showCourierSearch">
                             <md-autocomplete
                                     ng-disabled="!job.showCourierSearch"
+                                    md-input-name="courierSearch_{{job.id}}"
                                     md-no-cache="true"
                                     md-autofocus="true"
                                     md-autoselect="true"

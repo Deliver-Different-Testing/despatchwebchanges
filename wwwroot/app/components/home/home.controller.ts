@@ -4,13 +4,13 @@ import DispatchCoreService from "../../services/dispatch-core.service";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
 import {AppConfig} from "../../interfaces/app-config.interface";
 import {
-    AddressViewModel,
-    AreaClearList,
-    ClearListViewModel,
-    CourierData,
+    IAddressViewModel,
+    IAreaClearList,
+    IClearListViewModel,
+    ICourierData,
     IDispatchJob, IJob,
-    JobQueryParams,
-    Suggestion, 
+    IJobQueryParams,
+    ISuggestion, 
 } from "../../interfaces/job.interface";
 import {ActiveCourierViewModel, TruckCourierStatusViewModel} from "../../interfaces/courier.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
@@ -99,9 +99,9 @@ class HomeController extends BaseController {
     mapZoom?: number;
     truckMode: string;
     showInput: any;
-    queryParams: JobQueryParams;
+    queryParams: IJobQueryParams;
     isUsCustomer: boolean;
-    selectedCourier?: Suggestion;
+    selectedCourier?: ISuggestion;
     jobDetailFabIsOpen: boolean = false;
     courierListFabIsOpen: boolean = false;
     isCheckingAttachments: boolean = false;
@@ -112,7 +112,7 @@ class HomeController extends BaseController {
     mapCenter: Coordinates;
     autoZoomEnabled: boolean;
     supports: ExtendedTask[];
-    driverLocations?: ClearListViewModel;
+    driverLocations?: IClearListViewModel;
     truckCourierStatus?: TruckCourierStatusViewModel;
     boxes?: Record<string, IBox>;
     dispatchState: DispatchState;
@@ -161,16 +161,16 @@ class HomeController extends BaseController {
     unReadMessageCount: number = 0;
 
     // supportFilters
-    staffList?: Suggestion[];
-    eventTypesList?: Suggestion[];
+    staffList?: ISuggestion[];
+    eventTypesList?: ISuggestion[];
     staffFilter: string = StatusFilter.All;
     eventTypeFilter: string = StatusFilter.All;
     supportsFilter: string = StatusFilter.All;
     filteredSupports: ExtendedTask[] = [];
     private supportsLoadingInBackground: boolean = false;
 
-    refreshIntervalOptions?: Suggestion[];
-    selectedRefreshInterval?: Suggestion;
+    refreshIntervalOptions?: ISuggestion[];
+    selectedRefreshInterval?: ISuggestion;
     private refreshIntervalPromise?: angular.IPromise<any>;
     private isAutoRefreshEnabled: boolean = false;
 
@@ -835,9 +835,9 @@ class HomeController extends BaseController {
         this.initialViewSet = true;
     }
 
-    setActiveArea(selectedArea: AreaClearList): void {
+    setActiveArea(selectedArea: IAreaClearList): void {
         if (!this.driverLocations) return;
-        this.driverLocations?.areas.forEach((area: AreaClearList) => {
+        this.driverLocations?.areas.forEach((area: IAreaClearList) => {
             area.isActive = area === selectedArea;
         });
     }
@@ -906,7 +906,7 @@ class HomeController extends BaseController {
         await this.DispatchData.updateJobDetail(currentJob.id, JobProperty.Locked, true, currentJob.preBook ?? false)
     }
 
-    async selectClearList(selectedClearList: AreaClearList): Promise<void> {
+    async selectClearList(selectedClearList: IAreaClearList): Promise<void> {
         try {
             if (!selectedClearList) return;
 
@@ -974,7 +974,7 @@ class HomeController extends BaseController {
         });
     }
 
-    async handleDispatchSelection(selectedCourier: Suggestion, model: Suggestion, label: string, $event: MouseEvent, job: IDispatchJob): Promise<void> {
+    async handleDispatchSelection(selectedCourier: ISuggestion, model: ISuggestion, label: string, $event: MouseEvent, job: IDispatchJob): Promise<void> {
         console.log("DISPATCH CALLED FROM:", new Error().stack);
         console.log("Typeahead params:", {selectedCourier, model, label});
 
@@ -1278,7 +1278,7 @@ class HomeController extends BaseController {
         }
     }
 
-    async getCourierOptions(searchTerm: string): Promise<Suggestion[]> {
+    async getCourierOptions(searchTerm: string): Promise<ISuggestion[]> {
         return await this.DispatchData.autocompleteSearch(searchTerm, this.COURIER_URL);
     }
 
@@ -1297,7 +1297,7 @@ class HomeController extends BaseController {
         }
     }
 
-    async selectCourier(courier: CourierData): Promise<void> {
+    async selectCourier(courier: ICourierData): Promise<void> {
         try {
             this.currentListLoading = true;
             this.applyScope();
@@ -1334,7 +1334,7 @@ class HomeController extends BaseController {
         }
     }
 
-    async selectPotentialCourier(courier: CourierData): Promise<void> {
+    async selectPotentialCourier(courier: ICourierData): Promise<void> {
         try {
             HomeController.updateCourierInfo(courier);
             await this.displayJobsForCourier(courier);
@@ -1344,13 +1344,13 @@ class HomeController extends BaseController {
         }
     }
 
-    static updateCourierInfo(courier: CourierData): void {
+    static updateCourierInfo(courier: ICourierData): void {
         if (!courier.courier) {
             courier.courier = `${courier.courier} ${courier.courierName}`;
         }
     }
 
-    async displayJobsForCourier(courier: CourierData): Promise<void> {
+    async displayJobsForCourier(courier: ICourierData): Promise<void> {
         if (!courier.courierId) return;
 
         const foundCourier = await this.DispatchData.getCourierById(courier.courierId);
@@ -1371,7 +1371,7 @@ class HomeController extends BaseController {
         return (lat && lng && !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0 && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180);
     }
 
-    async updateUIForPotentialCourier(courier: CourierData): Promise<void> {
+    async updateUIForPotentialCourier(courier: ICourierData): Promise<void> {
         this.currentWorkSelection = ` for Courier ${courier.courier}`;
         this.currentCourier = courier;
     }
@@ -1699,7 +1699,7 @@ class HomeController extends BaseController {
                 orderDirection = "desc";
             }
 
-            const params: JobQueryParams = {
+            const params: IJobQueryParams = {
                 order: orderBy,
                 orderDirection: orderDirection,
                 dateCutoff: this.jobCutoffDate
@@ -1881,7 +1881,7 @@ class HomeController extends BaseController {
         }
     }
 
-    async handleNewAddressForSplitJobs(addressDetails: AddressViewModel, currentJob: IDispatchJob): Promise<void> {
+    async handleNewAddressForSplitJobs(addressDetails: IAddressViewModel, currentJob: IDispatchJob): Promise<void> {
         if (!addressDetails) {
             console.log("Split jobs canceled!");
             return;
@@ -2329,7 +2329,7 @@ class HomeController extends BaseController {
     }
 
 
-    async filterByStaff(selectedStaff: string | Suggestion): Promise<void> {
+    async filterByStaff(selectedStaff: string | ISuggestion): Promise<void> {
         if (typeof selectedStaff === 'string') {
             this.staffFilter = selectedStaff;
         } else {
@@ -2340,7 +2340,7 @@ class HomeController extends BaseController {
         await this.loadSupports();
     }
 
-    async filterBySupportType(selectedType: string | Suggestion): Promise<void> {
+    async filterBySupportType(selectedType: string | ISuggestion): Promise<void> {
         if (typeof selectedType === 'string') {
             this.eventTypeFilter = selectedType;
         } else {
@@ -2386,10 +2386,10 @@ class HomeController extends BaseController {
     }
 
     initRefreshIntervalOptions(): void {
-        const disabledOption: Suggestion = {id: 0, text: "Disabled"};
+        const disabledOption: ISuggestion = {id: 0, text: "Disabled"};
         this.selectedRefreshInterval = disabledOption;
 
-        const options: Suggestion[] = [
+        const options: ISuggestion[] = [
             disabledOption
         ];
 
@@ -2419,7 +2419,7 @@ class HomeController extends BaseController {
         }
     }
 
-    onRefreshIntervalChange(selectedInterval: Suggestion): void {
+    onRefreshIntervalChange(selectedInterval: ISuggestion): void {
         console.log('Refresh interval changed to:', selectedInterval, 'seconds');
 
         this.selectedRefreshInterval = selectedInterval;
@@ -2514,7 +2514,7 @@ class HomeController extends BaseController {
         });
     }
 
-    async onCourierSearchSelect(selectedCourier: Suggestion): Promise<void> {
+    async onCourierSearchSelect(selectedCourier: ISuggestion): Promise<void> {
         try {
             await this.getCurrentJobs(selectedCourier.id);
             this.courierSearchText = undefined;

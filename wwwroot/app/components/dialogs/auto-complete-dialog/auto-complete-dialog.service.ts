@@ -1,5 +1,5 @@
 import {AutoCompleteDialogController} from "./auto-complete-dialog.controller";
-import {Suggestion} from "../../../interfaces/job.interface";
+import {ISuggestion} from "../../../interfaces/job.interface";
 
 class AutoCompleteDialogService implements angular.IServiceProvider {
     static $inject = [
@@ -29,7 +29,7 @@ class AutoCompleteDialogService implements angular.IServiceProvider {
             placeholder, minimumInputLength: 3, searchUrl: url
         };
 
-        const data: Suggestion = await this.$mdDialog.show({
+        const data: ISuggestion = await this.$mdDialog.show({
             controller: AutoCompleteDialogController,
             controllerAs: "ctrl",
             parent: this.$document.parent(),

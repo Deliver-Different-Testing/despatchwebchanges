@@ -4,7 +4,7 @@ import DispatchExecutorService from "../../services/dispatch-executor.service";
 import ToastrService from "../../services/toastr.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import {AppConfig} from "../../interfaces/app-config.interface";
-import {BulkScanDetail, IDispatchJob, Suggestion} from "../../interfaces/job.interface";
+import {BulkScanDetail, IDispatchJob, ISuggestion} from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
 import BaseController from "../base-controller";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
@@ -75,7 +75,7 @@ class JobSearchController extends BaseController {
     timeZone: string = TimeZone;
     jobList?: IDispatchJob[];
     bulkJobList?: IDispatchJob[];
-    pickRegions?: Suggestion[];
+    pickRegions?: ISuggestion[];
     currentJob?: IDispatchJob;
     currentSelection?: string;
     currentJobId?: number;
@@ -692,7 +692,7 @@ class JobSearchController extends BaseController {
         }
     }
 
-    async filterRegion(region: Suggestion) {
+    async filterRegion(region: ISuggestion) {
         if (!this.pickRegions) return;
 
         try {
@@ -1046,7 +1046,7 @@ class JobSearchController extends BaseController {
         return this.jobSearchService.getActiveClients(searchText);
     }
 
-    async selectedClientChange(item: Suggestion) {
+    async selectedClientChange(item: ISuggestion) {
         if (!item) {
             this.searchCriteria.client = undefined;
             return;
@@ -1060,7 +1060,7 @@ class JobSearchController extends BaseController {
         return this.jobSearchService.getActiveCouriersSearch(searchText);
     }
 
-    async selectedCourierChange(item: Suggestion) {
+    async selectedCourierChange(item: ISuggestion) {
         if (!item) {
             this.searchCriteria.courier = undefined;
             return;

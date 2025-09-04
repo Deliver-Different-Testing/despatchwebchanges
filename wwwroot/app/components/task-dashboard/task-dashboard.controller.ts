@@ -1,6 +1,6 @@
 import "./task-dashboard.styles.less";
 import {ExtendedTask, TaskTableFiltersRequest, TaskViewModel} from "./task-dashboard.interfaces";
-import {IDispatchJob, Suggestion} from "../../interfaces/job.interface";
+import {IDispatchJob, ISuggestion} from "../../interfaces/job.interface";
 import {ViewMode} from "./enums/view-mode";
 import BaseController from "../base-controller";
 import {ITaskListItemConfig} from "../common/task-item-component/task-item.interfaces";
@@ -46,8 +46,8 @@ class TaskDashboardController extends BaseController {
     timeOptions: string[] = [];
 
     // Lists
-    staffList?: Suggestion[];
-    eventTypesList?: Suggestion[];
+    staffList?: ISuggestion[];
+    eventTypesList?: ISuggestion[];
 
     // Task item configurations
     taskItemConfig: ITaskListItemConfig = {

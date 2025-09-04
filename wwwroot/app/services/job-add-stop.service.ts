@@ -1,6 +1,6 @@
 import DispatchCoreService from "./dispatch-core.service";
 import {EditAddressDialogService} from "../components/dialogs/edit-address-dialog/edit-address-dialog.service";
-import {AddressViewModel, IDispatchJob} from "../interfaces/job.interface";
+import {IAddressViewModel, IDispatchJob} from "../interfaces/job.interface";
 import ToastrService from "./toastr.service";
 import JobSuffix from "../enums/job-suffix.enum";
 import {IPrebookListModel} from "../components/recurringJobs/recurringJobs.interface";
@@ -99,7 +99,7 @@ class JobAddStopService implements angular.IServiceProvider {
     }
 
 
-    private generateBlankAddress(): AddressViewModel {
+    private generateBlankAddress(): IAddressViewModel {
         return {
             addressLine1: "",
             addressLine2: "",

@@ -1,7 +1,7 @@
 import "./flight-agent-confirmation-dialog.layout.less";
 import BaseController from "../../base-controller";
 import {FlightSegmentViewModel, IFlightViewModel} from "../../Nationwide/nationwide.interfaces";
-import {Suggestion} from "../../../interfaces/job.interface";
+import {ISuggestion} from "../../../interfaces/job.interface";
 import getDangerousGoodsClassName from "../../../functions/getDangerousGoodsClassName";
 import {FlightAgentConfirmationDialogResult} from "../../../interfaces/dialog-result.interfaces";
 import NationwideService from "../../Nationwide/nationwide.service";
@@ -75,7 +75,7 @@ class FlightAgentConformationDialogController extends BaseController {
         public jobId: number,
         public jobNumber: string,
         public flight?: IFlightViewModel,
-        public agent?: Suggestion,
+        public agent?: ISuggestion,
         private existingAwb?: string,
         private dgClass?: number,
         private stopJobCount?: number,

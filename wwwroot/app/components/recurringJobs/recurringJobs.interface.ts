@@ -1,4 +1,4 @@
-import {AddressViewModel} from "../../interfaces/job.interface";
+import {IAddressViewModel} from "../../interfaces/job.interface";
 
 export interface IPrebookListModel {
     id: number;
@@ -15,8 +15,8 @@ export interface IPrebookListModel {
     clientId: number | null;
     courier: string;
     speed: string;
-    pickupAddress: AddressViewModel;
-    deliveryAddress: AddressViewModel;
+    pickupAddress: IAddressViewModel;
+    deliveryAddress: IAddressViewModel;
 }
 
 export interface IRecurringJobQuery {

@@ -1,6 +1,6 @@
-import {JobGroup, Suggestion} from "../interfaces/job.interface";
+import {JobGroup, ISuggestion} from "../interfaces/job.interface";
 
-function sortRelatedJobs(relatedJobs: Suggestion[]): JobGroup[] {
+function sortRelatedJobs(relatedJobs: ISuggestion[]): JobGroup[] {
     console.log('[SortRelatedJobs] input: ', relatedJobs);
 
     if (!relatedJobs || relatedJobs.length === 0) {
@@ -8,7 +8,7 @@ function sortRelatedJobs(relatedJobs: Suggestion[]): JobGroup[] {
     }
 
     // Group jobs by their base number
-    const jobMap = new Map<string, Suggestion[]>();
+    const jobMap = new Map<string, ISuggestion[]>();
 
     // First pass: identify base job numbers
     relatedJobs.forEach(job => {
@@ -30,7 +30,7 @@ function sortRelatedJobs(relatedJobs: Suggestion[]): JobGroup[] {
     const result: JobGroup[] = [];
 
     // Process each group
-    jobMap.forEach((jobs: Suggestion[], baseJob: string) => {
+    jobMap.forEach((jobs: ISuggestion[], baseJob: string) => {
         // Sort jobs - main job first (no suffix), then others alphabetically
         jobs.sort((a, b) => {
             const suffixA = a.text.replace(baseJob, '');

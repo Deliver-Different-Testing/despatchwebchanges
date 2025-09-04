@@ -6,7 +6,7 @@ import "./inter-courier-charge-dialog.styles.less";
 import {
     FeatureInDevelopmentDialogService
 } from "../feature-in-development-dialog/feature-in-development-dialog.service";
-import {Suggestion} from "../../../interfaces/job.interface";
+import {ISuggestion} from "../../../interfaces/job.interface";
 
 class InterCourierChargeDialogController extends BaseController {
     static $inject = [
@@ -54,7 +54,7 @@ class InterCourierChargeDialogController extends BaseController {
         };
     }
 
-    async courierSearch(searchTerm: string): Promise<Suggestion[]> {
+    async courierSearch(searchTerm: string): Promise<ISuggestion[]> {
         if (!searchTerm || searchTerm.length < 2) {
             return [];
         }
