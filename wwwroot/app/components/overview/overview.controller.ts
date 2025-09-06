@@ -14,6 +14,7 @@ import {MapDialogController} from "../dialogs/map-dialog/map-dialog.controller";
 class OverviewController extends BaseController {
     static $inject = [
         "$mdDialog",
+        "$log",
         "$mdSidenav",
         "overviewService",
         "toastrService",
@@ -58,6 +59,7 @@ class OverviewController extends BaseController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
+        private $log: angular.ILogService,
         private $mdSidenav: angular.material.ISidenavService,
         private overviewService: OverviewService,
         private toastrService: ToastrService,
@@ -157,7 +159,7 @@ class OverviewController extends BaseController {
 
     private loadSavedLimit(): void {
         const savedLimit = localStorage.getItem(this.OverviewJobLimitDisplay);
-        console.log(`Saved limit is: ${savedLimit}`);
+        this.$log.debug(`Saved limit is: ${savedLimit}`);
         if (savedLimit) {
             this.query.limit = parseInt(savedLimit);
         }
@@ -171,10 +173,10 @@ class OverviewController extends BaseController {
             this.refreshData(),
         ])
             .then(() => {
-                console.log("All data loaded successfully");
+                this.$log.debug("All data loaded successfully");
             })
             .catch((error) => {
-                console.error("Error loading data:", error);
+                this.$log.error("Error loading data:", error);
             });
     }
 
@@ -200,7 +202,7 @@ class OverviewController extends BaseController {
                 completed: stats.completed || 0,
             };
         } catch (error) {
-            console.error("Error loading statistics:", error);
+            this.$log.error("Error loading statistics:", error);
             this.statistics = {active: 0, inactive: 0, completed: 0};
         }
     }
@@ -228,7 +230,7 @@ class OverviewController extends BaseController {
             this.regionsLoading = true;
             this.regions = await this.overviewService.getAllRegions();
         } catch (error) {
-            console.error("An error occured getting regions.");
+            this.$log.error("An error occured getting regions.");
         } finally {
             this.regionsLoading = false;
         }
@@ -276,7 +278,7 @@ class OverviewController extends BaseController {
             this.speedsLoading = true;
             this.speeds = await this.overviewService.getAllSpeeds();
         } catch (error) {
-            console.error("An error occured getting speeds.");
+            this.$log.error("An error occured getting speeds.");
         } finally {
             this.speedsLoading = false;
         }
@@ -325,7 +327,7 @@ class OverviewController extends BaseController {
                 try {
                     this.$mdSidenav("right").toggle();
                 } catch (retryError) {
-                    console.error('Sidenav still not available:', retryError);
+                    this.$log.error('Sidenav still not available:', retryError);
                 }
             }, 100);
         }
@@ -377,7 +379,7 @@ class OverviewController extends BaseController {
             await this.refreshData();
         } catch (error) {
             if (error !== undefined) {
-                console.error("Error selecting date range:", error);
+                this.$log.error("Error selecting date range:", error);
             }
         }
     }
@@ -501,7 +503,7 @@ class OverviewController extends BaseController {
             // Refresh statistics after a data load
             await this.loadStats();
         } catch (error) {
-            console.error("Error loading deliveries:", error);
+            this.$log.error("Error loading deliveries:", error);
             this.toastrService.showErrorToast(
                 "An unexpected error occurred. Please try again."
             );

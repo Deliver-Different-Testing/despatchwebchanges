@@ -11,6 +11,7 @@ import dayjs from "dayjs";
 export class EditDateTimeDialogController extends BaseController {
     static $inject = [
         "$mdDialog",
+        "$log",
         "toastrService",
         "$timeout",
         "$interval",
@@ -30,6 +31,7 @@ export class EditDateTimeDialogController extends BaseController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
+        private $log: angular.ILogService,
         private toastrService: ToastrService,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
@@ -42,9 +44,7 @@ export class EditDateTimeDialogController extends BaseController {
     ) {
         super();
         this.initServices($timeout, $interval);
-
-        console.log('EditDateTimeDialogController: Controller instantiated');
-
+        
         const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         this.browserTimeZone = findWindows(browserTimeZone)[0];
         this.selectedTimeZone = defaultTimeZone?.text ?? TimeZone;
@@ -110,9 +110,9 @@ export class EditDateTimeDialogController extends BaseController {
                         .toDate();
                 }
             }
-            console.log('DateTime updated:', this.dateTime?.toISOString?.());
+            this.$log.debug('DateTime updated:', this.dateTime?.toISOString?.());
         } catch (error) {
-            console.error('Error updating dateTime:', error);
+            this.$log.error('Error updating dateTime:', error);
             this.dateTime = undefined;
         }
     }
@@ -144,10 +144,10 @@ export class EditDateTimeDialogController extends BaseController {
                 value: this.dateTime
             };
 
-            console.log('Submitting result:', result);
+            this.$log.debug('Submitting result:', result);
             this.$mdDialog.hide(result);
         } catch (error: any) {
-            console.error('Error submitting date/time:', error);
+            this.$log.error('Error submitting date/time:', error);
             this.toastrService.showErrorToast(error.message);
         } finally {
             this.isLoading = false;

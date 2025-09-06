@@ -22,7 +22,6 @@ class VoidJobConfirmationDialogController extends BaseController {
         public job: IDispatchJob
     ) {
         super();
-        console.log('VoidJobConfirmationDialogController: Controller instantiated');
     }
 
     async confirm() {

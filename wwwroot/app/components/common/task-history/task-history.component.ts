@@ -10,6 +10,7 @@ import DensityMode from "../../../enums/densityMode";
 
 class TaskHistoryController extends BaseController {
     static $inject = [
+        '$log',
         'toastrService',
         'DispatchData',
         '$timeout',
@@ -40,6 +41,7 @@ class TaskHistoryController extends BaseController {
     densityMode: DensityMode = DensityMode.Normal;
 
     constructor(
+        private $log: angular.ILogService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
         $timeout: angular.ITimeoutService,
@@ -132,13 +134,13 @@ class TaskHistoryController extends BaseController {
                 this.buildTimelineFromDeliveryJourney(deliveryJourney);
             })
             .catch((error) => {
-                console.error('Error loading delivery journey:', error);
+                this.$log.error('Error loading delivery journey:', error);
                 this.toastrService.showErrorToast('Failed to load delivery journey');
                 this.initializeEmptyData();
             })
             .finally(() => {
                 this.historyLoading = false;
-                console.log('Delivery journey loaded');
+                this.$log.debug('Delivery journey loaded');
             });
     }
 

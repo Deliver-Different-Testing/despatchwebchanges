@@ -13,7 +13,6 @@ class AgentInfoDialogController extends BaseController {
         public agent: IAgentInfoDialog
     ) {
         super();
-        console.log('AgentInfoDialogController: Controller instantiated');
     }
 
     formatPhone(phone: string): string {

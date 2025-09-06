@@ -79,39 +79,7 @@
                         </div>
                     </md-menu-content>
                 </md-menu>
-
-                <md-menu>
-                    <md-button
-                            aria-label="Open views menu"
-                            class="md-icon-button"
-                            ng-click="$mdMenu.open($event)">
-                        <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.views">view_list
-                        </md-icon>
-                        <md-tooltip md-direction="bottom">Views</md-tooltip>
-                        <md-progress-circular
-                                md-diameter="18"
-                                md-mode="indeterminate"
-                                ng-if="!ctrl.views"
-                        ></md-progress-circular>
-                    </md-button>
-                    <md-menu-content>
-                        <md-menu-item ng-if="ctrl.views && ctrl.views.length === 0">
-                            <p>No views available.</p>
-                        </md-menu-item>
-                        <md-menu-item
-                                ng-if="ctrl.views && ctrl.views.length > 0"
-                                ng-repeat="view in ctrl.views">
-                            <md-checkbox
-                                    class="md-primary"
-                                    aria-label="{{view.name}}"
-                                    ng-change="ctrl.toggleView(view)"
-                                    ng-model="view.selected">
-                                {{view.name}}
-                            </md-checkbox>
-                        </md-menu-item>
-                    </md-menu-content>
-                </md-menu>
-
+                
                 <md-menu>
                     <md-button
                             aria-label="Open layout options menu"

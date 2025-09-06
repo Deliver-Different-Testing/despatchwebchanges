@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 
 class MaterialSidenavComponentController extends BaseController {
     static $inject = [
+        "$log",
         "$state",
         "$mdSidenav",
         "$timeout",
@@ -39,6 +40,7 @@ class MaterialSidenavComponentController extends BaseController {
     private readonly debouncedClose: () => void;
 
     constructor(
+        private $log: angular.ILogService,
         private $state: angular.ui.IStateService,
         private $mdSidenav: angular.material.ISidenavService,
         $timeout: angular.ITimeoutService,
@@ -85,13 +87,13 @@ class MaterialSidenavComponentController extends BaseController {
 
             if (this.sidenavElement.length) {
                 this.setupEventListeners();
-                console.log('Sidenav initialized successfully');
+                this.$log.debug('Sidenav initialized successfully');
             } else {
                 console.warn('Sidenav element not found');
                 this.registerTimeout(() => this.initializeSidenav(), 100);
             }
         } catch (error) {
-            console.error('Failed to initialize sidenav:', error);
+            this.$log.error('Failed to initialize sidenav:', error);
             this.registerTimeout(() => this.initializeSidenav(), 200);
         }
     }

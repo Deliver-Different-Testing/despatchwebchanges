@@ -13,6 +13,7 @@ import {IAssignedFlight} from "../../interfaces/job.interface";
 
 class MegaMapController extends BaseController {
     static $inject = [
+        "$log",
         "toastrService",
         "$mdSidenav",
         "overviewService",
@@ -37,6 +38,7 @@ class MegaMapController extends BaseController {
     platform: any;
 
     constructor(
+        private $log: angular.ILogService,
         private toastrService: ToastrService,
         private $mdSidenav: angular.material.ISidenavService,
         private overviewService: OverviewService,
@@ -62,7 +64,7 @@ class MegaMapController extends BaseController {
             ? appConfig.US_Coordinates_Center
             : appConfig.NZ_Coordinates_Center;
 
-        this.initializeMap().then(_ => console.log("HERE Map initialized"));
+        this.initializeMap().then(_ => this.$log.debug("HERE Map initialized"));
 
         // Set up auto-refresh every 30 seconds
         this.registerInterval(async () => {
@@ -83,7 +85,7 @@ class MegaMapController extends BaseController {
                 try {
                     this.$mdSidenav("right").toggle();
                 } catch (retryError) {
-                    console.error('Sidenav still not available:', retryError);
+                    this.$log.error('Sidenav still not available:', retryError);
                 }
             }, 100);
         }
@@ -108,13 +110,13 @@ class MegaMapController extends BaseController {
 
             await this.refreshData();
         } catch (error) {
-            console.error("Error initializing HERE Maps:", error);
+            this.$log.error("Error initializing HERE Maps:", error);
             this.toastrService.showErrorToast("Error initializing map");
         }
     }
 
     onMapReady(mapData: { map: any, platform: any }) {
-        console.log("HERE Map is ready", mapData);
+        this.$log.debug("HERE Map is ready", mapData);
         this.map = mapData.map;
         this.platform = mapData.platform;
     }
@@ -136,7 +138,7 @@ class MegaMapController extends BaseController {
             this.updateHereMapConfig();
         } catch (error) {
             this.toastrService.showErrorToast("Error updating data");
-            console.error("Error:", error);
+            this.$log.error("Error:", error);
         }
     }
 
@@ -228,7 +230,7 @@ class MegaMapController extends BaseController {
 
 
     transformMapData(jobs: MegaMapResponse[]) {
-        console.log("Starting transformMapData with %d jobs", jobs.length);
+        this.$log.debug("Starting transformMapData with %d jobs", jobs.length);
 
         const pickups: MapPoint[] = [];
         const deliveries: MapPoint[] = [];
@@ -241,7 +243,7 @@ class MegaMapController extends BaseController {
         }>();
 
         jobs.forEach(job => {
-            console.log("Processing job %s:", job.jobNumber, job);
+            this.$log.debug("Processing job %s:", job.jobNumber, job);
 
             const isFlightRoute = job?.isFlightJob || false;
 
@@ -251,7 +253,7 @@ class MegaMapController extends BaseController {
                 const lng = job.pickupLocation.longitude;
 
                 if (!isNaN(lat) && !isNaN(lng)) {
-                    console.log("Adding pickup point for job %s at [%d, %d]",
+                    this.$log.debug("Adding pickup point for job %s at [%d, %d]",
                         job.jobNumber, lat, lng
                     );
 
@@ -276,7 +278,7 @@ class MegaMapController extends BaseController {
                 const lng = job.deliveryLocation.longitude;
 
                 if (!isNaN(lat) && !isNaN(lng)) {
-                    console.log("Adding delivery point for job %s at [%d, %d]",
+                    this.$log.debug("Adding delivery point for job %s at [%d, %d]",
                         job.jobNumber, lat, lng
                     );
 
@@ -343,7 +345,7 @@ class MegaMapController extends BaseController {
                 .join(", ")
         }));
 
-        console.log("Transformed data:", {
+        this.$log.debug("Transformed data:", {
             pickups: pickups.length,
             deliveries: deliveries.length,
             drivers: drivers.length,
@@ -457,19 +459,19 @@ class MegaMapController extends BaseController {
 
     showPointInfo(point: MapPoint): void {
         if (!point) {
-            console.error("Could not get point data");
+            this.$log.error("Could not get point data");
             return;
         }
 
         if (!this.jobs) {
-            console.error("No jobs saved!");
+            this.$log.error("No jobs saved!");
             return;
         }
 
         this.selectedJob = this.jobs.find(job => job.jobId === point.jobId);
 
         if (!this.selectedJob) {
-            console.error("Could not find job data for point:", point);
+            this.$log.error("Could not find job data for point:", point);
             return;
         }
 

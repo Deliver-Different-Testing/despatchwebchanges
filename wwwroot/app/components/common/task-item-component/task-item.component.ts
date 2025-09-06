@@ -13,6 +13,7 @@ import TasksService from "../../../services/tasks.service";
 
 class TaskListItemController extends BaseController {
     static $inject = [
+        '$log',
         'selectDialogService',
         'editDateTimeDialogService',
         'toastrService',
@@ -31,6 +32,7 @@ class TaskListItemController extends BaseController {
     timeZone: string;
 
     constructor(
+        private $log: angular.ILogService,
         private selectDialogService: SelectDialogService,
         private editDateTimeDialogService: EditDateTimeDialogService,
         private toastrService: ToastrService,
@@ -158,7 +160,7 @@ class TaskListItemController extends BaseController {
 
     private handleError(error: any) {
         if (!error) {
-            console.log("Dialog Closed");
+            this.$log.debug("Dialog Closed");
             return;
         }
 
@@ -166,13 +168,13 @@ class TaskListItemController extends BaseController {
     }
 
     handleTaskClick($event: MouseEvent) {
-        console.log('[TaskListItemController.handleTaskClick] Starting click handler');
+        this.$log.debug('[TaskListItemController.handleTaskClick] Starting click handler');
         if (this.config?.onTaskClick && this.onTaskClick && this.task) {
-            console.log('[TaskListItemController.handleTaskClick] Conditions met, executing onTaskClick with task:', this.task);
+            this.$log.debug('[TaskListItemController.handleTaskClick] Conditions met, executing onTaskClick with task:', this.task);
             $event.stopPropagation();
             this.onTaskClick({task: this.task});
         } else {
-            console.log('[TaskListItemController.handleTaskClick] Click handler conditions not met', {
+            this.$log.debug('[TaskListItemController.handleTaskClick] Click handler conditions not met', {
                 hasConfigOnTaskClick: !!this.config?.onTaskClick,
                 hasOnTaskClick: !!this.onTaskClick,
                 hasTask: !!this.task

@@ -1,17 +1,17 @@
-﻿export interface CargoStatus {
+﻿export interface ICargoStatus {
     class: string;
     icon: string;
     hours: string;
     text: string;
 }
 
-export interface CargoIndicator {
+export interface ICargoIndicator {
     class: string;
     icon: string;
     text: string;
 }
 
-export interface AvailableTime {
+export interface IAvailableTime {
     class: string;
     icon: string;
     text: string;

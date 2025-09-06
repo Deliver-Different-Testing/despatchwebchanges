@@ -17,6 +17,7 @@ import DensityMode from "../../enums/densityMode";
 class TaskDashboardController extends BaseController {
     static $inject = [
         "$mdSidenav",
+        "$log",
         "$filter",
         "DispatchData",
         "messagingDialogService",
@@ -80,6 +81,7 @@ class TaskDashboardController extends BaseController {
 
     constructor(
         private $mdSidenav: angular.material.ISidenavService,
+        private $log: angular.ILogService,
         private $filter: angular.IFilterService,
         private DispatchService: DispatchCoreService,
         private messagingDialogService: MessagingDialogService,
@@ -104,7 +106,7 @@ class TaskDashboardController extends BaseController {
         this.loadLists()
             .then(() => this.getTasks())
             .catch(error => {
-                console.error('Initialization error:', error);
+                this.$log.error('Initialization error:', error);
             });
 
         this.watchEvent('jobChanged', (_, newJob: IDispatchJob) => {
@@ -122,7 +124,7 @@ class TaskDashboardController extends BaseController {
             this.staffList = staffList;
             this.eventTypesList = eventTypesList;
         } catch (error) {
-            console.error('Error loading lists:', error);
+            this.$log.error('Error loading lists:', error);
             throw error;
         }
     }
@@ -136,7 +138,7 @@ class TaskDashboardController extends BaseController {
                 try {
                     this.$mdSidenav("right").toggle();
                 } catch (retryError) {
-                    console.error('Sidenav still not available:', retryError);
+                    this.$log.error('Sidenav still not available:', retryError);
                 }
             }, 100);
         }
@@ -170,7 +172,7 @@ class TaskDashboardController extends BaseController {
                 this.isFirstLoad = false;
             });
         } catch (error) {
-            console.error('Error loading tasks:', error);
+            this.$log.error('Error loading tasks:', error);
 
             this.registerTimeout(() => {
                 this.tasksLoading = false;
@@ -227,7 +229,7 @@ class TaskDashboardController extends BaseController {
                 task.dueTimeStr = `${formattedHours}:${roundedMinutes === 0 ? '00' : roundedMinutes}`;
                 task.dueDate = dueDate.format();
             } catch (error) {
-                console.error(`Error processing dueDate for task:`, task, error);
+                this.$log.error(`Error processing dueDate for task:`, task, error);
                 task.dueTimeStr = "00:00";
             }
         });
@@ -354,7 +356,7 @@ class TaskDashboardController extends BaseController {
     }
 
     async onSearchRangeChange(optionSelected: number): Promise<void> {
-        console.log(`Search range changed to: ${optionSelected}`);
+        this.$log.debug(`Search range changed to: ${optionSelected}`);
 
         this.dateSearchRange = optionSelected;
 
@@ -363,7 +365,7 @@ class TaskDashboardController extends BaseController {
             this.endDate = dayjs().add(24, 'hours').toDate();
             this.selectedDate = dayjs().toDate();
 
-            console.log('24 Hours mode: Reset dates to defaults', {
+            this.$log.debug('24 Hours mode: Reset dates to defaults', {
                 startDate: dayjs(this.startDate).format('YYYY-MM-DD HH:mm:ss'),
                 endDate: dayjs(this.endDate).format('YYYY-MM-DD HH:mm:ss'),
                 selectedDate: dayjs(this.selectedDate).format('YYYY-MM-DD HH:mm:ss')
@@ -377,7 +379,7 @@ class TaskDashboardController extends BaseController {
                 this.endDate = dayjs().add(1, 'days').toDate();
             }
 
-            console.log('Custom mode: Set custom date range', {
+            this.$log.debug('Custom mode: Set custom date range', {
                 startDate: dayjs(this.startDate).format('YYYY-MM-DD HH:mm:ss'),
                 endDate: dayjs(this.endDate).format('YYYY-MM-DD HH:mm:ss')
             });
@@ -387,7 +389,7 @@ class TaskDashboardController extends BaseController {
     }
 
     handleCalendarTaskClick(task: ExtendedTask): void {
-        console.log('Calendar task clicked:', task);
+        this.$log.debug('Calendar task clicked:', task);
         this.selectTaskJobDetail(task);
     }
 
@@ -396,7 +398,7 @@ class TaskDashboardController extends BaseController {
     }
 
     handleCalendarTaskStatusChange(task: ExtendedTask): void {
-        console.log('Calendar task status changed:', task);
+        this.$log.debug('Calendar task status changed:', task);
 
         const taskIndex = this.tasks.findIndex(t => t.id === task.id);
         if (taskIndex !== -1) {
@@ -452,12 +454,12 @@ class TaskDashboardController extends BaseController {
     }
 
     handleHistoryStepClick(step: any): void {
-        console.log('History step clicked:', step);
+        this.$log.debug('History step clicked:', step);
         // Add logic to handle step clicks if needed
     }
 
     handleHistoryAutomationClick(automation: any): void {
-        console.log('History automation clicked:', automation);
+        this.$log.debug('History automation clicked:', automation);
         // Add logic to handle automation clicks if needed
     }
 }

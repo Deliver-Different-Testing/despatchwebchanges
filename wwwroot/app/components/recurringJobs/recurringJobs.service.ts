@@ -7,9 +7,7 @@ class RecurringJobsService {
 
     constructor(
         private $http: angular.IHttpService
-    ) {
-        console.log('RecurringJobsService: Service instantiated');
-    }
+    ) {}
 
     async getPreBookJobs(active: boolean): Promise<IPrebookListModel[]> {
         const response = await this.$http.get<IPrebookListModel[]>(`job/PreBookJobs`, {
@@ -20,7 +18,7 @@ class RecurringJobsService {
         return response.data;
     }
 
-    async sendPrebookJob(jobId: number) {
+    async sendPrebookJob(jobId: number): Promise<void> {
         await this.$http.post(`job/SendPrebookJob`,
             null, {
                 params: {
@@ -29,7 +27,7 @@ class RecurringJobsService {
             });
     }
 
-    async voidPrebookJob(jobId: number, despatcherName: string, staffId: number) {
+    async voidPrebookJob(jobId: number, despatcherName: string, staffId: number): Promise<void> {
         await this.$http.post(
             `job/VoidPrebookJob`,
             null, {

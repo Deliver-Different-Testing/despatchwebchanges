@@ -14,6 +14,7 @@ export class EventGroupDialogController extends BaseController {
 
     static $inject = [
         '$mdDialog',
+        '$log',
         '$http',
         'toastrService',
         'navigationService',
@@ -26,6 +27,7 @@ export class EventGroupDialogController extends BaseController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
+        private $log: angular.ILogService,
         private $http: angular.IHttpService,
         private toastrService: ToastrService,
         private navigationService: NavigationService,
@@ -44,12 +46,12 @@ export class EventGroupDialogController extends BaseController {
         this.minDate = new Date();
         this.maxDate = dayjs().add(15, 'year').toDate();
 
-        console.log('EventGroupDialog initialized with', events.length, 'event groups');
+        this.$log.debug('EventGroupDialog initialized with', events.length, 'event groups');
     }
 
     async save(jobId: number, events: EventGroupViewModel[]) {
         try {
-            console.log('Processing event save request');
+            this.$log.debug('Processing event save request');
 
             const activeEvents = events.filter(event => event.active);
             if (activeEvents.length === 0) {
@@ -73,7 +75,7 @@ export class EventGroupDialogController extends BaseController {
             this.toastrService.showSuccessToast(`${taskCount} task${taskCount !== 1 ? 's' : ''} added successfully`);
             this.$mdDialog.hide();
         } catch (error) {
-            console.error('EventGroupDialogController: Error in save', error);
+            this.$log.error('EventGroupDialogController: Error in save', error);
             this.toastrService.showErrorToast();
         }
     }
@@ -90,7 +92,7 @@ export class EventGroupDialogController extends BaseController {
             );
         }
 
-        console.log('Search query processed with', results.length, 'results');
+        this.$log.debug('Search query processed with', results.length, 'results');
         return results.length > 0 ? results : this.users;
     }
 
@@ -102,7 +104,7 @@ export class EventGroupDialogController extends BaseController {
 
             this.events[index].assignTo.text = user.text;
             this.events[index].assignTo.id = user.id;
-            console.log('User assigned to event at index', index, ':', user.text);
+            this.$log.debug('User assigned to event at index', index, ':', user.text);
         }
     }
     

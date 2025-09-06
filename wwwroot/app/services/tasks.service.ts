@@ -75,11 +75,11 @@ class TasksService implements angular.IServiceProvider {
         });
     }
 
-    $get() {
+    $get(): this {
         return this;
     }
 
-    async markTaskAsClosed(eventId: number, closed: boolean) {
+    async markTaskAsClosed(eventId: number, closed: boolean): Promise<void> {
         await this.$http.post("task/MarkTaskAsClosed",
             null, {
                 params: {
@@ -89,7 +89,7 @@ class TasksService implements angular.IServiceProvider {
             });
     }
 
-    async updateTaskDate(eventId: number, date: string) {
+    async updateTaskDate(eventId: number, date: string): Promise<void> {
         await this.$http.post("task/UpdateTaskDate",
             null, {
                 params: {
@@ -99,7 +99,7 @@ class TasksService implements angular.IServiceProvider {
             });
     }
 
-    async updateTaskTime(eventId: number, time: string) {
+    async updateTaskTime(eventId: number, time: string): Promise<void> {
         await this.$http.post("task/UpdateTaskTime",
             null, {
                 params: {
@@ -109,7 +109,7 @@ class TasksService implements angular.IServiceProvider {
             });
     }
 
-    async reassignTaskToStaff(eventId: number, staffId: number) {
+    async reassignTaskToStaff(eventId: number, staffId: number): Promise<void> {
         await this.$http.post("task/ReassignTask",
             null, {
                 params: {

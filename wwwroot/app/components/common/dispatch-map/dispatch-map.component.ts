@@ -9,6 +9,7 @@ import {ClearListEnvelopeViewModel} from "../../../interfaces/dfrnt-page-view-mo
 
 class DispatchMapController extends BaseController {
     static $inject = [
+        "$log",
         "NgMap",
         "configService",
         "$window",
@@ -61,6 +62,7 @@ class DispatchMapController extends BaseController {
     tooltip: google.maps.InfoWindow | null = null;
 
     constructor(
+        private $log: angular.ILogService,
         private NgMap: angular.map.INgMap,
         private configService: ConfigService,
         private $window: angular.IWindowService,
@@ -111,14 +113,14 @@ class DispatchMapController extends BaseController {
 
                 // Check if we have jobs data already
                 if ((this.jobs && this.jobs.length > 0) || this.currentJob) {
-                    console.log('[DispatchMapController] Map initialized with existing jobs data, updating markers...');
+                    this.$log.debug('[DispatchMapController] Map initialized with existing jobs data, updating markers...');
                     return this.updateDisplayedJobs();
                 } else {
-                    console.log('[DispatchMapController] Map initialized without jobs data, will wait for changes');
+                    this.$log.debug('[DispatchMapController] Map initialized without jobs data, will wait for changes');
                 }
             })
             .catch((error) => {
-                console.error("[DispatchMapController] Error initializing map:", error);
+                this.$log.error("[DispatchMapController] Error initializing map:", error);
             });
     }
 
@@ -133,7 +135,7 @@ class DispatchMapController extends BaseController {
                 if (!mapElement) {
                     if (retryCount < maxRetries) {
                         retryCount++;
-                        console.log(`[DispatchMapController] Map element not found, retry ${retryCount}/${maxRetries}`);
+                        this.$log.debug(`[DispatchMapController] Map element not found, retry ${retryCount}/${maxRetries}`);
                         this.registerTimeout(() => {
                             tryGetMap().then(resolve).catch(reject);
                         }, 500);
@@ -149,7 +151,7 @@ class DispatchMapController extends BaseController {
                     .catch((error) => {
                         if (retryCount < maxRetries) {
                             retryCount++;
-                            console.log(`[DispatchMapController] NgMap.getMap failed, retry ${retryCount}/${maxRetries}:`, error);
+                            this.$log.debug(`[DispatchMapController] NgMap.getMap failed, retry ${retryCount}/${maxRetries}:`, error);
                             setTimeout(() => {
                                 tryGetMap().then(resolve).catch(reject);
                             }, 500);
@@ -170,19 +172,19 @@ class DispatchMapController extends BaseController {
     }
 
     $onChanges(changes: angular.IOnChangesObject) {
-        console.log('[DispatchMapController] $onChanges called with changes:', changes);
+        this.$log.debug('[DispatchMapController] $onChanges called with changes:', changes);
 
         // If map isn't ready, store changes to apply later
         if (!this.mapInstance) {
-            console.log('[DispatchMapController] Map instance not ready yet, storing changes for later');
+            this.$log.debug('[DispatchMapController] Map instance not ready yet, storing changes for later');
 
             if ('jobs' in changes && changes.jobs.currentValue) {
-                console.log(`[DispatchMapController] Storing jobs array with ${changes.jobs.currentValue.length} jobs`);
+                this.$log.debug(`[DispatchMapController] Storing jobs array with ${changes.jobs.currentValue.length} jobs`);
                 this.pendingChanges.jobs = changes.jobs.currentValue;
             }
 
             if ('currentJob' in changes && changes.currentJob.currentValue) {
-                console.log('[DispatchMapController] Storing current job for later');
+                this.$log.debug('[DispatchMapController] Storing current job for later');
                 this.pendingChanges.currentJob = changes.currentJob.currentValue;
             }
 
@@ -208,14 +210,14 @@ class DispatchMapController extends BaseController {
 
         // Handle jobs and currentJob changes
         if ('jobs' in changes || 'currentJob' in changes) {
-            console.log('[DispatchMapController] Jobs or currentJob changed, updating markers...');
+            this.$log.debug('[DispatchMapController] Jobs or currentJob changed, updating markers...');
 
             if ('jobs' in changes) {
-                console.log(`[DispatchMapController] Jobs array changed: ${changes.jobs.currentValue?.length || 0} jobs available`);
+                this.$log.debug(`[DispatchMapController] Jobs array changed: ${changes.jobs.currentValue?.length || 0} jobs available`);
             }
 
             if ('currentJob' in changes) {
-                console.log(`[DispatchMapController] Current job changed: ${changes.currentJob.currentValue?.jobNo || 'none'}`);
+                this.$log.debug(`[DispatchMapController] Current job changed: ${changes.currentJob.currentValue?.jobNo || 'none'}`);
             }
 
             this.clearJobMarkers();
@@ -321,15 +323,15 @@ class DispatchMapController extends BaseController {
     }
 
     async fetchCourierPositions() {
-        console.log('[DispatchMapController] Starting courier positions fetch');
+        this.$log.debug('[DispatchMapController] Starting courier positions fetch');
 
         if (!this.showAvailableCouriers) {
-            console.log('[DispatchMapController] Skipping fetch - couriers not enabled');
+            this.$log.debug('[DispatchMapController] Skipping fetch - couriers not enabled');
             return;
         }
 
         if (!this.mapInstance) {
-            console.log('[DispatchMapController] Skipping fetch - map instance not available');
+            this.$log.debug('[DispatchMapController] Skipping fetch - map instance not available');
             return;
         }
 
@@ -338,11 +340,11 @@ class DispatchMapController extends BaseController {
             const couriers = await this.fetchCourierData(coordinates);
             this.updateCourierMarkers(couriers);
 
-            console.log('[DispatchMapController] Successfully updated courier positions', {
+            this.$log.debug('[DispatchMapController] Successfully updated courier positions', {
                 courierCount: couriers?.length ?? 0
             });
         } catch (error) {
-            console.error('[DispatchMapController] Failed to fetch courier positions:', error);
+            this.$log.error('[DispatchMapController] Failed to fetch courier positions:', error);
             this.clearCourierMarkers();
         }
     }
@@ -356,7 +358,7 @@ class DispatchMapController extends BaseController {
         const bounds = this.mapInstance?.getBounds();
 
         if (bounds) {
-            console.log('[DispatchMapController] Using map bounds for courier search');
+            this.$log.debug('[DispatchMapController] Using map bounds for courier search');
             const sw = bounds.getSouthWest();
             const ne = bounds.getNorthEast();
             return {
@@ -367,7 +369,7 @@ class DispatchMapController extends BaseController {
             };
         }
 
-        console.log('[DispatchMapController] Using default area for courier search');
+        this.$log.debug('[DispatchMapController] Using default area for courier search');
         const center = this.mapCenter || this.AppConfig.US_Coordinates_Center;
         const offset = 0.5; // Approximate 50km radius bounds
 
@@ -385,7 +387,7 @@ class DispatchMapController extends BaseController {
         east: number;
         north: number;
     }) {
-        console.log('[DispatchMapController] Fetching courier locations', coordinates);
+        this.$log.debug('[DispatchMapController] Fetching courier locations', coordinates);
 
         return await this.DispatchData.getAvailableCourierLocation(
             coordinates.west,
@@ -398,20 +400,20 @@ class DispatchMapController extends BaseController {
     private async updateDisplayedJobs() {
         if (this.isUpdating) {
             if (this.markers.length === 0) {
-                console.log('[DispatchMapController] Initial update, allowing even though update is in progress');
+                this.$log.debug('[DispatchMapController] Initial update, allowing even though update is in progress');
             } else {
-                console.log('[DispatchMapController] Already updating displayed jobs, skipping this update');
+                this.$log.debug('[DispatchMapController] Already updating displayed jobs, skipping this update');
                 return;
             }
         }
 
         if (!this.mapInstance) {
-            console.log('[DispatchMapController] Map instance not ready yet, cannot update jobs');
+            this.$log.debug('[DispatchMapController] Map instance not ready yet, cannot update jobs');
             return;
         }
 
         this.isUpdating = true;
-        console.log('[DispatchMapController] Starting to update displayed jobs...');
+        this.$log.debug('[DispatchMapController] Starting to update displayed jobs...');
 
         try {
             let markersAdded = 0;
@@ -423,11 +425,11 @@ class DispatchMapController extends BaseController {
                 this.jobs && this.jobs.length > 1
             );
 
-            console.log(`[DispatchMapController] Map mode: ${isShowingCourierJobs ? 'Courier jobs view' : 'Normal view'}`);
+            this.$log.debug(`[DispatchMapController] Map mode: ${isShowingCourierJobs ? 'Courier jobs view' : 'Normal view'}`);
 
             // Add current job first (if exists)
             if (this.currentJob) {
-                console.log(`[DispatchMapController] Adding current job to map: ${this.currentJob.jobNo}`);
+                this.$log.debug(`[DispatchMapController] Adding current job to map: ${this.currentJob.jobNo}`);
 
                 if (this.isValidCoordinates(
                     this.currentJob.pickupAddress?.latitude,
@@ -448,7 +450,7 @@ class DispatchMapController extends BaseController {
 
             // Add other jobs in batches
             if (this.jobs?.length) {
-                console.log(`[DispatchMapController] Adding ${this.jobs.length} jobs to map in batches`);
+                this.$log.debug(`[DispatchMapController] Adding ${this.jobs.length} jobs to map in batches`);
 
                 const jobsToAdd = this.jobs.filter(job =>
                     !currentJobId || job.id !== currentJobId
@@ -462,20 +464,20 @@ class DispatchMapController extends BaseController {
                 markersAdded += batchMarkersAdded;
             }
 
-            console.log(`Added ${markersAdded} markers to the map`);
+            this.$log.debug(`Added ${markersAdded} markers to the map`);
 
             if (markersAdded > 0) {
                 await this.registerTimeout(() => {
                     if (this.autoZoomEnabled) {
-                        console.log('[DispatchMapController] Auto-zoom enabled, fitting map to markers');
+                        this.$log.debug('[DispatchMapController] Auto-zoom enabled, fitting map to markers');
                         this.fitMapToMarkers();
                     }
                 }, 200);
             } else {
-                console.log('[DispatchMapController] No markers added to map');
+                this.$log.debug('[DispatchMapController] No markers added to map');
             }
         } catch (error) {
-            console.error('[DispatchMapController] Error updating displayed jobs:', error);
+            this.$log.error('[DispatchMapController] Error updating displayed jobs:', error);
         } finally {
             this.isUpdating = false;
         }
@@ -492,7 +494,7 @@ class DispatchMapController extends BaseController {
             const batch = jobs.slice(i, i + batchSize);
             let batchMarkersAdded = 0;
 
-            console.log(`[DispatchMapController] Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(jobs.length/batchSize)} (${batch.length} jobs)`);
+            this.$log.debug(`[DispatchMapController] Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(jobs.length/batchSize)} (${batch.length} jobs)`);
 
             this.isUpdating = true;
 
@@ -523,7 +525,7 @@ class DispatchMapController extends BaseController {
             }
         }
 
-        console.log(`[DispatchMapController] Completed batched marker addition: ${totalMarkersAdded} markers from ${jobs.length} jobs`);
+        this.$log.debug(`[DispatchMapController] Completed batched marker addition: ${totalMarkersAdded} markers from ${jobs.length} jobs`);
 
         await new Promise<void>(resolve => {
             this.registerTimeout(() => {
@@ -657,7 +659,7 @@ class DispatchMapController extends BaseController {
 
         marker.addListener("click", () => {
              if (this.isUpdating) {
-                console.log('[DispatchMapController] Ignoring marker click during map update');
+                this.$log.debug('[DispatchMapController] Ignoring marker click during map update');
                 return;
             }
 
@@ -814,7 +816,7 @@ class DispatchMapController extends BaseController {
         );
 
         if (!isValid && (lat || lng)) {
-            console.log(`[DispatchMapController] Invalid coordinates detected: lat=${lat}, lng=${lng}`);
+            this.$log.debug(`[DispatchMapController] Invalid coordinates detected: lat=${lat}, lng=${lng}`);
         }
 
         return isValid;
@@ -864,7 +866,7 @@ class DispatchMapController extends BaseController {
             try {
                 window.localStorage.setItem(`mapZoom-${contactId}`, JSON.stringify({display: this.autoZoomEnabled}));
             } catch (e) {
-                console.error("Error saving auto zoom preference:", e);
+                this.$log.error("Error saving auto zoom preference:", e);
             }
         }
     }
@@ -879,7 +881,7 @@ class DispatchMapController extends BaseController {
                     this.autoZoomEnabled = parsed.display;
                 }
             } catch (e) {
-                console.error("Error loading auto zoom preference:", e);
+                this.$log.error("Error loading auto zoom preference:", e);
                 this.autoZoomEnabled = true; // Default to true if any error occurs
             }
         }
@@ -969,7 +971,7 @@ class DispatchMapController extends BaseController {
 
     fitMapToEnvelope(envelopeData: ClearListEnvelopeViewModel, zoomLevel?: number): void {
         if (!this.mapInstance || !envelopeData) {
-            console.log('[DispatchMapController] Cannot fit to envelope - map instance or data not available');
+            this.$log.debug('[DispatchMapController] Cannot fit to envelope - map instance or data not available');
             return;
         }
 
@@ -992,20 +994,20 @@ class DispatchMapController extends BaseController {
                 }, 100);
             }
 
-            console.log('[DispatchMapController] Map fitted to envelope bounds');
+            this.$log.debug('[DispatchMapController] Map fitted to envelope bounds');
         } catch (error) {
-            console.error('[DispatchMapController] Error fitting map to envelope:', error);
+            this.$log.error('[DispatchMapController] Error fitting map to envelope:', error);
         }
     }
 
     async updateMapWithClearListEnvelope(clearListId: number): Promise<any> {
         if (!clearListId) {
-            console.log('[DispatchMapController] No clear list ID provided');
+            this.$log.debug('[DispatchMapController] No clear list ID provided');
             return null;
         }
 
         try {
-            console.log(`[DispatchMapController] Fetching envelope for clear list: ${clearListId}`);
+            this.$log.debug(`[DispatchMapController] Fetching envelope for clear list: ${clearListId}`);
 
             const envelopeData = await this.DispatchData.getDriverDestinationEnvelope(clearListId);
 
@@ -1013,11 +1015,11 @@ class DispatchMapController extends BaseController {
                 this.fitMapToEnvelope(envelopeData, 13);
                 return envelopeData;
             } else {
-                console.log('[DispatchMapController] No envelope data received');
+                this.$log.debug('[DispatchMapController] No envelope data received');
                 return null;
             }
         } catch (error) {
-            console.error('[DispatchMapController] Error fetching clear list envelope:', error);
+            this.$log.error('[DispatchMapController] Error fetching clear list envelope:', error);
             throw error;
         }
     }

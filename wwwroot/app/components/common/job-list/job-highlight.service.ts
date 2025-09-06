@@ -2,10 +2,10 @@
     private highlightedRelatedJobIds: number[] = [];
     private listeners: Array<(jobIds: number[]) => void> = [];
 
-    static $inject: string[] = [];
+    static $inject = ['$log'];
 
-    constructor() {
-        console.log('JobHighlightService: Service instantiated');
+    constructor(private $log: angular.ILogService) {
+        this.$log.error('JobHighlightService: Service instantiated');
     }
     
     $get() { 
@@ -49,7 +49,7 @@
             try {
                 listener([...this.highlightedRelatedJobIds]);
             } catch (error) {
-                console.error('Error notifying job highlight listener:', error);
+                this.$log.error('Error notifying job highlight listener:', error);
             }
         });
     }

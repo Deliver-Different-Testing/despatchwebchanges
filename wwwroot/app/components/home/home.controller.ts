@@ -51,6 +51,7 @@ class HomeController extends BaseController {
     static $inject = [
         '$document',
         '$mdDialog',
+        '$log',
         '$window',
         'toastrService',
         'DispatchData',
@@ -177,6 +178,7 @@ class HomeController extends BaseController {
     constructor(
         private $document: angular.IDocumentService,
         private $mdDialog: angular.material.IDialogService,
+        private $log: angular.ILogService,
         private $window: angular.IWindowService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
@@ -221,11 +223,11 @@ class HomeController extends BaseController {
 
         this.watchEvent('jobChanged', async (_, newJob: IJob) => {
             if (this.currentJobId === newJob.id) {
-                console.log(`Job ${newJob.jobNo} is already the current job, skipping reload`);
+                this.$log.debug(`Job ${newJob.jobNo} is already the current job, skipping reload`);
                 return;
             }
 
-            console.log(`Handling job changed event for job ${newJob.jobNo}`);
+            this.$log.debug(`Handling job changed event for job ${newJob.jobNo}`);
 
             const job = await this.DispatchData.getDispatchJobDetail(newJob.id);
             await this.selectJob(job)
@@ -290,7 +292,7 @@ class HomeController extends BaseController {
         this.showInput = {};
 
         if (!ClientInternal) {
-            this.getClientContacts().then(() => console.log("Get Data Complete!"));
+            this.getClientContacts().then(() => this.$log.debug("Get Data Complete!"));
         }
 
         this.queryParams = {
@@ -407,7 +409,7 @@ class HomeController extends BaseController {
         }, 60000);
 
         this.loadPageViews().then(async () => {
-            console.log("Loaded Page Views and Data!");
+            this.$log.debug("Loaded Page Views and Data!");
 
             this.dateSearchRange = 1; // Default to 24 Hours
             this.startDate = dayjs(new Date(0)).toDate(); // Unix epoch start date
@@ -975,8 +977,8 @@ class HomeController extends BaseController {
     }
 
     async handleDispatchSelection(selectedCourier: ISuggestion, model: ISuggestion, label: string, $event: MouseEvent, job: IDispatchJob): Promise<void> {
-        console.log("DISPATCH CALLED FROM:", new Error().stack);
-        console.log("Typeahead params:", {selectedCourier, model, label});
+        this.$log.debug("DISPATCH CALLED FROM:", new Error().stack);
+        this.$log.debug("Typeahead params:", {selectedCourier, model, label});
 
         // Prevent duplicate dispatch attempts
         if ($event === undefined) return;
@@ -1195,9 +1197,9 @@ class HomeController extends BaseController {
             }
         } catch (error: any) {
             if (error instanceof Error) {
-                console.log(error.message);
+                this.$log.debug(error.message);
             }
-            console.log("Splitting job failed:", error);
+            this.$log.debug("Splitting job failed:", error);
         }
     }
 
@@ -1388,10 +1390,10 @@ class HomeController extends BaseController {
             this.jobsCurrentList = await this.DispatchData.getJobsCurrent(courierId, false);
 
             if (this.jobsCurrentList && this.jobsCurrentList.length > 0) {
-                console.log(`Setting mapJobList for courier ${courierId} with ${this.jobsCurrentList.length} jobs`);
+                this.$log.debug(`Setting mapJobList for courier ${courierId} with ${this.jobsCurrentList.length} jobs`);
                 this.mapJobList = [...this.jobsCurrentList];
             } else {
-                console.log(`No jobs found for courier ${courierId}`);
+                this.$log.debug(`No jobs found for courier ${courierId}`);
                 this.mapJobList = [];
             }
         } catch (error: any) {
@@ -1404,7 +1406,7 @@ class HomeController extends BaseController {
     }
 
     async selectSupportJobDetail(task: TaskViewModel): Promise<void> {
-        console.log(' Starting with task:', {
+        this.$log.debug(' Starting with task:', {
             jobId: task.jobId,
             jobNumber: task.jobNumber,
             taskId: task.id
@@ -1419,7 +1421,7 @@ class HomeController extends BaseController {
         }
 
         try {
-            console.log(' Fetching job details for jobId:', task.jobId);
+            this.$log.debug(' Fetching job details for jobId:', task.jobId);
 
             const jobLists = [
                 {list: this.jobList, name: 'jobList'}
@@ -1438,7 +1440,7 @@ class HomeController extends BaseController {
             }
 
             await this.selectJob(attachedJob);
-            console.log(' Job selected successfully');
+            this.$log.debug(' Job selected successfully');
 
             this.currentSelection = ` for Job ${attachedJob.jobNo}`;
         } catch (error) {
@@ -1448,8 +1450,8 @@ class HomeController extends BaseController {
     }
 
     async selectJob(job: IDispatchJob): Promise<void> {
-        console.log("Selected job run...");
-        console.log(job);
+        this.$log.debug("Selected job run...");
+        this.$log.debug(job);
 
         if (!job) return;
 
@@ -1488,12 +1490,12 @@ class HomeController extends BaseController {
         try {
             if (!job.courier && !job.assignedCourier) {
                 // Scenario 2: Job has no courier assigned - show only this job
-                console.log("Selected job has no courier - showing only this job on map");
+                this.$log.debug("Selected job has no courier - showing only this job on map");
                 this.mapJobList = [job];
                 await this.handleUndispatchedJob(job);
             } else {
                 // Scenario 3: Job has a courier assigned - show this courier's jobs
-                console.log("Selected job has courier assigned - loading courier's jobs");
+                this.$log.debug("Selected job has courier assigned - loading courier's jobs");
                 this.potentialCouriers = false;
 
                 if (job.courierData && job.courierData.courierId) {
@@ -1560,7 +1562,7 @@ class HomeController extends BaseController {
         const effectiveJobId = jobId || this.currentJobId;
 
         if (this.supportsLoadingInBackground) {
-            console.log("Supports already loading in background, cancelling previous");
+            this.$log.debug("Supports already loading in background, cancelling previous");
             this.tasksService.cancelJobTaskLoading(this.currentAppPage, this.currentJobId);
         }
 
@@ -1590,7 +1592,7 @@ class HomeController extends BaseController {
 
                 this.applyScope();
             } else {
-                console.log(`Ignoring task results for old job ${effectiveJobId}, current is ${this.currentJobId}`);
+                this.$log.debug(`Ignoring task results for old job ${effectiveJobId}, current is ${this.currentJobId}`);
             }
         }, this.currentAppPage, effectiveJobId);
     }
@@ -1676,7 +1678,7 @@ class HomeController extends BaseController {
             this.isLoadingData = true;
 
             if (!this.viewsInitialized && this.selectedViews.length === 0) {
-                console.log('Views not initialized yet, loading defaults');
+                this.$log.debug('Views not initialized yet, loading defaults');
                 this.selectedViews = HomeController.loadViewsFromStorage();
 
                 // If still no views, add at least one default view
@@ -1809,7 +1811,7 @@ class HomeController extends BaseController {
         try {
             this.pickClients = await this.DispatchData.getClientContacts(ContactID);
         } catch (error: any) {
-            console.log("Error getting client contacts:", error);
+            this.$log.debug("Error getting client contacts:", error);
         }
     }
 
@@ -1826,7 +1828,7 @@ class HomeController extends BaseController {
             await this.getJobList();
 
             if (!this.currentCourier && !this.currentJob) {
-                console.log("Initial load: showing all jobs on map");
+                this.$log.debug("Initial load: showing all jobs on map");
                 this.mapJobList = [...this.jobList];
             }
         } catch (error: any) {
@@ -1849,15 +1851,15 @@ class HomeController extends BaseController {
     async getDriverLocationsData(): Promise<void> {
         try {
             if (!this.selectedViews || this.selectedViews.length === 0) {
-                console.log('No selected views available for driver locations');
+                this.$log.debug('No selected views available for driver locations');
                 this.driverLocations = {areas: []};
                 this.updateDriverLocationsDisplay();
                 return;
             }
 
-            console.log('Fetching driver locations for views:', this.selectedViews);
+            this.$log.debug('Fetching driver locations for views:', this.selectedViews);
             this.driverLocations = await this.DispatchData.getDriverLocations(this.selectedViews);
-            console.log('Driver locations received:', this.driverLocations);
+            this.$log.debug('Driver locations received:', this.driverLocations);
             this.updateDriverLocationsDisplay();
         } catch (error: any) {
             console.error("Error getting driver locations data:", error);
@@ -1875,15 +1877,15 @@ class HomeController extends BaseController {
 
             await this.handleNewAddressForSplitJobs(newAddress, currentJob);
         } catch (error: any) {
-            console.log(error.message);
+            this.$log.debug(error.message);
         } finally {
-            console.log("Split jobs process completed.");
+            this.$log.debug("Split jobs process completed.");
         }
     }
 
     async handleNewAddressForSplitJobs(addressDetails: IAddressViewModel, currentJob: IDispatchJob): Promise<void> {
         if (!addressDetails) {
-            console.log("Split jobs canceled!");
+            this.$log.debug("Split jobs canceled!");
             return;
         }
 
@@ -1906,8 +1908,8 @@ class HomeController extends BaseController {
         await this.getData();
 
         this.toastrService.showSuccessToast("Job Successfully Split");
-        console.log("Job splitting complete!");
-        console.log("Dialog closed!");
+        this.$log.debug("Job splitting complete!");
+        this.$log.debug("Dialog closed!");
 
         return this.getJobList();
     }
@@ -1924,7 +1926,7 @@ class HomeController extends BaseController {
                 await this.processNewJob(newJobId);
             }
         } catch (error: any) {
-            console.log("Error in createNewJob:", error);
+            this.$log.debug("Error in createNewJob:", error);
         }
     }
 
@@ -1970,7 +1972,7 @@ class HomeController extends BaseController {
             this.hasAttachedFile = response;
             return response;
         } catch (error: any) {
-            console.log("Error checking for attachments:", error);
+            this.$log.debug("Error checking for attachments:", error);
             this.hasAttachedFile = false;
             throw error;
         } finally {
@@ -2063,10 +2065,10 @@ class HomeController extends BaseController {
     }
 
     async filterByStatus(statusGroup: string): Promise<void> {
-        console.log('filterByStatus called with:', statusGroup);
+        this.$log.debug('filterByStatus called with:', statusGroup);
         this.queryParams.order = statusGroup;
         await this.getJobList();
-        console.log(`Jobs ordered by status group: ${statusGroup}`);
+        this.$log.debug(`Jobs ordered by status group: ${statusGroup}`);
     }
 
     private applyLayoutDimensions(): void {
@@ -2157,7 +2159,7 @@ class HomeController extends BaseController {
                 this.eventTypeFilter
             );
 
-            console.log('Filter request:', filterRequest);
+            this.$log.debug('Filter request:', filterRequest);
 
             const tasks = await this.tasksService.loadTasks(filterRequest);
             this.supports = tasks;
@@ -2271,7 +2273,7 @@ class HomeController extends BaseController {
     private updateDriverLocationsDisplay(): void {
         const hasAreas = this.driverLocations && this.driverLocations.areas && this.driverLocations.areas.length > 0;
 
-        console.log('Updating driver locations display:', {
+        this.$log.debug('Updating driver locations display:', {
             loading: this.driverLocationsLoading,
             hasDriverLocations: !!this.driverLocations,
             areasCount: this.driverLocations?.areas?.length || 0,
@@ -2420,7 +2422,7 @@ class HomeController extends BaseController {
     }
 
     onRefreshIntervalChange(selectedInterval: ISuggestion): void {
-        console.log('Refresh interval changed to:', selectedInterval, 'seconds');
+        this.$log.debug('Refresh interval changed to:', selectedInterval, 'seconds');
 
         this.selectedRefreshInterval = selectedInterval;
 
@@ -2446,13 +2448,13 @@ class HomeController extends BaseController {
         // Always stop any existing refresh first
         this.stopAutoRefresh();
 
-        console.log(`Starting auto refresh every ${this.selectedRefreshInterval.id} seconds (${this.selectedRefreshInterval.text})`);
+        this.$log.debug(`Starting auto refresh every ${this.selectedRefreshInterval.id} seconds (${this.selectedRefreshInterval.text})`);
 
         this.isAutoRefreshEnabled = true;
 
         this.refreshIntervalPromise = this.registerInterval(async () => {
             if (this.isAutoRefreshEnabled) {
-                console.log('Auto refreshing job lists...');
+                this.$log.debug('Auto refreshing job lists...');
                 try {
                     await this.getData();
 
@@ -2461,7 +2463,7 @@ class HomeController extends BaseController {
                         await this.loadSupports();
                     }
 
-                    console.log('Auto refresh completed successfully');
+                    this.$log.debug('Auto refresh completed successfully');
                 } catch (error) {
                     console.error('Error during auto refresh:', error);
                 }
@@ -2472,13 +2474,13 @@ class HomeController extends BaseController {
     }
 
     private stopAutoRefresh(): void {
-        console.log('Stopping auto refresh');
+        this.$log.debug('Stopping auto refresh');
         this.isAutoRefreshEnabled = false;
 
         if (this.refreshIntervalPromise) {
             const cancelled = this.cancelInterval(this.refreshIntervalPromise);
             if (cancelled) {
-                console.log('Successfully cancelled refresh interval');
+                this.$log.debug('Successfully cancelled refresh interval');
             } else {
                 console.warn('Failed to cancel refresh interval');
             }
