@@ -1,30 +1,16 @@
 @import '../../../../css/variables.less';
 
-// Professional Dialog Variables - Reduced padding
-@card-border-radius: @dialog-border-radius;
 @small-border-radius: 8px;
-@section-spacing: 18px; // Reduced from 24px
-@card-spacing: 12px; // Reduced from 16px
+@section-spacing: 18px;
+@card-spacing: 12px;
 @icon-size: 24px;
-@large-icon-size: @font-stat;
 
-// Surface colors using your palette
-@surface-elevated: @text-light;
 @surface-background: #f8fafc;
 @surface-secondary: #f1f5f9;
 @border-light: #e2e8f0;
 @border-medium: #cbd5e1;
 
-// Updated color mappings to use your variables
-@success-bg: @status-green;
-@success-border: @primary-green;
 @success-text: darken(@primary-green, 15%);
-@warning-bg: @status-despatched-bg;
-@warning-border: @primary-warning;
-@warning-text: @status-despatched-text;
-@error-bg: @status-undeliverable-bg;
-@error-border: @error-red;
-@error-text: @status-undeliverable-text;
 
 .flight-agent-confirmation-dialog {
   // Elevation Mixins
@@ -90,7 +76,7 @@
     .section-icon-wrapper {
       width: 36px; // Reduced from 48px
       height: 36px; // Reduced from 48px
-      border-radius: @card-border-radius;
+      border-radius: @dialog-border-radius;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -133,9 +119,9 @@
 
     .section-badge {
       .badge-text {
-        background: @success-bg;
+        background: @status-green;
         color: @success-text;
-        border: 1px solid @success-border;
+        border: 1px solid @primary-green;
         padding: 3px 9px; // Reduced padding
         border-radius: 16px;
         font-size: @font-xs;
@@ -148,8 +134,8 @@
 
   // Flight Route Section - Reduced padding
   .flight-route-section {
-    background: @surface-elevated;
-    border-radius: @card-border-radius;
+    background: @text-light;
+    border-radius: @dialog-border-radius;
     padding: 18px; // Reduced from 24px
     margin-bottom: @section-spacing;
     .elevation(1);
@@ -249,8 +235,8 @@
 
   // Metrics Section - Reduced padding
   .metrics-section {
-    background: @surface-elevated;
-    border-radius: @card-border-radius;
+    background: @text-light;
+    border-radius: @dialog-border-radius;
     padding: 18px; // Reduced from 24px
     margin-bottom: @section-spacing;
     .elevation(1);
@@ -276,7 +262,7 @@
   }
 
   .metric-card {
-    background: @surface-elevated;
+    background: @text-light;
     border: 2px solid @border-light;
     border-radius: @small-border-radius;
     padding: 15px; // Reduced from 20px
@@ -294,7 +280,7 @@
     }
 
     &.empty-state {
-      .status-colors(@warning-bg, @warning-border, @warning-text);
+      .status-colors(@status-despatched-bg, @primary-warning, @status-despatched-text);
     }
 
     .metric-header {
@@ -343,33 +329,68 @@
       }
     }
 
-    .datetime-control {
+    .datetime-control-split {
       display: flex;
       align-items: stretch;
       gap: 6px; // Reduced from 8px
       margin-bottom: 6px; // Reduced
 
-      .datetime-input {
+      .date-time-inputs {
         flex: 1;
-        text-align: center !important;
-        font-weight: @weight-semibold !important;
-        font-size: @font-base !important;
-        padding: 6px !important; // Reduced
-        border: 2px solid @border-light !important;
-        border-radius: 6px !important;
-        background: @text-light !important;
-        color: @text-dark !important;
-        transition: border-color 0.2s ease !important;
+        display: flex;
+        gap: 6px; // Space between date and time inputs
 
-        &:focus {
-          border-color: @primary-blue !important;
-          outline: none !important;
+        .date-input,
+        .time-input {
+          flex: 1;
+          text-align: center !important;
+          font-weight: @weight-semibold !important;
+          font-size: @font-base !important;
+          padding: 6px !important; // Reduced
+          border: 2px solid @border-light !important;
+          border-radius: 6px !important;
+          background: @text-light !important;
+          color: @text-dark !important;
+          transition: all 0.2s ease !important;
+
+          &:focus {
+            border-color: @primary-blue !important;
+            outline: none !important;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(25, 118, 210, 0.15);
+          }
+
+          &:disabled {
+            background: @surface-secondary !important;
+            color: @text-muted !important;
+            opacity: 0.7;
+            cursor: not-allowed;
+          }
+
+          // Placeholder text styling
+          &::placeholder {
+            color: @text-muted;
+            opacity: 0.6;
+            font-weight: normal;
+          }
+
+          // Style the calendar and clock icons
+          &::-webkit-calendar-picker-indicator {
+            color: @primary-blue;
+            cursor: pointer;
+            filter: brightness(0) saturate(100%) invert(27%) sepia(96%) saturate(1028%) hue-rotate(201deg) brightness(95%) contrast(87%);
+          }
         }
 
-        &:disabled {
-          background: @surface-secondary !important;
-          color: @text-muted !important;
-          opacity: 0.7;
+        // Date input specific styling
+        .date-input {
+          min-width: 120px;
+        }
+
+        // Time input specific styling  
+        .time-input {
+          min-width: 80px;
+          max-width: 100px;
         }
       }
 
@@ -377,6 +398,12 @@
         min-width: 44px !important;
         padding: 0 9px !important; // Reduced
         border-radius: 6px !important;
+        flex-shrink: 0;
+
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
       }
     }
 
@@ -390,11 +417,11 @@
       font-weight: @weight-semibold;
 
       &.valid {
-        .status-colors(@success-bg, @success-border, @success-text);
+        .status-colors(@status-green, @primary-green, @success-text);
       }
 
       &.invalid {
-        .status-colors(@error-bg, @error-border, @error-text);
+        .status-colors(@status-undeliverable-bg, @error-red, @status-undeliverable-text);
       }
 
       &.loading {
@@ -405,26 +432,47 @@
     }
   }
 
+  .metric-card {
+    &.package-time,
+    &.delivery-time {
+      .metric-content {
+        // Ensure proper spacing for the split controls
+        .datetime-control-split + .status-indicator {
+          margin-top: 8px;
+        }
+      }
+    }
+  }
+
   // Status Classes
   .time-sufficient, .cargo-open {
     color: @success-text !important;
-    md-icon { color: @success-text !important; }
+
+    md-icon {
+      color: @success-text !important;
+    }
   }
 
   .time-warning {
-    color: @warning-text !important;
-    md-icon { color: @warning-text !important; }
+    color: @status-despatched-text !important;
+
+    md-icon {
+      color: @status-despatched-text !important;
+    }
   }
 
   .time-critical, .cargo-closed {
-    color: @error-text !important;
-    md-icon { color: @error-text !important; }
+    color: @status-undeliverable-text !important;
+
+    md-icon {
+      color: @status-undeliverable-text !important;
+    }
   }
 
   // Loading Section - Reduced padding
   .loading-section {
-    background: @surface-elevated;
-    border-radius: @card-border-radius;
+    background: @text-light;
+    border-radius: @dialog-border-radius;
     padding: 36px 18px; // Reduced
     margin-bottom: @section-spacing;
     .elevation(1);
@@ -461,23 +509,23 @@
   }
 
   .warning-card {
-    background: @warning-bg;
-    border: 2px solid @warning-border;
-    border-radius: @card-border-radius;
+    background: @status-despatched-bg;
+    border: 2px solid @primary-warning;
+    border-radius: @dialog-border-radius;
     padding: 18px; // Reduced from 24px
     .elevation(2);
 
     &.critical {
-      background: @error-bg;
-      border-color: @error-border;
+      background: @status-undeliverable-bg;
+      border-color: @error-red;
 
       .warning-icon-wrapper {
-        background: fade(@error-border, 15%);
-        color: @error-border;
+        background: fade(@error-red, 15%);
+        color: @error-red;
       }
 
       .warning-title {
-        color: @error-text;
+        color: @status-undeliverable-text;
       }
     }
 
@@ -491,8 +539,8 @@
         width: 36px; // Reduced from 48px
         height: 36px; // Reduced from 48px
         border-radius: 12px;
-        background: fade(@warning-border, 15%);
-        color: @warning-border;
+        background: fade(@primary-warning, 15%);
+        color: @primary-warning;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -510,13 +558,13 @@
           margin: 0 0 6px 0; // Reduced from 8px
           font-size: @font-xl;
           font-weight: @weight-semibold;
-          color: @warning-text;
+          color: @status-despatched-text;
         }
 
         .warning-message {
           margin: 0;
           font-size: @font-base;
-          color: darken(@warning-text, 10%);
+          color: darken(@status-despatched-text, 10%);
           line-height: @line-relaxed;
         }
       }
@@ -577,8 +625,8 @@
 
   // Assignment Section - Reduced padding
   .assignment-section {
-    background: @surface-elevated;
-    border-radius: @card-border-radius;
+    background: @text-light;
+    border-radius: @dialog-border-radius;
     padding: 18px; // Reduced from 24px
     margin-bottom: @section-spacing;
     .elevation(1);
@@ -597,8 +645,8 @@
   }
 
   .alert-card {
-    background: @surface-elevated;
-    border-radius: @card-border-radius;
+    background: @text-light;
+    border-radius: @dialog-border-radius;
     padding: 15px; // Reduced from 20px
     .elevation(1);
     border: 1px solid @border-light;
@@ -610,7 +658,7 @@
     }
 
     &.dangerous-goods {
-      border-left: 4px solid @error-border;
+      border-left: 4px solid @error-red;
     }
 
     .alert-header {
@@ -630,8 +678,8 @@
         color: @primary-blue;
 
         &.danger {
-          background: fade(@error-border, 15%);
-          color: @error-border;
+          background: fade(@error-red, 15%);
+          color: @error-red;
         }
       }
 
@@ -664,9 +712,9 @@
         .chip {
           display: flex;
           align-items: center;
-          background: @success-bg;
+          background: @status-green;
           color: @success-text;
-          border: 1px solid @success-border;
+          border: 1px solid @primary-green;
           border-radius: 20px;
           padding: 6px 9px; // Reduced
           font-size: @font-sm;
@@ -697,8 +745,8 @@
 
   // Form Section - Reduced padding
   .form-section {
-    background: @surface-elevated;
-    border-radius: @card-border-radius;
+    background: @text-light;
+    border-radius: @dialog-border-radius;
     padding: 18px; // Reduced from 24px
     margin-bottom: @section-spacing;
     .elevation(1);
@@ -806,7 +854,7 @@
 
   // Dialog Actions - Reduced padding
   .dialog-actions {
-    background: @surface-elevated;
+    background: @text-light;
     border-top: 1px solid @border-light;
     padding: 15px 18px; // Reduced from 20px 24px
     display: flex;
@@ -840,15 +888,19 @@
     font-weight: @weight-semibold;
 
     &.danger-class {
-      color: @error-text;
+      color: @status-undeliverable-text;
       font-weight: 700;
     }
   }
 
   // Animations
   @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
   }
 
   // Responsive Design
@@ -871,7 +923,7 @@
     }
 
     .dialog-content {
-      padding: 15px 12px; // Further reduced for mobile
+      padding: 15px 12px; 
     }
 
     .metrics-grid {
@@ -886,7 +938,7 @@
 
     .flight-route-card {
       flex-direction: column;
-      gap: 15px; // Reduced from 20px
+      gap: 15px;
       text-align: center;
 
       .flight-path {
@@ -912,17 +964,36 @@
 
     .section-header {
       flex-wrap: wrap;
-      gap: 9px; // Reduced from 12px
+      gap: 9px; 
 
       .section-badge {
         flex-basis: 100%;
+      }
+    }
+
+    .datetime-control-split {
+      flex-direction: column;
+      gap: 8px;
+
+      .date-time-inputs {
+        width: 100%;
+
+        .date-input,
+        .time-input {
+          flex: 1;
+        }
+      }
+
+      .datetime-action-btn {
+        width: 100%;
+        min-width: unset !important;
       }
     }
   }
 
   @media (max-width: 480px) {
     .flight-route-card {
-      padding: 12px; // Reduced
+      padding: 12px; 
 
       .airport-info .airport-code {
         font-size: @font-2xl;
@@ -930,22 +1001,36 @@
     }
 
     .metric-card {
-      padding: 12px; // Reduced
+      padding: 12px;
 
       .metric-content .metric-value {
-        font-size: 18px; // Reduced from 20px
+        font-size: 18px;
 
         &.large {
-          font-size: 20px; // Reduced from 22px
+          font-size: 20px; 
         }
       }
     }
 
     md-toolbar .md-toolbar-tools {
-      min-height: 56px; // Reduced from 64px
+      min-height: 56px; 
 
       .toolbar-content .md-title {
         font-size: @font-xl;
+      }
+    }
+
+    .datetime-control-split {
+      .date-time-inputs {
+        flex-direction: column;
+        gap: 6px;
+
+        .date-input,
+        .time-input {
+          width: 100%;
+          min-width: unset;
+          max-width: unset;
+        }
       }
     }
   }

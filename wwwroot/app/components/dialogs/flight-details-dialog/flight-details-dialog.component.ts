@@ -23,7 +23,6 @@ class FlightDetailsDialogController extends BaseController {
     ) {
         super();
         this.flight = flightData;
-        console.log('FlightDetailsDialogController: Flight data received', this.flight);
 
         // Initialize with an overview or first segment
         if (this.flight.isMultiSegment && this.flight.flightSegments && this.flight.flightSegments.length > 0) {

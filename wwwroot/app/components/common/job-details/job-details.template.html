@@ -115,186 +115,74 @@
         </div>
 
         <!-- Timing Section -->
-        <div class="timing-section md-whiteframe-1dp">
-            <div layout="row" layout-wrap layout-xs="column">
-                <!-- Left Column -->
-                <div flex="33" flex-xs="100">
-                    <md-list class="md-dense" flex>
-                        <md-list-item
-                                class="md-2-line md-long-text"
-                                ng-click="ctrl.showPricingBreakdown($event, ctrl.job)">
-                            <md-icon
-                                    class="md-avatar"
-                                    aria-label="Pricing"
-                                    md-font-set="material-symbols-outlined">
-                                payments
-                            </md-icon>
-                            <div class="md-list-item-text">
-                                <h3>Pricing</h3>
-                                <p>{{ ctrl.job.charge ? ctrl.job.charge : 'N/A' }}</p>
-                            </div>
-                        </md-list-item>
-
-                        <md-divider></md-divider>
-
-                        <md-list-item
-                                class="md-2-line md-long-text"
-                                ng-click="!this.job.locked && ctrl.editBookedDate($event, ctrl.job)">
-                            <md-icon
-                                    class="md-avatar"
-                                    aria-label="Created date"
-                                    md-font-set="material-symbols-outlined">
-                                add_circle
-                            </md-icon>
-                            <div class="md-list-item-text">
-                                <h3>Booked</h3>
-                                <p>{{ctrl.job.createdDate ? (ctrl.job.createdDate |
-                                                momentFormat:'MM/DD') + ' (' + ((ctrl.job.pickUpTimeZone ?
-                                                ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort)
-                                        + ')' : 'N/A'}}</p>
-                            </div>
-                        </md-list-item>
-
-                        <md-divider></md-divider>
-
-                        <md-list-item
-                                class="md-2-line md-long-text"
-                                ng-click="!this.job.locked && ctrl.editStartTime($event, ctrl.job)">
-                            <md-icon
-                                    aria-label="start time"
-                                    md-font-set="material-symbols-outlined">
-                                timer
-                            </md-icon>
-                            <div class="md-list-item-text">
-                                <h3>Start Time</h3>
-                                <p>
-                                    {{ctrl.job.time ? (ctrl.job.time | momentFormat:'HH:mm') + ' (' + ((ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort) + ')' : 'N/A'}}</p>
-                            </div>
-                        </md-list-item>
-                    </md-list>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Pricing</div>
+                <div class="metric-value" ng-click="ctrl.showPricingBreakdown($event, ctrl.job)">
+                    {{ctrl.job.charge || '—'}}
                 </div>
-
-                <!-- Middle Column -->
-                <div flex="33" flex-xs="100">
-                    <md-list class="md-dense" flex>
-                        <md-list-item
-                                class="md-2-line md-long-text"
-                                ng-click="!this.job.locked && ctrl.editDeliverBy($event, ctrl.job)">
-                            <md-icon
-                                    class="md-avatar"
-                                    aria-label="delivery by time"
-                                    md-font-set="material-symbols-outlined">
-                                alarm
-                            </md-icon>
-                            <div class="md-list-item-text">
-                                <h3>Deliver By</h3>
-                                <p>
-                                    {{ctrl.job.deliverByTime ? (ctrl.job.deliverByTime | momentFormat:'MM/DD HH:mm') + ' (' + ((ctrl.job.deliveryTimeZone ?
-                                                ctrl.job.deliveryTimeZone.text : ctrl.timeZone) | timezoneShort)
-                                        + ')' : 'N/A'}}
-                                <p>
-                            </div>
-                        </md-list-item>
-
-                        <md-divider></md-divider>
-
-                        <md-list-item
-                                class="md-2-line md-long-text"
-                                ng-click="!this.job.locked && ctrl.editPuDate($event, ctrl.job)">
-                            <md-icon
-                                    class="md-avatar"
-                                    aria-label="Pickup time"
-                                    md-font-set="material-symbols-outlined">
-                                schedule
-                            </md-icon>
-                            <div class="md-list-item-text">
-                                <h3>PU Time</h3>
-                                <p>
-                                    {{ctrl.job.puTime ? (ctrl.job.puTime | momentFormat:'MM/DD HH:mm') + ' (' + ((ctrl.job.pickUpTimeZone ?
-                                                ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort)
-                                        + ')' : 'N/A'}}
-                                <p>
-                            </div>
-                        </md-list-item>
-
-                        <md-divider></md-divider>
-
-                        <md-list-item
-                                class="md-2-line md-long-text">
-                            <md-icon
-                                    class="md-avatar"
-                                    aria-label="Dispatch status"
-                                    md-font-set="material-symbols-outlined">
-                                outgoing_mail
-                            </md-icon>
-                            <div class="md-list-item-text">
-                                <h3>Dispatch</h3>
-                                <p>
-                                    {{ctrl.job.dispatchTime ? (ctrl.job.dispatchTime | momentFormat:'MM/DD HH:mm') + ' (' + (ctrl.timeZone | timezoneShort) + ')' : 'N/A'}}
-                                </p>
-                            </div>
-                        </md-list-item>
-                    </md-list>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Booked</div>
+                <div class="metric-value" ng-click="!ctrl.job.locked && ctrl.editBookedDate($event, ctrl.job)">
+                    {{ctrl.job.createdDate ? (ctrl.job.createdDate | momentFormat:'MMM DD') : '—'}}
                 </div>
-
-                <!-- Right Column -->
-                <div flex="33" flex-xs="100">
-                    <md-list class="md-dense" flex>
-                        <md-list-item
-                                class="md-2-line md-long-text"
-                                ng-click="!ctrl.job.locked && ctrl.editPodName($event, ctrl.job)">
-                            <md-icon
-                                    class="md-avatar"
-                                    aria-label="POD name"
-                                    md-font-set="material-symbols-outlined">
-                                verified_user
-                            </md-icon>
-                            <div class="md-list-item-text">
-                                <h3>POD Name</h3>
-                                <p>{{ctrl.job.podName || 'N/A'}}</p>
-                            </div>
-                        </md-list-item>
-
-                        <md-divider></md-divider>
-
-                        <md-list-item
-                                class="md-2-line md-long-text"
-                                ng-click="!this.job.locked && ctrl.editCompletedTime($event, ctrl.job)">
-                            <md-icon
-                                    class="md-avatar"
-                                    aria-label="POD time"
-                                    md-font-set="material-symbols-outlined">
-                                verified
-                            </md-icon>
-                            <div class="md-list-item-text">
-                                <h3>POD Time</h3>
-                                <p>
-                                    {{ctrl.job.completedTime ? (ctrl.job.completedTime | momentFormat:'MM/DD HH:mm') + ' (' + (ctrl.job.deliveryTimeZone.text | timezoneShort) + ')' : 'N/A'}}</p>
-                            </div>
-                        </md-list-item>
-
-                        <md-divider></md-divider>
-
-                        <md-list-item
-                                class="md-2-line md-long-text"
-                                ng-click="!this.job.locked && ctrl.editFollowUpTime($event, ctrl.job)">
-                            <md-icon
-                                    class="md-avatar"
-                                    aria-label="Follow up time"
-                                    md-font-set="material-symbols-outlined">
-                                sync
-                            </md-icon>
-                            <div class="md-list-item-text">
-                                <h3>Follow Up</h3>
-                                <p>
-                                    {{ctrl.job.followupTime ? (ctrl.job.followupTime | momentFormat:'MM/DD HH:mm') + ' (' + (ctrl.timeZone | timezoneShort) + ')' : 'N/A'}}</p>
-                            </div>
-                        </md-list-item>
-                    </md-list>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Start Time</div>
+                <div class="metric-value" ng-click="!ctrl.job.locked && ctrl.editStartTime($event, ctrl.job)">
+                    {{ctrl.job.time ? (ctrl.job.time | momentFormat:'HH:mm') : '—'}}
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">PU Time</div>
+                <div class="metric-value" ng-click="!ctrl.job.locked && ctrl.editPuDate($event, ctrl.job)">
+                    {{ctrl.job.puTime ? (ctrl.job.puTime | momentFormat:'MM/DD HH:mm') + ' (' + ((ctrl.job.pickUpTimeZone ?
+                                ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort)
+                        + ')' : 'N/A'}}
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Deliver By</div>
+                <div class="metric-value" ng-click="!ctrl.job.locked && ctrl.editDeliverBy($event, ctrl.job)">
+                    {{ctrl.job.deliverByTime ? (ctrl.job.deliverByTime | momentFormat:'MMM DD HH:mm') : '—'}}
+                </div>
+            </div>
+        </div> 
+        
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Dispatch</div>
+                <div class="metric-value" ng-click="ctrl.showPricingBreakdown($event, ctrl.job)">
+                    {{ctrl.job.dispatchTime ? (ctrl.job.dispatchTime | momentFormat:'MM/DD HH:mm') + ' (' + (ctrl.timeZone | timezoneShort) + ')' : 'N/A'}}
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">POD Name</div>
+                <div class="metric-value" ng-click="!ctrl.job.locked && ctrl.editPodName($event, ctrl.job)">
+                    {{ctrl.job.podName || 'N/A'}}
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">POD Time</div>
+                <div class="metric-value" ng-click="!ctrl.job.locked && ctrl.editCompletedTime($event, ctrl.job)">
+                    {{ctrl.job.completedTime ? (ctrl.job.completedTime | momentFormat:'MM/DD HH:mm') + ' (' + (ctrl.job.deliveryTimeZone.text | timezoneShort) + ')' : 'N/A'}}
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Follow Up</div>
+                <div class="metric-value" ng-click="!ctrl.job.locked && ctrl.editFollowUpTime($event, ctrl.job)">
+                    {{ctrl.job.followupTime ? (ctrl.job.followupTime | momentFormat:'MM/DD HH:mm') + ' (' + (ctrl.timeZone | timezoneShort) + ')' : 'N/A'}}
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Client Name</div>
+                <div class="metric-value" ng-click="!ctrl.job.locked && ctrl.clientClick($event, ctrl.job)">
+                    {{ctrl.job.clientName || 'N/A'}}
                 </div>
             </div>
         </div>
-
+        
         <!-- Main Content -->
         <div class="main-content" layout="row">
             <!-- Left Column -->
@@ -1118,21 +1006,6 @@
                                     ng-click="ctrl.clientClick($event, ctrl.job)">
                                 <md-icon
                                         class="md-avatar"
-                                        aria-label="Company"
-                                        md-font-set="material-symbols-outlined">
-                                    account_circle
-                                </md-icon>
-                                <div class="md-list-item-text">
-                                    <h3>Client Name</h3>
-                                    <p>{{ctrl.job.clientName || 'N/A'}}</p>
-                                </div>
-                            </md-list-item>
-
-                            <md-list-item
-                                    class="md-2-line md-long-text"
-                                    ng-click="ctrl.clientClick($event, ctrl.job)">
-                                <md-icon
-                                        class="md-avatar"
                                         aria-label="Account number"
                                         md-font-set="material-symbols-outlined">
                                     tag
@@ -1323,14 +1196,11 @@
         </div>
 
         <!-- Pallet Table Section -->
-        <div class="pallet-table-section" ng-if="ctrl.job">
-            <md-toolbar class="pallet-table-header md-primary">
+        <div class="pallet-table-section" ng-if="ctrl.job && ctrl.job.pallets && ctrl.job.pallets.length > 0">
+            <md-toolbar class="md-primary">
                 <div class="md-toolbar-tools">
                     <span class="material-symbols-outlined">inventory_2</span>
-                    <span class="pallet-header-title" flex>Pallet Information</span>
-                    <span class="pallet-count-badge">
-                {{ctrl.job.palletInfo.length}} {{ctrl.job.palletInfo.length === 1 ? 'Pallet' : 'Pallets'}}
-            </span>
+                    <span class="md-headline-title" flex style="margin-left: 8px">Pallet Information</span>
                 </div>
             </md-toolbar>
 

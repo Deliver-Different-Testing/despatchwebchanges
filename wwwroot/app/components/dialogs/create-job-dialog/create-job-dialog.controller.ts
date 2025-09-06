@@ -20,6 +20,7 @@ interface CreateJobDialogControllerScope extends angular.IScope {
 export class CreateJobDialogController extends BaseController {
     static $inject: string[] = [
         "$scope",
+        "$log",
         "$mdDialog",
         "DispatchData",
         "toastrService",
@@ -52,6 +53,7 @@ export class CreateJobDialogController extends BaseController {
 
     constructor(
         $scope: CreateJobDialogControllerScope,
+        private $log: angular.ILogService,
         private $mdDialog: angular.material.IDialogService,
         private dispatchData: DispatchCoreService,
         private toastrService: ToastrService,
@@ -154,7 +156,7 @@ export class CreateJobDialogController extends BaseController {
         try {
             return this.dispatchData.autocompleteSearch(searchTerm, url);
         } catch (error: any) {
-            console.error(`Search failed: ${error.message}`);
+            this.$log.error(`Search failed: ${error.message}`);
             return Promise.resolve([]);
         }
     }
@@ -185,7 +187,7 @@ export class CreateJobDialogController extends BaseController {
                 (localSuburb.alias && localSuburb.alias.toLowerCase() === lowerCaseDistrict)
             );
         } catch (error: any) {
-            console.error(`Failed to find suburb: ${error.message}`);
+            this.$log.error(`Failed to find suburb: ${error.message}`);
             return null;
         }
     }
@@ -195,8 +197,8 @@ export class CreateJobDialogController extends BaseController {
             const data: any = await this.dispatchData.getGeoCodeInformation(item);
             const returnedLocation = data.Response.View[0].Result[0].Location;
 
-            console.log(`Suburb/City = ${returnedLocation.Address.District}`);
-            console.log(`PostCode/ZIP = ${returnedLocation.Address.PostalCode}`);
+            this.$log.debug(`Suburb/City = ${returnedLocation.Address.District}`);
+            this.$log.debug(`PostCode/ZIP = ${returnedLocation.Address.PostalCode}`);
 
             const addressDetails = isToAddress ? this.job.deliveryAddress : this.job.pickupAddress;
 
@@ -237,7 +239,7 @@ export class CreateJobDialogController extends BaseController {
             addressDetails.latitude = returnedLocation.DisplayPosition.Latitude;
             addressDetails.longitude = returnedLocation.DisplayPosition.Longitude;
         } catch (error: any) {
-            console.log("Error: ", error);
+            this.$log.error("Error: ", error);
         }
     }
 
@@ -256,7 +258,7 @@ export class CreateJobDialogController extends BaseController {
 
             this.$mdDialog.hide(jobId);
         } catch (error: any) {
-            console.error(`Job creation failed: ${error.message}`);
+            this.$log.error(`Job creation failed: ${error.message}`);
         } finally {
             this.isLoading = false;
         }

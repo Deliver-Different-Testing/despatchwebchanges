@@ -3,14 +3,16 @@ import MessagingDialogController from "./messaging-dialog.controller";
 class MessagingDialogService implements angular.IServiceProvider {
     static $inject = [
         '$mdDialog',
+        '$log',
         '$document'
     ];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
+        private $log: angular.ILogService,
         private $document: angular.IDocumentService,
     ) {
-        console.log('MessagingDialogService: Service instantiated');
+        this.$log.debug('MessagingDialogService: Service instantiated');
     }
 
     $get() {
@@ -32,10 +34,10 @@ class MessagingDialogService implements angular.IServiceProvider {
                 bindToController: true,
             });
 
-            console.log('MessagingDialogService: Dialog closed!');
+            this.$log.debug('MessagingDialogService: Dialog closed!');
         } catch (error) {
             if(error === undefined) {
-                console.log('User closed messaging dialog');
+                this.$log.debug('User closed messaging dialog');
                 return;
             }
 

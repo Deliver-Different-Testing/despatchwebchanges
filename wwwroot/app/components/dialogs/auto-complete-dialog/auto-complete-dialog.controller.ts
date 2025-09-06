@@ -28,7 +28,6 @@ export class AutoCompleteDialogController extends BaseController {
         public showRerateOption: boolean
     ) {
         super();
-        console.log('AutoCompleteDialogController: Controller instantiated');
     }
     
     $onInit(): void {

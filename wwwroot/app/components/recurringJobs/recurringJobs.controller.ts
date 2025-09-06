@@ -13,6 +13,7 @@ import IContextMenuOption from "../../interfaces/context-menu-option.interface";
 class RecurringJobsController extends BaseController {
     static $inject = [
         '$mdDialog',
+        '$log',
         '$state',
         '$filter',
         '$mdSidenav',
@@ -73,6 +74,7 @@ class RecurringJobsController extends BaseController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
+        private $log: angular.ILogService,
         private $state: angular.ui.IStateService,
         private $filter: angular.IFilterService,
         private $mdSidenav: angular.material.ISidenavService,
@@ -106,7 +108,7 @@ class RecurringJobsController extends BaseController {
         });
 
         // Initial data load
-        this.refreshData().then(() => console.log("Data Refreshed"));
+        this.refreshData().then(() => this.$log.debug("Data Refreshed"));
     }
 
     saveLayout() {
@@ -225,7 +227,7 @@ class RecurringJobsController extends BaseController {
                 try {
                     this.$mdSidenav("right").toggle();
                 } catch (retryError) {
-                    console.error('Sidenav still not available:', retryError);
+                    this.$log.error('Sidenav still not available:', retryError);
                 }
             }, 100);
         }
@@ -310,7 +312,7 @@ class RecurringJobsController extends BaseController {
     }
 
     goToRunViewer(): void {
-        console.log("goToRunViewer.");
+        this.$log.debug("goToRunViewer.");
         this.$state.go("home");
     }
 
@@ -335,7 +337,7 @@ class RecurringJobsController extends BaseController {
 
             return this.jobList;
         } catch (error) {
-            console.error("Error loading prebook jobs:", error);
+            this.$log.error("Error loading prebook jobs:", error);
             this.jobList = [];
             this.updateTable();
 
@@ -362,7 +364,7 @@ class RecurringJobsController extends BaseController {
     }
 
     async selectJobDetail(jobId: number): Promise<void> {
-        console.log('Selected job run: ', jobId);
+        this.$log.debug('Selected job run: ', jobId);
         if (!jobId) return;
         this.currentJobId = jobId;
     }
@@ -412,9 +414,9 @@ class RecurringJobsController extends BaseController {
             );
         } catch (error) {
             if (!error) {
-                console.log("User Canceled");
+                this.$log.debug("User Canceled");
             } else {
-                console.log("Error inactivating recurring jobs:", error);
+                this.$log.debug("Error inactivating recurring jobs:", error);
 
                 // Show an error dialog to the user
                 this.$mdDialog.show(
@@ -455,9 +457,9 @@ class RecurringJobsController extends BaseController {
             );
         } catch (error) {
             if (!error) {
-                console.log("User Canceled");
+                this.$log.debug("User Canceled");
             } else {
-                console.log("Error inactivating recurring job:", error);
+                this.$log.debug("Error inactivating recurring job:", error);
 
                 // Show an error dialog to the user
                 await this.$mdDialog.show(
@@ -501,9 +503,9 @@ class RecurringJobsController extends BaseController {
             );
         } catch (error) {
             if (!error) {
-                console.log("User Canceled");
+                this.$log.debug("User Canceled");
             } else {
-                console.log("Error sending prebook jobs:", error);
+                this.$log.debug("Error sending prebook jobs:", error);
 
                 // Show an error dialog to the user
                 await this.$mdDialog.show(
@@ -544,9 +546,9 @@ class RecurringJobsController extends BaseController {
             );
         } catch (error) {
             if (!error) {
-                console.log("User Canceled");
+                this.$log.debug("User Canceled");
             } else {
-                console.log("Error sending prebook job:", error);
+                this.$log.debug("Error sending prebook job:", error);
 
                 // Show an error dialog to the user
                 await this.$mdDialog.show(

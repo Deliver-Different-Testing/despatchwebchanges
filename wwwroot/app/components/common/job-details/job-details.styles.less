@@ -1065,72 +1065,113 @@
       }
     }
     
-    // Professional Timing Section
-    .timing-section {
-      background: linear-gradient(135deg, @surface-container-low 0%, @surface-container 100%);
-      border-radius: @border-radius-sm;
-      margin: 0 @spacing-sm;
-      border: 1px solid @outline-variant;
-      box-shadow: @elevation-1;
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1px;
+      background: #E5E7EB;
+      padding: 1px;
 
-      .timing-list {
-        padding: 0 !important;
-      }
+      .metric-card {
+        background: @surface;
+        padding: 16px 20px;
+        text-align: center;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);;
+        cursor: pointer;
 
-      md-icon {
-        color: @text-muted;
-        margin-right: @spacing !important;
-      }
+        &:hover {
+          background: #F9FAFB;
 
-      .timing-detail {
-        .flex-between();
-        width: 100%;
-        align-items: center;
-      }
-
-      .timing-label {
-        color: @text-muted;
-        font-size: @font-sm;
-        font-weight: @weight-medium;
-        min-width: 90px;
-      }
-
-      .timing-value {
-        color: @text-dark;
-        font-size: @font-sm;
-        margin-left: auto;
-        font-weight: @weight-normal;
-      }
-
-      @media (max-width: @mobile-breakpoint) {
-        padding: @spacing @spacing-lg;
-
-        .timing-column:not(:first-child) {
-          margin-top: @spacing-sm;
-        }
-
-        .timing-label {
-          min-width: 80px;
-        }
-      }
-
-      .checkbox-column {
-        .flex-center();
-        padding: 0 !important;
-
-        .compact-checkbox {
-          margin: 2px @spacing-sm;
-
-          .md-container {
-            margin-right: @spacing-xs;
-          }
-
-          .md-label {
-            font-size: @font-sm;
+          .metric-value {
+            color: @primary-blue;
           }
         }
+
+        .metric-label {
+          font-size: @font-xs;
+          font-weight: @weight-medium;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: @text-dark;
+          margin-bottom: 4px;
+        }
+
+        .metric-value {
+          font-size: @font-base;
+          font-weight: @weight-semibold;
+          color: @text-dark;
       }
     }
+  }
+
+
+
+  /*    // Professional Timing Section
+      .timing-section {
+        background: linear-gradient(135deg, @surface-container-low 0%, @surface-container 100%);
+        border-radius: @border-radius-sm;
+        margin: 0 @spacing-sm;
+        border: 1px solid @outline-variant;
+        box-shadow: @elevation-1;
+  
+        .timing-list {
+          padding: 0 !important;
+        }
+  
+        md-icon {
+          color: @text-muted;
+          margin-right: @spacing !important;
+        }
+  
+        .timing-detail {
+          .flex-between();
+          width: 100%;
+          align-items: center;
+        }
+  
+        .timing-label {
+          color: @text-muted;
+          font-size: @font-sm;
+          font-weight: @weight-medium;
+          min-width: 90px;
+        }
+  
+        .timing-value {
+          color: @text-dark;
+          font-size: @font-sm;
+          margin-left: auto;
+          font-weight: @weight-normal;
+        }
+  
+        @media (max-width: @mobile-breakpoint) {
+          padding: @spacing @spacing-lg;
+  
+          .timing-column:not(:first-child) {
+            margin-top: @spacing-sm;
+          }
+  
+          .timing-label {
+            min-width: 80px;
+          }
+        }
+  
+        .checkbox-column {
+          .flex-center();
+          padding: 0 !important;
+  
+          .compact-checkbox {
+            margin: 2px @spacing-sm;
+  
+            .md-container {
+              margin-right: @spacing-xs;
+            }
+  
+            .md-label {
+              font-size: @font-sm;
+            }
+          }
+        }
+      }*/
 
     // Main Content
     .main-content {

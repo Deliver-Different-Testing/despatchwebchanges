@@ -11,6 +11,7 @@ import {formatFullDate} from "../../functions/formatDates";
 class NationwideService implements angular.IServiceProvider {
     static $inject = [
         "$http",
+        "$log",
     ];
 
     private flightCache: Map<string, { timestamp: number, data: any }> = new Map();
@@ -18,8 +19,9 @@ class NationwideService implements angular.IServiceProvider {
 
     constructor(
         private $http: angular.IHttpService,
+        private $log: angular.ILogService
     ) {
-        console.log('NationwideService: Service instantiated');
+        this.$log.debug('NationwideService: Service instantiated');
     }
 
     $get(): any {
@@ -90,11 +92,11 @@ class NationwideService implements angular.IServiceProvider {
 
         // Return cached data if it's still valid
         if (cachedData && (Date.now() - cachedData.timestamp < this.CACHE_DURATION)) {
-            console.log('Retrieved flight data from cache for job', jobId);
+            this.$log.debug('Retrieved flight data from cache for job', jobId);
             return cachedData.data;
         }
 
-        console.log(`Fetching flight data for job ${jobId} with departure ${formattedDate}`);
+        this.$log.debug(`Fetching flight data for job ${jobId} with departure ${formattedDate}`);
 
         try {
             const response = await this.$http.get<IFlightViewModel[]>("nationwideJob/GetScheduledFlightOptions", {
@@ -131,7 +133,7 @@ class NationwideService implements angular.IServiceProvider {
             });
 
             const endTime = performance.now();
-            console.log(`Flight request completed in ${(endTime - startTime).toFixed(2)}ms for job ${jobId}, received ${response.data.length} flights`);
+            this.$log.debug(`Flight request completed in ${(endTime - startTime).toFixed(2)}ms for job ${jobId}, received ${response.data.length} flights`);
 
             return result;
         } catch (error) {
@@ -261,7 +263,7 @@ class NationwideService implements angular.IServiceProvider {
 
     async calculateCargoReadyTime(jobId: number, carrierFsCode: string, arrivalTime: Date): Promise<IFlightCargoProcessing> {
         const formattedArrivalTime =  formatFullDate(arrivalTime);
-        console.log('formattedArrivalTime', formattedArrivalTime);
+        this.$log.debug('formattedArrivalTime', formattedArrivalTime);
         const response = await this.$http.get<IFlightCargoProcessing>("nationwideJob/CalculateCargoReadyTime", {
             params: {
                 jobId,

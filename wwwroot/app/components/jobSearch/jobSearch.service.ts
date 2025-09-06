@@ -8,9 +8,7 @@ class JobSearchService implements angular.IServiceProvider {
 
     constructor(
         private $http: angular.IHttpService
-    ) {
-        console.log('JobSearchService: Service instantiated');
-    }
+    ) {}
 
     $get() {
         return this;

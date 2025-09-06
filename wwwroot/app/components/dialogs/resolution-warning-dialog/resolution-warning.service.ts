@@ -9,12 +9,12 @@ class ResolutionWarningService implements angular.IServiceProvider {
     private readonly STORAGE_KEY = `resolution-warning-shown_${ContactID}`;
     private readonly MIN_WIDTH = 1920;
     private readonly MIN_HEIGHT = 1200;
+    private currentScreenWidth?: number;
+    private currentScreenHeight?: number;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private $window: angular.IWindowService) {
-        console.log('ResolutionWarningService: Service instantiated');
-    }
+        private $window: angular.IWindowService) {}
 
     $get() {
         return this;
@@ -27,10 +27,10 @@ class ResolutionWarningService implements angular.IServiceProvider {
         }
 
         // Check screen resolution
-        const screenWidth = this.$window.screen.width;
-        const screenHeight = this.$window.screen.height;
+        this.currentScreenWidth = this.$window.screen.width;
+        this.currentScreenHeight = this.$window.screen.height;
 
-        if (screenWidth < this.MIN_WIDTH || screenHeight < this.MIN_HEIGHT) {
+        if (this.currentScreenWidth < this.MIN_WIDTH || this.currentScreenHeight < this.MIN_HEIGHT) {
             this.showResolutionWarning();
         } else {
             // Mark as shown even if not displayed, so it doesn't check again
@@ -44,7 +44,11 @@ class ResolutionWarningService implements angular.IServiceProvider {
             controller: ResolutionWarningDialogController,
             controllerAs: 'ctrl',
             locals: {
-                STORAGE_KEY: this.STORAGE_KEY
+                STORAGE_KEY: this.STORAGE_KEY,
+                MIN_WIDTH: this.MIN_WIDTH,
+                MIN_HEIGHT: this.MIN_HEIGHT,
+                currentScreenWidth: this.currentScreenWidth,
+                currentScreenHeight: this.currentScreenHeight
             },
             clickOutsideToClose: false,
             escapeToClose: false,

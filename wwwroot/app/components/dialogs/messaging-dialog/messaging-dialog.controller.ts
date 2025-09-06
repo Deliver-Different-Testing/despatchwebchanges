@@ -18,6 +18,7 @@ import {DEFAULT_QUICK_RESPONSES} from "./DEFAULT_QUICK_RESPONSES";
 class MessagingDialogController extends BaseController {
     static $inject = [
         '$mdDialog',
+        '$log',
         'messagingService',
         'toastrService',
         '$interval',
@@ -68,6 +69,7 @@ class MessagingDialogController extends BaseController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
+        private $log: angular.ILogService,
         private messagingService: MessagingService,
         private toastrService: ToastrService,
         $interval: angular.IIntervalService,
@@ -136,7 +138,7 @@ class MessagingDialogController extends BaseController {
                 if (updated) this.selectedConversation = updated;
             }
         } catch (error) {
-            console.error('Failed to load conversations:', error);
+            this.$log.error('Failed to load conversations:', error);
             if (!silent) this.toastrService.showErrorToast('Failed to load conversations');
         } finally {
             if (!silent) this.isLoading = false;
@@ -154,9 +156,9 @@ class MessagingDialogController extends BaseController {
 
             this.applyScope();
 
-            console.log('Quick responses loaded:', this.quickResponses.length);
+            this.$log.debug('Quick responses loaded:', this.quickResponses.length);
         } catch (error) {
-            console.error('Failed to load quick responses:', error);
+            this.$log.error('Failed to load quick responses:', error);
             // Fallback to just defaults if loading fails
             this.quickResponses = [...DEFAULT_QUICK_RESPONSES];
         } finally {
@@ -181,7 +183,7 @@ class MessagingDialogController extends BaseController {
                 })
                 .sort((a, b) => a.messageTime.valueOf() - b.messageTime.valueOf());
         } catch (error) {
-            console.error('Failed to load messages:', error);
+            this.$log.error('Failed to load messages:', error);
             if (!silent) this.toastrService.showErrorToast('Failed to load messages');
         } finally {
             if (!silent) this.isMessagesLoading = false;
@@ -251,7 +253,7 @@ class MessagingDialogController extends BaseController {
             this.scrollToBottom();
             this.toastrService.showSuccessToast('Message sent');
         } catch (error) {
-            console.error('Failed to send message:', error);
+            this.$log.error('Failed to send message:', error);
             this.toastrService.showErrorToast('Failed to send message');
         } finally {
             this.isSending = false;
@@ -299,7 +301,7 @@ class MessagingDialogController extends BaseController {
 
             this.toastrService.showSuccessToast('Quick response saved!');
         } catch (error) {
-            console.error('Failed to save quick response:', error);
+            this.$log.error('Failed to save quick response:', error);
             this.toastrService.showErrorToast('Failed to save quick response');
         } finally {
             this.isSavingQuickResponse = false;
@@ -320,7 +322,7 @@ class MessagingDialogController extends BaseController {
             this.quickResponses = this.quickResponses.filter(r => r.id !== response.id);
             this.toastrService.showSuccessToast('Quick response deleted');
         } catch (error) {
-            console.error('Failed to delete quick response:', error);
+            this.$log.error('Failed to delete quick response:', error);
             this.toastrService.showErrorToast('Failed to delete quick response');
         } finally {
             this.applyScope();
@@ -352,7 +354,7 @@ class MessagingDialogController extends BaseController {
                 conversation.unreadCount = 0;
             }
         } catch (error) {
-            console.error('Failed to mark messages as read:', error);
+            this.$log.error('Failed to mark messages as read:', error);
         } finally {
             this.applyScope();
         }
@@ -491,7 +493,7 @@ class MessagingDialogController extends BaseController {
             this.contactOptions = await this.messagingService.getMessageContactOptions(searchTerm);
 
         } catch (error) {
-            console.error('Search failed:', error);
+            this.$log.error('Search failed:', error);
             this.contactOptions = [];
         } finally {
             this.isSearching = false;
@@ -732,7 +734,7 @@ class MessagingDialogController extends BaseController {
             this.backToMessaging();
 
         } catch (error) {
-            console.error('Failed to send multi message:', error);
+            this.$log.error('Failed to send multi message:', error);
             this.toastrService.showErrorToast('Failed to send message to all contacts');
         } finally {
             this.isSending = false;
