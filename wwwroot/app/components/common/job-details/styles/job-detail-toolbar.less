@@ -1,0 +1,78 @@
+﻿md-toolbar.job-detail-toolbar {
+  background-color: #ffffff !important;
+  color: #4B5563 !important;  // Dark gray for title
+  border-bottom: 1px solid #E5E7EB !important;  // Lighter border
+
+  .md-toolbar-tools {
+    background-color: transparent !important;
+    color: inherit !important;
+
+    span, .md-title, .greeting-message {
+      color: #4B5563 !important;  // Dark gray for headers
+      font-weight: 500 !important;  // Medium weight for titles
+    }
+
+    // For data values specifically
+    .data-value {
+      color: #111827 !important;  // Near black for actual data
+    }
+
+    // For labels
+    .data-label {
+      color: #6B7280 !important;  // Medium gray for labels
+      font-size: 13px !important;
+    }
+
+    md-icon {
+      color: #6B7280 !important;  // Medium gray for icons
+      fill: #6B7280 !important;
+    }
+
+    .material-symbols-outlined {
+      color: #6B7280 !important;  // Medium gray for material icons
+    }
+
+    .md-button, .md-icon-button {
+      color: #4B5563 !important;  // Dark gray for buttons
+
+      &:hover {
+        background-color: rgba(75, 85, 99, 0.08) !important;  // Subtle gray hover
+      }
+
+      &:focus {
+        background-color: rgba(75, 85, 99, 0.12) !important;  // Slightly darker on focus
+      }
+
+      md-icon, .material-symbols-outlined {
+        color: #4B5563 !important;
+      }
+    }
+
+    md-divider, .vertical-divider {
+      border-right-color: #E5E7EB !important;  // Light gray dividers
+      background-color: #E5E7EB !important;
+    }
+
+    .custom-badge {
+      background-color: #4B5563 !important;  // Dark gray badge
+      color: #ffffff !important;
+    }
+
+    md-progress-circular {
+      path {
+        stroke: #4B5563 !important;  // Dark gray progress
+      }
+    }
+
+    .toolbar-logo {
+      filter: brightness(0.3) saturate(100%);  // Slightly lighter than pure black
+    }
+  }
+
+  md-menu-content {
+    md-toolbar {
+      background-color: inherit;
+      color: inherit;
+    }
+  }
+}

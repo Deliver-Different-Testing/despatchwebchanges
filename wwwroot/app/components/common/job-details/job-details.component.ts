@@ -55,6 +55,9 @@ class JobDetailController extends BaseController {
         "jobFileUploadDialogService",
         "voidJobConfirmationDialogService",
     ];
+    
+    private static readonly FIELD_VISIBILITY_KEY = `jobDetail_fieldVisibility_${ContactID}`;
+    private static readonly VIEW_DENSITY_KEY = `jobDetail_viewDensity_${ContactID}`;
 
     readonly isRecurringJob: boolean = false;
     readonly isBulkJob: boolean = false;
@@ -77,6 +80,11 @@ class JobDetailController extends BaseController {
     selectedRelatedJob?: JobGroup;
     selectedSubJobIndex: number = 0;
     jobAddressIcon: string = "pin_drop";
+    viewDensity: 'normal' | 'dense' | 'ultradense' = 'normal';
+
+    isEditMode: boolean = false;
+    fieldVisibility: { [key: string]: boolean } = {};
+    defaultFieldVisibility: { [key: string]: boolean } = {};
 
     constructor(
         $scope: angular.IScope,
@@ -145,7 +153,74 @@ class JobDetailController extends BaseController {
             this.loadJobData(this.jobId);
         }
 
+        // Apply UI tweaks
+        this.loadViewDensity();
+        this.initializeFieldVisibility();
+        
         this.applyScope();
+    }
+
+    private initializeFieldVisibility(): void {
+        // Define default visibility for all fields
+        this.defaultFieldVisibility = {
+            // Main section visibility toggles
+            additionalInfo: true,
+            deliveryDetails: true,
+            clientInformation: true,
+            bookedBy: true,
+            jobDetails: true,
+            packageDetails: true,
+
+            // Individual field visibility within sections
+            // Delivery Details section fields
+            dispatcherName: true,
+            courierName: true,
+            courierMobile: true,
+            scheduleName: true,
+
+            // Job Details section fields
+            speedName: true,
+            jobTypeDescription: true,
+            sizeText: true,
+            refA: true,
+            refB: true,
+            ourRef: true,
+            conNote: true, // AWB field
+
+            // Client Information section fields
+            client: true,
+
+            // Booked By section fields
+            loggedInContactName: true,
+            fromContactName: true,
+            fromContactNumber: true,
+
+            // Additional fields that might be used
+            pricing: true,
+            booked: true,
+            startTime: true,
+            puTime: true,
+            deliverBy: true,
+            dispatch: true,
+            podName: true,
+            podTime: true,
+            followUp: true,
+            clientName: true,
+            pickupLocation: true,
+            deliveryLocation: true,
+            totalMiles: true,
+            dimensions: true,
+            weight: true,
+            dgDocs: true,
+            leaveParcel: true,
+            tracking: true,
+            mobile: true,
+            email: true,
+            checkboxes: true
+        };
+
+        // Load from localStorage or use defaults
+        this.fieldVisibility = this.loadFieldVisibilityFromStorage();
     }
 
     $onChanges(changes: angular.IOnChangesObject) {
@@ -1972,6 +2047,91 @@ class JobDetailController extends BaseController {
             const height = pallet.height || 0;
             return sum + (length * depth * height * (pallet.quantity || 1));
         }, 0);
+    }
+
+
+    private loadFieldVisibilityFromStorage(): { [key: string]: boolean } {
+        try {
+            const stored = localStorage.getItem(JobDetailController.FIELD_VISIBILITY_KEY);
+            if (stored) {
+                const parsedVisibility = JSON.parse(stored);
+                // Merge with defaults to ensure all fields are present
+                return { ...this.defaultFieldVisibility, ...parsedVisibility };
+            }
+        } catch (error) {
+            this.$log.warn('Failed to load field visibility from localStorage:', error);
+        }
+
+        // Return a copy of defaults if no stored data or error
+        return { ...this.defaultFieldVisibility };
+    }
+
+    private saveFieldVisibilityToStorage(): void {
+        try {
+            localStorage.setItem(
+                JobDetailController.FIELD_VISIBILITY_KEY,
+                JSON.stringify(this.fieldVisibility)
+            );
+        } catch (error) {
+            this.$log.warn('Failed to save field visibility to localStorage:', error);
+        }
+    }
+
+    toggleEditMode(): void {
+        this.isEditMode = !this.isEditMode;
+    }
+    
+    toggleFieldVisibility(fieldKey: string): void {
+        this.fieldVisibility[fieldKey] = !this.fieldVisibility[fieldKey];
+        this.saveFieldVisibilityToStorage();
+    }
+
+    resetFieldVisibility(): void {
+        this.fieldVisibility = { ...this.defaultFieldVisibility };
+        this.saveFieldVisibilityToStorage();
+    }
+
+    isFieldVisible(fieldKey: string): boolean {
+        return this.fieldVisibility[fieldKey];
+    }
+
+    loadViewDensity(): void {
+        try {
+            const stored = localStorage.getItem(JobDetailController.VIEW_DENSITY_KEY);
+            if (stored && ['normal', 'dense', 'ultradense'].includes(stored)) {
+                this.viewDensity = stored as 'normal' | 'dense' | 'ultradense';
+            }
+        } catch (error) {
+            this.$log.warn('Failed to load view density from localStorage:', error);
+        }
+    }
+
+    saveViewDensity(): void {
+        try {
+            localStorage.setItem(JobDetailController.VIEW_DENSITY_KEY, this.viewDensity);
+        } catch (error) {
+            this.$log.warn('Failed to save view density to localStorage:', error);
+        }
+    }
+
+    toggleViewDensity(): void {
+        switch(this.viewDensity) {
+            case 'normal':
+                this.viewDensity = 'dense';
+                break;
+            case 'dense':
+                this.viewDensity = 'normal';
+                break;
+        }
+        this.saveViewDensity();
+    }
+    
+    isDenseView(): boolean {
+        return this.viewDensity === 'dense';
+    }
+
+    isUltraDenseView(): boolean {
+        return this.viewDensity === 'ultradense';
     }
 }
 

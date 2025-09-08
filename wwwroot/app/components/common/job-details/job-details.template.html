@@ -4,9 +4,11 @@
         ng-show="ctrl.isLoading">
 </md-progress-linear>
 
-<div class="job-detail-page" ng-if="ctrl.job">
-    <md-card
-            class="warning-section md-whiteframe-1dp"
+<div class="job-detail-page" 
+     ng-if="ctrl.job"
+     ng-class="{'dense-view': ctrl.isDenseView(), 'ultradense-view': ctrl.isUltraDenseView()}">
+<md-card
+            class="warning-section "
             ng-if="::ctrl.job.isArchived || ctrl.job.preBook || ctrl.job.isBulkJob">
         <md-card-content>
             <div layout="row" layout-align="start center">
@@ -18,7 +20,7 @@
                 <span class="warning-text"
                       ng-if="::ctrl.job.preBook">
                     Recurring job. Some fields may require confirmation
-                </span> 
+                </span>
                 <span class="warning-text"
                       ng-if="::ctrl.job.isBulkJob">
                 Bulk job. Changes will be applied to all matching records. Confirm your selections before submitting.
@@ -55,7 +57,7 @@
                 </md-tabs>
             </div>
 
-            <md-menu ng-if="ctrl.showStageDropdown">
+            <md-menu id="status-menu" md-position-mode="target-right target" ng-if="ctrl.showStageDropdown">
                 <md-button aria-label="internal stage" ng-click="$mdMenu.open($event)">
                     <md-tooltip md-direction="bottom">Modify Status</md-tooltip>
                     <md-icon
@@ -74,6 +76,34 @@
                 </md-menu-content>
             </md-menu>
 
+            <md-button class="md-raised"
+                       aria-label="Toggle density view"
+                       ng-click="ctrl.toggleViewDensity()">
+                <md-icon
+                        md-font-set="material-symbols-outlined"
+                        style="margin-right: 5px">
+                    browse
+                </md-icon>
+                {{ ctrl.viewDensity }}
+            </md-button>
+            
+            <md-button class="md-raised"
+                       ng-class="{'md-primary': ctrl.isEditMode}"
+                       aria-label="edit job details fields"
+                       ng-click="ctrl.toggleEditMode()">
+                <md-icon md-font-set="material-symbols-outlined">
+                    {{ctrl.isEditMode ? 'check' : 'edit'}}
+                </md-icon>
+                {{ctrl.isEditMode ? 'Done Editing' : 'Customize Fields'}}
+            </md-button>
+
+            <md-button
+                    ng-if="ctrl.isEditMode"
+                    ng-click="ctrl.resetFieldVisibility()">
+                Reset to Default
+            </md-button>
+
+            
             <div flex></div>
 
             <md-chip
@@ -148,8 +178,8 @@
                     {{ctrl.job.deliverByTime ? (ctrl.job.deliverByTime | momentFormat:'MMM DD HH:mm') : '—'}}
                 </div>
             </div>
-        </div> 
-        
+        </div>
+
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-label">Dispatch</div>
@@ -182,7 +212,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Main Content -->
         <div class="main-content" layout="row">
             <!-- Left Column -->
@@ -199,7 +229,7 @@
                          flex="50"
                          flex-xs="100">
 
-                        <md-toolbar class="md-primary">
+                        <md-toolbar class="job-detail-toolbar">
                             <div class="md-toolbar-tools">
                                 <span class="material-symbols-outlined">{{::ctrl.jobAddressIcon}}</span>
                                 <span class="md-headline-title" flex style="margin-left: 8px">
@@ -277,7 +307,7 @@
                          flex="50"
                          flex-xs="100">
 
-                        <md-toolbar class="md-primary">
+                        <md-toolbar class="job-detail-toolbar">
                             <div class="md-toolbar-tools">
                                 <span class="material-symbols-outlined">{{::ctrl.jobAddressIcon}}</span>
                                 <span class="md-headline-title" flex style="margin-left: 8px">
@@ -305,7 +335,7 @@
                                      {{ctrl.job.deliveryAddress.addressLine5}}, {{ctrl.job.deliveryAddress.addressLine6}}, {{ctrl.job.deliveryAddress.addressLine7}}
                                   </span>
                                 </div>
-                                
+
                                 <span class="address-badge"
                                       ng-if="ctrl.job.deliveryAddress.addressLine1">Destination</span>
                             </div>
@@ -349,7 +379,7 @@
 
                 <!-- Total Miles Section -->
                 <div
-                        class="total-miles-section md-whiteframe-z1"
+                        class="total-miles-section"
                         style="
             margin-top: 10px;
             margin-bottom: 16px;
@@ -381,14 +411,14 @@
 
                 <!-- Combined Info Sections -->
                 <div
-                        class="info-sections-container md-whiteframe-1dp"
+                        class="info-sections-container "
                         ng-if="ctrl.job.assignedFlight || ctrl.job.assignedAgent"
                         style="background: #f5f5f5">
                     <!-- Flight Information -->
                     <section
                             class="info-section client-section"
                             ng-if="ctrl.job.assignedFlight">
-                        <md-toolbar class="md-primary">
+                        <md-toolbar class="job-detail-toolbar">
                             <div class="md-toolbar-tools">
                                 <span class="material-symbols-outlined">flight</span>
                                 <span class="md-headline-title" flex style="margin-left: 8px">Flight Information</span>
@@ -491,7 +521,7 @@
                     <section
                             class="info-section booker-section"
                             ng-if="ctrl.job.assignedAgent">
-                        <md-toolbar class="md-primary">
+                        <md-toolbar class="job-detail-toolbar">
                             <div class="md-toolbar-tools">
                                 <span class="material-symbols-outlined">badge</span>
                                 <span class="md-headline-title" flex style="margin-left: 8px">Agent Information</span>
@@ -583,7 +613,7 @@
                 </div>
 
                 <!-- Notes Section with sticky note design -->
-                <div class="sticky-note-container md-whiteframe-1dp">
+                <div class="sticky-note-container ">
                     <sticky-note
                             is-recurring-job="ctrl.job.preBook"
                             job-id="ctrl.job.id">
@@ -591,15 +621,25 @@
                 </div>
 
                 <div
-                        class="info-sections-container md-whiteframe-1dp"
+                        class="info-sections-container "
                         layout="row"
                         layout-xs="column">
                     <!-- Package Details -->
-                    <div class="info-section" flex="50" flex-xs="100">
-                        <md-toolbar class="md-primary">
+                    <div class="info-section" flex="50" flex-xs="100"
+                         ng-if="ctrl.isFieldVisible('packageDetails') || ctrl.isEditMode">
+                        <md-toolbar class="job-detail-toolbar">
                             <div class="md-toolbar-tools">
                                 <span class="material-symbols-outlined">inventory_2</span>
                                 <span class="md-headline-title" flex style="margin-left: 8px">Package Details</span>
+                              
+                                <div flex></div>
+
+                                <md-button class="md-icon-button"
+                                           ng-if="ctrl.isEditMode"
+                                           ng-click="ctrl.toggleFieldVisibility('packageDetails')">
+                                    <md-icon md-font-set="material-symbols-outlined">{{ ctrl.isFieldVisible('packageDetails') ? 'visibility' : 'visibility_off' }}</md-icon>
+                                </md-button>
+                                
                             </div>
                         </md-toolbar>
 
@@ -663,12 +703,26 @@
                     <md-divider hide-xs vertical></md-divider>
 
                     <!-- Additional Info -->
-                    <div class="info-section" flex="50" flex-xs="100">
-                        <md-toolbar class="md-primary">
+                    <div class="info-section"
+                         flex="50"
+                         flex-xs="100"
+                         ng-if="ctrl.isFieldVisible('additionalInfo') || ctrl.isEditMode">
+                        <md-toolbar class="job-detail-toolbar">
                             <div class="md-toolbar-tools">
                                 <span class="material-symbols-outlined">description</span>
-                                <span class="md-headline-title" flex style="margin-left: 8px"
-                                >Additional Info</span>
+                                <span class="md-headline-title" flex style="margin-left: 8px">
+                                    Additional Info
+                                </span>
+
+                                <div flex></div>
+
+                                <md-button class="md-icon-button"
+                                           ng-if="ctrl.isEditMode"
+                                           ng-click="ctrl.toggleFieldVisibility('additionalInfo')">
+                                    <md-icon md-font-set="material-symbols-outlined">
+                                        {{ ctrl.isFieldVisible('additionalInfo') ? 'visibility' : 'visibility_off' }}
+                                    </md-icon>
+                                </md-button>
                             </div>
                         </md-toolbar>
 
@@ -708,7 +762,7 @@
                 </div>
 
                 <div
-                        class="info-sections-container md-whiteframe-1dp"
+                        class="info-sections-container "
                         layout="row"
                         layout-xs="column">
                     <!-- Additional Details 2-->
@@ -717,17 +771,29 @@
                             flex="50"
                             flex-xs="100"
                             ng-if="!ctrl.job.prebook">
-                        <div class="info-section">
-                            <md-toolbar class="md-primary">
+                        <div class="info-section"
+                             ng-if="ctrl.isFieldVisible('deliveryDetails') || ctrl.isEditMode">
+                            <md-toolbar class="job-detail-toolbar">
                                 <div class="md-toolbar-tools">
                                     <span class="material-symbols-outlined">local_shipping</span>
                                     <span class="md-headline-title" flex
                                           style="margin-left: 8px">Delivery Details</span>
+
+                                    <div flex></div>
+
+                                    <md-button class="md-icon-button"
+                                               ng-if="ctrl.isEditMode"
+                                               ng-click="ctrl.toggleFieldVisibility('deliveryDetails')">
+                                        <md-icon md-font-set="material-symbols-outlined">
+                                            {{ ctrl.isFieldVisible('deliveryDetails') ? 'visibility' : 'visibility_off' }}
+                                        </md-icon>
+                                    </md-button>
                                 </div>
                             </md-toolbar>
 
                             <md-list class="md-dense" flex>
-                                <md-list-item class="md-2-line md-long-text">
+                                <md-list-item class="md-2-line md-long-text"
+                                              ng-if="ctrl.isFieldVisible('dispatcherName') || ctrl.isEditMode">
                                     <md-icon
                                             class="md-avatar"
                                             aria-label="dispatcher"
@@ -738,10 +804,19 @@
                                         <h3>Dispatcher Name</h3>
                                         <p>{{ctrl.job.dispatcherName || 'N/A'}}</p>
                                     </div>
+
+                                    <md-icon class="md-secondary"
+                                             ng-if="ctrl.isEditMode"
+                                             md-font-set="material-symbols-outlined"
+                                             ng-click="ctrl.toggleFieldVisibility('dispatcherName')"
+                                             aria-label="dispatcher name">
+                                        {{ ctrl.isFieldVisible('dispatcherName') ? 'visibility' : 'visibility_off' }}
+                                    </md-icon>
                                 </md-list-item>
 
                                 <md-list-item class="md-2-line md-long-text"
-                                              ng-click="ctrl.courierClick($event, ctrl.job)">
+                                              ng-click="ctrl.courierClick($event, ctrl.job)"
+                                              ng-if="ctrl.isFieldVisible('courierName')  || ctrl.isEditMode">
                                     <md-icon
                                             class="md-avatar"
                                             aria-label="Courier"
@@ -752,9 +827,18 @@
                                         <h3>Courier</h3>
                                         <p>{{ctrl.job.courierData.courierName}}</p>
                                     </div>
+
+                                    <md-icon class="md-secondary"
+                                             ng-if="ctrl.isEditMode"
+                                             md-font-set="material-symbols-outlined"
+                                             ng-click="ctrl.toggleFieldVisibility('courierName')"
+                                             aria-label="dispatcher name">
+                                        {{ ctrl.isFieldVisible('courierName') ? 'visibility' : 'visibility_off' }}
+                                    </md-icon>
                                 </md-list-item>
 
-                                <md-list-item class="md-2-line md-long-text">
+                                <md-list-item class="md-2-line md-long-text"
+                                              ng-if="ctrl.isFieldVisible('courierMobile') || ctrl.isEditMode">
                                     <md-icon
                                             class="md-avatar"
                                             aria-label="courier phone"
@@ -765,9 +849,18 @@
                                         <h3>Courier Mobile</h3>
                                         <p>{{ctrl.job.courierData.courierMobile || 'N/A'}}</p>
                                     </div>
+
+                                    <md-icon class="md-secondary"
+                                             ng-if="ctrl.isEditMode"
+                                             md-font-set="material-symbols-outlined"
+                                             ng-click="ctrl.toggleFieldVisibility('courierMobile')"
+                                             aria-label="courier mobile">
+                                        {{ ctrl.isFieldVisible('courierMobile') ? 'visibility' : 'visibility_off' }}
+                                    </md-icon>
                                 </md-list-item>
 
-                                <md-list-item class="md-2-line md-long-text">
+                                <md-list-item class="md-2-line md-long-text"
+                                              ng-if="ctrl.isFieldVisible('scheduleName') || ctrl.isEditMode">
                                     <md-icon
                                             class="md-avatar"
                                             aria-label="schedule name"
@@ -778,6 +871,14 @@
                                         <h3>Schedule Name</h3>
                                         <p>{{ctrl.job.scheduleName || 'N/A'}}</p>
                                     </div>
+
+                                    <md-icon class="md-secondary"
+                                             ng-if="ctrl.isEditMode"
+                                             md-font-set="material-symbols-outlined"
+                                             ng-click="ctrl.toggleFieldVisibility('scheduleName')"
+                                             aria-label="schedule name">
+                                        {{ ctrl.isFieldVisible('scheduleName') ? 'visibility' : 'visibility_off' }}
+                                    </md-icon>
                                 </md-list-item>
                             </md-list>
                         </div>
@@ -791,7 +892,7 @@
                             flex-xs="100"
                             ng-if="ctrl.job.preBook">
                         <div class="info-section">
-                            <md-toolbar class="md-primary">
+                            <md-toolbar class="job-detail-toolbar">
                                 <div class="md-toolbar-tools">
                                     <span class="material-symbols-outlined">schedule</span>
                                     <span class="md-headline-title" flex style="margin-left: 8px">Recurring Jobs</span>
@@ -988,20 +1089,33 @@
             <div class="right-column" flex="40">
                 <!-- Combined Info Sections -->
                 <div
-                        class="info-sections-container md-whiteframe-1dp"
+                        class="info-sections-container "
                         style="background: #f5f5f5">
                     <!-- Client Information -->
-                    <section class="info-section client-section">
-                        <md-toolbar class="md-primary">
+                    <section class="info-section client-section"
+                             ng-if="ctrl.isFieldVisible('clientInformation') || ctrl.isEditMode">
+                        <md-toolbar class="job-detail-toolbar">
                             <div class="md-toolbar-tools">
                                 <span class="material-symbols-outlined">account_box</span>
-                                <span class="md-headline-title" flex style="margin-left: 8px"
-                                >Client Information</span>
+                                <span class="md-headline-title" flex style="margin-left: 8px">
+                                    Client Information
+                                </span>
+
+                                <div flex></div>
+
+                                <md-button class="md-icon-button"
+                                           ng-if="ctrl.isEditMode"
+                                           ng-click="ctrl.toggleFieldVisibility('clientInformation')">
+                                    <md-icon md-font-set="material-symbols-outlined">
+                                        {{ ctrl.isFieldVisible('clientInformation') ? 'visibility' : 'visibility_off' }}
+                                    </md-icon>
+                                </md-button>
                             </div>
                         </md-toolbar>
 
                         <md-list class="md-dense" flex>
                             <md-list-item
+                                    ng-if="ctrl.isFieldVisible('client') || ctrl.isEditMode"
                                     class="md-2-line md-long-text"
                                     ng-click="ctrl.clientClick($event, ctrl.job)">
                                 <md-icon
@@ -1014,21 +1128,43 @@
                                     <h3>Account</h3>
                                     <p>{{ctrl.job.client || 'N/A'}}</p>
                                 </div>
+
+                                <md-icon
+                                        ng-if="ctrl.isEditMode"
+                                        class="md-secondary"
+                                        md-font-set="material-symbols-outlined"
+                                        ng-click="ctrl.toggleFieldVisibility('client')"
+                                        aria-label="client">
+                                    {{ ctrl.isFieldVisible('client') ? 'visibility' : 'visibility_off' }}
+                                </md-icon>
                             </md-list-item>
                         </md-list>
                     </section>
 
                     <!-- Booked By -->
-                    <section class="info-section booker-section">
-                        <md-toolbar class="md-primary">
+                    <section class="info-section booker-section"
+                             ng-if="ctrl.isFieldVisible('bookedBy') || ctrl.isEditMode">
+                        <md-toolbar class="job-detail-toolbar">
                             <div class="md-toolbar-tools">
                                 <span class="material-symbols-outlined">person_outline</span>
                                 <span class="md-headline-title" flex style="margin-left: 8px">Booked By</span>
+
+                                <div flex></div>
+
+                                <md-button class="md-icon-button"
+                                           ng-if="ctrl.isEditMode"
+                                           ng-click="ctrl.toggleFieldVisibility('bookedBy')">
+                                    <md-icon md-font-set="material-symbols-outlined">
+                                        {{ ctrl.isFieldVisible('bookedBy') ? 'visibility' : 'visibility_off' }}
+                                    </md-icon>
+                                </md-button>
                             </div>
                         </md-toolbar>
 
                         <md-list class="md-dense" flex>
-                            <md-list-item class="md-2-line md-long-text">
+                            <md-list-item
+                                    ng-if="ctrl.isFieldVisible('loggedInContactName') || ctrl.isEditMode"
+                                    class="md-2-line md-long-text">
                                 <md-icon
                                         class="md-avatar"
                                         aria-label="logged in contact"
@@ -1039,12 +1175,20 @@
                                     <h3>Logged-in Contact</h3>
                                     <p>{{ctrl.job.loggedInContactName || 'N/A'}}</p>
                                 </div>
+
+                                <md-icon class="md-secondary"
+                                         ng-if="ctrl.isEditMode"
+                                         md-font-set="material-symbols-outlined"
+                                         ng-click="ctrl.toggleFieldVisibility('loggedInContactName')"
+                                         aria-label="logged in contact name">
+                                    {{ ctrl.isFieldVisible('loggedInContactName') ? 'visibility' : 'visibility_off' }}
+                                </md-icon>
                             </md-list-item>
 
                             <md-list-item
                                     class="md-2-line md-long-text"
                                     ng-click="ctrl.contactClick($event, ctrl.job)"
-                                    ng-if="!ctrl.job.bulkJob">
+                                    ng-if="!ctrl.job.bulkJob && (ctrl.isFieldVisible('fromContactName') || ctrl.isEditMode)">
                                 <md-icon
                                         class="md-avatar"
                                         aria-label="Contact name"
@@ -1055,9 +1199,18 @@
                                     <h3>Name</h3>
                                     <p>{{ctrl.job.fromContactName || 'N/A'}}</p>
                                 </div>
+
+                                <md-icon class="md-secondary"
+                                         ng-if="ctrl.isEditMode"
+                                         md-font-set="material-symbols-outlined"
+                                         ng-click="ctrl.toggleFieldVisibility('fromContactName')"
+                                         aria-label="from contact name">
+                                    {{ ctrl.isFieldVisible('fromContactName') ? 'visibility' : 'visibility_off' }}
+                                </md-icon>
                             </md-list-item>
 
                             <md-list-item
+                                    ng-if="ctrl.isFieldVisible('fromContactNumber') || ctrl.isEditMode"
                                     class="md-2-line md-long-text"
                                     ng-click="!ctrl.job.locked && ctrl.editJobContactPhone($event, ctrl.job, 'from')">
                                 <md-icon
@@ -1070,23 +1223,42 @@
                                     <h3>Phone</h3>
                                     <p>{{ctrl.job.fromContactNumber || 'N/A'}}</p>
                                 </div>
+
+                                <md-icon class="md-secondary"
+                                         ng-if="ctrl.isEditMode"
+                                         md-font-set="material-symbols-outlined"
+                                         ng-click="ctrl.toggleFieldVisibility('fromContactNumber')">
+                                    {{ ctrl.isFieldVisible('fromContactNumber') ? 'visibility' : 'visibility_off' }}
+                                </md-icon>
                             </md-list-item>
                         </md-list>
                     </section>
                 </div>
 
                 <!-- Job Details -->
-                <div class="info-sections-container job-details-info md-whiteframe-1dp">
-                    <div class="info-section">
-                        <md-toolbar class="md-primary">
+                <div class="info-sections-container job-details-info ">
+                    <div class="info-section"
+                         ng-if="ctrl.isFieldVisible('jobDetails') || ctrl.isEditMode">
+                        <md-toolbar class="job-detail-toolbar">
                             <div class="md-toolbar-tools">
                                 <span class="material-symbols-outlined">assignment</span>
                                 <span class="md-headline-title" flex style="margin-left: 8px">Job Details</span>
+
+                                <div flex></div>
+
+                                <md-button class="md-icon-button"
+                                           ng-if="ctrl.isEditMode"
+                                           ng-click="ctrl.toggleFieldVisibility('jobDetails')">
+                                    <md-icon md-font-set="material-symbols-outlined">
+                                        {{ ctrl.isFieldVisible('jobDetails') ? 'visibility' : 'visibility_off' }}
+                                    </md-icon>
+                                </md-button>
                             </div>
                         </md-toolbar>
 
                         <md-list class="md-dense" flex>
                             <md-list-item
+                                    ng-if="ctrl.isFieldVisible('speedName') || ctrl.isEditMode"
                                     class="md-2-line md-long-text"
                                     ng-click="!ctrl.job.locked && ctrl.speedClick($event, ctrl.job)">
                                 <md-icon
@@ -1099,9 +1271,17 @@
                                     <h3>Speed</h3>
                                     <p>{{ctrl.job.speedName || 'N/A'}}</p>
                                 </div>
+
+                                <md-icon class="md-secondary"
+                                         ng-if="ctrl.isEditMode"
+                                         md-font-set="material-symbols-outlined"
+                                         ng-click="ctrl.toggleFieldVisibility('speedName')">
+                                    {{ ctrl.isFieldVisible('speedName') ? 'visibility' : 'visibility_off' }}
+                                </md-icon>
                             </md-list-item>
 
                             <md-list-item
+                                    ng-if="ctrl.isFieldVisible('jobTypeDescription') || ctrl.isEditMode"
                                     class="md-2-line md-long-text"
                                     ng-click="!ctrl.job.locked && ctrl.jobTypeClick($event, ctrl.job)">
                                 <md-icon
@@ -1113,9 +1293,17 @@
                                     <h3>Job Type</h3>
                                     <p>{{ctrl.job.jobTypeDescription}}</p>
                                 </div>
+
+                                <md-icon class="md-secondary"
+                                         ng-if="ctrl.isEditMode"
+                                         md-font-set="material-symbols-outlined"
+                                         ng-click="ctrl.toggleFieldVisibility('jobTypeDescription')">
+                                    {{ ctrl.isFieldVisible('jobTypeDescription') ? 'visibility' : 'visibility_off' }}
+                                </md-icon>
                             </md-list-item>
 
                             <md-list-item
+                                    ng-if="ctrl.isFieldVisible('sizeText') || ctrl.isEditMode"
                                     class="md-2-line md-long-text"
                                     ng-click="!ctrl.job.locked && ctrl.sizeClick($event, ctrl.job)">
                                 <md-icon
@@ -1128,9 +1316,17 @@
                                     <h3>Size</h3>
                                     <p>{{ctrl.job.size.text}}</p>
                                 </div>
+
+                                <md-icon class="md-secondary"
+                                         ng-if="ctrl.isEditMode"
+                                         md-font-set="material-symbols-outlined"
+                                         ng-click="ctrl.toggleFieldVisibility('sizeText')">
+                                    {{ ctrl.isFieldVisible('sizeText') ? 'visibility' : 'visibility_off' }}
+                                </md-icon>
                             </md-list-item>
 
                             <md-list-item
+                                    ng-if="ctrl.isFieldVisible('refA') || ctrl.isEditMode"
                                     class="md-2-line md-long-text"
                                     ng-click="ctrl.editRef($event, ctrl.job, true)">
                                 <md-icon
@@ -1143,9 +1339,17 @@
                                     <h3>Ref A</h3>
                                     <p>{{ctrl.job.refA || '-'}}</p>
                                 </div>
+
+                                <md-icon class="md-secondary"
+                                         ng-if="ctrl.isEditMode"
+                                         md-font-set="material-symbols-outlined"
+                                         ng-click="ctrl.toggleFieldVisibility('refA')">
+                                    {{ ctrl.isFieldVisible('refA') ? 'visibility' : 'visibility_off' }}
+                                </md-icon>
                             </md-list-item>
 
                             <md-list-item
+                                    ng-if="ctrl.isFieldVisible('refB') || ctrl.isEditMode"
                                     class="md-2-line md-long-text"
                                     ng-click="ctrl.editRef($event, ctrl.job, false)">
                                 <md-icon
@@ -1158,9 +1362,17 @@
                                     <h3>Ref B</h3>
                                     <p>{{ctrl.job.refB || '-'}}</p>
                                 </div>
+
+                                <md-icon class="md-secondary"
+                                         ng-if="ctrl.isEditMode"
+                                         md-font-set="material-symbols-outlined"
+                                         ng-click="ctrl.toggleFieldVisibility('refB')">
+                                    {{ ctrl.isFieldVisible('refB') ? 'visibility' : 'visibility_off' }}
+                                </md-icon>
                             </md-list-item>
 
                             <md-list-item
+                                    ng-if="ctrl.isFieldVisible('ourRef') || ctrl.isEditMode"
                                     class="md-2-line md-long-text"
                                     ng-click="ctrl.editOurRef($event, ctrl.job)">
                                 <md-icon
@@ -1173,9 +1385,17 @@
                                     <h3>Our Ref</h3>
                                     <p>{{ctrl.job.ourRef}}</p>
                                 </div>
+
+                                <md-icon class="md-secondary"
+                                         ng-if="ctrl.isEditMode"
+                                         md-font-set="material-symbols-outlined"
+                                         ng-click="ctrl.toggleFieldVisibility('ourRef')">
+                                    {{ ctrl.isFieldVisible('ourRef') ? 'visibility' : 'visibility_off' }}
+                                </md-icon>
                             </md-list-item>
 
                             <md-list-item
+                                    ng-if="ctrl.isFieldVisible('conNote') || ctrl.isEditMode"
                                     class="md-2-line md-long-text"
                                     ng-click="ctrl.editConNote($event, ctrl.job)">
                                 <md-icon
@@ -1188,6 +1408,13 @@
                                     <h3>AWB</h3>
                                     <p>{{ctrl.job.conNote}}</p>
                                 </div>
+
+                                <md-icon class="md-secondary"
+                                         ng-if="ctrl.isEditMode"
+                                         md-font-set="material-symbols-outlined"
+                                         ng-click="ctrl.toggleFieldVisibility('conNote')">
+                                    {{ ctrl.isFieldVisible('conNote') ? 'visibility' : 'visibility_off' }}
+                                </md-icon>
                             </md-list-item>
                         </md-list>
                     </div>
@@ -1197,7 +1424,7 @@
 
         <!-- Pallet Table Section -->
         <div class="pallet-table-section" ng-if="ctrl.job && ctrl.job.pallets && ctrl.job.pallets.length > 0">
-            <md-toolbar class="md-primary">
+            <md-toolbar class="job-detail-toolbar">
                 <div class="md-toolbar-tools">
                     <span class="material-symbols-outlined">inventory_2</span>
                     <span class="md-headline-title" flex style="margin-left: 8px">Pallet Information</span>
@@ -1323,7 +1550,7 @@
         </div>
 
         <!-- Footer Section -->
-        <div class="timing-section" style="margin: 0 8px">
+        <md-card style="margin: 0 8px">
             <div layout="row" layout-align="space-between center">
                 <!-- Left Column -->
                 <div class="timing-column" flex="33" flex-xs="100">
@@ -1430,10 +1657,10 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </md-card>
 
         <!-- Read Tracker Bar -->
-        <div class="read-tracker-bar md-whiteframe-1dp" ng-if="ctrl.job">
+        <div class="read-tracker-bar " ng-if="ctrl.job">
             <div layout="row" layout-align="space-between center">
                 <div
                         class="read-status"
@@ -1483,7 +1710,7 @@
 </no-data>
 
 <div
-        class="pod-photo-section md-whiteframe-1dp"
+        class="pod-photo-section "
         ng-if="ctrl.job && ctrl.job.done && ctrl.formattedPodPhotos.length > 0">
     <div class="section-header">
         <div
@@ -1597,7 +1824,7 @@
 </div>
 
 <div
-        class="pod-photo-section md-whiteframe-1dp"
+        class="pod-photo-section "
         ng-if="ctrl.formattedPodPhotos.length === 0 && ctrl.job.done">
     <div class="section-header">
         <div
