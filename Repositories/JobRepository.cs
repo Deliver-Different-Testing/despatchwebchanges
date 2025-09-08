@@ -2158,7 +2158,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 {
                     JobId = j.UcjbId,
                     Reference = j.UcjbNumber,
-                    Status = j.UcjbStatusNavigation.UcjsName,
+                    Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
                     PickupTime = j.PickUpTime ?? DateTime.Today,
                     PickupName = j.PickupFromContact,
                     PickupAddress = AddressFormatter.FormatWithCityStateZip(
@@ -2173,7 +2173,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                             j.PickupAddressLine8
                         )
                     ),
-                    DeliveryTime = j.RequiredDeliveryTime ?? DateTime.Today,
+                    DeliveryTime = CalculateDeliveryTime(j),
                     DeliveryName = j.DeliverToContact,
                     DeliveryAddress = AddressFormatter.FormatWithCityStateZip(
                         new AddressFormatter.Address(
@@ -2187,21 +2187,21 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                             j.DeliveryAddressLine8
                         )
                     ),
-                    DriverName = j.UcjbCourier.UccrName,
-                    CompletedToday = j.UcjbCourier.TucJobUcjbCouriers.Count(dj =>
+                    DriverName = j.UcjbCourier != null ? j.UcjbCourier.UccrName : null,
+                    CompletedToday =j.UcjbCourier != null ? j.UcjbCourier.TucJobUcjbCouriers.Count(dj =>
                         dj.UcjbStatus == (int)JobStatus.Completed
                         && dj.UcjbComplTime.HasValue
                         && dj.UcjbComplTime.Value.Date == DateTime.Today
-                    ),
-                    LastCompleted = j
-                        .UcjbCourier.TucJobUcjbCouriers.Where(dj =>
+                    ) : 0,
+                    LastCompleted = j.UcjbCourier != null ?
+                        j.UcjbCourier.TucJobUcjbCouriers.Where(dj =>
                             dj.UcjbStatus == (int)JobStatus.Completed && dj.UcjbComplTime.HasValue
                         )
                         .OrderByDescending(dj => dj.UcjbComplTime)
                         .Select(dj => dj.UcjbComplTime)
-                        .FirstOrDefault(),
+                        .FirstOrDefault() : null,
                     Quantity = j.UcjbQty ?? 0,
-                    PackageType = j.AcceptedJobType.UcjtName,
+                    PackageType = j.AcceptedJobType != null ? j.AcceptedJobType.UcjtName : null,
                     Mileage = j.TotalDistance ?? 0
                 })
                 .AsNoTracking()
@@ -2213,6 +2213,34 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         {
             Log.Error(ex, "Error getting open jobs");
             throw;
+        }
+    }
+
+    private static DateTime CalculateDeliveryTime(TucJob job)
+    {
+        try
+        {
+            if (job.RequiredDeliveryTime.HasValue) return job.RequiredDeliveryTime.Value;
+            if (job.DeliverByTime.HasValue) return job.DeliverByTime.Value;
+        
+            ArgumentNullException.ThrowIfNull(job.UcjbSpeedNavigation);
+            ArgumentNullException.ThrowIfNull(job.UcjbSpeedNavigation.DeliveryTime);
+            
+            var dateToUse = job.PickUpTime ?? new DateTime(job.UcjbDate.Year,
+                job.UcjbDate.Month,
+                job.UcjbDate.Day,
+                job.UcjbTime?.Hour ?? 0, 
+                job.UcjbTime?.Minute ??   0, 
+                job.UcjbTime?.Second ??0);
+        
+            var deliverTime = dateToUse.AddMinutes(job.UcjbSpeedNavigation.DeliveryTime.Value);
+            return deliverTime;
+        }
+        catch (Exception e)
+        {
+           Log.Error(e, "{Message}", 
+               ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(CalculateDeliveryTime)));
+           return DateTime.MinValue;
         }
     }
 

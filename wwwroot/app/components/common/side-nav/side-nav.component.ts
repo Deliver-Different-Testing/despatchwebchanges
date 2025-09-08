@@ -2,6 +2,7 @@ import {AppConfig} from "../../../interfaces/app-config.interface";
 import "./side-nav.styles.less";
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
+import {FullName} from "../../../contants";
 
 class MaterialSidenavComponentController extends BaseController {
     static $inject = [
@@ -53,7 +54,7 @@ class MaterialSidenavComponentController extends BaseController {
 
         // Initialize read-only properties
         this.isUsCustomer = appConfig.US_Customer;
-        this.userName = FirstName;
+        this.userName = FullName;
         this.currentYear = dayjs().year();
 
         const locale = appConfig.US_Customer ? 'en' : 'en-nz';

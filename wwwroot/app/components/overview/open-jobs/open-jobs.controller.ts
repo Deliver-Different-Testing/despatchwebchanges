@@ -5,9 +5,11 @@ import {DriverViewModel, OpenJobResponse, OverviewQueryParams, ViewJob} from "..
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
 import duration from 'dayjs/plugin/duration';
+import {formatMins, formatShortDate} from "../../../functions/formatDates";
 
 class OpenJobsWidgetController extends BaseController {
     static $inject = [
+        "$log",
         "overviewService",
         "overviewFiltersService",
         "$filter",
@@ -17,8 +19,9 @@ class OpenJobsWidgetController extends BaseController {
         "$interval",
     ];
 
+    private static readonly OpenJobsViewModeKey = `openJobsViewMode_${ContactID}`;
+    private static readonly LimitNameKey = `openJobsTableViewLimit${ContactID}`;
     private readonly isUsCustomer: boolean;
-    private readonly limitName: string = "openJobsTableViewLimit";
     private readonly sortBy: string;
 
     private isCardCollapsed?: boolean;
@@ -33,6 +36,7 @@ class OpenJobsWidgetController extends BaseController {
     };
 
     constructor(
+        private $log: angular.ILogService,
         private overviewService: OverviewService,
         private overviewFiltersService: OverviewFiltersService,
         private $filter: angular.IFilterService,
@@ -54,27 +58,28 @@ class OpenJobsWidgetController extends BaseController {
             (newValue: number, oldValue: number) => {
                 if (newValue !== oldValue) {
                     if (Modernizr.localstorage) {
-                        localStorage.setItem(this.limitName, `${this.tableQuery.limit}`);
+                        localStorage.setItem(OpenJobsWidgetController.LimitNameKey, `${this.tableQuery.limit}`);
                     }
                 }
             }
         );
     }
 
-    $onInit() {
+    $onInit(): void {
         // Subscribe to filter changes
         this.overviewFiltersService.onFilterChange(() => this.loadOpenJobs());
 
         this.loadSavedLimit();
         this.loadOpenJobs();
         this.loadCardState();
+        this.loadViewModeState();
 
         this.registerInterval(this.loadOpenJobs, 60000);
     }
 
     private loadSavedLimit() {
-        const savedLimit = localStorage.getItem(this.limitName);
-        console.log(`Saved limit is: ${savedLimit}`);
+        const savedLimit = localStorage.getItem(OpenJobsWidgetController.LimitNameKey);
+        this.$log.debug(`Saved limit is: ${savedLimit}`);
         if (savedLimit) {
             this.tableQuery.limit = parseInt(savedLimit);
         }
@@ -101,7 +106,7 @@ class OpenJobsWidgetController extends BaseController {
                             jobs: [],
                             completedToday: job.completedToday,
                             lastCompleted: job.lastCompleted ?
-                                this.formatTime(job.lastCompleted) : "N/A",
+                               formatMins(job.lastCompleted) : "N/A",
                             expanded: false
                         };
                     }
@@ -111,12 +116,12 @@ class OpenJobsWidgetController extends BaseController {
                         reference: job.reference,
                         status: job.status,
                         pickup: {
-                            time: job.pickupTime.toDate(),
+                            time: job.pickupTime,
                             name: job.pickupName,
                             address: job.pickupAddress
                         },
                         delivery: {
-                            time: job.deliveryTime.toDate(),
+                            time: job.deliveryTime,
                             name: job.deliveryName,
                             address: job.deliveryAddress
                         },
@@ -140,7 +145,7 @@ class OpenJobsWidgetController extends BaseController {
                 this.tableJobs.sort(this.compareJobs);
             })
             .catch(error => {
-                console.error("Error loading open jobs:", error);
+                this.$log.error("Error loading open jobs:", error);
             });
     }
 
@@ -149,25 +154,21 @@ class OpenJobsWidgetController extends BaseController {
     }
 
     loadViewModeState() {
-        const savedViewMode = localStorage.getItem('openJobsViewMode');
+        const savedViewMode = localStorage.getItem(OpenJobsWidgetController.OpenJobsViewModeKey);
         if (savedViewMode === 'table') {
             this.isTableView = true;
         }
     }
 
     toggleViewMode() {
-        localStorage.setItem('openJobsViewMode', this.isTableView ? 'table' : 'card');
+        localStorage.setItem(OpenJobsWidgetController.OpenJobsViewModeKey, this.isTableView ? 'table' : 'card');
     }
 
     async toggleCard(): Promise<void> {
         this.isCardCollapsed = !this.isCardCollapsed;
         await this.overviewService.saveCollapseState("openJobs", this.isCardCollapsed);
     }
-
-    private formatTime(timestamp: dayjs.Dayjs): string {
-        return timestamp.format("HH:mm");
-    }
-
+    
     compareJobs(a: ViewJob, b: ViewJob): number {
         try {
             const order = this.tableQuery.order;
@@ -203,7 +204,7 @@ class OpenJobsWidgetController extends BaseController {
 
             return isDesc ? -comparison : comparison;
         } catch (error) {
-            console.error("Error comparing jobs:", error);
+            this.$log.error("Error comparing jobs:", error);
             return 0;
         }
     }
@@ -233,20 +234,19 @@ class OpenJobsWidgetController extends BaseController {
             // For table view
             this.tableJobs.sort((a, b) => this.compareJobs(a, b));
         } catch (error) {
-            console.error("Error during sort:", error);
+            this.$log.error("Error during sort:", error);
         }
     }
 
     formatRegionalTime(timestamp: string | Date): string {
         if (!timestamp) return "";
-
-        const format = this.isUsCustomer ? "MM/DD HH:mm" : "DD/MM HH:mm";
-
+        
         // Get the formatted timezone using the filter
         const timezoneShort = this.$filter<(timezone: string) => string>('timezoneShort')(TimeZone);
         const timezoneDisplay = timezoneShort ? ` (${timezoneShort})` : '';
-
-        return dayjs(timestamp).format(format) + timezoneDisplay;
+        
+        const formattedShortDate = formatShortDate(timestamp, this.isUsCustomer);
+        return formattedShortDate + timezoneDisplay;
     }
 
     getTimeSinceLastCompleted(lastCompletedTime: string): number {
