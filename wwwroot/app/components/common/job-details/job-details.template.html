@@ -4,10 +4,10 @@
         ng-show="ctrl.isLoading">
 </md-progress-linear>
 
-<div class="job-detail-page" 
+<div class="job-detail-page"
      ng-if="ctrl.job"
      ng-class="{'dense-view': ctrl.isDenseView(), 'ultradense-view': ctrl.isUltraDenseView()}">
-<md-card
+    <md-card
             class="warning-section "
             ng-if="::ctrl.job.isArchived || ctrl.job.preBook || ctrl.job.isBulkJob">
         <md-card-content>
@@ -30,10 +30,9 @@
     </md-card>
 
     <md-card class="job-detail-widget md-padding">
-        <div class="header-bar">
-            <div
-                    class="job-ids-container"
-                    ng-if="ctrl.jobGroups && ctrl.jobGroups.length > 0">
+        <!-- Header with tabs (shown only when there are related jobs) -->
+        <div class="header-bar" ng-if="ctrl.jobGroups && ctrl.jobGroups.length > 0">
+            <div class="job-ids-container">
                 <md-tabs
                         md-border-bottom
                         md-no-pagination="true"
@@ -56,7 +55,11 @@
                     </md-tab>
                 </md-tabs>
             </div>
+        </div>
 
+        <!-- Main header with controls (position depends on whether tabs exist) -->
+        <div class="header-bar">
+            <!-- Status Menu -->
             <md-menu id="status-menu" md-position-mode="target-right target" ng-if="ctrl.showStageDropdown">
                 <md-button aria-label="internal stage" ng-click="$mdMenu.open($event)">
                     <md-tooltip md-direction="bottom">Modify Status</md-tooltip>
@@ -76,6 +79,7 @@
                 </md-menu-content>
             </md-menu>
 
+            <!-- View Density Toggle -->
             <md-button class="md-raised"
                        aria-label="Toggle density view"
                        ng-click="ctrl.toggleViewDensity()">
@@ -86,7 +90,8 @@
                 </md-icon>
                 {{ ctrl.viewDensity }}
             </md-button>
-            
+
+            <!-- Edit Mode Toggle -->
             <md-button class="md-raised"
                        ng-class="{'md-primary': ctrl.isEditMode}"
                        aria-label="edit job details fields"
@@ -97,15 +102,17 @@
                 {{ctrl.isEditMode ? 'Done Editing' : 'Customize Fields'}}
             </md-button>
 
+            <!-- Reset Button -->
             <md-button
                     ng-if="ctrl.isEditMode"
                     ng-click="ctrl.resetFieldVisibility()">
                 Reset to Default
             </md-button>
 
-            
+            <!-- Spacer -->
             <div flex></div>
 
+            <!-- Status Chip -->
             <md-chip
                     class="status {{ctrl.job.statusName | lowercase | replace:' ':'-'}}"
                     md-ink-ripple
@@ -631,15 +638,17 @@
                             <div class="md-toolbar-tools">
                                 <span class="material-symbols-outlined">inventory_2</span>
                                 <span class="md-headline-title" flex style="margin-left: 8px">Package Details</span>
-                              
+
                                 <div flex></div>
 
                                 <md-button class="md-icon-button"
                                            ng-if="ctrl.isEditMode"
                                            ng-click="ctrl.toggleFieldVisibility('packageDetails')">
-                                    <md-icon md-font-set="material-symbols-outlined">{{ ctrl.isFieldVisible('packageDetails') ? 'visibility' : 'visibility_off' }}</md-icon>
+                                    <md-icon md-font-set="material-symbols-outlined">
+                                        {{ ctrl.isFieldVisible('packageDetails') ? 'visibility' : 'visibility_off' }}
+                                    </md-icon>
                                 </md-button>
-                                
+
                             </div>
                         </md-toolbar>
 
@@ -785,7 +794,8 @@
                                                ng-if="ctrl.isEditMode"
                                                ng-click="ctrl.toggleFieldVisibility('deliveryDetails')">
                                         <md-icon md-font-set="material-symbols-outlined">
-                                            {{ ctrl.isFieldVisible('deliveryDetails') ? 'visibility' : 'visibility_off' }}
+                                            {{ ctrl.isFieldVisible('deliveryDetails') ? 'visibility' : 'visibility_off'
+                                            }}
                                         </md-icon>
                                     </md-button>
                                 </div>

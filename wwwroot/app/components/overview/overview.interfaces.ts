@@ -69,15 +69,15 @@ export interface OpenJobResponse {
     jobId: number;
     reference: string;
     status: string;
-    pickupTime: Dayjs;
+    pickupTime: Date;
     pickupName: string;
     pickupAddress: string;
-    deliveryTime: Dayjs;
+    deliveryTime: Date;
     deliveryName: string;
     deliveryAddress: string;
     driverName: string;
     completedToday: number;
-    lastCompleted: Dayjs | null;
+    lastCompleted?: Date;
     quantity: number;
     packageType: string;
     mileage: number;

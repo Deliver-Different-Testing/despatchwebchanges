@@ -1,6 +1,6 @@
 <div class="open-jobs-component">
     <md-card class="jobs-widget">
-        <md-toolbar class="md-accent">
+        <md-toolbar class="widget-toolbar">
             <div class="md-toolbar-tools">
                 <span class="material-symbols-outlined">inventory_2</span>
                 <span class="md-headline-title" flex style="margin-left: 8px;">Open Jobs</span>
@@ -22,7 +22,7 @@
 
                 <md-button aria-label="collapse" class="md-icon-button" ng-click="ctrl.toggleCard()">
                     <md-icon md-font-set="material-symbols-outlined" style="color: white;">
-                        {{ctrl.isCardCollapsed ? 'expand_less' : 'expand_more'}}
+                        {{ctrl.isCardCollapsed ? 'expand_more' : 'expand_less'}}
                     </md-icon>
                 </md-button>
             </div>
@@ -223,7 +223,7 @@
                                                 <!-- Pickup Info -->
                                                 <div flex="50">
                                                     <div layout="row" layout-align="start center">
-                                                        <md-icon class="md-primary" md-font-set="material-symbols-outlined">schedule</md-icon>
+                                                        <md-icon class="md-primary" md-font-set="material-symbols-outlined">pin_drop</md-icon>
                                                         <span class="md-body-2">Pickup: {{::ctrl.formatRegionalTime(job.pickup.time)}}</span>
                                                     </div>
                                                     <div layout="column" layout-padding>
@@ -235,7 +235,7 @@
                                                 <!-- Delivery Info -->
                                                 <div flex="50">
                                                     <div layout="row" layout-align="start center">
-                                                        <md-icon class="md-accent" md-font-set="material-symbols-outlined">schedule</md-icon>
+                                                        <md-icon class="md-primary" md-font-set="material-symbols-outlined">pin_drop</md-icon>
                                                         <span class="md-body-2">Delivery: {{::ctrl.formatRegionalTime(job.delivery.time)}}</span>
                                                     </div>
                                                     <div layout="column" layout-padding>
