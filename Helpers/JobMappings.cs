@@ -11,7 +11,7 @@ namespace DespatchWeb.Helpers;
 
 public static class JobMappings
 {
-    public static readonly Expression<Func<TucJob, DispatchJobViewModel>> JobDispatchMapping =
+    public static Expression<Func<TucJob, DispatchJobViewModel>> JobDispatchMapping(bool isUsCustomer) =>
         j => new DispatchJobViewModel
         {
             Id = j.UcjbId,
@@ -33,9 +33,9 @@ public static class JobMappings
             Time = j.UcjbTime,
             Booked = CombineDateAndTime(j.UcjbDate, j.UcjbTime),
             IsFlightJob = j.UcjbSpeedNavigation != null
-                          && j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight,
+                          && j.UcjbSpeedNavigation.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
             IsAgentJob = j.UcjbSpeedNavigation != null
-                         && j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Agent,
+                         && j.UcjbSpeedNavigation.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Agent : (int)UrgentSpeedGrouping.NationwideAgent),
 
             Courier = j.UcjbCourierId != null ? j.UcjbCourier.Code : null,
             CourierData =
@@ -1104,9 +1104,7 @@ public static class JobMappings
                 : j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName
                 : string.Empty
         };
-
     
-
     private static string FormatDate(DateTime? date)
     {
         var dateToUse = date ?? DateTime.MinValue;

@@ -34,6 +34,7 @@ import {formatFullDate} from "../functions/formatDates";
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = [
         "$http",
+        "$log",
         "APP_CONFIG",
         "configService"
     ];
@@ -43,6 +44,7 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     constructor(
         private $http: angular.IHttpService,
+        private $log: angular.ILogService,
         private appConfig: AppConfig,
         private configService: ConfigService
     ) {
@@ -456,7 +458,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 headers: {"Content-Type": "application/json"},
             });
         } catch (error) {
-            console.error("Error in lateCall:", error);
+            this.$log.error("Error in lateCall:", error);
             throw error;
         }
     }
@@ -556,7 +558,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             let endpoint = prebook
                 ? "job/UpdateBookingDeliveryAddress"
                 : "job/UpdateDeliveryAddress";
-            console.log(`Using endpoint: ${endpoint}`);
+            this.$log.debug(`Using endpoint: ${endpoint}`);
 
             let requestBody;
             if (!this.isUsCustomer) {
@@ -589,10 +591,10 @@ class DispatchCoreService implements angular.IServiceProvider {
                 endpoint += "Us";
             }
 
-            console.log(`Address Update Request: ${requestBody}`);
+            this.$log.debug(`Address Update Request: ${requestBody}`);
             await this.$http.post(endpoint, requestBody);
         } catch (error) {
-            console.error(error);
+            this.$log.error(error);
         }
     }
 
@@ -606,7 +608,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             let endpoint = prebook
                 ? "job/UpdateBookingPickupAddress"
                 : "job/UpdatePickupAddress";
-            console.log(`Using endpoint: ${endpoint}`);
+            this.$log.debug(`Using endpoint: ${endpoint}`);
 
             let requestBody;
             if (!this.isUsCustomer) {
@@ -629,10 +631,10 @@ class DispatchCoreService implements angular.IServiceProvider {
                 endpoint += "Us";
             }
 
-            console.log(`Address Update Request: ${requestBody}`);
+            this.$log.debug(`Address Update Request: ${requestBody}`);
             await this.$http.post(endpoint, requestBody);
         } catch (error) {
-            console.error(error);
+            this.$log.error(error);
         }
     }
 
@@ -663,7 +665,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         value: string | Date | number | boolean,
         isRecurring: boolean
     ): Promise<any> {
-        console.log("Starting updateJobDetail:", {
+        this.$log.debug("Starting updateJobDetail:", {
             jobId,
             field,
             initialValue: value,
@@ -687,12 +689,12 @@ class DispatchCoreService implements angular.IServiceProvider {
                     isRecurring,
                 }
             });
-            console.log("API response received:", {
+            this.$log.debug("API response received:", {
                 data: response.data,
             });
             return response.data;
         } catch (error) {
-            console.error("API request failed:", {
+            this.$log.error("API request failed:", {
                 error: error instanceof Error ? error.message : "Unknown error",
                 parameters: {jobId, field: field, value: value},
             });
@@ -906,7 +908,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             });
             return response.data;
         } catch (error) {
-            console.error("Error updating packages:", error);
+            this.$log.error("Error updating packages:", error);
             throw error;
         }
     }
@@ -936,7 +938,7 @@ class DispatchCoreService implements angular.IServiceProvider {
 
             return response.data;
         } catch (error) {
-            console.error("Error adding price component:", error);
+            this.$log.error("Error adding price component:", error);
             throw error;
         }
     }
@@ -954,7 +956,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 }
             );
         } catch (error) {
-            console.error("Error updating price breakdown:", error);
+            this.$log.error("Error updating price breakdown:", error);
             throw error;
         }
     }
@@ -974,7 +976,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 }
             );
         } catch (error) {
-            console.error("Error deleting price breakdown:", error);
+            this.$log.error("Error deleting price breakdown:", error);
             throw error;
         }
     }
@@ -1015,7 +1017,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 if (filters.endDate) params.endDate = filters.endDate;
 
                 if (Object.keys(params).length > 0) {
-                    console.log(`Query params:`, params);
+                    this.$log.debug(`Query params:`, params);
                 }
             }
 
@@ -1025,7 +1027,7 @@ class DispatchCoreService implements angular.IServiceProvider {
 
             return response.data;
         } catch (error) {
-            console.error("Error fetching tasks:", error);
+            this.$log.error("Error fetching tasks:", error);
             return [];
         }
     }
@@ -1053,7 +1055,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 }
             );
         } catch (error) {
-            console.error("Error updating job read status:", error);
+            this.$log.error("Error updating job read status:", error);
             throw error;
         }
     }
@@ -1072,7 +1074,7 @@ class DispatchCoreService implements angular.IServiceProvider {
 
             return response.data;
         } catch (error) {
-            console.error("Error updating packages:", error);
+            this.$log.error("Error updating packages:", error);
             throw error;
         }
     }
@@ -1091,7 +1093,7 @@ class DispatchCoreService implements angular.IServiceProvider {
 
             return response.data;
         } catch (error) {
-            console.error("Error updating packages:", error);
+            this.$log.error("Error updating packages:", error);
             throw error;
         }
     }

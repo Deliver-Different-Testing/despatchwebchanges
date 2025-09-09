@@ -37,6 +37,8 @@ public class NationwideJobRepository(
             if (flights.FlightSegments.Count == 0)
                 throw new ArgumentException("Flight list cannot be empty", nameof(flights));
 
+            var isUsCustomer = _infoService.IsUsTenant();
+
             // Parse dates
             var parsedPackageReadyTime = !string.IsNullOrEmpty(requestData.PackageReadyTime)
                 ? DateTime.TryParse(requestData.PackageReadyTime, out var readyTime) ? readyTime : (DateTime?)null
@@ -112,7 +114,9 @@ public class NationwideJobRepository(
             {
                 var pickUpJob = job.Parent.InverseParent.FirstOrDefault(j =>
                     j.UcjbNumber.EndsWith('1') &&
-                    j.UcjbSpeedNavigation?.Grouping?.GroupingId == (int)SpeedGrouping.Agent);
+                    j.UcjbSpeedNavigation?.Grouping?.GroupingId == (isUsCustomer
+                        ? (int)SpeedGrouping.Agent
+                        : (int)UrgentSpeedGrouping.NationwideAgent));
 
                 if (pickUpJob != null)
                 {
@@ -141,7 +145,10 @@ public class NationwideJobRepository(
                                                                                    || j.UcjbNumber.EndsWith('3'))
                                                                                && j.UcjbSpeedNavigation?.Grouping
                                                                                    ?.GroupingId ==
-                                                                               (int)SpeedGrouping.Agent);
+                                                                               (isUsCustomer
+                                                                                   ? (int)SpeedGrouping.Agent
+                                                                                   : (int)UrgentSpeedGrouping
+                                                                                       .NationwideAgent));
 
                 if (deliveryJob != null)
                 {

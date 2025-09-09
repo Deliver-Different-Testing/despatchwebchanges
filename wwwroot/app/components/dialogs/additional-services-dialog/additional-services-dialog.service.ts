@@ -4,17 +4,19 @@ import AdditionalServicesDialogController from "./additional-services-dialog.con
 
 class AdditionalServicesDialogService implements  angular.IServiceProvider {
     static $inject = [
+        '$log',
         '$mdDialog',
         'DispatchData',
         '$document'
     ];
 
     constructor(
+        private $log: angular.ILogService,
         private $mdDialog: angular.material.IDialogService,
         private DispatchData: DispatchCoreService,
         private $document: angular.IDocumentService,
     ) {
-        console.log('AdditionalServicesDialogService: Service instantiated');
+        this.$log.debug('AdditionalServicesDialogService: Service instantiated');
     }
 
     $get() {
@@ -23,12 +25,12 @@ class AdditionalServicesDialogService implements  angular.IServiceProvider {
 
     async showAdditionalServicesDialog($event: MouseEvent, job: IJob | IDispatchJob) {
         try {
-            console.log("Additional Services Dialog opened!");
-            console.log("Job: ", job);
+            this.$log.debug("Additional Services Dialog opened!");
+            this.$log.debug("Job: ", job);
 
             if (!job.clientId || !job.speedId) {
-                console.log("Speed is: ", job.speedId, "Client is: ", job.clientId, "")
-                console.log("No client or speed selected!");
+                this.$log.debug("Speed is: ", job.speedId, "Client is: ", job.clientId, "")
+                this.$log.debug("No client or speed selected!");
                 return;
             }
 
@@ -59,12 +61,12 @@ class AdditionalServicesDialogService implements  angular.IServiceProvider {
                 bindToController: true,
             });
 
-            console.log("Additional Services Dialog closed!");
+            this.$log.debug("Additional Services Dialog closed!");
         } catch (error: any) {
             if (error === undefined) {
-                console.log("User canceled dialog!");
+                this.$log.debug("User canceled dialog!");
             } else {
-                console.error("Error in showAdditionalServicesMenu:", error);
+                this.$log.error("Error in showAdditionalServicesMenu:", error);
             }
         }
     }
