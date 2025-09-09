@@ -9,6 +9,7 @@ import dayjs from "dayjs";
 class DispatchExecutorService implements angular.IServiceProvider {
     static $inject = [
         "$mdDialog",
+        "$log",
         "DispatchData",
         "toastrService"
     ];
@@ -18,10 +19,11 @@ class DispatchExecutorService implements angular.IServiceProvider {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
+        private $log: angular.ILogService,
         private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
     ) {
-        console.log("DispatchExecutorService initialized");
+        this.$log.debug("DispatchExecutorService initialized");
     }
 
     $get() {
@@ -29,7 +31,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
     }
 
     async fetchCouriersData(): Promise<void> {
-        console.log("Fetching couriers data...");
+        this.$log.debug("Fetching couriers data...");
         try {
             const [activeCouriers, allCouriers] = await Promise.all([
                 this.DispatchData.getActiveCouriers(),
@@ -39,12 +41,12 @@ class DispatchExecutorService implements angular.IServiceProvider {
             this.pickCouriers = activeCouriers;
             this.pickAllCouriers = allCouriers;
 
-            console.log("Couriers data fetched:", {
+            this.$log.debug("Couriers data fetched:", {
                 activeCouriers: this.pickCouriers.length,
                 allCouriers: this.pickAllCouriers.length
             });
         } catch (error) {
-            console.error("Error fetching couriers data:", error);
+            this.$log.error("Error fetching couriers data:", error);
             throw error;
         }
     }
@@ -55,7 +57,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         isInternal: boolean,
         selectedAreas: Array<any>
     ): Promise<JobListResponse> {
-        console.log("Getting job list with courier data:", {
+        this.$log.debug("Getting job list with courier data:", {
             queryParams,
             clientCount: selectedClients?.length,
             isInternal,
@@ -88,7 +90,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
                 !job?.courierData?.courierId
             );
 
-            console.log(`Retrieved ${result.length} jobs, ${unDispatchedJobs.length} unDispatched`);
+            this.$log.debug(`Retrieved ${result.length} jobs, ${unDispatchedJobs.length} unDispatched`);
 
             return {
                 items: result,
@@ -97,19 +99,19 @@ class DispatchExecutorService implements angular.IServiceProvider {
                 allCouriers: this.pickAllCouriers
             };
         } catch (error) {
-            console.error("Error in getJobListWithCourierData:", error);
+            this.$log.error("Error in getJobListWithCourierData:", error);
             throw error;
         }
     }
 
     async dispatchJobByJobId(courierId: number, jobId: number): Promise<void> {
-        console.log("Dispatching job by ID:", {courierId, jobId});
+        this.$log.debug("Dispatching job by ID:", {courierId, jobId});
         try {
             const job = await this.DispatchData.getDispatchJobDetail(jobId);
-            console.log("Job details fetched:", job);
+            this.$log.debug("Job details fetched:", job);
 
             const foundCourier = await this.DispatchData.getCourierById(courierId);
-            console.log("Found courier:", foundCourier);
+            this.$log.debug("Found courier:", foundCourier);
 
             if (!foundCourier) {
                 await this.$mdDialog.show(
@@ -124,24 +126,24 @@ class DispatchExecutorService implements angular.IServiceProvider {
 
             await this.dispatchJob(foundCourier.courierId, job as IDispatchJob);
         } catch (error) {
-            console.error("Error in dispatchJobByJobId:", error);
+            this.$log.error("Error in dispatchJobByJobId:", error);
             throw error;
         }
     }
 
     async dispatchJobsByCourierId(courierId: number, jobs: IDispatchJob[]): Promise<any> {
-        console.log("Dispatching multiple jobs by courier ID:", {courierId, jobCount: jobs.length});
+        this.$log.debug("Dispatching multiple jobs by courier ID:", {courierId, jobCount: jobs.length});
         try {
             const courier = await this.DispatchData.getCourierById(courierId);
-            console.log("Found courier:", courier);
+            this.$log.debug("Found courier:", courier);
 
             if (courier) {
                 await this.dispatchJobsContinue(courier, jobs);
             } else {
-                console.warn(`Could not find courier with ID ${courierId}`);
+                this.$log.warn(`Could not find courier with ID ${courierId}`);
             }
         } catch (error) {
-            console.error("Error in dispatchJobsBycourierId:", error);
+            this.$log.error("Error in dispatchJobsBycourierId:", error);
             throw error;
         }
     }
@@ -178,30 +180,30 @@ class DispatchExecutorService implements angular.IServiceProvider {
     }
 
     async restoreJob(job: IDispatchJob): Promise<{ gpsCourier: number | undefined }> {
-        console.log(`[restoreJob] Starting restoration for job #${job.jobNo}`);
+        this.$log.debug(`[restoreJob] Starting restoration for job #${job.jobNo}`);
 
         const validationResult = await this.validateJobForRestore(job);
-        console.log(`[restoreJob] Validation result for job #${job.jobNo}:`,
+        this.$log.debug(`[restoreJob] Validation result for job #${job.jobNo}:`,
             {isValid: validationResult.isValid, courierId: validationResult.courier?.id});
 
         if (!validationResult.isValid) {
-            console.log(`[restoreJob] Job #${job.jobNo} failed validation, not restoring`);
+            this.$log.debug(`[restoreJob] Job #${job.jobNo} failed validation, not restoring`);
             return {gpsCourier: undefined};
         }
 
         try {
             if (!validationResult.courier) {
-                console.error(`[restoreJob] Courier not found for job #${job.jobNo}`);
+                this.$log.error(`[restoreJob] Courier not found for job #${job.jobNo}`);
                 return {gpsCourier: undefined};
             }
 
-            console.log(`[restoreJob] Processing restore for job #${job.jobNo} with courier ID ${validationResult.courier.id}`);
+            this.$log.debug(`[restoreJob] Processing restore for job #${job.jobNo} with courier ID ${validationResult.courier.id}`);
             const restoredJob = await this.processJobRestore(job, validationResult.courier);
-            console.log(`[restoreJob] Successfully restored job #${job.jobNo}, assigned to courier ID ${restoredJob.courierId}`);
+            this.$log.debug(`[restoreJob] Successfully restored job #${job.jobNo}, assigned to courier ID ${restoredJob.courierId}`);
 
             return {gpsCourier: restoredJob.courierId};
         } catch (error: any) {
-            console.error(`[restoreJob] Error restoring job #${job.jobNo}:`, error);
+            this.$log.error(`[restoreJob] Error restoring job #${job.jobNo}:`, error);
             await this.showAlertMessage(`Failed to restore job #${job.jobNo}. Error occured ${error.message}`);
             return {gpsCourier: undefined};
         }
@@ -275,7 +277,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         isValid: boolean;
         message: string;
     }> {
-        console.log("Validating job:", {
+        this.$log.debug("Validating job:", {
             jobNo: job?.jobNo,
             courierId: courier?.id,
             hasDG: job.dgClass !== undefined && job.dgClass > 0,
@@ -302,7 +304,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
             }
         }
 
-        console.log("Job validation passed:", job.jobNo);
+        this.$log.debug("Job validation passed:", job.jobNo);
         return {isValid: true, message: ""};
     }
 
@@ -321,7 +323,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         }
 
         const logJobStatus = (message: string, data?: object) => {
-            console.log(message, data);
+            this.$log.debug(message, data);
         };
 
         try {
@@ -341,10 +343,10 @@ class DispatchExecutorService implements angular.IServiceProvider {
 
     private async processFollowupJobs(jobs: IDispatchJob[]): Promise<void> {
         const jobsRequiringFollowup = jobs.filter(this.requiresFollowupEvent);
-        console.log("Jobs requiring followup:", jobsRequiringFollowup.length);
+        this.$log.debug("Jobs requiring followup:", jobsRequiringFollowup.length);
 
         if (jobsRequiringFollowup.length > 0) {
-            console.log("Processing followup events");
+            this.$log.debug("Processing followup events");
             await Promise.all(
                 jobsRequiringFollowup.map(job => this.DispatchData.addFollowupEvent(job.id))
             );
@@ -353,12 +355,12 @@ class DispatchExecutorService implements angular.IServiceProvider {
 
     private async allocateJobsToCourier(courier: ActiveCourierViewModel, jobs: IDispatchJob[]): Promise<void> {
         const jobIds = jobs.map(job => job.id);
-        console.log("Allocating jobs:", jobIds.length);
+        this.$log.debug("Allocating jobs:", jobIds.length);
         await this.DispatchData.allocateJobs(courier.courierId, ContactID, jobIds);
     }
 
     private async handleDispatchError(error: Error): Promise<never> {
-        console.error("Error processing valid jobs:", error);
+        this.$log.error("Error processing valid jobs:", error);
         await this.showAlertMessage(`Failed to dispatch jobs: ${error.message}`);
         throw error;
     }
@@ -395,24 +397,24 @@ class DispatchExecutorService implements angular.IServiceProvider {
     }
 
     private async processJobRestore(job: IDispatchJob, courier: ActiveCourierViewModel) {
-        console.log(`[_processJobRestore] Starting restore process for job #${job.jobNo} with ID ${job.id}`);
+        this.$log.debug(`[_processJobRestore] Starting restore process for job #${job.jobNo} with ID ${job.id}`);
 
         try {
-            console.log(`[_processJobRestore] Adding restore event for job ID ${job.id}`);
+            this.$log.debug(`[_processJobRestore] Adding restore event for job ID ${job.id}`);
             await this.DispatchData.addRestoreEvent(job.id);
 
             if (job.displaySplitJobDetail) {
-                console.log(`[_processJobRestore] Job #${job.jobNo} is a split job, restoring all split jobs`);
+                this.$log.debug(`[_processJobRestore] Job #${job.jobNo} is a split job, restoring all split jobs`);
                 await this.DispatchData.restoreSplitJobs([job.id]);
             } else {
-                console.log(`[_processJobRestore] Job #${job.jobNo} is a standard job, restoring`);
+                this.$log.debug(`[_processJobRestore] Job #${job.jobNo} is a standard job, restoring`);
                 await this.DispatchData.restoreJobs([job.id]);
             }
 
-            console.log(`[_processJobRestore] Successfully completed restore process for job #${job.jobNo}, courier ID: ${courier.id}`);
+            this.$log.debug(`[_processJobRestore] Successfully completed restore process for job #${job.jobNo}, courier ID: ${courier.id}`);
             return courier;
         } catch (error) {
-            console.error(`[_processJobRestore] Error during restore process for job #${job.jobNo}:`, error);
+            this.$log.error(`[_processJobRestore] Error during restore process for job #${job.jobNo}:`, error);
             throw error;
         }
     }

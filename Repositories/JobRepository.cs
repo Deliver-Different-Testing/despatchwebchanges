@@ -58,6 +58,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
     public async Task<DispatchJobViewModel> GetBulkDispatchJobDetailAsync(int bulkJobId)
     {
+        var isUsCustomer = _infoService.IsUsTenant();
+        
         var bulkJob = await (
                 from j in Context.TblBulkJobs
                 join c in Context.TblCouriers on j.CourierId equals c.CourierId into courierJoin
@@ -81,9 +83,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     ParentId = j.ParentId,
 
                     IsFlightJob = speed != null
-                                  && speed.GroupingId == (int)SpeedGrouping.Flight,
+                                  && speed.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
                     IsAgentJob = speed != null
-                                 && speed.GroupingId == (int)SpeedGrouping.Agent,
+                                 && speed.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Agent : (int)UrgentSpeedGrouping.NationwideAgent),
 
                     Vehicle = vehicleSize != null
                         ? new Suggestion
@@ -155,6 +157,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
     public async Task<List<DispatchJobViewModel>> BulkSearchAsync(PodSearchRequest data)
     {
+        var isUsCustomer = _infoService.IsUsTenant();
         var jobSearch = (data.Job ?? string.Empty).ToLower();
         var wildSearch = (data.Wild ?? string.Empty).ToLower();
 
@@ -211,9 +214,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     ParentId = j.ParentId,
 
                     IsFlightJob = speed != null
-                                  && speed.GroupingId == (int)SpeedGrouping.Flight,
+                                  && speed.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
                     IsAgentJob = speed != null
-                                 && speed.GroupingId == (int)SpeedGrouping.Agent,
+                                 && speed.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Agent : (int)UrgentSpeedGrouping.NationwideAgent),
 
                     Vehicle = vehicleSize != null
                         ? new Suggestion
@@ -288,6 +291,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     {
         try
         {
+            var isUsCustomer = _infoService.IsUsTenant();
             var jobSearch = $"%{data.Job}%";
             var wildSearch = $"%{data.Wild}%";
 
@@ -364,9 +368,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
                         DeliverByTime = j.DeliverByTime,
                         IsFlightJob = speed != null
-                                      && speed.GroupingId == (int)SpeedGrouping.Flight,
+                                      && speed.GroupingId ==  (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
                         IsAgentJob = speed != null
-                                     && speed.GroupingId == (int)SpeedGrouping.Agent,
+                                     && speed.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Agent : (int)UrgentSpeedGrouping.NationwideAgent),
 
                         Vehicle = vehicleSize != null
                             ? new Suggestion
@@ -898,11 +902,13 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
     public async Task<List<DispatchJobViewModel>> CurrentJobListAsync(int courierId, bool done)
     {
+        var isUsCustomer = _infoService.IsUsTenant();
+        
         return await Context
             .TucCouriers.Where(c => c.UccrId == courierId)
             .SelectMany(c => c.TucJobUcjbCouriers)
             .Where(j => j.UcjbJobDone == done)
-            .Select(JobMappings.JobDispatchMapping)
+            .Select(JobMappings.JobDispatchMapping(isUsCustomer))
             .AsNoTracking()
             .ToListAsync();
     }
@@ -2772,9 +2778,11 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
     public async Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId)
     {
+        var isUsCustomer = _infoService.IsUsTenant();
+        
         var job = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
-            .Select(JobMappings.JobDispatchMapping)
+            .Select(JobMappings.JobDispatchMapping(isUsCustomer))
             .AsNoTracking()
             .FirstOrDefaultAsync();
         return job;
@@ -2953,6 +2961,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
     public async Task<List<MegaMapResponse>> GetJobsForMegaMapAsync()
     {
+        var isUsCustomer = _infoService.IsUsTenant();
+        
         // Get active jobs to display on a map
         var jobs = await Context
             .TucJobs.Where(j =>
@@ -2966,13 +2976,13 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 JobNumber = j.UcjbNumber,
                 JobStatus = j.UcjbStatus != null ? j.UcjbStatusNavigation.UcjsName : "New",
                 EstimatedDelivery =
-                    j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
+                    j.UcjbSpeedNavigation.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight)
                     && j.TucJobNationwides.Count != 0
                         ? j.TucJobNationwides.FirstOrDefault().UcnwEta.Value
                         : j
                             .UcjbDate.Date.Add(j.UcjbTime.Value.TimeOfDay)
                             .AddMinutes(j.UcjbSpeedNavigation.Minutes ?? 180),
-                IsFlightJob = j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight,
+                IsFlightJob = j.UcjbSpeedNavigation.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
                 PickupLocation = new AddressViewModel
                 {
                     Latitude = j.PickUpLatitude ?? 0,
@@ -3015,7 +3025,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     }
                     : null,
                 FlightInfo =
-                    j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
+                    j.UcjbSpeedNavigation.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight)
                         ? j
                             .TucJobNationwides.Select(n => new AssignedFlight
                             {

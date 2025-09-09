@@ -5,16 +5,18 @@ import {PriceBreakdown} from "../../../interfaces/job.interface";
 class PriceBreakdownDialogService implements angular.IServiceProvider {
     static $inject = [
         '$mdDialog',
+        '$log',
         'DispatchData',
         '$document'
     ];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
+        private $log: angular.ILogService,
         private DispatchData: DispatchCoreService,
         private $document: angular.IDocumentService,
     ) {
-        console.log('PriceBreakdownDialogService: Service instantiated');
+        this.$log.debug('PriceBreakdownDialogService: Service instantiated');
     }
 
     $get() {
@@ -41,15 +43,15 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
                 bindToController: true,
             });
 
-            console.log('PriceBreakdownDialogService: Dialog closed!');
+            this.$log.debug('PriceBreakdownDialogService: Dialog closed!');
         } catch (error) {
             if(error === undefined) {
-                console.log('User closed dialog');
+                this.$log.debug('User closed dialog');
                 return;
             }
 
             // Error occurred
-            console.error('PriceBreakdownDialogService: Error in openPriceBreakdownDialog', error);
+            this.$log.error('PriceBreakdownDialogService: Error in openPriceBreakdownDialog', error);
             throw error;
         }
     }

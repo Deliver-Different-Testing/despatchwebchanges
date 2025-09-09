@@ -6,6 +6,7 @@ import {IJobFile, IUploadProgressFile} from "./job-file-upload-dialog.interfaces
 class JobFileUploadController extends BaseController {
     static $inject = [
         "$http",
+        "$log",
         "$mdDialog",
         "$window",
         "toastrService",
@@ -26,6 +27,7 @@ class JobFileUploadController extends BaseController {
 
     constructor(
         private $http: angular.IHttpService,
+        private $log: angular.ILogService,
         private $mdDialog: angular.material.IDialogService,
         private $window: angular.IWindowService,
         private toastrService: ToastrService,
@@ -62,15 +64,15 @@ class JobFileUploadController extends BaseController {
 
             if (this.showNormalTab) {
                 this.files = allFiles.filter((file: IJobFile) => !file.isPOD);
-                console.log("Regular Files:", this.files);
+                this.$log.debug("Regular Files:", this.files);
             }
 
             if (this.showPodTab) {
                 this.podFiles = allFiles.filter((file: IJobFile) => file.isPOD);
-                console.log("POD Files:", this.podFiles);
+                this.$log.debug("POD Files:", this.podFiles);
             }
         }).catch((error: any) => {
-            console.error("Error loading files:", error);
+            this.$log.error("Error loading files:", error);
             this.toastrService.showErrorToast("Failed to load files. Please try again.");
         });
 
@@ -107,10 +109,10 @@ class JobFileUploadController extends BaseController {
                     const newPodFiles = podPhotos.filter((p: { s3Key: string; }) => !existingKeys.includes(p.s3Key));
 
                     this.podFiles = [...this.podFiles, ...newPodFiles];
-                    console.log("All POD Files:", this.podFiles);
+                    this.$log.debug("All POD Files:", this.podFiles);
                 }
             }).catch((error: any) => {
-                console.error("Error loading POD files:", error);
+                this.$log.error("Error loading POD files:", error);
                 this.toastrService.showErrorToast("Failed to load POD photos. Please try again.");
             });
         }
@@ -158,7 +160,7 @@ class JobFileUploadController extends BaseController {
                     progress: (event: Event) => {
                         const progressEvent = event as ProgressEvent;
                         const progressPercentage = Math.round((100 * progressEvent.loaded) / progressEvent.total);
-                        console.log(`progress: ${progressPercentage}% ${file.name}`);
+                        this.$log.debug(`progress: ${progressPercentage}% ${file.name}`);
                         this.updateFileProgress(file, progressPercentage);
                     }
                 }
@@ -167,11 +169,11 @@ class JobFileUploadController extends BaseController {
             const fileType = this.isPODUpload() ? 'POD photo' : 'file';
             const message = `Success ${file.name} uploaded as ${fileType}`;
             this.toastrService.showSuccessToast(message);
-            console.log(message + ". Response: " + JSON.stringify(response.data));
+            this.$log.debug(message + ". Response: " + JSON.stringify(response.data));
             this.loadFiles();
         } catch (error: any) {
-            console.error(`Error status: ${error.status}`);
-            console.error(`Error data: ${JSON.stringify(error.data)}`);
+            this.$log.error(`Error status: ${error.status}`);
+            this.$log.error(`Error data: ${JSON.stringify(error.data)}`);
             this.toastrService.showErrorToast(`Failed to upload ${this.isPODUpload() ? 'POD photo' : 'file'}: ${file.name}. Please try again.`);
         }
     }
@@ -211,8 +213,8 @@ class JobFileUploadController extends BaseController {
             });
 
             // Log response for debugging
-            console.log("Response received:", response);
-            console.log("All headers:", response.headers());
+            this.$log.debug("Response received:", response);
+            this.$log.debug("All headers:", response.headers());
 
             // Get content type - fallback to image/jpeg if not found
             const contentType = response.headers("content-type") || "image/jpeg";
@@ -250,7 +252,7 @@ class JobFileUploadController extends BaseController {
                 this.$window.URL.revokeObjectURL(url);
             }, 100);
         } catch (error) {
-            console.error("Download failed:", error);
+            this.$log.error("Download failed:", error);
             this.toastrService.showErrorToast("Failed to download file. Please try again.");
         }
     }
@@ -270,12 +272,12 @@ class JobFileUploadController extends BaseController {
                 }
             }).then(
                 (response: angular.IHttpResponse<any>) => {
-                    console.log("Delete Success:", response.data);
+                    this.$log.debug("Delete Success:", response.data);
                     this.loadFiles();
                     this.toastrService.showSuccessToast("POD photo deleted successfully");
                 },
                 (error: any) => {
-                    console.error("Delete Error:", error);
+                    this.$log.error("Delete Error:", error);
                     this.toastrService.showErrorToast("Failed to delete POD photo. Please try again.");
                 }
             );
@@ -288,12 +290,12 @@ class JobFileUploadController extends BaseController {
                 }
             }).then(
                 (response: angular.IHttpResponse<any>) => {
-                    console.log("Delete Success:", response.data);
+                    this.$log.debug("Delete Success:", response.data);
                     this.loadFiles();
                     this.toastrService.showSuccessToast("File deleted successfully");
                 },
                 (error: any) => {
-                    console.error("Delete Error:", error);
+                    this.$log.error("Delete Error:", error);
                     this.toastrService.showErrorToast("Failed to delete file. Please try again.");
                 }
             );

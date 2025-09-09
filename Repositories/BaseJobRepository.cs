@@ -70,7 +70,7 @@ public class BaseJobRepository(
             }
 
             var jobs = await query
-                .Select(JobMappings.JobDispatchMapping)
+                .Select(JobMappings.JobDispatchMapping(isUsTenant))
                 .AsNoTracking()
                 .ToListAsync();
 

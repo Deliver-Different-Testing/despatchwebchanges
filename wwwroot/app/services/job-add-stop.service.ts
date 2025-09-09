@@ -16,9 +16,7 @@ class JobAddStopService implements angular.IServiceProvider {
         private DispatchData: DispatchCoreService,
         private editAddressDialogService: EditAddressDialogService,
         private toastrService: ToastrService,
-    ) {
-        console.log("JobAddStop service initialized");
-    }
+    ) {}
 
     $get() {
         return this;

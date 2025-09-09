@@ -20,6 +20,7 @@ namespace DespatchWeb.Services;
 public class RateJobService(
     IJobRepository jobRepository,
     HttpClient httpClient,
+    ITenantInfoService infoService,
     IHttpContextAccessor contextAccessor)
     : IRateJobService
 {
@@ -106,7 +107,8 @@ public class RateJobService(
     }
 
      private async Task<JobRateResult> CalculateJobRateUsAsync(JobRateRequest request)
-        {
+     {
+         var isUsCustomer = infoService.IsUsTenant();
             var speed = await jobRepository.GetJobTypeByIdAsync(request.SpeedId);
             var speedGrouping = speed.Grouping;
 
@@ -117,7 +119,7 @@ public class RateJobService(
                 ToMiles = 0
             };
 
-            if (speedGrouping.GroupingId != (int)SpeedGrouping.Flight)
+            if (speedGrouping.GroupingId != (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight))
             {
                 result.TotalMiles = await CalculateRoadDistance(
                     request.PickupLat,

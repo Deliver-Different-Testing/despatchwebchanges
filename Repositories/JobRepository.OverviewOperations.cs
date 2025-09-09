@@ -229,6 +229,8 @@ public partial class JobRepository
     
     public async Task<OverviewDeliveryMapResponse> GetOverviewLocationDataAsync(int jobId)
     {
+        var isUsCustomer = infoService.IsUsTenant();
+        
         var locations = await Context
             .TucJobs.Where(j => j.UcjbId == jobId)
             .Select(j => new OverviewDeliveryMapResponse
@@ -264,7 +266,7 @@ public partial class JobRepository
                                 Lng = c.DeliveryLongitude ?? 0
                             },
                             Flight =
-                                j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
+                                j.UcjbSpeedNavigation.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight) 
                         })
                         .ToList()
                 }
