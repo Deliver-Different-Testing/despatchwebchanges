@@ -1,4 +1,4 @@
-@import '../../../../../css/variables.less'; 
+@import '../../../../../css/variables.less';
 
 // Pallet Table Component Styles
 .pallet-table-section {
@@ -7,10 +7,12 @@
   border-radius: @dialog-border-radius;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+
   // Content Container
   .pallet-table-content {
     background: #fafafa;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 
     // Table Wrapper
     .pallet-table-wrapper {
@@ -19,6 +21,7 @@
       border-radius: 8px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
       overflow: hidden;
+      transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 
       // Main Table
       .pallet-data-table {
@@ -26,11 +29,13 @@
         border-collapse: separate;
         border-spacing: 0;
         font-size: @font-base;
+        transition: font-size 200ms cubic-bezier(0.4, 0, 0.2, 1);
 
         // Table Header
         .pallet-table-head {
           tr {
             background: #f8f9fa;
+            transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 
             th {
               padding: 12px 16px;
@@ -42,6 +47,7 @@
               font-size: @font-sm;
               text-transform: uppercase;
               letter-spacing: 0.5px;
+              transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 
               &.pallet-col-qty,
               &.pallet-col-weight,
@@ -59,7 +65,7 @@
           .pallet-row {
             background: white;
             border-bottom: 1px solid #f0f0f0;
-            transition: background-color 150ms ease;
+            transition: all 150ms ease;
 
             &:hover {
               background: @hover-color;
@@ -82,6 +88,7 @@
               color: @text-dark;
               vertical-align: middle;
               font-size: @font-base;
+              transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 
               &.pallet-cell-qty,
               &.pallet-cell-weight,
@@ -107,35 +114,41 @@
                 font-weight: @weight-semibold;
                 min-width: 28px;
                 font-size: @font-sm;
+                transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
               }
 
               // Weight
               .pallet-weight-value {
                 font-weight: @weight-medium;
+                transition: font-size 200ms cubic-bezier(0.4, 0, 0.2, 1);
               }
 
               .pallet-weight-unit {
                 color: @text-muted;
                 font-size: @font-xs;
                 margin-left: 2px;
+                transition: font-size 200ms cubic-bezier(0.4, 0, 0.2, 1);
               }
 
               // Dimensions
               .pallet-dims-values {
                 font-family: 'Roboto Mono', monospace;
                 font-size: @font-sm;
+                transition: font-size 200ms cubic-bezier(0.4, 0, 0.2, 1);
               }
 
               .pallet-dims-unit {
                 color: @text-muted;
                 font-size: @font-xs;
                 margin-left: 4px;
+                transition: font-size 200ms cubic-bezier(0.4, 0, 0.2, 1);
               }
 
               // Status Chips
               .pallet-status-group {
                 display: inline-flex;
                 gap: 6px;
+                transition: gap 200ms cubic-bezier(0.4, 0, 0.2, 1);
 
                 .pallet-status-chip {
                   display: inline-flex;
@@ -151,6 +164,7 @@
 
                   .pallet-status-icon {
                     font-size: 14px;
+                    transition: font-size 200ms cubic-bezier(0.4, 0, 0.2, 1);
                   }
 
                   &.pallet-status-active {
@@ -178,6 +192,7 @@
                 background: fade(@primary-warning, 20%);
                 color: darken(@primary-warning, 15%);
                 border: 1px solid fade(@primary-warning, 40%);
+                transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 
                 &.pallet-dg-1 {
                   background: fade(@error-red, 15%);
@@ -205,6 +220,7 @@
                 white-space: nowrap;
                 color: @text-muted;
                 font-size: @font-sm;
+                transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
               }
 
               .pallet-no-data {
@@ -220,6 +236,7 @@
               padding: 48px 16px;
               text-align: center;
               background: white;
+              transition: padding 200ms cubic-bezier(0.4, 0, 0.2, 1);
             }
           }
         }
@@ -235,6 +252,7 @@
       border-top: 2px solid #e0e0e0;
       margin: 0 16px 16px;
       border-radius: 0 0 8px 8px;
+      transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 
       .pallet-summary-item {
         display: flex;
@@ -258,6 +276,7 @@
           background: white;
           padding: 8px;
           border-radius: 8px;
+          transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .pallet-summary-details {
@@ -271,6 +290,7 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             font-weight: @weight-medium;
+            transition: font-size 200ms cubic-bezier(0.4, 0, 0.2, 1);
           }
 
           .pallet-summary-value {
@@ -278,14 +298,238 @@
             font-weight: @weight-semibold;
             color: @text-dark;
             line-height: @line-tight;
+            transition: font-size 200ms cubic-bezier(0.4, 0, 0.2, 1);
+          }
+        }
+      }
+    }
+  }
+}
+
+// Dense View Modifiers for Pallet Table Section
+.job-detail-page {
+  &.dense-view {
+    .pallet-table-section {
+      margin: 12px 6px;
+
+      .pallet-table-content {
+        .pallet-table-wrapper {
+          margin: 12px;
+
+          .pallet-data-table {
+            font-size: @font-sm;
+
+            .pallet-table-head {
+              tr th {
+                padding: 8px 12px;
+                font-size: 11px;
+              }
+            }
+
+            .pallet-table-body {
+              .pallet-row td {
+                padding: 8px 12px;
+                font-size: @font-sm;
+
+                .pallet-qty-badge {
+                  padding: 1px 6px;
+                  font-size: 11px;
+                  min-width: 24px;
+                }
+
+                .pallet-weight-value {
+                  font-size: @font-sm;
+                }
+
+                .pallet-weight-unit {
+                  font-size: 10px;
+                }
+
+                .pallet-dims-values {
+                  font-size: 11px;
+                }
+
+                .pallet-dims-unit {
+                  font-size: 10px;
+                }
+
+                .pallet-status-group {
+                  gap: 4px;
+
+                  .pallet-status-chip {
+                    padding: 1px 6px;
+                    font-size: 10px;
+
+                    .pallet-status-icon {
+                      font-size: 12px;
+                    }
+                  }
+                }
+
+                .pallet-dg-badge {
+                  padding: 1px 6px;
+                  font-size: 10px;
+                }
+
+                .pallet-notes-text {
+                  font-size: 11px;
+                  max-width: 150px;
+                }
+              }
+
+              .pallet-empty-row td {
+                padding: 32px 12px;
+              }
+            }
+          }
+        }
+
+        .pallet-summary-footer {
+          padding: 12px;
+          margin: 0 12px 12px;
+
+          .pallet-summary-item {
+            gap: 8px;
+            padding: 6px 12px;
+
+            md-icon {
+              font-size: 20px;
+              padding: 6px;
+            }
+
+            .pallet-summary-details {
+              .pallet-summary-label {
+                font-size: 10px;
+              }
+
+              .pallet-summary-value {
+                font-size: @font-lg;
+              }
+            }
           }
         }
       }
     }
   }
 
-  // Mobile Responsive
-  @media (max-width: 960px) {
+  &.ultradense-view {
+    .pallet-table-section {
+      margin: 8px 4px;
+
+      .pallet-table-content {
+        .pallet-table-wrapper {
+          margin: 8px;
+          border-radius: 4px;
+
+          .pallet-data-table {
+            font-size: 11px;
+
+            .pallet-table-head {
+              tr th {
+                padding: 6px 8px;
+                font-size: 10px;
+                border-bottom-width: 1px;
+              }
+            }
+
+            .pallet-table-body {
+              .pallet-row td {
+                padding: 6px 8px;
+                font-size: 11px;
+
+                .pallet-qty-badge {
+                  padding: 1px 4px;
+                  font-size: 10px;
+                  min-width: 20px;
+                  border-radius: 2px;
+                }
+
+                .pallet-weight-value {
+                  font-size: 11px;
+                }
+
+                .pallet-weight-unit {
+                  font-size: 9px;
+                }
+
+                .pallet-dims-values {
+                  font-size: 10px;
+                }
+
+                .pallet-dims-unit {
+                  font-size: 9px;
+                }
+
+                .pallet-status-group {
+                  gap: 2px;
+
+                  .pallet-status-chip {
+                    padding: 1px 4px;
+                    font-size: 9px;
+                    border-radius: 2px;
+
+                    .pallet-status-icon {
+                      font-size: 10px;
+                    }
+                  }
+                }
+
+                .pallet-dg-badge {
+                  padding: 1px 4px;
+                  font-size: 9px;
+                  border-radius: 2px;
+                }
+
+                .pallet-notes-text {
+                  font-size: 10px;
+                  max-width: 120px;
+                }
+              }
+
+              .pallet-empty-row td {
+                padding: 24px 8px;
+              }
+            }
+          }
+        }
+
+        .pallet-summary-footer {
+          padding: 8px;
+          margin: 0 8px 8px;
+          border-top-width: 1px;
+
+          .pallet-summary-item {
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 4px;
+
+            md-icon {
+              font-size: 18px;
+              padding: 4px;
+              border-radius: 4px;
+            }
+
+            .pallet-summary-details {
+              gap: 1px;
+
+              .pallet-summary-label {
+                font-size: 9px;
+              }
+
+              .pallet-summary-value {
+                font-size: @font-base;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Mobile Responsive
+@media (max-width: 960px) {
+  .pallet-table-section {
     margin: 8px 4px;
 
     .pallet-table-content {
@@ -309,33 +553,83 @@
     }
   }
 
-  @media (max-width: 600px) {
-    .pallet-table-header {
-      .md-toolbar-tools {
-        .pallet-header-title {
-          font-size: @font-lg;
+  // Dense view mobile adjustments
+  .job-detail-page {
+    &.dense-view, &.ultradense-view {
+      .pallet-table-section {
+        margin: 4px 2px;
+
+        .pallet-table-content {
+          .pallet-table-wrapper {
+            margin: 4px;
+          }
+
+          .pallet-summary-footer {
+            margin: 0 4px 4px;
+            padding: 6px;
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .pallet-table-header {
+    .md-toolbar-tools {
+      .pallet-header-title {
+        font-size: @font-lg;
+      }
+
+      .pallet-count-badge {
+        font-size: @font-sm;
+        padding: 2px 8px;
+      }
+    }
+  }
+
+  .pallet-table-content {
+    .pallet-table-wrapper {
+      .pallet-data-table {
+        font-size: @font-sm;
+
+        .pallet-table-head th,
+        .pallet-table-body td {
+          padding: 8px;
         }
 
-        .pallet-count-badge {
-          font-size: @font-sm;
-          padding: 2px 8px;
+        .pallet-notes-text {
+          max-width: 120px;
+        }
+      }
+    }
+  }
+
+  // Small mobile dense view adjustments
+  .job-detail-page {
+    &.dense-view {
+      .pallet-table-section .pallet-table-content .pallet-table-wrapper .pallet-data-table {
+        .pallet-table-head th,
+        .pallet-table-body td {
+          padding: 6px;
+        }
+
+        .pallet-notes-text {
+          max-width: 100px;
         }
       }
     }
 
-    .pallet-table-content {
-      .pallet-table-wrapper {
-        .pallet-data-table {
-          font-size: @font-sm;
+    &.ultradense-view {
+      .pallet-table-section .pallet-table-content .pallet-table-wrapper .pallet-data-table {
+        .pallet-table-head th,
+        .pallet-table-body td {
+          padding: 4px;
+          font-size: 10px;
+        }
 
-          .pallet-table-head th,
-          .pallet-table-body td {
-            padding: 8px;
-          }
-
-          .pallet-notes-text {
-            max-width: 120px;
-          }
+        .pallet-notes-text {
+          max-width: 80px;
         }
       }
     }
