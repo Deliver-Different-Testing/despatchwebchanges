@@ -7,7 +7,7 @@ import BaseController from "../base-controller";
 import {HereMapConfig, HereMapCredentials} from "../../interfaces/hereMapCredentials.interfaces";
 import ConfigService from "../../services/config.service";
 import OverviewService from "../overview/overview.service";
-import {AppConfig} from "../../interfaces/app-config.interface";
+import {IAppConfig} from "../../interfaces/app-config.interface";
 import GreetUser from "../../functions/greetUser";
 import {IAssignedFlight} from "../../interfaces/job.interface";
 
@@ -44,7 +44,7 @@ class MegaMapController extends BaseController {
         private overviewService: OverviewService,
         private configService: ConfigService,
         private $rootScope: angular.IRootScopeService,
-        appConfig: AppConfig,
+        appConfig: IAppConfig,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
     ) {

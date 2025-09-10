@@ -1,4 +1,4 @@
-import {AppConfig} from "../../interfaces/app-config.interface";
+import {IAppConfig} from "../../interfaces/app-config.interface";
 import {IJob, ISuggestion} from "../../interfaces/job.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
@@ -84,7 +84,7 @@ class RecurringJobsController extends BaseController {
         $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
-        appConfig: AppConfig,
+        appConfig: IAppConfig,
     ) {
         super();
         this.initServices($timeout, $interval, $scope);

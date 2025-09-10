@@ -110,15 +110,12 @@ public interface IJobRepository
     Task DeletePalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
     Task SendPrebookJobAsync(int jobId);
     Task VoidPrebookJobAsync(int jobId, string despatcher, int staffId);
-    Task UpdateDeliveryAddressNzAsync(UpdateAddressRequestNz request);
-    Task UpdateDeliveryAddressUsAsync(UpdateAddressRequestUs request);
-    Task UpdateBookingDeliveryAddressNzAsync(UpdateAddressRequestNz request);
-    Task UpdateBookingDeliveryAddressUsAsync(UpdateAddressRequestUs request);
-
-    Task UpdatePickupAddressNzAsync(UpdateAddressRequestNz request);
-    Task UpdatePickupAddressUsAsync(UpdateAddressRequestUs request);
-    Task UpdateBookingPickupAddressNzAsync(UpdateAddressRequestNz request);
-    Task UpdateBookingPickupAddressUsAsync(UpdateAddressRequestUs request);
+    
+    /* Address Updates */
+    Task UpdateDeliveryAddressAsync(UpdateAddressRequest request);
+    Task UpdatePickupAddressAsync(UpdateAddressRequest request);
+    Task UpdateBookingPickupAddressAsync(UpdateAddressRequest request);
+    Task UpdateBookingDeliveryAddressAsync(UpdateAddressRequest request);
 
     Task UpdateJobAsync(
         int jobId,

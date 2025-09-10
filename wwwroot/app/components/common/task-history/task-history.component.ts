@@ -2,7 +2,7 @@
 import BaseController from "../../base-controller";
 import {IDeliveryHistoryConfig, DeliveryJourneyViewModel} from "./task-history.interfaces";
 import ToastrService from "../../../services/toastr.service";
-import {AppConfig} from "../../../interfaces/app-config.interface";
+import {IAppConfig} from "../../../interfaces/app-config.interface";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import DispatchCoreService from "../../../services/dispatch-core.service";
@@ -46,7 +46,7 @@ class TaskHistoryController extends BaseController {
         private DispatchData: DispatchCoreService,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
-        appConfig: AppConfig
+        appConfig: IAppConfig
     ) {
         super();
 

@@ -772,12 +772,11 @@ public class NationwideJobRepository(
 
     public async Task RestoreNationwideJobAsync(int jobId)
     {
-        // First verify the job exists
+        // First, verify the job exists
         var jobExists = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
         if (!jobExists)
             throw new ArgumentException($"Job with ID {jobId} not found");
 
-        // Update job fields using ExecuteUpdateAsync
         await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .ExecuteUpdateAsync(setters => setters

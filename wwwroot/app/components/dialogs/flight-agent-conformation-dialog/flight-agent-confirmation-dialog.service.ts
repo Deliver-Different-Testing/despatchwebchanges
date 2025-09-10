@@ -8,6 +8,7 @@ import IFlightAgentConfirmationDialogLocals from "./interfaces/IFlightAgentConfi
 class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
     static $inject = [
         '$mdDialog',
+        '$log',
         '$document'
     ];
 
@@ -15,9 +16,10 @@ class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
+        private $log: angular.ILogService,
         private $document: angular.IDocumentService,
     ) {
-        console.log('FlightAgentConfirmationDialogService: Service instantiated');
+        this.$log.debug('FlightAgentConfirmationDialogService: Service instantiated');
 
         this.dialogResult = {
             shouldAssign: false
@@ -32,7 +34,7 @@ class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
         const dialogConfig: angular.material.IDialogOptions = {
             controller: FlightAgentConformationDialogController,
             controllerAs: 'ctrl',
-            templateUrl: 'app/components/dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.template.html',
+            template: require("./flight-agent-confirmation-dialog.template.html"),
             parent: this.$document.parent(),
             targetEvent: $event,
             clickOutsideToClose: false,
@@ -45,9 +47,9 @@ class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
             return this.dialogResult;
         } catch (error) {
             if (error) {
-                console.warn('Dialog was cancelled or encountered an error:', error);
+                this.$log.debug('Dialog was cancelled or encountered an error:', error);
             } else {
-                console.info('Dialog was dismissed by user');
+                this.$log.debug('Dialog was dismissed by user');
             }
 
             this.dialogResult.shouldAssign = false;

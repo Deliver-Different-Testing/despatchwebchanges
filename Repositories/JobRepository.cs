@@ -1138,19 +1138,21 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
     public async Task ResetLateEventAsync(int jobId, int lateEventType)
     {
-        var job = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
-
         switch (lateEventType)
         {
             case (int)LateEventType.Pickup:
-                job.LatePickupNotificationHasBeenSent = false;
+                await Context.TucJobs
+                    .Where(j => j.UcjbId == jobId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(j => j.LatePickupNotificationHasBeenSent, false));
                 break;
             case (int)LateEventType.Delivery:
-                job.LateDeliveryNotificationHasBeenSent = false;
+                await Context.TucJobs
+                    .Where(j => j.UcjbId == jobId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(j => j.LateDeliveryNotificationHasBeenSent, false));
                 break;
         }
-
-        await Context.SaveChangesAsync();
     }
 
     public async Task LatePickupAsync(
@@ -1181,19 +1183,14 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         var dueMins = (jobDateTime.AddMinutes((double)windowValue) - currentDate).TotalMinutes;
         var latePick = job.UcjbLatePick;
 
-        // Perform calculation if required
         if (calculationRequired)
         {
             var pickupEtaValue = late;
             late = (int)(pickupEtaValue - (int)dueMins + windowValue);
-
-            // Return if latePick is already equal to late
             if (latePick.GetValueOrDefault(0) == late) return;
         }
 
-        // Format pickup time
         var minsOver = late - time;
-
         await SaveNoteAsync(jobId: jobId, noteText: $"Late Pickup: {minsOver} mins over ETA");
 
         // Update job
@@ -1698,214 +1695,118 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     public async Task VoidPrebookJobAsync(int jobId, string despatcher, int staffId) =>
         await Context.Procedures.DESWEB_stpVoidPrebookJobAsync(jobId, despatcher, staffId);
 
-    public async Task UpdateDeliveryAddressNzAsync(UpdateAddressRequestNz request)
-    {
-        try
-        {
-            var job = await Context.TucJobs.FindAsync(request.JobId);
-            ArgumentNullException.ThrowIfNull(job);
-
-            // Update job coordinates and address details
-            job.DeliveryLatitude = request.Latitude;
-            job.DeliveryLongitude = request.Longitude;
-            job.UcjbToAddr = request.Address;
-            job.UcjbTo = request.SuburbId;
-            job.UcjbCbd = request.Cbd;
-
-            await Context.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "An error occurred updating the delivery address for job {JobId}", request.JobId);
-            throw;
-        }
-    }
-
-    public async Task UpdateDeliveryAddressUsAsync(UpdateAddressRequestUs request)
+    public async Task UpdateDeliveryAddressAsync(UpdateAddressRequest request)
     {
         try
         {
             var address = request.Address;
-            var job = await Context.TucJobs.FindAsync(request.JobId);
-            ArgumentNullException.ThrowIfNull(job);
+        
+            var rowsAffected = await Context.TucJobs
+                .Where(j => j.UcjbId == request.JobId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.DeliveryLatitude, address.Latitude)
+                    .SetProperty(j => j.DeliveryLongitude, address.Longitude)
+                    .SetProperty(j => j.DeliveryAddressLine1, address.AddressLine1)
+                    .SetProperty(j => j.DeliveryAddressLine2, address.AddressLine2)
+                    .SetProperty(j => j.DeliveryAddressLine3, address.AddressLine3)
+                    .SetProperty(j => j.DeliveryAddressLine4, address.AddressLine4)
+                    .SetProperty(j => j.DeliveryAddressLine5, address.AddressLine5)
+                    .SetProperty(j => j.DeliveryAddressLine6, address.AddressLine6)
+                    .SetProperty(j => j.DeliveryAddressLine7, address.AddressLine7));
 
-            // Update coordinates
-            job.DeliveryLatitude = address.Latitude;
-            job.DeliveryLongitude = address.Longitude;
-
-            // Update address lines
-            job.DeliveryAddressLine1 = address.AddressLine1;
-            job.DeliveryAddressLine2 = address.AddressLine2;
-            job.DeliveryAddressLine3 = address.AddressLine3;
-            job.DeliveryAddressLine4 = address.AddressLine4;
-            job.DeliveryAddressLine5 = address.AddressLine5;
-            job.DeliveryAddressLine6 = address.AddressLine6;
-            job.DeliveryAddressLine7 = address.AddressLine7;
-
-            await Context.SaveChangesAsync();
+            if (rowsAffected == 0) throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "An error occurred updating the delivery address for job {JobId}", request.JobId);
+            Log.Error(ex, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository), nameof(UpdateDeliveryAddressAsync)));
             throw;
         }
     }
 
-    public async Task UpdatePickupAddressNzAsync(UpdateAddressRequestNz request)
-    {
-        try
-        {
-            var job = await Context.TucJobs.FindAsync(request.JobId);
-            ArgumentNullException.ThrowIfNull(job);
-
-            // Update coordinates
-            job.PickUpLatitude = request.Latitude;
-            job.PickUpLongitude = request.Longitude;
-            job.UcjbFromAddr = request.Address;
-            job.UcjbFrom = request.SuburbId;
-            job.UcjbCbd = request.Cbd;
-
-            await Context.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "An error occurred updating the pickup address for job {JobId}", request.JobId);
-            throw;
-        }
-    }
-
-    public async Task UpdatePickupAddressUsAsync(UpdateAddressRequestUs request)
+    public async Task UpdatePickupAddressAsync(UpdateAddressRequest request)
     {
         try
         {
             var address = request.Address;
-            var job = await Context.TucJobs.FindAsync(request.JobId);
-            ArgumentNullException.ThrowIfNull(job);
+        
+            var rowsAffected = await Context.TucJobs
+                .Where(j => j.UcjbId == request.JobId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.PickUpLatitude, address.Latitude)
+                    .SetProperty(j => j.PickUpLongitude, address.Longitude)
+                    .SetProperty(j => j.PickupAddressLine1, address.AddressLine1)
+                    .SetProperty(j => j.PickupAddressLine2, address.AddressLine2)
+                    .SetProperty(j => j.PickupAddressLine3, address.AddressLine3)
+                    .SetProperty(j => j.PickupAddressLine4, address.AddressLine4)
+                    .SetProperty(j => j.PickupAddressLine5, address.AddressLine5)
+                    .SetProperty(j => j.PickupAddressLine6, address.AddressLine6)
+                    .SetProperty(j => j.PickupAddressLine7, address.AddressLine7));
 
-            // Update coordinates
-            job.PickUpLatitude = address.Latitude;
-            job.PickUpLongitude = address.Longitude;
-
-            // Update address lines
-            job.PickupAddressLine1 = address.AddressLine1;
-            job.PickupAddressLine2 = address.AddressLine2;
-            job.PickupAddressLine3 = address.AddressLine3;
-            job.PickupAddressLine4 = address.AddressLine4;
-            job.PickupAddressLine5 = address.AddressLine5;
-            job.PickupAddressLine6 = address.AddressLine6;
-            job.PickupAddressLine7 = address.AddressLine7;
-
-            await Context.SaveChangesAsync();
+            if (rowsAffected == 0) throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "An error occurred updating the pickup address for job {JobId}", request.JobId);
+            Log.Error(ex, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository), nameof(UpdatePickupAddressAsync)));
             throw;
         }
     }
 
-    public async Task UpdateBookingPickupAddressNzAsync(UpdateAddressRequestNz request)
-    {
-        try
-        {
-            var jobBooking = await Context.TucJobBookings.FindAsync(request.JobId);
-            ArgumentNullException.ThrowIfNull(jobBooking);
-
-            // Update coordinates
-            jobBooking.PickUpLatitude = request.Latitude;
-            jobBooking.PickUpLongitude = request.Longitude;
-            jobBooking.UcbkFromAddr = request.Address;
-            jobBooking.UcbkFrom = request.SuburbId;
-            jobBooking.UcbkCbd = request.Cbd;
-
-            await Context.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "An error occurred updating the pickup address for job {JobId}", request.JobId);
-            throw;
-        }
-    }
-
-    public async Task UpdateBookingPickupAddressUsAsync(UpdateAddressRequestUs request)
+    public async Task UpdateBookingPickupAddressAsync(UpdateAddressRequest request)
     {
         try
         {
             var address = request.Address;
-            var jobBooking = await Context.TucJobBookings.FindAsync(request.JobId);
-            ArgumentNullException.ThrowIfNull(jobBooking);
+        
+            var rowsAffected = await Context.TucJobBookings
+                .Where(jb => jb.UcbkId == request.JobId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(jb => jb.PickUpLatitude, address.Latitude)
+                    .SetProperty(jb => jb.PickUpLongitude, address.Longitude)
+                    .SetProperty(jb => jb.PickupAddressLine1, address.AddressLine1)
+                    .SetProperty(jb => jb.PickupAddressLine2, address.AddressLine2)
+                    .SetProperty(jb => jb.PickupAddressLine3, address.AddressLine3)
+                    .SetProperty(jb => jb.PickupAddressLine4, address.AddressLine4)
+                    .SetProperty(jb => jb.PickupAddressLine5, address.AddressLine5)
+                    .SetProperty(jb => jb.PickupAddressLine6, address.AddressLine6)
+                    .SetProperty(jb => jb.PickupAddressLine7, address.AddressLine7));
 
-            // Update coordinates
-            jobBooking.PickUpLatitude = address.Latitude;
-            jobBooking.PickUpLongitude = address.Longitude;
-
-            // Update address lines
-            jobBooking.PickupAddressLine1 = address.AddressLine1;
-            jobBooking.PickupAddressLine2 = address.AddressLine2;
-            jobBooking.PickupAddressLine3 = address.AddressLine3;
-            jobBooking.PickupAddressLine4 = address.AddressLine4;
-            jobBooking.PickupAddressLine5 = address.AddressLine5;
-            jobBooking.PickupAddressLine6 = address.AddressLine6;
-            jobBooking.PickupAddressLine7 = address.AddressLine7;
-
-            await Context.SaveChangesAsync();
+            if (rowsAffected == 0) throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "An error occurred updating the pickup address for job {JobId}", request.JobId);
+            Log.Error(ex, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository), nameof(UpdateBookingPickupAddressAsync)));
             throw;
         }
     }
 
-    public async Task UpdateBookingDeliveryAddressNzAsync(UpdateAddressRequestNz request)
-    {
-        try
-        {
-            var jobBooking = await Context.TucJobBookings.FindAsync(request.JobId);
-            ArgumentNullException.ThrowIfNull(jobBooking);
-
-            // Update coordinates
-            jobBooking.DeliveryLatitude = request.Latitude;
-            jobBooking.DeliveryLongitude = request.Longitude;
-            jobBooking.UcbkToAddr = request.Address;
-            jobBooking.UcbkTo = request.SuburbId;
-            jobBooking.UcbkCbd = request.Cbd;
-
-            await Context.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "An error occurred updating the delivery address for job {JobId}", request.JobId);
-            throw;
-        }
-    }
-
-    public async Task UpdateBookingDeliveryAddressUsAsync(UpdateAddressRequestUs request)
+    public async Task UpdateBookingDeliveryAddressAsync(UpdateAddressRequest request)
     {
         try
         {
             var address = request.Address;
-            var jobBooking = await Context.TucJobBookings.FindAsync(request.JobId);
-            ArgumentNullException.ThrowIfNull(jobBooking);
+        
+            var rowsAffected = await Context.TucJobBookings
+                .Where(jb => jb.UcbkId == request.JobId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(jb => jb.DeliveryLatitude, address.Latitude)
+                    .SetProperty(jb => jb.DeliveryLongitude, address.Longitude)
+                    .SetProperty(jb => jb.DeliveryAddressLine1, address.AddressLine1)
+                    .SetProperty(jb => jb.DeliveryAddressLine2, address.AddressLine2)
+                    .SetProperty(jb => jb.DeliveryAddressLine3, address.AddressLine3)
+                    .SetProperty(jb => jb.DeliveryAddressLine4, address.AddressLine4)
+                    .SetProperty(jb => jb.DeliveryAddressLine5, address.AddressLine5)
+                    .SetProperty(jb => jb.DeliveryAddressLine6, address.AddressLine6)
+                    .SetProperty(jb => jb.DeliveryAddressLine7, address.AddressLine7));
 
-            // Update coordinates
-            jobBooking.DeliveryLatitude = address.Latitude;
-            jobBooking.DeliveryLongitude = address.Longitude;
-
-            // Update address lines
-            jobBooking.DeliveryAddressLine1 = address.AddressLine1;
-            jobBooking.DeliveryAddressLine2 = address.AddressLine2;
-            jobBooking.DeliveryAddressLine3 = address.AddressLine3;
-            jobBooking.DeliveryAddressLine4 = address.AddressLine4;
-            jobBooking.DeliveryAddressLine5 = address.AddressLine5;
-            jobBooking.DeliveryAddressLine6 = address.AddressLine6;
-            jobBooking.DeliveryAddressLine7 = address.AddressLine7;
-
-            await Context.SaveChangesAsync();
+            if (rowsAffected == 0) throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "An error occurred updating the pickup address for job {JobId}", request.JobId);
+            Log.Error(ex, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository), nameof(UpdateBookingDeliveryAddressAsync)));
             throw;
         }
     }

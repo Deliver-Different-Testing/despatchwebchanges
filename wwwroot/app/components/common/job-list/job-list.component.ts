@@ -9,7 +9,7 @@ import dayjs from "dayjs";
 import JobCategory from "./enums/jobCategory";
 import {JobStatus} from "../../../enums/job-status.enum";
 import {ContactID, TimeZone} from "../../../contants";
-import {AppConfig} from "../../../interfaces/app-config.interface";
+import {IAppConfig} from "../../../interfaces/app-config.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import JobListType from "./enums/jobListType";
 import JobHighlightService from "./job-highlight.service";
@@ -112,7 +112,7 @@ class JobsListController extends BaseController {
         private toastrService: ToastrService,
         private $document: angular.IDocumentService,
         private $mdDialog: angular.material.IDialogService,
-        appConfig: AppConfig,
+        appConfig: IAppConfig,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
         $scope: angular.IScope

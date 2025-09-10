@@ -1,4 +1,4 @@
-import {HereMapsLocationResult} from "../interfaces/heremaps-autocomplete.interfaces";
+import {IHereMapsLocationResult} from "../interfaces/heremaps-autocomplete.interfaces";
 import {HereMapsLookupResponse} from "../interfaces/hereMapsLookUp.interfaces";
 
 class AddressLookupService implements angular.IServiceProvider {
@@ -14,8 +14,8 @@ class AddressLookupService implements angular.IServiceProvider {
         return this;
     }
 
-    async autocompleteAddressSearch(text: string): Promise<HereMapsLocationResult[]> {
-        const response = await this.$http.get<HereMapsLocationResult[]>("addressAutocomplete/AutocompleteAddressSearch", {
+    async autocompleteAddressSearch(text: string): Promise<IHereMapsLocationResult[]> {
+        const response = await this.$http.get<IHereMapsLocationResult[]>("addressAutocomplete/AutocompleteAddressSearch", {
             params: {
                 text
             }
@@ -34,8 +34,8 @@ class AddressLookupService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async fetchNearestAddress(latitude: number, longitude: number): Promise<HereMapsLocationResult[]> {
-        const response = await this.$http.get<HereMapsLocationResult[]>("addressAutocomplete/FetchNearestAddress", {
+    async fetchNearestAddress(latitude: number, longitude: number): Promise<IHereMapsLocationResult[]> {
+        const response = await this.$http.get<IHereMapsLocationResult[]>("addressAutocomplete/FetchNearestAddress", {
             params: {
                 latitude,
                 longitude

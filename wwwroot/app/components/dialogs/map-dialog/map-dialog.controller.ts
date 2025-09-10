@@ -2,7 +2,7 @@ import "./map-dialog.styles.less"
 import OverviewService from "../../overview/overview.service";
 import ConfigService from "../../../services/config.service";
 import {MapConfig, OverviewTableParentJob} from "../../overview/overview.interfaces";
-import {AppConfig} from "../../../interfaces/app-config.interface";
+import {IAppConfig} from "../../../interfaces/app-config.interface";
 
 export class MapDialogController implements angular.IController {
     static $inject = [
@@ -23,7 +23,7 @@ export class MapDialogController implements angular.IController {
         private $mdDialog: angular.material.IDialogService,
         private overviewService: OverviewService,
         private configService: ConfigService,
-        private appConfig: AppConfig,
+        private appConfig: IAppConfig,
         private delivery: OverviewTableParentJob) {
 
         this.title = `${delivery.jobName} Map`;

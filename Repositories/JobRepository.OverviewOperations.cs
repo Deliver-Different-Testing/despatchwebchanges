@@ -229,7 +229,7 @@ public partial class JobRepository
     
     public async Task<OverviewDeliveryMapResponse> GetOverviewLocationDataAsync(int jobId)
     {
-        var isUsCustomer = infoService.IsUsTenant();
+        var isUsCustomer = _infoService.IsUsTenant();
         
         var locations = await Context
             .TucJobs.Where(j => j.UcjbId == jobId)

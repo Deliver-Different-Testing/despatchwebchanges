@@ -1,24 +1,14 @@
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 import DispatchExecutorService from "../../../services/dispatch-executor.service";
-import {AppConfig} from "../../../interfaces/app-config.interface";
+import {IAppConfig} from "../../../interfaces/app-config.interface";
 import {IAddressViewModel, JobCreateViewModel, SelectOption, ISuggestion} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import {getStateByAbbreviation, getStates} from "../../../functions/usStates";
+import ICreateJobDialogControllerScope from "./interfaces/ICreateJobDialogControllerScope";
 
-interface CreateJobDialogControllerScope extends angular.IScope {
-    jobForm: angular.IFormController;
-    fromAddressSearchText: string;
-    toAddressSearchText: string;
-    searchClientText: string;
-    courierSearchText: string;
-    isLoading: boolean;
-    selectedCourier: any;
-    selectedClient: any;
-    selectedVehicle: any;
-}
 export class CreateJobDialogController extends BaseController {
-    static $inject: string[] = [
+    static $inject = [
         "$scope",
         "$log",
         "$mdDialog",
@@ -31,7 +21,7 @@ export class CreateJobDialogController extends BaseController {
         "APP_CONFIG",
     ];
 
-    private readonly useUsFormat: boolean;
+    private readonly isUsCustomer: boolean;
 
     vehicleSearchText: string = "";
     speedSearchText: string = "";
@@ -52,7 +42,7 @@ export class CreateJobDialogController extends BaseController {
     vehicleSizes: ISuggestion[] = [];
 
     constructor(
-        $scope: CreateJobDialogControllerScope,
+        $scope: ICreateJobDialogControllerScope,
         private $log: angular.ILogService,
         private $mdDialog: angular.material.IDialogService,
         private dispatchData: DispatchCoreService,
@@ -61,7 +51,7 @@ export class CreateJobDialogController extends BaseController {
         public dispatchJobService: DispatchExecutorService,
         public staffId: number,
         public despatcherName: string,
-        APP_CONFIG: AppConfig,
+        APP_CONFIG: IAppConfig,
     ) {
         super();
 
@@ -69,13 +59,13 @@ export class CreateJobDialogController extends BaseController {
         this.initializeFormData($scope);
         this.initializeJob();
 
-        this.useUsFormat = APP_CONFIG.US_Customer;
-        if (this.useUsFormat) {
+        this.isUsCustomer = APP_CONFIG.US_Customer;
+        if (this.isUsCustomer) {
             this.states = getStates();
         }
     }
 
-    private initializeFormData($scope: CreateJobDialogControllerScope): void {
+    private initializeFormData($scope: ICreateJobDialogControllerScope): void {
         this.jobForm = $scope.jobForm;
         this.fromAddressSearchText = "";
         this.toAddressSearchText = "";
@@ -202,7 +192,7 @@ export class CreateJobDialogController extends BaseController {
 
             const addressDetails = isToAddress ? this.job.deliveryAddress : this.job.pickupAddress;
 
-            if (this.useUsFormat) {
+            if (this.isUsCustomer) {
                 addressDetails.addressLine1 = returnedLocation.Address.Place;
                 addressDetails.addressLine2 = returnedLocation.Address.Subunit;
                 addressDetails.addressLine3 = returnedLocation.Address.HouseNumber;
@@ -276,7 +266,7 @@ export class CreateJobDialogController extends BaseController {
         job.speedId = this.selectedSpeed.id;
         job.vehicleId = this.selectedVehicle.id;
 
-        // Ensure fullAddress is up-to-date for both pickup and delivery addresses
+        // Ensure the fullAddress is up to date for both pickup and delivery addresses
         ["pickupAddress", "deliveryAddress"].forEach(addressType => {
             const address = job[addressType as keyof JobCreateViewModel] as IAddressViewModel;
             address.fullAddress = [

@@ -3,7 +3,7 @@ import JobSearchService from "./jobSearch.service";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
 import ToastrService from "../../services/toastr.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
-import {AppConfig} from "../../interfaces/app-config.interface";
+import {IAppConfig} from "../../interfaces/app-config.interface";
 import {BulkScanDetail, IDispatchJob, ISuggestion} from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
 import BaseController from "../base-controller";
@@ -114,7 +114,7 @@ class JobSearchController extends BaseController {
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
         private $mdSidenav: angular.material.ISidenavService,
-        appConfig: AppConfig,
+        appConfig: IAppConfig,
         private jobContextMenuService: JobContextMenuService,
         private navigationService: NavigationService,
         private messagingDialogService: MessagingDialogService,

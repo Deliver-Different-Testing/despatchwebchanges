@@ -1,11 +1,11 @@
-import { AppConfig } from "./interfaces/app-config.interface";
+import { IAppConfig } from "./interfaces/app-config.interface";
 
 class ThemeConfig {
     private readonly isUsCustomer: boolean;
 
     constructor(
         private readonly $mdThemingProvider: angular.material.IThemingProvider,
-        appConfig: AppConfig
+        appConfig: IAppConfig
     ) {
         this.isUsCustomer = appConfig.US_Customer;
     }
