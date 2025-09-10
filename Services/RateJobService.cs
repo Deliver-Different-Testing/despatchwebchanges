@@ -24,8 +24,7 @@ public class RateJobService(
     IHttpContextAccessor contextAccessor)
     : IRateJobService
 {
-    private const string HereMapsApiBaseUrl = "https://router.hereapi.com/v8/";
-
+    private const string HereMapsApiBaseUrl = "https://router.hereapi.com/v8";
 
     public async Task<decimal> RateJobNzAsync(JobRatingDetailsDtoNz jobDetails)
     {
@@ -58,7 +57,7 @@ public class RateJobService(
             ArgumentNullException.ThrowIfNull(jobDetails.SpeedId);
             ArgumentNullException.ThrowIfNull(jobDetails.ClientId);
             ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
-            
+
             // Get distances and airport info
             var distanceResult = await CalculateJobRateUsAsync(
                 new JobRateRequest
@@ -70,7 +69,7 @@ public class RateJobService(
                     DeliveryLong = jobDetails.DeliveryLong
                 }
             );
-            
+
             // Calculate final rate
             await jobRepository.RateJobUsAsync(new RateJobUsDto
             {
@@ -109,55 +108,55 @@ public class RateJobService(
         }
     }
 
-     private async Task<JobRateResult> CalculateJobRateUsAsync(JobRateRequest request)
-     {
-         var isUsCustomer = infoService.IsUsTenant();
-            var speed = await jobRepository.GetJobTypeByIdAsync(request.SpeedId);
-            var speedGrouping = speed.Grouping;
+    private async Task<JobRateResult> CalculateJobRateUsAsync(JobRateRequest request)
+    {
+        var isUsCustomer = infoService.IsUsTenant();
+        var speed = await jobRepository.GetJobTypeByIdAsync(request.SpeedId);
+        var speedGrouping = speed.Grouping;
 
-            var result = new JobRateResult
-            {
-                TotalMiles = 0,
-                FromMiles = 0,
-                ToMiles = 0
-            };
+        var result = new JobRateResult
+        {
+            TotalMiles = 0,
+            FromMiles = 0,
+            ToMiles = 0
+        };
 
-            if (speedGrouping.GroupingId != (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight))
-            {
-                result.TotalMiles = await CalculateRoadDistance(
-                    request.PickupLat,
-                    request.PickupLong,
-                    request.DeliveryLat,
-                    request.DeliveryLong);
-            }
-            else
-            {
-                // Get closest airports
-                var closestFromAirports = await jobRepository.GetClosestAirportsAsync(
-                    request.PickupLat ?? 0,
-                    request.PickupLong ?? 0);
-                var closestToAirports = await jobRepository.GetClosestAirportsAsync(
-                    request.DeliveryLat ?? 0,
-                    request.DeliveryLong ?? 0);
-
-                result.FromAirport = closestFromAirports.First();
-                result.ToAirport = closestToAirports.First();
-
-                result.FromMiles = await CalculateRoadDistance(
-                    request.PickupLat,
-                    request.PickupLong,
-                    result.FromAirport.Latitude,
-                    result.FromAirport.Longitude);
-
-                result.ToMiles = await CalculateRoadDistance(
-                    result.ToAirport.Latitude,
-                    result.ToAirport.Longitude,
-                    request.DeliveryLat,
-                    request.DeliveryLong);
-            }
-
-            return result;
+        if (speedGrouping.GroupingId != (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight))
+        {
+            result.TotalMiles = await CalculateRoadDistance(
+                request.PickupLat,
+                request.PickupLong,
+                request.DeliveryLat,
+                request.DeliveryLong);
         }
+        else
+        {
+            // Get closest airports
+            var closestFromAirports = await jobRepository.GetClosestAirportsAsync(
+                request.PickupLat ?? 0,
+                request.PickupLong ?? 0);
+            var closestToAirports = await jobRepository.GetClosestAirportsAsync(
+                request.DeliveryLat ?? 0,
+                request.DeliveryLong ?? 0);
+
+            result.FromAirport = closestFromAirports.First();
+            result.ToAirport = closestToAirports.First();
+
+            result.FromMiles = await CalculateRoadDistance(
+                request.PickupLat,
+                request.PickupLong,
+                result.FromAirport.Latitude,
+                result.FromAirport.Longitude);
+
+            result.ToMiles = await CalculateRoadDistance(
+                result.ToAirport.Latitude,
+                result.ToAirport.Longitude,
+                request.DeliveryLat,
+                request.DeliveryLong);
+        }
+
+        return result;
+    }
 
     private async Task<double> CalculateRoadDistance(decimal? fromLatitude, decimal? fromLongitude, decimal? toLatitude,
         decimal? toLongitude)
@@ -234,51 +233,52 @@ public class RateJobService(
         {
             // Map Job Object
             var jobObject = MapToUrgentRerateObject(jobDetails);
-        
+
             // Generate DFRNT Api Token
             var connectionString =
                 contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "Connection")?.Value;
             ArgumentException.ThrowIfNullOrEmpty(connectionString);
-            var tenantId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
+            var tenantId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")
+                ?.Value;
             ArgumentException.ThrowIfNullOrEmpty(tenantId);
             var timeZone = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "TimeZone")?.Value;
             ArgumentException.ThrowIfNullOrEmpty(timeZone);
             var userName = contextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Name)?.Value;
             ArgumentException.ThrowIfNullOrEmpty(userName);
-        
-            var token = AuthenticationExtensions.CreateApiToken(userName, 
+
+            var token = AuthenticationExtensions.CreateApiToken(userName,
                 int.Parse(tenantId),
                 connectionString,
                 timeZone);
-            
+
             var requestToken = new JwtSecurityTokenHandler().WriteToken(token);
-            
+
             // Call DFRNT API
             var baseUrl = Environment.GetEnvironmentVariable("WebAPIUrl");
-        
+
             var request = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/rates/getRerateAmount");
             request.Headers.Add("Authorization", $"Bearer {requestToken}");
             request.Content = JsonContent.Create(jobObject);
-        
+
             var response = await httpClient.SendAsync(request);
-        
+
             if (!response.IsSuccessStatusCode)
             {
                 Log.Error("Request failed with status code {ResponseStatusCode}", response.StatusCode);
                 Log.Error("Response content: {ReadAsStringAsync}", await response.Content.ReadAsStringAsync());
             }
-        
+
             var rerateResponse = await response.Content.ReadFromJsonAsync<RerateApiResponse>();
             return rerateResponse.ApiRerate ?? throw new ApplicationException("Failed to get rate from DFRNT API");
         }
         catch (Exception e)
         {
-           Log.Error(e, "{Message}",
-               ErrorMessageStringFormatter.FormatForLogging(e, nameof(RateJobService), nameof(RateUrgentJobAsync)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(RateJobService), nameof(RateUrgentJobAsync)));
             throw;
         }
     }
-    
+
     private static UrgentRerateObject MapToUrgentRerateObject(JobRatingDetailsDtoNz dto)
     {
         ArgumentNullException.ThrowIfNull(dto);
@@ -351,7 +351,7 @@ public class RateJobService(
     private static UrgentTruckObject CreateTruckObject(JobRatingDetailsDtoNz dto)
     {
         if (dto.PickupTailLift.HasValue || dto.DropoffTailLift.HasValue || dto.PrivateRes.HasValue ||
-            dto.HasDgDocuments.HasValue || !string.IsNullOrEmpty(dto.TruckStartTime) || 
+            dto.HasDgDocuments.HasValue || !string.IsNullOrEmpty(dto.TruckStartTime) ||
             dto.TruckHours.HasValue || (!dto.IsPedal && !dto.IsVan))
         {
             return new UrgentTruckObject
