@@ -43,9 +43,9 @@ public static class DistanceCalculator
         var haversine =
             Math.Sin(latitudeDifference / 2) * Math.Sin(latitudeDifference / 2)
             + Math.Cos(latitude1)
-                * Math.Cos(latitude2)
-                * Math.Sin(longitudeDifference / 2)
-                * Math.Sin(longitudeDifference / 2);
+            * Math.Cos(latitude2)
+            * Math.Sin(longitudeDifference / 2)
+            * Math.Sin(longitudeDifference / 2);
 
         var centralAngle = 2 * Math.Asin(Math.Sqrt(haversine));
 

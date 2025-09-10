@@ -18,6 +18,7 @@ dayjs.extend(timezone);
 class TaskCalendarViewController extends BaseController {
     static $inject = [
         "tasksService",
+        "$log",
         "$scope",
         "$timeout",
         "$interval",
@@ -52,6 +53,7 @@ class TaskCalendarViewController extends BaseController {
 
     constructor(
         private tasksService: TasksService,
+        private $log: angular.ILogService,
         $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
@@ -247,7 +249,7 @@ class TaskCalendarViewController extends BaseController {
     }
 
     handleTaskStatusChange(task: ExtendedTask): void {
-        console.log('Task status changed:', task.id, 'closed:', task.closed);
+        this.$log.debug('Task status changed:', task.id, 'closed:', task.closed);
         if (this.onTaskStatusChange) {
             this.onTaskStatusChange({task: task});
         }

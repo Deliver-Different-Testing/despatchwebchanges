@@ -17,6 +17,7 @@ interface PageFilterNames {
 class TasksService implements angular.IServiceProvider {
     static $inject = [
         "$http",
+        "$log",
         'DispatchData'
     ];
 
@@ -63,9 +64,10 @@ class TasksService implements angular.IServiceProvider {
 
     constructor(
         private $http: angular.IHttpService,
+        private $log: angular.ILogService,
         private DispatchData: DispatchCoreService
     ) {
-        console.log("Tasks service initialized");
+        this.$log.debug("Tasks service initialized");
 
         // Initialize background loading states for all pages
         Object.values(AppPages).forEach(page => {
@@ -134,7 +136,7 @@ class TasksService implements angular.IServiceProvider {
                 return staff;
             })
             .catch((error: any) => {
-                console.error('Error loading staff list:', error);
+                this.$log.error('Error loading staff list:', error);
                 this.staffListPromise = undefined;
                 return [];
             });
@@ -157,7 +159,7 @@ class TasksService implements angular.IServiceProvider {
                 return eventTypes;
             })
             .catch((error: any) => {
-                console.error('Error loading event types list:', error);
+                this.$log.error('Error loading event types list:', error);
                 this.eventTypesPromise = undefined;
                 return [];
             });
@@ -174,7 +176,7 @@ class TasksService implements angular.IServiceProvider {
 
             return {staffList, eventTypesList};
         } catch (error) {
-            console.error('Error loading lists:', error);
+            this.$log.error('Error loading lists:', error);
             return {staffList: [], eventTypesList: []};
         }
     }
@@ -201,7 +203,7 @@ class TasksService implements angular.IServiceProvider {
         // Add page context for potential future use
         if (appPage) {
             // This could be used for page-specific filtering logic if needed
-            console.log(`Building filter request for page: ${AppPages[appPage]}`);
+            this.$log.debug(`Building filter request for page: ${AppPages[appPage]}`);
         }
 
         switch (filterType) {
@@ -245,7 +247,7 @@ class TasksService implements angular.IServiceProvider {
             if (onProgress) onProgress(false);
             return tasks || [];
         } catch (error) {
-            console.error("Error loading tasks:", error);
+            this.$log.error("Error loading tasks:", error);
             if (onError) onError(error);
             if (onProgress) onProgress(false);
             return [];
@@ -262,7 +264,7 @@ class TasksService implements angular.IServiceProvider {
 
         // Cancel previous loading for this job if still in progress
         if (this.jobTaskLoadingStates[loadingKey]) {
-            console.log(`Cancelling previous task loading for job ${jobId} on ${AppPages[appPage]}`);
+            this.$log.debug(`Cancelling previous task loading for job ${jobId} on ${AppPages[appPage]}`);
             return; // Skip this request
         }
 
@@ -272,7 +274,7 @@ class TasksService implements angular.IServiceProvider {
             try {
                 // Check if this loading is still relevant
                 if (!this.jobTaskLoadingStates[loadingKey]) {
-                    console.log(`Task loading cancelled for job ${jobId}`);
+                    this.$log.debug(`Task loading cancelled for job ${jobId}`);
                     return;
                 }
 
@@ -284,7 +286,7 @@ class TasksService implements angular.IServiceProvider {
                 }
             } catch (error) {
                 if (this.jobTaskLoadingStates[loadingKey]) {
-                    console.error(`Error loading tasks for job ${jobId}:`, error);
+                    this.$log.error(`Error loading tasks for job ${jobId}:`, error);
                     callback([], error);
                 }
             } finally {
@@ -296,7 +298,7 @@ class TasksService implements angular.IServiceProvider {
     cancelJobTaskLoading(appPage: AppPages, jobId?: number): void {
         const loadingKey = `${appPage}-${jobId || 'all'}`;
         if (this.jobTaskLoadingStates[loadingKey]) {
-            console.log(`Manually cancelling task loading for job ${jobId}`);
+            this.$log.debug(`Manually cancelling task loading for job ${jobId}`);
             this.jobTaskLoadingStates[loadingKey] = false;
         }
     }
@@ -427,7 +429,7 @@ class TasksService implements angular.IServiceProvider {
                 const tasks = await this.DispatchData.getAllTasks(filterRequest);
                 callback(tasks || []);
             } catch (error) {
-                console.error("Error loading tasks with debounce:", error);
+                this.$log.error("Error loading tasks with debounce:", error);
                 callback([], error);
             }
         }, delay);

@@ -8,9 +8,7 @@ class AddressLookupService implements angular.IServiceProvider {
 
     constructor(
         private $http: angular.IHttpService
-    ) {
-        console.log("AddressLookupService: Service instantiated");
-    }
+    ) {}
 
     $get() {
         return this;

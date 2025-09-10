@@ -637,17 +637,21 @@
             .address {
               color: #1e293b;
               margin-bottom: 1px;
-              word-wrap: break-word;
-              word-break: break-word;
-              hyphens: auto;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              width: 100%;
+              max-width: 100%;
             }
 
             .city-state {
               color: #64748b;
               font-size: 11px;
-              word-wrap: break-word;
-              word-break: break-word;
-              hyphens: auto;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              width: 100%;
+              max-width: 100%;
             }
 
             &.pickup-cell {
@@ -657,18 +661,6 @@
             &.delivery-cell {
               position: relative;
               padding-left: 12px;
-
-              &::before {
-                content: '';
-                position: absolute;
-                left: 4px;
-                top: 50%;
-                transform: translateY(-50%);
-                width: 6px;
-                height: 6px;
-                background: #10b981;
-                border-radius: 50%;
-              }
             }
           }
 

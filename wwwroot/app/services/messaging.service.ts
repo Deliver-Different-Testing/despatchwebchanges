@@ -13,9 +13,7 @@ class MessagingService implements angular.IServiceProvider {
 
     constructor(
         private $http: angular.IHttpService,
-    ) {
-        console.log('MessagingService: Service instantiated');
-    }
+    ) {}
 
     $get() {
         return this;
@@ -25,7 +23,7 @@ class MessagingService implements angular.IServiceProvider {
         const response = await this.$http.get<number>(`messages/GetUnreadMessageCount`);
         return response.data;
     }
-    
+
     async getRecentList(): Promise<RecentMessageViewModel[]> {
         const response = await this.$http.get<RecentMessageViewModel[]>(`messages/GetRecentList`);
         return response.data;
@@ -54,8 +52,8 @@ class MessagingService implements angular.IServiceProvider {
 
     async sendMessage(data: SendMessageRequest) {
         await this.$http.post('messages/SendMessage', data);
-    } 
-    
+    }
+
     async sendMultiMessage(data: SendMultipleMessageRequest) {
         await this.$http.post('messages/SendMultiMessage', data);
     }

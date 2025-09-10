@@ -6,9 +6,7 @@ class ConfigService implements angular.IServiceProvider {
 
     constructor(
         private $http: angular.IHttpService
-    ) {
-        console.log("Config service initialized");
-    }
+    ) {}
 
     $get() {
         return this;
