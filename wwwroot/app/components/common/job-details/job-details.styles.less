@@ -1555,10 +1555,12 @@
       padding: 1px;
 
       .metric-card {
+        position: relative;
+        overflow: hidden;  
         background: @surface;
         padding: 16px 20px;
         text-align: center;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         cursor: pointer;
 
         &:hover {
