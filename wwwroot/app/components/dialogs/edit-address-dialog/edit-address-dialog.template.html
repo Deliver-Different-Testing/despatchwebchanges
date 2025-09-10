@@ -26,7 +26,7 @@
                     <div class="search-container">
                         <md-autocomplete
                                 class="md-block address-autocomplete"
-                                md-floating-label="{{ ::ctrl.useUsFormat ? 'Street Address' : 'Address' }}"
+                                md-floating-label="Search Address"
                                 md-item-text="item.address.label"
                                 md-items="item in ctrl.autocompleteAddressSearch(ctrl.addressSearchText)"
                                 md-min-length="3"
@@ -60,19 +60,59 @@
                 <div class="section address-details-section">
                     <h3 class="section-title">Address Details</h3>
 
-                    <!-- US Format Fields -->
+                    <!-- Line 1: Company/Building/Complex (Both US and NZ) -->
+                    <div class="form-row">
+                        <md-input-container class="md-block form-field" flex="100">
+                            <label for="addressLine1">Company/Building/Complex</label>
+                            <input id="addressLine1"
+                                   name="addressLine1"
+                                   ng-model="ctrl.addressDetails.addressLine1"
+                                   ng-disabled="ctrl.isAddressLoading"
+                                   required/>
+                            <div ng-messages="addressForm.addressLine1.$error" ng-if="addressForm.addressLine1.$dirty">
+                                <div ng-message="required">Company/Building/Complex is required.</div>
+                            </div>
+                        </md-input-container>
+                    </div>
+
+                    <!-- Line 2 & 3: Unit/Suite and Street/House Number -->
+                    <div class="form-row">
+                        <md-input-container class="md-block form-field" flex="30">
+                            <label for="addressLine2">{{ ctrl.useUsFormat ? 'Unit/Suite' : 'Unit/Flat/Suite' }}</label>
+                            <input id="addressLine2"
+                                   ng-model="ctrl.addressDetails.addressLine2"
+                                   ng-disabled="ctrl.isAddressLoading"/>
+                        </md-input-container>
+
+                        <md-input-container class="md-block form-field" flex="20">
+                            <label for="addressLine3">{{ ctrl.useUsFormat ? 'Street Number' : 'Street Number' }}</label>
+                            <input id="addressLine3"
+                                   ng-model="ctrl.addressDetails.addressLine3"
+                                   type="text"
+                                   ng-disabled="ctrl.isAddressLoading"/>
+                        </md-input-container>
+
+                        <md-input-container class="md-block form-field" flex="50">
+                            <label for="addressLine4">Street Name</label>
+                            <input id="addressLine4"
+                                   ng-model="ctrl.addressDetails.addressLine4"
+                                   ng-disabled="ctrl.isAddressLoading"/>
+                        </md-input-container>
+                    </div>
+
+                    <!-- US Format: City, State, ZIP -->
                     <div class="form-row" ng-if="ctrl.useUsFormat">
                         <md-input-container class="md-block form-field" flex="50">
-                            <label for="street">Street</label>
-                            <input id="street"
-                                   ng-model="ctrl.addressDetails.addressLine4"
+                            <label for="city">City</label>
+                            <input id="city"
+                                   ng-model="ctrl.addressDetails.addressLine5"
                                    ng-disabled="ctrl.isAddressLoading"/>
                         </md-input-container>
 
                         <md-input-container class="md-block form-field" flex="25">
                             <label>State</label>
                             <md-select id="usState"
-                                       ng-model="ctrl.addressDetails.stateAbbreviation"
+                                       ng-model="ctrl.addressDetails.addressLine6"
                                        ng-disabled="ctrl.isAddressLoading">
                                 <md-option ng-repeat="state in ctrl.usStateList"
                                            ng-value="state.abbreviation">
@@ -86,44 +126,44 @@
                             <input id="zipCode"
                                    ng-model="ctrl.addressDetails.addressLine7"
                                    ng-disabled="ctrl.isAddressLoading"
-                                   pattern="[0-9]{5}"/>
+                                   pattern="[0-9]{5}(-[0-9]{4})?"/>
                         </md-input-container>
                     </div>
 
-                    <div class="form-row" ng-if="ctrl.useUsFormat">
-                        <md-input-container class="md-block form-field" flex="100">
-                            <label for="city">City</label>
-                            <input id="city"
+                    <!-- NZ Format: Suburb, City, Post Code -->
+                    <div class="form-row" ng-if="!ctrl.useUsFormat">
+                        <md-input-container class="md-block form-field" flex="40">
+                            <label for="suburb">Suburb</label>
+                            <input id="suburb"
                                    ng-model="ctrl.addressDetails.addressLine5"
                                    ng-disabled="ctrl.isAddressLoading"/>
                         </md-input-container>
-                    </div>
 
-                    <!-- Non-US Format Fields -->
-                    <div class="form-row" ng-if="!ctrl.useUsFormat">
-                        <md-input-container class="md-block form-field" flex="50">
-                            <label for="suburb">Suburb</label>
-                            <input id="suburb" ng-model="ctrl.addressDetails.addressLine5"/>
+                        <md-input-container class="md-block form-field" flex="40">
+                            <label for="nzCity">City</label>
+                            <input id="nzCity"
+                                   ng-model="ctrl.addressDetails.addressLine6"
+                                   ng-disabled="ctrl.isAddressLoading"/>
                         </md-input-container>
 
-                        <md-autocomplete class="md-block form-field"
-                                         flex="50"
-                                         md-floating-label="Our Suburb"
-                                         md-item-text="item.text"
-                                         md-items="item in ctrl.ourSuburbSearch(ctrl.ourSuburbSearchText)"
-                                         md-search-text="ctrl.ourSuburbSearchText"
-                                         md-selected-item="ctrl.ourSuburbSelectedItem"
-                                         ng-disabled="ctrl.isAddressLoading">
-                            <md-item-template>
-                                <span md-highlight-flags="^i"
-                                      md-highlight-text="ctrl.ourSuburbSearchText">
-                                    {{item.text}}
-                                </span>
-                            </md-item-template>
-                            <md-not-found>
-                                No matches found for "{{ctrl.ourSuburbSearchText}}" in Suburb.
-                            </md-not-found>
-                        </md-autocomplete>
+                        <md-input-container class="md-block form-field" flex="20">
+                            <label for="postCode">Post Code</label>
+                            <input id="postCode"
+                                   ng-model="ctrl.addressDetails.addressLine7"
+                                   ng-disabled="ctrl.isAddressLoading"
+                                   pattern="[0-9]{4}"/>
+                        </md-input-container>
+                    </div>
+
+                    <!-- Address Extras (Line 8) -->
+                    <div class="form-row">
+                        <md-input-container class="md-block form-field" flex="100">
+                            <label for="extras">{{ ctrl.useUsFormat ? 'Additional Notes' : 'Address Extras' }}</label>
+                            <input id="extras"
+                                   ng-model="ctrl.addressDetails.addressLine8"
+                                   ng-disabled="ctrl.isAddressLoading"
+                                   placeholder="{{ ctrl.useUsFormat ? 'Gate code, delivery instructions, etc.' : 'Rural delivery, additional directions, etc.' }}"/>
+                        </md-input-container>
                     </div>
 
                     <!-- Coordinates -->
@@ -146,50 +186,10 @@
                                    ng-disabled="ctrl.isAddressLoading"/>
                         </md-input-container>
                     </div>
-
-                    <!-- Additionally US Fields -->
-                    <div class="form-row" ng-if="ctrl.useUsFormat">
-                        <md-input-container class="md-block form-field" flex="40">
-                            <label for="addressLine1">Company/Building/Complex</label>
-                            <input id="addressLine1"
-                                   name="addressLine1"
-                                   ng-model="ctrl.addressDetails.addressLine1"
-                                   ng-disabled="ctrl.isAddressLoading"
-                                   required/>
-                            <div ng-messages="addressForm.addressLine1.$error" ng-if="addressForm.addressLine1.$dirty">
-                                <div ng-message="required">Company/Building/Complex is required.</div>
-                            </div>
-                        </md-input-container>
-
-                        <md-input-container class="md-block form-field" flex="30">
-                            <label for="addressLine2">Unit/Suite</label>
-                            <input id="addressLine2"
-                                   ng-model="ctrl.addressDetails.addressLine2"
-                                   ng-disabled="ctrl.isAddressLoading"/>
-                        </md-input-container>
-
-                        <md-input-container class="md-block form-field" flex="30">
-                            <label for="addressLine3">House Number</label>
-                            <input id="addressLine3"
-                                   ng-model="ctrl.addressDetails.addressLine3"
-                                   type="text"
-                                   ng-disabled="ctrl.isAddressLoading"/>
-                        </md-input-container>
-                    </div>
-
-                    <!-- Address Extras -->
-                    <div class="form-row">
-                        <md-input-container class="md-block form-field" flex="100">
-                            <label for="extras">Address Extras</label>
-                            <input id="extras"
-                                   ng-model="ctrl.addressDetails.addressLine8"
-                                   ng-disabled="ctrl.isAddressLoading"/>
-                        </md-input-container>
-                    </div>
                 </div>
 
                 <!-- Shipment Details Card -->
-                <md-card class="shipment-details-card" ng-if="ctrl.showContactInfo">
+                <md-card class="shipment-details-card" ng-if="::ctrl.showContactInfo">
                     <md-card-header class="card-header">
                         <md-card-header-text>
                             <div class="card-title-row">
@@ -231,7 +231,7 @@
 
                         <div class="form-row">
                             <md-input-container class="md-block form-field" flex="50">
-                                <label for="weight">Weight ({{ ::ctrl.useUsFormat ? 'lbs' : 'kg' }})</label>
+                                <label for="weight">Weight ({{ ctrl.useUsFormat ? 'lbs' : 'kg' }})</label>
                                 <input id="weight"
                                        name="weight"
                                        ng-model="ctrl.shipmentDetails.weight"
@@ -259,10 +259,10 @@
                                 </div>
                             </md-input-container>
                         </div>
-                        
+
                         <div class="form-row">
                             <md-input-container class="md-block form-field" flex="33">
-                                <label for="length">Length ({{ ::ctrl.useUsFormat ? 'in' : 'cm' }})</label>
+                                <label for="length">Length ({{ ctrl.useUsFormat ? 'in' : 'cm' }})</label>
                                 <input id="length"
                                        name="length"
                                        ng-model="ctrl.shipmentDetails.length"
@@ -277,30 +277,32 @@
                             </md-input-container>
 
                             <md-input-container class="md-block form-field" flex="33">
-                                <label for="depth">Width ({{ ::ctrl.useUsFormat ? 'in' : 'cm' }})</label>
+                                <label for="depth">Width ({{ ctrl.useUsFormat ? 'in' : 'cm' }})</label>
                                 <input id="depth"
                                        name="depth"
                                        ng-model="ctrl.shipmentDetails.depth"
                                        type="number"
-                                       min="1"
+                                       min="0"
+                                       step="0.1"
                                        required/>
                                 <div ng-messages="addressForm.depth.$error" ng-if="addressForm.depth.$dirty">
                                     <div ng-message="required">Width is required.</div>
-                                    <div ng-message="min">Width must be at least 1.</div>
+                                    <div ng-message="min">Width must be greater than 0.</div>
                                 </div>
-                            </md-input-container> 
-                            
+                            </md-input-container>
+
                             <md-input-container class="md-block form-field" flex="33">
-                                <label for="height">Height ({{ ::ctrl.useUsFormat ? 'in' : 'cm' }})</label>
+                                <label for="height">Height ({{ ctrl.useUsFormat ? 'in' : 'cm' }})</label>
                                 <input id="height"
                                        name="height"
                                        ng-model="ctrl.shipmentDetails.height"
                                        type="number"
-                                       min="1"
+                                       min="0"
+                                       step="0.1"
                                        required/>
                                 <div ng-messages="addressForm.height.$error" ng-if="addressForm.height.$dirty">
                                     <div ng-message="required">Height is required.</div>
-                                    <div ng-message="min">Height must be at least 1.</div>
+                                    <div ng-message="min">Height must be greater than 0.</div>
                                 </div>
                             </md-input-container>
                         </div>

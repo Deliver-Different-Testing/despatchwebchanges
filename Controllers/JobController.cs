@@ -1411,7 +1411,7 @@ public class JobController(
                 var jobDetails = await jobRepository.GetJobDetailsForRatingNzAsync(jobId);
                 if (jobDetails.IsManuallyRated) return Ok();
 
-                await rateJobService.RateJobAsync(jobDetails);
+                await rateJobService.RateJobNzAsync(jobDetails);
             }
 
             return Ok();
@@ -1454,7 +1454,7 @@ public class JobController(
                 var jobDetails = await jobRepository.GetJobDetailsForRatingNzAsync(jobId);
                 if (jobDetails.IsManuallyRated) return Ok();
 
-                await rateJobService.RateJobAsync(jobDetails);
+                await rateJobService.RateJobNzAsync(jobDetails);
             }
 
             return Ok();
@@ -2015,7 +2015,7 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            var operationType = $"{(isBooking ? "booking " : "")}{addressType.ToString().ToLower()}";
+            var operationType = $"{(isBooking ? "booking " : string.Empty)}{addressType.ToString().ToLower()}";
             Log.Error(ex, "Error updating {OperationType} address for job {JobId}", operationType, request.JobId);
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
@@ -2039,7 +2039,7 @@ public class JobController(
                 ? await jobRepository.GetJobBookingDetailsForRatingNzAsync(jobId)
                 : await jobRepository.GetJobDetailsForRatingNzAsync(jobId);
 
-            var rate = await rateJobService.RateJobAsync(jobDetailsNz);
+            var rate = await rateJobService.RateJobNzAsync(jobDetailsNz);
             var noteText = $"{addressType} address updated to {newAddress}. Rate recalculated: {rate:C}";
             await jobRepository.UpdateJobRateAsync(jobId, rate, noteText);
         }

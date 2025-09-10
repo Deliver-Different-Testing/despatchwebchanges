@@ -24,7 +24,10 @@ public class RateJobService(
     IHttpContextAccessor contextAccessor)
     : IRateJobService
 {
-    public async Task<decimal> RateJobAsync(JobRatingDetailsDtoNz jobDetails)
+    private const string HereMapsApiBaseUrl = "https://router.hereapi.com/v8/";
+
+
+    public async Task<decimal> RateJobNzAsync(JobRatingDetailsDtoNz jobDetails)
     {
         try
         {
@@ -42,7 +45,7 @@ public class RateJobService(
         catch (Exception ex)
         {
             Log.Error(ex, "{ErrorMessage}",
-                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(RateJobService), nameof(RateJobAsync)));
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(RateJobService), nameof(RateJobNzAsync)));
             throw;
         }
     }
@@ -193,7 +196,7 @@ public class RateJobService(
 
         try
         {
-            var response = await httpClient.GetAsync($"routes?{queryString}");
+            var response = await httpClient.GetAsync($"{HereMapsApiBaseUrl}/routes?{queryString}");
             response.EnsureSuccessStatusCode();
 
             var result = await response.Content.ReadFromJsonAsync<HereMapRouteResponseV8>();
