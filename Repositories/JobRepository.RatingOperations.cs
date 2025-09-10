@@ -10,7 +10,7 @@ namespace DespatchWeb.Repositories;
 
 public partial class JobRepository
 {
-     public async Task<JobRatingDetailsDto> GetJobDetailsForRatingAsync(int jobId)
+    public async Task<JobRatingDetailsDto> GetJobDetailsForRatingAsync(int jobId)
     {
         try
         {
@@ -116,11 +116,8 @@ public partial class JobRepository
                     DeliveryLat = job.DeliveryLatitude ?? 0,
                     DeliveryLong = job.DeliveryLongitude ?? 0,
 
-                    // US-specific properties
-                    FromZip = job.PickupAddressLine7,
-                    ToZip = job.DeliveryAddressLine7,
                     DangerousGoods = job.Dgdocument ?? false,
-                    TotalPallets = job.TucJobItemJobs.Count,
+                    TotalPallets = job.TucJobItemJobs != null ? job.TucJobItemJobs.Count : 0,
                     ExtraStopOffs = 0,
                     DryIceWeight = job.DryIceWeight ?? 0,
                     WaitTime = job.WaitedPickUp ?? 0,
@@ -133,50 +130,48 @@ public partial class JobRepository
 
                     // Client-specific rate information
                     ClientDiscount = job.UcjbClient != null ? job.UcjbClient.Discount : 0,
-                    Cubic = job.TucJobItemJobs.Sum(i => i.Cubic),
+                    Cubic = job.TucJobItemJobs != null ? job.TucJobItemJobs.Sum(i => i.Cubic) : null,
                     IsManuallyRated = job.RatedManually,
                     IsPrebook = job.IsRecurringJob,
 
-                    // NEW NZ-specific From Address fields
                     FromCompanyName = job.PickupAddressLine1,
                     FromBuildingName = job.PickupAddressLine2,
-                    FromStreetAddress = job.PickupAddressLine3 ?? string.Empty,
-                    FromCity = job.PickupAddressLine4 ?? string.Empty,
-                    FromState = job.PickupAddressLine5,
-                    FromSuburb = job.PickupAddressLine6,
+                    FromStreetAddress = $"{job.PickupAddressLine3} {job.PickupAddressLine4}".Trim(),
+                    FromSuburb = job.PickupAddressLine5,
+                    FromCity = job.PickupAddressLine6 ?? string.Empty,
+                    FromState = null,
                     FromPostCode = job.PickupAddressLine7,
                     FromCountryCode = job.PickupAddressLine8,
 
-                    // NEW NZ-specific To Address fields
                     ToCompanyName = job.DeliveryAddressLine1,
                     ToBuildingName = job.DeliveryAddressLine2,
-                    ToStreetAddress = job.DeliveryAddressLine3 ?? string.Empty,
-                    ToCity = job.DeliveryAddressLine4 ?? string.Empty,
-                    ToState = job.DeliveryAddressLine5,
-                    ToSuburb = job.DeliveryAddressLine6,
+                    ToStreetAddress = $"{job.DeliveryAddressLine3} {job.DeliveryAddressLine4}".Trim(),
+                    ToSuburb = job.DeliveryAddressLine5,
+                    ToCity = job.DeliveryAddressLine6 ?? string.Empty,
+                    ToState = null,
                     ToPostCode = job.DeliveryAddressLine7,
                     ToCountryCode = job.DeliveryAddressLine8,
 
-                    // NEW Package Details
-                    Packages = job.TucJobItemJobs.Select(item => new PackageDetailsDto
-                    {
-                        Name = item.Notes,
-                        Length = item.Length,
-                        Width = item.Depth,
-                        Height = item.Height,
-                        Cubic = item.Cubic.HasValue ? (double)item.Cubic : 0,
-                        Kg = item.Weight,
-                        Type = null,
-                        PackageCode = null,
-                        Units = job.TucJobItemJobs.Count
-                    }).ToList(),
+                    Packages = job.TucJobItemJobs != null
+                        ? job.TucJobItemJobs.Select(item => new PackageDetailsDto
+                        {
+                            Name = item.Notes,
+                            Length = item.Length,
+                            Width = item.Depth,
+                            Height = item.Height,
+                            Cubic = item.Cubic.HasValue ? (double)item.Cubic : 0,
+                            Kg = item.Weight,
+                            Type = null,
+                            PackageCode = null,
+                            Units = item.Items
+                        }).ToList()
+                        : null,
 
-                    // NEW Truck-specific properties
                     PickupTailLift = null,
                     DropoffTailLift = null,
                     PrivateRes = job.DeliverToPrivateBusiness == 1,
                     HasDgDocuments = job.Dgdocument,
-                    TruckStartTime = job.TruckStartTime.ToString(),
+                    TruckStartTime = job.TruckStartTime != null ? job.TruckStartTime.ToString() : null,
                     TruckHours = (int)job.TruckHours
                 })
                 .FirstOrDefaultAsync();
@@ -376,8 +371,8 @@ public partial class JobRepository
             throw new ApplicationException($"Failed to retrieve NZ job booking details for rating: {ex.Message}", ex);
         }
     }
-    
-        public async Task RateJobUsAsync(RateJobUsDto dto)
+
+    public async Task RateJobUsAsync(RateJobUsDto dto)
     {
         var rate = new OutputParameter<decimal?>();
         var description = new OutputParameter<string>();
@@ -447,7 +442,7 @@ public partial class JobRepository
         var printableRate = rate.Value ?? 0;
         await SaveNoteAsync(dto.JobId, $"Repriced from {dto.PreviousRate} to {printableRate}", true);
     }
-        
+
     private async Task<bool> DoesAddressMatchAirportAsync(int jobId, bool isPickupAddress)
     {
         var hasMatchingAirport = await Context.TucJobs

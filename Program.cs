@@ -124,10 +124,6 @@ builder.Services.Configure<KestrelServerOptions>(options =>
 });
 
 builder.Services.AddHttpClient();
-builder.Services.AddHttpClient("HereMaps", client =>
-{
-    client.BaseAddress = new Uri("https://router.hereapi.com/v8/");
-});
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<IJobRepository, JobRepository>();

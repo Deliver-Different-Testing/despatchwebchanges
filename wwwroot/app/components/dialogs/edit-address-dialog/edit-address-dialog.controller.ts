@@ -45,7 +45,7 @@ class EditAddressDialogController extends BaseController {
     // Contact Card
     isContactCardExpanded: boolean = false;
     shipmentDetails?: IShipmentDetails;
-    private readonly useUsFormat: boolean;
+    useUsFormat: boolean;
 
     constructor(
         $scope: angular.IScope,
@@ -74,22 +74,25 @@ class EditAddressDialogController extends BaseController {
 
         this.usStateList = getStates();
 
-        if (
-            this.addressDetails.addressLine6 &&
-            !this.addressDetails.stateAbbreviation
-        ) {
-            const stateByName = getStateByName(
-                this.addressDetails.addressLine6
-            );
-            if (stateByName) {
-                this.addressDetails.stateAbbreviation = stateByName.abbreviation;
+        // Handle state abbreviation for US addresses
+        if (this.useUsFormat && this.addressDetails.addressLine6) {
+            // Check if it's already an abbreviation
+            if (this.addressDetails.addressLine6.length === 2) {
+                // It's likely already an abbreviation
+                this.addressDetails.stateAbbreviation = this.addressDetails.addressLine6;
+            } else {
+                // Try to find the state by name and get its abbreviation
+                const stateByName = getStateByName(this.addressDetails.addressLine6);
+                if (stateByName) {
+                    this.addressDetails.stateAbbreviation = stateByName.abbreviation;
+                }
             }
         }
 
         // Set up a map
         this.initializeHereMap();
     }
-    
+
     $onInit() {
         this.registerTimeout(() => {
             if(this.addressDetails.latitude && this.addressDetails.longitude) {
@@ -140,7 +143,7 @@ class EditAddressDialogController extends BaseController {
             if (this.mapInstance && this.mapInstance.getViewPort) {
                 this.mapInstance.getViewPort().resize();
             }
-        }, 500);
+        }, 100);
 
         // Add click listener for map clicks
         map.addEventListener('tap', async (event: any) => {
@@ -163,7 +166,6 @@ class EditAddressDialogController extends BaseController {
         this.updateMapPosition(lat, lng);
         await this.fetchNearestAddress(lat, lng);
     }
-
 
     private updateMapPosition(lat: number, lng: number): void {
         // Update the map config to reflect the new position
@@ -303,60 +305,26 @@ class EditAddressDialogController extends BaseController {
     toggleContactCard(): void {
         this.isContactCardExpanded = !this.isContactCardExpanded;
     }
-    
+
     private handleAddressFieldsFromLookup(
-        location: HereMapsLookupResponse
-    ): void {
-        if (this.useUsFormat) {
-            this.handleUsFormatAddressFromLookup(location);
-        } else {
-            this.handleNonUsFormatAddressFromLookup(location);
-        }
-
-        // Update coordinates
-        this.addressDetails.latitude = location.position.lat;
-        this.addressDetails.longitude = location.position.lng;
-    }
-
-    private handleUsFormatAddressFromLookup(
         location: HereMapsLookupResponse
     ): void {
         const address = location.address;
 
+        // Common fields for both US and NZ
+        // Line 1: Company/Building
         this.addressDetails.addressLine1 = location.title ||
             location.mapReferences?.pointAddress?.buildingName || "";
-        this.addressDetails.addressLine2 = ""; // Unit/Suite - not directly available
+
+        // Line 2: Unit/Suite - not directly available from HERE Maps
+        this.addressDetails.addressLine2 = "";
+
+        // Line 3: Street Number
         this.addressDetails.addressLine3 = address.houseNumber || "";
-        this.addressDetails.addressLine4 = address.street || "";
-        this.addressDetails.addressLine5 = address.city || "";
-        this.addressDetails.addressLine6 = address.state || "";
 
-        if (address.postalCode) {
-            const zipMatch = address.postalCode.match(/^(\d{5})/);
-            this.addressDetails.addressLine7 = zipMatch
-                ? zipMatch[1]
-                : address.postalCode;
-        } else {
-            this.addressDetails.addressLine7 = "";
-        }
-
-        if (address.stateCode) {
-            this.addressDetails.stateAbbreviation = address.stateCode;
-        } else if (address.state) {
-            const stateByName = getStateByName(address.state);
-            if (stateByName) {
-                this.addressDetails.stateAbbreviation = stateByName.abbreviation;
-            }
-        }
-
-        if (location.countryInfo) {
-            this.$log.debug("Country info from lookup:", location.countryInfo);
-        }
-
+        // Line 4: Street Name
         if (location.streetInfo && location.streetInfo.length > 0) {
             const streetInfo = location.streetInfo[0];
-            this.$log.debug("Street info from lookup:", streetInfo);
-
             let formattedStreet = "";
 
             if (streetInfo.prefix) {
@@ -377,37 +345,108 @@ class EditAddressDialogController extends BaseController {
                 formattedStreet += " " + streetInfo.suffix;
             }
 
-            if (formattedStreet) {
-                this.addressDetails.addressLine4 = formattedStreet.trim();
-            }
+            this.addressDetails.addressLine4 = formattedStreet.trim();
+        } else {
+            this.addressDetails.addressLine4 = address.street || "";
         }
+
+        if (this.useUsFormat) {
+            // US Format specific fields
+            // Line 5: City
+            this.addressDetails.addressLine5 = address.city || "";
+
+            // Line 6: State
+            this.addressDetails.addressLine6 = address.stateCode || address.state || "";
+
+            // Handle state abbreviation
+            if (address.stateCode) {
+                this.addressDetails.stateAbbreviation = address.stateCode;
+            } else if (address.state) {
+                const stateByName = getStateByName(address.state);
+                if (stateByName) {
+                    this.addressDetails.stateAbbreviation = stateByName.abbreviation;
+                    this.addressDetails.addressLine6 = stateByName.abbreviation;
+                }
+            }
+
+            // Line 7: ZIP Code
+            if (address.postalCode) {
+                const zipMatch = address.postalCode.match(/^(\d{5})/);
+                this.addressDetails.addressLine7 = zipMatch
+                    ? zipMatch[1]
+                    : address.postalCode;
+            } else {
+                this.addressDetails.addressLine7 = "";
+            }
+        } else {
+            // NZ Format specific fields
+            // Line 5: Suburb
+            this.addressDetails.addressLine5 = address.district || "";
+
+            // Line 6: City
+            this.addressDetails.addressLine6 = address.city || "";
+
+            // Line 7: Post Code
+            this.addressDetails.addressLine7 = address.postalCode || "";
+        }
+
+        // Line 8: Additional notes/extras - typically empty from lookup
+        this.addressDetails.addressLine8 = "";
+
+        // Update coordinates
+        this.addressDetails.latitude = location.position.lat;
+        this.addressDetails.longitude = location.position.lng;
     }
 
-    private handleNonUsFormatAddressFromLookup(
-        location: HereMapsLookupResponse
-    ): void {
-        const address = location.address;
-        this.addressDetails.addressLine5 = address.district || address.city || "";
-    }
-
-    private validateUsAddress(
+    private validateAddress(
         addressDetails: IEditAddressDialogViewModel
     ): boolean {
-        if (
-            !addressDetails.addressLine4 ||
-            !addressDetails.addressLine5 ||
-            !addressDetails.stateAbbreviation
-        ) {
-            alert("Please fill in all required fields (Street, City, and State)");
+        // Common validation for both formats
+        if (!addressDetails.addressLine1) {
+            alert("Please enter a Company/Building/Complex name");
             return false;
         }
 
-        const stateObj = getStateByAbbreviation(
-            addressDetails.stateAbbreviation
-        );
-        if (!stateObj) {
-            alert("Please select a valid US state");
+        if (!addressDetails.addressLine4) {
+            alert("Please enter a street name");
             return false;
+        }
+
+        if (this.useUsFormat) {
+            // US specific validation
+            if (!addressDetails.addressLine5) {
+                alert("Please enter a city");
+                return false;
+            }
+
+            if (!addressDetails.addressLine6 || !addressDetails.stateAbbreviation) {
+                alert("Please select a state");
+                return false;
+            }
+
+            const stateObj = getStateByAbbreviation(
+                addressDetails.stateAbbreviation
+            );
+            if (!stateObj) {
+                alert("Please select a valid US state");
+                return false;
+            }
+
+            if (!addressDetails.addressLine7) {
+                alert("Please enter a ZIP code");
+                return false;
+            }
+        } else {
+            // NZ specific validation
+            if (!addressDetails.addressLine6) {
+                alert("Please enter a city");
+                return false;
+            }
+
+            if (!addressDetails.addressLine7) {
+                alert("Please enter a post code");
+                return false;
+            }
         }
 
         return true;
@@ -420,35 +459,18 @@ class EditAddressDialogController extends BaseController {
         try {
             this.$log.debug("Using US Format:", this.useUsFormat);
 
+            // Validate the address
+            if (!this.validateAddress(addressDetails)) {
+                this.$log.error("Address validation failed");
+                this.isLoading = false;
+                return;
+            }
+
             if (this.useUsFormat) {
-                this.$log.debug("Processing US address submission");
-                if (!this.validateUsAddress(addressDetails)) {
-                    this.$log.error("US address validation failed");
-                    this.isLoading = false;
-                    return;
+                // For US addresses, ensure Line 6 has the abbreviation
+                if (addressDetails.stateAbbreviation) {
+                    addressDetails.addressLine6 = addressDetails.stateAbbreviation;
                 }
-
-                // Get the full state name from the abbreviation
-                this.$log.debug(
-                    "Getting state info for abbreviation:",
-                    addressDetails.stateAbbreviation
-                );
-
-                if (!addressDetails.stateAbbreviation) {
-                    alert("Please select a valid US state");
-                    return;
-                }
-
-                const stateObj = getStateByAbbreviation(
-                    addressDetails.stateAbbreviation
-                );
-                this.$log.debug("Retrieved state object:", stateObj);
-
-                addressDetails.addressLine6 = stateObj?.name ?? "";
-                this.$log.debug(
-                    "Updated address details with full state name:",
-                    addressDetails
-                );
             }
 
             // Ensure the fullAddress is up to date
@@ -457,10 +479,10 @@ class EditAddressDialogController extends BaseController {
 
             this.isLoading = false;
 
-            // Add contact info
+            // Add contact info if available
             addressDetails.shipmentDetails = this.shipmentDetails;
 
-            // Return a new address
+            // Return the updated address
             this.$mdDialog.hide(addressDetails);
             this.$log.debug("Dialog submission complete");
         } catch (error) {
@@ -470,7 +492,7 @@ class EditAddressDialogController extends BaseController {
             this.toastrService.showErrorToast(
                 "Error updating address. Please try again or contact support"
             );
-            throw error; // Re-throw to maintain an error chain
+            throw error;
         } finally {
             this.applyScope();
         }
@@ -479,7 +501,6 @@ class EditAddressDialogController extends BaseController {
     cancel(): void {
         this.$mdDialog.cancel();
     }
-
 }
 
 export default EditAddressDialogController;
