@@ -16,7 +16,6 @@ class TruckCourierStatusDialogController extends BaseController {
         private dispatchData: DispatchCoreService,
         private toastrService: ToastrService,
         public truckCourierStatus: TruckCourierStatusViewModel) {
-        console.log('TruckCourierStatusDialogController: Controller instantiated');
         super();
     }
 

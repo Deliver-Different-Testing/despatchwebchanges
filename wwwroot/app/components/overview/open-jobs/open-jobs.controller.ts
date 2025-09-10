@@ -1,6 +1,6 @@
 import OverviewService from "../overview.service";
 import OverviewFiltersService from "../services/overview-filters.service";
-import {AppConfig} from "../../../interfaces/app-config.interface";
+import {IAppConfig} from "../../../interfaces/app-config.interface";
 import {DriverViewModel, OpenJobResponse, OverviewQueryParams, ViewJob} from "../overview.interfaces";
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
@@ -40,7 +40,7 @@ class OpenJobsWidgetController extends BaseController {
         private overviewService: OverviewService,
         private overviewFiltersService: OverviewFiltersService,
         private $filter: angular.IFilterService,
-        APP_CONFIG: AppConfig,
+        APP_CONFIG: IAppConfig,
         $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,

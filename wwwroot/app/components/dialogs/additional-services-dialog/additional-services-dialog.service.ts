@@ -2,7 +2,7 @@ import {IDispatchJob, IJob} from "../../../interfaces/job.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import AdditionalServicesDialogController from "./additional-services-dialog.controller";
 
-class AdditionalServicesDialogService implements  angular.IServiceProvider {
+class AdditionalServicesDialogService implements angular.IServiceProvider {
     static $inject = [
         '$log',
         '$mdDialog',

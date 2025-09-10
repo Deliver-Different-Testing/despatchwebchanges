@@ -39,7 +39,6 @@ class VoidJobConfirmationDialogController extends BaseController {
         } catch (error: any) {
             this.toastrService.showErrorToast(error.message);
         }
-
     }
 
     cancel(): void {

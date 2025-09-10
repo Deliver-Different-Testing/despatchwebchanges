@@ -3,7 +3,7 @@ import NationwideService from "./nationwide.service";
 import ToastrService from "../../services/toastr.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import {AppPages} from "../../enums/app-pages.enum";
-import {AppConfig} from "../../interfaces/app-config.interface";
+import {IAppConfig} from "../../interfaces/app-config.interface";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
 import {IAgent, IDispatchJob, IJob, IJobQueryParams, ISuggestion} from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
@@ -208,7 +208,7 @@ class NationwideControl extends BaseController {
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
         private $mdSidenav: angular.material.ISidenavService,
-        private appConfig: AppConfig,
+        private appConfig: IAppConfig,
         private dispatchJobService: DispatchExecutorService,
         private jobFileUploadDialogService: JobFileUploadDialogService,
         private addEventDialogService: AddEventDialogService,

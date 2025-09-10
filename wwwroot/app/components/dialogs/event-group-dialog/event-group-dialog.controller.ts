@@ -1,7 +1,7 @@
 import "./event-group-dialog.styles.less";
 import {ISuggestion} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
-import {EventGroupViewModel} from "../../../interfaces/event-group-view-model.interface";
+import {IEventGroupViewModel} from "../../../interfaces/event-group-view-model.interface";
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
 import NavigationService from "../../../services/navigation.service";
@@ -34,7 +34,7 @@ export class EventGroupDialogController extends BaseController {
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
         public jobId: number,
-        public events: EventGroupViewModel[],
+        public events: IEventGroupViewModel[],
         public users: ISuggestion[],
     ) {
         super();
@@ -49,7 +49,7 @@ export class EventGroupDialogController extends BaseController {
         this.$log.debug('EventGroupDialog initialized with', events.length, 'event groups');
     }
 
-    async save(jobId: number, events: EventGroupViewModel[]) {
+    async save(jobId: number, events: IEventGroupViewModel[]) {
         try {
             this.$log.debug('Processing event save request');
 

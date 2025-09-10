@@ -2,14 +2,15 @@ import "./edit-address-dialog.styles.less";
 import {IEditAddressDialogViewModel, IShipmentDetails,} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import ToastrService from "../../../services/toastr.service";
-import {AppConfig} from "../../../interfaces/app-config.interface";
+import {IAppConfig} from "../../../interfaces/app-config.interface";
 import IStateInfo from "../../../interfaces/state-info.interface";
 import ConfigService from "../../../services/config.service";
-import {HereMapsLocationResult,} from "../../../interfaces/heremaps-autocomplete.interfaces";
+import {IHereMapsLocationResult,} from "../../../interfaces/heremaps-autocomplete.interfaces";
 import {HereMapsLookupResponse,} from "../../../interfaces/hereMapsLookUp.interfaces";
 import {getStateByAbbreviation, getStateByName, getStates} from "../../../functions/usStates";
 import AddressLookupService from "../../../services/address-lookup.service";
 import {HereMapConfig, HereMapCredentials} from "../../../interfaces/hereMapCredentials.interfaces";
+import dayjs from "dayjs";
 
 class EditAddressDialogController extends BaseController {
     static $inject = [
@@ -38,7 +39,7 @@ class EditAddressDialogController extends BaseController {
 
     addressSearchText: string;
     usStateList: IStateInfo[];
-    addressSearchResults: HereMapsLocationResult[] = [];
+    addressSearchResults: IHereMapsLocationResult[] = [];
     selectedAddressId?: string;
 
     // Contact Card
@@ -53,7 +54,7 @@ class EditAddressDialogController extends BaseController {
         private $log: angular.ILogService,
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
-        private appConfig: AppConfig,
+        private appConfig: IAppConfig,
         private configService: ConfigService,
         private addressLookupService: AddressLookupService,
         public addressDetails: IEditAddressDialogViewModel,
@@ -120,7 +121,7 @@ class EditAddressDialogController extends BaseController {
                         // No delivery for a single address
                     },
                     preserveView: false,
-                    timestamp: Date.now()
+                    timestamp: dayjs().valueOf()
                 };
             })
             .catch((error) => {
@@ -172,7 +173,7 @@ class EditAddressDialogController extends BaseController {
                 id: 'edit-address',
                 pickup: {lat, lng}
             },
-            timestamp: Date.now() // Force update
+            timestamp: dayjs().valueOf()
         };
 
         this.applyScope();
@@ -180,7 +181,7 @@ class EditAddressDialogController extends BaseController {
 
     async autocompleteAddressSearch(
         text: string
-    ): Promise<HereMapsLocationResult[]> {
+    ): Promise<IHereMapsLocationResult[]> {
         try {
             const results = await this.addressLookupService.autocompleteAddressSearch(text);
             this.addressSearchResults = results;
@@ -197,7 +198,7 @@ class EditAddressDialogController extends BaseController {
     }
 
     async addressSearchItemSelected(
-        selectedItem: HereMapsLocationResult
+        selectedItem: IHereMapsLocationResult
     ): Promise<void> {
         try {
             this.$log.debug("Selected address item:", selectedItem);
@@ -237,8 +238,7 @@ class EditAddressDialogController extends BaseController {
             this.updateMapPosition(coordinates.lat, coordinates.lng);
 
             this.isAddressLoading = false;
-
-        } catch (error: any) {
+        } catch (error) {
             this.$log.error("Error processing selected address:", error);
             this.isAddressLoading = false;
             this.toastrService.showErrorToast(
@@ -423,7 +423,7 @@ class EditAddressDialogController extends BaseController {
             if (this.useUsFormat) {
                 this.$log.debug("Processing US address submission");
                 if (!this.validateUsAddress(addressDetails)) {
-                    console.warn("US address validation failed");
+                    this.$log.error("US address validation failed");
                     this.isLoading = false;
                     return;
                 }

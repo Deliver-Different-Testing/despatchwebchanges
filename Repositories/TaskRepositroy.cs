@@ -68,33 +68,41 @@ public class TaskRepository(
 
     public async Task SetEventAsClosedAsync(int eventId, bool closed)
     {
-        var dfrntEvent = await Context.TucEvents.FindAsync(eventId);
-        ArgumentNullException.ThrowIfNull(dfrntEvent);
-
-        dfrntEvent.UcevClosed = closed;
-
-        await Context.SaveChangesAsync();
+        var rowsAffected = await Context.TucEvents
+            .Where(e => e.UcevId == eventId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(e => e.UcevClosed, closed));
+    
+        if (rowsAffected == 0) throw new ArgumentException($"Event with ID {eventId} not found.");
     }
 
     public async Task UpdateEventDateAsync(int eventId, string date)
     {
-        var dfrntEvent = await Context.TucEvents.FindAsync(eventId);
-        ArgumentNullException.ThrowIfNull(dfrntEvent);
-
         var newDate = DateTime.Parse(date).Date;
-        var existingTime = dfrntEvent.UcevDueTime.TimeOfDay;
-
-        dfrntEvent.UcevDueTime = newDate.Add(existingTime);
-        await Context.SaveChangesAsync();
+    
+        var existingEvent = await Context.TucEvents
+            .Where(e => e.UcevId == eventId)
+            .Select(e => new { e.UcevDueTime })
+            .FirstOrDefaultAsync();
+        ArgumentNullException.ThrowIfNull(existingEvent);
+    
+        var existingTime = existingEvent.UcevDueTime.TimeOfDay;
+    
+        await Context.TucEvents
+            .Where(e => e.UcevId == eventId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(e => e.UcevDueTime, newDate.Add(existingTime)));
     }
 
     public async Task UpdateEventTimeAsync(int eventId, string time)
     {
-        var dfrntEvent = await Context.TucEvents.FindAsync(eventId);
-        ArgumentNullException.ThrowIfNull(dfrntEvent);
-
-        dfrntEvent.UcevDueTime = DateTime.Parse(time);
-        await Context.SaveChangesAsync();
+        var rowsAffected = await Context.TucEvents
+            .Where(e => e.UcevId == eventId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(e => e.UcevDueTime, DateTime.Parse(time)));
+    
+        if (rowsAffected == 0)
+            throw new ArgumentException($"Event with ID {eventId} not found.");
     }
 
     public async Task ReassignEventToUserAsync(int eventId, int staffId)

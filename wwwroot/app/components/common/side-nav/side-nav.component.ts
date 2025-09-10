@@ -1,4 +1,4 @@
-import {AppConfig} from "../../../interfaces/app-config.interface";
+import {IAppConfig} from "../../../interfaces/app-config.interface";
 import "./side-nav.styles.less";
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
@@ -47,7 +47,7 @@ class MaterialSidenavComponentController extends BaseController {
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
         $scope: angular.IScope,
-        appConfig: AppConfig
+        appConfig: IAppConfig
     ) {
         super();
         this.initServices($timeout, $interval, $scope);

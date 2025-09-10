@@ -7,7 +7,7 @@ import {IDialogDateTimeResult, ISelectDialogResult} from "../../../interfaces/di
 import {ITaskListItemConfig} from "./task-item.interfaces";
 import ToastrService from "../../../services/toastr.service";
 import "./task-item.styles.less";
-import {AppConfig} from "../../../interfaces/app-config.interface";
+import {IAppConfig} from "../../../interfaces/app-config.interface";
 import dayjs from "dayjs";
 import TasksService from "../../../services/tasks.service";
 
@@ -40,7 +40,7 @@ class TaskListItemController extends BaseController {
         private tasksService: TasksService,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
-        appConfig: AppConfig
+        appConfig: IAppConfig
     ) {
         super();
 

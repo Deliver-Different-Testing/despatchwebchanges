@@ -1,27 +1,27 @@
-﻿export interface Position {
+﻿export interface IPosition {
     lat: number;
     lng: number;
 }
 
-export interface MapView {
+export interface IMapView {
     west: number;
     south: number;
     east: number;
     north: number;
 }
 
-export interface FieldScore {
+export interface IFieldScore {
     streets?: number[];
     houseNumber?: number;
     placeName?: number;
 }
 
-export interface Scoring {
+export interface IScoring {
     queryScore: number;
-    fieldScore: FieldScore;
+    fieldScore: IFieldScore;
 }
 
-export interface Address {
+export interface IAddress {
     label: string;
     countryCode: string;
     countryName: string;
@@ -35,29 +35,29 @@ export interface Address {
     houseNumber: string;
 }
 
-export interface Category {
+export interface ICategory {
     id: string;
     name: string;
     primary?: boolean;
 }
 
-export interface FoodType {
+export interface IFoodType {
     id: string;
     name: string;
     primary?: boolean;
 }
 
-export interface HereMapsLocationResult {
+export interface IHereMapsLocationResult {
     title: string;
     id: string;
     resultType: string;
     houseNumberType?: string;
-    address: Address;
-    position: Position;
-    access: Position[];
-    mapView: MapView;
+    address: IAddress;
+    position: IPosition;
+    access: IPosition[];
+    mapView: IMapView;
     estimatedPointAddress?: boolean;
-    scoring: Scoring;
-    categories?: Category[];
-    foodTypes?: FoodType[];
+    scoring: IScoring;
+    categories?: ICategory[];
+    foodTypes?: IFoodType[];
 }

@@ -18,7 +18,7 @@ import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interface
 import {EditAddressDialogService} from "../../dialogs/edit-address-dialog/edit-address-dialog.service";
 import PriceBreakdownDialogService from "../../dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
 import BaseController from "../../base-controller";
-import {AppConfig} from "../../../interfaces/app-config.interface";
+import {IAppConfig} from "../../../interfaces/app-config.interface";
 import {JobStatus} from "../../../enums/job-status.enum";
 import EditParcelDimensionsDialogService
     from "../../dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
@@ -96,7 +96,7 @@ class JobDetailController extends BaseController {
         private editDateTimeDialogService: EditDateTimeDialogService,
         private editAddressDialogService: EditAddressDialogService,
         private priceBreakdownDialogService: PriceBreakdownDialogService,
-        appConfig: AppConfig,
+        appConfig: IAppConfig,
         private editParcelDimensionsDialogService: EditParcelDimensionsDialogService,
         private $rootScope: angular.IRootScopeService,
         $timeout: angular.ITimeoutService,
@@ -884,12 +884,20 @@ class JobDetailController extends BaseController {
                     $event
                 );
             if (!newAddress) {
-                return; // User closed dialog
+                this.$log.debug("User closed dialog");
+                return;
             }
 
             await this.processAddressUpdate(job, newAddress, isDeliveryAddress);
         } catch (error) {
-            this.$log.debug("Error updating GPS:", error);
+            if(!error) {
+                this.$log.debug("User closed dialog");
+                return;
+            }
+            
+            this.$log.error("Error updating GPS:", error);
+        } finally {
+            this.applyScope();
         }
     }
 
@@ -898,18 +906,11 @@ class JobDetailController extends BaseController {
         newAddress: IEditAddressDialogViewModel,
         isDeliveryAddress: boolean
     ): Promise<void> {
-        this.$log.debug(`isDeliveryAddress: ${isDeliveryAddress}`);
-
-        // Update job by address format
-        const updatedJob = this.updateJobAddressUs(
-            job,
-            newAddress,
-            isDeliveryAddress
-        );
-
         try {
+            this.$log.debug(`isDeliveryAddress: ${isDeliveryAddress}`);
+
             await this.updateJobRateAndAddress(
-                updatedJob,
+                job,
                 newAddress,
                 isDeliveryAddress
             );
@@ -1630,6 +1631,7 @@ class JobDetailController extends BaseController {
         if (!error) {
             this.$log.debug("User closed dialog");
         } else {
+            this.$log.error("Error: ", error);
             this.toastrService.showErrorToast();
         }
     }

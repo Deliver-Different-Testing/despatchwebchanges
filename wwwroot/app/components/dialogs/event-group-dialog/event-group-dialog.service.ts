@@ -4,12 +4,14 @@ import {EventGroupDialogController} from "./event-group-dialog.controller";
 export class EventGroupDialogService implements angular.IServiceProvider {
     static $inject = [
         "$mdDialog",
+        "$log",
         "DispatchData",
         "$document"
     ];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
+        private $log: angular.ILogService,
         private DispatchData: DispatchCoreService,
         private $document: angular.IDocumentService,
     ) {
@@ -39,12 +41,11 @@ export class EventGroupDialogService implements angular.IServiceProvider {
                 },
                 bindToController: true,
             });
-            console.log('EventGroupDialogService: Dialog closed');
+            
+            this.$log.debug('EventGroupDialogService: Dialog closed');
         } catch (error) {
             if(!error)  return;
-
-            // Error occured
-            console.error('EventGroupDialogService: Error in openEventGroupDialog', error);
+            this.$log.error('EventGroupDialogService: Error in openEventGroupDialog', error);
             throw error;
         }
     }

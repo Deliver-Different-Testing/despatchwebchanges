@@ -42,7 +42,7 @@ public class RateJobService(
         catch (Exception ex)
         {
             Log.Error(ex, "{ErrorMessage}",
-                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(RateJobService), nameof(RateJobUsAsync)));
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(RateJobService), nameof(RateJobAsync)));
             throw;
         }
     }

@@ -587,8 +587,8 @@ public class JobController(
             Log.Error(ex, "An unexpected error occured");
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
-    } 
-    
+    }
+
     public async Task<IActionResult> DispatchBulkJobDetail(int bulkJobId)
     {
         try
@@ -598,7 +598,7 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "{Message}", 
+            Log.Error(ex, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(DispatchBulkJobDetail)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
@@ -645,7 +645,7 @@ public class JobController(
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
+            Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(PodSearch)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
@@ -843,7 +843,7 @@ public class JobController(
         return Ok();
     }
 
-    public async Task<IActionResult> BulkSearch(PodSearchRequest data )
+    public async Task<IActionResult> BulkSearch(PodSearchRequest data)
     {
         try
         {
@@ -852,9 +852,9 @@ public class JobController(
         }
         catch (Exception e)
         {
-         Log.Error(e, "{Message}", 
-             ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(BulkSearch)));
-         return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(BulkSearch)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -1397,20 +1397,20 @@ public class JobController(
             // Recalculate job
             var shouldRecalculateRate = ShouldRecalculateRate(field);
             if (!shouldRecalculateRate) return Ok();
-            
+
             var isUsTenant = infoService.IsUsTenant();
             if (isUsTenant)
             {
                 var jobDetails = await jobRepository.GetJobBookingDetailsForRatingAsync(jobId);
                 if (jobDetails.IsManuallyRated) return Ok();
-                
+
                 await rateJobService.RateJobUsAsync(jobDetails);
             }
             else
             {
                 var jobDetails = await jobRepository.GetJobDetailsForRatingNzAsync(jobId);
                 if (jobDetails.IsManuallyRated) return Ok();
-                
+
                 await rateJobService.RateJobAsync(jobDetails);
             }
 
@@ -1446,14 +1446,14 @@ public class JobController(
             {
                 var jobDetails = await jobRepository.GetJobBookingDetailsForRatingAsync(jobId);
                 if (jobDetails.IsManuallyRated) return Ok();
-                
+
                 await rateJobService.RateJobUsAsync(jobDetails);
             }
             else
             {
                 var jobDetails = await jobRepository.GetJobDetailsForRatingNzAsync(jobId);
                 if (jobDetails.IsManuallyRated) return Ok();
-                
+
                 await rateJobService.RateJobAsync(jobDetails);
             }
 
@@ -1958,252 +1958,90 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdateDeliveryAddressNz([FromBody] UpdateAddressRequestNz request)
+    public async Task<IActionResult> UpdateDeliveryAddress([FromBody] UpdateAddressRequest request)
     {
-        try
-        {
-            // First update the address
-            await jobRepository.UpdateDeliveryAddressNzAsync(request);
-
-            // Get job details for rating
-            var jobDetails = await jobRepository.GetJobDetailsForRatingNzAsync(request.JobId);
-
-            // Update job details with a new delivery address
-            jobDetails.ToId = request.SuburbId;
-            jobDetails.DeliveryLat = request.Latitude;
-            jobDetails.DeliveryLong = request.Longitude;
-
-            // Calculate new rate
-            var rate = await rateJobService.RateJobAsync(jobDetails);
-
-            // Create note text
-            var noteText = $"Delivery address updated to {request.Address}. Rate recalculated: {rate:C}";
-
-            // Update job rate and add note
-            await jobRepository.UpdateJobRateAsync(request.JobId, rate, noteText);
-
-            return Ok(new { message = "Delivery address updated successfully", newRate = rate });
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error updating delivery address for job {JobId}", request.JobId);
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
+        return await UpdateAddressAsync(
+            request,
+            jobRepository.UpdateDeliveryAddressAsync,
+            AddressType.Delivery,
+            isBooking: false);
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdateDeliveryAddressUs([FromBody] UpdateAddressRequestUs request)
+    public async Task<IActionResult> UpdatePickupAddress([FromBody] UpdateAddressRequest request)
+    {
+        return await UpdateAddressAsync(
+            request,
+            jobRepository.UpdatePickupAddressAsync,
+            AddressType.Pickup,
+            isBooking: false);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> UpdateBookingPickupAddress([FromBody] UpdateAddressRequest request)
+    {
+        return await UpdateAddressAsync(
+            request,
+            jobRepository.UpdateBookingPickupAddressAsync,
+            AddressType.Pickup,
+            isBooking: true);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> UpdateBookingDeliveryAddress([FromBody] UpdateAddressRequest request)
+    {
+        return await UpdateAddressAsync(
+            request,
+            jobRepository.UpdateBookingDeliveryAddressAsync,
+            AddressType.Delivery,
+            isBooking: true);
+    }
+
+    private async Task<IActionResult> UpdateAddressAsync(
+        UpdateAddressRequest request,
+        Func<UpdateAddressRequest, Task> updateAddressAction,
+        AddressType addressType,
+        bool isBooking)
     {
         try
         {
             // First update the address
-            await jobRepository.UpdateDeliveryAddressUsAsync(request);
+            await updateAddressAction(request);
 
-            // Get job details for rating
-            var jobDetails = await jobRepository.GetJobDetailsForRatingAsync(request.JobId);
-
-            // Update job details with a new delivery address
-            jobDetails.ToZip = request.Address.AddressLine7;
-            jobDetails.DeliveryLat = request.Address.Latitude ?? 0;
-            jobDetails.DeliveryLong = request.Address.Longitude ?? 0;
-
-            // Calculate new rate
-            await rateJobService.RateJobUsAsync(jobDetails);
+            // Get job details for rating and update
+            await RecalculateJobRateAsync(request.JobId, request.Address.FullAddress, addressType, isBooking);
 
             return Ok();
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error updating delivery address for job {JobId}", request.JobId);
+            var operationType = $"{(isBooking ? "booking " : "")}{addressType.ToString().ToLower()}";
+            Log.Error(ex, "Error updating {OperationType} address for job {JobId}", operationType, request.JobId);
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
-    [HttpPost]
-    public async Task<IActionResult> UpdatePickupAddressNz([FromBody] UpdateAddressRequestNz request)
+    private async Task RecalculateJobRateAsync(int jobId, string newAddress, AddressType addressType, bool isBooking)
     {
-        try
+        var isUsCustomer = infoService.IsUsTenant();
+
+        if (isUsCustomer)
         {
-            // First update the address
-            await jobRepository.UpdatePickupAddressNzAsync(request);
+            var jobDetailsUs = isBooking
+                ? await jobRepository.GetJobBookingDetailsForRatingAsync(jobId)
+                : await jobRepository.GetJobDetailsForRatingAsync(jobId);
 
-            // Get job details for rating
-            var jobDetails = await jobRepository.GetJobDetailsForRatingNzAsync(request.JobId);
-
-            // Update job details with a new pickup address
-            jobDetails.FromId = request.SuburbId;
-            jobDetails.PickupLat = request.Latitude;
-            jobDetails.PickupLong = request.Longitude;
-
-            // Calculate new rate
-            var rate = await rateJobService.RateJobAsync(jobDetails);
-
-            // Create note text
-            var noteText = $"Changed Pickup Address to {request.Address}. Rate recalculated: {rate:C}";
-
-            // Update job rate and add note
-            await jobRepository.UpdateJobRateAsync(request.JobId, rate, noteText);
-
-            return Ok(new { message = "Pickup address updated successfully", newRate = rate });
+            await rateJobService.RateJobUsAsync(jobDetailsUs);
         }
-        catch (Exception ex)
+        else
         {
-            Log.Error(ex, "Error updating pickup address for job {JobId}", request.JobId);
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
+            var jobDetailsNz = isBooking
+                ? await jobRepository.GetJobBookingDetailsForRatingNzAsync(jobId)
+                : await jobRepository.GetJobDetailsForRatingNzAsync(jobId);
 
-    [HttpPost]
-    public async Task<IActionResult> UpdatePickupAddressUs([FromBody] UpdateAddressRequestUs request)
-    {
-        try
-        {
-            // First update the address
-            await jobRepository.UpdatePickupAddressUsAsync(request);
-
-            // Get job details for rating
-            var jobDetails = await jobRepository.GetJobDetailsForRatingAsync(request.JobId);
-
-            // Update job details with a new pickup address
-            jobDetails.FromZip = request.Address.AddressLine7;
-            jobDetails.PickupLat = request.Address.Latitude ?? 0;
-            jobDetails.PickupLong = request.Address.Longitude ?? 0;
-
-            // Calculate new rate
-            await rateJobService.RateJobUsAsync(jobDetails);
-
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error updating pickup address for job {JobId}", request.JobId);
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
-
-    public async Task<IActionResult> UpdateBookingPickupAddressNz([FromBody] UpdateAddressRequestNz request)
-    {
-        try
-        {
-            // First update the address
-            await jobRepository.UpdateBookingPickupAddressNzAsync(request);
-
-            // Get job details for rating
-            var jobDetails = await jobRepository.GetJobBookingDetailsForRatingNzAsync(request.JobId);
-
-            // Update job details with a new pickup address
-            jobDetails.FromId = request.SuburbId;
-            jobDetails.PickupLat = request.Latitude;
-            jobDetails.PickupLong = request.Longitude;
-            jobDetails.IsPrebook = true;
-
-            // Calculate new rate
-            var rate = await rateJobService.RateJobAsync(jobDetails);
-
-            // Create note text
-            var noteText = $"Changed Pickup Address to {request.Address}. Rate recalculated: {rate:C}";
-
-            // Update job rate and add note
-            await jobRepository.UpdateJobRateAsync(request.JobId, rate, noteText);
-
-            return Ok(new { message = "Pickup address updated successfully", newRate = rate });
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error updating pickup address for job {JobId}", request.JobId);
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> UpdateBookingPickupAddressUs([FromBody] UpdateAddressRequestUs request)
-    {
-        try
-        {
-            // First update the address
-            await jobRepository.UpdateBookingPickupAddressUsAsync(request);
-
-            // Get job details for rating
-            var jobDetails = await jobRepository.GetJobBookingDetailsForRatingAsync(request.JobId);
-
-            // Update job details with a new pickup address
-            jobDetails.FromZip = request.Address.AddressLine7;
-            jobDetails.PickupLat = request.Address.Latitude ?? 0;
-            jobDetails.PickupLong = request.Address.Longitude ?? 0;
-            jobDetails.IsPrebook = true;
-
-            // Calculate new rate
-            await rateJobService.RateJobUsAsync(jobDetails);
-
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error updating pickup address for job {JobId}", request.JobId);
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
-
-    public async Task<IActionResult> UpdateBookingDeliveryAddressNz([FromBody] UpdateAddressRequestNz request)
-    {
-        try
-        {
-            // First update the address
-            await jobRepository.UpdateBookingDeliveryAddressNzAsync(request);
-
-            // Get job details for rating
-            var jobDetails = await jobRepository.GetJobBookingDetailsForRatingNzAsync(request.JobId);
-
-            // Update job details with a new pickup address
-            jobDetails.ToId = request.SuburbId;
-            jobDetails.DeliveryLat = request.Latitude;
-            jobDetails.DeliveryLong = request.Longitude;
-            jobDetails.IsPrebook = true;
-
-            // Calculate new rate
-            var rate = await rateJobService.RateJobAsync(jobDetails);
-
-            // Create note text
-            var noteText = $"Changed Delivery Address to {request.Address}. Rate recalculated: {rate:C}";
-
-            // Update job rate and add note
-            await jobRepository.UpdateJobRateAsync(request.JobId, rate, noteText);
-
-            return Ok(new { message = "Delivery address updated successfully", newRate = rate });
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error updating delivery address for job {JobId}", request.JobId);
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> UpdateBookingDeliveryAddressUs([FromBody] UpdateAddressRequestUs request)
-    {
-        try
-        {
-            // First update the address
-            await jobRepository.UpdateBookingDeliveryAddressUsAsync(request);
-
-            // Get job details for rating
-            var jobDetails = await jobRepository.GetJobBookingDetailsForRatingAsync(request.JobId);
-
-            // Update job details with a new pickup address
-            jobDetails.ToZip = request.Address.AddressLine7;
-            jobDetails.DeliveryLat = request.Address.Latitude ?? 0;
-            jobDetails.DeliveryLong = request.Address.Longitude ?? 0;
-            jobDetails.IsPrebook = true;
-
-            // Calculate new rate
-            await rateJobService.RateJobUsAsync(jobDetails);
-
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error updating pickup address for job {JobId}", request.JobId);
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+            var rate = await rateJobService.RateJobAsync(jobDetailsNz);
+            var noteText = $"{addressType} address updated to {newAddress}. Rate recalculated: {rate:C}";
+            await jobRepository.UpdateJobRateAsync(jobId, rate, noteText);
         }
     }
 

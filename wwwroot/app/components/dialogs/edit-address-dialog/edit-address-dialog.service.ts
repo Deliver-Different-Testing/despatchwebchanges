@@ -5,14 +5,16 @@ import {IDocumentService, IServiceProvider, material} from "angular";
 export class EditAddressDialogService implements IServiceProvider {
     static $inject = [
         '$mdDialog',
+        '$log',
         "$document",
     ];
 
     constructor(
         private $mdDialog: material.IDialogService,
+        private $log: angular.ILogService,
         private $document: IDocumentService,
     ) {
-        console.log('EditAddressDialogService: Service instantiated');
+        this.$log.debug('EditAddressDialogService: Service instantiated');
     }
 
     $get() {
@@ -26,7 +28,7 @@ export class EditAddressDialogService implements IServiceProvider {
             const newAddress: IEditAddressDialogViewModel = await this.$mdDialog.show({
                 controller: EditAddressDialogController,
                 controllerAs: 'ctrl',
-                template: require("./edit-address-dialog.html"),
+                template: require("./edit-address-dialog.template.html"),
                 parent: this.$document.parent(),
                 targetEvent: $event,
                 clickOutsideToClose: false,
@@ -39,15 +41,16 @@ export class EditAddressDialogService implements IServiceProvider {
                 }
             });
 
-            console.log('EditAddressDialogService: newAddress', newAddress);
+            this.$log.debug('EditAddressDialogService: newAddress', newAddress);
             return newAddress;
         } catch (error) {
             if (error === undefined) {
+                this.$log.debug('User closed dialog');
                 return;
             }
 
             // Error occurred
-            console.error('EditAddressDialogService: Error in openEditAddressDialog', error);
+            this.$log.error('EditAddressDialogService: Error in openEditAddressDialog', error);
             throw error;
         }
     }

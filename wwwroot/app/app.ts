@@ -1,4 +1,4 @@
-import {AppConfig} from "./interfaces/app-config.interface";
+import {IAppConfig} from "./interfaces/app-config.interface";
 import {AppPages} from "./enums/app-pages.enum";
 import {PodPhotoViewerComponent} from "./components/common/pod-photo-viewer/pod-photo-viewer.component";
 import {MaterialSidenavComponent} from "./components/common/side-nav/side-nav.component";
@@ -78,7 +78,7 @@ app
             lat: -36.8485,
             lng: 174.7633
         }
-    } as AppConfig)
+    } as IAppConfig)
     .constant("AppPages", AppPages);
 
 // Routes
@@ -93,7 +93,7 @@ app.config(["$urlRouterProvider", "$stateProvider",
 app.config(["$mdThemingProvider", "APP_CONFIG",
     (
         $mdThemingProvider: angular.material.IThemingProvider,
-        appConfig: AppConfig
+        appConfig: IAppConfig
     ): void => {
         const themeConfig = new ThemeConfig($mdThemingProvider, appConfig);
         themeConfig.configure();
@@ -106,7 +106,7 @@ app.config(["$qProvider", ($qProvider: angular.IQProvider) => {
 }])
     .config(["$mdDateLocaleProvider", "APP_CONFIG", (
         $mdDateLocaleProvider: angular.material.IDateLocaleProvider,
-        appConfig: AppConfig) => {
+        appConfig: IAppConfig) => {
         if (!appConfig.US_Customer) {
             dayjs().locale("en-nz");
 

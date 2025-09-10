@@ -1,6 +1,6 @@
 import {ISuggestion} from "./job.interface";
 
-export interface EventGroupViewModel {
+export interface IEventGroupViewModel {
     eventTypeGroupTypeGroupId: number;
     eventType: ISuggestion;
     group: string;

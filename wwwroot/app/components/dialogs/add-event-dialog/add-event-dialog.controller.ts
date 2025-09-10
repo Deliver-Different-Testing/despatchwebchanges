@@ -12,6 +12,7 @@ import VoidJobConfirmationDialogService from "../void-job-confirmation-dialog/vo
 class AddEventDialogController extends BaseController {
     static $inject = [
         "$mdDialog",
+        "$log",
         "DispatchData",
         "toastrService",
         "noteService",
@@ -30,6 +31,7 @@ class AddEventDialogController extends BaseController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
+        private $log: angular.ILogService,
         private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
         private noteService: NoteService,
@@ -140,7 +142,7 @@ class AddEventDialogController extends BaseController {
 
             this.$mdDialog.hide();
         } catch (error: any) {
-            console.error(error);
+            this.$log.debug(error);
             this.toastrService.showErrorToast(error.message);
             this.isLoading = false;
         }

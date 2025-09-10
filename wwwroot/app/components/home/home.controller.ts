@@ -2,7 +2,7 @@ import "./home.styles.less";
 import ToastrService from "../../services/toastr.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
-import {AppConfig} from "../../interfaces/app-config.interface";
+import {IAppConfig} from "../../interfaces/app-config.interface";
 import {
     IAddressViewModel,
     IAreaClearList,
@@ -183,7 +183,7 @@ class HomeController extends BaseController {
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
         private dispatchJobService: DispatchExecutorService,
-        private APP_CONFIG: AppConfig,
+        private APP_CONFIG: IAppConfig,
         private $mdSidenav: angular.material.ISidenavService,
         private $stateParams: angular.ui.IStateParamsService,
         private additionalServicesDialogService: AdditionalServicesDialogService,

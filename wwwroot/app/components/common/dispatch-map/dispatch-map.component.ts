@@ -4,7 +4,7 @@ import {AvailableCourierPosition} from "../../../interfaces/courier.interface";
 import "./dispatch-map.styles.less";
 import BaseController from "../../base-controller";
 import DispatchCoreService from "../../../services/dispatch-core.service";
-import {AppConfig} from "../../../interfaces/app-config.interface";
+import {IAppConfig} from "../../../interfaces/app-config.interface";
 import {ClearListEnvelopeViewModel} from "../../../interfaces/dfrnt-page-view-model.interface";
 
 class DispatchMapController extends BaseController {
@@ -68,7 +68,7 @@ class DispatchMapController extends BaseController {
         private $window: angular.IWindowService,
         private $rootScope: angular.IRootScopeService,
         private DispatchData: DispatchCoreService,
-        private AppConfig: AppConfig,
+        private AppConfig: IAppConfig,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
         $scope: angular.IScope,

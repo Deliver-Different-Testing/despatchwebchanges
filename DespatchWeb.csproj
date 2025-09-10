@@ -324,6 +324,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\agent-info-dialog\agent-info-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\agent-info-dialog\agent-info-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\auto-complete-dialog\auto-complete-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\interfaces\ICreateJobDialogControllerScope.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\flight-agent-conformation-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\interfaces\ICargoStatus.ts" />

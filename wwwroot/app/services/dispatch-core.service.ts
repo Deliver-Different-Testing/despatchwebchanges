@@ -1,4 +1,4 @@
-import {AppConfig} from "../interfaces/app-config.interface";
+import {IAppConfig} from "../interfaces/app-config.interface";
 import {
     IAddressViewModel,
     IClearListViewModel,
@@ -21,7 +21,7 @@ import {
     AvailableCourierPosition,
     TruckCourierStatusViewModel,
 } from "../interfaces/courier.interface";
-import {EventGroupViewModel} from "../interfaces/event-group-view-model.interface";
+import {IEventGroupViewModel} from "../interfaces/event-group-view-model.interface";
 import {ClearListEnvelopeViewModel, DfrntPageViewModel,} from "../interfaces/dfrnt-page-view-model.interface";
 import {TaskTableFiltersRequest, TaskViewModel,} from "../components/task-dashboard/task-dashboard.interfaces";
 import {JobProperty} from "../enums/job-property.enum";
@@ -45,7 +45,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     constructor(
         private $http: angular.IHttpService,
         private $log: angular.ILogService,
-        private appConfig: AppConfig,
+        private appConfig: IAppConfig,
         private configService: ConfigService
     ) {
         this.isUsCustomer = this.appConfig.US_Customer;
@@ -78,8 +78,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getEventTypeGroups(eventGroupId: number): Promise<EventGroupViewModel[]> {
-        const response = await this.$http.get<EventGroupViewModel[]>(
+    async getEventTypeGroups(eventGroupId: number): Promise<IEventGroupViewModel[]> {
+        const response = await this.$http.get<IEventGroupViewModel[]>(
             "task/GetEventTypeGroups", {
                 params: {
                     eventGroupId,
@@ -226,7 +226,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             }
         });
     }
-    
+
     async reAssignJobs(jobIds: number[]): Promise<any> {
         const response = await this.$http.post(
             `job/ReAssignSelected`,
@@ -548,54 +548,44 @@ class DispatchCoreService implements angular.IServiceProvider {
         });
     }
 
+    private async updateAddress(
+        jobId: number,
+        despatcherName: string,
+        prebook: boolean,
+        addressData: IAddressViewModel,
+        addressType: 'pickup' | 'delivery'
+    ): Promise<void> {
+        try {
+            const endpoint = this.getAddressEndpoint(prebook, addressType);
+            this.$log.debug(`Using endpoint: ${endpoint}`);
+
+            const requestBody = {
+                jobId,
+                despatcherName,
+                address: addressData
+            };
+
+            this.$log.debug(`Address Update Request:`, requestBody);
+            await this.$http.post(endpoint, requestBody);
+        } catch (error) {
+            this.$log.error(`Failed to update ${addressType} address:`, error);
+            throw error; // Re-throw to allow the caller to handle if needed
+        }
+    }
+
+    private getAddressEndpoint(prebook: boolean, addressType: 'pickup' | 'delivery'): string {
+        const prefix = prebook ? 'Booking' : '';
+        const suffix = addressType === 'pickup' ? 'PickupAddress' : 'DeliveryAddress';
+        return `job/Update${prefix}${suffix}`;
+    }
+
     async updateDeliveryAddress(
         jobId: number,
         despatcherName: string,
         prebook: boolean,
         addressData: IAddressViewModel
     ): Promise<void> {
-        try {
-            let endpoint = prebook
-                ? "job/UpdateBookingDeliveryAddress"
-                : "job/UpdateDeliveryAddress";
-            this.$log.debug(`Using endpoint: ${endpoint}`);
-
-            let requestBody;
-            if (!this.isUsCustomer) {
-                requestBody = {
-                    jobId: jobId,
-                    despatcherName: despatcherName,
-                    address: addressData.address,
-                    suburbId: addressData.toSuburbId,
-                    cbd: addressData.cbd,
-                    latitude: addressData.latitude,
-                    longitude: addressData.longitude,
-                };
-                endpoint += "Nz";
-            } else {
-                requestBody = {
-                    jobId: jobId,
-                    despatcherName: despatcherName,
-                    address: {
-                        addressLine1: addressData.addressLine1,
-                        addressLine2: addressData.addressLine2,
-                        addressLine3: addressData.addressLine3,
-                        addressLine4: addressData.addressLine4,
-                        addressLine5: addressData.addressLine5,
-                        addressLine6: addressData.addressLine6,
-                        addressLine7: addressData.addressLine7,
-                        latitude: addressData.latitude,
-                        longitude: addressData.longitude,
-                    },
-                };
-                endpoint += "Us";
-            }
-
-            this.$log.debug(`Address Update Request: ${requestBody}`);
-            await this.$http.post(endpoint, requestBody);
-        } catch (error) {
-            this.$log.error(error);
-        }
+        return this.updateAddress(jobId, despatcherName, prebook, addressData, 'delivery');
     }
 
     async updatePickupAddress(
@@ -604,38 +594,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         prebook: boolean,
         addressData: IAddressViewModel
     ): Promise<void> {
-        try {
-            let endpoint = prebook
-                ? "job/UpdateBookingPickupAddress"
-                : "job/UpdatePickupAddress";
-            this.$log.debug(`Using endpoint: ${endpoint}`);
-
-            let requestBody;
-            if (!this.isUsCustomer) {
-                requestBody = {
-                    jobId: jobId,
-                    despatcherName: despatcherName,
-                    address: addressData.address,
-                    suburbId: addressData.toSuburbId,
-                    cbd: addressData.cbd,
-                    latitude: addressData.latitude,
-                    longitude: addressData.longitude,
-                };
-                endpoint += "Nz";
-            } else {
-                requestBody = {
-                    jobId: jobId,
-                    despatcherName: despatcherName,
-                    address: addressData,
-                };
-                endpoint += "Us";
-            }
-
-            this.$log.debug(`Address Update Request: ${requestBody}`);
-            await this.$http.post(endpoint, requestBody);
-        } catch (error) {
-            this.$log.error(error);
-        }
+        return this.updateAddress(jobId, despatcherName, prebook, addressData, 'pickup');
     }
 
     async updateSplitJobAddress(
