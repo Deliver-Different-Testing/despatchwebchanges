@@ -1398,10 +1398,11 @@ class NationwideControl extends BaseController {
             if (result.awb) {
                 await this.DispatchData.updateJobDetail(job.id, JobProperty.ConNote, result.awb, false);
             }
-
+            
+            this.showJobHasAssignedAgentMessage = true;
             await this.getJobList([JobDataType.NEW, JobDataType.POD]);
             this.currentJob = this.findJobInLocalLists(job.id);
-
+            
             this.isDataLoading = false;
 
             const successMessage = (`Successfully assigned agent ${agent.text} to job ${job.jobNo}`)

@@ -2089,6 +2089,7 @@ class JobDetailController extends BaseController {
     resetFieldVisibility(): void {
         this.fieldVisibility = { ...this.defaultFieldVisibility };
         this.saveFieldVisibilityToStorage();
+        this.toastrService.showSuccessToast("Default Job Detail layout restored");
     }
 
     isFieldVisible(fieldKey: string): boolean {

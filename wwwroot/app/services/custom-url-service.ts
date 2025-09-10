@@ -3,9 +3,7 @@
 
     constructor(
         private $location: angular.ILocationService
-    ) {
-        console.log("UrlService: Service instantiated");
-    }
+    ) {}
 
     $get() {
         return this;

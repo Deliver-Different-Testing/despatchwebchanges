@@ -12,8 +12,7 @@ public class SqlServerHealthCheck(ILogger<SqlServerHealthCheck> logger): IHealth
     private readonly string _healthCheckConnectionString = 
         Environment.GetEnvironmentVariable("SQLHealthCheckConnection")
         ?? throw new InvalidOperationException("SQLHealthCheckConnection environment variable is not set.");
-
-
+    
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
         try
