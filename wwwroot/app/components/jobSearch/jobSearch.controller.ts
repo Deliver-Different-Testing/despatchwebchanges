@@ -22,6 +22,8 @@ import ISearchCriteria from "./interfaces/ISearchCriteria";
 import dayjs from "dayjs";
 import JobListType from "../common/job-list/enums/jobListType";
 import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
+import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
+import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 
 class JobSearchController extends BaseController {
     static $inject = [
@@ -41,6 +43,8 @@ class JobSearchController extends BaseController {
         "navigationService",
         "messagingDialogService",
         "createJobDialogService",
+        "additionalServicesDialogService",
+        "jobFileUploadDialogService",
     ];
 
     readonly isUsCustomer: boolean;
@@ -121,6 +125,8 @@ class JobSearchController extends BaseController {
         private navigationService: NavigationService,
         private messagingDialogService: MessagingDialogService,
         private createJobDialogService: CreateJobDialogService,
+        private additionalServicesDialogService: AdditionalServicesDialogService,
+        private jobFileUploadDialogService: JobFileUploadDialogService
     ) {
         super();
 
@@ -606,20 +612,7 @@ class JobSearchController extends BaseController {
                 return;
             }
 
-            // Show additional services dialog
-            await this.$mdDialog.show({
-                controller: 'AdditionalServicesDialogController',
-                controllerAs: "ctrl",
-                templateUrl: "app/components/dialogs/additional-services-dialog/additional-services-dialog.html",
-                parent: this.$document.parent(),
-                targetEvent: $event,
-                clickOutsideToClose: false,
-                fullscreen: true,
-                locals: {
-                    job
-                },
-                bindToController: true
-            });
+            await this.additionalServicesDialogService.showAdditionalServicesDialog($event, job);
         } catch (error) {
             this.$log.error('Error in showAdditionalServicesMenu:', error);
         }
@@ -627,26 +620,13 @@ class JobSearchController extends BaseController {
 
     async openFileAttachmentDialog($event: MouseEvent, job: IDispatchJob) {
         try {
-            await this.$mdDialog.show({
-                controller: 'JobFileUploadController',
-                controllerAs: 'ctrl',
-                parent: this.$document.parent(),
-                targetEvent: $event,
-                templateUrl: "app/components/dialogs/job-file-upload-dialog/job-file-upload-dialog.html",
-                clickOutsideToClose: false,
-                fullscreen: true,
-                locals: {
-                    jobId: job.id
-                },
-                bindToController: true
-            });
-
+            await this.jobFileUploadDialogService.openJobFileUploadDialog($event, job);
             this.$log.debug('Job File Upload Dialog Closed!');
         } catch (error) {
             if (error === undefined) {
                 this.$log.debug('User canceled!');
             } else {
-                throw error;
+                this.$log.error('Error in openFileAttachmentDialog:', error);
             }
         }
     }
