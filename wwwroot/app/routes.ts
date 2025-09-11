@@ -1,5 +1,6 @@
 class RouterConfig {
     constructor(
+        private $log: angular.ILogService,
         private $urlRouterProvider: angular.ui.IUrlRouterProvider,
         private $stateProvider: angular.ui.IStateProvider
     ) {
@@ -38,7 +39,7 @@ class RouterConfig {
                         const response = await $http.get<Record<string, string>>('dist/manifest.json');
                         return response.data;
                     } catch {
-                        console.warn('[ROUTES] Failed to load manifest for home state, using fallback names');
+                        this.$log.warn('[ROUTES] Failed to load manifest for home state, using fallback names');
                         return {
                             'home.js': 'home.js',
                             'home.css': 'home.css'
@@ -77,7 +78,7 @@ class RouterConfig {
                         const response = await $http.get<Record<string, string>>('dist/manifest.json');
                         return response.data;
                     } catch {
-                        console.warn('[ROUTES] Failed to load manifest for nationwide state, using fallback names');
+                        this.$log.warn('[ROUTES] Failed to load manifest for nationwide state, using fallback names');
                         return {
                             'nationwide.js': 'nationwide.js',
                             'nationwide.css': 'nationwide.css'
@@ -113,7 +114,7 @@ class RouterConfig {
                         const response = await $http.get<Record<string, string>>('dist/manifest.json');
                         return response.data;
                     } catch {
-                        console.warn('[ROUTES] Failed to load manifest for jobSearch state, using fallback names');
+                        this.$log.warn('[ROUTES] Failed to load manifest for jobSearch state, using fallback names');
                         return {
                             'jobSearch.js': 'jobSearch.js',
                             'jobSearch.css': 'jobSearch.css'
@@ -142,7 +143,7 @@ class RouterConfig {
                         const response = await $http.get<Record<string, string>>('dist/manifest.json');
                         return response.data;
                     } catch {
-                        console.warn('[ROUTES] Failed to load manifest for recurringJobs state, using fallback names');
+                        this.$log.warn('[ROUTES] Failed to load manifest for recurringJobs state, using fallback names');
                         return {'recurringJobs.js': 'recurringJobs.js'};
                     }
                 }],
@@ -165,7 +166,7 @@ class RouterConfig {
                         const response = await $http.get<Record<string, string>>('dist/manifest.json');
                         return response.data;
                     } catch {
-                        console.warn('[ROUTES] Failed to load manifest for overview state, using fallback names');
+                        this.$log.warn('[ROUTES] Failed to load manifest for overview state, using fallback names');
                         return {
                             'overview.js': 'overview.js',
                             'overview.css': 'overview.css'
@@ -194,7 +195,7 @@ class RouterConfig {
                         const response = await $http.get<Record<string, string>>('dist/manifest.json');
                         return response.data;
                     } catch {
-                        console.warn('[ROUTES] Failed to load manifest for megaMap state, using fallback names');
+                        this.$log.warn('[ROUTES] Failed to load manifest for megaMap state, using fallback names');
                         return {
                             'megaMap.js': 'megaMap.js',
                             'megaMap.css': 'megaMap.css'
@@ -223,7 +224,7 @@ class RouterConfig {
                         const response = await $http.get<Record<string, string>>('dist/manifest.json');
                         return response.data;
                     } catch {
-                        console.warn('[ROUTES] Failed to load manifest for taskDashboard state, using fallback names');
+                        this.$log.warn('[ROUTES] Failed to load manifest for taskDashboard state, using fallback names');
                         return {
                             'taskDashboard.js': 'taskDashboard.js',
                             'taskDashboard.css': 'taskDashboard.css'

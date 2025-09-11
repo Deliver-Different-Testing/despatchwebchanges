@@ -1444,7 +1444,7 @@ public class JobController(
             var isUsTenant = infoService.IsUsTenant();
             if (isUsTenant)
             {
-                var jobDetails = await jobRepository.GetJobBookingDetailsForRatingAsync(jobId);
+                var jobDetails = await jobRepository.GetJobDetailsForRatingAsync(jobId);
                 if (jobDetails.IsManuallyRated) return Ok();
 
                 await rateJobService.RateJobUsAsync(jobDetails);

@@ -83,9 +83,10 @@ app
 
 // Routes
 app.config(["$urlRouterProvider", "$stateProvider",
-    ($urlRouterProvider: angular.ui.IUrlRouterProvider,
+    ($log: angular.ILogService,
+     $urlRouterProvider: angular.ui.IUrlRouterProvider,
      $stateProvider: angular.ui.IStateProvider) => {
-        new RouterConfig($urlRouterProvider, $stateProvider);
+        new RouterConfig($log, $urlRouterProvider, $stateProvider);
     }
 ]);
 
