@@ -261,13 +261,15 @@ public class RateJobService(
             request.Content = JsonContent.Create(jobObject);
 
             var response = await httpClient.SendAsync(request);
+            var rawContent = await response.Content.ReadAsStringAsync();
+            Log.Debug("Raw response: {RawContent}", rawContent);
 
             if (!response.IsSuccessStatusCode)
             {
                 Log.Error("Request failed with status code {ResponseStatusCode}", response.StatusCode);
-                Log.Error("Response content: {ReadAsStringAsync}", await response.Content.ReadAsStringAsync());
+                Log.Error("Response content: {ReadAsStringAsync}", rawContent);
             }
-
+            
             var rerateResponse = await response.Content.ReadFromJsonAsync<RerateApiResponse>();
             return rerateResponse.ApiRerate ?? throw new ApplicationException("Failed to get rate from DFRNT API");
         }
