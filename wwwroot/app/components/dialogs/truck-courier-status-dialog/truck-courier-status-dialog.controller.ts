@@ -1,13 +1,17 @@
 import BaseController from "../../base-controller";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
-import {TruckCourierStatusViewModel} from "../../../interfaces/courier.interface";
+import {ITruckCourierStatus} from "../../../interfaces/courier.interface";
 
 class TruckCourierStatusDialogController extends BaseController {
     static $inject = [
         "$mdDialog",
         "DispatchData",
         "toastrService",
+        "$log",
+        "$scope",
+        "$interval",
+        "$timeout",
         "truckCourierStatus"
     ];
 
@@ -15,19 +19,27 @@ class TruckCourierStatusDialogController extends BaseController {
         private $mdDialog: angular.material.IDialogService,
         private dispatchData: DispatchCoreService,
         private toastrService: ToastrService,
-        public truckCourierStatus: TruckCourierStatusViewModel) {
+        private $log: angular.ILogService,
+        $scope: angular.IScope,
+        $interval: angular.IIntervalService,
+        $timeout: angular.ITimeoutService,
+        public truckCourierStatus: ITruckCourierStatus) {
         super();
+        this.initServices($timeout, $interval, $scope);
     }
 
     async refresh(courierId: number) {
         try {
             this.truckCourierStatus = await this.dispatchData.truckCourierStatus(courierId);
         } catch (error) {
+            this.$log.error("Error refreshing truck courier status:", error);
             this.toastrService.showErrorToast("An error occurred while refreshing the data. Please try again later.");
+        } finally {
+            this.$log.debug("Truck courier status refreshed successfully");
+            this.applyScope();
         }
     }
-
-
+    
     cancel() {
         this.$mdDialog.cancel();
     }

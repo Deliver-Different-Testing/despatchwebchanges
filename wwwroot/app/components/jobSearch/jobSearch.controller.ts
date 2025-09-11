@@ -21,6 +21,7 @@ import DensityMode from "../../enums/densityMode";
 import ISearchCriteria from "./interfaces/ISearchCriteria";
 import dayjs from "dayjs";
 import JobListType from "../common/job-list/enums/jobListType";
+import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
 
 class JobSearchController extends BaseController {
     static $inject = [
@@ -39,6 +40,7 @@ class JobSearchController extends BaseController {
         'jobContextMenuService',
         "navigationService",
         "messagingDialogService",
+        "createJobDialogService",
     ];
 
     readonly isUsCustomer: boolean;
@@ -118,6 +120,7 @@ class JobSearchController extends BaseController {
         private jobContextMenuService: JobContextMenuService,
         private navigationService: NavigationService,
         private messagingDialogService: MessagingDialogService,
+        private createJobDialogService: CreateJobDialogService,
     ) {
         super();
 
@@ -576,20 +579,7 @@ class JobSearchController extends BaseController {
     async createNewJob($event: MouseEvent) {
         try {
             // Dialog
-            const newJobId = await this.$mdDialog.show({
-                controller: 'CreateJobDialogController',
-                controllerAs: 'ctrl',
-                parent: this.$document.parent(),
-                targetEvent: $event,
-                templateUrl: "app/components/dialogs/create-job-dialog/create-job-dialog.html",
-                clickOutsideToClose: false,
-                fullscreen: true,
-                locals: {
-                    staffId: ContactID, despatcherName: FirstName
-                },
-                bindToController: true
-            });
-
+            const newJobId = await this.createJobDialogService.showCreateJobDialog($event);
             // Refresh data
             await this.refreshData();
 

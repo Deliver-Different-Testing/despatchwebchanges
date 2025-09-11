@@ -25,7 +25,7 @@ class MegaMapController extends BaseController {
     ];
 
     isUsCustomer: boolean;
-    jobs: any[];
+    jobs: MegaMapResponse[];
     drivers: any[];
     pickupPoints: any[];
     deliveryPoints: any[];
@@ -80,7 +80,7 @@ class MegaMapController extends BaseController {
         try {
             this.$mdSidenav("right").toggle();
         } catch (error) {
-            console.warn('Sidenav not available yet:', error);
+            this.$log.warn('Sidenav not available yet:', error);
             this.registerTimeout(() => {
                 try {
                     this.$mdSidenav("right").toggle();
@@ -266,10 +266,10 @@ class MegaMapController extends BaseController {
                         isFlightRoute
                     });
                 } else {
-                    console.warn("Job %s has invalid pickup coordinates", job.jobNumber);
+                    this.$log.warn("Job %s has invalid pickup coordinates", job.jobNumber);
                 }
             } else {
-                console.warn("Job %s missing valid pickup location", job.jobNumber);
+                this.$log.warn("Job %s missing valid pickup location", job.jobNumber);
             }
 
             // Add delivery points
@@ -291,10 +291,10 @@ class MegaMapController extends BaseController {
                         isFlightRoute
                     });
                 } else {
-                    console.warn("Job %s has invalid delivery coordinates", job.jobNumber);
+                    this.$log.warn("Job %s has invalid delivery coordinates", job.jobNumber);
                 }
             } else {
-                console.warn("Job %s missing valid delivery location", job.jobNumber);
+                this.$log.warn("Job %s missing valid delivery location", job.jobNumber);
             }
 
             // Add driver location if exists
@@ -332,7 +332,7 @@ class MegaMapController extends BaseController {
                         });
                     }
                 } else {
-                    console.warn("Job %s has invalid driver coordinates", job.jobNumber);
+                    this.$log.warn("Job %s has invalid driver coordinates", job.jobNumber);
                 }
             }
         });
@@ -407,26 +407,26 @@ class MegaMapController extends BaseController {
         lng: number;
         progress: number;
     } {
-        const now = new Date();
-        const departureTime = flightInfo.expectedDeparture ? new Date(flightInfo.expectedDeparture) : null;
-        const arrivalTime = flightInfo.expectedArrival ? new Date(flightInfo.expectedArrival) : null;
+        const now = dayjs();
+        const departureTime = flightInfo.expectedDeparture ? dayjs(flightInfo.expectedDeparture) : null;
+        const arrivalTime = flightInfo.expectedArrival ? dayjs(flightInfo.expectedArrival) : null;
 
         // Default to start position if no valid times
-        if (!departureTime || !arrivalTime) {
-            console.warn(`Missing flight times for flight ${flightInfo.flightNumber}`);
+        if (!departureTime || !arrivalTime || !departureTime.isValid() || !arrivalTime.isValid()) {
+            this.$log.warn(`Missing or invalid flight times for flight ${flightInfo.flightNumber}`);
             return {lat: startLat, lng: startLng, progress: 0};
         }
 
         // Calculate progress (0 to 1) based on current time
         let progress;
-        if (now < departureTime) {
+        if (now.isBefore(departureTime)) {
             progress = 0; // Not departed yet
-        } else if (now > arrivalTime) {
+        } else if (now.isAfter(arrivalTime)) {
             progress = 1; // Already arrived
         } else {
             // Calculate position between departure and arrival
-            const totalTime = arrivalTime.getTime() - departureTime.getTime();
-            const elapsedTime = now.getTime() - departureTime.getTime();
+            const totalTime = arrivalTime.diff(departureTime);
+            const elapsedTime = now.diff(departureTime);
             progress = Math.min(Math.max(elapsedTime / totalTime, 0), 1); // Clamp between 0 and 1
         }
 

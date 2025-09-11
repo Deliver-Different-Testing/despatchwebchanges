@@ -26,7 +26,7 @@ export interface ActiveCourierViewModel {
     isActive: boolean;
 }
 
-export interface TruckCourierStatusViewModel {
+export interface ITruckCourierStatus {
     id: number;
     courierCode: string;
     firstName: string;
@@ -39,7 +39,7 @@ export interface TruckCourierStatusViewModel {
     lastUpdated: Date;
 }
 
-export interface AvailableCourierPosition {
+export interface IAvailableCourierPosition {
     courierId: number;
     courierName: string;
     channelId: number;
