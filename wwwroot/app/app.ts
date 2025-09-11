@@ -82,7 +82,7 @@ app
     .constant("AppPages", AppPages);
 
 // Routes
-app.config(["$urlRouterProvider", "$stateProvider",
+app.config(["$log", "$urlRouterProvider", "$stateProvider",
     ($log: angular.ILogService,
      $urlRouterProvider: angular.ui.IUrlRouterProvider,
      $stateProvider: angular.ui.IStateProvider) => {
