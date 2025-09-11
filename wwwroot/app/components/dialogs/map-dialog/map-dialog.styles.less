@@ -1,76 +1,498 @@
+@import "../../../../css/variables.less";
+  
 .map-dialog-component {
-  width: 40%;
-  max-width: 800px;
-  min-width: 300px;
+  width: 90%;
+  max-width: 1300px;
+  min-width: 600px;
+  height: 80vh;
+  max-height: 1000px;
+  border-radius: 8px;
+  overflow: hidden;
+  
+  // Dialog Body
+  .dialog-body {
+    padding: 0;
+    background: #f8f9fa;
+    height: calc(100% - 64px);
+    overflow: hidden;
 
-  .job-timeline {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 16px;
-    border-top: 1px solid rgba(0, 0, 0, 0.12);
-
-    .timeline-container {
-      max-width: 100%;
-      overflow-x: auto;
-      padding: 0 16px;
-    }
-
-    .timeline-step {
+    .content-wrapper {
+      height: 100%;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      cursor: pointer;
-      padding: 0 8px;
-
-      .step-circle {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: 500;
-        transition: background-color 0.3s ease;
-      }
-
-      .step-label {
-        margin-top: 4px;
-        font-size: 12px;
-        color: rgba(0, 0, 0, 0.87);
-        text-align: center;
-        max-width: 100px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
     }
+  }
 
-    .timeline-connector {
-      display: flex;
-      align-items: center;
-      width: 48px;
-      margin: 0 4px;
+  // Loading State
+  .loading-container {
+    min-height: 400px;
+    flex-direction: column;
+    gap: 24px;
+
+    .loading-wrapper {
       position: relative;
 
-      md-icon {
+      .map-loader {
+        circle {
+          stroke: @primary-blue;
+        }
+      }
+
+      .loading-icon {
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        font-size: 20px;
-        color: rgba(0, 0, 0, 0.54);
+        font-size: 24px;
+        color: @primary-blue;
+        animation: pulse 2s infinite;
+      }
+    }
+
+    .loading-text {
+      color: #6c757d;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      animation: fadeInOut 2s infinite;
+    }
+  }
+
+  // Map Container
+  .map-wrapper {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+
+    .map-container {
+      flex: 1;
+      position: relative;
+      background: white;
+      border-bottom: 1px solid #e1e4e8;
+
+      // Add padding to compensate for timeline overlay
+      padding-bottom: 180px;
+      box-sizing: border-box;
+
+      .here-map-element {
+        display: block;
+        width: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
       }
     }
   }
 
-  // Update map container spacing
-  .md-dialog-content {
-    > div:not(.job-timeline) {
-      margin-bottom: 80px;
+  // Job Timeline
+  .job-timeline-wrapper {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 900px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    border: 2px solid @primary-blue;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), 0 0 80px rgba(102, 126, 234, 0.15);
+    z-index: 1000;
+
+    .timeline-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 24px 10px;
+      border-bottom: 2px solid rgba(102, 126, 234, 0.15);
+      background: linear-gradient(to right, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
+      border-radius: 12px 12px 0 0;
+
+      md-icon {
+        font-size: 22px;
+        color: @primary-blue;
+      }
+
+      .timeline-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #2c3e50;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+      }
+    }
+
+    .timeline-content {
+      padding: 20px 24px 24px;
+      background: rgba(250, 251, 252, 0.95);
+      border-radius: 0 0 12px 12px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .timeline-scroll-container {
+      width: auto;
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding-bottom: 4px;
+      display: flex;
+      justify-content: center;
+
+      &::-webkit-scrollbar {
+        height: 6px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+
+        &:hover {
+          background: #a8a8a8;
+        }
+      }
+    }
+
+    .timeline-track {
+      display: inline-flex;
+      align-items: center;
+      min-width: fit-content;
+      padding: 8px 0;
+      justify-content: center;
+    }
+
+    .timeline-scroll-container {
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding-bottom: 4px;
+
+      &::-webkit-scrollbar {
+        height: 6px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+
+        &:hover {
+          background: #a8a8a8;
+        }
+      }
+    }
+
+    .timeline-track {
+      display: flex;
+      align-items: center;
+      min-width: fit-content;
+      padding: 8px 0;
+    }
+
+    .timeline-segment {
+      display: flex;
+      align-items: center;
+    }
+
+    // Timeline Nodes
+    .timeline-node {
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.9);
+      margin: 0 4px;
+
+      &:hover {
+        background: white;
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.25);
+
+        .node-circle {
+          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+          transform: scale(1.05);
+        }
+      }
+
+      &.active {
+        background: white;
+        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+
+        .node-circle {
+          background: linear-gradient(135deg, @primary-blue, #764ba2);
+          color: white;
+          box-shadow: 0 8px 24px rgba(102, 126, 234, 0.5);
+          transform: scale(1.15);
+          border-color: @primary-blue;
+        }
+
+        .node-label {
+          .label-type {
+            color: @primary-blue;
+            font-weight: 700;
+          }
+
+          .label-name {
+            color: #2c3e50;
+            font-weight: 600;
+          }
+        }
+      }
+
+      &.completed {
+        .node-circle {
+          background: linear-gradient(135deg, #48c774, #3abb67);
+          color: white;
+          border-color: #48c774;
+          box-shadow: 0 4px 12px rgba(72, 199, 116, 0.4);
+        }
+      }
+
+      .node-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .node-circle {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        border: 3px solid @primary-blue;
+        transition: all 0.3s ease;
+        position: relative;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+        md-icon {
+          font-size: 24px;
+          color: inherit;
+        }
+
+        .node-number {
+          font-weight: 700;
+          font-size: 20px;
+          color: @primary-blue;
+        }
+      }
+
+      .node-label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        max-width: 140px;
+
+        .label-type {
+          font-size: 12px;
+          color: @primary-blue;
+          text-transform: uppercase;
+          letter-spacing: 0.6px;
+          font-weight: 600;
+        }
+
+        .label-name {
+          font-size: 14px;
+          color: #2c3e50;
+          text-align: center;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          width: 100%;
+          font-weight: 500;
+        }
+      }
+
+      // Special node styles
+      &.parent-node {
+        .node-circle {
+          background: linear-gradient(135deg, #56ab2f, #a8e063);
+          border: 3px solid #56ab2f;
+          color: white;
+          box-shadow: 0 6px 16px rgba(86, 171, 47, 0.4);
+
+          md-icon {
+            font-size: 28px;
+          }
+        }
+
+        .node-label {
+          .label-type {
+            color: #56ab2f;
+          }
+        }
+      }
+
+      &.end-node {
+        cursor: pointer;
+
+        &:hover {
+          background: white;
+          transform: translateY(-4px);
+          box-shadow: 0 8px 20px rgba(235, 59, 90, 0.25);
+
+          .node-circle {
+            box-shadow: 0 8px 24px rgba(235, 59, 90, 0.5);
+            transform: scale(1.05);
+          }
+        }
+
+        &.active {
+          background: white;
+          box-shadow: 0 4px 16px rgba(235, 59, 90, 0.2);
+
+          .node-circle {
+            transform: scale(1.15);
+            box-shadow: 0 8px 24px rgba(235, 59, 90, 0.6);
+          }
+        }
+
+        .node-circle {
+          background: linear-gradient(135deg, #eb3b5a, #fc5c65);
+          border: 3px solid #eb3b5a;
+          color: white;
+          box-shadow: 0 6px 16px rgba(235, 59, 90, 0.4);
+
+          md-icon {
+            font-size: 28px;
+          }
+        }
+
+        .node-label {
+          .label-type {
+            color: #eb3b5a;
+          }
+        }
+      }
+    }
+
+    // Timeline Connections
+    .timeline-connection {
+      display: flex;
+      align-items: center;
+      position: relative;
+      margin: 0 -8px;
+
+      .connection-line {
+        width: 70px;
+        height: 3px;
+        background: linear-gradient(90deg,
+        @primary-blue 0%,
+        @primary-blue 40%,
+        transparent 40%,
+        transparent 60%,
+        @primary-blue 60%,
+        @primary-blue 100%);
+        background-size: 10px 3px;
+        animation: moveDash 2s linear infinite;
+        opacity: 0.8;
+      }
+
+      .connection-icon {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 20px;
+        color: @primary-blue;
+        background: white;
+        padding: 0 4px;
+        font-weight: bold;
+      }
+    }
+  }
+
+  // Animations
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  @keyframes fadeInOut {
+    0%, 100% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes moveDash {
+    0% {
+      background-position: 0 0;
+    }
+    100% {
+      background-position: 8px 0;
+    }
+  }
+
+  // Responsive adjustments
+  @media (max-width: 768px) {
+    width: 95%;
+    min-width: 320px;
+
+    .dialog-header {
+      .md-toolbar-tools {
+        padding: 0 16px;
+      }
+
+      .dialog-title {
+        font-size: 18px;
+      }
+    }
+
+    .job-timeline-wrapper {
+      .timeline-header {
+        padding: 8px 16px;
+      }
+
+      .timeline-content {
+        padding: 12px 16px;
+      }
+
+      .timeline-node {
+        padding: 4px;
+
+        .node-circle {
+          width: 40px;
+          height: 40px;
+        }
+
+        .node-label {
+          max-width: 80px;
+
+          .label-type {
+            font-size: 10px;
+          }
+
+          .label-name {
+            font-size: 12px;
+          }
+        }
+      }
+
+      .timeline-connection {
+        .connection-line {
+          width: 40px;
+        }
+      }
     }
   }
 }

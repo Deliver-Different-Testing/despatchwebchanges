@@ -4,77 +4,114 @@
             <md-icon class="popup-icon" md-font-set="material-symbols-outlined">map</md-icon>
             <h2>{{ctrl.title}}</h2>
             <span flex></span>
-            <md-button class="md-icon-button" ng-click="ctrl.cancel()">
+            <md-button class="md-icon-button close-dialog-button" ng-click="ctrl.cancel()">
                 <md-icon md-font-set="material-symbols-outlined">close</md-icon>
                 <md-tooltip md-direction="bottom">Close</md-tooltip>
             </md-button>
         </div>
     </md-toolbar>
 
-    <md-dialog-content>
-        <div class="md-dialog-content">
-            <!-- Loading Indicator -->
-            <div layout="row" layout-align="center center" ng-if="ctrl.loading" style="min-height: 300px;">
-                <div style="position: relative;">
+    <md-dialog-content class="dialog-body">
+        <div class="content-wrapper">
+            <!-- Loading State -->
+            <div class="loading-container" layout="row" layout-align="center center" ng-if="ctrl.loading">
+                <div class="loading-wrapper">
                     <md-progress-circular
-                            md-diameter="70"
+                            class="map-loader"
+                            md-diameter="60"
                             md-mode="indeterminate">
                     </md-progress-circular>
-                    <md-icon
-                            md-font-set="material-symbols-outlined"
-                            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px;">
-                        map
+                    <md-icon class="loading-icon" md-font-set="material-symbols-outlined">
+                        explore
                     </md-icon>
                 </div>
+                <div class="loading-text">Loading map data...</div>
             </div>
 
-            <!-- Map (shown when not loading) -->
-            <div ng-if="!ctrl.loading">
-                <here-map-tracking
-                        config="ctrl.mapConfig"
-                        credentials="ctrl.hereCredentials"
-                        map-id="mapContainer"
-                        on-map-ready=""
-                        style="width: 800px; height:500px;">
-                </here-map-tracking>
+            <!-- Map Container -->
+            <div class="map-wrapper" ng-if="!ctrl.loading">
+                <div class="map-container">
+                    <here-map-tracking
+                            config="ctrl.mapConfig"
+                            credentials="ctrl.hereCredentials"
+                            map-id="mapContainer"
+                            on-map-ready=""
+                            class="here-map-element">
+                    </here-map-tracking>
 
-                <div class="job-timeline" layout="row" layout-align="center center" ng-if="!ctrl.loading">
-                    <div class="timeline-container" layout="row" layout-align="center center">
-                        <!-- Parent Job Step -->
-                        <div layout="row" layout-align="center center">
-                            <div class="timeline-step"
-                                 ng-class="{'active': ctrl.selectedJobIndex === 0}"
-                                 ng-click="ctrl.switchMapJob(0)">
-                                <div class="step-circle"
-                                     md-colors="{background: ctrl.selectedJobIndex === 0 ? 'primary' : 'background-400'}">
-                                    P
-                                </div>
-                                <div class="step-label">{{ctrl.delivery.jobName}}</div>
-                            </div>
-                            <!-- Connector Line to first child -->
-                            <div class="timeline-connector"
-                                 md-colors="{background: 'background-400'}">
-                                <md-icon md-font-set="material-symbols-outlined">arrow_forward</md-icon>
-                            </div>
+                    <!-- Job Timeline Navigation Overlay -->
+                    <div class="job-timeline-wrapper">
+                        <div class="timeline-header">
+                            <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">timeline</md-icon>
+                            <span class="timeline-title">Delivery Route</span>
                         </div>
 
-                        <!-- Child Jobs -->
-                        <div layout="row" layout-align="center center" ng-repeat="job in ctrl.delivery.childJobs">
-                            <!-- Job Step Circle -->
-                            <div class="timeline-step"
-                                 ng-class="{'active': ctrl.selectedJobIndex === $index + 1}"
-                                 ng-click="ctrl.switchMapJob($index + 1)">
-                                <div class="step-circle"
-                                     md-colors="{background: ctrl.selectedJobIndex === $index + 1 ? 'primary' : 'background-400'}">
-                                    {{$index + 1}}
+                        <div class="timeline-content" layout="row" layout-align="center center">
+                            <div class="timeline-scroll-container">
+                                <div class="timeline-track" layout="row" layout-align="center center">
+                                    <!-- Parent Job Node -->
+                                    <div class="timeline-node parent-node"
+                                         ng-class="{'active': ctrl.selectedJobIndex === 0}"
+                                         ng-click="ctrl.switchMapJob(0)">
+                                        <div class="node-wrapper">
+                                            <div class="node-circle">
+                                                <md-icon md-font-set="material-symbols-outlined">flag</md-icon>
+                                            </div>
+                                            <div class="node-label">
+                                                <span class="label-type">Origin</span>
+                                                <span class="label-name" ng-bind="ctrl.delivery.jobName"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Connection Line -->
+                                    <div class="timeline-connection">
+                                        <div class="connection-line"></div>
+                                        <md-icon class="connection-icon" md-font-set="material-symbols-outlined">
+                                            chevron_right
+                                        </md-icon>
+                                    </div>
+
+                                    <!-- Child Job Nodes -->
+                                    <div ng-repeat="job in ctrl.delivery.childJobs" class="timeline-segment">
+                                        <div class="timeline-node child-node"
+                                             ng-class="{'active': ctrl.selectedJobIndex === $index + 1, 'completed': job.status === 'completed'}"
+                                             ng-click="ctrl.switchMapJob($index + 1)">
+                                            <div class="node-wrapper">
+                                                <div class="node-circle">
+                                                    <span class="node-number">{{$index + 1}}</span>
+                                                </div>
+                                                <div class="node-label">
+                                                    <span class="label-type">Stop {{$index + 1}}</span>
+                                                    <span class="label-name" ng-bind="job.jobName"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Connection Line (not after the last item) -->
+                                        <div class="timeline-connection" ng-if="!$last">
+                                            <div class="connection-line"></div>
+                                            <md-icon class="connection-icon" md-font-set="material-symbols-outlined">
+                                                chevron_right
+                                            </md-icon>
+                                        </div>
+                                    </div>
+
+                                    <!-- End Marker -->
+                                    <div class="timeline-node end-node"
+                                         ng-if="ctrl.delivery.childJobs.length > 0"
+                                         ng-class="{'active': ctrl.selectedJobIndex === ctrl.delivery.childJobs.length + 1}"
+                                         ng-click="ctrl.switchMapJob(ctrl.delivery.childJobs.length + 1)">
+                                        <div class="node-wrapper">
+                                            <div class="node-circle">
+                                                <md-icon md-font-set="material-symbols-outlined">place</md-icon>
+                                            </div>
+                                            <div class="node-label">
+                                                <span class="label-type">Destination</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="step-label" ng-bind="job.jobName"></div>
-                            </div>
-                            <!-- Connector Line (don't show after last item) -->
-                            <div class="timeline-connector"
-                                 md-colors="{background: 'background-400'}"
-                                 ng-if="!$last">
-                                <md-icon md-font-set="material-symbols-outlined">arrow_forward</md-icon>
                             </div>
                         </div>
                     </div>
@@ -83,3 +120,38 @@
         </div>
     </md-dialog-content>
 </md-dialog>
+
+
+<style>
+    /* Fix the overlay-map-fix class */
+    .overlay-map-fix {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1; /* Above the map but below UI controls */
+        pointer-events: none; /* Allow clicks to pass through to map */
+    }
+
+    /* Ensure the here-map element fills its container exactly */
+    here-map-tracking {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* Fix the map container itself */
+    .here-map {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Ensure canvases inside the map are properly sized */
+    .here-map canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+</style>

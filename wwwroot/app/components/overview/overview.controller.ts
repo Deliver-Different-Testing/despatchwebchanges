@@ -10,6 +10,7 @@ import greetUser from "../../functions/greetUser";
 import dayjs, {Dayjs} from "dayjs";
 import {DateRangeDialogController} from "../dialogs/date-range-dialog/date-range-dialog.controller";
 import {MapDialogController} from "../dialogs/map-dialog/map-dialog.controller";
+import MapDialogService from "../dialogs/map-dialog/map-dialog.service";
 
 class OverviewController extends BaseController {
     static $inject = [
@@ -20,6 +21,7 @@ class OverviewController extends BaseController {
         "toastrService",
         "navigationService",
         "overviewFiltersService",
+        "mapDialogService",
         "$document",
         "$scope",
         "$timeout",
@@ -65,6 +67,7 @@ class OverviewController extends BaseController {
         private toastrService: ToastrService,
         private navigationService: NavigationService,
         private overviewFiltersService: OverviewFiltersService,
+        private mapDialogService: MapDialogService,
         private $document: angular.IDocumentService,
         $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
@@ -423,19 +426,8 @@ class OverviewController extends BaseController {
         await this.refreshData();
     }
 
-    async showMap(delivery: OverviewTableParentJob) {
-        await this.$mdDialog.show({
-            controller: MapDialogController,
-            controllerAs: "ctrl",
-            template: require("../dialogs/map-dialog/map-dialog.template.html"),
-            parent: this.$document.parent(),
-            clickOutsideToClose: true,
-            fullscreen: true,
-            locals: {
-                delivery,
-            },
-            bindToController: true,
-        });
+    async showMap($event: MouseEvent, delivery: OverviewTableParentJob) {
+       await this.mapDialogService.openMapDialog($event, delivery);
     }
 
     openJobDetail(delivery: OverviewTableParentJob) {

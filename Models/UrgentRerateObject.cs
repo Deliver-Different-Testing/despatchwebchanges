@@ -34,8 +34,8 @@ public class UrgentRerateAddressObject
     public string ZipCode { get; set; }
     public string PostCode { get; set; }
     public string CountryCode { get; set; }
-    public double? Latitude { get; set; }
-    public double? Longitude { get; set; }
+    public decimal? Latitude { get; set; }
+    public decimal? Longitude { get; set; }
 }
 
 public class UrgentPackageObject
