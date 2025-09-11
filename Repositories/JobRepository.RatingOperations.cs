@@ -84,7 +84,7 @@ public partial class JobRepository
     {
         try
         {
-            var jobDetails = await Context.TucJobs
+            var jobDetailsForRating = await Context.TucJobs
                 .Where(j => j.UcjbId == jobId)
                 .Include(j => j.UcjbClient)
                 .Include(j => j.UcjbSpeedNavigation)
@@ -176,9 +176,9 @@ public partial class JobRepository
                 })
                 .FirstOrDefaultAsync();
 
-            ArgumentNullException.ThrowIfNull(jobDetails);
+            ArgumentNullException.ThrowIfNull(jobDetailsForRating);
 
-            return jobDetails;
+            return jobDetailsForRating;
         }
         catch (Exception ex)
         {

@@ -1422,3 +1422,17 @@ md-dialog {
     opacity: 1;
   }
 }
+
+.close-dialog-button {
+  transition: background 0.3s ease !important;
+
+  md-icon {
+    transition: transform 0.3s ease !important;
+  }
+
+  &:hover {
+    md-icon {
+      transform: rotate(90deg) !important;
+    }
+  }
+}

@@ -291,32 +291,32 @@ public class RateJobService(
             {
                 CompanyName = dto.FromCompanyName,
                 BuildingName = dto.FromBuildingName,
-                StreetAddress = dto.FromStreetAddress ?? string.Empty,
-                City = dto.FromCity ?? string.Empty,
+                StreetAddress = dto.FromStreetAddress,
+                City = dto.FromCity,
                 State = dto.FromState,
                 Suburb = dto.FromSuburb,
                 ZipCode = dto.FromZip ?? dto.FromPostCode,
                 PostCode = dto.FromPostCode ?? dto.FromZip,
                 CountryCode = dto.FromCountryCode,
-                Latitude = (double?)dto.PickupLat,
-                Longitude = (double?)dto.PickupLong
+                Latitude = dto.PickupLat,
+                Longitude = dto.PickupLong
             },
             To = new UrgentRerateAddressObject
             {
                 CompanyName = dto.ToCompanyName,
                 BuildingName = dto.ToBuildingName,
-                StreetAddress = dto.ToStreetAddress ?? string.Empty,
-                City = dto.ToCity ?? string.Empty,
+                StreetAddress = dto.ToStreetAddress,
+                City = dto.ToCity,
                 State = dto.ToState,
                 Suburb = dto.ToSuburb,
                 ZipCode = dto.ToZip ?? dto.ToPostCode,
                 PostCode = dto.ToPostCode ?? dto.ToZip,
                 CountryCode = dto.ToCountryCode,
-                Latitude = (double?)dto.DeliveryLat,
-                Longitude = (double?)dto.DeliveryLong
+                Latitude = dto.DeliveryLat,
+                Longitude = dto.DeliveryLong
             },
             Packages = MapPackages(dto.Packages),
-            Weight = (int)(dto.Weight ?? 0),
+            Weight = dto.Weight.HasValue ? (int)(dto.Weight ?? 0) : 0,
             Quantity = dto.Quantity,
             IsDangerousGoods = dto.DangerousGoods,
             IsPrebook = dto.IsPrebook,

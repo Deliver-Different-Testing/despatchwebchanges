@@ -4,6 +4,7 @@ import OverviewService from "./overview.service";
 import OverviewFiltersService from "./services/overview-filters.service";
 import {DateRangeDialogController} from "../dialogs/date-range-dialog/date-range-dialog.controller";
 import {MapDialogController} from "../dialogs/map-dialog/map-dialog.controller";
+import MapDialogService from "../dialogs/map-dialog/map-dialog.service";
 
 const overviewModule = angular.module('uDispatch.overview', [
     'ui.router',
@@ -23,5 +24,8 @@ overviewModule
     .service("overviewFiltersService", OverviewFiltersService)
     .controller('DateRangeDialogController', DateRangeDialogController)
     .controller('MapDialogController', MapDialogController);
+
+overviewModule
+    .service("mapDialogService", MapDialogService);
 
 export default overviewModule;
