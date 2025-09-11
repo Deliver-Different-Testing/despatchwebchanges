@@ -1,6 +1,6 @@
 import ConfigService from "../../../services/config.service";
 import {IJob} from "../../../interfaces/job.interface";
-import {AvailableCourierPosition} from "../../../interfaces/courier.interface";
+import {IAvailableCourierPosition} from "../../../interfaces/courier.interface";
 import "./dispatch-map.styles.less";
 import BaseController from "../../base-controller";
 import DispatchCoreService from "../../../services/dispatch-core.service";
@@ -48,7 +48,7 @@ class DispatchMapController extends BaseController {
     initialMapZoom?: number;
     jobs?: IJob[] = [];
     currentJob?: IJob;
-    courierPositions?: AvailableCourierPosition[] = [];
+    courierPositions?: IAvailableCourierPosition[] = [];
     mapCenter?: google.maps.LatLng | google.maps.LatLngLiteral;
     mapZoom: number = 12;
     onMarkerClick?: (params: { job: IJob }) => void;
@@ -537,13 +537,13 @@ class DispatchMapController extends BaseController {
         return totalMarkersAdded;
     }
 
-    private updateCourierMarkers(couriers: AvailableCourierPosition[]) {
+    private updateCourierMarkers(couriers: IAvailableCourierPosition[]) {
         if (!couriers || !this.showAvailableCouriers) return;
 
         this.clearCourierMarkers();
         this.courierPositions = couriers;
 
-        couriers.forEach((courier: AvailableCourierPosition) => {
+        couriers.forEach((courier: IAvailableCourierPosition) => {
             if (this.isValidCoordinates(courier.latitude ?? 0, courier.longitude ?? 0)) {
                 this.addCourierMarker(courier);
             }
@@ -686,7 +686,7 @@ class DispatchMapController extends BaseController {
         });
     }
 
-    private getFlagColor(courier: AvailableCourierPosition): string {
+    private getFlagColor(courier: IAvailableCourierPosition): string {
         if (courier.overDueJobs > 0) {
             return '#FF1493';
         } else if (courier.totalJobs === 0) {
@@ -696,7 +696,7 @@ class DispatchMapController extends BaseController {
         }
     }
 
-    private getFlagTextColor(courier: AvailableCourierPosition): string {
+    private getFlagTextColor(courier: IAvailableCourierPosition): string {
         if (courier.totalJobs === 0) {
             return '#000000';
         }
@@ -705,7 +705,7 @@ class DispatchMapController extends BaseController {
         return '#FFFFFF';
     }
 
-    private addCourierMarker(courier: AvailableCourierPosition) {
+    private addCourierMarker(courier: IAvailableCourierPosition) {
         const position = new this.$window.google.maps.LatLng(courier.latitude, courier.longitude);
 
         const flagColor = this.getFlagColor(courier);

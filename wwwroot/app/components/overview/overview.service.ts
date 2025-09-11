@@ -9,10 +9,16 @@ import {
 import dayjs from "dayjs";
 
 class OverviewService implements angular.IServiceProvider {
-    static $inject = ["$http"];
+    static $inject = [
+        "$http",
+        "$log"
+    ];
 
-    constructor(private $http: angular.IHttpService) {
-        console.log('OverviewService: Service instantiated');
+    constructor(
+        private $http: angular.IHttpService,
+        private $log: angular.ILogService
+    ) {
+        this.$log.debug('OverviewService: Service instantiated');
     }
 
     $get(): any {
@@ -68,7 +74,7 @@ class OverviewService implements angular.IServiceProvider {
         return response.data;
     }
 
-   async getOpenJobs(params: Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds'>): Promise<OpenJobResponse[]> {
+    async getOpenJobs(params: Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds'>): Promise<OpenJobResponse[]> {
         const response = await this.$http.get<OpenJobResponse[]>("/overview/GetOpenJobs", {
             params: {
                 startDate: params.startDate ? params.startDate.format() : null,
@@ -93,7 +99,7 @@ class OverviewService implements angular.IServiceProvider {
                 localStorage.setItem("cardCollapseStates", JSON.stringify(states));
                 return states;
             } catch (error) {
-                console.error("Error saving collapse state:", error);
+                this.$log.error("Error saving collapse state:", error);
                 throw error;
             }
         }
@@ -110,7 +116,7 @@ class OverviewService implements angular.IServiceProvider {
                     return states[cardName] || false;
                 }
             } catch (error) {
-                console.error("Error loading collapse state:", error);
+                this.$log.error("Error loading collapse state:", error);
             }
         }
 

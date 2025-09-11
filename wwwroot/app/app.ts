@@ -182,7 +182,6 @@ app.component("stickyNote", StickyNoteComponent);
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);
 app.controller("AutoCompleteDialogController", AutoCompleteDialogController);
-app.controller("CreateJobDialogController", CreateJobDialogController);
 app.controller("EditParcelDimensionsDialogController", EditParcelDimensionsDialogController);
 app.controller("FeatureInDevelopmentDialogController", FeatureInDevelopmentDialogController);
 app.controller("SelectDialogController", SelectDialogController);

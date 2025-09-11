@@ -18,8 +18,8 @@ import {
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {
     ActiveCourierViewModel,
-    AvailableCourierPosition,
-    TruckCourierStatusViewModel,
+    IAvailableCourierPosition,
+    ITruckCourierStatus,
 } from "../interfaces/courier.interface";
 import {IEventGroupViewModel} from "../interfaces/event-group-view-model.interface";
 import {ClearListEnvelopeViewModel, DfrntPageViewModel,} from "../interfaces/dfrnt-page-view-model.interface";
@@ -164,8 +164,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         });
     }
 
-    async truckCourierStatus(courierId: number): Promise<TruckCourierStatusViewModel> {
-        const response = await this.$http.get<TruckCourierStatusViewModel>(
+    async truckCourierStatus(courierId: number): Promise<ITruckCourierStatus> {
+        const response = await this.$http.get<ITruckCourierStatus>(
             `courier/TruckCourierStatus`, {
                 params: {
                     courierId,
@@ -397,8 +397,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         minLat: number,
         maxLng: number,
         maxLat: number
-    ): Promise<AvailableCourierPosition[]> {
-        const response = await this.$http.get<AvailableCourierPosition[]>(
+    ): Promise<IAvailableCourierPosition[]> {
+        const response = await this.$http.get<IAvailableCourierPosition[]>(
             `courier/AvailableCourierLocation`, {
                 params: {
                     minLng,

@@ -1,7 +1,7 @@
 <md-dialog aria-label="Add event" style="width: 50%;">
     <md-toolbar class="md-hue-1">
         <div class="md-toolbar-tools">
-            <h2>Truck Loading Status for {{ ctrl.truckCourierStatus.courierCode }} {{ ctrl.truckCourierStatus.firstName }}</h2>
+            <h2>Truck Loading Status for {{ ::ctrl.truckCourierStatus.courierCode }} {{ ::ctrl.truckCourierStatus.firstName }}</h2>
             <span flex></span>
             <md-button class="md-icon-button" ng-click="ctrl.cancel()">
                 <md-tooltip md-direction="bottom">Cancel</md-tooltip>

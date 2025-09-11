@@ -50,7 +50,7 @@ public partial class JobRepository
                     FromZip = job.PickupAddressLine7,
                     ToZip = job.DeliveryAddressLine7,
                     DangerousGoods = job.Dgdocument ?? false,
-                    TotalPallets = job.TucJobItemJobs.Count,
+                    TotalPallets = job.TucJobItemJobs != null ? job.TucJobItemJobs.Count : 0,
                     ExtraStopOffs = 0,
                     DryIceWeight = job.DryIceWeight ?? 0,
                     WaitTime = 0,
@@ -62,8 +62,8 @@ public partial class JobRepository
                     ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
 
                     // Client-specific rate information
-                    ClientDiscount = job.UcjbClient.Discount,
-                    Cubic = job.TucJobItemJobs.Sum(i => i.Cubic),
+                    ClientDiscount = job.UcjbClient != null ? job.UcjbClient.Discount : 0,
+                    Cubic = job.TucJobItemJobs != null ? job.TucJobItemJobs.Sum(i => i.Cubic) : null,
                     IsManuallyRated = job.RatedManually
                 })
                 .FirstOrDefaultAsync();
@@ -136,18 +136,18 @@ public partial class JobRepository
 
                     FromCompanyName = job.PickupAddressLine1,
                     FromBuildingName = job.PickupAddressLine2,
-                    FromStreetAddress = $"{job.PickupAddressLine3} {job.PickupAddressLine4}".Trim(),
+                    FromStreetAddress = job.PickupAddressLine3 + " " + job.PickupAddressLine4,
                     FromSuburb = job.PickupAddressLine5,
-                    FromCity = job.PickupAddressLine6 ?? string.Empty,
+                    FromCity = job.PickupAddressLine6,
                     FromState = null,
                     FromPostCode = job.PickupAddressLine7,
                     FromCountryCode = job.PickupAddressLine8,
 
                     ToCompanyName = job.DeliveryAddressLine1,
                     ToBuildingName = job.DeliveryAddressLine2,
-                    ToStreetAddress = $"{job.DeliveryAddressLine3} {job.DeliveryAddressLine4}".Trim(),
+                    ToStreetAddress = job.DeliveryAddressLine3 + " " + job.DeliveryAddressLine4,
                     ToSuburb = job.DeliveryAddressLine5,
-                    ToCity = job.DeliveryAddressLine6 ?? string.Empty,
+                    ToCity = job.DeliveryAddressLine6,
                     ToState = null,
                     ToPostCode = job.DeliveryAddressLine7,
                     ToCountryCode = job.DeliveryAddressLine8,
@@ -171,8 +171,8 @@ public partial class JobRepository
                     DropoffTailLift = null,
                     PrivateRes = job.DeliverToPrivateBusiness == 1,
                     HasDgDocuments = job.Dgdocument,
-                    TruckStartTime = job.TruckStartTime != null ? job.TruckStartTime.ToString() : null,
-                    TruckHours = (int)job.TruckHours
+                    TruckStartTime = job.TruckStartTime.HasValue ? job.TruckStartTime.ToString() : null,
+                    TruckHours = job.TruckHours.HasValue ? (int)job.TruckHours : null
                 })
                 .FirstOrDefaultAsync();
 
@@ -197,11 +197,10 @@ public partial class JobRepository
                 .Include(j => j.UcbkSpeedNavigation) // Include job type info
                 .Select(job => new JobRatingDetailsDto
                 {
-                    // Map the entity properties to our model
                     JobId = job.UcbkId,
                     ClientId = job.UcbkClientId ?? 0,
                     FromId = (int)job.UcbkFrom,
-                    ToId = (int)job.UcbkTo,
+                    ToId =  (int)job.UcbkTo,
                     SpeedId = job.UcbkSpeed ?? 0,
                     IsPedal = job.UcbkCbd ?? false,
                     IsVan = job.UcbkVan,
@@ -216,32 +215,28 @@ public partial class JobRepository
                     RefB = job.UcbkClientRefb,
                     Quantity = job.Quantity.HasValue ? (int)job.Quantity : 0,
                     BookedDate = job.UcbkDate ?? DateTime.MinValue,
-                    PreviousRate = job.PricingBreakdowns.Sum(p => p.Charged),
+                    PreviousRate = job.PricingBreakdowns != null ? job.PricingBreakdowns.Sum(p => p.Charged) : null,
 
-                    // Coordinates
                     PickupLat = job.PickUpLatitude ?? 0,
                     PickupLong = job.PickUpLongitude ?? 0,
                     DeliveryLat = job.DeliveryLatitude ?? 0,
                     DeliveryLong = job.DeliveryLongitude ?? 0,
 
-                    // US-specific properties
                     FromZip = job.PickupAddressLine7,
                     ToZip = job.DeliveryAddressLine7,
                     DangerousGoods = job.Dgdocument ?? false,
-                    TotalPallets = job.TucJobBookingItemBookings.Count,
+                    TotalPallets = job.TucJobBookingItemBookings != null ? job.TucJobBookingItemBookings.Count : 0,
                     ExtraStopOffs = 0,
                     DryIceWeight = job.DryIceWeight ?? 0,
                     WaitTime = 0,
 
-                    // Flight-specific properties
                     FromAirportId = job.FromAirportId,
                     ToAirportId = job.ToAirportId,
                     FromAgentId = job.FromAirport != null ? job.FromAirport.AgentId : null,
                     ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
 
-                    // Client-specific rate information
-                    ClientDiscount = job.UcbkClient.Discount,
-                    Cubic = job.TucJobBookingItemBookings.Sum(i => i.Cubic),
+                    ClientDiscount = job.UcbkClient != null ? job.UcbkClient.Discount : 0,
+                    Cubic = job.TucJobBookingItemBookings != null ? job.TucJobBookingItemBookings.Sum(i => i.Cubic) : null,
                     CalculateDimsOncePerJob = job.DimensionsType == 1
                 })
                 .FirstOrDefaultAsync();
@@ -268,7 +263,6 @@ public partial class JobRepository
                 .Include(j => j.TucJobBookingItemBookings)
                 .Select(job => new JobRatingDetailsDtoNz
                 {
-                    // Base properties from JobRatingDetailsDto
                     JobId = job.UcbkId,
                     ClientId = job.UcbkClientId ?? 0,
                     FromId = (int)job.UcbkFrom,
@@ -287,58 +281,52 @@ public partial class JobRepository
                     RefB = job.UcbkClientRefb,
                     Quantity = job.Quantity.HasValue ? (int)job.Quantity : 0,
                     BookedDate = job.UcbkDate ?? DateTime.MinValue,
-                    PreviousRate = job.PricingBreakdowns.Sum(p => p.Charged),
+                    PreviousRate = job.PricingBreakdowns != null ? job.PricingBreakdowns.Sum(p => p.Charged) : null,
 
-                    // Coordinates
                     PickupLat = job.PickUpLatitude ?? 0,
                     PickupLong = job.PickUpLongitude ?? 0,
                     DeliveryLat = job.DeliveryLatitude ?? 0,
                     DeliveryLong = job.DeliveryLongitude ?? 0,
 
-                    // US-specific properties
                     FromZip = job.PickupAddressLine7,
                     ToZip = job.DeliveryAddressLine7,
                     DangerousGoods = job.Dgdocument ?? false,
-                    TotalPallets = job.TucJobBookingItemBookings.Count,
+                    TotalPallets = job.TucJobBookingItemBookings != null ? job.TucJobBookingItemBookings.Count : 0,
                     ExtraStopOffs = 0,
                     DryIceWeight = job.DryIceWeight ?? 0,
                     WaitTime = 0,
 
-                    // Flight-specific properties
                     FromAirportId = job.FromAirportId,
                     ToAirportId = job.ToAirportId,
                     FromAgentId = job.FromAirport != null ? job.FromAirport.AgentId : null,
                     ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
 
-                    // Client-specific rate information
                     ClientDiscount = job.UcbkClient != null ? job.UcbkClient.Discount : 0,
-                    Cubic = job.TucJobBookingItemBookings.Sum(i => i.Cubic),
+                    Cubic = job.TucJobBookingItemBookings != null ? job.TucJobBookingItemBookings.Sum(i => i.Cubic) : null,
                     IsManuallyRated = job.RatedManually,
                     IsPrebook = true,
                     CalculateDimsOncePerJob = job.DimensionsType == 1,
 
-                    // NEW NZ-specific From Address fields
                     FromCompanyName = job.PickupAddressLine1,
                     FromBuildingName = job.PickupAddressLine2,
-                    FromStreetAddress = job.PickupAddressLine3 ?? string.Empty,
-                    FromCity = job.PickupAddressLine4 ?? string.Empty,
+                    FromStreetAddress = job.PickupAddressLine3,
+                    FromCity = job.PickupAddressLine4,
                     FromState = job.PickupAddressLine5,
                     FromSuburb = job.PickupAddressLine6,
                     FromPostCode = job.PickupAddressLine7,
                     FromCountryCode = job.PickupAddressLine8,
 
-                    // NEW NZ-specific To Address fields
                     ToCompanyName = job.DeliveryAddressLine1,
                     ToBuildingName = job.DeliveryAddressLine2,
-                    ToStreetAddress = job.DeliveryAddressLine3 ?? string.Empty,
-                    ToCity = job.DeliveryAddressLine4 ?? string.Empty,
+                    ToStreetAddress = job.DeliveryAddressLine3,
+                    ToCity = job.DeliveryAddressLine4,
                     ToState = job.DeliveryAddressLine5,
                     ToSuburb = job.DeliveryAddressLine6,
                     ToPostCode = job.DeliveryAddressLine7,
                     ToCountryCode = job.DeliveryAddressLine8,
 
-                    // NEW Package Details
-                    Packages = job.TucJobBookingItemBookings.Select(item => new PackageDetailsDto
+                    Packages = job.TucJobBookingItemBookings != null 
+                        ? job.TucJobBookingItemBookings.Select(item => new PackageDetailsDto
                     {
                         Name = item.Notes,
                         Length = item.Length,
@@ -349,15 +337,16 @@ public partial class JobRepository
                         Type = null,
                         PackageCode = null,
                         Units = job.TucJobBookingItemBookings.Count
-                    }).ToList(),
+                    }).ToList() 
+                    : null,
 
                     // NEW Truck-specific properties
                     PickupTailLift = null,
                     DropoffTailLift = null,
                     PrivateRes = job.DeliverToPrivateBusiness == 1,
                     HasDgDocuments = job.Dgdocument,
-                    TruckStartTime = job.TruckStartTime.ToString(),
-                    TruckHours = (int)job.TruckHours
+                    TruckStartTime = job.TruckStartTime != null ? job.TruckStartTime.ToString() : null,
+                    TruckHours = job.TruckHours != null ? (int)job.TruckHours : null
                 })
                 .FirstOrDefaultAsync();
 
