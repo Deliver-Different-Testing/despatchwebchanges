@@ -949,16 +949,17 @@ class DispatchCoreService implements angular.IServiceProvider {
             '/Job/GetJobDeliveryPhotosAndSignature',
             {
                 params: {
-                    jobId: jobId,
-                    year: year,
-                    month: month
+                    jobId,
+                    year,
+                    month
                 }
             }
         );
+        
         return response.data;
     }
 
-    async getAllTasks(filters?: TaskTableFiltersRequest): Promise<any> {
+    async getAllTasks(filters?: TaskTableFiltersRequest): Promise<TaskViewModel[]> {
         try {
             let params: any = {};
 

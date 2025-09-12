@@ -253,7 +253,7 @@
                 </div>
 
                 <!-- Job Rows -->
-                <div ng-repeat-start="job in ctrl.filteredJobs track by job.id"
+                <div ng-repeat-start="job in ctrl.filteredJobs track by (job.id + '_' + job.jobNo)"
                      class="job-row {{ctrl.getJobPriorityClass(job)}}"
                      ng-class="{
                              'selected': ctrl.selectedJob && ctrl.selectedJob.id === job.id,
