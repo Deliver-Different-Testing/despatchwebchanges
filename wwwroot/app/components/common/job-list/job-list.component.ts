@@ -211,19 +211,26 @@ class JobsListController extends BaseController {
             return;
         }
 
-        // Group jobs by RootParentId
         const grouped: IDispatchJob[] = [];
         const childJobs: { [parentId: number]: IDispatchJob[] } = {};
+        const processedIds = new Set<number>(); // Track processed IDs to avoid duplicates
 
         // First pass: separate parents and children
         for (let job of this.jobs) {
+            // Skip if we've already processed this job ID
+            if (processedIds.has(job.id)) {
+                this.$log.warn(`Duplicate job ID found: ${job.id}`);
+                continue;
+            }
+            processedIds.add(job.id);
+
             if (job.isParentOrSingle) {
                 // This is a parent or standalone job
                 job._isExpanded = job._isExpanded || false;
                 job._groupChildren = [];
                 grouped.push(job);
-            } else if (job.parentId) {
-                // This is a child's job
+            } else if (job.parentId && job.parentId !== job.id) { // <-- Fix: Exclude self-referencing
+                // This is a child job (and not self-referencing)
                 if (!childJobs[job.parentId]) {
                     childJobs[job.parentId] = [];
                 }
@@ -243,7 +250,7 @@ class JobsListController extends BaseController {
         // Only show parent jobs in the main list when grouped
         this.jobs = grouped;
     }
-
+    
     toggleJobGroup(job: IDispatchJob) {
         if (!this.isMultiPartJob(job)) return;
 

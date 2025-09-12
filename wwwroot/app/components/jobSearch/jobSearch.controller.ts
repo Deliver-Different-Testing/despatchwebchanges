@@ -979,7 +979,6 @@ class JobSearchController extends BaseController {
                     lat: this.currentJob.pickupAddress.latitude,
                     lng: this.currentJob.pickupAddress.longitude
                 };
-                this.jobList = [this.currentJob as any];
             }
 
             if (!this.currentJob?.booked) return;
@@ -1008,7 +1007,6 @@ class JobSearchController extends BaseController {
                     lat: this.currentJob.pickupAddress.latitude,
                     lng: this.currentJob.pickupAddress.longitude
                 };
-                this.jobList = [this.currentJob as any];
             }
 
             if (!this.currentJob?.booked) return;
