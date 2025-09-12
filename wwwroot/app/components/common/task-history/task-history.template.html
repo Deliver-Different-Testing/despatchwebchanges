@@ -60,8 +60,8 @@
                         </div>
 
                         <div class="step-details" ng-if="item.data.tags && item.data.tags.length > 0">
-                        <span ng-repeat="tag in item.data.tags | limitTo:(ctrl.densityMode === ctrl.DensityMode.UltraDense ? 2 : ctrl.densityMode === ctrl.DensityMode.Dense ? 3 : 10)"
-                              class="step-tag">
+                     <span ng-repeat="tag in item.data.tags | limitTo:(ctrl.densityMode === ctrl.DensityMode.UltraDense ? 2 : ctrl.densityMode === ctrl.DensityMode.Dense ? 3 : 10) track by $index"
+                           class="step-tag">
                             <md-icon style="font-size: 20px;" md-font-set="material-symbols-outlined"
                                      ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">info</md-icon>
                              {{tag}}

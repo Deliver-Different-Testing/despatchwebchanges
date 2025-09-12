@@ -1,5 +1,7 @@
 import {IDispatchJob} from "../../interfaces/job.interface";
 import dayjs from "dayjs";
+import {formatFullDate} from "../../functions/formatDates";
+import IScanDetailResult from "./interfaces/IScanDetailResult";
 
 class JobSearchService implements angular.IServiceProvider {
     static $inject = [
@@ -95,15 +97,16 @@ class JobSearchService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getScanDetail(runDate: Date, scan: string) {
-        const response = await this.$http.get(
+    async getScanDetail(runDate: Date, scan: string): Promise<IScanDetailResult[]> {
+        const response = await this.$http.get<IScanDetailResult[]>(
             `/Job/ScanJobDetail`, {
                 params: {
-                    runDate: dayjs(runDate).format(),
+                    runDate: formatFullDate(runDate),
                     scan
                 }
             }
         );
+        
         return response.data;
     }
 

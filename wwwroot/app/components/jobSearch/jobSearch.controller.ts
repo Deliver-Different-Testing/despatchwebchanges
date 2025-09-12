@@ -4,7 +4,7 @@ import DispatchExecutorService from "../../services/dispatch-executor.service";
 import ToastrService from "../../services/toastr.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import {IAppConfig} from "../../interfaces/app-config.interface";
-import {BulkScanDetail, IDispatchJob, ISuggestion} from "../../interfaces/job.interface";
+import {IDispatchJob, ISuggestion} from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
 import BaseController from "../base-controller";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
@@ -24,6 +24,7 @@ import JobListType from "../common/job-list/enums/jobListType";
 import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
+import IScanDetailResult from "./interfaces/IScanDetailResult";
 
 class JobSearchController extends BaseController {
     static $inject = [
@@ -54,7 +55,7 @@ class JobSearchController extends BaseController {
     jobDetailFabIsOpen: boolean = false;
     dateSearchRange: number;
     searchBox: any;
-    scanList: BulkScanDetail[];
+    scanList: IScanDetailResult[];
     jobRecordSearchText: string;
     sort: any;
     searchCriteria: ISearchCriteria;
@@ -73,7 +74,7 @@ class JobSearchController extends BaseController {
 
     jobListType = JobListType.JobSearchMainList;
     bulkJobListType = JobListType.JobSearchBulkList;
-    
+
     layouts: ILayout[] = [];
     defaultLayout?: ILayout;
     currentLayoutName?: string;
@@ -581,7 +582,7 @@ class JobSearchController extends BaseController {
         if (!job) return;
         return this.selectJobDetail(job.id);
     }
-    
+
     async createNewJob($event: MouseEvent) {
         try {
             // Dialog
@@ -957,7 +958,7 @@ class JobSearchController extends BaseController {
             fileElement.val(null);
         }
     }
-    
+
     async selectJobDetail(jobId: number) {
         try {
             this.$log.debug("select Job  " + jobId);
@@ -968,11 +969,11 @@ class JobSearchController extends BaseController {
             this.currentSelection = " for Job " + this.currentJob?.jobNo;
 
             // Update the map with just this job
-            if(!this.currentJob) {
+            if (!this.currentJob) {
                 this.$log.debug("Job not found");
                 return;
             }
-            
+
             if (this.currentJob.pickupAddress?.latitude && this.currentJob.pickupAddress?.longitude) {
                 this.mapCenter = {
                     lat: this.currentJob.pickupAddress.latitude,
@@ -982,6 +983,7 @@ class JobSearchController extends BaseController {
             }
 
             if (!this.currentJob?.booked) return;
+
             this.scanPromise = this.jobSearchService.getScanDetail(this.currentJob.booked, this.currentJob.jobNo);
             this.scanList = await this.scanPromise;
         } catch (error) {
@@ -1018,7 +1020,7 @@ class JobSearchController extends BaseController {
             this.applyScope();
         }
     }
-    
+
     clientQuerySearch(searchText: string) {
         return this.jobSearchService.getActiveClients(searchText);
     }
@@ -1104,7 +1106,7 @@ class JobSearchController extends BaseController {
                 await this.refreshBulkData();
                 break;
             case JobSearchBoxes.JobDetail:
-                if(!this.currentJobId) return;
+                if (!this.currentJobId) return;
 
                 // Store the job ID and determine if it's a bulk job
                 const jobIdToRefresh = this.currentJobId;
@@ -1124,6 +1126,7 @@ class JobSearchController extends BaseController {
                 break;
         }
     }
+
     async onJobSelect(job: IDispatchJob): Promise<void> {
         await this.selectJobDetail(job.id);
     }

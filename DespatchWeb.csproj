@@ -350,6 +350,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\home\home.module.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\enums\jobSearchBoxes.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\enums\podSearchResponse.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\jobSearch\interfaces\IScanDetailResult.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\jobSearch.module.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\jobSearch.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-event-dialog\add-event-dialog.controller.ts" />

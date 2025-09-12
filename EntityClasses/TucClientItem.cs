@@ -27,9 +27,11 @@ public partial class TucClientItem
 
     public decimal Rate { get; set; }
 
-    public bool OnlyVan { get; set; }
+    public int? VehicleSizeId { get; set; }
 
     public virtual TucClient Client { get; set; }
 
     public virtual ICollection<TblClientAvailableSpeedItem> TblClientAvailableSpeedItems { get; set; } = new List<TblClientAvailableSpeedItem>();
+
+    public virtual VehicleSize VehicleSize { get; set; }
 }

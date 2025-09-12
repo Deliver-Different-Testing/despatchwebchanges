@@ -203,4 +203,5 @@ public interface IJobRepository
     Task<List<DeliveryJourneyViewModel>> GetDeliveryJourneyForJobAsync(int jobId);
     Task BulkUpdateReadStatusAsync(BulkReadUpdateRequestModel data);
    Task AddPackagesToJobAsync(int effectiveJobId, List<TucJobItem> items);
+   Task<List<ScanDetailResult>> ScanList(DateTime? runDate, string scan);
 }

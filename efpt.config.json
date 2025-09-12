@@ -95,6 +95,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tblBulkScan]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tblClearListArea]",
          "ObjectType": 0
       },
