@@ -450,6 +450,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                         ToAirportId = j.ToAirportId,
                         FromAirportId = j.FromAirportId
                     })
+                .Distinct()
                 .AsNoTracking()
                 .ToListAsync();
 

@@ -9,7 +9,10 @@ type EntryPointName = 'vendor' | 'app' | 'home' | 'nationwide' | 'overview' | 'j
 type EntryPoints = Record<EntryPointName, string>;
 
 // Configuration
-const isDev = process.argv.includes("--dev") || process.env.NODE_ENV === "development";
+const isDev = process.argv.includes("--dev") 
+    || process.env.NODE_ENV === "development" 
+    || process.env.NODE_ENV == "staging"
+    || process.env.NODE_ENV == "testing";
 const rootDir = __dirname;
 const distPath = path.join(rootDir, "wwwroot/dist");
 
