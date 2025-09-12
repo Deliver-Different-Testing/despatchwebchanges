@@ -220,32 +220,23 @@ class JobsListController extends BaseController {
         const childJobs: { [parentId: number]: IDispatchJob[] } = {};
         const processedIds = new Set<number>();
 
-        // First pass: separate parents and children
         for (let job of this.jobs) {
-            // Skip if we've already processed this job ID
             if (processedIds.has(job.id)) {
-                this.$log.warn(`Duplicate job ID found: ${job.id}, skipping duplicate`);
+                this.$log.warn(`Duplicate job ID found: ${job.id}`);
                 continue;
             }
             processedIds.add(job.id);
 
-            // A job is a parent if it's marked as parent/single OR if its parentId equals its own ID
-            if (job.isParentOrSingle || job.parentId === job.id) {
+            if (job.isParentOrSingle) {
                 // This is a parent or standalone job
                 job._isExpanded = job._isExpanded || false;
                 job._groupChildren = [];
                 grouped.push(job);
-            } else if (job.parentId && job.parentId !== job.id) {
-                // This is a child's job with a different parent
+            } else if (job.parentId && job.parentId !== job.id) { 
                 if (!childJobs[job.parentId]) {
                     childJobs[job.parentId] = [];
                 }
                 childJobs[job.parentId].push(job);
-            } else {
-                // Jobs without parentId or with unclear parent relationship - treat as standalone
-                job._isExpanded = false;
-                job._groupChildren = [];
-                grouped.push(job);
             }
         }
 
@@ -258,12 +249,8 @@ class JobsListController extends BaseController {
             }
         }
 
+        // Only show parent jobs in the main list when grouped
         this.jobs = grouped;
-
-        this.$log.debug('Jobs grouped:', {
-            totalJobs: this.jobs.length,
-            parentsWithChildren: grouped.filter(j => j._groupChildren && j._groupChildren.length > 0).length
-        });
     }
     
     toggleJobGroup(job: IDispatchJob) {

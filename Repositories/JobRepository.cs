@@ -2376,8 +2376,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             JobId = jobId,
             Title = e.UcevDescription,
             Icon = "task",
-            Tags =
-            [
+            Tags = new[]
+            {
                 "Task",
                 e.UcevClosed ? "Completed" : "In Progress",
                 $"Created by {e.UcevDespatcher}",
@@ -2387,7 +2387,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 e.UcevStaffIdoutNavigation != null
                     ? $"Completed by {e.UcevStaffIdoutNavigation.UcstFirstName} {e.UcevStaffIdoutNavigation.UcstLastName}"
                     : null
-            ],
+            }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList(),
             Date = e.UcevDate ?? DateTime.MinValue
         }).ToList();
 
@@ -2418,8 +2418,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 Icon = "sticky_note_2",
                 Description = n.NoteText,
                 Date = n.UpdatedDate ?? n.CreatedDate,
-                Tags =
-                [
+                Tags = new[]
+                {
                     "Note",
                     n.CreatedByNavigation != null
                         ? $"Created by {n.CreatedByNavigation.UcstFirstName} {n.CreatedByNavigation.UcstLastName} on {n.CreatedDate:dd/MM/yyyy HH:mm}"
@@ -2427,7 +2427,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     n.UpdatedByNavigation != null && n.UpdatedDate.HasValue
                         ? $"Updated by {n.UpdatedByNavigation.UcstFirstName} {n.UpdatedByNavigation.UcstLastName} on {n.UpdatedDate.Value:dd/MM/yyyy HH:mm}"
                         : null
-                ]
+                }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList()
             }).ToList();
         }
         else
@@ -2446,8 +2446,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 Icon = "sticky_note_2",
                 Description = n.NoteText,
                 Date = n.UpdatedDate ?? n.CreatedDate ?? DateTime.MinValue,
-                Tags =
-                [
+                Tags = new[]
+                {
                     "Note",
                     n.CreatedDate.HasValue
                         ? $"Created on {n.CreatedDate.Value:dd/MM/yyyy HH:mm}"
@@ -2455,7 +2455,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     n.UpdatedDate.HasValue
                         ? $"Updated on {n.UpdatedDate.Value:dd/MM/yyyy HH:mm}"
                         : null
-                ]
+                }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList()
             }).ToList();
         }
 
@@ -2481,52 +2481,53 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             Description = m.UcmmMessage,
             Icon = "sms",
             Tags = new List<string>()
-                .Concat(m.UcmmSendToCourierId.HasValue || m.UcmmSendToStaffId.HasValue
-                    ? new[]
-                    {
-                        "Direct Message",
-                        m.UcmmSendToCourier != null
-                            ? $"{m.UcmmSendToCourier.UccrName}, {m.UcmmSendToCourier.UccrSurname}"
-                            : null,
-                        m.UcmmSendToStaff != null
-                            ? $"{m.UcmmSendToStaff.UcstFirstName}, {m.UcmmSendToStaff.UcstLastName}"
-                            : null,
-                        m.UcmmSendFromCourier != null
-                            ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}"
-                            : null,
-                        m.UcmmSendFromStaff != null
-                            ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}"
-                            : null,
-                        m.TimeRead.HasValue ? $"Read at {m.TimeRead?.ToString("g")}" : null
-                    }
-                    : Array.Empty<string>())
-                .Concat(!string.IsNullOrEmpty(m.SendToEmailAddress)
-                    ? new[]
-                    {
-                        "Email",
-                        $"Sent to {m.SendToEmailAddress}",
-                        m.UcmmSendFromCourier != null
-                            ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}"
-                            : null,
-                        m.UcmmSendFromStaff != null
-                            ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}"
-                            : null
-                    }
-                    : Array.Empty<string>())
-                .Concat(!string.IsNullOrEmpty(m.SendToMobile)
-                    ? new[]
-                    {
-                        "SMS",
-                        $"Sent to {m.SendToMobile}",
-                        m.UcmmSendFromCourier != null
-                            ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}"
-                            : null,
-                        m.UcmmSendFromStaff != null
-                            ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}"
-                            : null
-                    }
-                    : Array.Empty<string>())
-                .ToList(),
+            .Concat(m.UcmmSendToCourierId.HasValue || m.UcmmSendToStaffId.HasValue
+                ? new[]
+                {
+                    "Direct Message",
+                    m.UcmmSendToCourier != null
+                        ? $"{m.UcmmSendToCourier.UccrName}, {m.UcmmSendToCourier.UccrSurname}"
+                        : null,
+                    m.UcmmSendToStaff != null
+                        ? $"{m.UcmmSendToStaff.UcstFirstName}, {m.UcmmSendToStaff.UcstLastName}"
+                        : null,
+                    m.UcmmSendFromCourier != null
+                        ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}"
+                        : null,
+                    m.UcmmSendFromStaff != null
+                        ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}"
+                        : null,
+                    m.TimeRead.HasValue ? $"Read at {m.TimeRead?.ToString("g")}" : null
+                }
+                : Array.Empty<string>())
+            .Concat(!string.IsNullOrEmpty(m.SendToEmailAddress)
+                ? new[]
+                {
+                    "Email",
+                    $"Sent to {m.SendToEmailAddress}",
+                    m.UcmmSendFromCourier != null
+                        ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}"
+                        : null,
+                    m.UcmmSendFromStaff != null
+                        ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}"
+                        : null
+                }
+                : Array.Empty<string>())
+            .Concat(!string.IsNullOrEmpty(m.SendToMobile)
+                ? new[]
+                {
+                    "SMS",
+                    $"Sent to {m.SendToMobile}",
+                    m.UcmmSendFromCourier != null
+                        ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}"
+                        : null,
+                    m.UcmmSendFromStaff != null
+                        ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}"
+                        : null
+                }
+                : Array.Empty<string>())
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .ToList(),
             Date = m.UcmmDate
         }).ToList();
 
@@ -2561,8 +2562,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 Title = "Status Changed",
                 Description = s.Comments,
                 Icon = "update",
-                Tags =
-                [
+                Tags = new[]
+                {
                     s.ChangeType,
                     $"Updated on {s.UpdatedAt:dd/MM/yyyy HH:mm}",
                     s.Staff != null ? $"Updated by {s.Staff.UcstFirstName} {s.Staff.UcstLastName}" : null,
@@ -2579,7 +2580,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     s.NewJobStatus != null && s.OldJobStatus != null
                         ? $"Status changed from {s.OldJobStatus.UcjsName} to {s.NewJobStatus?.UcjsName}"
                         : null
-                ]
+                }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList()
             }).ToList();
         }
         else
@@ -2600,8 +2601,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     ? $"Status changed from status ID {s.OldJobStatusId} to {s.NewJobStatusId}"
                     : null,
                 Icon = "update",
-                Tags =
-                [
+                Tags = new[]
+                {
                     s.ChangeType,
                     $"Updated on {s.UpdatedAt:dd/MM/yyyy HH:mm}",
                     s.UpdatedByType != null ? $"Updated by {s.UpdatedByType}" : null,
@@ -2617,7 +2618,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     s.OldJobStatusId != null && s.NewJobStatusId != null
                         ? $"Status changed from status ID {s.OldJobStatusId} to {s.NewJobStatusId}"
                         : null
-                ]
+                }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList()
             }).ToList();
         }
 
