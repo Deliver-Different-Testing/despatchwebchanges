@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -59,7 +58,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     public async Task<DispatchJobViewModel> GetBulkDispatchJobDetailAsync(int bulkJobId)
     {
         var isUsCustomer = _infoService.IsUsTenant();
-        
+
         var bulkJob = await (
                 from j in Context.TblBulkJobs
                 join c in Context.TblCouriers on j.CourierId equals c.CourierId into courierJoin
@@ -77,15 +76,19 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 where j.BulkJobId == bulkJobId
                 select new DispatchJobViewModel
                 {
-                     Id = j.BulkJobId,
+                    Id = j.BulkJobId,
                     HasBeenRead = readTracker != null && readTracker.HasBeenRead,
                     IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.JobId,
                     ParentId = j.ParentId,
 
                     IsFlightJob = speed != null
-                                  && speed.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
+                                  && speed.GroupingId == (isUsCustomer
+                                      ? (int)SpeedGrouping.Flight
+                                      : (int)UrgentSpeedGrouping.Flight),
                     IsAgentJob = speed != null
-                                 && speed.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Agent : (int)UrgentSpeedGrouping.NationwideAgent),
+                                 && speed.GroupingId == (isUsCustomer
+                                     ? (int)SpeedGrouping.Agent
+                                     : (int)UrgentSpeedGrouping.NationwideAgent),
 
                     Vehicle = vehicleSize != null
                         ? new Suggestion
@@ -214,9 +217,13 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     ParentId = j.ParentId,
 
                     IsFlightJob = speed != null
-                                  && speed.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
+                                  && speed.GroupingId == (isUsCustomer
+                                      ? (int)SpeedGrouping.Flight
+                                      : (int)UrgentSpeedGrouping.Flight),
                     IsAgentJob = speed != null
-                                 && speed.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Agent : (int)UrgentSpeedGrouping.NationwideAgent),
+                                 && speed.GroupingId == (isUsCustomer
+                                     ? (int)SpeedGrouping.Agent
+                                     : (int)UrgentSpeedGrouping.NationwideAgent),
 
                     Vehicle = vehicleSize != null
                         ? new Suggestion
@@ -368,9 +375,13 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
                         DeliverByTime = j.DeliverByTime,
                         IsFlightJob = speed != null
-                                      && speed.GroupingId ==  (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
+                                      && speed.GroupingId == (isUsCustomer
+                                          ? (int)SpeedGrouping.Flight
+                                          : (int)UrgentSpeedGrouping.Flight),
                         IsAgentJob = speed != null
-                                     && speed.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Agent : (int)UrgentSpeedGrouping.NationwideAgent),
+                                     && speed.GroupingId == (isUsCustomer
+                                         ? (int)SpeedGrouping.Agent
+                                         : (int)UrgentSpeedGrouping.NationwideAgent),
 
                         Vehicle = vehicleSize != null
                             ? new Suggestion
@@ -424,7 +435,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                         PickUpLongitude = j.PickUpLongitude,
                         DeliveryLatitude = j.DeliveryLatitude,
                         DeliveryLongitude = j.DeliveryLongitude,
-                        Booked = j.Date.HasValue && j.Time.HasValue
+                        Booked = j.Date.HasValue
                             ? new DateTime(
                                 j.Date.Value.Year,
                                 j.Date.Value.Month,
@@ -439,7 +450,6 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                         ToAirportId = j.ToAirportId,
                         FromAirportId = j.FromAirportId
                     })
-                .Distinct()
                 .AsNoTracking()
                 .ToListAsync();
 
@@ -903,7 +913,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     public async Task<List<DispatchJobViewModel>> CurrentJobListAsync(int courierId, bool done)
     {
         var isUsCustomer = _infoService.IsUsTenant();
-        
+
         return await Context
             .TucCouriers.Where(c => c.UccrId == courierId)
             .SelectMany(c => c.TucJobUcjbCouriers)
@@ -1700,7 +1710,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         try
         {
             var address = request.Address;
-        
+
             var rowsAffected = await Context.TucJobs
                 .Where(j => j.UcjbId == request.JobId)
                 .ExecuteUpdateAsync(setters => setters
@@ -1714,12 +1724,14 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     .SetProperty(j => j.DeliveryAddressLine6, address.AddressLine6)
                     .SetProperty(j => j.DeliveryAddressLine7, address.AddressLine7));
 
-            if (rowsAffected == 0) throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
+            if (rowsAffected == 0)
+                throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository), nameof(UpdateDeliveryAddressAsync)));
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository),
+                    nameof(UpdateDeliveryAddressAsync)));
             throw;
         }
     }
@@ -1729,7 +1741,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         try
         {
             var address = request.Address;
-        
+
             var rowsAffected = await Context.TucJobs
                 .Where(j => j.UcjbId == request.JobId)
                 .ExecuteUpdateAsync(setters => setters
@@ -1743,12 +1755,14 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     .SetProperty(j => j.PickupAddressLine6, address.AddressLine6)
                     .SetProperty(j => j.PickupAddressLine7, address.AddressLine7));
 
-            if (rowsAffected == 0) throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
+            if (rowsAffected == 0)
+                throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository), nameof(UpdatePickupAddressAsync)));
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository),
+                    nameof(UpdatePickupAddressAsync)));
             throw;
         }
     }
@@ -1758,7 +1772,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         try
         {
             var address = request.Address;
-        
+
             var rowsAffected = await Context.TucJobBookings
                 .Where(jb => jb.UcbkId == request.JobId)
                 .ExecuteUpdateAsync(setters => setters
@@ -1772,12 +1786,14 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     .SetProperty(jb => jb.PickupAddressLine6, address.AddressLine6)
                     .SetProperty(jb => jb.PickupAddressLine7, address.AddressLine7));
 
-            if (rowsAffected == 0) throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
+            if (rowsAffected == 0)
+                throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository), nameof(UpdateBookingPickupAddressAsync)));
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository),
+                    nameof(UpdateBookingPickupAddressAsync)));
             throw;
         }
     }
@@ -1787,7 +1803,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         try
         {
             var address = request.Address;
-        
+
             var rowsAffected = await Context.TucJobBookings
                 .Where(jb => jb.UcbkId == request.JobId)
                 .ExecuteUpdateAsync(setters => setters
@@ -1801,12 +1817,14 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     .SetProperty(jb => jb.DeliveryAddressLine6, address.AddressLine6)
                     .SetProperty(jb => jb.DeliveryAddressLine7, address.AddressLine7));
 
-            if (rowsAffected == 0) throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
+            if (rowsAffected == 0)
+                throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository), nameof(UpdateBookingDeliveryAddressAsync)));
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository),
+                    nameof(UpdateBookingDeliveryAddressAsync)));
             throw;
         }
     }
@@ -2095,18 +2113,21 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                         )
                     ),
                     DriverName = j.UcjbCourier != null ? j.UcjbCourier.UccrName : null,
-                    CompletedToday =j.UcjbCourier != null ? j.UcjbCourier.TucJobUcjbCouriers.Count(dj =>
-                        dj.UcjbStatus == (int)JobStatus.Completed
-                        && dj.UcjbComplTime.HasValue
-                        && dj.UcjbComplTime.Value.Date == DateTime.Today
-                    ) : 0,
-                    LastCompleted = j.UcjbCourier != null ?
-                        j.UcjbCourier.TucJobUcjbCouriers.Where(dj =>
-                            dj.UcjbStatus == (int)JobStatus.Completed && dj.UcjbComplTime.HasValue
+                    CompletedToday = j.UcjbCourier != null
+                        ? j.UcjbCourier.TucJobUcjbCouriers.Count(dj =>
+                            dj.UcjbStatus == (int)JobStatus.Completed
+                            && dj.UcjbComplTime.HasValue
+                            && dj.UcjbComplTime.Value.Date == DateTime.Today
                         )
-                        .OrderByDescending(dj => dj.UcjbComplTime)
-                        .Select(dj => dj.UcjbComplTime)
-                        .FirstOrDefault() : null,
+                        : 0,
+                    LastCompleted = j.UcjbCourier != null
+                        ? j.UcjbCourier.TucJobUcjbCouriers.Where(dj =>
+                                dj.UcjbStatus == (int)JobStatus.Completed && dj.UcjbComplTime.HasValue
+                            )
+                            .OrderByDescending(dj => dj.UcjbComplTime)
+                            .Select(dj => dj.UcjbComplTime)
+                            .FirstOrDefault()
+                        : null,
                     Quantity = j.UcjbQty ?? 0,
                     PackageType = j.AcceptedJobType != null ? j.AcceptedJobType.UcjtName : null,
                     Mileage = j.TotalDistance ?? 0
@@ -2129,25 +2150,25 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         {
             if (job.RequiredDeliveryTime.HasValue) return job.RequiredDeliveryTime.Value;
             if (job.DeliverByTime.HasValue) return job.DeliverByTime.Value;
-        
+
             ArgumentNullException.ThrowIfNull(job.UcjbSpeedNavigation);
             ArgumentNullException.ThrowIfNull(job.UcjbSpeedNavigation.DeliveryTime);
-            
+
             var dateToUse = job.PickUpTime ?? new DateTime(job.UcjbDate.Year,
                 job.UcjbDate.Month,
                 job.UcjbDate.Day,
-                job.UcjbTime?.Hour ?? 0, 
-                job.UcjbTime?.Minute ??   0, 
-                job.UcjbTime?.Second ??0);
-        
+                job.UcjbTime?.Hour ?? 0,
+                job.UcjbTime?.Minute ?? 0,
+                job.UcjbTime?.Second ?? 0);
+
             var deliverTime = dateToUse.AddMinutes(job.UcjbSpeedNavigation.DeliveryTime.Value);
             return deliverTime;
         }
         catch (Exception e)
         {
-           Log.Error(e, "{Message}", 
-               ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(CalculateDeliveryTime)));
-           return DateTime.MinValue;
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(CalculateDeliveryTime)));
+            return DateTime.MinValue;
         }
     }
 
@@ -2193,7 +2214,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                         Description = casi.ClientItem.Description,
                         PerItem = casi.ClientItem.PerItem,
                         Rate = casi.ClientItem.Rate,
-                        OnlyVan = casi.ClientItem.OnlyVan,
+                        VehicleSizeId = casi.ClientItem.VehicleSizeId,
                         Selected = clientItemIds.Contains(casi.ClientItem.ItemId)
                     })
             );
@@ -2680,7 +2701,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     public async Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId)
     {
         var isUsCustomer = _infoService.IsUsTenant();
-        
+
         var job = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Select(JobMappings.JobDispatchMapping(isUsCustomer))
@@ -2863,7 +2884,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     public async Task<List<MegaMapResponse>> GetJobsForMegaMapAsync()
     {
         var isUsCustomer = _infoService.IsUsTenant();
-        
+
         // Get active jobs to display on a map
         var jobs = await Context
             .TucJobs.Where(j =>
@@ -2877,13 +2898,15 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 JobNumber = j.UcjbNumber,
                 JobStatus = j.UcjbStatus != null ? j.UcjbStatusNavigation.UcjsName : "New",
                 EstimatedDelivery =
-                    j.UcjbSpeedNavigation.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight)
+                    j.UcjbSpeedNavigation.GroupingId ==
+                    (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight)
                     && j.TucJobNationwides.Count != 0
                         ? j.TucJobNationwides.FirstOrDefault().UcnwEta.Value
                         : j
                             .UcjbDate.Date.Add(j.UcjbTime.Value.TimeOfDay)
                             .AddMinutes(j.UcjbSpeedNavigation.Minutes ?? 180),
-                IsFlightJob = j.UcjbSpeedNavigation.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
+                IsFlightJob = j.UcjbSpeedNavigation.GroupingId ==
+                              (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
                 PickupLocation = new AddressViewModel
                 {
                     Latitude = j.PickUpLatitude ?? 0,
@@ -2926,7 +2949,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     }
                     : null,
                 FlightInfo =
-                    j.UcjbSpeedNavigation.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight)
+                    j.UcjbSpeedNavigation.GroupingId ==
+                    (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight)
                         ? j
                             .TucJobNationwides.Select(n => new AssignedFlight
                             {
@@ -3157,4 +3181,82 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             await Context.SaveChangesAsync();
         }
     }
+
+    public async Task<List<ScanDetailResult>> ScanList(DateTime? runDate, string scan)
+    {
+        runDate ??= _infoService.GetCurrentTenantTime();
+        var cutoffDate = runDate.Value.AddDays(-3);
+
+        var query = from bs in Context.TblBulkScans
+            where bs.ScanDateTime > cutoffDate && bs.Scan == scan
+            select new
+            {
+                bs.BulkScanId,
+                bs.ScanDateTime,
+                bs.ScanType,
+                bs.CourierId,
+                bs.ToCourierId,
+                bs.RunName,
+                bs.Courier,
+                TransferTo = Context.TucCouriers
+                    .FirstOrDefault(c => bs.CourierId != 999 
+                                         && c.Code == bs.ToCourierId.ToString() 
+                                         && c.Active),
+                RunViewerTransferTo = Context.TucCouriers
+                    .FirstOrDefault(c => bs.CourierId == 999 
+                                         && c.UccrId == bs.ToCourierId
+                                         && c.Active)
+            };
+        
+        var results = await query
+            .AsNoTracking()
+            .OrderBy(x => x.ScanDateTime)
+            .Select(x => new ScanDetailResult
+            {
+                BulkScanId = x.BulkScanId,
+                ScanDateTime = x.ScanDateTime,
+                ScanDetail = GetScanDetail(x.ScanType),
+                Courier = GetCourierDescription(x.ScanType,
+                    x.Courier, x.TransferTo, x.RunViewerTransferTo, x.RunName)
+            })
+            .ToListAsync();
+
+        return results;
+    }
+
+    private static string GetScanDetail(int scanType)
+    {
+        return scanType switch
+        {
+            (int)ScanType.Sort or (int)ScanType.AlternateSort => "Sort",
+            (int)ScanType.Run => "Run",
+            (int)ScanType.InvalidRun => "InvalidRun",
+            (int)ScanType.Transit => "Transit",
+            (int)ScanType.InwardsDepot => "InwardsDepot",
+            (int)ScanType.Pickup => "Pickup",
+            (int)ScanType.InvalidPickup => "InvalidPickup",
+            (int)ScanType.Transfer => "Transfer",
+            _ => null
+        };
+    }
+    private static string GetCourierDescription(int scanType, 
+        TucCourier courier, TucCourier transferTo, 
+        TucCourier runViewerTransferTo, string runName)
+    {
+        return scanType switch
+        {
+            (int)ScanType.Transfer when courier.UccrId == 999 => 
+                $"Ops (Run Viewer){(runViewerTransferTo != null ? $" to {runViewerTransferTo.Code} {runViewerTransferTo.UccrName} {runViewerTransferTo.UccrSurname}" : string.Empty)}",
+            
+            (int)ScanType.Transfer => 
+                $"{courier.Code} {courier.UccrName} {courier.UccrSurname}{(transferTo != null ? $" to {transferTo.Code} {transferTo.UccrName} {transferTo.UccrSurname}" : string.Empty)}",
+            
+            (int)ScanType.InvalidRun => $"{courier?.Code} {courier?.UccrName} - Run {runName?.ToUpper() ?? string.Empty}",
+
+            (int)ScanType.InwardsDepot => $"{courier?.Code} {courier?.UccrName} {runName ?? string.Empty}",
+            
+            _ => $"{courier?.Code} {courier?.UccrName}"
+        };
+    }
+    
 }

@@ -2117,4 +2117,22 @@ public class JobController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
+    
+    [HttpGet]
+    public async Task<IActionResult> ScanJobDetail(string runDate, string scan)
+    {
+        try
+        {
+            var formattedDate = DateTime.Parse(runDate);
+            var scanList = await jobRepository.ScanList(formattedDate, scan);
+            return Json(scanList);
+        }
+        catch (Exception e)
+        {
+           Log.Error(e, "{Message}", 
+               ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(ScanJobDetail)));
+           return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+        
+    }
 }

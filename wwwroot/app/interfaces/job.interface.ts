@@ -528,13 +528,6 @@ export interface IReadTrackerInfoViewModel {
     readDate: Date | null;
 }
 
-export interface BulkScanDetail {
-    bulkScanId: number;
-    scanDateTime: Date;
-    scanDetail: string;
-    courier: string;
-}
-
 export interface JobGroup {
     job: ISuggestion;
     subJobs: ISuggestion[];

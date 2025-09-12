@@ -128,7 +128,7 @@ class JobsListController extends BaseController {
         this.loadSortState();
 
         // Group jobs by parent if not nationwide
-        if (!this.isNationwideList()) this.groupJobs();
+        if (!this.isNonGroupJobsList()) this.groupJobs();
 
         this.calculateStats();
         this.applyFilters();
@@ -188,7 +188,7 @@ class JobsListController extends BaseController {
     $onChanges(changes: angular.IOnChangesObject) {
         if (changes['jobs'] && changes['jobs'].currentValue) {
             // Group jobs by parent if not nationwide
-            if (!this.isNationwideList()) this.groupJobs();
+            if (!this.isNonGroupJobsList()) this.groupJobs();
 
             this.calculateStats();
             this.applyFilters();
@@ -200,8 +200,9 @@ class JobsListController extends BaseController {
         }
     }
 
-    isNationwideList(): boolean {
-        return this.jobListType.toLowerCase().includes('Nationwide'.toLowerCase())
+    isNonGroupJobsList(): boolean {
+        return this.jobListType.toLowerCase().includes('Nationwide'.toLowerCase()) 
+            || this.jobListType.toLowerCase().includes('JobSearch'.toLowerCase()); 
     }
 
     private groupJobs() {
@@ -634,7 +635,7 @@ class JobsListController extends BaseController {
         if (this.isUrgent(job)) return 'urgent';
         if (this.isWarning(job)) return 'warning';
         if (this.needsDispatch(job)) return 'needs-dispatch';
-        if (this.isNationwideList() && this.hasRelatedJobs(job)) return 'related-job';
+        if (this.isNonGroupJobsList() && this.hasRelatedJobs(job)) return 'related-job';
         if (job.parentId) return 'parent-job';
         if (job.parentId && job.id !== job.parentId) return 'child-job';
         return 'normal';
@@ -834,7 +835,7 @@ class JobsListController extends BaseController {
     }
 
     hasRelatedJobs(job: IDispatchJob): boolean {
-        if (!this.isNationwideList()) {
+        if (!this.isNonGroupJobsList()) {
             return false;
         }
 

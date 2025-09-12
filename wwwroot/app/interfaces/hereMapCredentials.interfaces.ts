@@ -9,7 +9,7 @@ export interface JobLocation {
     lng: number;
 }
 
-export interface ChildJob {
+export interface IHereMapChildJob {
     id: number | string;
     pickup: JobLocation;
     delivery: JobLocation;
@@ -17,11 +17,11 @@ export interface ChildJob {
     index?: number; // Added by the service for tracking
 }
 
-export interface Job {
+export interface IHereMapJob {
     id: number | string;
     pickup: JobLocation;
     delivery?: JobLocation;
-    childJobs?: ChildJob[];
+    childJobs?: IHereMapChildJob[];
     flight?: boolean;
     timestamp?: number; // For forcing updates
 }
@@ -34,8 +34,8 @@ export interface CourierLocation {
 export interface HereMapConfig {
     center?: Coordinates;
     zoom?: number;
-    job?: Job | null;
-    courierLocation?: CourierLocation | null;
+    job?: IHereMapJob | undefined;
+    courierLocation?: CourierLocation | undefined;
     selectedJobIndex?: number;
     timestamp?: number;
     disableAutoZoom?: boolean;

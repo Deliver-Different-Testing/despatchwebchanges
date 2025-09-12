@@ -59,6 +59,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TblBulkRunSchedule> TblBulkRunSchedules { get; set; }
 
+    public virtual DbSet<TblBulkScan> TblBulkScans { get; set; }
+
     public virtual DbSet<TblClearListArea> TblClearListAreas { get; set; }
 
     public virtual DbSet<TblClearListAreaPolygon> TblClearListAreaPolygons { get; set; }
@@ -1370,6 +1372,36 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.Speed).WithMany(p => p.TblBulkRunScheduleSpeeds)
                 .HasForeignKey(d => d.SpeedId)
                 .HasConstraintName("FK_tblBulkRunSchedule_tucJobType");
+        });
+
+        modelBuilder.Entity<TblBulkScan>(entity =>
+        {
+            entity.HasKey(e => e.BulkScanId);
+
+            entity.ToTable("tblBulkScan");
+
+            entity.HasIndex(e => e.ScanDateTime, "IX_tblBulkScan");
+
+            entity.HasIndex(e => e.Scan, "IX_tblBulkScan_1");
+
+            entity.HasIndex(e => e.ScanType, "IX_tblBulkScan_2");
+
+            entity.Property(e => e.BulkScanId).HasColumnName("BulkScanID");
+            entity.Property(e => e.CourierId).HasColumnName("CourierID");
+            entity.Property(e => e.RunName).HasMaxLength(50);
+            entity.Property(e => e.Scan)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.ScanDateTime).HasColumnType("datetime");
+            entity.Property(e => e.ToCourierId).HasColumnName("ToCourierID");
+
+            entity.HasOne(d => d.Courier).WithMany(p => p.TblBulkScanCouriers)
+                .HasForeignKey(d => d.CourierId)
+                .HasConstraintName("FK_tblBulkScan_CourierId_tucCourier");
+
+            entity.HasOne(d => d.ToCourier).WithMany(p => p.TblBulkScanToCouriers)
+                .HasForeignKey(d => d.ToCourierId)
+                .HasConstraintName("FK_tblBulkScan_ToCourierId_tucCourier");
         });
 
         modelBuilder.Entity<TblClearListArea>(entity =>
@@ -3746,11 +3778,16 @@ public partial class DespatchContext : DbContext
                 .IsRequired()
                 .HasMaxLength(100);
             entity.Property(e => e.Rate).HasColumnType("money");
+            entity.Property(e => e.VehicleSizeId).HasColumnName("VehicleSizeID");
 
             entity.HasOne(d => d.Client).WithMany(p => p.TucClientItems)
                 .HasForeignKey(d => d.ClientId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__tucClient__Clien__5D21AF45");
+
+            entity.HasOne(d => d.VehicleSize).WithMany(p => p.TucClientItems)
+                .HasForeignKey(d => d.VehicleSizeId)
+                .HasConstraintName("FK__tucClient__Vehic__2D3E5D50");
         });
 
         modelBuilder.Entity<TucContact>(entity =>
