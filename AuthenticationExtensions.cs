@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Security.Claims;
@@ -13,7 +14,7 @@ namespace DespatchWeb;
 
 public static class AuthenticationExtensions
 {
-    public static JwtSecurityToken CreateApiToken(string name, int tenantId, string connection, string timeZone)
+    public static JwtSecurityToken CreateApiToken(string name, int tenantId, string connection, string timeZone, int? clientId = null)
     {
         try
         {
@@ -21,13 +22,21 @@ public static class AuthenticationExtensions
                 new SymmetricSecurityKey(
                     Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSecretKey") ?? string.Empty));
 
-            var sensitiveClaims = JsonSerializer.Serialize(new
+            var sensitiveClaims = new Dictionary<string, string>
             {
-                TenantId = tenantId.ToString(),
-                Connection = connection,
-                TimeZone = timeZone
-            });
-            var encryptedClaims = EncryptClaims(sensitiveClaims, Environment.GetEnvironmentVariable("ClaimsKey"));
+                ["TenantId"] = tenantId.ToString(),
+                ["Connection"] = connection,
+                ["TimeZone"] = timeZone
+            };
+
+            if (clientId.HasValue)
+            {
+                sensitiveClaims["ClientId"] = clientId.Value.ToString();
+                sensitiveClaims["SubAccounts"] = string.Empty;
+            }
+
+            var sensitiveClaimsJson = JsonSerializer.Serialize(sensitiveClaims);
+            var encryptedClaims = EncryptClaims(sensitiveClaimsJson, Environment.GetEnvironmentVariable("ClaimsKey"));
             var claims = new Claim[]
             {
                 new(ClaimTypes.Name, name),

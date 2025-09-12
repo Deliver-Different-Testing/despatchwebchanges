@@ -240,7 +240,10 @@ public class RateJobService(
             ArgumentException.ThrowIfNullOrEmpty(connectionString);
             var tenantId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")
                 ?.Value;
-            ArgumentException.ThrowIfNullOrEmpty(tenantId);
+            ArgumentException.ThrowIfNullOrEmpty(tenantId); 
+            var clientId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "ContactID")
+                ?.Value;
+            ArgumentException.ThrowIfNullOrEmpty(clientId);
             var timeZone = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "TimeZone")?.Value;
             ArgumentException.ThrowIfNullOrEmpty(timeZone);
             var userName = contextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Name)?.Value;
@@ -249,7 +252,8 @@ public class RateJobService(
             var token = AuthenticationExtensions.CreateApiToken(userName,
                 int.Parse(tenantId),
                 connectionString,
-                timeZone);
+                timeZone,
+                int.Parse(clientId));
 
             var requestToken = new JwtSecurityTokenHandler().WriteToken(token);
 
@@ -323,8 +327,8 @@ public class RateJobService(
             IsDangerousGoods = dto.DangerousGoods,
             IsPrebook = dto.IsPrebook,
             DateTime = dto.BookedDate,
-            Van = dto.IsVan ? true : null,
-            Bike = dto.IsPedal ? true : null,
+            Van = dto.IsVan,
+            Bike = dto.IsPedal,
             Truck = CreateTruckObject(dto),
             OurReference = dto.OurRef,
             ClientReferenceA = dto.RefA,
