@@ -3631,8 +3631,8 @@
                                     ng-src="{{'data:image/png;base64,' + photo.url}}"/>
                             <md-grid-tile-footer>
                                 <h3>
-                                    {{photo.timestamp | date:'shortTime'}}
-                                    ({{ctrl.job.deliveryTimeZone.text | timezoneShort}})
+                                    {{::photo.timestamp | date:'shortTime'}}
+                                    ({{::ctrl.job.deliveryTimeZone.text | timezoneShort}})
                                 </h3>
                             </md-grid-tile-footer>
                         </md-grid-tile>
@@ -3640,12 +3640,10 @@
                 </div>
             </div>
 
-            <div
-                    class="pod-photo-section "
+            <div class="pod-photo-section "
                     ng-if="ctrl.formattedPodPhotos.length === 0 && ctrl.job.done">
                 <div class="section-header">
-                    <div
-                            class="md-dense"
+                    <div class="md-dense"
                             style="display: flex; align-items: center; padding: 8px 16px">
                         <md-icon md-font-set="material-symbols-outlined" style="margin-right: 8px">photo_library
                         </md-icon>
@@ -3682,8 +3680,7 @@
                     ng-if="ctrl.formattedPodPhotos.length > 0"
                     on-close="ctrl.closePodViewer()"
                     photos="ctrl.formattedPodPhotos"
-                    time-zone="ctrl.job.deliveryTimeZone.text"
-            >
+                    time-zone="ctrl.job.deliveryTimeZone.text">
             </pod-photo-viewer>
 
             <p class="timestamp">
@@ -3696,8 +3693,7 @@
             </p>
             <p
                     class="coordinates"
-                    ng-if="ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].coordinates"
-            >
+                    ng-if="ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].coordinates">
                 Location:
                 {{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].coordinates.lat}},
                 {{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].coordinates.lng}}
@@ -3738,7 +3734,7 @@
                 <md-grid-tile-footer>
                     <h3>
                         {{photo.timestamp | date:'shortTime'}}
-                        ({{ctrl.job.deliveryTimeZone.text | timezoneShort}})
+                        ({{::ctrl.job.deliveryTimeZone.text | timezoneShort}})
                     </h3>
                 </md-grid-tile-footer>
             </md-grid-tile>

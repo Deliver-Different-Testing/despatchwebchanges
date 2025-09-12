@@ -34,6 +34,7 @@ import dayjs from "dayjs";
 import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
 import VoidJobConfirmationDialogService
     from "../../dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
+import {formatFullDate} from "../../../functions/formatDates";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -55,7 +56,7 @@ class JobDetailController extends BaseController {
         "jobFileUploadDialogService",
         "voidJobConfirmationDialogService",
     ];
-    
+
     private static readonly FIELD_VISIBILITY_KEY = `jobDetail_fieldVisibility_${ContactID}`;
     private static readonly VIEW_DENSITY_KEY = `jobDetail_viewDensity_${ContactID}`;
 
@@ -156,7 +157,7 @@ class JobDetailController extends BaseController {
         // Apply UI tweaks
         this.loadViewDensity();
         this.initializeFieldVisibility();
-        
+
         this.applyScope();
     }
 
@@ -310,11 +311,11 @@ class JobDetailController extends BaseController {
             }
 
             this.initializeJobData();
-            if(!this.job) {
+            if (!this.job) {
                 this.$log.debug("No job data returned from server");
                 return;
             }
-            
+
             if (this.job?.relatedJobs?.length > 0) {
                 this.setupRelatedJobs(jobId);
             } else {
@@ -327,7 +328,7 @@ class JobDetailController extends BaseController {
             this.applyScope();
 
             if (this.job.completedTime && !this.isRecurringJob) {
-                this.loadPodPhotos();
+                await this.loadPodPhotos();
             }
         } catch (error) {
             this.$log.error("Error loading job data:", error);
@@ -399,7 +400,7 @@ class JobDetailController extends BaseController {
         }
     }
 
-    private loadPodPhotos(): void {
+    private async loadPodPhotos(): Promise<void> {
         if (!this.job?.completedTime) {
             this.$log.debug("No POD time available for job");
             return;
@@ -412,62 +413,55 @@ class JobDetailController extends BaseController {
             const month = completedTime.month() + 1;
             const year = completedTime.year();
 
-            this.$log.debug(`Getting POD photos for date: ${year}-${month}`);
+            this.$log.debug(`Getting POD photos for Job ${this.job.jobNo} : for date: ${year}-${month}`);
 
-            this.DispatchData.getJobDeliveryPhotosAndSignature(
+            const photosData: any = await this.DispatchData.getJobDeliveryPhotosAndSignature(
                 this.job.id,
                 year,
                 month
-            )
-                .then((photosData: any) => {
-                    if (!photosData || photosData.length === 0) {
-                        this.$log.debug("No POD photos returned from server");
-                        this.formattedPodPhotos = [];
-                    } else {
-                        this.$log.debug("Raw photos data received, count:", photosData.length);
+            );
 
-                        this.formattedPodPhotos = photosData.map(
-                            (photoData: string, index: number) => {
-                                try {
-                                    const podPhoto: PodPhoto = {
-                                        url: photoData,
-                                        timestamp: this.job?.completedTime
-                                            ? dayjs(this.job.completedTime).format(
-                                                "MM/DD/YYYY HH:mm"
-                                            )
-                                            : undefined,
-                                        uploadedBy: this.job?.courierData?.courierName ?? "Unknown",
-                                        coordinates: {
-                                            lat: this.job?.deliveryAddress?.latitude ?? 0,
-                                            lng: this.job?.deliveryAddress?.longitude ?? 0,
-                                        },
-                                    };
+            if (!photosData || photosData.length === 0) {
+                this.$log.debug("No POD photos returned from server");
+                this.formattedPodPhotos = [];
+            } else {
+                this.$log.debug("Raw photos data received, count:", photosData.length);
 
-                                    return podPhoto;
-                                } catch (e) {
-                                    this.$log.error(`Error processing photo ${index}:`, e);
-                                    return null;
-                                }
-                            }
-                        );
+                this.formattedPodPhotos = photosData.map(
+                    (photoData: string, index: number) => {
+                        try {
+                            const podPhoto: PodPhoto = {
+                                url: photoData,
+                                timestamp: this.job?.completedTime
+                                    ? formatFullDate(this.job.completedTime)
+                                    : undefined,
+                                uploadedBy: this.job?.courierData?.courierName ?? "Unknown",
+                                coordinates: {
+                                    lat: this.job?.deliveryAddress?.latitude ?? 0,
+                                    lng: this.job?.deliveryAddress?.longitude ?? 0,
+                                },
+                            };
+
+                            return podPhoto;
+                        } catch (error) {
+                            this.$log.error(`Error processing photo ${index}:`, error);
+                            return null;
+                        }
                     }
+                );
+            }
 
-                    this.$log.debug(
-                        `Successfully processed ${this.formattedPodPhotos.length} POD photos`
-                    );
+            this.$log.debug(
+                `Successfully processed ${this.formattedPodPhotos.length} POD photos`
+            );
 
-                    this.selectedPhotoIndex = 0;
-                    this.setupPhotoKeyboardNavigation();
-                })
-                .catch((error: Error) => {
-                    this.toastrService.showErrorToast("Failed to load POD photos");
-                    this.$log.error("Error loading POD photos:", error);
-
-                    this.formattedPodPhotos = [];
-                });
+            this.selectedPhotoIndex = 0;
+            this.setupPhotoKeyboardNavigation();
         } catch (error) {
-            this.handleError(error);
+            this.toastrService.showErrorToast("Failed to load POD photos");
+            this.$log.error("Error loading POD photos:", error);
             this.formattedPodPhotos = [];
+            this.handleError(error);
         }
     }
 
@@ -890,11 +884,11 @@ class JobDetailController extends BaseController {
 
             await this.processAddressUpdate(job, newAddress, isDeliveryAddress);
         } catch (error) {
-            if(!error) {
+            if (!error) {
                 this.$log.debug("User closed dialog");
                 return;
             }
-            
+
             this.$log.error("Error updating GPS:", error);
         } finally {
             this.applyScope();
@@ -1680,7 +1674,6 @@ class JobDetailController extends BaseController {
 
         if (photoSection.length) {
             photoSection.off("keydown", this.handleKeydown);
-
             photoSection.on("keydown", this.handleKeydown);
             photoSection.attr("tabindex", "0");
         }
@@ -1948,7 +1941,7 @@ class JobDetailController extends BaseController {
                 `Loading subjob details for ID: ${subJob.id}`
             );
 
-            // Load the subjob details from the server
+            // Load the subj ob details from the server
             const jobDetails = await this.DispatchData.getJobDetail(subJob.id);
 
             // Preserve the original related jobs data
@@ -1957,16 +1950,16 @@ class JobDetailController extends BaseController {
             const originalSelectedRelatedJob = this.selectedRelatedJob;
             const originalSelectedTabIndex = this.selectedTabIndex;
 
-            // Update the job with the subjob details
+            // Update the job with the subj ob details
             this.job = jobDetails;
 
             // Restore the preserved data
             if (originalRelatedJobs) {
-                if(!this.job) {
+                if (!this.job) {
                     this.$log.error("Failed to load subjob details");
                     return;
                 }
-                
+
                 this.job.relatedJobs = originalRelatedJobs;
                 this.jobGroups = originalJobGroups;
                 this.selectedRelatedJob = originalSelectedRelatedJob;
@@ -1975,7 +1968,7 @@ class JobDetailController extends BaseController {
 
             this.initializeJobData();
 
-            // Broadcast the subjob change
+            // Broadcast the subj ob change
             this.$rootScope.$broadcast("subJobChanged", this.job);
 
             this.$log.debug(
@@ -2010,12 +2003,12 @@ class JobDetailController extends BaseController {
             this.handleError(error);
         }
     }
-    
+
     async updateVoid($event: MouseEvent, job: IJob): Promise<void> {
         try {
             const newVoidValue = !job.void;
-            
-            if(newVoidValue) {
+
+            if (newVoidValue) {
                 await this.voidJobConfirmationDialogService.showVoidConfirmationDialog($event, job);
             } else {
                 await this.DispatchData.updateJobDetail(
@@ -2051,21 +2044,20 @@ class JobDetailController extends BaseController {
         }, 0);
     }
 
-
     private loadFieldVisibilityFromStorage(): { [key: string]: boolean } {
         try {
             const stored = localStorage.getItem(JobDetailController.FIELD_VISIBILITY_KEY);
             if (stored) {
                 const parsedVisibility = JSON.parse(stored);
                 // Merge with defaults to ensure all fields are present
-                return { ...this.defaultFieldVisibility, ...parsedVisibility };
+                return {...this.defaultFieldVisibility, ...parsedVisibility};
             }
         } catch (error) {
             this.$log.warn('Failed to load field visibility from localStorage:', error);
         }
 
         // Return a copy of defaults if no stored data or error
-        return { ...this.defaultFieldVisibility };
+        return {...this.defaultFieldVisibility};
     }
 
     private saveFieldVisibilityToStorage(): void {
@@ -2082,14 +2074,14 @@ class JobDetailController extends BaseController {
     toggleEditMode(): void {
         this.isEditMode = !this.isEditMode;
     }
-    
+
     toggleFieldVisibility(fieldKey: string): void {
         this.fieldVisibility[fieldKey] = !this.fieldVisibility[fieldKey];
         this.saveFieldVisibilityToStorage();
     }
 
     resetFieldVisibility(): void {
-        this.fieldVisibility = { ...this.defaultFieldVisibility };
+        this.fieldVisibility = {...this.defaultFieldVisibility};
         this.saveFieldVisibilityToStorage();
         this.toastrService.showSuccessToast("Default Job Detail layout restored");
     }
@@ -2118,7 +2110,7 @@ class JobDetailController extends BaseController {
     }
 
     toggleViewDensity(): void {
-        switch(this.viewDensity) {
+        switch (this.viewDensity) {
             case 'normal':
                 this.viewDensity = 'dense';
                 break;
@@ -2128,7 +2120,7 @@ class JobDetailController extends BaseController {
         }
         this.saveViewDensity();
     }
-    
+
     isDenseView(): boolean {
         return this.viewDensity === 'dense';
     }
