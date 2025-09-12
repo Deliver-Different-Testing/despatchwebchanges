@@ -16,6 +16,7 @@ import JobHighlightService from "./job-highlight.service";
 import DensityMode from "../../../enums/densityMode";
 import AutoCompleteDialogService from "../../dialogs/auto-complete-dialog/auto-complete-dialog.service";
 import ToastrService from "../../../services/toastr.service";
+import {formatMins} from "../../../functions/formatDates";
 
 class JobsListController extends BaseController {
     static $inject = [
@@ -127,8 +128,7 @@ class JobsListController extends BaseController {
         this.loadColumnWidths();
         this.loadSortState();
 
-        // Group jobs by parent if not nationwide
-        if (!this.isNonGroupJobsList()) this.groupJobs();
+        if (this.shouldGroupJobs()) this.groupJobs();
 
         this.calculateStats();
         this.applyFilters();
@@ -188,7 +188,7 @@ class JobsListController extends BaseController {
     $onChanges(changes: angular.IOnChangesObject) {
         if (changes['jobs'] && changes['jobs'].currentValue) {
             // Group jobs by parent if not nationwide
-            if (!this.isNonGroupJobsList()) this.groupJobs();
+            if (this.shouldGroupJobs()) this.groupJobs();
 
             this.calculateStats();
             this.applyFilters();
@@ -200,9 +200,14 @@ class JobsListController extends BaseController {
         }
     }
 
-    isNonGroupJobsList(): boolean {
-        return this.jobListType.toLowerCase().includes('Nationwide'.toLowerCase()) 
-            || this.jobListType.toLowerCase().includes('JobSearch'.toLowerCase()); 
+    shouldGroupJobs(): boolean {
+        this.$log.debug('shouldGroupJobs - jobListType:', this.jobListType);
+
+        const shouldGroup = !this.jobListType.toLowerCase().includes('nationwide')
+            && !this.jobListType.toLowerCase().includes('jobsearch');
+
+        this.$log.debug('shouldGroupJobs - result:', shouldGroup);
+        return shouldGroup;
     }
 
     private groupJobs() {
@@ -213,28 +218,34 @@ class JobsListController extends BaseController {
 
         const grouped: IDispatchJob[] = [];
         const childJobs: { [parentId: number]: IDispatchJob[] } = {};
-        const processedIds = new Set<number>(); // Track processed IDs to avoid duplicates
+        const processedIds = new Set<number>();
 
         // First pass: separate parents and children
         for (let job of this.jobs) {
             // Skip if we've already processed this job ID
             if (processedIds.has(job.id)) {
-                this.$log.warn(`Duplicate job ID found: ${job.id}`);
+                this.$log.warn(`Duplicate job ID found: ${job.id}, skipping duplicate`);
                 continue;
             }
             processedIds.add(job.id);
 
-            if (job.isParentOrSingle) {
+            // A job is a parent if it's marked as parent/single OR if its parentId equals its own ID
+            if (job.isParentOrSingle || job.parentId === job.id) {
                 // This is a parent or standalone job
                 job._isExpanded = job._isExpanded || false;
                 job._groupChildren = [];
                 grouped.push(job);
-            } else if (job.parentId && job.parentId !== job.id) { // <-- Fix: Exclude self-referencing
-                // This is a child job (and not self-referencing)
+            } else if (job.parentId && job.parentId !== job.id) {
+                // This is a child's job with a different parent
                 if (!childJobs[job.parentId]) {
                     childJobs[job.parentId] = [];
                 }
                 childJobs[job.parentId].push(job);
+            } else {
+                // Jobs without parentId or with unclear parent relationship - treat as standalone
+                job._isExpanded = false;
+                job._groupChildren = [];
+                grouped.push(job);
             }
         }
 
@@ -247,8 +258,12 @@ class JobsListController extends BaseController {
             }
         }
 
-        // Only show parent jobs in the main list when grouped
         this.jobs = grouped;
+
+        this.$log.debug('Jobs grouped:', {
+            totalJobs: this.jobs.length,
+            parentsWithChildren: grouped.filter(j => j._groupChildren && j._groupChildren.length > 0).length
+        });
     }
     
     toggleJobGroup(job: IDispatchJob) {
@@ -642,14 +657,14 @@ class JobsListController extends BaseController {
         if (this.isUrgent(job)) return 'urgent';
         if (this.isWarning(job)) return 'warning';
         if (this.needsDispatch(job)) return 'needs-dispatch';
-        if (this.isNonGroupJobsList() && this.hasRelatedJobs(job)) return 'related-job';
+        if (this.shouldGroupJobs() && this.hasRelatedJobs(job)) return 'related-job';
         if (job.parentId) return 'parent-job';
         if (job.parentId && job.id !== job.parentId) return 'child-job';
         return 'normal';
     }
 
     formatDeliveryTime(job: IDispatchJob): string {
-        return dayjs(job.booked).format('HH:mm');
+        return formatMins(job.booked);
     }
 
     formatDate(dateTime: Date | undefined): string {
@@ -842,7 +857,7 @@ class JobsListController extends BaseController {
     }
 
     hasRelatedJobs(job: IDispatchJob): boolean {
-        if (!this.isNonGroupJobsList()) {
+        if (this.shouldGroupJobs()) {
             return false;
         }
 

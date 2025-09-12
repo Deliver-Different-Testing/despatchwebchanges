@@ -508,43 +508,78 @@ public class JobController(
         return allResults;
     }
 
-    public async Task<IActionResult> GetJobDeliveryPhotosAndSignature(
-        int jobId,
-        int year,
-        int month
-    )
+    public async Task<IActionResult> GetJobDeliveryPhotosAndSignature(int jobId, int year, int month)
     {
-        var all = new List<byte[]>();
+        const string functionName = nameof(GetJobDeliveryPhotosAndSignature);
+        var traceId = Guid.NewGuid().ToString();
+
+        Log.Information("[{FunctionName}][{TraceId}] Starting - JobId: {JobId}, Year: {Year}, Month: {Month}",
+            functionName, traceId, jobId, year, month);
+
         try
         {
+            var allPodPhotos = new List<byte[]>();
+
             var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
             var key = $"{jobId}-";
-            Log.Debug("Get S3 Object List for {Key}", key);
-            var s3List =
-                await SearchDeliveryFilesByPatternAsync(bucketName, key, year, month);
-            Log.Debug("Found {S3ListCount} objects for {Key}", s3List.Count, key);
-            foreach (
-                var getObjectRequest in s3List.Select(s3Object => new GetObjectRequest
+
+            Log.Debug(
+                "[{FunctionName}][{TraceId}] Searching S3 bucket {BucketName} for objects with key pattern: {Key}",
+                functionName, traceId, bucketName, key);
+
+            var s3List = await SearchDeliveryFilesByPatternAsync(bucketName, key, year, month);
+
+            Log.Information("[{FunctionName}][{TraceId}] Found {S3ListCount} S3 objects for key pattern: {Key}",
+                functionName, traceId, s3List.Count, key);
+
+            var processedCount = 0;
+            foreach (var s3Object in s3List)
+            {
+                var getObjectRequest = new GetObjectRequest
                 {
                     BucketName = bucketName,
                     Key = s3Object.Key
-                })
-            )
-            {
+                };
+
+                Log.Debug("[{FunctionName}][{TraceId}] Processing S3 object {ProcessedCount}/{TotalCount}: {S3Key}",
+                    functionName, traceId, ++processedCount, s3List.Count, s3Object.Key);
+
                 using var response = await s3Client.GetObjectAsync(getObjectRequest);
                 await using var responseStream = response.ResponseStream;
                 using var reader = new StreamReader(responseStream);
                 using var memoryStream = new MemoryStream();
                 await response.ResponseStream.CopyToAsync(memoryStream);
-                all.Add(memoryStream.ToArray());
+
+                var photoBytes = memoryStream.ToArray();
+                allPodPhotos.Add(photoBytes);
+
+                Log.Debug(
+                    "[{FunctionName}][{TraceId}] Successfully retrieved S3 object {S3Key}, Size: {ByteSize} bytes",
+                    functionName, traceId, s3Object.Key, photoBytes.Length);
             }
+
+            Log.Information(
+                "[{FunctionName}][{TraceId}] Successfully completed - Retrieved {PhotoCount} photos totaling {TotalBytes} bytes",
+                functionName, traceId, allPodPhotos.Count, allPodPhotos.Sum(p => p.Length));
+
+            return Json(allPodPhotos);
+        }
+        catch (AmazonS3Exception s3Ex)
+        {
+            Log.Error(s3Ex, "[{FunctionName}][{TraceId}] S3 operation failed - {ErrorMessage}",
+                functionName, traceId,
+                ErrorMessageStringFormatter.FormatForLogging(s3Ex, nameof(JobController), functionName));
+
+            return StatusCode(500, ErrorMessageStringFormatter.Format(s3Ex));
         }
         catch (Exception e)
         {
-            Log.Error(e, $"{nameof(GetJobDeliveryPhotosAndSignature)} Error: ");
-        }
+            Log.Error(e, "[{FunctionName}][{TraceId}] Unexpected error - {ErrorMessage}",
+                functionName, traceId,
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), functionName));
 
-        return Json(all);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
     }
 
     public async Task<IActionResult> RecurringJobDetail(int jobId)
@@ -2117,7 +2152,7 @@ public class JobController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
-    
+
     [HttpGet]
     public async Task<IActionResult> ScanJobDetail(string runDate, string scan)
     {
@@ -2129,10 +2164,9 @@ public class JobController(
         }
         catch (Exception e)
         {
-           Log.Error(e, "{Message}", 
-               ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(ScanJobDetail)));
-           return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(ScanJobDetail)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
-        
     }
 }
