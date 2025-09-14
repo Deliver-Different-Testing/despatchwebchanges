@@ -19,7 +19,6 @@ public interface IFlightStatsService
         int? airlineId = null,
         int? departureAirportId = null,
         int? arrivalAirportId = null,
-        int flightBuffer = 0,
         string codeType = null,
         List<string> extendedOptions = null,
         int minimumLayoverMinutes = 60

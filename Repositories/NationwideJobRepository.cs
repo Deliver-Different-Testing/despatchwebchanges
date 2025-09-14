@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1308,17 +1309,46 @@ public class NationwideJobRepository(
 
         return cargoModel;
     }
-
-    public async Task<List<Suggestion>> GetAllActiveAirportsAsync()
+    
+    public async Task<(GetArrivalAndDepartureAirportsDto fromAirport, GetArrivalAndDepartureAirportsDto toAirport)> 
+        GetArrivalAndDepartureAirports(int jobId, int? departureAirportId = null, int? arrivalAirportId = null)
     {
-        return await Context.TblAirports
-            .Where(a => a.Active)
-            .Select(a => new Suggestion
+        var query = Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new
             {
-                Id = a.AirportId,
-                Text = a.AirportCode
-            })
-            .AsNoTracking()
-            .ToListAsync();
+                FromAirport = departureAirportId.HasValue 
+                    ? Context.TblAirports
+                        .Where(a => a.AirportId == departureAirportId.Value)
+                        .Select(MapToAirportDto())
+                        .FirstOrDefault()
+                    : j.FromAirport != null 
+                        ? MapToAirportDto().Compile()(j.FromAirport)
+                        : null,
+                ToAirport = arrivalAirportId.HasValue 
+                    ? Context.TblAirports
+                        .Where(a => a.AirportId == arrivalAirportId.Value)
+                        .Select(MapToAirportDto())
+                        .FirstOrDefault()
+                    : j.ToAirport != null 
+                        ? MapToAirportDto().Compile()(j.ToAirport)
+                        : null
+            });
+    
+        var result = await query.AsNoTracking().FirstOrDefaultAsync();
+    
+        return result != null 
+            ? (result.FromAirport, result.ToAirport)
+            : (null, null);
+    }
+
+    private static Expression<Func<TblAirport, GetArrivalAndDepartureAirportsDto>> MapToAirportDto()
+    {
+        return a => new GetArrivalAndDepartureAirportsDto
+        {
+            AirportId = a.AirportId,
+            AirportCode = a.AirportCode,
+            FlightBufferMinutes = a.FlightBufferMinutes
+        };
     }
 }
