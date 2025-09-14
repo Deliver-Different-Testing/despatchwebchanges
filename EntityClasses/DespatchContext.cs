@@ -1126,6 +1126,7 @@ public partial class DespatchContext : DbContext
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy).HasMaxLength(50);
             entity.Property(e => e.ExtraInfo).HasMaxLength(550);
+            entity.Property(e => e.FlightBufferMinutes).HasDefaultValue(120);
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");

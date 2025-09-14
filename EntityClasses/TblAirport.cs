@@ -67,6 +67,8 @@ public partial class TblAirport
 
     public string Timezone { get; set; }
 
+    public int FlightBufferMinutes { get; set; }
+
     public virtual TucAgent Agent { get; set; }
 
     public virtual ICollection<AgentVehicle> AgentVehicles { get; set; } = new List<AgentVehicle>();

@@ -162,7 +162,6 @@ public class FlightStatsService(
         int? airlineId = null,
         int? departureAirportId = null,
         int? arrivalAirportId = null,
-        int flightBuffer = 0,
         string codeType = null,
         List<string> extendedOptions = null,
         int minimumLayoverMinutes = 60
@@ -173,23 +172,18 @@ public class FlightStatsService(
             jobId, departureDateTime);
 
         // Airports
-        var allAirports = await repository.GetAllActiveAirportsAsync();
-        var (arrivalAirportCode, departureAirportCode) = await repository.GetAirportCodesByJobIdAsync(jobId);
-        if (departureAirportId.HasValue)
-            departureAirportCode = allAirports.First(a => a.Id == departureAirportId.Value).Text;
-        if (arrivalAirportId.HasValue)
-            arrivalAirportCode =  allAirports.First(a => a.Id == arrivalAirportId.Value).Text;
+        var (departureAirport, arrivalAirport) =
+            await repository.GetArrivalAndDepartureAirports(jobId, departureAirportId, arrivalAirportId);
+        ArgumentNullException.ThrowIfNull(departureAirport);
+        ArgumentNullException.ThrowIfNull(arrivalAirport);
         
         var activeAirlineCodes = await repository.GetActiveAirlineCodesAsync();
-
-        ArgumentException.ThrowIfNullOrEmpty(departureAirportCode);
-        ArgumentException.ThrowIfNullOrEmpty(arrivalAirportCode);
-
-        var flightsFrom = CalculateFlightSearchStartTime(departureDateTime, flightBuffer);
+        
+        var flightsFrom = CalculateFlightSearchStartTime(departureDateTime, departureAirport.FlightBufferMinutes);
         var (year, month, day, hour, minute) = SplitDate(flightsFrom);
 
         var relativeUrl =
-            $"json/firstflightout/{departureAirportCode}/to/{arrivalAirportCode}/leaving_after/{year}/{month}/{day}/{hour}/{minute}";
+            $"json/firstflightout/{departureAirport.AirportCode}/to/{arrivalAirport.AirportCode}/leaving_after/{year}/{month}/{day}/{hour}/{minute}";
 
         var query = HttpUtility.ParseQueryString(string.Empty);
         query["appId"] = _appId;
@@ -259,7 +253,7 @@ public class FlightStatsService(
                 var firstFlight = conn.ScheduledFlight.First();
                 var lastFlight = conn.ScheduledFlight.Last();
 
-                // Map flight segments with detailed info from appendix
+                // Map flight segments with detailed info from the appendix
                 var segments = conn.ScheduledFlight
                     .Select((segment, index) =>
                     {
@@ -283,10 +277,10 @@ public class FlightStatsService(
                             DepartureTime = segment.DepartureTime,
                             ArrivalTime =
                                 AdjustArrivalTimeForOvernightFlight(segment.DepartureTime, segment.ArrivalTime),
-                            DepartureAirportId = allAirports.FirstOrDefault(a => a.Text == segment.DepartureAirportFsCode)?.Id ?? 0,
+                            DepartureAirportId = departureAirport.AirportId,
                             DepartureAirportFsCode = segment.DepartureAirportFsCode,
                             DepartureTerminal = segment.DepartureTerminal,
-                            ArrivalAirportId = allAirports.FirstOrDefault(a => a.Text == segment.ArrivalAirportFsCode)?.Id ?? 0,
+                            ArrivalAirportId = arrivalAirport.AirportId,
                             ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
                             ArrivalTerminal = segment.ArrivalTerminal,
                             FlightEquipmentIataCode = segment.FlightEquipmentIataCode,

@@ -101,7 +101,6 @@ public class NationwideJobController(
                 airlineId,
                 departureAirportId,
                 arrivalAirportId,
-                flightBuffer: 0,
                 codeType: null,
                 extendedOptions: null,
                 minimumLayoverMinutes: minimumLayoverMinutes);
