@@ -8,6 +8,12 @@ import {StatusFilter} from "../components/task-dashboard/enums/status-filter";
 import {AppPages} from "../enums/app-pages.enum";
 import {ContactID} from "../contants";
 import DispatchCoreService from "./dispatch-core.service";
+import {
+    ITaskAssignStaffRequest,
+    ITaskCloseRequest,
+    ITaskDateRequest,
+    ITaskTimeRequest
+} from "../interfaces/task-request.interfaces";
 
 interface PageFilterNames {
     staff: string;
@@ -82,43 +88,39 @@ class TasksService implements angular.IServiceProvider {
     }
 
     async markTaskAsClosed(eventId: number, closed: boolean): Promise<void> {
-        await this.$http.post("task/MarkTaskAsClosed",
-            null, {
-                params: {
-                    eventId: eventId,
-                    closed: closed
-                }
-            });
+        const data: ITaskCloseRequest = {
+            eventId,
+            closed
+        };
+        
+        await this.$http.post("task/MarkTaskAsClosed", data);
     }
 
     async updateTaskDate(eventId: number, date: string): Promise<void> {
-        await this.$http.post("task/UpdateTaskDate",
-            null, {
-                params: {
-                    eventId,
-                    date
-                }
-            });
+        const data: ITaskDateRequest = {
+            eventId,
+            date
+        };
+        
+        await this.$http.post("task/UpdateTaskDate", data);
     }
 
     async updateTaskTime(eventId: number, time: string): Promise<void> {
-        await this.$http.post("task/UpdateTaskTime",
-            null, {
-                params: {
-                    eventId,
-                    time
-                }
-            });
+        const data: ITaskTimeRequest = {
+            eventId,
+            time
+        };
+        
+        await this.$http.post("task/UpdateTaskTime", data);
     }
 
     async reassignTaskToStaff(eventId: number, staffId: number): Promise<void> {
-        await this.$http.post("task/ReassignTask",
-            null, {
-                params: {
-                    eventId,
-                    staffId
-                }
-            });
+        const data: ITaskAssignStaffRequest = {
+            eventId,
+            staffId
+        }
+        
+        await this.$http.post("task/ReassignTask", data);
     }
 
     async getStaffList(): Promise<ISuggestion[] | undefined> {

@@ -261,7 +261,7 @@
                              'unread': !job.hasBeenRead,
                              'multi-part-parent': ctrl.isMultiPartJob(job) && !!job.isParentOrSingle,
                              'child-job': !job.isParentOrSingle,
-                             'related-job': ctrl.isNationwideList() && ctrl.hasRelatedJobs(job),
+                             'related-job': ctrl.hasRelatedJobs(job),
                              'warning': ctrl.isWarning(job)
                          }"
                      ng-style="{'grid-template-columns': ctrl.getGridTemplateColumns()}"

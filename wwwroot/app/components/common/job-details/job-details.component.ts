@@ -2138,6 +2138,7 @@ const JobDetailComponent: angular.IComponentOptions = {
         onStatusChange: "&",
         isRecurringJob: "<",
         isBulkJob: "<",
+        isEditMode: "<",
     },
     controller: JobDetailController,
     controllerAs: "ctrl",

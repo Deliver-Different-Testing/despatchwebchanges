@@ -26,11 +26,11 @@ public class TaskController(ITaskRepository taskRepository) : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> MarkTaskAsClosed(int eventId, bool closed)
+    public async Task<IActionResult> MarkTaskAsClosed([FromBody] TaskCloseRequest data)
     {
         try
         {
-            await taskRepository.SetEventAsClosedAsync(eventId, closed);
+            await taskRepository.SetEventAsClosedAsync(data.EventId, data.Closed);
             return Ok();
         }
         catch (Exception ex)
@@ -42,11 +42,11 @@ public class TaskController(ITaskRepository taskRepository) : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdateTaskDate(int eventId, string date)
+    public async Task<IActionResult> UpdateTaskDate([FromBody] TaskDateRequest data)
     {
         try
         {
-            await taskRepository.UpdateEventDateAsync(eventId, date);
+            await taskRepository.UpdateEventDateAsync(data.EventId, data.Date);
             return Ok();
         }
         catch (Exception ex)
@@ -58,11 +58,11 @@ public class TaskController(ITaskRepository taskRepository) : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdateTaskTime(int eventId, string time)
+    public async Task<IActionResult> UpdateTaskTime([FromBody] TaskTimeRequest data)
     {
         try
         {
-            await taskRepository.UpdateEventTimeAsync(eventId, time);
+            await taskRepository.UpdateEventTimeAsync(data.EventId, data.Time);
             return Ok();
         }
         catch (Exception ex)
@@ -140,11 +140,11 @@ public class TaskController(ITaskRepository taskRepository) : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> ReassignTask(int eventId, int staffId)
+    public async Task<IActionResult> ReassignTask([FromBody] TaskAssignStaffRequest data)
     {
         try
         {
-            await taskRepository.ReassignEventToUserAsync(eventId, staffId);
+            await taskRepository.ReassignEventToUserAsync(data.EventId, data.StaffId);
             return Ok();
         }
         catch (Exception ex)

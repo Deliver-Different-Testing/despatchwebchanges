@@ -3,10 +3,12 @@
 class ResolutionWarningService implements angular.IServiceProvider {
     static $inject = [
         '$mdDialog',
+        '$log',
         '$window'
     ];
 
-    private readonly STORAGE_KEY = `resolution-warning-shown_${ContactID}`;
+    private readonly STORAGE_KEY_Old = `resolution-warning-shown_${ContactID}`;
+    private readonly STORAGE_KEY = `resolution-warning-shown}`;
     private readonly MIN_WIDTH = 1920;
     private readonly MIN_HEIGHT = 1200;
     private currentScreenWidth?: number;
@@ -14,7 +16,10 @@ class ResolutionWarningService implements angular.IServiceProvider {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private $window: angular.IWindowService) {}
+        private $log: angular.ILogService,
+        private $window: angular.IWindowService) {
+        this.$log.debug('ResolutionWarningService: Service instantiated');
+    }
 
     $get() {
         return this;
@@ -22,7 +27,8 @@ class ResolutionWarningService implements angular.IServiceProvider {
 
     checkAndShowResolutionWarning(): void {
         // Check if a warning has already been shown
-        if (localStorage.getItem(this.STORAGE_KEY)) {
+        if (localStorage.getItem(this.STORAGE_KEY) || localStorage.getItem(this.STORAGE_KEY_Old)) {
+            this.$log.debug('ResolutionWarningService: Warning already shown');
             return;
         }
 
@@ -33,12 +39,16 @@ class ResolutionWarningService implements angular.IServiceProvider {
         if (this.currentScreenWidth < this.MIN_WIDTH || this.currentScreenHeight < this.MIN_HEIGHT) {
             this.showResolutionWarning();
         } else {
+            this.$log.debug('ResolutionWarningService: Screen resolution is sufficient');
+            
             // Mark as shown even if not displayed, so it doesn't check again
             localStorage.setItem(this.STORAGE_KEY, 'true');
         }
     }
 
     private showResolutionWarning(): void {
+        this.$log.debug('ResolutionWarningService: Showing resolution warning');
+        
         this.$mdDialog.show({
             template: require('./resolution-warning-dialog.template.html'),
             controller: ResolutionWarningDialogController,
@@ -54,6 +64,8 @@ class ResolutionWarningService implements angular.IServiceProvider {
             escapeToClose: false,
             fullscreen: false
         });
+        
+        this.$log.debug('ResolutionWarningService: Resolution warning shown');
     }
 }
 
