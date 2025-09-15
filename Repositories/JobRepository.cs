@@ -2530,186 +2530,107 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     private async Task<List<DeliveryJourneyViewModel>> GetStatusUpdatesForDeliveryJourneyAsync(int jobId,
         bool isLiveJob)
     {
-        const string internalStatusChangeType = nameof(DeliveryJourneyChangeType.InternalStatus);
-        
+        List<DeliveryJourneyViewModel> statusUpdates;
+
         if (isLiveJob)
         {
-            var statusUpdates = await Context.JobDeliveryJourneys
-                .Where(j => j.JobId == jobId && j.ChangeType != internalStatusChangeType)
-                .OrderBy(s => s.UpdatedAt)
+            // Get status updates from the live job table
+            var statusUpdatesTempList = await Context.JobDeliveryJourneys
+                .Where(j => j.JobId == jobId
+                            && j.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus))
                 .AsNoTracking()
-                .Select(s => new LiveJobStatusUpdateDto
-                {
-                    UpdatedAt = s.UpdatedAt,
-                    ChangeType = s.ChangeType,
-                    Comments = s.Comments,
-                    FieldName = s.FieldName,
-                    OldValue = s.OldValue,
-                    NewValue = s.NewValue,
-                    StaffName = s.Staff != null ? s.Staff.UcstFirstName + " " + s.Staff.UcstLastName : null,
-                    CourierName = s.Courier != null ? s.Courier.UccrName + ", " + s.Courier.UccrSurname : null,
-                    FlightNo = s.Flight != null ? s.Flight.UcnwFlightNo : null,
-                    NewAgentName = s.NewAgent != null ? s.NewAgent.UcagName : null,
-                    OldAgentName = s.OldAgent != null ? s.OldAgent.UcagName : null,
-                    NewStatusName = s.NewJobStatus != null ? s.NewJobStatus.UcjsName : null,
-                    OldStatusName = s.OldJobStatus != null ? s.OldJobStatus.UcjsName : null
-                })
+                .Include(s => s.NewJobStatus)
+                .Include(s => s.OldJobStatus)
+                .Include(s => s.Staff)
+                .Include(s => s.Courier)
+                .Include(s => s.Flight)
+                .Include(s => s.NewAgent)
+                .Include(s => s.OldAgent)
                 .ToListAsync();
 
-            return statusUpdates
-                .GroupBy(s => s.UpdatedAt)
-                .Select(group => CreateDeliveryJourneyViewModel(jobId, group.Key, group))
+            statusUpdates = statusUpdatesTempList
+                .GroupBy(s => s.UpdatedAt) // Group by datetime
+                .Select(group => new DeliveryJourneyViewModel
+                {
+                    Id = Guid.NewGuid(),
+                    JobId = jobId,
+                    Date = group.Key,
+                    Title = "Status Changed",
+                    Description = string.Join("; ", group.Select(s => s.Comments).Where(c => !string.IsNullOrWhiteSpace(c))),
+                    Icon = "update",
+                    Tags = group.SelectMany(s => new[]
+                        {
+                            s.ChangeType,
+                            $"Updated on {s.UpdatedAt:dd/MM/yyyy HH:mm}",
+                            s.Staff != null ? $"Updated by {s.Staff.UcstFirstName} {s.Staff.UcstLastName}" : null,
+                            s.Courier != null ? $"Updated by {s.Courier.UccrName}, {s.Courier.UccrSurname}" : null,
+                            s.Flight != null ? $"Flight {s.Flight.UcnwFlightNo} assigned" : null,
+                            s.NewAgent != null && s.OldAgent != null
+                                ? $"Reassigned from Agent {s.OldAgent.UcagName} to {s.NewAgent.UcagName}"
+                                : null,
+                            s.NewAgent != null && s.OldAgent == null ? $"Assigned to Agent {s.NewAgent.UcagName}" : null,
+                            s.NewAgent == null && s.OldAgent != null ? $"Unassigned from Agent {s.OldAgent.UcagName}" : null,
+                            s.FieldName != null ? $"Field {s.FieldName} updated" : null,
+                            s.FieldName != null && s.OldValue != null ? $"Old value: {s.OldValue}" : null,
+                            s.FieldName != null && s.NewValue != null ? $"New value: {s.NewValue}" : null,
+                            s.NewJobStatus != null && s.OldJobStatus != null
+                                ? $"Status changed from {s.OldJobStatus.UcjsName} to {s.NewJobStatus?.UcjsName}"
+                                : null
+                        })
+                        .Where(tag => !string.IsNullOrWhiteSpace(tag))
+                        .Distinct()
+                        .ToList()
+                })
+                .ToList();
+        }
+        else
+        {
+            // Get status updates from the archived job table
+            var archivedStatusUpdatesTempList = await Context.JobDeliveryJourneyArchives
+                .Where(j => j.JobId == jobId && j.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus))
+                .AsNoTracking()
+                .ToListAsync();
+
+            statusUpdates = archivedStatusUpdatesTempList
+                .GroupBy(s => s.UpdatedAt) // Group by datetime
+                .Select(group => new DeliveryJourneyViewModel
+                {
+                    Id = Guid.NewGuid(),
+                    JobId = jobId,
+                    Date = group.Key,
+                    Title = "Status Changed",
+                    Description = string.Join("; ", group
+                        .Select(s => s.OldJobStatusId != null && s.NewJobStatusId != null
+                            ? $"Status changed from status ID {s.OldJobStatusId} to {s.NewJobStatusId}"
+                            : null)
+                        .Where(d => !string.IsNullOrWhiteSpace(d))),
+                    Icon = "update",
+                    Tags = group.SelectMany(s => new[]
+                        {
+                            s.ChangeType,
+                            $"Updated on {s.UpdatedAt:dd/MM/yyyy HH:mm}",
+                            s.UpdatedByType != null ? $"Updated by {s.UpdatedByType}" : null,
+                            s.FlightId != null ? $"Flight ID {s.FlightId} assigned" : null,
+                            s.NewAgentId != null && s.OldAgentId != null
+                                ? $"Reassigned from Agent ID {s.OldAgentId} to {s.NewAgentId}"
+                                : null,
+                            s.NewAgentId != null && s.OldAgentId == null ? $"Assigned to Agent ID {s.NewAgentId}" : null,
+                            s.FieldName != null ? $"Field {s.FieldName} updated" : null,
+                            s.FieldName != null && s.OldValue != null ? $"Old value: {s.OldValue}" : null,
+                            s.FieldName != null && s.NewValue != null ? $"New value: {s.NewValue}" : null,
+                            s.Comments != null ? $"Comments: {s.Comments}" : null,
+                            s.OldJobStatusId != null && s.NewJobStatusId != null
+                                ? $"Status changed from status ID {s.OldJobStatusId} to {s.NewJobStatusId}"
+                                : null
+                        })
+                        .Where(tag => !string.IsNullOrWhiteSpace(tag))
+                        .Distinct()
+                        .ToList()
+                })
                 .ToList();
         }
 
-        // Optimized archived query
-        var archivedStatusUpdates = await Context.JobDeliveryJourneyArchives
-            .Where(j => j.JobId == jobId && j.ChangeType != internalStatusChangeType)
-            .OrderBy(s => s.UpdatedAt)
-            .AsNoTracking()
-            .Select(s => new ArchivedJobStatusUpdateDto
-            {
-                UpdatedAt = s.UpdatedAt,
-                ChangeType = s.ChangeType,
-                Comments = s.Comments,
-                FieldName = s.FieldName,
-                OldValue = s.OldValue,
-                NewValue = s.NewValue,
-                UpdatedByType = s.UpdatedByType,
-                FlightId = s.FlightId,
-                NewAgentId = s.NewAgentId,
-                OldAgentId = s.OldAgentId,
-                NewJobStatusId = s.NewJobStatusId,
-                OldJobStatusId = s.OldJobStatusId
-            })
-            .ToListAsync();
-
-        return archivedStatusUpdates
-            .GroupBy(s => s.UpdatedAt)
-            .Select(group => CreateArchivedDeliveryJourneyViewModel(jobId, group.Key, group))
-            .ToList();
-    }
-
-    private static DeliveryJourneyViewModel CreateDeliveryJourneyViewModel(int jobId, DateTime updatedAt, IEnumerable<LiveJobStatusUpdateDto> items)
-    {
-        var tagSet = new HashSet<string>();
-        var commentSet = new HashSet<string>();
-        
-        foreach (var item in items)
-        {
-            // Add a change type
-            if (!string.IsNullOrWhiteSpace(item.ChangeType))
-                tagSet.Add(item.ChangeType);
-
-            // Add updater info
-            if (!string.IsNullOrWhiteSpace(item.StaffName))
-                tagSet.Add($"Updated by {item.StaffName}");
-            else if (!string.IsNullOrWhiteSpace(item.CourierName))
-                tagSet.Add($"Updated by {item.CourierName}");
-
-            // Add flight info
-            if (!string.IsNullOrWhiteSpace(item.FlightNo))
-                tagSet.Add($"Flight {item.FlightNo} assigned");
-
-            // Add agent changes
-            if (!string.IsNullOrWhiteSpace(item.NewAgentName) && !string.IsNullOrWhiteSpace(item.OldAgentName))
-                tagSet.Add($"Reassigned from Agent {item.OldAgentName} to {item.NewAgentName}");
-            else if (!string.IsNullOrWhiteSpace(item.NewAgentName))
-                tagSet.Add($"Assigned to Agent {item.NewAgentName}");
-            else if (!string.IsNullOrWhiteSpace(item.OldAgentName))
-                tagSet.Add($"Unassigned from Agent {item.OldAgentName}");
-
-            // Add field changes
-            if (!string.IsNullOrWhiteSpace(item.FieldName))
-            {
-                tagSet.Add($"Field {item.FieldName} updated");
-                if (!string.IsNullOrWhiteSpace(item.OldValue))
-                    tagSet.Add($"Old value: {item.OldValue}");
-                if (!string.IsNullOrWhiteSpace(item.NewValue))
-                    tagSet.Add($"New value: {item.NewValue}");
-            }
-
-            // Add status changes
-            if (!string.IsNullOrWhiteSpace(item.NewStatusName) && !string.IsNullOrWhiteSpace(item.OldStatusName))
-                tagSet.Add($"Status changed from {item.OldStatusName} to {item.NewStatusName}");
-
-            // Collect comments
-            if (!string.IsNullOrWhiteSpace(item.Comments))
-                commentSet.Add(item.Comments);
-        }
-
-        var tags = new List<string>(tagSet.Count + 1) { $"Updated on {updatedAt:dd/MM/yyyy HH:mm}" };
-        tags.AddRange(tagSet);
-
-        return new DeliveryJourneyViewModel
-        {
-            Id = Guid.NewGuid(),
-            JobId = jobId,
-            Date = updatedAt,
-            Title = "Status Changed",
-            Description = commentSet.Count > 0 ? string.Join("; ", commentSet) : null,
-            Icon = "update",
-            Tags = tags
-        };
-    }
-
-    private static DeliveryJourneyViewModel CreateArchivedDeliveryJourneyViewModel(int jobId, DateTime updatedAt, IEnumerable<ArchivedJobStatusUpdateDto> items)
-    {
-        var tagSet = new HashSet<string>();
-        var commentSet = new HashSet<string>();
-        
-        foreach (var item in items)
-        {
-            // Add a change type
-            if (!string.IsNullOrWhiteSpace(item.ChangeType))
-                tagSet.Add(item.ChangeType);
-
-            // Add updater info
-            if (!string.IsNullOrWhiteSpace(item.UpdatedByType))
-                tagSet.Add($"Updated by {item.UpdatedByType}");
-
-            // Add flight info
-            if (item.FlightId.HasValue)
-                tagSet.Add($"Flight ID {item.FlightId} assigned");
-
-            // Add agent changes
-            if (item.NewAgentId.HasValue && item.OldAgentId.HasValue)
-                tagSet.Add($"Reassigned from Agent ID {item.OldAgentId} to {item.NewAgentId}");
-            else if (item.NewAgentId.HasValue)
-                tagSet.Add($"Assigned to Agent ID {item.NewAgentId}");
-
-            // Add field changes
-            if (!string.IsNullOrWhiteSpace(item.FieldName))
-            {
-                tagSet.Add($"Field {item.FieldName} updated");
-                if (!string.IsNullOrWhiteSpace(item.OldValue))
-                    tagSet.Add($"Old value: {item.OldValue}");
-                if (!string.IsNullOrWhiteSpace(item.NewValue))
-                    tagSet.Add($"New value: {item.NewValue}");
-            }
-
-            // Add status changes
-            if (item.OldJobStatusId.HasValue && item.NewJobStatusId.HasValue)
-                tagSet.Add($"Status changed from status ID {item.OldJobStatusId} to {item.NewJobStatusId}");
-
-            // Collect comments
-            if (!string.IsNullOrWhiteSpace(item.Comments))
-                commentSet.Add(item.Comments);
-        }
-
-        var tags = new List<string>(tagSet.Count + 1) { $"Updated on {updatedAt:dd/MM/yyyy HH:mm}" };
-        tags.AddRange(tagSet);
-
-        return new DeliveryJourneyViewModel
-        {
-            Id = Guid.NewGuid(),
-            JobId = jobId,
-            Date = updatedAt,
-            Title = "Status Changed",
-            Description = commentSet.Count > 0 ? string.Join("; ", commentSet) : null,
-            Icon = "update",
-            Tags = tags
-        };
+        return statusUpdates;
     }
     
     private async Task CloseTasksByJobIdAsync(int jobId, bool closeSingleJobTasksOnly = false)

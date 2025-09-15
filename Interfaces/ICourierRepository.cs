@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
@@ -21,11 +20,8 @@ public interface ICourierRepository
 
     Task<List<Suggestion>> AllActiveCouriersAsync(string searchTerm);
 
-    Task<List<CourierPosition>> GetCourierRouteAsync(string code, DateTime? start, DateTime? end);
-
     Task<List<ActiveCouriersViewModel>> AllActiveCouriersAsync();
 
-    CourierLocation Location(string code);
     Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds);
 
     Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(
