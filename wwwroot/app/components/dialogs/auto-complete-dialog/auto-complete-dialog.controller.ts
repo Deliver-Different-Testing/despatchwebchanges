@@ -2,6 +2,7 @@ import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 import {ISuggestion} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
+import IAutoCompleteOptions from "./interfaces/IAutoCompleteOptions";
 
 export class AutoCompleteDialogController extends BaseController {
     static $inject = [
@@ -21,13 +22,16 @@ export class AutoCompleteDialogController extends BaseController {
         private $mdDialog: angular.material.IDialogService,
         private dispatchData: DispatchCoreService,
         private toastrService: ToastrService,
+        $interval: angular.IIntervalService,
+        $timeout: angular.ITimeoutService,
         public fieldName: string,
         public title: string,
-        private options: any,
+        private options: IAutoCompleteOptions,
         public selectedItem: ISuggestion | undefined,
         public showRerateOption: boolean
     ) {
         super();
+        this.initServices($timeout, $interval);
     }
     
     $onInit(): void {
