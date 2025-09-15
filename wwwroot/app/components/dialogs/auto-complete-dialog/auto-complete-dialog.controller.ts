@@ -9,6 +9,8 @@ export class AutoCompleteDialogController extends BaseController {
         "$mdDialog",
         "DispatchData",
         "toastrService",
+        "$interval",
+        "$timeout",
         "fieldName",
         "title",
         "options",

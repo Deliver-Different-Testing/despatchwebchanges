@@ -2,7 +2,7 @@ import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 import DispatchExecutorService from "../../../services/dispatch-executor.service";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
-import {IAddressViewModel, JobCreateViewModel, SelectOption, ISuggestion} from "../../../interfaces/job.interface";
+import {IAddressViewModel, JobCreateViewModel, ISuggestion} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import {getStateByAbbreviation, getStates} from "../../../functions/usStates";
 import ICreateJobDialogControllerScope from "./interfaces/ICreateJobDialogControllerScope";
@@ -134,15 +134,15 @@ export class CreateJobDialogController extends BaseController {
         this.selectedSpeed = item;
     }
 
-    clientSearch(searchTerm: string): Promise<SelectOption[]> {
+    clientSearch(searchTerm: string): Promise<ISuggestion[]> {
         return this.performAutocompleteSearch(searchTerm, "/home/ActiveClients");
     }
 
-    courierSearch(searchText: string): Promise<SelectOption[]> {
+    courierSearch(searchText: string): Promise<ISuggestion[]> {
         return this.performAutocompleteSearch(searchText, "/courier/AllActiveSearch");
     }
 
-    performAutocompleteSearch(searchTerm: string, url: string): Promise<SelectOption[]> {
+    performAutocompleteSearch(searchTerm: string, url: string): Promise<ISuggestion[]> {
         try {
             return this.dispatchData.autocompleteSearch(searchTerm, url);
         } catch (error: any) {

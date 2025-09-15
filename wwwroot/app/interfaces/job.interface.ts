@@ -343,9 +343,6 @@ export interface ClientItemsViewModel {
     selected: boolean;
 }
 
-export interface SelectOption extends ISuggestion {
-}
-
 export interface INoteType extends ISuggestion {
     isPublic: boolean;
     description?: string;
