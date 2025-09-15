@@ -2,7 +2,7 @@
     <md-toolbar class="md-hue-1">
         <div class="md-toolbar-tools">
             <md-icon class="popup-icon" md-font-set="material-symbols-outlined">manage_search</md-icon>
-            <h2>{{ ctrl.title }}</h2>
+            <h2>{{ ::ctrl.title }}</h2>
             <span flex></span>
             <md-button class="md-icon-button close-dialog-button" ng-click="ctrl.cancel()">
                 <md-tooltip md-direction="bottom">Cancel</md-tooltip>
@@ -27,7 +27,7 @@
                         md-min-length="1"
                         md-search-text="ctrl.searchText"
                         md-selected-item="ctrl.selectedItem"
-                        placeholder="{{ctrl.options.placeholder }}">
+                        placeholder="{{::ctrl.options.placeholder }}">
                     <md-item-template>
                         <span md-highlight-flags="^i" md-highlight-text="ctrl.searchText">{{item.text}}</span>
                     </md-item-template>
