@@ -117,34 +117,6 @@ public class CourierController(
         }
     }
 
-    public IActionResult Location(string code)
-    {
-        try
-        {
-            var result = courierRepository.Location(code);
-            return Json(result);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error getting courier location");
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
-
-    public async Task<IActionResult> Route(string code, DateTime? start, DateTime? end)
-    {
-        try
-        {
-            var result = await courierRepository.GetCourierRouteAsync(code, start, end);
-            return Json(result);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error getting courier route");
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
-
     public async Task<IActionResult> TruckCourierStatus(string courierId)
     {
         try

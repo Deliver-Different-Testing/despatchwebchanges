@@ -291,49 +291,6 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         }
     }
 
-    public async Task<List<CourierPosition>> GetCourierRouteAsync(
-        string code,
-        DateTime? start,
-        DateTime? end
-    )
-    {
-        try
-        {
-            Log.Information(
-                "Getting courier route for code: {CourierCode}, start: {StartDate}, end: {EndDate}",
-                code,
-                start,
-                end
-            );
-
-            var results = await Context.Procedures.MAP_stpCourierGPS_LastPositionTodayAsync(code);
-            var mappedResults = results.Select(x => new CourierPosition
-            {
-                Latitude = x.Latitude,
-                Longitude = x.Longitude,
-                FirstName = x.FirstName,
-                rawdata = x.rawdata,
-                Time = x.Time,
-                Status = x.Status,
-                CourierName = x.CourierName,
-                GPSWasEstimated = x.GPSWasEstimated,
-                JobID = x.JobID
-            }).ToList();
-
-            Log.Information(
-                "Retrieved {Count} position records for courier {CourierCode}",
-                mappedResults.Count,
-                code
-            );
-            return mappedResults;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error getting courier route for code {CourierCode}", code);
-            throw;
-        }
-    }
-
     public async Task<List<ActiveCouriersViewModel>> AllActiveCouriersAsync()
     {
         try
@@ -356,44 +313,6 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         catch (Exception ex)
         {
             Log.Error(ex, "Error retrieving all active couriers");
-            throw;
-        }
-    }
-
-    public CourierLocation Location(string code)
-    {
-        try
-        {
-            Log.Information("Getting current location for courier: {CourierCode}", code);
-
-            var currentLocation = new CourierLocation();
-            Context
-                .LoadStoredProc("MAP_stpCourierGPS_LastPositionToday")
-                .WithSqlParam("@CourierCode", code)
-                .ExecuteStoredProc(handle =>
-                {
-                    currentLocation = handle.ReadToList<CourierLocation>().FirstOrDefault();
-                });
-
-            if (currentLocation != null)
-            {
-                Log.Information(
-                    "Retrieved location for courier {CourierCode}: Lat={Latitude}, Long={Longitude}",
-                    code,
-                    currentLocation.Latitude,
-                    currentLocation.Longitude
-                );
-            }
-            else
-            {
-                Log.Warning("No location found for courier {CourierCode}", code);
-            }
-
-            return currentLocation;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error getting location for courier {CourierCode}", code);
             throw;
         }
     }
