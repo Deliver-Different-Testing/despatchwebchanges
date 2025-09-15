@@ -166,6 +166,11 @@ export interface IJob {
     calculateDimsOncePerJob: boolean;
 }
 
+export interface UpdateJobPackagesRequest {
+    jobId: number;
+    parcels: IParcelDimensions[];
+}
+
 export interface IParcelDimensions {
     itemId?: number;
     itemName: string;

@@ -13,7 +13,7 @@ import {
     PriceBreakdown,
     SuburbLookup,
     ISuggestion,
-    VoidJobRequest,
+    VoidJobRequest, UpdateJobPackagesRequest,
 } from "../interfaces/job.interface";
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {
@@ -861,10 +861,12 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async updatePackages(jobId: number, parcels: IParcelDimensions[]): Promise<any> {
         try {
-            const response = await this.$http.post("job/UpdateJobPackages", {
-                jobId: jobId,
-                parcels: parcels,
-            });
+            const data: UpdateJobPackagesRequest = {
+                jobId,
+                parcels
+            };
+            
+            const response = await this.$http.post("job/UpdateJobPackages", data);
             return response.data;
         } catch (error) {
             this.$log.error("Error updating packages:", error);

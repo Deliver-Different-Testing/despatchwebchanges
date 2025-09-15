@@ -1957,16 +1957,12 @@ public class JobController(
         try
         {
             await jobRepository.UpdatePackagesForJobAsync(request.JobId, request.Parcels);
-            return Ok(new { message = "Parcels updated successfully" });
+            return Ok();
         }
         catch (Exception ex)
         {
-            Log.Error(
-                ex,
-                "Error updating packages for job {JobId}. Error: {ErrorMessage}",
-                request.JobId,
-                ex.Message
-            );
+            Log.Error(ex, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(UpdateJobPackages)));;
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }

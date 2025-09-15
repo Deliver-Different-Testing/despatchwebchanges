@@ -1586,31 +1586,21 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     {
         if (viewModel.JobId is null && viewModel.PrebookJobId is null) return;
 
-        var breakdown = Context.PricingBreakdowns.FirstOrDefault(p => p.PricingBreakdownId == viewModel.ChargeId);
-        if (breakdown == null) return;
+        var rowsAffected = await Context.PricingBreakdowns
+            .Where(p => p.PricingBreakdownId == viewModel.ChargeId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(p => p.ChargeAmount, viewModel.Amount)
+                .SetProperty(p => p.ChargeName, viewModel.Name)
+                .SetProperty(p => p.CostAmount, viewModel.CostAmount));
 
-        breakdown.ChargeAmount = viewModel.Amount;
-        breakdown.ChargeName = viewModel.Name;
-        breakdown.CostAmount = viewModel.CostAmount;
+        if (rowsAffected == 0) return;
 
         var note = $"Updated price breakdown: {viewModel.Name} charge amount changed to {viewModel.Amount:C}";
 
-        var isPrebook = breakdown.PrebookJobId.HasValue;
-        switch (isPrebook)
-        {
-            case true:
-                if (viewModel.PrebookJobId != null)
-                    await SetPrebookJobAsManuallyPriceAsync(viewModel.PrebookJobId.Value, note);
-                break;
-            default:
-                if (viewModel.JobId != null) await SetJobAsManuallyPriceAsync(viewModel.JobId.Value, note);
-                break;
-        }
-
-        Context.Update(breakdown);
-        await Context.SaveChangesAsync();
+        if (viewModel.PrebookJobId != null)
+            await SetPrebookJobAsManuallyPriceAsync(viewModel.PrebookJobId.Value, note);
+        else if (viewModel.JobId != null) await SetJobAsManuallyPriceAsync(viewModel.JobId.Value, note);
     }
-
     public async Task DeleteJobPriceBreakdownAsync(int chargeId)
     {
         var breakdown = await Context.PricingBreakdowns
@@ -1637,20 +1627,22 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
     private async Task SetJobAsManuallyPriceAsync(int jobId, string note)
     {
-        var job = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
-        job.RatedManually = true;
+        await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(j => j.RatedManually, true));
 
         await SaveNoteAsync(jobId, note);
-        Context.Update(job);
     }
 
     private async Task SetPrebookJobAsManuallyPriceAsync(int prebookJobId, string note)
     {
-        var job = await Context.TucJobBookings.FirstOrDefaultAsync(j => j.UcbkId == prebookJobId);
-        job.RatedManually = true;
+        await Context.TucJobBookings
+            .Where(j => j.UcbkId == prebookJobId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(j => j.RatedManually, true));
 
         await SaveNoteAsync(prebookJobId, note, false, true);
-        Context.Update(job);
     }
 
     public async Task AddPalletInfoAsync(PalletInfo p, bool preBook, string despatcher)
@@ -2481,53 +2473,53 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             Description = m.UcmmMessage,
             Icon = "sms",
             Tags = new List<string>()
-            .Concat(m.UcmmSendToCourierId.HasValue || m.UcmmSendToStaffId.HasValue
-                ? new[]
-                {
-                    "Direct Message",
-                    m.UcmmSendToCourier != null
-                        ? $"{m.UcmmSendToCourier.UccrName}, {m.UcmmSendToCourier.UccrSurname}"
-                        : null,
-                    m.UcmmSendToStaff != null
-                        ? $"{m.UcmmSendToStaff.UcstFirstName}, {m.UcmmSendToStaff.UcstLastName}"
-                        : null,
-                    m.UcmmSendFromCourier != null
-                        ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}"
-                        : null,
-                    m.UcmmSendFromStaff != null
-                        ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}"
-                        : null,
-                    m.TimeRead.HasValue ? $"Read at {m.TimeRead?.ToString("g")}" : null
-                }
-                : Array.Empty<string>())
-            .Concat(!string.IsNullOrEmpty(m.SendToEmailAddress)
-                ? new[]
-                {
-                    "Email",
-                    $"Sent to {m.SendToEmailAddress}",
-                    m.UcmmSendFromCourier != null
-                        ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}"
-                        : null,
-                    m.UcmmSendFromStaff != null
-                        ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}"
-                        : null
-                }
-                : Array.Empty<string>())
-            .Concat(!string.IsNullOrEmpty(m.SendToMobile)
-                ? new[]
-                {
-                    "SMS",
-                    $"Sent to {m.SendToMobile}",
-                    m.UcmmSendFromCourier != null
-                        ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}"
-                        : null,
-                    m.UcmmSendFromStaff != null
-                        ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}"
-                        : null
-                }
-                : Array.Empty<string>())
-            .Where(tag => !string.IsNullOrWhiteSpace(tag))
-            .ToList(),
+                .Concat(m.UcmmSendToCourierId.HasValue || m.UcmmSendToStaffId.HasValue
+                    ? new[]
+                    {
+                        "Direct Message",
+                        m.UcmmSendToCourier != null
+                            ? $"{m.UcmmSendToCourier.UccrName}, {m.UcmmSendToCourier.UccrSurname}"
+                            : null,
+                        m.UcmmSendToStaff != null
+                            ? $"{m.UcmmSendToStaff.UcstFirstName}, {m.UcmmSendToStaff.UcstLastName}"
+                            : null,
+                        m.UcmmSendFromCourier != null
+                            ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}"
+                            : null,
+                        m.UcmmSendFromStaff != null
+                            ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}"
+                            : null,
+                        m.TimeRead.HasValue ? $"Read at {m.TimeRead?.ToString("g")}" : null
+                    }
+                    : Array.Empty<string>())
+                .Concat(!string.IsNullOrEmpty(m.SendToEmailAddress)
+                    ? new[]
+                    {
+                        "Email",
+                        $"Sent to {m.SendToEmailAddress}",
+                        m.UcmmSendFromCourier != null
+                            ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}"
+                            : null,
+                        m.UcmmSendFromStaff != null
+                            ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}"
+                            : null
+                    }
+                    : Array.Empty<string>())
+                .Concat(!string.IsNullOrEmpty(m.SendToMobile)
+                    ? new[]
+                    {
+                        "SMS",
+                        $"Sent to {m.SendToMobile}",
+                        m.UcmmSendFromCourier != null
+                            ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}"
+                            : null,
+                        m.UcmmSendFromStaff != null
+                            ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}"
+                            : null
+                    }
+                    : Array.Empty<string>())
+                .Where(tag => !string.IsNullOrWhiteSpace(tag))
+                .ToList(),
             Date = m.UcmmDate
         }).ToList();
 
@@ -2794,11 +2786,16 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
             // Process existing and new parcels separately
             var newParcels = new List<TucJobItem>();
-            var existingParcelIds = new List<int>();
+            var existingParcelsToUpdate = new List<ParcelDimensions>();
 
-            var existingCount = await GetJobItemCount(effectiveJobId);
+            // Get the maximum existing ItemId for this job
+            var maxItemId = await Context.TucJobItems
+                .Where(i => i.JobId == effectiveJobId)
+                .MaxAsync(i => (int?)i.ItemId) ?? 0;
 
             // Get next ItemId for new parcels
+            var nextItemId = maxItemId + 1;
+
             foreach (var parcel in parcels)
             {
                 if (parcel.ItemId == null)
@@ -2811,34 +2808,35 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                         Length = parcel.Length ?? 0,
                         Depth = parcel.Depth ?? 0,
                         Notes = parcel.ItemName,
-                        ItemId = existingCount + newParcels.Count + 1
+                        ItemId = nextItemId++ // Increment for each new item
                     };
 
                     newParcels.Add(newItem);
                 }
-                else existingParcelIds.Add(parcel.ItemId.Value);
-            }
-
-            if (newParcels.Count > 0) await Context.TucJobItems.AddRangeAsync(newParcels);
-
-            if (existingParcelIds.Count != 0)
-            {
-                var existingItems = await Context.TucJobItems
-                    .Where(i => existingParcelIds.Contains(i.ItemId))
-                    .ToListAsync();
-
-                var existingItemsLookup = existingItems.ToDictionary(i => i.ItemId);
-
-                // Update existing items
-                foreach (var p in parcels.Where(p => p.ItemId != null))
+                else
                 {
-                    if (!p.ItemId.HasValue) continue;
-                    if (existingItemsLookup.TryGetValue(p.ItemId.Value, out var existingItem))
-                        UpdateTucJobItem(existingItem, p);
+                    existingParcelsToUpdate.Add(parcel);
                 }
             }
 
-            await Context.SaveChangesAsync();
+            // Add new parcels
+            if (newParcels.Count > 0)
+            {
+                await Context.TucJobItems.AddRangeAsync(newParcels);
+                await Context.SaveChangesAsync();
+            }
+
+            // Update existing items using ExecuteUpdateAsync
+            foreach (var parcel in existingParcelsToUpdate)
+            {
+                await Context.TucJobItems
+                    .Where(i => i.ItemId == parcel.ItemId!.Value)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(i => i.Height, parcel.Height ?? 0)
+                        .SetProperty(i => i.Length, parcel.Length ?? 0)
+                        .SetProperty(i => i.Depth, parcel.Depth ?? 0)
+                        .SetProperty(i => i.Notes, parcel.ItemName));
+            }
         }
         catch (Exception e)
         {
@@ -2861,14 +2859,6 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         return char.IsLetter(jobNumber.Last());
     }
 
-
-    private static void UpdateTucJobItem(TucJobItem item, ParcelDimensions parcel)
-    {
-        item.Height = parcel.Height ?? 0;
-        item.Length = parcel.Length ?? 0;
-        item.Depth = parcel.Depth ?? 0;
-        item.Notes = parcel.ItemName;
-    }
 
     public async Task AddPackagesToJobAsync(int effectiveJobId, List<TucJobItem> items)
     {
@@ -3201,15 +3191,15 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 bs.RunName,
                 bs.Courier,
                 TransferTo = Context.TucCouriers
-                    .FirstOrDefault(c => bs.CourierId != 999 
-                                         && c.Code == bs.ToCourierId.ToString() 
+                    .FirstOrDefault(c => bs.CourierId != 999
+                                         && c.Code == bs.ToCourierId.ToString()
                                          && c.Active),
                 RunViewerTransferTo = Context.TucCouriers
-                    .FirstOrDefault(c => bs.CourierId == 999 
+                    .FirstOrDefault(c => bs.CourierId == 999
                                          && c.UccrId == bs.ToCourierId
                                          && c.Active)
             };
-        
+
         var results = await query
             .AsNoTracking()
             .OrderBy(x => x.ScanDateTime)
@@ -3241,24 +3231,25 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             _ => null
         };
     }
-    private static string GetCourierDescription(int scanType, 
-        TucCourier courier, TucCourier transferTo, 
+
+    private static string GetCourierDescription(int scanType,
+        TucCourier courier, TucCourier transferTo,
         TucCourier runViewerTransferTo, string runName)
     {
         return scanType switch
         {
-            (int)ScanType.Transfer when courier.UccrId == 999 => 
+            (int)ScanType.Transfer when courier.UccrId == 999 =>
                 $"Ops (Run Viewer){(runViewerTransferTo != null ? $" to {runViewerTransferTo.Code} {runViewerTransferTo.UccrName} {runViewerTransferTo.UccrSurname}" : string.Empty)}",
-            
-            (int)ScanType.Transfer => 
+
+            (int)ScanType.Transfer =>
                 $"{courier.Code} {courier.UccrName} {courier.UccrSurname}{(transferTo != null ? $" to {transferTo.Code} {transferTo.UccrName} {transferTo.UccrSurname}" : string.Empty)}",
-            
-            (int)ScanType.InvalidRun => $"{courier?.Code} {courier?.UccrName} - Run {runName?.ToUpper() ?? string.Empty}",
+
+            (int)ScanType.InvalidRun =>
+                $"{courier?.Code} {courier?.UccrName} - Run {runName?.ToUpper() ?? string.Empty}",
 
             (int)ScanType.InwardsDepot => $"{courier?.Code} {courier?.UccrName} {runName ?? string.Empty}",
-            
+
             _ => $"{courier?.Code} {courier?.UccrName}"
         };
     }
-    
 }
