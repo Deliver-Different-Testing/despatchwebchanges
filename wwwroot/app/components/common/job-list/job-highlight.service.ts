@@ -4,7 +4,9 @@ class JobHighlightService implements angular.IServiceProvider {
     private highlightedRelatedJobIds: number[] = [];
     private listeners: Array<(jobIds: number[]) => void> = [];
 
-    static $inject = ['$log'];
+    static $inject = [
+        '$log'
+    ];
 
     constructor(private $log: angular.ILogService) {
         this.$log.debug('JobHighlightService: Service instantiated');
@@ -52,7 +54,7 @@ class JobHighlightService implements angular.IServiceProvider {
     private notifyListeners(): void {
         this.$log.debug('Notifying job highlight listeners');
         
-        this.listeners.forEach(listener => {
+        this.listeners.forEach((listener: (jobIds: number[]) => void) => {
             try {
                 listener([...this.highlightedRelatedJobIds]);
             } catch (error) {

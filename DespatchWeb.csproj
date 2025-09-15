@@ -452,6 +452,7 @@
     <TypeScriptCompile Include="wwwroot\app\interfaces\paginated-response.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\requests.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\state-info.interface.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\task-request.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\materialTheme.ts" />
     <TypeScriptCompile Include="wwwroot\app\routes.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\address-lookup.service.ts" />

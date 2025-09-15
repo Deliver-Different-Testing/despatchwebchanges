@@ -7,6 +7,7 @@ import BaseController from "../../base-controller";
 export class EditParcelDimensionsDialogController extends BaseController {
     static $inject = [
         "$mdDialog",
+        "$log",
         "toastrService",
         "DispatchData",
         "jobId",
@@ -27,6 +28,7 @@ export class EditParcelDimensionsDialogController extends BaseController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
+        private $log: angular.ILogService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
         public jobId: number,
@@ -202,7 +204,7 @@ export class EditParcelDimensionsDialogController extends BaseController {
             this.toastrService.showSuccessToast(`Successfully updated ${count} ${count === 1 ? "parcel" : "parcels"}`);
             this.$mdDialog.hide(this.parcels);
         } catch (error: any) {
-            console.error("An error occurred while updating packages:", error);
+            this.$log.error("An error occurred while updating packages:", error);
             this.toastrService.showErrorToast(error.message || 'Failed to update parcels');
         } finally {
             this.isLoading = false;

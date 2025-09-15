@@ -644,7 +644,7 @@ class JobsListController extends BaseController {
         if (this.isUrgent(job)) return 'urgent';
         if (this.isWarning(job)) return 'warning';
         if (this.needsDispatch(job)) return 'needs-dispatch';
-        if (this.shouldGroupJobs() && this.hasRelatedJobs(job)) return 'related-job';
+        if (this.hasRelatedJobs(job)) return 'related-job'; 
         if (job.parentId) return 'parent-job';
         if (job.parentId && job.id !== job.parentId) return 'child-job';
         return 'normal';
@@ -842,12 +842,8 @@ class JobsListController extends BaseController {
             return [];
         }
     }
-
+    
     hasRelatedJobs(job: IDispatchJob): boolean {
-        if (this.shouldGroupJobs()) {
-            return false;
-        }
-
         return this.jobHighlightService.isJobHighlighted(job.id);
     }
 
