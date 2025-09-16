@@ -14,7 +14,7 @@
                     <span class="custom-badge"
                           ng-show="ctrl.unReadMessageCount > 0"
                           ng-class="{'large-count': ctrl.unReadMessageCount > 99}"
-                          md-tooltip="{{ctrl.unReadMessageCount}} Unread Messages"
+                          md-tooltip="{{ctrl.unReadMessageCount}} Unread Messages" 
                           md-tooltip-direction="bottom">
         {{ ctrl.unReadMessageCount > 99 ? '99+' : ctrl.unReadMessageCount }}
     </span>
@@ -534,7 +534,7 @@
                                 <md-button class="md-icon-button" ng-click="ctrl.getData()"
                                            ng-if="::ctrl.boxes[box.name].showRefresh">
                                     <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
-                                    <md-tooltip md-direction="bottom">Refresh {{ box.name }}</md-tooltip>
+                                    <md-tooltip md-direction="bottom">Refresh</md-tooltip>
                                 </md-button>
 
                                 <div class="box-handle md-icon-button">

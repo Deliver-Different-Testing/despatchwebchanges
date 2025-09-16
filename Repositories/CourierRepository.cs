@@ -790,6 +790,30 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             .ToList() ?? [];
     }
 
+    public async Task<List<Suggestion>> SearchAllCouriersAsync(string searchTerm)
+    {
+        var searchPattern = $"%{searchTerm}%";
+        
+        var couriers = await Context.TucCouriers
+            .Where(c => EF.Functions.Like(c.Code, searchPattern)
+            || EF.Functions.Like(c.UccrName, searchPattern)
+            || EF.Functions.Like(c.UccrSurname, searchPattern)
+            || EF.Functions.Like(c.UccrVehicleModel, searchPattern)
+            || EF.Functions.Like(c.VehicleVinnumber, searchPattern)
+            || EF.Functions.Like(c.VehiclePlateNnumber, searchPattern)
+            || EF.Functions.Like(c.UccrEmail, searchPattern)
+            || EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern))
+            .Select(c => new Suggestion
+            {
+                Id = c.UccrId,
+                Text = $"{c.Code} - {c.UccrName} {c.UccrSurname}"
+            })
+            .AsNoTracking()
+            .ToListAsync();
+        
+        return couriers;
+    }
+    
     public async Task<CourierDataDashboardViewModel> GetCourierDetailsForDashboardAsync(int courierId)
     {
         var courierData = await Context.TucCouriers
@@ -942,18 +966,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         var duration = endTime - startTime;
         return (int)duration.TotalHours + "h " + duration.Minutes + "m";
     }
-
-    public async Task<List<CourierDataDashboardViewModel>> FindCourierByRegoAsync(string rego)
-    {
-        var courierOptions = await Context.TucCouriers
-            .Where(c => EF.Functions.Like(c.VehiclePlateNnumber, rego))
-            .Select(CourierDataDashboardMapping())
-            .AsNoTracking()
-            .ToListAsync();
-
-        return courierOptions;
-    }
-
+    
     private static Expression<Func<TucCourier, CourierDataDashboardViewModel>> CourierDataDashboardMapping() =>
         c => new CourierDataDashboardViewModel
         {

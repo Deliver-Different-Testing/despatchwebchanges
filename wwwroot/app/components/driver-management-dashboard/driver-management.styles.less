@@ -1,15 +1,7 @@
-﻿// Variables
-@primary-color: #1976d2;
-@accent-color: #ff6f00;
-@success-color: #4caf50;
-@warning-color: #ff9800;
-@danger-color: #f44336;
-@gray-light: #f5f5f5;
-@gray-medium: #9e9e9e;
-@gray-dark: #616161;
-@text-primary: #212121;
-@text-secondary: #757575;
-@border-color: #e0e0e0;
+﻿// Import shared variables
+@import '../../../css/variables.less';
+
+// Component-specific variables (if needed)
 @card-shadow: 0 2px 4px rgba(0,0,0,0.1);
 @card-hover-shadow: 0 4px 12px rgba(0,0,0,0.15);
 
@@ -33,13 +25,13 @@
 // Main Container
 .driver-management-container {
   margin-top: -20px;
-  background-color: @gray-light;
+  background-color: @main-background-color;
   min-height: 100vh;
 
   // Main Tabs
   .main-tabs {
     background: white;
-    border-bottom: 1px solid @border-color;
+    border-bottom: 1px solid @standard-grey;
     height: calc(100% - 64px);
 
     md-tabs-wrapper {
@@ -48,16 +40,16 @@
 
     md-tab-item {
       text-transform: uppercase;
-      font-weight: 500;
+      font-weight: @weight-medium;
       letter-spacing: 0.5px;
 
       &.md-active {
-        color: @primary-color;
+        color: @primary-blue;
       }
     }
 
     md-ink-bar {
-      background-color: @primary-color;
+      background-color: @primary-blue;
       height: 3px;
     }
   }
@@ -75,6 +67,7 @@
 
   // Search Card
   .search-card {
+    border-radius: @dialog-border-radius;
     margin-bottom: 24px;
     box-shadow: @card-shadow;
     .card-transition();
@@ -104,7 +97,7 @@
           padding: 4px 0;
 
           md-icon {
-            color: @gray-medium;
+            color: @standard-grey;
             font-size: 20px;
           }
         }
@@ -161,19 +154,18 @@
 
       &:hover {
         box-shadow: @card-hover-shadow;
-        transform: translateY(-2px);
       }
 
       .card-title {
         display: flex;
         align-items: center;
         gap: 12px;
-        font-size: 16px;
-        font-weight: 500;
-        color: @text-primary;
+        font-size: @font-lg;
+        font-weight: @weight-medium;
+        color: @text-dark;
 
         md-icon {
-          color: @primary-color;
+          color: @primary-blue;
           font-size: 22px;
         }
       }
@@ -185,7 +177,7 @@
       .info-row {
         display: flex;
         padding: 10px 0;
-        border-bottom: 1px solid lighten(@border-color, 5%);
+        border-bottom: 1px solid lighten(@standard-grey, 35%);
 
         &:last-child {
           border-bottom: none;
@@ -193,49 +185,49 @@
 
         .info-label {
           flex: 0 0 140px;
-          font-size: 13px;
-          color: @text-secondary;
-          font-weight: 500;
+          font-size: @font-xs;
+          color: @text-muted;
+          font-weight: @weight-medium;
           text-transform: uppercase;
           letter-spacing: 0.3px;
         }
 
         .info-value {
           flex: 1;
-          font-size: 14px;
-          color: @text-primary;
+          font-size: @font-base;
+          color: @text-dark;
 
           &.email-value {
-            color: @primary-color;
+            color: @primary-blue;
             word-break: break-word;
           }
 
           &.phone-value {
-            font-weight: 500;
+            font-weight: @weight-medium;
           }
 
           &.rego-value {
-            font-weight: 600;
+            font-weight: @weight-semibold;
             text-transform: uppercase;
-            color: @accent-color;
+            color: @primary-warning;
           }
 
           &.notes-value {
-            line-height: 1.5;
+            line-height: @line-relaxed;
           }
         }
 
         .boolean-indicator {
           padding: 2px 8px;
           border-radius: 12px;
-          font-size: 12px;
-          font-weight: 500;
-          background-color: lighten(@gray-medium, 20%);
-          color: @text-secondary;
+          font-size: @font-sm;
+          font-weight: @weight-medium;
+          background-color: lighten(@standard-grey, 20%);
+          color: @text-muted;
 
           &.active {
-            background-color: lighten(@success-color, 35%);
-            color: @success-color;
+            background-color: lighten(@primary-green, 35%);
+            color: @primary-green;
           }
         }
       }
@@ -253,21 +245,21 @@
 
       .empty-state-icon {
         font-size: 72px;
-        color: lighten(@gray-medium, 10%);
+        color: lighten(@standard-grey, 10%);
         margin-bottom: 24px;
       }
 
       .empty-state-title {
         font-size: 20px;
-        font-weight: 500;
-        color: @text-primary;
+        font-weight: @weight-medium;
+        color: @text-dark;
         margin-bottom: 8px;
       }
 
       .empty-state-message {
-        font-size: 14px;
-        color: @text-secondary;
-        line-height: 1.5;
+        font-size: @font-base;
+        color: @text-muted;
+        line-height: @line-relaxed;
       }
     }
   }
@@ -286,7 +278,6 @@
       overflow: hidden;
 
       &:hover {
-        transform: translateY(-4px);
         box-shadow: @card-hover-shadow;
       }
 
@@ -297,23 +288,23 @@
         left: 0;
         right: 0;
         height: 4px;
-        background: linear-gradient(90deg, @gray-medium, darken(@gray-medium, 10%));
+        background: linear-gradient(90deg, @standard-grey, darken(@standard-grey, 10%));
       }
 
       &.expired-stat::before {
-        background: linear-gradient(90deg, @danger-color, darken(@danger-color, 10%));
+        background: linear-gradient(90deg, @error-red, darken(@error-red, 10%));
       }
 
       &.warning-stat::before {
-        background: linear-gradient(90deg, @warning-color, darken(@warning-color, 10%));
+        background: linear-gradient(90deg, @primary-warning, darken(@primary-warning, 10%));
       }
 
       &.valid-stat::before {
-        background: linear-gradient(90deg, @success-color, darken(@success-color, 10%));
+        background: linear-gradient(90deg, @primary-green, darken(@primary-green, 10%));
       }
 
       &.total-stat::before {
-        background: linear-gradient(90deg, @primary-color, darken(@primary-color, 10%));
+        background: linear-gradient(90deg, @primary-blue, darken(@primary-blue, 10%));
       }
 
       md-card-content {
@@ -326,7 +317,7 @@
 
           md-icon {
             font-size: 36px;
-            color: @gray-medium;
+            color: @standard-grey;
           }
         }
 
@@ -334,26 +325,26 @@
           flex: 1;
 
           .stat-value {
-            font-size: 32px;
+            font-size: @font-stat;
             font-weight: 300;
-            color: @text-primary;
-            line-height: 1;
+            color: @text-dark;
+            line-height: @line-tight;
             margin-bottom: 4px;
           }
 
           .stat-label {
-            font-size: 13px;
-            color: @text-secondary;
+            font-size: @font-xs;
+            color: @text-muted;
             text-transform: uppercase;
             letter-spacing: 0.5px;
           }
         }
       }
 
-      &.expired-stat .stat-icon md-icon { color: @danger-color; }
-      &.warning-stat .stat-icon md-icon { color: @warning-color; }
-      &.valid-stat .stat-icon md-icon { color: @success-color; }
-      &.total-stat .stat-icon md-icon { color: @primary-color; }
+      &.expired-stat .stat-icon md-icon { color: @error-red; }
+      &.warning-stat .stat-icon md-icon { color: @primary-warning; }
+      &.valid-stat .stat-icon md-icon { color: @primary-green; }
+      &.total-stat .stat-icon md-icon { color: @primary-blue; }
     }
   }
 
@@ -422,15 +413,15 @@
       }
 
       &::-webkit-scrollbar-track {
-        background: @gray-light;
+        background: @main-background-color;
       }
 
       &::-webkit-scrollbar-thumb {
-        background: lighten(@gray-medium, 10%);
+        background: lighten(@scroll-bar-color, 10%);
         border-radius: 4px;
 
         &:hover {
-          background: @gray-medium;
+          background: @scroll-bar-color;
         }
       }
     }
@@ -441,10 +432,10 @@
       thead {
         tr {
           th {
-            font-weight: 600;
-            color: @text-primary;
-            background-color: lighten(@gray-light, 2%);
-            font-size: 13px;
+            font-weight: @weight-semibold;
+            color: @text-dark;
+            background-color: lighten(@main-background-color, 2%);
+            font-size: @font-xs;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             padding: 16px 12px;
@@ -461,13 +452,13 @@
           .card-transition();
 
           &:hover {
-            background-color: lighten(@primary-color, 47%);
+            background-color: @hover-color;
           }
 
           td {
             padding: 12px;
-            font-size: 14px;
-            color: @text-primary;
+            font-size: @font-base;
+            color: @text-dark;
 
             &.checkbox-column {
               width: 50px;
@@ -481,122 +472,122 @@
     .code-badge {
       display: inline-block;
       padding: 4px 8px;
-      background-color: @primary-color;
-      color: white;
+      background-color: @primary-blue;
+      color: @text-light;
       border-radius: 4px;
-      font-size: 12px;
-      font-weight: 600;
+      font-size: @font-sm;
+      font-weight: @weight-semibold;
       letter-spacing: 0.5px;
     }
 
     .type-badge {
       display: inline-block;
       padding: 3px 10px;
-      background-color: lighten(@gray-light, 2%);
-      color: @text-secondary;
+      background-color: lighten(@main-background-color, 2%);
+      color: @text-muted;
       border-radius: 12px;
-      font-size: 12px;
-      font-weight: 500;
+      font-size: @font-sm;
+      font-weight: @weight-medium;
     }
 
     .status-badge {
       display: inline-block;
       padding: 4px 12px;
       border-radius: 12px;
-      font-size: 12px;
-      font-weight: 600;
+      font-size: @font-sm;
+      font-weight: @weight-semibold;
       text-transform: uppercase;
       letter-spacing: 0.3px;
 
       &.expired {
-        background-color: lighten(@danger-color, 35%);
-        color: @danger-color;
+        background-color: @status-undeliverable-bg;
+        color: @status-undeliverable-text;
       }
 
       &.expiring {
-        background-color: lighten(@warning-color, 35%);
-        color: darken(@warning-color, 10%);
+        background-color: @status-despatched-bg;
+        color: @status-despatched-text;
       }
 
       &.valid {
-        background-color: lighten(@success-color, 40%);
-        color: darken(@success-color, 10%);
+        background-color: lighten(@primary-green, 40%);
+        color: darken(@primary-green, 10%);
       }
     }
 
     .days-badge {
-      font-weight: 500;
+      font-weight: @weight-medium;
 
       &.expired {
-        color: @danger-color;
+        color: @error-red;
       }
 
       &.expiring {
-        color: @warning-color;
+        color: @primary-warning;
       }
 
       &.valid {
-        color: @success-color;
+        color: @primary-green;
       }
     }
 
     .day-badge {
       display: inline-block;
       padding: 4px 12px;
-      background: linear-gradient(135deg, @primary-color, darken(@primary-color, 10%));
-      color: white;
+      background: linear-gradient(135deg, @primary-blue, darken(@primary-blue, 10%));
+      color: @text-light;
       border-radius: 4px;
-      font-size: 12px;
-      font-weight: 500;
+      font-size: @font-sm;
+      font-weight: @weight-medium;
     }
 
     .time-badge {
       display: inline-block;
       padding: 3px 8px;
       border-radius: 4px;
-      font-size: 13px;
-      font-weight: 500;
+      font-size: @font-xs;
+      font-weight: @weight-medium;
 
       &.start-time {
-        background-color: lighten(@success-color, 45%);
-        color: darken(@success-color, 10%);
+        background-color: lighten(@primary-green, 45%);
+        color: darken(@primary-green, 10%);
       }
 
       &.end-time {
-        background-color: lighten(@accent-color, 40%);
-        color: darken(@accent-color, 10%);
+        background-color: lighten(@primary-warning, 40%);
+        color: darken(@primary-warning, 10%);
       }
     }
 
     .duration-badge {
-      font-weight: 500;
-      color: @text-secondary;
+      font-weight: @weight-medium;
+      color: @text-muted;
     }
 
     .fleet-badge {
       display: inline-block;
       padding: 3px 10px;
-      background-color: lighten(@primary-color, 45%);
-      color: @primary-color;
+      background-color: lighten(@primary-blue, 45%);
+      color: @primary-blue;
       border-radius: 12px;
-      font-size: 12px;
-      font-weight: 500;
+      font-size: @font-sm;
+      font-weight: @weight-medium;
       text-transform: capitalize;
     }
 
     .date-value {
-      font-weight: 500;
+      font-weight: @weight-medium;
     }
 
     .email-value {
-      color: @primary-color;
+      color: @primary-blue;
       .text-ellipsis();
       max-width: 200px;
       display: inline-block;
     }
 
     .phone-value {
-      font-weight: 500;
+      font-weight: @weight-medium;
     }
 
     // Table Actions
@@ -619,7 +610,7 @@
         }
       }
     }
-    
+
     // Loading Bar
     md-progress-linear {
       position: absolute;
@@ -628,7 +619,7 @@
       right: 0;
 
       .md-bar {
-        background-color: @primary-color;
+        background-color: @primary-blue;
       }
     }
   }
@@ -670,7 +661,7 @@
 
   md-select {
     .md-select-value {
-      border-bottom-color: @border-color;
+      border-bottom-color: @standard-grey;
     }
   }
 
@@ -678,11 +669,9 @@
   @keyframes fadeIn {
     from {
       opacity: 0;
-      transform: translateY(10px);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
     }
   }
 
@@ -690,6 +679,7 @@
   .stat-card,
   .filter-card,
   .data-table-card {
+    border-radius: @dialog-border-radius;
     animation: fadeIn 0.3s ease-out;
   }
 }
@@ -709,7 +699,7 @@
     .info-card {
       page-break-inside: avoid;
       box-shadow: none;
-      border: 1px solid @border-color;
+      border: 1px solid @standard-grey;
     }
   }
 }
