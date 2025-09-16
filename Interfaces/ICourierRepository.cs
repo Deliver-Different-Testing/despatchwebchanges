@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
+using DespatchWeb.Models.Response;
 
 namespace DespatchWeb.Interfaces;
 
@@ -35,4 +36,14 @@ public interface ICourierRepository
     Task<List<Suggestion>> GetAllRegionsAsync();
 
     Task<List<Suggestion>> GetAllSpeedsAsync();
+    Task<CourierDataDashboardViewModel> GetCourierDetailsForDashboardAsync(int courierId);
+
+    Task<CourierCompliancePaginatedResponse> GetAllCourierComplianceAsync(
+        string searchTerm,
+        int page = 1,
+        int pageSize = 10,
+        string sortBy = "Code",
+        bool sortDescending = false);
+    Task<List<AfterHoursCourierScheduleViewModel>> GetAfterHoursCourierScheduleAsync(string searchTerm);
+    Task<List<CourierDataDashboardViewModel>> FindCourierByRegoAsync(string rego);
 }

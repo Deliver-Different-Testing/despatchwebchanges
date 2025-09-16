@@ -34,8 +34,8 @@ export interface CourierLocation {
 export interface HereMapConfig {
     center?: Coordinates;
     zoom?: number;
-    job?: IHereMapJob | undefined;
-    courierLocation?: CourierLocation | undefined;
+    job?: IHereMapJob;
+    courierLocation?: CourierLocation;
     selectedJobIndex?: number;
     timestamp?: number;
     disableAutoZoom?: boolean;

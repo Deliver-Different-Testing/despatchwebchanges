@@ -17,7 +17,7 @@ class ToastrService implements angular.IServiceProvider {
         private $log: angular.ILogService,
         private $document: angular.IDocumentService
     ) {
-        console.log("Toastr service initialized");
+        this.$log.log("Toastr service initialized");
     }
 
     $get() {
@@ -49,7 +49,7 @@ class ToastrService implements angular.IServiceProvider {
             .textContent(message)
             .position("top right")
             .toastClass(`md-${type}-toast md-toast-custom`)
-            .hideDelay(5000)
+            .hideDelay(3000)
             .parent(this.$document.parent())
             .theme(`${type}-toast`);
 

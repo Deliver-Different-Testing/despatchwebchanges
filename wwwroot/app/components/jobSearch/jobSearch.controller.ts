@@ -544,7 +544,7 @@ class JobSearchController extends BaseController {
             try {
                 this.$mdSidenav("right").toggle();
             } catch (error) {
-                console.warn('Sidenav not available:', error);
+                this.$log.debug('Sidenav not available:', error);
             }
         }
     }

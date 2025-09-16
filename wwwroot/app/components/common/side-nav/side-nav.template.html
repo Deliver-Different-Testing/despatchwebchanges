@@ -93,6 +93,17 @@
                         <md-icon md-font-set="material-symbols-outlined">map</md-icon>
                         <p>Map View</p>
                     </div>
+                </md-list-item>  
+                
+                <!-- Driver Management View -->
+                <md-list-item class="nav-item"
+                              ng-class="{'active': ctrl.isActive('driverManagement')}"
+                              ui-sref="driverManagement"
+                              md-ink-ripple>
+                    <div class="nav-item-content">
+                        <md-icon md-font-set="material-symbols-outlined">manage_accounts</md-icon>
+                        <p>Driver Management</p>
+                    </div>
                 </md-list-item>
             </md-list>
         </md-content>

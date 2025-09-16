@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -9,13 +10,13 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
-using DespatchWebContextExtensions;
+using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 namespace DespatchWeb.Repositories;
 
-public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory, ITenantInfoService tenantInfoService)
+public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory, ITenantInfoService infoService)
     : BaseRepository(contextFactory),
         ICourierRepository
 {
@@ -101,7 +102,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
 
     private async Task<List<AvailableCourierPosition>> GetUsAvailableCourierPositionsAsync(CourierLocationRequest data)
     {
-        var currentDate = tenantInfoService.GetCurrentTenantTime();
+        var currentDate = infoService.GetCurrentTenantTime();
         var uaFleetIds = new[] { 32, 33, 34, 35, 36, 37, 38, 64 };
 
         var courierData = await Context.TucCouriers
@@ -192,7 +193,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             .AsNoTracking()
             .ToListAsync();
 
-        var now = tenantInfoService.GetCurrentTenantTime();
+        var now = infoService.GetCurrentTenantTime();
         var uaFleetIds = new[] { 32, 33, 34, 35, 36, 37, 38, 64 };
 
         return couriers.Select(dto => new AvailableCourierPosition
@@ -339,7 +340,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
 
     private async Task<List<ActiveCourierDto>> GetActiveCouriersAsync()
     {
-        var today = tenantInfoService.GetCurrentTenantTime();
+        var today = infoService.GetCurrentTenantTime();
 
         return await Context.TucCouriers
             .Where(c => c.Active &&
@@ -524,7 +525,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
 
     private IQueryable<EnvelopeCoordinate> GetCourierLocationsQueryUs(int clearListAreaId)
     {
-        var currentDate = tenantInfoService.GetCurrentTenantTime();
+        var currentDate = infoService.GetCurrentTenantTime();
 
         return Context
             .TucCouriers.SelectMany(c =>
@@ -678,7 +679,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
 
     private async Task<List<ClearListResult>> GetClearListCouriers(int clearListAreaId)
     {
-        var currentDate = tenantInfoService.GetCurrentTenantTime();
+        var currentDate = infoService.GetCurrentTenantTime();
 
         // Main courier data query
         var courierData = await (
@@ -788,4 +789,214 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             .Where(y => !string.IsNullOrWhiteSpace(y.Label))
             .ToList() ?? [];
     }
+
+    public async Task<CourierDataDashboardViewModel> GetCourierDetailsForDashboardAsync(int courierId)
+    {
+        var courierData = await Context.TucCouriers
+            .Where(c => c.UccrId == courierId)
+            .Select(CourierDataDashboardMapping())
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        return courierData;
+    }
+
+   public async Task<CourierCompliancePaginatedResponse> GetAllCourierComplianceAsync(
+    string searchTerm,
+    int page = 1,
+    int pageSize = 10,
+    string sortBy = "Code",
+    bool sortDescending = false)
+{
+    var now = infoService.GetCurrentTenantTime();
+
+    // Ensure valid page and pageSize
+    page = Math.Max(1, page);
+    pageSize = Math.Max(1, Math.Min(100, pageSize));
+
+    var query = Context.TucCouriers.AsQueryable();
+
+    if (!string.IsNullOrWhiteSpace(searchTerm))
+    {
+        var searchPattern = $"%{searchTerm}%";
+
+        query = query.Where(c =>
+            EF.Functions.Like(c.Code, searchPattern) ||
+            EF.Functions.Like(c.UccrName, searchPattern) ||
+            EF.Functions.Like(c.UccrSurname, searchPattern) ||
+            EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern)
+        );
+    }
+
+    var totalCount = await query.CountAsync();
+    
+    var totalExpired = await query
+        .Where(c => c.DriversLicenseExpiry.HasValue && c.DriversLicenseExpiry.Value < now)
+        .CountAsync();
+    
+    var expiringThreshold = now.AddDays(30);
+    var totalExpiringSoon = await query
+        .Where(c => c.DriversLicenseExpiry.HasValue && 
+                    c.DriversLicenseExpiry.Value >= now && 
+                    c.DriversLicenseExpiry.Value <= expiringThreshold)
+        .CountAsync();
+    
+    var totalValid = await query
+        .Where(c => !c.DriversLicenseExpiry.HasValue || 
+                    c.DriversLicenseExpiry.Value > expiringThreshold)
+        .CountAsync();
+
+    // Apply sorting
+    query = sortBy?.ToLower() switch
+    {
+        "name" => sortDescending
+            ? query.OrderByDescending(c => c.UccrName).ThenByDescending(c => c.UccrSurname)
+            : query.OrderBy(c => c.UccrName).ThenBy(c => c.UccrSurname),
+        "expirydate" => sortDescending
+            ? query.OrderByDescending(c => c.DriversLicenseExpiry)
+            : query.OrderBy(c => c.DriversLicenseExpiry),
+        _ => sortDescending
+            ? query.OrderByDescending(c => c.Code)
+            : query.OrderBy(c => c.Code)
+    };
+
+    // Calculate total pages
+    var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+    // Apply pagination and get the data
+    var couriersCompliance = await query
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .Select(c => new CourierComplianceViewModel
+        {
+            Code = c.Code,
+            Name = c.UccrName + " " + c.UccrSurname,
+            ComplianceType = "Dangerous Goods",
+            ItemNumber = "DG123456",
+            ExpiryDate = c.DriversLicenseExpiry,
+            Status = PrintLicenceStatus(now, c.DriversLicenseExpiry),
+            DaysUntilExpiry = c.DriversLicenseExpiry.HasValue
+                ? (int)Math.Ceiling((c.DriversLicenseExpiry.Value - now).TotalDays) + " days"
+                : "N/A"
+        })
+        .AsNoTracking()
+        .ToListAsync();
+
+    return new CourierCompliancePaginatedResponse
+    {
+        Items = couriersCompliance,
+        Total = totalCount,
+        Page = page,
+        Pages = totalPages,
+        TotalExpired = totalExpired,
+        TotalExpiringSoon = totalExpiringSoon,
+        TotalValid = totalValid
+    };
+}
+
+    private static string PrintLicenceStatus(DateTime now, DateTime? licenceExpiryDate)
+    {
+        if (!licenceExpiryDate.HasValue || now >= licenceExpiryDate) return "Expired";
+        var timeUntilExpiry = licenceExpiryDate - now;
+        return timeUntilExpiry.Value.TotalDays <= 60 ? "Expiring Soon" : "Valid";
+    }
+
+    public async Task<List<AfterHoursCourierScheduleViewModel>> GetAfterHoursCourierScheduleAsync(string searchTerm)
+    {
+        var query = Context.TblAfterHours
+            .Where(x => x.CourierId.HasValue)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var searchPattern = $"%{searchTerm}%";
+
+            query = query.Where(x =>
+                EF.Functions.Like(x.Courier.UccrName, searchPattern) ||
+                EF.Functions.Like(x.Courier.UccrSurname, searchPattern) ||
+                EF.Functions.Like(x.Courier.UccrName + " " + x.Courier.UccrSurname, searchPattern) ||
+                EF.Functions.Like(x.DayName, searchPattern) ||
+                (x.Courier.Code != null && EF.Functions.Like(x.Courier.Code, searchPattern))
+            );
+        }
+
+        var afterHoursSchedule = await query
+            .Select(x => new AfterHoursCourierScheduleViewModel
+            {
+                CourierId = x.CourierId.Value,
+                CourierName = x.Courier.UccrName + " " + x.Courier.UccrSurname,
+                Day = x.DayName,
+                StartTime = x.StartTime,
+                EndTime = x.EndTime,
+                Duration = CalculateDuration(x.StartTime, x.EndTime)
+            })
+            .AsNoTracking()
+            .ToListAsync();
+
+        return afterHoursSchedule;
+    }
+
+    private static string CalculateDuration(DateTime startTime, DateTime endTime)
+    {
+        if (endTime < startTime) endTime = endTime.AddDays(1);
+        var duration = endTime - startTime;
+        return (int)duration.TotalHours + "h " + duration.Minutes + "m";
+    }
+
+    public async Task<List<CourierDataDashboardViewModel>> FindCourierByRegoAsync(string rego)
+    {
+        var courierOptions = await Context.TucCouriers
+            .Where(c => EF.Functions.Like(c.VehiclePlateNnumber, rego))
+            .Select(CourierDataDashboardMapping())
+            .AsNoTracking()
+            .ToListAsync();
+
+        return courierOptions;
+    }
+
+    private static Expression<Func<TucCourier, CourierDataDashboardViewModel>> CourierDataDashboardMapping() =>
+        c => new CourierDataDashboardViewModel
+        {
+            BasicInformation = new BasicInformation
+            {
+                Code = c.Code,
+                FirstName = c.UccrName,
+                Surname = c.UccrSurname,
+                Email = c.UccrEmail,
+                Address = c.UccrAddress
+            },
+            ContactInformation = new ContactInformation
+            {
+                Mobile = c.UccrMobile,
+                Home = c.PersonalMobile,
+                GstNumber = c.UccrGst,
+                IrdNumber = c.OpenForceNumber
+            },
+            VehicleInformation = new VehicleInformation
+            {
+                Rego = c.VehiclePlateNnumber,
+                VehicleYear = c.UccrVehicleYear,
+                VehicleModel = c.UccrVehicleModel,
+                VehicleInsurance = c.UccrInsurance != null ? c.UccrInsurance.UcicName : "None"
+            },
+            Compliance = new Compliance
+            {
+                DangerousGoods = c.UccrDangerousGoods == 1,
+                DangerousGoodsExpiry = c.DglicenseExpiry,
+                DriversLicenceExpiry = c.DriversLicenseExpiry
+            },
+            BankingAndEmergency = new BankingAndEmergency
+            {
+                EmergencyContact = true,
+                Bank = c.UccrBankBranch,
+                SecurityCheck = false
+            },
+            AdditionalInformation = new AdditionalInformation
+            {
+                ContactSignDate = c.UccrStartDate,
+                MobileInsurence = c.MobileInsurance,
+                DailyProfitAdjust = 42,
+                Notes = c.UccrNotes
+            }
+        };
 }

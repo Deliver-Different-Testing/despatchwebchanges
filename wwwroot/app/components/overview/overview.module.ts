@@ -19,13 +19,15 @@ const overviewModule = angular.module('uDispatch.overview', [
 
 overviewModule
     .component("overviewComponent", OverviewComponent)
-    .component("openJobsWidget", openJobsComponent)
-    .service("overviewService", OverviewService)
-    .service("overviewFiltersService", OverviewFiltersService)
+    .component("openJobsWidget", openJobsComponent);
+
+overviewModule
     .controller('DateRangeDialogController', DateRangeDialogController)
     .controller('MapDialogController', MapDialogController);
 
 overviewModule
-    .service("mapDialogService", MapDialogService);
+    .service("mapDialogService", MapDialogService)
+    .service("overviewService", OverviewService)
+    .service("overviewFiltersService", OverviewFiltersService);
 
 export default overviewModule;

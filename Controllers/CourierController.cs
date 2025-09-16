@@ -5,6 +5,7 @@ using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
+using DespatchWeb.Models.Response;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 
@@ -177,6 +178,70 @@ public class CourierController(
         {
             Log.Error(ex, "Error find courier");
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
+    public async Task<IActionResult> GetCourierDetailsForDashboard(int courierId)
+    {
+        try
+        {
+            var courierData = await courierRepository.GetCourierDetailsForDashboardAsync(courierId);
+            return Json(courierData);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(GetCourierDetailsForDashboard)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    public async Task<IActionResult> GetCourierComplianceList(PaginatedRequest data)
+    {
+        try
+        {
+            var complianceList = await courierRepository.GetAllCourierComplianceAsync(data.SearchTerm, data.Page, data.PageSize, data.OrderBy, data.SortDescending);
+            return Json(complianceList);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(GetCourierComplianceList)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    public async Task<IActionResult> GetAfterHoursCourierSchedule(string searchTerm)
+    {
+        try
+        {
+            var afterHoursSchedule = await courierRepository.GetAfterHoursCourierScheduleAsync(searchTerm);
+            return Json(afterHoursSchedule);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(GetAfterHoursCourierSchedule)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    public async Task<IActionResult> FindCourierByRego(string rego)
+    {
+        try
+        {
+            var courierOptions = await courierRepository.FindCourierByRegoAsync(rego);
+            return Json(courierOptions);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(FindCourierByRego)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 }

@@ -1,0 +1,829 @@
+﻿<md-content class="md-dense scrollable-container driver-management-container">
+    <div>
+        <md-toolbar class="md-hue-2 md-whiteframe-2dp">
+            <div class="md-toolbar-tools">
+                <img alt="DFRNT" class="toolbar-logo" src="images/dfrnt_logo.png" ng-click="ctrl.openHubUrl()">
+                <md-divider class="vertical-divider"></md-divider>
+                <h2 class="md-title">Driver Management</h2>
+                <span flex></span>
+
+                <span style="font-size: medium;">{{::ctrl.greetUser()}}</span>
+                <md-button aria-label="Menu" class="md-icon-button" ng-click="ctrl.toggleSidenav()"
+                           ng-mouseover="ctrl.toggleSidenav()">
+                    <md-icon md-font-set="material-symbols-outlined" md-font-set="material-symbols-outlined">menu
+                    </md-icon>
+                </md-button>
+            </div>
+        </md-toolbar>
+
+        <material-sidenav></material-sidenav>
+    </div>
+
+    <md-tabs md-selected="ctrl.selectedTab"
+             md-dynamic-height
+             md-center-tabs
+             class="main-tabs"
+             ng-model-options="{ debounce: 500 }">
+
+        <!-- Driver Details Tab -->
+        <md-tab label="Driver Details" md-on-select="ctrl.onTabChange(0)">
+            <md-content class="tab-content">
+                <!-- Search Section -->
+                <md-card class="search-card">
+                    <md-card-content>
+                        <div class="search-container">
+                            <md-autocomplete
+                                    class="driver-search"
+                                    md-selected-item="ctrl.selectedDriverFromList"
+                                    md-search-text="ctrl.driverSearchText"
+                                    md-search-text-change="ctrl.driverSearchTextChange(ctrl.driverSearchText)"
+                                    md-selected-item-change="ctrl.selectDriver(driver)"
+                                    md-items="driver in ctrl.queryDrivers(ctrl.driverSearchText)"
+                                    md-item-text="driver.text"
+                                    md-min-length="0"
+                                    md-floating-label="Select Driver"
+                                    md-no-cache="true"
+                                    flex="40">
+                                <md-item-template>
+                                    <div class="autocomplete-item">
+                                        <md-icon md-font-set="material-symbols-outlined">person</md-icon>
+                                        <span md-highlight-text="ctrl.driverSearchText" md-highlight-flags="^i">
+                                            {{driver.text}}
+                                        </span>
+                                    </div>
+                                </md-item-template>
+                                <md-not-found>
+                                    No drivers matching "{{ctrl.driverSearchText}}" were found.
+                                </md-not-found>
+                            </md-autocomplete>
+
+                            <div flex></div>
+
+                            <div class="action-buttons">
+                                <md-button class="md-raised md-primary action-button"
+                                           ng-click="ctrl.editDriverDetails()"
+                                           ng-disabled="!ctrl.selectedDriver">
+                                    <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
+                                    Edit Details
+                                </md-button>
+                                <md-button class="md-raised action-button"
+                                           ng-click="ctrl.printDriverDetails()"
+                                           ng-disabled="!ctrl.selectedDriver">
+                                    <md-icon md-font-set="material-symbols-outlined">print</md-icon>
+                                    Print
+                                </md-button>
+                            </div>
+                        </div>
+                    </md-card-content>
+                </md-card>
+
+                <!-- Driver Information Grid -->
+                <div ng-if="ctrl.selectedDriver" class="info-grid">
+                    <!-- Basic Information -->
+                    <md-card class="info-card">
+                        <md-card-title>
+                            <md-card-title-text>
+                                <span class="card-title">
+                                    <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">badge</md-icon>
+                                    Basic Information
+                                </span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content>
+                            <div class="info-row">
+                                <span class="info-label">Code</span>
+                                <span class="info-value">{{ctrl.selectedDriver.basicInformation.code}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Name</span>
+                                <span class="info-value">{{ctrl.selectedDriver.basicInformation.firstName}} {{ctrl.selectedDriver.basicInformation.surname}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Email</span>
+                                <span class="info-value email-value">{{ctrl.selectedDriver.basicInformation.email}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Address</span>
+                                <span class="info-value">{{ctrl.selectedDriver.basicInformation.address}}</span>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+
+                    <!-- Contact Information -->
+                    <md-card class="info-card">
+                        <md-card-title>
+                            <md-card-title-text>
+                                <span class="card-title">
+                                    <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">phone</md-icon>
+                                    Contact Information
+                                </span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content>
+                            <div class="info-row">
+                                <span class="info-label">Home Phone</span>
+                                <span class="info-value">{{ctrl.selectedDriver.contactInformation.home || '—'}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Mobile</span>
+                                <span class="info-value phone-value">{{ctrl.selectedDriver.contactInformation.mobile}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">GST Number</span>
+                                <span class="info-value">{{ctrl.selectedDriver.contactInformation.gstNumber || '—'}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">IRD Number</span>
+                                <span class="info-value">{{ctrl.selectedDriver.contactInformation.irdNumber || '—'}}</span>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+
+                    <!-- Vehicle Information -->
+                    <md-card class="info-card">
+                        <md-card-title>
+                            <md-card-title-text>
+                                <span class="card-title">
+                                    <md-icon class="dialog-icon"
+                                             md-font-set="material-symbols-outlined">directions_car</md-icon>
+                                    Vehicle Information
+                                </span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content>
+                            <div class="info-row">
+                                <span class="info-label">Registration</span>
+                                <span class="info-value rego-value">{{ctrl.selectedDriver.vehicleInformation.rego}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Model</span>
+                                <span class="info-value">{{ctrl.selectedDriver.vehicleInformation.vehicleModel}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Year</span>
+                                <span class="info-value">{{ctrl.selectedDriver.vehicleInformation.vehicleYear || '—'}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Insurance</span>
+                                <span class="info-value">{{ctrl.selectedDriver.vehicleInformation.vehicleInsurance || '—'}}</span>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+
+                    <!-- Compliance -->
+                    <md-card class="info-card">
+                        <md-card-title>
+                            <md-card-title-text>
+                                <span class="card-title">
+                                    <md-icon class="dialog-icon"
+                                             md-font-set="material-symbols-outlined">verified_user</md-icon>
+                                    Compliance
+                                </span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content>
+                            <div class="info-row">
+                                <span class="info-label">Dangerous Goods</span>
+                                <span class="info-value">
+                                    <span class="boolean-indicator"
+                                          ng-class="{'active': ctrl.selectedDriver.compliance.dangerousGoods}">
+                                        {{ctrl.selectedDriver.compliance.dangerousGoods ? 'Yes' : 'No'}}
+                                    </span>
+                                </span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">DG Expiry</span>
+                                <span class="info-value">{{ctrl.selectedDriver.compliance.dangerousGoodsExpiry | date:'dd/MM/yyyy' || '—'}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">License Expiry</span>
+                                <span class="info-value">{{ctrl.selectedDriver.compliance.driversLicenceExpiry | date:'dd/MM/yyyy' || '—'}}</span>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+
+                    <!-- Banking & Emergency -->
+                    <md-card class="info-card">
+                        <md-card-title>
+                            <md-card-title-text>
+                                <span class="card-title">
+                                    <md-icon class="dialog-icon"
+                                             md-font-set="material-symbols-outlined">account_balance</md-icon>
+                                    Banking & Emergency
+                                </span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content>
+                            <div class="info-row">
+                                <span class="info-label">Emergency Contact</span>
+                                <span class="info-value">
+                                    <span class="boolean-indicator"
+                                          ng-class="{'active': ctrl.selectedDriver.bankingAndEmergency.emergencyContact}">
+                                        {{ctrl.selectedDriver.bankingAndEmergency.emergencyContact ? 'Yes' : 'No'}}
+                                    </span>
+                                </span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Bank</span>
+                                <span class="info-value">{{ctrl.selectedDriver.bankingAndEmergency.bank || '—'}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Security Check</span>
+                                <span class="info-value">
+                                    <span class="boolean-indicator"
+                                          ng-class="{'active': ctrl.selectedDriver.bankingAndEmergency.securityCheck}">
+                                        {{ctrl.selectedDriver.bankingAndEmergency.securityCheck ? 'Yes' : 'No'}}
+                                    </span>
+                                </span>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+
+                    <!-- Additional Information -->
+                    <md-card class="info-card">
+                        <md-card-title>
+                            <md-card-title-text>
+                                <span class="card-title">
+                                    <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">info</md-icon>
+                                    Additional Information
+                                </span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content>
+                            <div class="info-row">
+                                <span class="info-label">Contract Date</span>
+                                <span class="info-value">{{ctrl.selectedDriver.additionalInformation.contactSignDate | date:'dd/MM/yyyy' || '—'}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Mobile Insurance</span>
+                                <span class="info-value">{{ctrl.selectedDriver.additionalInformation.mobileInsurence || '—'}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Daily Profit Adjust</span>
+                                <span class="info-value">{{ctrl.selectedDriver.additionalInformation.dailyProfitAdjust || '—'}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Notes</span>
+                                <span class="info-value notes-value">{{ctrl.selectedDriver.additionalInformation.notes || '—'}}</span>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+                </div>
+
+                <!-- Empty State -->
+                <div ng-if="!ctrl.selectedDriver" class="empty-state">
+                    <div class="empty-state-content">
+                        <md-icon md-font-set="material-symbols-outlined" class="empty-state-icon">
+                            person_search
+                        </md-icon>
+                        <h3 class="empty-state-title">No Driver Selected</h3>
+                        <p class="empty-state-message">Please select a driver from the search box above to view their
+                            details</p>
+                    </div>
+                </div>
+            </md-content>
+        </md-tab>
+
+        <!-- Compliance Tab -->
+        <md-tab label="Driver Compliance" md-on-select="ctrl.onTabChange(1)">
+            <md-content class="tab-content">
+                <!-- Statistics Dashboard -->
+                <div class="stats-dashboard">
+                    <md-card class="stat-card expired-stat">
+                        <md-card-content>
+                            <div class="stat-icon">
+                                <md-icon md-font-set="material-symbols-outlined">error</md-icon>
+                            </div>
+                            <div class="stat-details">
+                                <div class="stat-value">{{ctrl.complianceStats.expired}}</div>
+                                <div class="stat-label">Expired Items</div>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+
+                    <md-card class="stat-card warning-stat">
+                        <md-card-content>
+                            <div class="stat-icon">
+                                <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
+                            </div>
+                            <div class="stat-details">
+                                <div class="stat-value">{{ctrl.complianceStats.expiring}}</div>
+                                <div class="stat-label">Expiring Soon</div>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+
+                    <md-card class="stat-card valid-stat">
+                        <md-card-content>
+                            <div class="stat-icon">
+                                <md-icon md-font-set="material-symbols-outlined">check_circle</md-icon>
+                            </div>
+                            <div class="stat-details">
+                                <div class="stat-value">{{ctrl.complianceStats.valid}}</div>
+                                <div class="stat-label">Valid</div>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+
+                    <md-card class="stat-card total-stat">
+                        <md-card-content>
+                            <div class="stat-icon">
+                                <md-icon md-font-set="material-symbols-outlined">group</md-icon>
+                            </div>
+                            <div class="stat-details">
+                                <div class="stat-value">{{ctrl.complianceStats.totalDrivers}}</div>
+                                <div class="stat-label">Total Drivers</div>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+                </div>
+
+                <!-- Filters & Actions -->
+                <md-card class="filter-card">
+                    <md-card-content>
+                        <div class="filter-section">
+                            <div class="filter-controls">
+                                <md-input-container class="filter-input">
+                                    <label>Filter by Type</label>
+                                    <md-select ng-model="ctrl.complianceFilters.type"
+                                               ng-change="ctrl.onComplianceFilterChange()">
+                                        <md-option value="">All Types</md-option>
+                                        <md-option value="drivers_license">Driver's License</md-option>
+                                        <md-option value="dg_endorsement">DG Endorsement</md-option>
+                                        <md-option value="insurance">Insurance</md-option>
+                                        <md-option value="vehicle_wof">Vehicle WOF</md-option>
+                                        <md-option value="vehicle_rego">Vehicle Registration</md-option>
+                                    </md-select>
+                                </md-input-container>
+
+                                <md-input-container class="filter-input">
+                                    <label>Filter by Status</label>
+                                    <md-select ng-model="ctrl.complianceFilters.status"
+                                               ng-change="ctrl.onComplianceFilterChange()">
+                                        <md-option value="">All Statuses</md-option>
+                                        <md-option value="expired">Expired</md-option>
+                                        <md-option value="expiring">Expiring Soon</md-option>
+                                        <md-option value="valid">Valid</md-option>
+                                    </md-select>
+                                </md-input-container>
+
+                                <md-input-container class="filter-input">
+                                    <label>Filter by Fleet</label>
+                                    <md-select ng-model="ctrl.complianceFilters.fleet"
+                                               ng-change="ctrl.onComplianceFilterChange()">
+                                        <md-option value="">All Fleets</md-option>
+                                        <md-option value="urgent">Urgent</md-option>
+                                        <md-option value="dfrnt">DFRNT</md-option>
+                                        <md-option value="independent">Independent</md-option>
+                                    </md-select>
+                                </md-input-container>
+
+                                <md-input-container class="filter-input search-input">
+                                    <label>Search</label>
+                                    <input ng-model="ctrl.complianceFilters.search"
+                                           ng-change="ctrl.onComplianceFilterChange()"
+                                           ng-model-options="{ debounce: 500 }">
+                                </md-input-container>
+                            </div>
+
+                            <div class="filter-actions">
+                                <md-button class="md-raised md-accent" ng-click="ctrl.addComplianceItem()">
+                                    <md-icon md-font-set="material-symbols-outlined">add</md-icon>
+                                    Add Item
+                                </md-button>
+                                <md-button class="md-raised md-warn" ng-click="ctrl.sendBulkComplianceReminders()">
+                                    <md-icon md-font-set="material-symbols-outlined">send</md-icon>
+                                    Send Reminders
+                                </md-button>
+                                <md-button class="md-raised" ng-click="ctrl.exportComplianceList()">
+                                    <md-icon md-font-set="material-symbols-outlined">download</md-icon>
+                                    Export
+                                </md-button>
+                            </div>
+                        </div>
+                    </md-card-content>
+                </md-card>
+
+                <!-- Compliance Table -->
+                <md-card class="data-table-card">
+                    <md-table-container>
+                        <table md-table md-progress="ctrl.compliancePromise" class="compliance-table">
+                            <thead md-head fix-head>
+                            <tr md-row>
+                                <th md-column>Code</th>
+                                <th md-column>Name</th>
+                                <th md-column>Type</th>
+                                <th md-column>Item/Number</th>
+                                <th md-column>Expiry Date</th>
+                                <th md-column>Status</th>
+                                <th md-column>Days Until Expiry</th>
+                                <th md-column>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody md-body>
+                            <tr md-row ng-repeat="item in ctrl.complianceItems" class="table-row">
+                                <td md-cell>
+                                    <span class="code-badge">{{item.code}}</span>
+                                </td>
+                                <td md-cell>{{item.name}}</td>
+                                <td md-cell>
+                                    <span class="type-badge">{{item.complianceType}}</span>
+                                </td>
+                                <td md-cell>{{item.itemNumber}}</td>
+                                <td md-cell>
+                                    <span class="date-value">{{item.expiryDate | date:'dd/MM/yyyy'}}</span>
+                                </td>
+                                <td md-cell>
+                                    <span class="status-badge"
+                                          ng-class="ctrl.getComplianceStatus(item.expiryDate).class">
+                                        {{ctrl.getComplianceStatus(item.expiryDate).status}}
+                                    </span>
+                                </td>
+                                <td md-cell>
+                                    <span class="days-badge" ng-class="ctrl.getComplianceStatus(item.expiryDate).class">
+                                        <span ng-if="ctrl.getComplianceStatus(item.expiryDate).daysUntil > -999">
+                                            <span ng-if="ctrl.getComplianceStatus(item.expiryDate).daysUntil < 0">
+                                                {{Math.abs(ctrl.getComplianceStatus(item.expiryDate).daysUntil)}} days overdue
+                                            </span>
+                                            <span ng-if="ctrl.getComplianceStatus(item.expiryDate).daysUntil >= 0">
+                                                {{ctrl.getComplianceStatus(item.expiryDate).daysUntil}} days
+                                            </span>
+                                        </span>
+                                        <span ng-if="ctrl.getComplianceStatus(item.expiryDate).daysUntil === -999">—</span>
+                                    </span>
+                                </td>
+                                <td md-cell>
+                                    <div class="table-actions">
+                                        <md-button class="md-icon-button" ng-click="ctrl.editComplianceItem(item)">
+                                            <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
+                                            <md-tooltip>Edit</md-tooltip>
+                                        </md-button>
+                                        <md-button class="md-icon-button" ng-click="ctrl.sendComplianceReminder(item)">
+                                            <md-icon md-font-set="material-symbols-outlined">email</md-icon>
+                                            <md-tooltip>Send Reminder</md-tooltip>
+                                        </md-button>
+                                        <md-button class="md-icon-button" ng-click="ctrl.deleteComplianceItem(item)">
+                                            <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
+                                            <md-tooltip>Delete</md-tooltip>
+                                        </md-button>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </md-table-container>
+
+                    <md-table-pagination
+                            md-limit="ctrl.complianceQuery.pageSize"
+                            md-limit-options="[10, 25, 50, 100]"
+                            md-page="ctrl.complianceQuery.page"
+                            md-total="{{ctrl.complianceStats.totalDrivers}}"
+                            md-on-paginate="ctrl.onCompliancePaginate"
+                            md-page-select>
+                    </md-table-pagination>
+
+                    <md-progress-linear md-mode="indeterminate" ng-if="ctrl.complianceLoading"></md-progress-linear>
+                </md-card>
+            </md-content>
+        </md-tab>
+
+        <!-- After Hours Tab -->
+        <md-tab label="After Hours Schedule" md-on-select="ctrl.onTabChange(2)">
+            <md-content class="tab-content">
+                <!-- Schedule Stats -->
+                <div class="stats-dashboard">
+                    <md-card class="stat-card">
+                        <md-card-content>
+                            <div class="stat-icon">
+                                <md-icon md-font-set="material-symbols-outlined">assignment</md-icon>
+                            </div>
+                            <div class="stat-details">
+                                <div class="stat-value">{{ctrl.afterHoursStats.totalAssignments}}</div>
+                                <div class="stat-label">Total Assignments</div>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+
+                    <md-card class="stat-card">
+                        <md-card-content>
+                            <div class="stat-icon">
+                                <md-icon md-font-set="material-symbols-outlined">person</md-icon>
+                            </div>
+                            <div class="stat-details">
+                                <div class="stat-value">{{ctrl.afterHoursStats.activeDrivers}}</div>
+                                <div class="stat-label">Active Drivers</div>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+
+                    <md-card class="stat-card"
+                             ng-class="{'valid-stat': ctrl.afterHoursStats.todayCoverage, 'expired-stat': !ctrl.afterHoursStats.todayCoverage}">
+                        <md-card-content>
+                            <div class="stat-icon">
+                                <md-icon md-font-set="material-symbols-outlined">
+                                    {{ctrl.afterHoursStats.todayCoverage ? 'check_circle' : 'cancel'}}
+                                </md-icon>
+                            </div>
+                            <div class="stat-details">
+                                <div class="stat-value">{{ctrl.afterHoursStats.todayCoverage ? 'Active' : 'None'}}</div>
+                                <div class="stat-label">Today's Coverage</div>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+                </div>
+
+                <!-- Schedule Controls -->
+                <md-card class="filter-card">
+                    <md-card-content>
+                        <div class="filter-section">
+                            <div class="filter-controls">
+                                <md-input-container class="search-input" flex="40">
+                                    <label>Search by Driver ID or Name</label>
+                                    <input ng-model="ctrl.afterHoursFilters.search"
+                                           ng-change="ctrl.loadAfterHoursSchedule()"
+                                           ng-model-options="{ debounce: 500 }">
+                                </md-input-container>
+
+                                <md-input-container class="filter-input">
+                                    <label>Filter by Day</label>
+                                    <md-select ng-model="ctrl.afterHoursFilters.day">
+                                        <md-option value="">All Days</md-option>
+                                        <md-option value="1">Monday</md-option>
+                                        <md-option value="2">Tuesday</md-option>
+                                        <md-option value="3">Wednesday</md-option>
+                                        <md-option value="4">Thursday</md-option>
+                                        <md-option value="5">Friday</md-option>
+                                        <md-option value="6">Saturday</md-option>
+                                        <md-option value="7">Sunday</md-option>
+                                    </md-select>
+                                </md-input-container>
+                            </div>
+
+                            <div class="filter-actions">
+                                <md-button class="md-raised md-accent" ng-click="ctrl.addAfterHoursAssignment()">
+                                    <md-icon md-font-set="material-symbols-outlined">add</md-icon>
+                                    Add Assignment
+                                </md-button>
+                                <md-button class="md-raised" ng-click="ctrl.loadAfterHoursSchedule()">
+                                    <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+                                    Refresh
+                                </md-button>
+                            </div>
+                        </div>
+                    </md-card-content>
+                </md-card>
+
+                <!-- Schedule Table -->
+                <md-card class="data-table-card">
+                    <md-table-container>
+                        <table md-table class="schedule-table">
+                            <thead md-head>
+                            <tr md-row>
+                                <th md-column>Driver ID</th>
+                                <th md-column>Driver Name</th>
+                                <th md-column>Day</th>
+                                <th md-column>Start Time</th>
+                                <th md-column>End Time</th>
+                                <th md-column>Duration</th>
+                                <th md-column>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody md-body>
+                            <tr md-row ng-repeat="assignment in ctrl.getFilteredAfterHoursSchedule()" class="table-row">
+                                <td md-cell>
+                                    <span class="code-badge">{{assignment.courierId}}</span>
+                                </td>
+                                <td md-cell>{{assignment.courierName}}</td>
+                                <td md-cell>
+                                    <span class="day-badge">{{assignment.day}}</span>
+                                </td>
+                                <td md-cell>
+                                    <span class="time-badge start-time">{{ctrl.formatScheduleTime(assignment.startTime)}}</span>
+                                </td>
+                                <td md-cell>
+                                    <span class="time-badge end-time">{{ctrl.formatScheduleTime(assignment.endTime)}}</span>
+                                </td>
+                                <td md-cell>
+                                    <span class="duration-badge">{{assignment.duration}}</span>
+                                </td>
+                                <td md-cell>
+                                    <div class="table-actions">
+                                        <md-button class="md-icon-button"
+                                                   ng-click="ctrl.editAfterHoursAssignment(assignment)">
+                                            <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
+                                            <md-tooltip>Edit</md-tooltip>
+                                        </md-button>
+                                        <md-button class="md-icon-button"
+                                                   ng-click="ctrl.deleteAfterHoursAssignment(assignment)">
+                                            <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
+                                            <md-tooltip>Delete</md-tooltip>
+                                        </md-button>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </md-table-container>
+
+                    <md-progress-linear md-mode="indeterminate" ng-if="ctrl.afterHoursLoading"></md-progress-linear>
+                </md-card>
+            </md-content>
+        </md-tab>
+
+        <!-- Find by REGO Tab -->
+        <md-tab label="Find by REGO">
+            <md-content class="tab-content">
+                <md-card class="search-card">
+                    <md-card-title>
+                        <md-card-title-text>
+                            <span class="card-title">
+                                <md-icon md-font-set="material-symbols-outlined">search</md-icon>
+                                Search Driver by Vehicle Registration
+                            </span>
+                        </md-card-title-text>
+                    </md-card-title>
+                    <md-card-content>
+                        <div class="rego-search-container">
+                            <md-input-container class="rego-search-input">
+                                <label>Enter Vehicle Registration</label>
+                                <input ng-model="ctrl.regoSearchQuery"
+                                       ng-keyup="$event.keyCode == 13 && ctrl.searchByRego()"
+                                       class="uppercase-input">
+                            </md-input-container>
+                            <md-button class="md-raised md-primary search-button" ng-click="ctrl.searchByRego()">
+                                <md-icon md-font-set="material-symbols-outlined">search</md-icon>
+                                Search
+                            </md-button>
+                        </div>
+                    </md-card-content>
+                </md-card>
+
+                <!-- Search Results -->
+                <div ng-if="ctrl.regoSearchResult" class="info-grid">
+                    <md-card class="info-card">
+                        <md-card-title>
+                            <md-card-title-text>
+                                <span class="card-title">
+                                    <md-icon md-font-set="material-symbols-outlined">person</md-icon>
+                                    Driver Information
+                                </span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content>
+                            <div class="info-row">
+                                <span class="info-label">Code</span>
+                                <span class="info-value">{{ctrl.regoSearchResult.basicInformation.code}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Name</span>
+                                <span class="info-value">{{ctrl.regoSearchResult.basicInformation.firstName}} {{ctrl.regoSearchResult.basicInformation.surname}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Email</span>
+                                <span class="info-value email-value">{{ctrl.regoSearchResult.basicInformation.email}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Mobile</span>
+                                <span class="info-value phone-value">{{ctrl.regoSearchResult.contactInformation.mobile}}</span>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+
+                    <md-card class="info-card">
+                        <md-card-title>
+                            <md-card-title-text>
+                                <span class="card-title">
+                                    <md-icon md-font-set="material-symbols-outlined">directions_car</md-icon>
+                                    Vehicle Details
+                                </span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content>
+                            <div class="info-row">
+                                <span class="info-label">Registration</span>
+                                <span class="info-value rego-value">{{ctrl.regoSearchResult.vehicleInformation.rego}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Model</span>
+                                <span class="info-value">{{ctrl.regoSearchResult.vehicleInformation.vehicleModel}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Year</span>
+                                <span class="info-value">{{ctrl.regoSearchResult.vehicleInformation.vehicleYear || '—'}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Insurance</span>
+                                <span class="info-value">{{ctrl.regoSearchResult.vehicleInformation.vehicleInsurance || '—'}}</span>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+                </div>
+            </md-content>
+        </md-tab>
+
+        <!-- Driver Emails Tab -->
+        <md-tab label="Driver Emails">
+            <md-content class="tab-content">
+                <!-- Email Controls -->
+                <md-card class="filter-card">
+                    <md-card-content>
+                        <div class="filter-section">
+                            <div class="filter-controls">
+                                <md-input-container class="search-input" flex="35">
+                                    <label>Search by Name, Email or Phone</label>
+                                    <input ng-model="ctrl.emailFilters.search">
+                                </md-input-container>
+
+                                <md-input-container class="filter-input">
+                                    <label>Filter by Fleet</label>
+                                    <md-select ng-model="ctrl.emailFilters.fleet">
+                                        <md-option value="">All Fleets</md-option>
+                                        <md-option value="urgent">Urgent</md-option>
+                                        <md-option value="dfrnt">DFRNT</md-option>
+                                        <md-option value="independent">Independent</md-option>
+                                    </md-select>
+                                </md-input-container>
+                            </div>
+
+                            <div class="filter-actions">
+                                <md-button class="md-raised md-primary" ng-click="ctrl.composeGroupEmail()">
+                                    <md-icon md-font-set="material-symbols-outlined">email</md-icon>
+                                    Compose Group Email
+                                </md-button>
+                                <md-button class="md-raised" ng-click="ctrl.selectAllEmails()">
+                                    <md-icon md-font-set="material-symbols-outlined">check_box</md-icon>
+                                    Select All
+                                </md-button>
+                                <md-button class="md-raised" ng-click="ctrl.deselectAllEmails()">
+                                    <md-icon md-font-set="material-symbols-outlined">check_box_outline_blank</md-icon>
+                                    Deselect All
+                                </md-button>
+                                <md-button class="md-raised" ng-click="ctrl.exportEmailList()">
+                                    <md-icon md-font-set="material-symbols-outlined">download</md-icon>
+                                    Export
+                                </md-button>
+                            </div>
+                        </div>
+                    </md-card-content>
+                </md-card>
+
+                <!-- Email List Table -->
+                <md-card class="data-table-card">
+                    <md-table-container>
+                        <table md-table class="email-table">
+                            <thead md-head>
+                            <tr md-row>
+                                <th md-column class="checkbox-column">
+                                    <md-checkbox ng-model="ctrl.selectAll"
+                                                 ng-change="ctrl.selectAll ? ctrl.selectAllEmails() : ctrl.deselectAllEmails()"
+                                                 aria-label="Select all">
+                                    </md-checkbox>
+                                </th>
+                                <th md-column>Code</th>
+                                <th md-column>Name</th>
+                                <th md-column>Email</th>
+                                <th md-column>Phone</th>
+                                <th md-column>Fleet</th>
+                                <th md-column>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody md-body>
+                            <tr md-row ng-repeat="driver in ctrl.getFilteredEmails()" class="table-row">
+                                <td md-cell class="checkbox-column">
+                                    <md-checkbox ng-checked="ctrl.isEmailSelected(driver.email)"
+                                                 ng-click="ctrl.toggleEmailSelection(driver.email)"
+                                                 aria-label="Select {{driver.name}}">
+                                    </md-checkbox>
+                                </td>
+                                <td md-cell>
+                                    <span class="code-badge">{{driver.code}}</span>
+                                </td>
+                                <td md-cell>{{driver.name}}</td>
+                                <td md-cell>
+                                    <span class="email-value">{{driver.email}}</span>
+                                </td>
+                                <td md-cell>
+                                    <span class="phone-value">{{driver.phone}}</span>
+                                </td>
+                                <td md-cell>
+                                    <span class="fleet-badge">{{driver.fleet}}</span>
+                                </td>
+                                <td md-cell>
+                                    <div class="table-actions">
+                                        <md-button class="md-icon-button" ng-click="ctrl.emailDriver(driver.email)">
+                                            <md-icon md-font-set="material-symbols-outlined">email</md-icon>
+                                            <md-tooltip>Email</md-tooltip>
+                                        </md-button>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </md-table-container>
+
+                    <md-progress-linear md-mode="indeterminate" ng-if="ctrl.emailsLoading"></md-progress-linear>
+                </md-card>
+            </md-content>
+        </md-tab>
+    </md-tabs>
+</md-content>

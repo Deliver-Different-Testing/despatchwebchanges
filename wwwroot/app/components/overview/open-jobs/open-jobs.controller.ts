@@ -5,7 +5,7 @@ import {DriverViewModel, OpenJobResponse, OverviewQueryParams, ViewJob} from "..
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
 import duration from 'dayjs/plugin/duration';
-import {formatMins, formatShortDate} from "../../../functions/formatDates";
+import {formatMins, formatShortDateTime} from "../../../functions/formatDates";
 
 class OpenJobsWidgetController extends BaseController {
     static $inject = [
@@ -245,7 +245,7 @@ class OpenJobsWidgetController extends BaseController {
         const timezoneShort = this.$filter<(timezone: string) => string>('timezoneShort')(TimeZone);
         const timezoneDisplay = timezoneShort ? ` (${timezoneShort})` : '';
         
-        const formattedShortDate = formatShortDate(timestamp, this.isUsCustomer);
+        const formattedShortDate = formatShortDateTime(timestamp, this.isUsCustomer);
         return formattedShortDate + timezoneDisplay;
     }
 
