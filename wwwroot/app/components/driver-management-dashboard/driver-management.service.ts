@@ -7,6 +7,7 @@ import {
     IPaginatedRequest,
     IPaginatedResponse
 } from "../../interfaces/paginated-response.interface";
+import {ISuggestion} from "../../interfaces/job.interface";
 
 class DriverManagementService implements angular.IServiceProvider {
     static $inject = [
@@ -23,6 +24,19 @@ class DriverManagementService implements angular.IServiceProvider {
 
     $get(): any {
         return this;
+    }
+    
+    async searchAllCouriers(searchTerm: string): Promise<ISuggestion[]> {
+        this.$log.debug("Searching couriers");
+        this.$log.debug("Search term: ", searchTerm);
+
+        const response = await this.$http.get<ISuggestion[]>("courier/SearchAllCouriers", {
+            params: {
+                searchTerm
+            }
+        });
+
+        return response.data;
     }
 
     async getCourierDetailsForDashboard(courierId: number): Promise<ICourierDataDashboard> {
@@ -46,23 +60,6 @@ class DriverManagementService implements angular.IServiceProvider {
             return response.data;
         } catch (error) {
             this.$log.error("Error updating courier details:", error);
-            throw error;
-        }
-    }
-
-    async findDriverByRego(rego: string): Promise<ICourierDataDashboard | undefined> {
-        this.$log.debug("Finding driver by rego:", rego);
-
-        try {
-            const response = await this.$http.get<ICourierDataDashboard>("courier/FindByRego", {
-                params: { rego }
-            });
-            return response.data;
-        } catch (error) {
-            if ((error as any).status === 404) {
-                return undefined;
-            }
-            this.$log.error("Error finding driver by rego:", error);
             throw error;
         }
     }

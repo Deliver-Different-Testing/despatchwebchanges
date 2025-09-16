@@ -3,8 +3,6 @@ import BaseController from "../base-controller";
 import DriverManagementService from "./driver-management.service";
 import dayjs from "dayjs";
 import ToastrService from "../../services/toastr.service";
-import DispatchCoreService from "../../services/dispatch-core.service";
-import {ActiveCourierViewModel} from "../../interfaces/courier.interface";
 import ICourierCompliance from "./interfaces/ICourierCompliance";
 import {ICourierDataDashboard} from "./interfaces/ICourierDataDashboard";
 import IDriverEmail from "./interfaces/IDriverEmail";
@@ -12,6 +10,7 @@ import {formatMins, formatShortDateWithYear} from "../../functions/formatDates";
 import {IAppConfig} from "../../interfaces/app-config.interface";
 import greetUser from "../../functions/greetUser";
 import {IPaginatedRequest} from "../../interfaces/paginated-response.interface";
+import {ISuggestion} from "../../interfaces/job.interface";
 
 class DriverManagementController extends BaseController {
     static $inject = [
@@ -25,9 +24,10 @@ class DriverManagementController extends BaseController {
         "$scope",
         "APP_CONFIG",
         "driverManagementService",
-        "DispatchData",
         "toastrService"
     ];
+
+    private static LastActiveTabKey = `lastActiveTabDriverManagement_${ContactID}`;
 
     isUsCustomer: boolean = false;
 
@@ -37,11 +37,9 @@ class DriverManagementController extends BaseController {
     // Driver Details
     selectedDriver?: ICourierDataDashboard;
     selectedDriverId?: number;
-    driversList: ActiveCourierViewModel[] = [];
-    selectedDriverFromList?: ActiveCourierViewModel;
     driversLoading: boolean = false;
     driverSearchText?: string;
-    
+
     // Compliance
     compliancePromise: any;
     complianceQuery: IPaginatedRequest = {
@@ -91,6 +89,7 @@ class DriverManagementController extends BaseController {
         fleet: '',
         search: ''
     };
+    driverInformationLoading: boolean = false;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -103,24 +102,43 @@ class DriverManagementController extends BaseController {
         $scope: angular.IScope,
         appConfig: IAppConfig,
         private driverManagementService: DriverManagementService,
-        private DispatchData: DispatchCoreService,
         private toastrService: ToastrService
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
-
         this.isUsCustomer = appConfig.US_Customer;
-        this.initialize();
+
+        this.$log.debug('Driver management component initialized');
     }
 
-    private async initialize(): Promise<void> {
-        try {
-            await this.loadDriversList();
-            await this.loadInitialData();
-        } catch (error) {
-            this.toastrService.showErrorToast('Failed to initialize driver management');
-            this.$log.error('Initialization error:', error);
+    $onInit(): void {
+        this.loadInitialData()
+            .then(() => {
+                this.setupWatchers();
+                this.loadLastActiveTab();
+            })
+            .catch(error => {
+                this.toastrService.showErrorToast('Failed to initialize driver management');
+                this.$log.error('Initialization error:', error);
+            });
+    }
+
+    private loadLastActiveTab() {
+        const lastActiveTab = localStorage.getItem(DriverManagementController.LastActiveTabKey);
+        if (lastActiveTab) {
+            this.selectedTab = parseInt(lastActiveTab);
         }
+    }
+
+    private setupWatchers(): void {
+        this.watchScope(
+            () => this.selectedTab,
+            (newValue: number, oldValue: number) => {
+                if (newValue !== oldValue) {
+                    return this.loadInitialData();
+                }
+            }
+        );
     }
 
     private async loadInitialData(): Promise<void> {
@@ -187,34 +205,31 @@ class DriverManagementController extends BaseController {
 
         this.$log.debug('Tab changed to:', index);
         this.selectedTab = index;
+        
+        // Save the last active tab
+        localStorage.setItem(DriverManagementController.LastActiveTabKey, index.toString());
+        
         await this.loadInitialData();
     }
 
-    // Driver Details Methods
-    private async loadDriversList(): Promise<void> {
-        this.driversLoading = true;
+    async selectDriver(courier: ISuggestion): Promise<void> {
         try {
-            this.driversList = await this.DispatchData.getAllCouriers();
-        } catch (error) {
-            this.$log.error('Error loading drivers:', error);
-            this.toastrService.showErrorToast('Failed to load drivers list');
-        } finally {
-            this.driversLoading = false;
-        }
-    }
+            this.driverInformationLoading = true;
+            this.applyScope();
 
-    async selectDriver(driver: ActiveCourierViewModel): Promise<void> {
-        if (!driver) {
-            this.selectedDriver = undefined;
-            return;
-        }
+            if (!courier) {
+                this.selectedDriver = undefined;
+                return;
+            }
 
-        try {
-            this.selectedDriverId = driver.courierId;
-            this.selectedDriver = await this.driverManagementService.getCourierDetailsForDashboard(driver.courierId);
+            this.selectedDriverId = courier.id;
+            this.selectedDriver = await this.driverManagementService.getCourierDetailsForDashboard(courier.id);
         } catch (error) {
             this.$log.error('Error loading driver details:', error);
             this.toastrService.showErrorToast('Failed to load driver details');
+        } finally {
+            this.driverInformationLoading = false;
+            this.applyScope();
         }
     }
 
@@ -224,20 +239,20 @@ class DriverManagementController extends BaseController {
             return;
         }
 
-       /* this.$mdDialog.show({
-            template: require("./dialogs/driver-details-dialog.template.html"),
-            controller: 'DriverDetailsDialogController',
-            controllerAs: 'ctrl',
-            locals: {
-                driver: angular.copy(this.selectedDriver)
-            },
-            parent: this.$document.parent(),
-            clickOutsideToClose: false
-        }).then(async (updatedDriver: ICourierDataDashboard) => {
-            if (updatedDriver) {
-                await this.saveDriverDetails(updatedDriver);
-            }
-        });*/
+        /* this.$mdDialog.show({
+             template: require("./dialogs/driver-details-dialog.template.html"),
+             controller: 'DriverDetailsDialogController',
+             controllerAs: 'ctrl',
+             locals: {
+                 driver: angular.copy(this.selectedDriver)
+             },
+             parent: this.$document.parent(),
+             clickOutsideToClose: false
+         }).then(async (updatedDriver: ICourierDataDashboard) => {
+             if (updatedDriver) {
+                 await this.saveDriverDetails(updatedDriver);
+             }
+         });*/
     }
 
     private async saveDriverDetails(driver: ICourierDataDashboard): Promise<void> {
@@ -245,7 +260,6 @@ class DriverManagementController extends BaseController {
             await this.driverManagementService.updateCourierDetails(driver);
             this.selectedDriver = driver;
             this.toastrService.showSuccessToast('Driver details updated successfully');
-            await this.loadDriversList();
         } catch (error) {
             this.$log.error('Error saving driver details:', error);
             this.toastrService.showErrorToast('Failed to update driver details');
@@ -265,10 +279,10 @@ class DriverManagementController extends BaseController {
         try {
             this.complianceQuery.searchTerm = this.buildComplianceSearchTerm();
             this.compliancePromise = this.driverManagementService.getCourierComplianceList(this.complianceQuery);
-            
+
             const complianceResponse = await this.compliancePromise;
             this.complianceItems = complianceResponse.items;
-          
+
             this.complianceStats = {
                 expired: complianceResponse.totalExpired,
                 expiring: complianceResponse.totalExpiringSoon,
@@ -281,10 +295,10 @@ class DriverManagementController extends BaseController {
         }
     }
 
-   async onCompliancePaginate(page: number, limit: number): Promise<void> {
+    async onCompliancePaginate(page: number, limit: number): Promise<void> {
         this.complianceQuery.page = page;
         this.complianceQuery.pageSize = limit;
-        
+
         await this.loadComplianceData();
     }
 
@@ -320,39 +334,39 @@ class DriverManagementController extends BaseController {
     }
 
     addComplianceItem(): void {
-      /*  this.$mdDialog.show({
-            template: require("./dialogs/compliance-dialog.template.html"),
-            controller: 'ComplianceDialogController',
-            controllerAs: 'ctrl',
-            locals: {
-                item: null,
-                driversList: this.driversList
-            },
-            parent: this.$document.parent(),
-            clickOutsideToClose: false
-        }).then(async (newItem: ICourierCompliance) => {
-            if (newItem) {
-                await this.saveComplianceItem(newItem);
-            }
-        });*/
+        /*  this.$mdDialog.show({
+              template: require("./dialogs/compliance-dialog.template.html"),
+              controller: 'ComplianceDialogController',
+              controllerAs: 'ctrl',
+              locals: {
+                  item: null,
+                  driversList: this.driversList
+              },
+              parent: this.$document.parent(),
+              clickOutsideToClose: false
+          }).then(async (newItem: ICourierCompliance) => {
+              if (newItem) {
+                  await this.saveComplianceItem(newItem);
+              }
+          });*/
     }
 
     editComplianceItem(item: ICourierCompliance): void {
-      /*  this.$mdDialog.show({
-            template: require("./dialogs/compliance-dialog.template.html"),
-            controller: 'ComplianceDialogController',
-            controllerAs: 'ctrl',
-            locals: {
-                item: angular.copy(item),
-                driversList: this.driversList
-            },
-            parent: this.$document.parent(),
-            clickOutsideToClose: false
-        }).then(async (updatedItem: ICourierCompliance) => {
-            if (updatedItem) {
-                await this.saveComplianceItem(updatedItem);
-            }
-        });*/
+        /*  this.$mdDialog.show({
+              template: require("./dialogs/compliance-dialog.template.html"),
+              controller: 'ComplianceDialogController',
+              controllerAs: 'ctrl',
+              locals: {
+                  item: angular.copy(item),
+                  driversList: this.driversList
+              },
+              parent: this.$document.parent(),
+              clickOutsideToClose: false
+          }).then(async (updatedItem: ICourierCompliance) => {
+              if (updatedItem) {
+                  await this.saveComplianceItem(updatedItem);
+              }
+          });*/
     }
 
     private async saveComplianceItem(item: ICourierCompliance): Promise<void> {
@@ -489,39 +503,39 @@ class DriverManagementController extends BaseController {
     }
 
     addAfterHoursAssignment(): void {
-      /*  this.$mdDialog.show({
-            template: require("./dialogs/after-hours-dialog.template.html"),
-            controller: 'AfterHoursDialogController',
-            controllerAs: 'ctrl',
-            locals: {
-                assignment: null,
-                driversList: this.driversList
-            },
-            parent: this.$document.parent(),
-            clickOutsideToClose: false
-        }).then(async (newAssignment: IAfterHoursCourierSchedule) => {
-            if (newAssignment) {
-                await this.saveAfterHoursAssignment(newAssignment);
-            }
-        });*/
+        /*  this.$mdDialog.show({
+              template: require("./dialogs/after-hours-dialog.template.html"),
+              controller: 'AfterHoursDialogController',
+              controllerAs: 'ctrl',
+              locals: {
+                  assignment: null,
+                  driversList: this.driversList
+              },
+              parent: this.$document.parent(),
+              clickOutsideToClose: false
+          }).then(async (newAssignment: IAfterHoursCourierSchedule) => {
+              if (newAssignment) {
+                  await this.saveAfterHoursAssignment(newAssignment);
+              }
+          });*/
     }
 
     editAfterHoursAssignment(assignment: IAfterHoursCourierSchedule): void {
-    /*    this.$mdDialog.show({
-            template: require("./dialogs/after-hours-dialog.template.html"),
-            controller: 'AfterHoursDialogController',
-            controllerAs: 'ctrl',
-            locals: {
-                assignment: angular.copy(assignment),
-                driversList: this.driversList
-            },
-            parent: this.$document.parent(),
-            clickOutsideToClose: false
-        }).then(async (updatedAssignment: IAfterHoursCourierSchedule) => {
-            if (updatedAssignment) {
-                await this.saveAfterHoursAssignment(updatedAssignment);
-            }
-        });*/
+        /*    this.$mdDialog.show({
+                template: require("./dialogs/after-hours-dialog.template.html"),
+                controller: 'AfterHoursDialogController',
+                controllerAs: 'ctrl',
+                locals: {
+                    assignment: angular.copy(assignment),
+                    driversList: this.driversList
+                },
+                parent: this.$document.parent(),
+                clickOutsideToClose: false
+            }).then(async (updatedAssignment: IAfterHoursCourierSchedule) => {
+                if (updatedAssignment) {
+                    await this.saveAfterHoursAssignment(updatedAssignment);
+                }
+            });*/
     }
 
     private async saveAfterHoursAssignment(assignment: IAfterHoursCourierSchedule): Promise<void> {
@@ -553,24 +567,6 @@ class DriverManagementController extends BaseController {
                 this.$log.error('Error deleting assignment:', error);
                 this.toastrService.showErrorToast('Failed to delete assignment');
             }
-        }
-    }
-
-    // Find by REGO Methods
-    async searchByRego(): Promise<void> {
-        if (!this.regoSearchQuery) {
-            this.toastrService.showWarningToast('Please enter a registration number');
-            return;
-        }
-
-        try {
-            this.regoSearchResult = await this.driverManagementService.findDriverByRego(this.regoSearchQuery);
-            if (!this.regoSearchResult) {
-                this.toastrService.showInfoToast('No driver found with this registration number');
-            }
-        } catch (error) {
-            this.$log.error('Error searching by rego:', error);
-            this.toastrService.showErrorToast('Failed to search by registration');
         }
     }
 
@@ -634,20 +630,20 @@ class DriverManagementController extends BaseController {
             return;
         }
 
-      /*  this.$mdDialog.show({
-            template: require("./dialogs/group-email-dialog.template.html"),
-            controller: 'GroupEmailDialogController',
-            controllerAs: 'ctrl',
-            locals: {
-                recipients: Array.from(this.selectedEmails)
-            },
-            parent: this.$document.parent(),
-            clickOutsideToClose: false
-        }).then(async (emailData: any) => {
-            if (emailData) {
-                await this.sendGroupEmail(emailData);
-            }
-        });*/
+        /*  this.$mdDialog.show({
+              template: require("./dialogs/group-email-dialog.template.html"),
+              controller: 'GroupEmailDialogController',
+              controllerAs: 'ctrl',
+              locals: {
+                  recipients: Array.from(this.selectedEmails)
+              },
+              parent: this.$document.parent(),
+              clickOutsideToClose: false
+          }).then(async (emailData: any) => {
+              if (emailData) {
+                  await this.sendGroupEmail(emailData);
+              }
+          });*/
     }
 
     private async sendGroupEmail(emailData: any): Promise<void> {
@@ -699,16 +695,8 @@ class DriverManagementController extends BaseController {
         this.$window.URL.revokeObjectURL(url);
     }
 
-    queryDrivers(searchText: string) {
-        if (!searchText || searchText.length === 0) {
-            return this.driversList;
-        }
-
-        const lowercaseQuery = searchText.toLowerCase();
-        return this.driversList.filter(driver => {
-            const searchString = (driver.text + ' ' + driver.name).toLowerCase();
-            return searchString.indexOf(lowercaseQuery) !== -1;
-        });
+    async queryDrivers(searchText: string) {
+        return await this.driverManagementService.searchAllCouriers(searchText);
     }
 }
 

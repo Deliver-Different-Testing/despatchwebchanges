@@ -181,6 +181,23 @@ public class CourierController(
         }
     }
 
+    public async Task<IActionResult> SearchAllCouriers(string searchTerm)
+    {
+        try
+        {
+            var couriers = await courierRepository.SearchAllCouriersAsync(searchTerm);
+            return Json(couriers);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(SearchAllCouriers)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+
     public async Task<IActionResult> GetCourierDetailsForDashboard(int courierId)
     {
         try
@@ -201,7 +218,8 @@ public class CourierController(
     {
         try
         {
-            var complianceList = await courierRepository.GetAllCourierComplianceAsync(data.SearchTerm, data.Page, data.PageSize, data.OrderBy, data.SortDescending);
+            var complianceList = await courierRepository.GetAllCourierComplianceAsync(data.SearchTerm, data.Page,
+                data.PageSize, data.OrderBy, data.SortDescending);
             return Json(complianceList);
         }
         catch (Exception e)
@@ -225,22 +243,6 @@ public class CourierController(
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
                     nameof(GetAfterHoursCourierSchedule)));
-            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
-        }
-    }
-
-    public async Task<IActionResult> FindCourierByRego(string rego)
-    {
-        try
-        {
-            var courierOptions = await courierRepository.FindCourierByRegoAsync(rego);
-            return Json(courierOptions);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
-                    nameof(FindCourierByRego)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
