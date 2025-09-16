@@ -162,7 +162,7 @@ class MaterialSidenavComponentController extends BaseController {
                 }, this.ANIMATION_DURATION);
             })
             .catch((error) => {
-                console.warn('Sidenav action failed:', error);
+                this.$log.error('Sidenav action failed:', error);
                 this.navState.isAnimating = false;
                 this.applyScope();
             });

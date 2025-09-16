@@ -305,5 +305,11 @@ public partial class TucCourier
 
     public virtual ICollection<TucManualMessage> TucManualMessageUcmmSendToCouriers { get; set; } = new List<TucManualMessage>();
 
+    public virtual TucInsuranceCompany UccrCarrierLiability { get; set; }
+
+    public virtual TucInsuranceCompany UccrInsurance { get; set; }
+
+    public virtual TucInsuranceCompany UccrPublicLiability { get; set; }
+
     public virtual ICollection<UserQuickResponse> UserQuickResponses { get; set; } = new List<UserQuickResponse>();
 }

@@ -133,6 +133,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TucEventTypeGroup> TucEventTypeGroups { get; set; }
 
+    public virtual DbSet<TucInsuranceCompany> TucInsuranceCompanies { get; set; }
+
     public virtual DbSet<TucInvoiceNo> TucInvoiceNos { get; set; }
 
     public virtual DbSet<TucJob> TucJobs { get; set; }
@@ -4091,6 +4093,18 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.Region).WithMany(p => p.TucCouriers)
                 .HasForeignKey(d => d.RegionId)
                 .HasConstraintName("FK_tucCourier_tblBulkRegion");
+
+            entity.HasOne(d => d.UccrCarrierLiability).WithMany(p => p.TucCourierUccrCarrierLiabilities)
+                .HasForeignKey(d => d.UccrCarrierLiabilityId)
+                .HasConstraintName("FK_tucCourier_tucInsuranceCompany1");
+
+            entity.HasOne(d => d.UccrInsurance).WithMany(p => p.TucCourierUccrInsurances)
+                .HasForeignKey(d => d.UccrInsuranceId)
+                .HasConstraintName("FK_tucCourier_tucInsuranceCompany");
+
+            entity.HasOne(d => d.UccrPublicLiability).WithMany(p => p.TucCourierUccrPublicLiabilities)
+                .HasForeignKey(d => d.UccrPublicLiabilityId)
+                .HasConstraintName("FK_tucCourier_tucInsuranceCompany2");
         });
 
         modelBuilder.Entity<TucCourierFleet>(entity =>
@@ -4298,6 +4312,43 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<TucInsuranceCompany>(entity =>
+        {
+            entity.HasKey(e => e.UcicId).IsClustered(false);
+
+            entity.ToTable("tucInsuranceCompany");
+
+            entity.HasIndex(e => e.UcicName, "Name").IsUnique();
+
+            entity.Property(e => e.UcicId).HasColumnName("ucicID");
+            entity.Property(e => e.Created).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.LastModified).HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.Notes).HasColumnType("ntext");
+            entity.Property(e => e.UcicAddress)
+                .HasMaxLength(200)
+                .IsUnicode(false)
+                .HasColumnName("ucicAddress");
+            entity.Property(e => e.UcicFax)
+                .HasMaxLength(12)
+                .IsUnicode(false)
+                .HasColumnName("ucicFax");
+            entity.Property(e => e.UcicName)
+                .IsRequired()
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("ucicName");
+            entity.Property(e => e.UcicPhone)
+                .HasMaxLength(12)
+                .IsUnicode(false)
+                .HasColumnName("ucicPhone");
         });
 
         modelBuilder.Entity<TucInvoiceNo>(entity =>

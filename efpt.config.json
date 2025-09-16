@@ -227,6 +227,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucInsuranceCompany]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucInvoiceNo]",
          "ObjectType": 0
       },

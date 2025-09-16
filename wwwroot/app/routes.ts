@@ -17,7 +17,8 @@ class RouterConfig {
             .configurePrebooksState()
             .configureOverviewState()
             .configureMegaMapState()
-            .configureTaskDashboardState();
+            .configureTaskDashboardState()
+            .configureDriverManagementState();
     }
 
     private configureHomeState(): this {
@@ -239,6 +240,35 @@ class RouterConfig {
                 }]
             },
             component: "taskDashboardComponent",
+        });
+        return this;
+    }   
+    
+    private configureDriverManagementState(): this {
+        this.$stateProvider.state("driverManagement", {
+            url: "/driverManagement",
+            resolve: {
+                manifest: ['$http', async ($http: angular.IHttpService) => {
+                    try {
+                        const response = await $http.get<Record<string, string>>('dist/manifest.json');
+                        return response.data;
+                    } catch {
+                        console.warn('[ROUTES] Failed to load manifest for taskDashboard state, using fallback names');
+                        return {
+                            'driverManagement.js': 'driverManagement.js',
+                            'driverManagement.css': 'driverManagement.css'
+                        };
+                    }
+                }],
+                loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                    const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
+                    return $ocLazyLoad.load([
+                        getAssetPath('driverManagement.js'),
+                        getAssetPath('driverManagement.css')
+                    ]);
+                }]
+            },
+            component: "driverManagementComponent",
         });
         return this;
     }

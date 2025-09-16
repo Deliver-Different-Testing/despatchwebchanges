@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import ToastrService from "../../services/toastr.service";
 import {Coordinates, MegaMapResponse} from "../overview/overview.interfaces";
 import BaseController from "../base-controller";
-import {HereMapConfig, HereMapCredentials} from "../../interfaces/hereMapCredentials.interfaces";
+import {CourierLocation, HereMapConfig, HereMapCredentials} from "../../interfaces/hereMapCredentials.interfaces";
 import ConfigService from "../../services/config.service";
 import OverviewService from "../overview/overview.service";
 import {IAppConfig} from "../../interfaces/app-config.interface";
@@ -104,8 +104,8 @@ class MegaMapController extends BaseController {
             this.hereMapConfig = {
                 center: this.mapCenter,
                 zoom: this.isUsCustomer ? 4 : 6,
-                job: null, // Will be set when we have job data
-                courierLocation: null
+                job: undefined, // Will be set when we have job data
+                courierLocation: undefined
             };
 
             await this.refreshData();
@@ -171,7 +171,7 @@ class MegaMapController extends BaseController {
         };
 
         // Get an average courier location if we have drivers
-        let avgCourierLocation = null;
+        let avgCourierLocation: CourierLocation | undefined = undefined;
         if (this.drivers.length > 0) {
             const avgLat = this.drivers.reduce((sum, driver) => sum + driver.lat, 0) / this.drivers.length;
             const avgLng = this.drivers.reduce((sum, driver) => sum + driver.lng, 0) / this.drivers.length;
