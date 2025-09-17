@@ -53,7 +53,6 @@ public interface INationwideJobRepository
     Task<List<Suggestion>> GetAllActiveAirportsWithAgentsAsync();
     Task UpdateRecoveryAgentAsync(UpdateAgentRecoveryRequest request);
     Task RemoveRecoveryAgentAsync(int recoveryId);
-    Task<bool> CanAssignAgentToJobAsync(int agentJobId);
     Task<string> GetWebhookEventsAsStringAsync();
 
     Task<FlightCargoProcessingModel> CalculateCargoReadyTimeAsync(int jobId, string carrierFsCode,

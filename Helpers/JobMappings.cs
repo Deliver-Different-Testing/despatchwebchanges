@@ -36,7 +36,11 @@ public static class JobMappings
                           && j.UcjbSpeedNavigation.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
             IsAgentJob = j.UcjbSpeedNavigation != null
                          && j.UcjbSpeedNavigation.GroupingId != (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
-
+            AllowAgentWithoutFlight = j.Parent == null || !j.Parent.InverseParent.Any(childJob => 
+                childJob.UcjbSpeedNavigation != null && 
+                childJob.UcjbSpeedNavigation.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight) &&
+                childJob.TucJobNationwides.Count != 0),
+            
             Courier = j.UcjbCourierId != null ? j.UcjbCourier.Code : null,
             CourierData =
                 j.UcjbCourierId != null

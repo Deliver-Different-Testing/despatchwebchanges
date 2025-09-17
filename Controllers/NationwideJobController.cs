@@ -449,22 +449,6 @@ public class NationwideJobController(
         }
     }
 
-    public async Task<IActionResult> RelatedJobHasFlightAssigned(int agentJobId)
-    {
-        try
-        {
-            ArgumentNullException.ThrowIfNull(agentJobId);
-
-            var isAllowed = await repository.CanAssignAgentToJobAsync(agentJobId);
-            return Json(isAllowed);
-        }
-        catch (Exception e)
-        {
-            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(RelatedJobHasFlightAssigned));
-            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
-        }
-    }
-
     public async Task<IActionResult> CalculateCargoReadyTime(int jobId, string carrierFsCode, DateTime arrivalTime)
     {
         try

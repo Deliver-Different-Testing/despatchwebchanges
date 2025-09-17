@@ -250,17 +250,7 @@ class NationwideService implements angular.IServiceProvider {
 
         await this.$http.post(`nationwideJob/RemoveAgentRecoveryJob`, data);
     }
-
-    async relatedJobHasFlightAssigned(agentJobId: number): Promise<boolean> {
-        const response = await this.$http.get<boolean>("nationwideJob/RelatedJobHasFlightAssigned", {
-            params: {
-                agentJobId
-            }
-        });
-
-        return response.data;
-    }
-
+    
     async calculateCargoReadyTime(jobId: number, carrierFsCode: string, arrivalTime: Date): Promise<IFlightCargoProcessing> {
         const formattedArrivalTime =  formatFullDate(arrivalTime);
         this.$log.debug('formattedArrivalTime', formattedArrivalTime);
