@@ -3,11 +3,12 @@ import ICourierCompliance from "./interfaces/ICourierCompliance";
 import IDriverEmail from "./interfaces/IDriverEmail";
 import IGroupEmailData from "./interfaces/IGroupEmailData";
 import {
+    ICourierAfterHoursPaginated,
     ICourierCompliancePaginated,
-    IPaginatedRequest,
-    IPaginatedResponse
 } from "../../interfaces/paginated-response.interface";
 import {ISuggestion} from "../../interfaces/job.interface";
+import {IPaginatedRequest} from "../../interfaces/paginated-request.interfaces";
+import {IAfterHoursFilter, ICourierComplianceFilter} from "./interfaces/ICourierComplianceFilter";
 
 class DriverManagementService implements angular.IServiceProvider {
     static $inject = [
@@ -64,18 +65,24 @@ class DriverManagementService implements angular.IServiceProvider {
         }
     }
 
-    async getCourierComplianceList(requestData: IPaginatedRequest): Promise<ICourierCompliancePaginated> {
-        this.$log.debug("Getting courier compliance list");
-        this.$log.debug("Search term: ", requestData.searchTerm);
+    async getCourierComplianceList(
+        requestData: IPaginatedRequest,
+        filters: ICourierComplianceFilter
+    ): Promise<ICourierCompliancePaginated> {
+        this.$log.debug("Getting courier compliance list with filters:", filters);
 
-        const response = await this.$http.get<ICourierCompliancePaginated>("courier/GetCourierComplianceList", {
-            params: {
-                searchTerm: requestData.searchTerm,
-                page: requestData.page,
-                pageSize: requestData.pageSize,
-                orderBy: requestData.orderBy,
-                sortDescending: requestData.sortDescending
-            }
+        const response = await this.$http.post<ICourierCompliancePaginated>("courier/GetCourierComplianceList", {
+            // Pagination data
+            page: requestData.page,
+            pageSize: requestData.pageSize,
+            orderBy: requestData.orderBy,
+            sortDescending: requestData.sortDescending,
+            searchTerm: requestData.searchTerm,
+
+            // Filter data
+            type: filters.type,
+            status: filters.status,
+            fleet: filters.fleet
         });
 
         return response.data;
@@ -135,14 +142,21 @@ class DriverManagementService implements angular.IServiceProvider {
     }
 
 
-    async getAfterHoursCourierSchedule(searchTerm: string): Promise<IAfterHoursCourierSchedule[]> {
+    async getAfterHoursCourierScheduleList(requestData: IPaginatedRequest,
+                                           filters: IAfterHoursFilter): Promise<ICourierAfterHoursPaginated> {
         this.$log.debug("Getting after hours courier schedule");
-        this.$log.debug("Search term: ", searchTerm);
+        this.$log.debug("Search term: ", requestData.searchTerm);
 
-        const response = await this.$http.get<IAfterHoursCourierSchedule[]>("courier/GetAfterHoursCourierSchedule", {
-            params: {
-                searchTerm
-            }
+        const response = await this.$http.post<ICourierAfterHoursPaginated>("courier/GetAfterHoursCourierSchedule", {
+            // Pagination data
+            page: requestData.page,
+            pageSize: requestData.pageSize,
+            orderBy: requestData.orderBy,
+            sortDescending: requestData.sortDescending,
+            searchTerm: requestData.searchTerm,
+
+            // Filter data
+            day: filters.day,
         });
 
         return response.data;

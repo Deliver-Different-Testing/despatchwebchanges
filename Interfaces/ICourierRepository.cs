@@ -40,11 +40,8 @@ public interface ICourierRepository
     /* Driver Management Dashboard */
     Task<List<Suggestion>> SearchAllCouriersAsync(string searchTerm);
     Task<CourierDataDashboardViewModel> GetCourierDetailsForDashboardAsync(int courierId);
-    Task<CourierCompliancePaginatedResponse> GetAllCourierComplianceAsync(
-        string searchTerm,
-        int page = 1,
-        int pageSize = 10,
-        string sortBy = "Code",
-        bool sortDescending = false);
-    Task<List<AfterHoursCourierScheduleViewModel>> GetAfterHoursCourierScheduleAsync(string searchTerm);
+
+    Task<CourierCompliancePaginatedResponse> GetAllCourierComplianceAsync(CourierComplianceFilterRequest request);
+
+    Task<CourierAfterHoursPaginatedResponse> GetAfterHoursCourierScheduleAsync(CourierAfterHoursFilterRequest request);
 }

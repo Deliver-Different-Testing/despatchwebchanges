@@ -17,11 +17,7 @@ public class CourierCompliancePaginatedResponse : PaginatedResponse<CourierCompl
     public int TotalValid { get; set; }
 }
 
-public class PaginatedRequest
+public class CourierAfterHoursPaginatedResponse : PaginatedResponse<AfterHoursCourierScheduleViewModel>
 {
-    public string SearchTerm { get; set; }
-    public int Page { get; set; }
-    public int PageSize { get; set; }
-    public string OrderBy { get; set; } = string.Empty;
-    public bool SortDescending { get; set; }
+    public int TotalActiveDrivers { get; set; }
 }

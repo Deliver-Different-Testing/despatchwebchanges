@@ -352,6 +352,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\driver-management-dashboard\driver-management.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\driver-management-dashboard\interfaces\IAfterHoursCourierSchedule.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\driver-management-dashboard\interfaces\ICourierCompliance.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\driver-management-dashboard\interfaces\ICourierComplianceFilter.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\driver-management-dashboard\interfaces\ICourierDataDashboard.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\driver-management-dashboard\interfaces\IDriverEmail.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\driver-management-dashboard\interfaces\IGroupEmailData.ts" />
@@ -458,6 +459,7 @@
     <TypeScriptCompile Include="wwwroot\app\interfaces\job.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\layout.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\open-job-options.interface.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\paginated-request.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\paginated-response.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\requests.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\state-info.interface.ts" />
@@ -474,6 +476,7 @@
     <TypeScriptCompile Include="wwwroot\app\services\tasks.service.ts" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Attributes\" />
     <Folder Include="wwwroot\app\components\dialogs\event-group-dialog\" />
     <Folder Include="wwwroot\dist\" />
   </ItemGroup>
