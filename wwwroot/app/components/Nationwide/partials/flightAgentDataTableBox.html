@@ -50,11 +50,11 @@
 
             <!-- Individual Airline Filter Chips -->
             <md-button ng-repeat="airline in ctrl.activeAirlineOptions"
-                       class="md-button airline-chip {{airline.text | lowercase}}"
+                       class="md-button airline-chip {{::airline.text | lowercase}}"
                        ng-click="ctrl.filterFlightsByAirline(airline.id)"
-                       aria-label="Filter by {{airline.text}}">
+                       aria-label="Filter by {{::airline.text}}">
                 <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
-                <span class="airline-label">{{airline.text}}</span>
+                <span class="airline-label">{{::airline.text}}</span>
             </md-button>
 
             <div flex></div>
@@ -66,9 +66,9 @@
                         class="md-button airline-chip"
                         ng-click="$mdMenu.open($event)">
                     <md-icon md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
-                    <span class="airline-label">{{ctrl.formatAirportCodeForDropdown(ctrl.selectedOutboundAirport.text)}}</span>
+                    <span class="airline-label">{{::ctrl.formatAirportCodeForDropdown(ctrl.selectedOutboundAirport.text)}}</span>
                     <md-tooltip md-direction="bottom">
-                        {{ctrl.selectedOutboundAirport ? 'Flights departing ' + ctrl.formatAirportCodeForDropdown(ctrl.selectedOutboundAirport.text) : 'Nearby Outbound Airports'}}
+                        {{::ctrl.selectedOutboundAirport ? 'Flights departing ' + ctrl.formatAirportCodeForDropdown(ctrl.selectedOutboundAirport.text) : 'Nearby Outbound Airports'}}
                     </md-tooltip>
                 </md-button>
 
@@ -115,9 +115,9 @@
                         class="md-button airline-chip"
                         ng-click="$mdMenu.open($event)">
                     <md-icon md-font-set="material-symbols-outlined">flight_land</md-icon>
-                    <span class="airline-label">{{ctrl.formatAirportCodeForDropdown(ctrl.selectedInboundAirport.text)}}</span>
+                    <span class="airline-label">{{::ctrl.formatAirportCodeForDropdown(ctrl.selectedInboundAirport.text)}}</span>
                     <md-tooltip md-direction="bottom">
-                        {{ctrl.selectedInboundAirport ? 'Flights arriving ' + ctrl.formatAirportCodeForDropdown(ctrl.selectedInboundAirport.text) : 'Nearby Inbound Airports'}}
+                        {{::ctrl.selectedInboundAirport ? 'Flights arriving ' + ctrl.formatAirportCodeForDropdown(ctrl.selectedInboundAirport.text) : 'Nearby Inbound Airports'}}
                     </md-tooltip>
                 </md-button>
                 <md-menu-content class="md-dense" width="4">
@@ -190,12 +190,12 @@
                     ng-repeat-start="flight in ctrl.filteredFlightOptions | orderBy: ctrl.flightTableQuery.order"
                     ng-class="{'has-segments': flight.isMultiSegment}">
                     <td md-cell>
-                        <span class="airline-code {{flight.airline | lowercase}}">{{flight.airline}}</span>
+                        <span class="airline-code {{::flight.airline | lowercase}}">{{::flight.airline}}</span>
                         <span class="codeshare-marker" ng-if="flight.isCodeShare">*</span>
                     </td>
                     <td md-cell>
                         <div class="flight-number-container">
-                            <span class="flight-number">{{flight.flightNumber}}</span>
+                            <span class="flight-number">{{::flight.flightNumber}}</span>
                             <md-icon ng-if="flight.isMultiSegment" md-font-set="material-symbols-outlined"
                                      ng-click="flight.showSegments = !flight.showSegments"
                                      class="segment-toggle">
@@ -204,24 +204,24 @@
                         </div>
                     </td>
                     <td md-cell>
-                        {{flight.departureTime | date: 'MM/dd/yyyy HH:mm'}} ({{::flight.departureAirportTimeZone | timezoneShort}})
-                        <div class="airport-code">{{flight.departureAirport}}</div>
+                        {{::flight.departureTime | date: 'MM/dd/yyyy HH:mm'}} ({{::flight.departureAirportTimeZone | timezoneShort}})
+                        <div class="airport-code">{{::flight.departureAirport}}</div>
                     </td>
                     <td md-cell>
-                        {{flight.arrivalTime | date: 'MM/dd/yyyy HH:mm'}} ({{::flight.arrivalAirportTimeZone | timezoneShort}})
-                        <div class="airport-code">{{flight.arrivalAirport}}</div>
+                        {{::flight.arrivalTime | date: 'MM/dd/yyyy HH:mm'}} ({{::flight.arrivalAirportTimeZone | timezoneShort}})
+                        <div class="airport-code">{{::flight.arrivalAirport}}</div>
                     </td>
                     <td md-cell>
-                        <span ng-if="flight.elapsedTime">{{flight.elapsedTime | minutesToTime}}</span>
-                        <span ng-if="!flight.elapsedTime">{{flight.duration | date: 'H:mm'}}</span>
+                        <span ng-if="flight.elapsedTime">{{::flight.elapsedTime | minutesToTime}}</span>
+                        <span ng-if="!flight.elapsedTime">{{::flight.duration | date: 'H:mm'}}</span>
                     </td>
                     <td md-cell>
                         <span ng-if="flight.stops === 0" class="direct-flight">Nonstop</span>
-                        <span ng-if="flight.stops > 0" class="stops-badge">{{flight.stops}} stop<span
+                        <span ng-if="flight.stops > 0" class="stops-badge">{{::flight.stops}} stop<span
                                 ng-if="flight.stops > 1">s</span></span>
                     </td>
-                    <td md-cell>{{flight.amount | currency}}</td>
-                    <td md-cell>{{flight.aircraft}}</td>
+                    <td md-cell>{{::flight.amount | currency}}</td>
+                    <td md-cell>{{::flight.aircraft}}</td>
                     <td class="actions" md-cell>
                             <span class="action-icon" ng-click="ctrl.addFlightToJob($event, flight, ctrl.currentJob)">
                                 <md-icon md-font-set="material-symbols-outlined">add</md-icon>
@@ -389,10 +389,10 @@
                 <tbody md-body>
                 <tr md-row
                     ng-repeat="agent in ctrl.agentOptions | filter: box.searchBox | orderBy: ctrl.agentTableQuery.order">
-                    <td md-cell>{{agent.agentName}}</td>
-                    <td md-cell>{{agent.agentRate | currency}}</td>
-                    <td md-cell>{{agent.agentRanking}}</td>
-                    <td md-cell md-truncate>{{agent.agentNotes}}</td>
+                    <td md-cell>{{::agent.agentName}}</td>
+                    <td md-cell>{{::agent.agentRate | currency}}</td>
+                    <td md-cell>{{::agent.agentRanking}}</td>
+                    <td md-cell md-truncate>{{::agent.agentNotes}}</td>
                     <td class="actions" md-cell>
                         <span class="action-icon" ng-click="ctrl.sendQuoteRequest($event, agent, ctrl.currentJob)">
                             <md-icon md-font-set="material-symbols-outlined">request_quote</md-icon>

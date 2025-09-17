@@ -75,6 +75,9 @@ class NationwideControl extends BaseController {
         'recoveryAgentManagementService',
     ];
 
+    private static NationwideLayoutKey: string = `layoutsNW-${ContactID}`;
+    private static NationwideLastActiveLayoutKey: string = `lastActiveLayoutNW-${ContactID}`;
+    
     readonly nationwideJobList: JobListType = JobListType.NationwideJobList;
     readonly nationwidePodJobList: JobListType = JobListType.NationwidePodJobList;
     readonly nationwideRepriceJobList: JobListType = JobListType.NationwideRepriceJobList;
@@ -316,8 +319,8 @@ class NationwideControl extends BaseController {
         // Load saved layouts or use default
         if (Modernizr.localstorage) {
             try {
-                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(`layoutsNW-${ContactID}`) || '[]');
-                const lastActiveLayout = localStorage.getItem(`lastActiveLayoutNW-${ContactID}`);
+                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(NationwideControl.NationwideLayoutKey) || '[]');
+                const lastActiveLayout = localStorage.getItem(NationwideControl.NationwideLastActiveLayoutKey);
 
                 this.layouts = storedLayouts || [this.defaultLayout];
                 this.layouts[0] = this.defaultLayout; // Ensure default is always up to date
@@ -344,7 +347,7 @@ class NationwideControl extends BaseController {
                 if (index !== -1) {
                     this.layouts[index].layout = angular.copy(newValue);
                     if (Modernizr.localstorage) {
-                        localStorage.setItem(`layoutsNW-${ContactID}`, JSON.stringify(this.layouts));
+                        localStorage.setItem(NationwideControl.NationwideLayoutKey, JSON.stringify(this.layouts));
                     }
                 }
             }
@@ -580,7 +583,7 @@ class NationwideControl extends BaseController {
             }
 
             if (Modernizr.localstorage) {
-                localStorage.setItem(`layoutsNW-${ContactID}`, JSON.stringify(this.layouts));
+                localStorage.setItem(NationwideControl.NationwideLayoutKey, JSON.stringify(this.layouts));
             }
         }
     }
@@ -716,7 +719,7 @@ class NationwideControl extends BaseController {
         this.applyLayoutDimensions();
 
         if (Modernizr.localstorage) {
-            localStorage.setItem(`lastActiveLayoutNW-${ContactID}`, layout.name);
+            localStorage.setItem(NationwideControl.NationwideLastActiveLayoutKey, layout.name);
         }
 
         this.applyScope();
@@ -756,8 +759,8 @@ class NationwideControl extends BaseController {
             this.layout = currentLayout.layout;
 
             if (Modernizr.localstorage) {
-                localStorage.setItem(`layoutsNW-${ContactID}`, JSON.stringify(this.layouts));
-                localStorage.setItem(`lastActiveLayoutNW-${ContactID}`, layoutName);
+                localStorage.setItem(NationwideControl.NationwideLayoutKey, JSON.stringify(this.layouts));
+                localStorage.setItem(NationwideControl.NationwideLastActiveLayoutKey, layoutName);
             }
 
             this.applyScope();
@@ -789,7 +792,7 @@ class NationwideControl extends BaseController {
             this.layouts.splice(index, 1);
 
             if (Modernizr.localstorage) {
-                localStorage.setItem(`layoutsNW-${ContactID}`, JSON.stringify(this.layouts));
+                localStorage.setItem(NationwideControl.NationwideLayoutKey, JSON.stringify(this.layouts));
             }
 
             if (this.currentLayoutName === this.layouts[index]?.name) {

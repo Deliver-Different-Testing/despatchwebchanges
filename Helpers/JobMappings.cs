@@ -35,7 +35,7 @@ public static class JobMappings
             IsFlightJob = j.UcjbSpeedNavigation != null
                           && j.UcjbSpeedNavigation.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
             IsAgentJob = j.UcjbSpeedNavigation != null
-                         && j.UcjbSpeedNavigation.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Agent : (int)UrgentSpeedGrouping.NationwideAgent),
+                         && j.UcjbSpeedNavigation.GroupingId != (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
 
             Courier = j.UcjbCourierId != null ? j.UcjbCourier.Code : null,
             CourierData =
