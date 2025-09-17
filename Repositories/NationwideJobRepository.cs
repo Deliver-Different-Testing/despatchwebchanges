@@ -1251,20 +1251,6 @@ public class NationwideJobRepository(
         }
     }
 
-    public async Task<bool> CanAssignAgentToJobAsync(int agentJobId)
-    {
-        if (System.Diagnostics.Debugger.IsAttached)
-            return true;
-
-        var canAssign = await Context.TucJobs
-            .Where(j => j.UcjbId == agentJobId)
-            .SelectMany(j => j.Parent.InverseParent)
-            .AsNoTracking()
-            .AnyAsync(siblingJob => siblingJob.TucJobNationwides.Any());
-
-        return canAssign;
-    }
-
     public async Task<string> GetWebhookEventsAsStringAsync()
     {
         var webhookEvents = await Context.FlightWebhookEventTypes

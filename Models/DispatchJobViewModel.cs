@@ -11,6 +11,7 @@ public class DispatchJobViewModel
     
     public bool IsFlightJob { get; set; }
     public bool IsAgentJob { get; set; }
+    public bool AllowAgentWithoutFlight { get; set; }
     public bool IsArchived { get; set; }
     public bool IsBulkJob { get; set; }
 
