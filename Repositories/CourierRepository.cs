@@ -22,6 +22,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
 {
     public async Task<ActiveCouriersViewModel> GetCourierByIdAsync(int courierId)
     {
+        var now = infoService.GetCurrentTenantTime();
         var courier = await Context.TucCouriers
             .Where(c => c.UccrId == courierId)
             .Select(c => new ActiveCouriersViewModel
@@ -36,7 +37,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
                     c.SendAlertSms == true ||
                     (c.SendJobsViaSms == false &&
                      c.CourierLogInOut != null &&
-                     c.CourierLogInOut.LogInTime.Date == DateTime.Today &&
+                     c.CourierLogInOut.LogInTime.Date == now.Date &&
                      c.CourierLogInOut.LogOutTime == null)
                 )
             })
@@ -793,16 +794,17 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
     public async Task<List<Suggestion>> SearchAllCouriersAsync(string searchTerm)
     {
         var searchPattern = $"%{searchTerm}%";
-        
+
         var couriers = await Context.TucCouriers
             .Where(c => EF.Functions.Like(c.Code, searchPattern)
-            || EF.Functions.Like(c.UccrName, searchPattern)
-            || EF.Functions.Like(c.UccrSurname, searchPattern)
-            || EF.Functions.Like(c.UccrVehicleModel, searchPattern)
-            || EF.Functions.Like(c.VehicleVinnumber, searchPattern)
-            || EF.Functions.Like(c.VehiclePlateNnumber, searchPattern)
-            || EF.Functions.Like(c.UccrEmail, searchPattern)
-            || EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern))
+                        || EF.Functions.Like(c.UccrName, searchPattern)
+                        || EF.Functions.Like(c.UccrSurname, searchPattern)
+                        || EF.Functions.Like(c.UccrVehicleModel, searchPattern)
+                        || EF.Functions.Like(c.VehiclePlateNnumber, searchPattern)
+                        || EF.Functions.Like(c.UccrEmail, searchPattern)
+                        || EF.Functions.Like(c.PersonalMobile, searchPattern)
+                        || EF.Functions.Like(c.UccrMobile, searchPattern)
+                        || EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern))
             .Select(c => new Suggestion
             {
                 Id = c.UccrId,
@@ -810,10 +812,10 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             })
             .AsNoTracking()
             .ToListAsync();
-        
+
         return couriers;
     }
-    
+
     public async Task<CourierDataDashboardViewModel> GetCourierDetailsForDashboardAsync(int courierId)
     {
         var courierData = await Context.TucCouriers
@@ -825,148 +827,280 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         return courierData;
     }
 
-   public async Task<CourierCompliancePaginatedResponse> GetAllCourierComplianceAsync(
-    string searchTerm,
-    int page = 1,
-    int pageSize = 10,
-    string sortBy = "Code",
-    bool sortDescending = false)
-{
-    var now = infoService.GetCurrentTenantTime();
-
-    // Ensure valid page and pageSize
-    page = Math.Max(1, page);
-    pageSize = Math.Max(1, Math.Min(100, pageSize));
-
-    var query = Context.TucCouriers.AsQueryable();
-
-    if (!string.IsNullOrWhiteSpace(searchTerm))
+    public async Task<CourierCompliancePaginatedResponse> GetAllCourierComplianceAsync(
+        CourierComplianceFilterRequest request)
     {
-        var searchPattern = $"%{searchTerm}%";
+        var now = infoService.GetCurrentTenantTime();
 
-        query = query.Where(c =>
-            EF.Functions.Like(c.Code, searchPattern) ||
-            EF.Functions.Like(c.UccrName, searchPattern) ||
-            EF.Functions.Like(c.UccrSurname, searchPattern) ||
-            EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern)
-        );
-    }
+        // Ensure valid page and pageSize
+        var page = Math.Max(1, request.Page);
+        var pageSize = Math.Max(1, Math.Min(100, request.PageSize));
 
-    var totalCount = await query.CountAsync();
-    
-    var totalExpired = await query
-        .Where(c => c.DriversLicenseExpiry.HasValue && c.DriversLicenseExpiry.Value < now)
-        .CountAsync();
-    
-    var expiringThreshold = now.AddDays(30);
-    var totalExpiringSoon = await query
-        .Where(c => c.DriversLicenseExpiry.HasValue && 
-                    c.DriversLicenseExpiry.Value >= now && 
-                    c.DriversLicenseExpiry.Value <= expiringThreshold)
-        .CountAsync();
-    
-    var totalValid = await query
-        .Where(c => !c.DriversLicenseExpiry.HasValue || 
-                    c.DriversLicenseExpiry.Value > expiringThreshold)
-        .CountAsync();
+        var query = Context.TucCouriers.AsQueryable();
 
-    // Apply sorting
-    query = sortBy?.ToLower() switch
-    {
-        "name" => sortDescending
-            ? query.OrderByDescending(c => c.UccrName).ThenByDescending(c => c.UccrSurname)
-            : query.OrderBy(c => c.UccrName).ThenBy(c => c.UccrSurname),
-        "expirydate" => sortDescending
-            ? query.OrderByDescending(c => c.DriversLicenseExpiry)
-            : query.OrderBy(c => c.DriversLicenseExpiry),
-        _ => sortDescending
-            ? query.OrderByDescending(c => c.Code)
-            : query.OrderBy(c => c.Code)
-    };
-
-    // Calculate total pages
-    var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-
-    // Apply pagination and get the data
-    var couriersCompliance = await query
-        .Skip((page - 1) * pageSize)
-        .Take(pageSize)
-        .Select(c => new CourierComplianceViewModel
+        if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
-            Code = c.Code,
-            Name = c.UccrName + " " + c.UccrSurname,
-            ComplianceType = "Dangerous Goods",
-            ItemNumber = "DG123456",
-            ExpiryDate = c.DriversLicenseExpiry,
-            Status = PrintLicenceStatus(now, c.DriversLicenseExpiry),
-            DaysUntilExpiry = c.DriversLicenseExpiry.HasValue
-                ? (int)Math.Ceiling((c.DriversLicenseExpiry.Value - now).TotalDays) + " days"
-                : "N/A"
-        })
-        .AsNoTracking()
-        .ToListAsync();
+            var searchPattern = $"%{request.SearchTerm}%";
 
-    return new CourierCompliancePaginatedResponse
-    {
-        Items = couriersCompliance,
-        Total = totalCount,
-        Page = page,
-        Pages = totalPages,
-        TotalExpired = totalExpired,
-        TotalExpiringSoon = totalExpiringSoon,
-        TotalValid = totalValid
-    };
-}
-
-    private static string PrintLicenceStatus(DateTime now, DateTime? licenceExpiryDate)
-    {
-        if (!licenceExpiryDate.HasValue || now >= licenceExpiryDate) return "Expired";
-        var timeUntilExpiry = licenceExpiryDate - now;
-        return timeUntilExpiry.Value.TotalDays <= 60 ? "Expiring Soon" : "Valid";
-    }
-
-    public async Task<List<AfterHoursCourierScheduleViewModel>> GetAfterHoursCourierScheduleAsync(string searchTerm)
-    {
-        var query = Context.TblAfterHours
-            .Where(x => x.CourierId.HasValue)
-            .AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            var searchPattern = $"%{searchTerm}%";
-
-            query = query.Where(x =>
-                EF.Functions.Like(x.Courier.UccrName, searchPattern) ||
-                EF.Functions.Like(x.Courier.UccrSurname, searchPattern) ||
-                EF.Functions.Like(x.Courier.UccrName + " " + x.Courier.UccrSurname, searchPattern) ||
-                EF.Functions.Like(x.DayName, searchPattern) ||
-                (x.Courier.Code != null && EF.Functions.Like(x.Courier.Code, searchPattern))
+            query = query.Where(c =>
+                EF.Functions.Like(c.Code, searchPattern) ||
+                EF.Functions.Like(c.UccrName, searchPattern) ||
+                EF.Functions.Like(c.UccrSurname, searchPattern) ||
+                EF.Functions.Like(c.UccrMobile, searchPattern) ||
+                EF.Functions.Like(c.PersonalMobile, searchPattern) ||
+                EF.Functions.Like(c.VehiclePlateNnumber, searchPattern) ||
+                EF.Functions.Like(c.UccrVehicleModel, searchPattern) ||
+                EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern)
             );
         }
 
-        var afterHoursSchedule = await query
-            .Select(x => new AfterHoursCourierScheduleViewModel
+        // Apply fleet filter
+        if (!string.IsNullOrWhiteSpace(request.Fleet))
+        {
+            query = request.Fleet.ToLower() switch
             {
-                CourierId = x.CourierId.Value,
-                CourierName = x.Courier.UccrName + " " + x.Courier.UccrSurname,
-                Day = x.DayName,
-                StartTime = x.StartTime,
-                EndTime = x.EndTime,
-                Duration = CalculateDuration(x.StartTime, x.EndTime)
+                "urgent" => query.Where(c => c.CourierFleet != null &&
+                                             EF.Functions.Like(c.CourierFleet.UccfName.ToLower(), "%urgent%")),
+                "dfrnt" => query.Where(c => c.CourierFleet != null &&
+                                            EF.Functions.Like(c.CourierFleet.UccfName.ToLower(), "%dfrnt%")),
+                "independent" => query.Where(c => c.CourierFleet != null &&
+                                                  EF.Functions.Like(c.CourierFleet.UccfName.ToLower(),
+                                                      "%independent%")),
+                _ => query
+            };
+        }
+
+        // Apply type filter
+        if (!string.IsNullOrWhiteSpace(request.Type))
+        {
+            switch (request.Type.ToLower())
+            {
+                case "drivers_license":
+                    // Only include couriers with driver's license data
+                    query = query.Where(c => c.DriversLicenseExpiry.HasValue);
+                    break;
+                case "dg_endorsement":
+                    // Only include couriers with DG endorsement
+                    query = query.Where(c => c.UccrDangerousGoods == 1 && c.DglicenseExpiry.HasValue);
+                    break;
+                case "vehicle_wof":
+                case "vehicle_rego":
+                case "insurance":
+                    // These would need additional database fields to filter properly
+                    // For now, include all couriers
+                    break;
+            }
+        }
+
+        var expiringThreshold = now.AddDays(30);
+        // Apply status filter
+        if (!string.IsNullOrWhiteSpace(request.Status))
+        {
+            query = request.Status.ToLower() switch
+            {
+                "expired" => query.Where(c => c.DriversLicenseExpiry.HasValue && c.DriversLicenseExpiry.Value < now),
+                "expiring" => query.Where(c =>
+                    c.DriversLicenseExpiry.HasValue && c.DriversLicenseExpiry.Value >= now &&
+                    c.DriversLicenseExpiry.Value <= expiringThreshold),
+                "valid" => query.Where(c =>
+                    !c.DriversLicenseExpiry.HasValue || c.DriversLicenseExpiry.Value > expiringThreshold),
+                _ => query
+            };
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var totalExpired = await query
+            .Where(c => c.DriversLicenseExpiry.HasValue && c.DriversLicenseExpiry.Value < now)
+            .CountAsync();
+
+        var totalExpiringSoon = await query
+            .Where(c => c.DriversLicenseExpiry.HasValue &&
+                        c.DriversLicenseExpiry.Value >= now &&
+                        c.DriversLicenseExpiry.Value <= expiringThreshold)
+            .CountAsync();
+
+        var totalValid = await query
+            .Where(c => !c.DriversLicenseExpiry.HasValue ||
+                        c.DriversLicenseExpiry.Value > expiringThreshold)
+            .CountAsync();
+
+        // Apply sorting
+        query = request.OrderBy?.ToLower() switch
+        {
+            "code" => request.SortDescending
+                ? query.OrderByDescending(c => c.Code)
+                : query.OrderBy(c => c.Code),
+            "name" => request.SortDescending
+                ? query.OrderByDescending(c => c.UccrName).ThenByDescending(c => c.UccrSurname)
+                : query.OrderBy(c => c.UccrName).ThenBy(c => c.UccrSurname),
+            "expiry" => request.SortDescending
+                ? query.OrderByDescending(c => c.DriversLicenseExpiry)
+                : query.OrderBy(c => c.DriversLicenseExpiry),
+            "type" => request.SortDescending
+                ? query.OrderByDescending(c => "Dangerous Goods")
+                : query.OrderBy(c => "Dangerous Goods"),
+            _ => request.SortDescending
+                ? query.OrderByDescending(c => c.Code)
+                : query.OrderBy(c => c.Code)
+        };
+
+        // Calculate total pages
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        // Apply pagination and get the data
+        var couriersCompliance = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(c => new CourierComplianceViewModel
+            {
+                Code = c.Code,
+                Name = c.UccrName + " " + c.UccrSurname,
+                ComplianceType = c.UccrDangerousGoods == 1 ? "Dangerous Goods" : "Driver's License",
+                ItemNumber = c.UccrDangerousGoods == 1 ? "DG-" + c.Code : "DL-" + c.Code,
+                ExpiryDate = c.UccrDangerousGoods == 1 ? c.DglicenseExpiry : c.DriversLicenseExpiry,
+                Status = GetComplianceStatus(now,
+                    c.UccrDangerousGoods == 1 ? c.DglicenseExpiry : c.DriversLicenseExpiry),
+                DaysUntilExpiry = CalculateDaysUntilExpiry(now,
+                    c.UccrDangerousGoods == 1 ? c.DglicenseExpiry : c.DriversLicenseExpiry),
             })
             .AsNoTracking()
             .ToListAsync();
 
-        return afterHoursSchedule;
+        return new CourierCompliancePaginatedResponse
+        {
+            Items = couriersCompliance,
+            Total = totalCount,
+            Page = page,
+            Pages = totalPages,
+            TotalExpired = totalExpired,
+            TotalExpiringSoon = totalExpiringSoon,
+            TotalValid = totalValid
+        };
+    }
+
+    private static string GetComplianceStatus(DateTime now, DateTime? expiryDate)
+    {
+        if (!expiryDate.HasValue) return "Not Set";
+        if (now >= expiryDate.Value) return "Expired";
+        var daysUntilExpiry = (expiryDate.Value - now).TotalDays;
+        return daysUntilExpiry <= 30 ? "Expiring Soon" : "Valid";
+    }
+
+    private static string CalculateDaysUntilExpiry(DateTime now, DateTime? expiryDate)
+    {
+        if (!expiryDate.HasValue) return "N/A";
+        var days = (int)Math.Ceiling((expiryDate.Value - now).TotalDays);
+        return days < 0 ? $"{Math.Abs(days)} days overdue" : $"{days} days";
+    }
+
+    public async Task<CourierAfterHoursPaginatedResponse> GetAfterHoursCourierScheduleAsync(
+        CourierAfterHoursFilterRequest request)
+    {
+        var now = infoService.GetCurrentTenantTime();
+
+        // Ensure valid page and pageSize
+        var page = Math.Max(1, request.Page);
+        var pageSize = Math.Max(1, Math.Min(100, request.PageSize));
+
+        var query = Context.TblAfterHours
+            .Where(c => c.CourierId.HasValue)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+        {
+            var searchPattern = $"%{request.SearchTerm}%";
+
+            query = query.Where(c =>
+                EF.Functions.Like(c.Courier.UccrName, searchPattern) ||
+                EF.Functions.Like(c.Courier.UccrSurname, searchPattern) ||
+                EF.Functions.Like(c.Courier.VehiclePlateNnumber, searchPattern) ||
+                EF.Functions.Like(c.Courier.UccrMobile, searchPattern) ||
+                EF.Functions.Like(c.Courier.PersonalMobile, searchPattern) ||
+                EF.Functions.Like(c.Courier.UccrEmail, searchPattern) ||
+                EF.Functions.Like(c.Courier.UccrVehicleModel, searchPattern) ||
+                EF.Functions.Like(c.Courier.UccrName + " " + c.Courier.UccrSurname, searchPattern) ||
+                EF.Functions.Like(c.DayName, searchPattern) ||
+                (c.Courier.Code != null && EF.Functions.Like(c.Courier.Code, searchPattern))
+            );
+        }
+
+        // Filter by day
+        if (!string.IsNullOrWhiteSpace(request.Day)
+            && !request.Day.Equals("all", StringComparison.CurrentCultureIgnoreCase))
+        {
+            query = query.Where(c => EF.Functions.Like(c.DayName, request.Day));
+            ;
+        }
+
+        var totalCount = await query.CountAsync();
+        var totalActiveDrivers = await query
+            .Where(c => c.Courier != null &&
+                        c.Courier.CourierLogInOut != null &&
+                        (c.Courier.CourierLogInOut.LogOutTime == null || c.Courier.CourierLogInOut.LogOutTime > now))
+            .CountAsync();
+
+        query = request.OrderBy?.ToLower() switch
+        {
+            "name" => request.SortDescending
+                ? query.OrderByDescending(c => c.Courier.UccrName)
+                    .ThenByDescending(c => c.Courier.UccrSurname)
+                : query.OrderBy(c => c.Courier.UccrName)
+                    .ThenBy(c => c.Courier.UccrSurname),
+            "day" => request.SortDescending
+                ? query.OrderByDescending(c => c.DayName)
+                : query.OrderBy(c => c.DayName),
+            "startTime" => request.SortDescending
+                ? query.OrderByDescending(c => c.StartTime)
+                : query.OrderBy(c => c.StartTime),
+            "endTime" => request.SortDescending
+                ? query.OrderByDescending(c => c.EndTime)
+                : query.OrderBy(c => c.EndTime),
+            _ => request.SortDescending
+                ? query.OrderByDescending(c => c.StartTime)
+                : query.OrderBy(c => c.StartTime)
+        };
+
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        var afterHoursSchedule = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(c => new AfterHoursCourierScheduleViewModel
+            {
+                CourierId = c.CourierId.Value,
+                CourierName = c.Courier.UccrName + " " + c.Courier.UccrSurname,
+                Day = c.DayName,
+                StartTime = c.StartTime,
+                EndTime = c.EndTime,
+                Duration = CalculateDuration(c.StartTime, c.EndTime)
+            })
+            .AsNoTracking()
+            .ToListAsync();
+
+        return new CourierAfterHoursPaginatedResponse
+        {
+            Items = afterHoursSchedule,
+            Total = totalCount,
+            Page = page,
+            Pages = totalPages,
+            TotalActiveDrivers = totalActiveDrivers
+        };
     }
 
     private static string CalculateDuration(DateTime startTime, DateTime endTime)
     {
-        if (endTime < startTime) endTime = endTime.AddDays(1);
-        var duration = endTime - startTime;
+        // Extract only the time components
+        var startTimeOnly = startTime.TimeOfDay;
+        var endTimeOnly = endTime.TimeOfDay;
+
+        // If end time is earlier than start time, assume it's the next day
+        if (endTimeOnly < startTimeOnly) endTimeOnly = endTimeOnly.Add(TimeSpan.FromDays(1));
+
+        var duration = endTimeOnly - startTimeOnly;
         return (int)duration.TotalHours + "h " + duration.Minutes + "m";
     }
-    
+
     private static Expression<Func<TucCourier, CourierDataDashboardViewModel>> CourierDataDashboardMapping() =>
         c => new CourierDataDashboardViewModel
         {
@@ -1000,7 +1134,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             },
             BankingAndEmergency = new BankingAndEmergency
             {
-                EmergencyContact = true,
+                EmergencyContact = false,
                 Bank = c.UccrBankBranch,
                 SecurityCheck = false
             },

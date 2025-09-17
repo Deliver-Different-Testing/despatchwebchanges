@@ -4,8 +4,8 @@ using System.Threading.Tasks;
 using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
-using DespatchWeb.Models.Response;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 
@@ -214,12 +214,12 @@ public class CourierController(
         }
     }
 
-    public async Task<IActionResult> GetCourierComplianceList(PaginatedRequest data)
+    [HttpPost]
+    public async Task<IActionResult> GetCourierComplianceList([FromBody] CourierComplianceFilterRequest  request)
     {
         try
         {
-            var complianceList = await courierRepository.GetAllCourierComplianceAsync(data.SearchTerm, data.Page,
-                data.PageSize, data.OrderBy, data.SortDescending);
+            var complianceList = await courierRepository.GetAllCourierComplianceAsync(request);
             return Json(complianceList);
         }
         catch (Exception e)
@@ -231,11 +231,12 @@ public class CourierController(
         }
     }
 
-    public async Task<IActionResult> GetAfterHoursCourierSchedule(string searchTerm)
+    [HttpPost]
+    public async Task<IActionResult> GetAfterHoursCourierSchedule([FromBody] CourierAfterHoursFilterRequest request)
     {
         try
         {
-            var afterHoursSchedule = await courierRepository.GetAfterHoursCourierScheduleAsync(searchTerm);
+            var afterHoursSchedule = await courierRepository.GetAfterHoursCourierScheduleAsync(request);
             return Json(afterHoursSchedule);
         }
         catch (Exception e)

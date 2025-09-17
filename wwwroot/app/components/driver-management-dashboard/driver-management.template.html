@@ -1,4 +1,4 @@
-﻿<md-content class="md-dense scrollable-container driver-management-container">
+﻿<md-content class="driver-management-container">
     <div>
         <md-toolbar class="md-hue-2 md-whiteframe-2dp">
             <div class="md-toolbar-tools">
@@ -27,7 +27,7 @@
 
         <!-- Driver Details Tab -->
         <md-tab label="Driver Details" md-on-select="ctrl.onTabChange(0)">
-            <md-content class="tab-content">
+            <div class="tab-content">
                 <!-- Search Section -->
                 <md-card class="search-card">
                     <md-toolbar class="widget-toolbar">
@@ -87,7 +87,7 @@
                 <div style="display: flex; justify-content: center; align-items: center;">
                     <md-progress-circular ng-if="ctrl.driverInformationLoading" md-diameter="96"></md-progress-circular>
                 </div>
-                
+
                 <div ng-if="!ctrl.driverInformationLoading">
                     <!-- Driver Information Grid -->
                     <div ng-if="ctrl.selectedDriver" class="info-grid">
@@ -296,19 +296,19 @@
                     </div>
                 </div>
 
-            </md-content>
+            </div>
         </md-tab>
 
         <!-- Compliance Tab -->
         <md-tab label="Driver Compliance" md-on-select="ctrl.onTabChange(1)">
-            <md-content class="tab-content">
+            <div class="tab-content">
                 <!-- Statistics Dashboard -->
                 <div class="stats-dashboard">
                     <md-card class="stat-card expired-stat">
                         <md-card-content>
                             <div class="stat-details">
                                 <div class="stat-value">{{ctrl.complianceStats.expired}}</div>
-                                <div class="stat-label">Expired Items</div>
+                                <div class="stat-label">Expired</div>
                             </div>
                         </md-card-content>
                     </md-card>
@@ -343,6 +343,14 @@
 
                 <!-- Filters & Actions -->
                 <md-card class="filter-card">
+                    <md-toolbar class="widget-toolbar">
+                        <div class="md-toolbar-tools">
+                            <span class="material-symbols-outlined">filter_list</span>
+                            <span class="md-headline-title" flex
+                                  style="margin-left: 8px;">Driver Compliance Filters</span>
+                        </div>
+                    </md-toolbar>
+
                     <md-card-content>
                         <div class="filter-section">
                             <div class="filter-controls">
@@ -350,7 +358,7 @@
                                     <label>Filter by Type</label>
                                     <md-select ng-model="ctrl.complianceFilters.type"
                                                ng-change="ctrl.onComplianceFilterChange()">
-                                        <md-option value="">All Types</md-option>
+                                        <md-option value="all">All Types</md-option>
                                         <md-option value="drivers_license">Driver's License</md-option>
                                         <md-option value="dg_endorsement">DG Endorsement</md-option>
                                         <md-option value="insurance">Insurance</md-option>
@@ -363,7 +371,7 @@
                                     <label>Filter by Status</label>
                                     <md-select ng-model="ctrl.complianceFilters.status"
                                                ng-change="ctrl.onComplianceFilterChange()">
-                                        <md-option value="">All Statuses</md-option>
+                                        <md-option value="all">All Statuses</md-option>
                                         <md-option value="expired">Expired</md-option>
                                         <md-option value="expiring">Expiring Soon</md-option>
                                         <md-option value="valid">Valid</md-option>
@@ -374,7 +382,7 @@
                                     <label>Filter by Fleet</label>
                                     <md-select ng-model="ctrl.complianceFilters.fleet"
                                                ng-change="ctrl.onComplianceFilterChange()">
-                                        <md-option value="">All Fleets</md-option>
+                                        <md-option value="all">All Fleets</md-option>
                                         <md-option value="urgent">Urgent</md-option>
                                         <md-option value="dfrnt">DFRNT</md-option>
                                         <md-option value="independent">Independent</md-option>
@@ -383,18 +391,19 @@
 
                                 <md-input-container class="filter-input search-input">
                                     <label>Search</label>
-                                    <input ng-model="ctrl.complianceFilters.search"
+                                    <input ng-model="ctrl.complianceQuery.searchTerm"
                                            ng-change="ctrl.onComplianceFilterChange()"
                                            ng-model-options="{ debounce: 500 }">
                                 </md-input-container>
                             </div>
 
                             <div class="filter-actions">
-                                <md-button class="md-raised md-accent" ng-click="ctrl.addComplianceItem()">
+                                <md-button ng-disabled class="md-raised md-accent" ng-click="ctrl.addComplianceItem()">
                                     <md-icon md-font-set="material-symbols-outlined">add</md-icon>
                                     Add Item
                                 </md-button>
-                                <md-button class="md-raised md-warn" ng-click="ctrl.sendBulkComplianceReminders()">
+                                <md-button ng-disabled class="md-raised md-warn"
+                                           ng-click="ctrl.sendBulkComplianceReminders()">
                                     <md-icon md-font-set="material-symbols-outlined">send</md-icon>
                                     Send Reminders
                                 </md-button>
@@ -411,13 +420,14 @@
                 <md-card class="data-table-card">
                     <md-table-container>
                         <table md-table md-progress="ctrl.compliancePromise" class="compliance-table">
-                            <thead md-head fix-head>
+                            <thead md-head fix-head md-order="ctrl.complianceQuery.orderBy"
+                                   md-on-reorder="ctrl.loadComplianceData">
                             <tr md-row>
-                                <th md-column>Code</th>
-                                <th md-column>Name</th>
-                                <th md-column>Type</th>
+                                <th md-column md-order-by="code">Code</th>
+                                <th md-column md-order-by="name">Name</th>
+                                <th md-column md-order-by="type">Type</th>
                                 <th md-column>Item/Number</th>
-                                <th md-column>Expiry Date</th>
+                                <th md-column md-order-by="expiry">Expiry Date</th>
                                 <th md-column>Status</th>
                                 <th md-column>Days Until Expiry</th>
                                 <th md-column>Actions</th>
@@ -481,18 +491,18 @@
                             md-limit-options="[10, 25, 50, 100]"
                             md-page="ctrl.complianceQuery.page"
                             md-total="{{ctrl.complianceStats.totalDrivers}}"
-                            md-on-paginate="ctrl.onCompliancePaginate"
+                            md-on-paginate="ctrl.loadComplianceData"
                             md-page-select>
                     </md-table-pagination>
 
                     <md-progress-linear md-mode="indeterminate" ng-if="ctrl.complianceLoading"></md-progress-linear>
                 </md-card>
-            </md-content>
+            </div>
         </md-tab>
 
         <!-- After Hours Tab -->
         <md-tab label="After Hours Schedule" md-on-select="ctrl.onTabChange(2)">
-            <md-content class="tab-content">
+            <div class="tab-content">
                 <!-- Schedule Stats -->
                 <div class="stats-dashboard">
                     <md-card class="stat-card">
@@ -537,27 +547,37 @@
 
                 <!-- Schedule Controls -->
                 <md-card class="filter-card">
+                    <md-toolbar class="widget-toolbar">
+                        <div class="md-toolbar-tools">
+                            <span class="material-symbols-outlined">filter_list</span>
+                            <span class="md-headline-title" flex
+                                  style="margin-left: 8px;">After Hours Schedule Filters</span>
+                        </div>
+                    </md-toolbar>
+
                     <md-card-content>
                         <div class="filter-section">
                             <div class="filter-controls">
                                 <md-input-container class="search-input" flex="40">
-                                    <label>Search by Driver ID or Name</label>
-                                    <input ng-model="ctrl.afterHoursFilters.search"
-                                           ng-change="ctrl.loadAfterHoursSchedule()"
+                                    <label>Search</label>
+                                    <input ng-model="ctrl.afterHoursQuery.searchTerm"
+                                           ng-change="ctrl.shouldTriggerSearch(ctrl.afterHoursQuery.searchTerm) && ctrl.loadAfterHoursSchedule()"
                                            ng-model-options="{ debounce: 500 }">
                                 </md-input-container>
 
                                 <md-input-container class="filter-input">
                                     <label>Filter by Day</label>
-                                    <md-select ng-model="ctrl.afterHoursFilters.day">
-                                        <md-option value="">All Days</md-option>
-                                        <md-option value="1">Monday</md-option>
-                                        <md-option value="2">Tuesday</md-option>
-                                        <md-option value="3">Wednesday</md-option>
-                                        <md-option value="4">Thursday</md-option>
-                                        <md-option value="5">Friday</md-option>
-                                        <md-option value="6">Saturday</md-option>
-                                        <md-option value="7">Sunday</md-option>
+                                    <md-select
+                                            ng-change="ctrl.loadAfterHoursSchedule()"
+                                            ng-model="ctrl.afterHoursFilters.day">
+                                        <md-option value="all">All Days</md-option>
+                                        <md-option value="monday">Monday</md-option>
+                                        <md-option value="tuesday">Tuesday</md-option>
+                                        <md-option value="wednesday">Wednesday</md-option>
+                                        <md-option value="thursday">Thursday</md-option>
+                                        <md-option value="friday">Friday</md-option>
+                                        <md-option value="saturday">Saturday</md-option>
+                                        <md-option value="sunday">Sunday</md-option>
                                     </md-select>
                                 </md-input-container>
                             </div>
@@ -567,7 +587,7 @@
                                     <md-icon md-font-set="material-symbols-outlined">add</md-icon>
                                     Add Assignment
                                 </md-button>
-                                <md-button class="md-raised" ng-click="ctrl.loadAfterHoursSchedule()">
+                                <md-button class="md-raised" ng-click="ctrl.refreshAfterHoursSchedule()">
                                     <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
                                     Refresh
                                 </md-button>
@@ -579,35 +599,32 @@
                 <!-- Schedule Table -->
                 <md-card class="data-table-card">
                     <md-table-container>
-                        <table md-table class="schedule-table">
-                            <thead md-head>
+                        <table md-table md-progress="ctrl.afterHoursSchedulePromise" class="schedule-table">
+                            <thead md-head fix-head md-order="ctrl.afterHoursQuery.orderBy"
+                                   md-on-reorder="ctrl.loadAfterHoursSchedule">
                             <tr md-row>
-                                <th md-column>Driver ID</th>
-                                <th md-column>Driver Name</th>
-                                <th md-column>Day</th>
-                                <th md-column>Start Time</th>
-                                <th md-column>End Time</th>
+                                <th md-column md-order-by="name">Driver Name</th>
+                                <th md-column md-order-by="day">Day</th>
+                                <th md-column md-order-by="startTime">Start Time</th>
+                                <th md-column md-order-by="endTime">End Time</th>
                                 <th md-column>Duration</th>
                                 <th md-column>Actions</th>
                             </tr>
                             </thead>
                             <tbody md-body>
-                            <tr md-row ng-repeat="assignment in ctrl.getFilteredAfterHoursSchedule()" class="table-row">
+                            <tr md-row ng-repeat="assignment in ctrl.afterHoursSchedule" class="table-row">
+                                <td md-cell>{{::assignment.courierName}}</td>
                                 <td md-cell>
-                                    <span class="code-badge">{{assignment.courierId}}</span>
-                                </td>
-                                <td md-cell>{{assignment.courierName}}</td>
-                                <td md-cell>
-                                    <span class="day-badge">{{assignment.day}}</span>
+                                    <span class="day-badge">{{::assignment.day}}</span>
                                 </td>
                                 <td md-cell>
-                                    <span class="time-badge start-time">{{ctrl.formatScheduleTime(assignment.startTime)}}</span>
+                                    <span class="time-badge start-time">{{::ctrl.formatScheduleTime(assignment.startTime)}}</span>
                                 </td>
                                 <td md-cell>
-                                    <span class="time-badge end-time">{{ctrl.formatScheduleTime(assignment.endTime)}}</span>
+                                    <span class="time-badge end-time">{{::ctrl.formatScheduleTime(assignment.endTime)}}</span>
                                 </td>
                                 <td md-cell>
-                                    <span class="duration-badge">{{assignment.duration}}</span>
+                                    <span class="duration-badge">{{::assignment.duration}}</span>
                                 </td>
                                 <td md-cell>
                                     <div class="table-actions">
@@ -628,14 +645,22 @@
                         </table>
                     </md-table-container>
 
-                    <md-progress-linear md-mode="indeterminate" ng-if="ctrl.afterHoursLoading"></md-progress-linear>
+                    <md-table-pagination
+                            md-limit="ctrl.afterHoursQuery.pageSize"
+                            md-limit-options="[10, 25, 50, 100]"
+                            md-page="ctrl.afterHoursQuery.page"
+                            md-total="{{ctrl.afterHoursStats.totalAssignments}}"
+                            md-on-paginate="ctrl.loadAfterHoursSchedule"
+                            md-page-select>
+                    </md-table-pagination>
+
                 </md-card>
-            </md-content>
+            </div>
         </md-tab>
 
         <!-- Driver Emails Tab -->
         <md-tab label="Driver Emails">
-            <md-content class="tab-content">
+            <div class="tab-content">
                 <!-- Email Controls -->
                 <md-card class="filter-card">
                     <md-card-content>
@@ -735,7 +760,7 @@
 
                     <md-progress-linear md-mode="indeterminate" ng-if="ctrl.emailsLoading"></md-progress-linear>
                 </md-card>
-            </md-content>
+            </div>
         </md-tab>
     </md-tabs>
 </md-content>

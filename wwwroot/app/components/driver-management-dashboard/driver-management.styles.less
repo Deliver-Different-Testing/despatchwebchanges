@@ -24,13 +24,15 @@
 
 // Main Container
 .driver-management-container {
+  height: 100vh;
+  overflow-y: auto;
   margin-top: -20px;
   background-color: @main-background-color;
   min-height: 100vh;
 
   // Main Tabs
   .main-tabs {
-    background: white;
+    background: @main-background-color;
     border-bottom: 1px solid @standard-grey;
     height: calc(100% - 64px);
 
@@ -247,6 +249,7 @@
         font-size: 72px;
         color: lighten(@standard-grey, 10%);
         margin-bottom: 24px;
+        margin-right: 24px;
       }
 
       .empty-state-title {

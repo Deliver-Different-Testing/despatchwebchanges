@@ -9,8 +9,9 @@ import IDriverEmail from "./interfaces/IDriverEmail";
 import {formatMins, formatShortDateWithYear} from "../../functions/formatDates";
 import {IAppConfig} from "../../interfaces/app-config.interface";
 import greetUser from "../../functions/greetUser";
-import {IPaginatedRequest} from "../../interfaces/paginated-response.interface";
 import {ISuggestion} from "../../interfaces/job.interface";
+import {IAfterHoursFilter, ICourierComplianceFilter} from "./interfaces/ICourierComplianceFilter";
+import {IPaginatedRequest} from "../../interfaces/paginated-request.interfaces";
 
 class DriverManagementController extends BaseController {
     static $inject = [
@@ -46,15 +47,14 @@ class DriverManagementController extends BaseController {
         orderBy: "code",
         pageSize: 10,
         page: 1,
-        searchTerm: undefined,
+        searchTerm: '',
         sortDescending: false,
     };
     complianceItems: ICourierCompliance[] = [];
-    complianceFilters = {
-        type: '',
-        status: '',
-        fleet: '',
-        search: ''
+    complianceFilters: ICourierComplianceFilter = {
+        type: 'all',
+        status: 'all',
+        fleet: 'all',
     };
     complianceStats = {
         expired: 0,
@@ -64,21 +64,23 @@ class DriverManagementController extends BaseController {
     };
 
     // After Hours
+    afterHoursSchedulePromise: any;
+    afterHoursQuery: IPaginatedRequest = {
+        orderBy: "name",
+        pageSize: 10,
+        page: 1,
+        searchTerm: '',
+        sortDescending: false,
+    };
     afterHoursSchedule: IAfterHoursCourierSchedule[] = [];
-    afterHoursLoading: boolean = false;
-    afterHoursFilters = {
-        day: '',
-        search: ''
+    afterHoursFilters: IAfterHoursFilter = {
+        day: 'all'
     };
     afterHoursStats = {
         totalAssignments: 0,
         activeDrivers: 0,
         todayCoverage: false
     };
-
-    // Find by REGO
-    regoSearchQuery: string = '';
-    regoSearchResult?: ICourierDataDashboard;
 
     // Email Management
     driverEmails: IDriverEmail[] = [];
@@ -107,6 +109,7 @@ class DriverManagementController extends BaseController {
         super();
         this.initServices($timeout, $interval, $scope);
         this.isUsCustomer = appConfig.US_Customer;
+        this.bindFunctions();
 
         this.$log.debug('Driver management component initialized');
     }
@@ -121,6 +124,12 @@ class DriverManagementController extends BaseController {
                 this.toastrService.showErrorToast('Failed to initialize driver management');
                 this.$log.error('Initialization error:', error);
             });
+    }
+
+    private bindFunctions() {
+        this.selectDriver = this.selectDriver.bind(this);
+        this.loadAfterHoursSchedule = this.loadAfterHoursSchedule.bind(this);
+        this.loadComplianceData = this.loadComplianceData.bind(this);
     }
 
     private loadLastActiveTab() {
@@ -205,10 +214,10 @@ class DriverManagementController extends BaseController {
 
         this.$log.debug('Tab changed to:', index);
         this.selectedTab = index;
-        
+
         // Save the last active tab
         localStorage.setItem(DriverManagementController.LastActiveTabKey, index.toString());
-        
+
         await this.loadInitialData();
     }
 
@@ -275,10 +284,12 @@ class DriverManagementController extends BaseController {
     }
 
     // Compliance Methods
-    private async loadComplianceData(): Promise<void> {
+    async loadComplianceData(): Promise<void> {
         try {
-            this.complianceQuery.searchTerm = this.buildComplianceSearchTerm();
-            this.compliancePromise = this.driverManagementService.getCourierComplianceList(this.complianceQuery);
+            this.compliancePromise = this.driverManagementService.getCourierComplianceList(
+                this.complianceQuery,
+                this.complianceFilters
+            );
 
             const complianceResponse = await this.compliancePromise;
             this.complianceItems = complianceResponse.items;
@@ -293,22 +304,6 @@ class DriverManagementController extends BaseController {
             this.$log.error('Error loading compliance data:', error);
             this.toastrService.showErrorToast('Failed to load compliance data');
         }
-    }
-
-    async onCompliancePaginate(page: number, limit: number): Promise<void> {
-        this.complianceQuery.page = page;
-        this.complianceQuery.pageSize = limit;
-
-        await this.loadComplianceData();
-    }
-
-    private buildComplianceSearchTerm(): string {
-        const filters = [];
-        if (this.complianceFilters.type) filters.push(`type:${this.complianceFilters.type}`);
-        if (this.complianceFilters.status) filters.push(`status:${this.complianceFilters.status}`);
-        if (this.complianceFilters.fleet) filters.push(`fleet:${this.complianceFilters.fleet}`);
-        if (this.complianceFilters.search) filters.push(this.complianceFilters.search);
-        return filters.join(' ');
     }
 
     getComplianceStatus(expiryDate: Date | undefined): { status: string; class: string; daysUntil: number } {
@@ -459,42 +454,25 @@ class DriverManagementController extends BaseController {
     }
 
     // After Hours Methods
-    private async loadAfterHoursSchedule(): Promise<void> {
-        this.afterHoursLoading = true;
+    async loadAfterHoursSchedule(): Promise<void> {
         try {
-            const searchTerm = this.afterHoursFilters.search;
-            this.afterHoursSchedule = await this.driverManagementService.getAfterHoursCourierSchedule(searchTerm);
-            this.updateAfterHoursStats();
+            this.afterHoursSchedulePromise = this.driverManagementService.getAfterHoursCourierScheduleList(
+                this.afterHoursQuery,
+                this.afterHoursFilters
+            );
+
+            const afterHoursResponse = await this.afterHoursSchedulePromise;
+            this.afterHoursSchedule = afterHoursResponse.items;
+
+            this.afterHoursStats = {
+                totalAssignments: afterHoursResponse.total,
+                activeDrivers: afterHoursResponse.totalActiveDrivers,
+                todayCoverage: afterHoursResponse.totalAssignments > 0
+            }
         } catch (error) {
             this.$log.error('Error loading after hours schedule:', error);
             this.toastrService.showErrorToast('Failed to load after hours schedule');
-        } finally {
-            this.afterHoursLoading = false;
         }
-    }
-
-    private updateAfterHoursStats(): void {
-        const uniqueDrivers = new Set(this.afterHoursSchedule.map(s => s.courierId));
-        const today = dayjs().format('dddd'); // Get the current day name
-        const todaySchedule = this.afterHoursSchedule.filter(s => s.day === today);
-
-        this.afterHoursStats = {
-            totalAssignments: this.afterHoursSchedule.length,
-            activeDrivers: uniqueDrivers.size,
-            todayCoverage: todaySchedule.length > 0
-        };
-    }
-
-    getFilteredAfterHoursSchedule(): IAfterHoursCourierSchedule[] {
-        let filtered = [...this.afterHoursSchedule];
-
-        if (this.afterHoursFilters.day) {
-            const dayNames = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-            const selectedDay = dayNames[parseInt(this.afterHoursFilters.day)];
-            filtered = filtered.filter(s => s.day === selectedDay);
-        }
-
-        return filtered;
     }
 
     formatScheduleTime(time: Date | undefined): string {
@@ -698,12 +676,21 @@ class DriverManagementController extends BaseController {
     async queryDrivers(searchText: string) {
         return await this.driverManagementService.searchAllCouriers(searchText);
     }
+
+    shouldTriggerSearch(searchTerm: string): boolean {
+        return searchTerm.length >= 2;
+    }
+
+    async refreshAfterHoursSchedule(): Promise<void> {
+        await this.loadAfterHoursSchedule();
+        this.toastrService.showSuccessToast('After hours schedule refreshed');
+    }
 }
 
 const DriverManagementComponent: angular.IComponentOptions = {
     template: require("./driver-management.template.html"),
     controller: DriverManagementController,
-    controllerAs: "ctrl"
+    controllerAs: "ctrl",
 };
 
 export default DriverManagementComponent;

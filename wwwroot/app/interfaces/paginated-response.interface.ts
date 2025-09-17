@@ -7,16 +7,12 @@ export interface IPaginatedResponse<T> {
     pages: number;
 }
 
-export interface IPaginatedRequest {
-    searchTerm?: string;
-    page: number;
-    pageSize: number;
-    orderBy: string;
-    sortDescending: boolean;
-}
-
 export interface ICourierCompliancePaginated extends IPaginatedResponse<ICourierCompliance> {
     totalExpired: number;
     totalExpiringSoon: number;
     totalValid: number;
+}
+
+export interface ICourierAfterHoursPaginated extends IPaginatedResponse<IAfterHoursCourierSchedule> {
+    totalActiveDrivers: number;
 }
