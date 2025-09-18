@@ -435,6 +435,7 @@
     <TypeScriptCompile Include="wwwroot\app\enums\holiday-delivery-options.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\job-internal-status.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\job-note-type.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\job-photo-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\job-property.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\job-status.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\late-event-type.enum.ts" />

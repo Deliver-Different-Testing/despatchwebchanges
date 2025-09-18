@@ -326,7 +326,7 @@ class TasksService implements angular.IServiceProvider {
 
         const filterName = this.PAGE_FILTER_MAPPING[appPage]?.staff;
         if (!filterName) {
-            console.warn(`No staff filter mapping found for page: ${AppPages[appPage]}`);
+            this.$log.warn(`No staff filter mapping found for page: ${AppPages[appPage]}`);
             return StatusFilter.All;
         }
 
@@ -338,7 +338,7 @@ class TasksService implements angular.IServiceProvider {
 
         const filterName = this.PAGE_FILTER_MAPPING[appPage]?.eventType;
         if (!filterName) {
-            console.warn(`No event type filter mapping found for page: ${AppPages[appPage]}`);
+            this.$log.warn(`No event type filter mapping found for page: ${AppPages[appPage]}`);
             return StatusFilter.All;
         }
 
@@ -350,7 +350,7 @@ class TasksService implements angular.IServiceProvider {
 
         const filterName = this.PAGE_FILTER_MAPPING[appPage]?.staff;
         if (!filterName) {
-            console.warn(`No staff filter mapping found for page: ${AppPages[appPage]}`);
+            this.$log.warn(`No staff filter mapping found for page: ${AppPages[appPage]}`);
             return;
         }
 
@@ -362,7 +362,7 @@ class TasksService implements angular.IServiceProvider {
 
         const filterName = this.PAGE_FILTER_MAPPING[appPage]?.eventType;
         if (!filterName) {
-            console.warn(`No event type filter mapping found for page: ${AppPages[appPage]}`);
+            this.$log.debug(`No event type filter mapping found for page: ${AppPages[appPage]}`);
             return;
         }
 
@@ -412,7 +412,7 @@ class TasksService implements angular.IServiceProvider {
         if (!hasJobId) {
             const message = "This task has no job attached";
             onWarning(message);
-            console.warn('[TaskService] No jobId provided for task:', task.id);
+            this.$log.warn('[TaskService] No jobId provided for task:', task.id);
         }
         return hasJobId;
     }

@@ -1,11 +1,11 @@
 import ToastrService from "../../../services/toastr.service";
 import {
-    IEditAddressDialogViewModel,
     IDispatchJob,
+    IEditAddressDialogViewModel,
     IJob,
     InternalStatus,
-    JobGroup,
     ISuggestion,
+    JobGroup,
 } from "../../../interfaces/job.interface";
 import {ContactID, FirstName} from "../../../contants";
 import {CallData, JobOptions, TabItem} from "./job-details.interfaces";
@@ -35,6 +35,7 @@ import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
 import VoidJobConfirmationDialogService
     from "../../dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
 import {formatFullDate} from "../../../functions/formatDates";
+import JobPhotoType from "../../../enums/job-photo-type.enum";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -82,6 +83,7 @@ class JobDetailController extends BaseController {
     selectedSubJobIndex: number = 0;
     jobAddressIcon: string = "pin_drop";
     viewDensity: 'normal' | 'dense' | 'ultradense' = 'normal';
+    formattedPickupPhotos: PodPhoto[] = [];
 
     isEditMode: boolean = false;
     fieldVisibility: { [key: string]: boolean } = {};
@@ -242,7 +244,15 @@ class JobDetailController extends BaseController {
         super.$onDestroy();
         this.$log.debug("$onDestroy called - cleaning up resources");
 
+        // Clean up delivery photos
         this.formattedPodPhotos?.forEach(photo => {
+            if (photo?.url) {
+                URL.revokeObjectURL(photo.url);
+            }
+        });
+
+        // Clean up pickup photos
+        this.formattedPickupPhotos?.forEach(photo => {
             if (photo?.url) {
                 URL.revokeObjectURL(photo.url);
             }
@@ -406,65 +416,79 @@ class JobDetailController extends BaseController {
             return;
         }
 
-        this.$log.debug(`Loading POD photos for job: ${this.job.id}`);
+        this.$log.debug(`Loading POD and pickup photos for job: ${this.job.id}`);
 
         try {
             const completedTime = dayjs(this.job?.completedTime);
             const month = completedTime.month() + 1;
             const year = completedTime.year();
 
-            this.$log.debug(`Getting POD photos for Job ${this.job.jobNo} : for date: ${year}-${month}`);
-
-            const photosData: any = await this.DispatchData.getJobDeliveryPhotosAndSignature(
+            // Load delivery photos
+            const deliveryPhotosData: any = await this.DispatchData.getJobDeliveryPhotosAndSignature(
                 this.job.id,
                 year,
                 month
             );
 
-            if (!photosData || photosData.length === 0) {
-                this.$log.debug("No POD photos returned from server");
-                this.formattedPodPhotos = [];
-            } else {
-                this.$log.debug("Raw photos data received, count:", photosData.length);
+            // Load pickup photos
+            const pickupPhotosData: any = await this.DispatchData.getJobPickupPhotos(
+                this.job.id,
+                year,
+                month
+            );
 
-                this.formattedPodPhotos = photosData.map(
-                    (photoData: string, index: number) => {
-                        try {
-                            const podPhoto: PodPhoto = {
-                                url: photoData,
-                                timestamp: this.job?.completedTime
-                                    ? formatFullDate(this.job.completedTime)
-                                    : undefined,
-                                uploadedBy: this.job?.courierData?.courierName ?? "Unknown",
-                                coordinates: {
-                                    lat: this.job?.deliveryAddress?.latitude ?? 0,
-                                    lng: this.job?.deliveryAddress?.longitude ?? 0,
-                                },
-                            };
+            // Process delivery photos
+            this.formattedPodPhotos = this.processPhotoData(deliveryPhotosData, JobPhotoType.Delivery);
 
-                            return podPhoto;
-                        } catch (error) {
-                            this.$log.error(`Error processing photo ${index}:`, error);
-                            return null;
-                        }
-                    }
-                );
-            }
+            // Process pickup photos
+            this.formattedPickupPhotos = this.processPhotoData(pickupPhotosData, JobPhotoType.Pickup);
 
             this.$log.debug(
-                `Successfully processed ${this.formattedPodPhotos.length} POD photos`
+                `Successfully processed ${this.formattedPodPhotos.length} delivery photos and ${this.formattedPickupPhotos.length} pickup photos`
             );
 
             this.selectedPhotoIndex = 0;
             this.setupPhotoKeyboardNavigation();
         } catch (error) {
-            this.toastrService.showErrorToast("Failed to load POD photos");
-            this.$log.error("Error loading POD photos:", error);
+            this.toastrService.showErrorToast("Failed to load POD/pickup photos");
+            this.$log.error("Error loading photos:", error);
             this.formattedPodPhotos = [];
+            this.formattedPickupPhotos = [];
             this.handleError(error);
         }
     }
 
+    private processPhotoData(photosData: any, photoType: JobPhotoType): PodPhoto[] {
+        if (!photosData || photosData.length === 0) {
+            return [];
+        }
+
+        return photosData.map((photoData: string, index: number) => {
+            try {
+                const podPhoto: PodPhoto = {
+                    url: photoData,
+                    timestamp: this.job?.completedTime
+                        ? formatFullDate(this.job.completedTime)
+                        : undefined,
+                    uploadedBy: this.job?.courierData?.courierName ?? "Unknown",
+                    coordinates: {
+                        lat: photoType === JobPhotoType.Delivery
+                            ? (this.job?.deliveryAddress?.latitude ?? 0)
+                            : (this.job?.pickupAddress?.latitude ?? 0),
+                        lng: photoType === JobPhotoType.Delivery
+                            ? (this.job?.deliveryAddress?.longitude ?? 0)
+                            : (this.job?.pickupAddress?.longitude ?? 0),
+                    },
+                };
+
+                return podPhoto;
+            } catch (error) {
+                this.$log.error(`Error processing ${photoType} photo ${index}:`, error);
+                return null;
+            }
+        });
+    }
+    
     private initializeJobData(): void {
         if (!this.job) return;
 

@@ -253,12 +253,12 @@ public class NationwideJobRepository(
         }
     }
 
-    private async Task<int> GetTimeZoneIdByNameAsync(string timeZoneName)
+    private async Task<int?> GetTimeZoneIdByNameAsync(string timeZoneName)
     {
         return await Context.TimeZones
             .Where(tz => tz.Name == timeZoneName || tz.Code == timeZoneName)
             .Select(tz => tz.Id)
-            .FirstAsync();
+            .FirstOrDefaultAsync();
     }
 
     public async Task<List<Suggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true)
@@ -1214,13 +1214,30 @@ public class NationwideJobRepository(
     private async Task UpdateJobAddressWithAirportInfoAsync(TucJob job, int airportId, string airportTimezone,
         bool isDeliveryAddress)
     {
-        var airport = await Context.TblAirports.FindAsync(airportId);
+        var airport = await Context.TblAirports
+            .Where(a => a.AirportId == airportId)
+            .Select(a => new AirportAddressInfoDto
+            {
+                AddressLine1 = a.AddressLine1,
+                AddressLine2 = a.AddressLine2,
+                AddressLine3 = a.AddressLine3,
+                AddressLine4 = a.AddressLine4,
+                AddressLine5 = a.AddressLine5,
+                AddressLine6 = a.AddressLine6,
+                AddressLine7 = a.AddressLine7,
+                AddressLine8 = a.AddressLine8,
+                Latitude = a.Latitude,
+                Longitude = a.Longitude
+            })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
         ArgumentNullException.ThrowIfNull(airport);
 
         int? timeZoneId = null;
         if (!string.IsNullOrEmpty(airportTimezone))
             timeZoneId = await GetTimeZoneIdByNameAsync(airportTimezone);
-
+        
         if (isDeliveryAddress)
         {
             job.DeliveryAddressLine1 = airport.AddressLine1;
