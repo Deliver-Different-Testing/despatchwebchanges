@@ -1,13 +1,15 @@
 ﻿export interface ICourierComplianceFilter {
     type: string;
     status: string;
-    fleet: string;
+    fleet: number;
 }
 
 export interface IAfterHoursFilter {
     day: string;
 }
 
-export interface IDriverEmailFilter {
-    fleet: string;
+export interface ITodayActiveDriverFilter {
+    location: string;
+    status: string;
+    fleet: number;
 }

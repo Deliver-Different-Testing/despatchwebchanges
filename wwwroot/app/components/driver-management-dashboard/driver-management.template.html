@@ -65,21 +65,6 @@
                             </md-autocomplete>
 
                             <div flex></div>
-
-                            <div class="action-buttons">
-                                <md-button class="md-raised md-primary action-button"
-                                           ng-click="ctrl.editDriverDetails()"
-                                           ng-disabled="!ctrl.selectedDriver">
-                                    <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
-                                    Edit Details
-                                </md-button>
-                                <md-button class="md-raised action-button"
-                                           ng-click="ctrl.printDriverDetails()"
-                                           ng-disabled="!ctrl.selectedDriver">
-                                    <md-icon md-font-set="material-symbols-outlined">print</md-icon>
-                                    Print
-                                </md-button>
-                            </div>
                         </div>
                     </md-card-content>
                 </md-card>
@@ -290,8 +275,7 @@
                             </md-icon>
                             <h3 class="empty-state-title">No Driver Selected</h3>
                             <p class="empty-state-message">Please select a driver from the search box above to view
-                                their
-                                details</p>
+                                their details</p>
                         </div>
                     </div>
                 </div>
@@ -299,8 +283,171 @@
             </div>
         </md-tab>
 
+        <!-- Today's Active Tab -->
+        <md-tab label="Today's Active" md-on-select="ctrl.onTabChange(1)">
+            <div class="tab-content">
+                <!-- Statistics Dashboard -->
+                <div class="stats-dashboard">
+                    <md-card class="stat-card valid-stat">
+                        <md-card-content>
+                            <div class="stat-details">
+                                <div class="stat-value">{{ctrl.todayActiveDriversStats.totalActiveDrivers}}</div>
+                                <div class="stat-label">Currently Online</div>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+
+                    <md-card class="stat-card warning-stat">
+                        <md-card-content>
+                            <div class="stat-details">
+                                <div class="stat-value">{{ctrl.todayActiveDriversStats.onBreak}}</div>
+                                <div class="stat-label">On Break</div>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+
+                    <md-card class="stat-card total-stat">
+                        <md-card-content>
+                            <div class="stat-details">
+                                <div class="stat-value">{{ctrl.todayActiveDriversStats.totalDriversActiveToday}}</div>
+                                <div class="stat-label">Total Today</div>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+
+                    <md-card class="stat-card total-stat">
+                        <md-card-content>
+                            <div class="stat-details">
+                                <div class="stat-value">{{ctrl.todayActiveDriversStats.averageSession}}</div>
+                                <div class="stat-label">Average Session</div>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+                </div>
+
+                <!-- Filters & Actions -->
+                <md-card class="filter-card">
+                    <md-toolbar class="widget-toolbar">
+                        <div class="md-toolbar-tools">
+                            <span class="material-symbols-outlined">filter_list</span>
+                            <span class="md-headline-title" flex
+                                  style="margin-left: 8px;">Today's Active Drivers Filters</span>
+                        </div>
+                    </md-toolbar>
+
+                    <md-card-content>
+                        <div class="filter-section">
+                            <div class="filter-controls">
+                                <md-input-container class="filter-input">
+                                    <label>Filter by Status</label>
+                                    <md-select ng-model="ctrl.todayActiveDriversFilters.status"
+                                               ng-change="ctrl.loadTodayActiveDrivers()">
+                                        <md-option value="all">All Statuses</md-option>
+                                        <md-option value="expired">Expired</md-option>
+                                        <md-option value="expiring">Expiring Soon</md-option>
+                                        <md-option value="valid">Valid</md-option>
+                                    </md-select>
+                                </md-input-container>
+
+                                <md-input-container class="filter-input">
+                                    <label>Filter by Fleet</label>
+                                    <md-select ng-model="ctrl.todayActiveDriversFilters.fleet"
+                                               ng-change="ctrl.loadTodayActiveDrivers()">
+                                        <md-option value="0">All Fleets</md-option>
+                                        <md-option ng-repeat="option in ctrl.fleetOptions track by option.id"
+                                                   ng-value="option.id">
+                                            {{option.text}}
+                                        </md-option>
+                                    </md-select>
+                                </md-input-container>
+
+                                <md-input-container class="filter-input search-input">
+                                    <label>Search</label>
+                                    <input ng-model="ctrl.todayActiveDriversQuery.searchTerm"
+                                           ng-change="ctrl.loadTodayActiveDrivers()"
+                                           ng-model-options="{ debounce: 500 }">
+                                </md-input-container>
+                            </div>
+
+                            <div class="filter-actions">
+                                <md-button class="md-raised" ng-click="ctrl.refreshTodaySchedule()">
+                                    <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+                                    Refresh
+                                </md-button>
+                                
+                                <md-button class="md-raised" ng-click="ctrl.exportTodayActiveDrivers()">
+                                    <md-icon md-font-set="material-symbols-outlined">download</md-icon>
+                                    Export
+                                </md-button>
+                            </div>
+                        </div>
+                    </md-card-content>
+                </md-card>
+
+                <!-- Today Active Drivers Table -->
+                <md-card class="data-table-card">
+                    <md-table-container>
+                        <table md-table md-progress="ctrl.todayActiveDriversPromise" class="active-drivers-table">
+                            <thead md-head fix-head md-order="ctrl.todayActiveDriversQuery.orderBy"
+                                   md-on-reorder="ctrl.loadTodayActiveDrivers">
+                            <tr md-row>
+                                <th md-column md-order-by="code">Code</th>
+                                <th md-column md-order-by="name">Name</th>
+                                <th md-column md-order-by="fleet">Fleet</th>
+                                <th md-column md-order-by="loginTime">Login Time</th>
+                                <th md-column md-order-by="logoutTime">Logout Time</th>
+                                <th md-column>Duration</th>
+                                <th md-column md-order-by="deliveries">Deliveries</th>
+                                <th md-column md-order-by="status">Status</th>
+                            </tr>
+                            </thead>
+                            <tbody md-body>
+                            <tr md-row ng-repeat="driver in ctrl.todayActiveDriversList track by driver.courierId"
+                                class="table-row">
+                                <td md-cell>
+                                    <span class="code-badge">{{::driver.code}}</span>
+                                </td>
+                                <td md-cell>{{::driver.name}}</td>
+                                <td md-cell>
+                                    <span class="fleet-badge">{{::driver.fleet}}</span>
+                                </td>
+                                <td md-cell>
+                                    <span class="time-value">{{::driver.loginTime | date:'HH:mm:ss'}}</span>
+                                </td>
+                                <td md-cell>
+                                    <span class="time-value">{{::driver.logoutTime | date:'HH:mm:ss'}}</span>
+                                </td>
+                                <td md-cell>
+                                    <span class="duration-badge">{{driver.duration}}</span>
+                                </td>
+                                <td md-cell>
+                                    <span class="delivery-count">{{driver.deliveries}}</span>
+                                </td>
+                                <td md-cell>
+                                    <span class="status-badge"
+                                          ng-class="ctrl.getDriverStatusClass(driver.status)">
+                                        {{driver.status}}
+                                    </span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </md-table-container>
+
+                    <md-table-pagination
+                            md-limit="ctrl.todayActiveDriversQuery.pageSize"
+                            md-limit-options="[10, 25, 50, 100]"
+                            md-page="ctrl.todayActiveDriversQuery.page"
+                            md-total="{{ctrl.todayActiveDriversStats.totalActiveDrivers}}"
+                            md-on-paginate="ctrl.loadActiveDriversData"
+                            md-page-select>
+                    </md-table-pagination>
+                </md-card>
+            </div>
+        </md-tab>
+
         <!-- Compliance Tab -->
-        <md-tab label="Driver Compliance" md-on-select="ctrl.onTabChange(1)">
+        <md-tab label="Driver Compliance" md-on-select="ctrl.onTabChange(2)">
             <div class="tab-content">
                 <!-- Statistics Dashboard -->
                 <div class="stats-dashboard">
@@ -357,7 +504,7 @@
                                 <md-input-container class="filter-input">
                                     <label>Filter by Type</label>
                                     <md-select ng-model="ctrl.complianceFilters.type"
-                                               ng-change="ctrl.onComplianceFilterChange()">
+                                               ng-change="ctrl.loadComplianceData()">
                                         <md-option value="all">All Types</md-option>
                                         <md-option value="drivers_license">Driver's License</md-option>
                                         <md-option value="dg_endorsement">DG Endorsement</md-option>
@@ -370,7 +517,7 @@
                                 <md-input-container class="filter-input">
                                     <label>Filter by Status</label>
                                     <md-select ng-model="ctrl.complianceFilters.status"
-                                               ng-change="ctrl.onComplianceFilterChange()">
+                                               ng-change="ctrl.loadComplianceData()">
                                         <md-option value="all">All Statuses</md-option>
                                         <md-option value="expired">Expired</md-option>
                                         <md-option value="expiring">Expiring Soon</md-option>
@@ -381,27 +528,24 @@
                                 <md-input-container class="filter-input">
                                     <label>Filter by Fleet</label>
                                     <md-select ng-model="ctrl.complianceFilters.fleet"
-                                               ng-change="ctrl.onComplianceFilterChange()">
-                                        <md-option value="all">All Fleets</md-option>
-                                        <md-option value="urgent">Urgent</md-option>
-                                        <md-option value="dfrnt">DFRNT</md-option>
-                                        <md-option value="independent">Independent</md-option>
+                                               ng-change="ctrl.loadComplianceData()">
+                                        <md-option value="0">All Fleets</md-option>
+                                        <md-option ng-repeat="option in ctrl.fleetOptions track by option.id"
+                                                   ng-value="option.id">
+                                            {{option.text}}
+                                        </md-option>
                                     </md-select>
                                 </md-input-container>
 
                                 <md-input-container class="filter-input search-input">
                                     <label>Search</label>
                                     <input ng-model="ctrl.complianceQuery.searchTerm"
-                                           ng-change="ctrl.onComplianceFilterChange()"
+                                           ng-change="ctrl.loadComplianceData()"
                                            ng-model-options="{ debounce: 500 }">
                                 </md-input-container>
                             </div>
 
                             <div class="filter-actions">
-                                <md-button ng-disabled class="md-raised md-accent" ng-click="ctrl.addComplianceItem()">
-                                    <md-icon md-font-set="material-symbols-outlined">add</md-icon>
-                                    Add Item
-                                </md-button>
                                 <md-button ng-disabled class="md-raised md-warn"
                                            ng-click="ctrl.sendBulkComplianceReminders()">
                                     <md-icon md-font-set="material-symbols-outlined">send</md-icon>
@@ -434,7 +578,8 @@
                             </tr>
                             </thead>
                             <tbody md-body>
-                            <tr md-row ng-repeat="item in ctrl.complianceItems" class="table-row">
+                            <tr md-row ng-repeat="item in ctrl.complianceItems track by item.courierId"
+                                class="table-row">
                                 <td md-cell>
                                     <span class="code-badge">{{item.code}}</span>
                                 </td>
@@ -467,17 +612,9 @@
                                 </td>
                                 <td md-cell>
                                     <div class="table-actions">
-                                        <md-button class="md-icon-button" ng-click="ctrl.editComplianceItem(item)">
-                                            <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
-                                            <md-tooltip>Edit</md-tooltip>
-                                        </md-button>
                                         <md-button class="md-icon-button" ng-click="ctrl.sendComplianceReminder(item)">
                                             <md-icon md-font-set="material-symbols-outlined">email</md-icon>
                                             <md-tooltip>Send Reminder</md-tooltip>
-                                        </md-button>
-                                        <md-button class="md-icon-button" ng-click="ctrl.deleteComplianceItem(item)">
-                                            <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
-                                            <md-tooltip>Delete</md-tooltip>
                                         </md-button>
                                     </div>
                                 </td>
@@ -501,7 +638,7 @@
         </md-tab>
 
         <!-- After Hours Tab -->
-        <md-tab label="After Hours Schedule" md-on-select="ctrl.onTabChange(2)">
+        <md-tab label="After Hours Schedule" md-on-select="ctrl.onTabChange(3)">
             <div class="tab-content">
                 <!-- Schedule Stats -->
                 <div class="stats-dashboard">
@@ -608,11 +745,11 @@
                                 <th md-column md-order-by="startTime">Start Time</th>
                                 <th md-column md-order-by="endTime">End Time</th>
                                 <th md-column>Duration</th>
-                                <th md-column>Actions</th>
                             </tr>
                             </thead>
                             <tbody md-body>
-                            <tr md-row ng-repeat="assignment in ctrl.afterHoursSchedule" class="table-row">
+                            <tr md-row ng-repeat="assignment in ctrl.afterHoursSchedule track by $index"
+                                class="table-row">
                                 <td md-cell>{{::assignment.courierName}}</td>
                                 <td md-cell>
                                     <span class="day-badge">{{::assignment.day}}</span>
@@ -624,21 +761,7 @@
                                     <span class="time-badge end-time">{{::ctrl.formatScheduleTime(assignment.endTime)}}</span>
                                 </td>
                                 <td md-cell>
-                                    <span class="duration-badge">{{::assignment.duration}}</span>
-                                </td>
-                                <td md-cell>
-                                    <div class="table-actions">
-                                        <md-button class="md-icon-button"
-                                                   ng-click="ctrl.editAfterHoursAssignment(assignment)">
-                                            <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
-                                            <md-tooltip>Edit</md-tooltip>
-                                        </md-button>
-                                        <md-button class="md-icon-button"
-                                                   ng-click="ctrl.deleteAfterHoursAssignment(assignment)">
-                                            <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
-                                            <md-tooltip>Delete</md-tooltip>
-                                        </md-button>
-                                    </div>
+                                    <span class="duration-badge">{{assignment.duration}}</span>
                                 </td>
                             </tr>
                             </tbody>
@@ -673,11 +796,13 @@
 
                                 <md-input-container class="filter-input">
                                     <label>Filter by Fleet</label>
-                                    <md-select ng-model="ctrl.emailFilters.fleet">
-                                        <md-option value="">All Fleets</md-option>
-                                        <md-option value="urgent">Urgent</md-option>
-                                        <md-option value="dfrnt">DFRNT</md-option>
-                                        <md-option value="independent">Independent</md-option>
+                                    <md-select ng-model="ctrl.emailFilters.fleet"
+                                               ng-change="ctrl.loadComplianceData()">
+                                        <md-option value="0">All Fleets</md-option>
+                                        <md-option ng-repeat="option in ctrl.fleetOptions"
+                                                   ng-value="option.id">
+                                            {{option.text}}
+                                        </md-option>
                                     </md-select>
                                 </md-input-container>
                             </div>

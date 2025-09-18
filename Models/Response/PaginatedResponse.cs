@@ -21,3 +21,10 @@ public class CourierAfterHoursPaginatedResponse : PaginatedResponse<AfterHoursCo
 {
     public int TotalActiveDrivers { get; set; }
 }
+
+public class TodayActiveDriversPaginatedResponse : PaginatedResponse<TodayActiveDriversViewModel>
+{
+    public int TotalActiveDrivers { get; set; }
+    public int TotalDriversActiveToday { get; set; }
+    public double AverageSessionTime { get; set; }
+}

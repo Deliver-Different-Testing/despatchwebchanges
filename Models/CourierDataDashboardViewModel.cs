@@ -4,6 +4,7 @@ namespace DespatchWeb.Models;
 
 public class CourierDataDashboardViewModel
 {
+    public int CourierId { get; set; }
     public BasicInformation BasicInformation { get; set; }
     public ContactInformation ContactInformation { get; set; }
     public VehicleInformation VehicleInformation { get; set; }

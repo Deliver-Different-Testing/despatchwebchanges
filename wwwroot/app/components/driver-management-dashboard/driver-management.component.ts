@@ -6,12 +6,23 @@ import ToastrService from "../../services/toastr.service";
 import ICourierCompliance from "./interfaces/ICourierCompliance";
 import {ICourierDataDashboard} from "./interfaces/ICourierDataDashboard";
 import IDriverEmail from "./interfaces/IDriverEmail";
-import {formatMins, formatShortDateWithYear} from "../../functions/formatDates";
+import {formatMins} from "../../functions/formatDates";
 import {IAppConfig} from "../../interfaces/app-config.interface";
 import greetUser from "../../functions/greetUser";
 import {ISuggestion} from "../../interfaces/job.interface";
-import {IAfterHoursFilter, ICourierComplianceFilter} from "./interfaces/ICourierComplianceFilter";
+import {
+    IAfterHoursFilter,
+    ICourierComplianceFilter,
+    ITodayActiveDriverFilter
+} from "./interfaces/ICourierComplianceFilter";
 import {IPaginatedRequest} from "../../interfaces/paginated-request.interfaces";
+import DriverManagementTabs from "./enums/DriverManagementTabs";
+import ITodayActiveDrivers from "./interfaces/ITodayActiveDrivers";
+import {
+    ICourierAfterHoursPaginated,
+    ICourierCompliancePaginated,
+    ITodayActiveDriverPaginated
+} from "../../interfaces/paginated-response.interface";
 
 class DriverManagementController extends BaseController {
     static $inject = [
@@ -42,7 +53,7 @@ class DriverManagementController extends BaseController {
     driverSearchText?: string;
 
     // Compliance
-    compliancePromise: any;
+    compliancePromise?: Promise<ICourierCompliancePaginated>;
     complianceQuery: IPaginatedRequest = {
         orderBy: "code",
         pageSize: 10,
@@ -54,7 +65,7 @@ class DriverManagementController extends BaseController {
     complianceFilters: ICourierComplianceFilter = {
         type: 'all',
         status: 'all',
-        fleet: 'all',
+        fleet: 0
     };
     complianceStats = {
         expired: 0,
@@ -64,7 +75,7 @@ class DriverManagementController extends BaseController {
     };
 
     // After Hours
-    afterHoursSchedulePromise: any;
+    afterHoursSchedulePromise?: Promise<ICourierAfterHoursPaginated>;
     afterHoursQuery: IPaginatedRequest = {
         orderBy: "name",
         pageSize: 10,
@@ -82,6 +93,29 @@ class DriverManagementController extends BaseController {
         todayCoverage: false
     };
 
+    // Today Active Drivers
+    todayActiveDriversPromise?: Promise<ITodayActiveDriverPaginated>;
+    todayActiveDriversList: ITodayActiveDrivers[] = [];
+    todayActiveDriversQuery: IPaginatedRequest = {
+        orderBy: "name",
+        pageSize: 10,
+        page: 1,
+        searchTerm: '',
+        sortDescending: false,
+    };
+    todayActiveDriversFilters: ITodayActiveDriverFilter = {
+        location: 'all',
+        status: 'all',
+        fleet: 0
+    };
+    todayActiveDriversStats = {
+        totalActiveDrivers: 0,
+        totalDriversActiveToday: 0,
+        onBreak: 0,
+        averageSession: '0h 0m'
+    };
+
+
     // Email Management
     driverEmails: IDriverEmail[] = [];
     emailsLoading: boolean = false;
@@ -92,6 +126,7 @@ class DriverManagementController extends BaseController {
         search: ''
     };
     driverInformationLoading: boolean = false;
+    fleetOptions?: ISuggestion[];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -115,76 +150,104 @@ class DriverManagementController extends BaseController {
     }
 
     $onInit(): void {
-        this.loadInitialData()
-            .then(() => {
-                this.setupWatchers();
-                this.loadLastActiveTab();
-            })
-            .catch(error => {
-                this.toastrService.showErrorToast('Failed to initialize driver management');
-                this.$log.error('Initialization error:', error);
-            });
+        this.loadLastActiveTab();
+
+        this.loadAllFleetOptions().then(() => {
+            this.loadInitialData()
+                .then(() => {
+                    this.setupWatchers();
+                })
+                .catch(error => {
+                    this.toastrService.showErrorToast('Failed to initialize driver management');
+                    this.$log.error('Initialization error:', error);
+                });
+        });
     }
 
     private bindFunctions() {
         this.selectDriver = this.selectDriver.bind(this);
         this.loadAfterHoursSchedule = this.loadAfterHoursSchedule.bind(this);
         this.loadComplianceData = this.loadComplianceData.bind(this);
+        this.loadTodayActiveDrivers = this.loadTodayActiveDrivers.bind(this);
     }
 
     private loadLastActiveTab() {
         const lastActiveTab = localStorage.getItem(DriverManagementController.LastActiveTabKey);
+        this.$log.debug('Loading last active tab:', lastActiveTab);
+
         if (lastActiveTab) {
             this.selectedTab = parseInt(lastActiveTab);
+            this.$log.debug('Last active tab loaded:', this.selectedTab);
         }
     }
 
     private setupWatchers(): void {
         this.watchScope(
             () => this.selectedTab,
-            (newValue: number, oldValue: number) => {
+            async (newValue: number, oldValue: number) => {
                 if (newValue !== oldValue) {
-                    return this.loadInitialData();
+                    this.$log.debug('Selected tab changed:', newValue);
+                    await this.loadInitialData();
                 }
             }
         );
+    }
+
+    private async loadAllFleetOptions() {
+        this.fleetOptions = await this.driverManagementService.getAllFleetOptions();
     }
 
     private async loadInitialData(): Promise<void> {
         this.$log.debug('[loadInitialData] Starting initial data load for tab:', this.selectedTab);
 
         // Load data based on the selected tab
-        if (this.selectedTab === 0) {
-            this.$log.debug('[loadInitialData] Tab 0 - Driver details already loaded');
-        } else if (this.selectedTab === 1) {
-            this.$log.debug('[loadInitialData] Tab 1 - Loading compliance data...');
-            try {
-                await this.loadComplianceData();
-                this.$log.debug('[loadInitialData] Compliance data loaded successfully');
-            } catch (error) {
-                this.$log.error('[loadInitialData] Error loading compliance data:', error);
-                throw error;
-            }
-        } else if (this.selectedTab === 2) {
-            this.$log.debug('[loadInitialData] Tab 2 - Loading after hours schedule...');
-            try {
-                await this.loadAfterHoursSchedule();
-                this.$log.debug('[loadInitialData] After hours schedule loaded successfully');
-            } catch (error) {
-                this.$log.error('[loadInitialData] Error loading after hours schedule:', error);
-                throw error;
-            }
-        } else if (this.selectedTab === 4) {
-            this.$log.debug('[loadInitialData] Tab 4 - Loading driver emails...');
-            try {
-                await this.loadDriverEmails();
-                this.$log.debug('[loadInitialData] Driver emails loaded successfully');
-            } catch (error) {
-                this.$log.error('[loadInitialData] Error loading driver emails:', error);
-                throw error;
-            }
-        } else {
-            this.$log.debug('[loadInitialData] Tab', this.selectedTab, '- No data loading required');
+        switch (this.selectedTab) {
+            case DriverManagementTabs.DriverDetails:
+                this.$log.debug('[loadInitialData] Tab 0 - Driver details already loaded');
+                break;
+            case DriverManagementTabs.TodayActive:
+                this.$log.debug('[loadInitialData] Tab 1 - Loading today active drivers...');
+                try {
+                    await this.loadTodayActiveDrivers();
+                    this.$log.debug('[loadInitialData] Today active drivers loaded successfully');
+                } catch (error) {
+                    this.$log.error('[loadInitialData] Error loading today active drivers:', error);
+                    throw error;
+                }
+                break;
+            case DriverManagementTabs.DriverCompliance:
+                this.$log.debug('[loadInitialData] Tab 2 - Loading compliance data...');
+                try {
+                    await this.loadComplianceData();
+                    this.$log.debug('[loadInitialData] Compliance data loaded successfully');
+                } catch (error) {
+                    this.$log.error('[loadInitialData] Error loading compliance data:', error);
+                    throw error;
+                }
+                break;
+            case DriverManagementTabs.AfterHours:
+                this.$log.debug('[loadInitialData] Tab 3 - Loading after hours schedule...');
+                try {
+                    await this.loadAfterHoursSchedule();
+                    this.$log.debug('[loadInitialData] After hours schedule loaded successfully');
+                } catch (error) {
+                    this.$log.error('[loadInitialData] Error loading after hours schedule:', error);
+                    throw error;
+                }
+                break;
+            case DriverManagementTabs.DriverEmails:
+                this.$log.debug('[loadInitialData] Tab 4 - Loading driver emails...');
+                try {
+                    await this.loadDriverEmails();
+                    this.$log.debug('[loadInitialData] Driver emails loaded successfully');
+                } catch (error) {
+                    this.$log.error('[loadInitialData] Error loading driver emails:', error);
+                    throw error;
+                }
+                break;
+            default:
+                this.$log.debug('[loadInitialData] Tab', this.selectedTab, '- No data loading required');
+                break;
         }
 
         this.$log.debug('[loadInitialData] Initial data load completed');
@@ -242,47 +305,6 @@ class DriverManagementController extends BaseController {
         }
     }
 
-    editDriverDetails(): void {
-        if (!this.selectedDriver) {
-            this.toastrService.showWarningToast('Please select a driver first');
-            return;
-        }
-
-        /* this.$mdDialog.show({
-             template: require("./dialogs/driver-details-dialog.template.html"),
-             controller: 'DriverDetailsDialogController',
-             controllerAs: 'ctrl',
-             locals: {
-                 driver: angular.copy(this.selectedDriver)
-             },
-             parent: this.$document.parent(),
-             clickOutsideToClose: false
-         }).then(async (updatedDriver: ICourierDataDashboard) => {
-             if (updatedDriver) {
-                 await this.saveDriverDetails(updatedDriver);
-             }
-         });*/
-    }
-
-    private async saveDriverDetails(driver: ICourierDataDashboard): Promise<void> {
-        try {
-            await this.driverManagementService.updateCourierDetails(driver);
-            this.selectedDriver = driver;
-            this.toastrService.showSuccessToast('Driver details updated successfully');
-        } catch (error) {
-            this.$log.error('Error saving driver details:', error);
-            this.toastrService.showErrorToast('Failed to update driver details');
-        }
-    }
-
-    printDriverDetails(): void {
-        if (!this.selectedDriver) {
-            this.toastrService.showWarningToast('Please select a driver first');
-            return;
-        }
-        this.$window.print();
-    }
-
     // Compliance Methods
     async loadComplianceData(): Promise<void> {
         try {
@@ -321,78 +343,6 @@ class DriverManagementController extends BaseController {
             return {status: 'Expiring Soon', class: 'status-expiring', daysUntil};
         } else {
             return {status: 'Valid', class: 'status-valid', daysUntil};
-        }
-    }
-
-    async onComplianceFilterChange(): Promise<void> {
-        await this.loadComplianceData();
-    }
-
-    addComplianceItem(): void {
-        /*  this.$mdDialog.show({
-              template: require("./dialogs/compliance-dialog.template.html"),
-              controller: 'ComplianceDialogController',
-              controllerAs: 'ctrl',
-              locals: {
-                  item: null,
-                  driversList: this.driversList
-              },
-              parent: this.$document.parent(),
-              clickOutsideToClose: false
-          }).then(async (newItem: ICourierCompliance) => {
-              if (newItem) {
-                  await this.saveComplianceItem(newItem);
-              }
-          });*/
-    }
-
-    editComplianceItem(item: ICourierCompliance): void {
-        /*  this.$mdDialog.show({
-              template: require("./dialogs/compliance-dialog.template.html"),
-              controller: 'ComplianceDialogController',
-              controllerAs: 'ctrl',
-              locals: {
-                  item: angular.copy(item),
-                  driversList: this.driversList
-              },
-              parent: this.$document.parent(),
-              clickOutsideToClose: false
-          }).then(async (updatedItem: ICourierCompliance) => {
-              if (updatedItem) {
-                  await this.saveComplianceItem(updatedItem);
-              }
-          });*/
-    }
-
-    private async saveComplianceItem(item: ICourierCompliance): Promise<void> {
-        try {
-            await this.driverManagementService.saveComplianceItem(item);
-            this.toastrService.showSuccessToast('Compliance item saved successfully');
-            await this.loadComplianceData();
-        } catch (error) {
-            this.$log.error('Error saving compliance item:', error);
-            this.toastrService.showErrorToast('Failed to save compliance item');
-        }
-    }
-
-    async deleteComplianceItem(item: ICourierCompliance): Promise<void> {
-        const confirm = this.$mdDialog.confirm()
-            .title('Delete Compliance Item')
-            .textContent(`Are you sure you want to delete the ${item.complianceType} compliance for ${item.name}?`)
-            .ok('Delete')
-            .cancel('Cancel');
-
-        try {
-            await this.$mdDialog.show(confirm);
-            await this.driverManagementService.deleteComplianceItem(item);
-            this.toastrService.showSuccessToast('Compliance item deleted');
-            await this.loadComplianceData();
-        } catch (error) {
-            // User canceled or error occurred
-            if (error !== undefined) {
-                this.$log.error('Error deleting compliance item:', error);
-                this.toastrService.showErrorToast('Failed to delete compliance item');
-            }
         }
     }
 
@@ -437,20 +387,7 @@ class DriverManagementController extends BaseController {
     }
 
     exportComplianceList(): void {
-        const data = this.complianceItems.map(item => {
-            const status = this.getComplianceStatus(item.expiryDate);
-            return {
-                Code: item.code,
-                Name: item.name,
-                Type: item.complianceType,
-                Item: item.itemNumber,
-                'Expiry Date': item.expiryDate ? formatShortDateWithYear(item.expiryDate, this.isUsCustomer) : 'Not Set',
-                Status: status.status,
-                'Days Until Expiry': status.daysUntil
-            };
-        });
-
-        this.exportToCSV(data, 'Compliance_Report');
+        this.toastrService.showWarningToast('Export not implemented yet');
     }
 
     // After Hours Methods
@@ -467,7 +404,7 @@ class DriverManagementController extends BaseController {
             this.afterHoursStats = {
                 totalAssignments: afterHoursResponse.total,
                 activeDrivers: afterHoursResponse.totalActiveDrivers,
-                todayCoverage: afterHoursResponse.totalAssignments > 0
+                todayCoverage: false // ToDo: Implement this
             }
         } catch (error) {
             this.$log.error('Error loading after hours schedule:', error);
@@ -480,75 +417,7 @@ class DriverManagementController extends BaseController {
         return formatMins(time);
     }
 
-    addAfterHoursAssignment(): void {
-        /*  this.$mdDialog.show({
-              template: require("./dialogs/after-hours-dialog.template.html"),
-              controller: 'AfterHoursDialogController',
-              controllerAs: 'ctrl',
-              locals: {
-                  assignment: null,
-                  driversList: this.driversList
-              },
-              parent: this.$document.parent(),
-              clickOutsideToClose: false
-          }).then(async (newAssignment: IAfterHoursCourierSchedule) => {
-              if (newAssignment) {
-                  await this.saveAfterHoursAssignment(newAssignment);
-              }
-          });*/
-    }
-
-    editAfterHoursAssignment(assignment: IAfterHoursCourierSchedule): void {
-        /*    this.$mdDialog.show({
-                template: require("./dialogs/after-hours-dialog.template.html"),
-                controller: 'AfterHoursDialogController',
-                controllerAs: 'ctrl',
-                locals: {
-                    assignment: angular.copy(assignment),
-                    driversList: this.driversList
-                },
-                parent: this.$document.parent(),
-                clickOutsideToClose: false
-            }).then(async (updatedAssignment: IAfterHoursCourierSchedule) => {
-                if (updatedAssignment) {
-                    await this.saveAfterHoursAssignment(updatedAssignment);
-                }
-            });*/
-    }
-
-    private async saveAfterHoursAssignment(assignment: IAfterHoursCourierSchedule): Promise<void> {
-        try {
-            await this.driverManagementService.saveAfterHoursSchedule(assignment);
-            this.toastrService.showSuccessToast('Assignment saved successfully');
-            await this.loadAfterHoursSchedule();
-        } catch (error) {
-            this.$log.error('Error saving assignment:', error);
-            this.toastrService.showErrorToast('Failed to save assignment');
-        }
-    }
-
-    async deleteAfterHoursAssignment(assignment: IAfterHoursCourierSchedule): Promise<void> {
-        const confirm = this.$mdDialog.confirm()
-            .title('Delete Assignment')
-            .textContent(`Are you sure you want to delete this assignment for ${assignment.courierName}?`)
-            .ok('Delete')
-            .cancel('Cancel');
-
-        try {
-            await this.$mdDialog.show(confirm);
-            await this.driverManagementService.deleteAfterHoursSchedule(assignment);
-            this.toastrService.showSuccessToast('Assignment deleted');
-            await this.loadAfterHoursSchedule();
-        } catch (error) {
-            // User canceled or error occurred
-            if (error !== undefined) {
-                this.$log.error('Error deleting assignment:', error);
-                this.toastrService.showErrorToast('Failed to delete assignment');
-            }
-        }
-    }
-
-    // Email Management Methods
+// Email Management Methods
     private async loadDriverEmails(): Promise<void> {
         this.emailsLoading = true;
         try {
@@ -684,6 +553,46 @@ class DriverManagementController extends BaseController {
     async refreshAfterHoursSchedule(): Promise<void> {
         await this.loadAfterHoursSchedule();
         this.toastrService.showSuccessToast('After hours schedule refreshed');
+    }
+
+    /* Today Active Drivers */
+    async loadTodayActiveDrivers(): Promise<void> {
+        try {
+            this.todayActiveDriversPromise = this.driverManagementService.getTodayActiveDriversAsync(
+                this.todayActiveDriversQuery,
+                this.todayActiveDriversFilters
+            );
+
+            const todayActiveResponse = await this.todayActiveDriversPromise;
+            this.todayActiveDriversList = todayActiveResponse.items;
+
+            this.todayActiveDriversStats = {
+                totalActiveDrivers: todayActiveResponse.totalActiveDrivers,
+                totalDriversActiveToday: todayActiveResponse.totalDriversActiveToday,
+                onBreak: 0, // ToDo: Implement this
+                averageSession: this.formatSessionTime(todayActiveResponse.averageSessionTime)
+            };
+        } catch (error) {
+            this.$log.error('Error loading today active drivers:', error);
+            this.toastrService.showErrorToast('Failed to load today active drivers');
+        }
+    }
+
+    async refreshTodaySchedule(): Promise<void> {
+        await this.loadTodayActiveDrivers();
+        this.toastrService.showSuccessToast('Today schedule refreshed');
+    }
+
+
+    private formatSessionTime(totalMinutes: number): string {
+        if (totalMinutes === 0) return '0h 0m';
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = Math.round(totalMinutes % 60);
+        return `${hours}h ${minutes}m`;
+    }
+
+    exportTodayActiveDrivers(): void {
+        this.toastrService.showWarningToast('Export not implemented yet');
     }
 }
 

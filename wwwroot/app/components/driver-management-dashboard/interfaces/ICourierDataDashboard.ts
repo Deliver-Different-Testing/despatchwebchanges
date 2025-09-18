@@ -1,4 +1,5 @@
 ﻿export interface ICourierDataDashboard {
+    courierId: number;
     basicInformation: BasicInformation;
     contactInformation: ContactInformation;
     vehicleInformation: VehicleInformation;
