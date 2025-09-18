@@ -410,7 +410,8 @@ public class NationwideJobController(
         }
         catch (Exception e)
         {
-            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(GetAllActiveAirports));
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(GetAllActiveAirports)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -426,7 +427,8 @@ public class NationwideJobController(
         }
         catch (Exception e)
         {
-            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(UpdateAgentRecoveryJob));
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(UpdateAgentRecoveryJob)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -444,7 +446,8 @@ public class NationwideJobController(
         }
         catch (Exception e)
         {
-            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(RemoveAgentRecoveryJob));
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(RemoveAgentRecoveryJob)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -458,7 +461,23 @@ public class NationwideJobController(
         }
         catch (Exception e)
         {
-            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(CalculateCargoReadyTime));
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(CalculateCargoReadyTime)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    public async Task<IActionResult> CanAssignAgentToJob(int agentJobId)
+    {
+        try
+        {
+            var canAssign = await repository.CanAssignAgentToJobAsync(agentJobId);
+            return Json(canAssign);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(CanAssignAgentToJob)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }

@@ -1295,35 +1295,35 @@ public class NationwideJobRepository(
 
         return cargoModel;
     }
-    
-    public async Task<(GetArrivalAndDepartureAirportsDto fromAirport, GetArrivalAndDepartureAirportsDto toAirport)> 
+
+    public async Task<(GetArrivalAndDepartureAirportsDto fromAirport, GetArrivalAndDepartureAirportsDto toAirport)>
         GetArrivalAndDepartureAirports(int jobId, int? departureAirportId = null, int? arrivalAirportId = null)
     {
         var query = Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Select(j => new
             {
-                FromAirport = departureAirportId.HasValue 
+                FromAirport = departureAirportId.HasValue
                     ? Context.TblAirports
                         .Where(a => a.AirportId == departureAirportId.Value)
                         .Select(MapToAirportDto())
                         .FirstOrDefault()
-                    : j.FromAirport != null 
+                    : j.FromAirport != null
                         ? MapToAirportDto().Compile()(j.FromAirport)
                         : null,
-                ToAirport = arrivalAirportId.HasValue 
+                ToAirport = arrivalAirportId.HasValue
                     ? Context.TblAirports
                         .Where(a => a.AirportId == arrivalAirportId.Value)
                         .Select(MapToAirportDto())
                         .FirstOrDefault()
-                    : j.ToAirport != null 
+                    : j.ToAirport != null
                         ? MapToAirportDto().Compile()(j.ToAirport)
                         : null
             });
-    
+
         var result = await query.AsNoTracking().FirstOrDefaultAsync();
-    
-        return result != null 
+
+        return result != null
             ? (result.FromAirport, result.ToAirport)
             : (null, null);
     }
@@ -1336,5 +1336,31 @@ public class NationwideJobRepository(
             AirportCode = a.AirportCode,
             FlightBufferMinutes = a.FlightBufferMinutes
         };
+    }
+
+    public async Task<bool> CanAssignAgentToJobAsync(int agentJobId)
+    {
+        if (System.Diagnostics.Debugger.IsAttached)
+            return true;
+
+        var result = await Context.TucJobs
+            .Where(j => j.UcjbId == agentJobId)
+            .SelectMany(j => j.Parent.InverseParent)
+            .AsNoTracking()
+            .Select(siblingJob => new
+            {
+                HasFlightSpeedGrouping = siblingJob.UcjbSpeedNavigation != null
+                                         && (siblingJob.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
+                                             || siblingJob.UcjbSpeedNavigation.GroupingId ==
+                                             (int)UrgentSpeedGrouping.Flight),
+                HasTucJobNationwides = siblingJob.TucJobNationwides.Any()
+            })
+            .ToListAsync();
+
+        var flightSpeedJobs = result
+            .Where(r => r.HasFlightSpeedGrouping)
+            .ToList();
+        return flightSpeedJobs.Count == 0
+               || flightSpeedJobs.Any(job => job.HasTucJobNationwides);
     }
 }

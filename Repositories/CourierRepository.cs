@@ -1227,8 +1227,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             AverageSessionTime = averageSessionTime
         };
     }
-
-
+    
     private static string CourierActiveDuration(DateTime loginTime, DateTime? logoutTime)
     {
         if (!logoutTime.HasValue) return "Not Available";
@@ -1260,7 +1259,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
 
         var query = Context.TucCouriers
             .Where(c => c.CourierLogInOut != null && c.CourierLogInOut.LogInTime.Date == now.Date).AsQueryable();
-
+        
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
             var searchPattern = $"%{request.SearchTerm}%";
@@ -1278,10 +1277,9 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         }
         
         var totalCount = await query.CountAsync();
-        var totalEarningsToday = await Context.TucJobs.SumAsync(j => j.CourierPayment ?? 0);
+        var totalDeliveriesToday = await GetCompletedJobCountForDayAsync(now);
+        var totalEarningsToday = await GetTotalCourierEarningsForDayAsync(now);
         var averageHourlyRate = await GetAverageHourlyWageForDateAsync(now);
-        var totalActiveDrivers = await query.CountAsync();
-        var totalDeliveriesToday = await Context.TucJobs.CountAsync(j => j.UcjbJobDone && j.UcjbComplTime.HasValue && j.UcjbComplTime.Value.Date == now.Date);
         
         // Calculate total pages
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
@@ -1310,11 +1308,30 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             Total = totalCount,
             TotalEarningsToday = totalEarningsToday,
             AverageHourlyRate = averageHourlyRate,
-            TotalActiveDrivers = totalActiveDrivers  ,
+            TotalActiveDrivers = totalCount  ,
             TotalDeliveriesToday = totalDeliveriesToday
         };
     }
 
+    private async Task<int> GetCompletedJobCountForDayAsync(DateTime now)
+    {
+        var completedCount = await Context.TucJobs
+            .Where(j => j.UcjbComplTime.HasValue && j.UcjbComplTime.Value.Date == now.Date)
+            .CountAsync();
+        
+        return completedCount;
+    }
+
+    private async Task<decimal> GetTotalCourierEarningsForDayAsync(DateTime now)
+    {
+        var totalEarnings = await Context.TucJobs
+            .Where(j => j.UcjbComplTime.HasValue && j.UcjbComplTime.Value.Date == now.Date)
+            .Select(j => j.CourierPayment)
+            .SumAsync();
+        
+        return totalEarnings ?? 0;
+    }
+    
     private async Task<decimal> GetAverageHourlyWageForDateAsync(DateTime date)
     {
         var courierData = await Context.TucCouriers

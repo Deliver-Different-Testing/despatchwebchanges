@@ -1372,7 +1372,7 @@ class NationwideControl extends BaseController {
     async addSelectedAgentToJob($event: MouseEvent, agent: ISuggestion, job: IDispatchJob): Promise<void> {
         try {
             // Check flight is assigned first
-            const isAllowedToAssignAgent = job.allowAgentWithoutFlight;
+            const isAllowedToAssignAgent = await this.DispatchData.canAssignAgentToJob(job.id);
             if (!isAllowedToAssignAgent) {
                 await this.$mdDialog.show(
                     this.$mdDialog.alert()

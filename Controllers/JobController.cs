@@ -36,7 +36,8 @@ public class JobController(
     IRecurringJobRepository recurringJobRepository,
     ITenantInfoService infoService,
     IAddStopJobService addStopJobService,
-    IPodExportService podExportService
+    IPodExportService podExportService,
+    IJobPhotoService jobPhotoService
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -315,6 +316,40 @@ public class JobController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
+    
+    [HttpPost]
+    public async Task<IActionResult> UploadJobPickupPhotoOrSignature(
+        int jobId,
+        IFormFile file,
+        bool isPod = true,
+        string podDescription = null)
+    {
+        try
+        {
+            var result = await jobPhotoService.UploadJobPhotoOrSignatureAsync(
+                jobId, file, JobPhotoType.Pickup, isPod, podDescription);
+            if (!result.Success) return BadRequest(result.ErrorMessage);
+
+            return Json(new
+            {
+                success = result.Success,
+                fileName = result.FileName,
+                s3Key = result.S3Key,
+                contentType = result.ContentType,
+                size = result.Size,
+                uploadDate = result.UploadDate.ToString("o"),
+                isPOD = result.IsPod,
+                podDescription = result.PodDescription
+            });
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(UploadJobPickupPhotoOrSignature)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
 
     [HttpPost]
     public async Task<IActionResult> UploadJobDeliveryPhotoOrSignature(
@@ -323,261 +358,94 @@ public class JobController(
         bool isPod = true,
         string podDescription = null)
     {
-        if (file == null || file.Length == 0)
-        {
-            return BadRequest("No file was uploaded");
-        }
-
         try
         {
-            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-            var folder = isPod ? "DeliveryPhotos" : "DeliverySignatures";
+            var result = await jobPhotoService.UploadJobPhotoOrSignatureAsync(
+                jobId, file, JobPhotoType.Delivery, isPod, podDescription);
+            if (!result.Success) return BadRequest(result.ErrorMessage);
 
-            // Create the file path in format: [folder]/[year]/[month]/[jobId]-[timestamp]-[filename]
-            var now = DateTime.UtcNow;
-            var monthFolder = $"{now.Year}/{now:MM}/";
-
-            // Extract the file extension
-            var fileExtension = Path.GetExtension(file.FileName);
-
-            // Generate a unique filename with timestamp
-            var timestamp = now.ToString("yyyyMMddHHmmss");
-            var filename = $"{jobId}-{timestamp}{fileExtension}";
-
-            // Combine parts to form the full S3 key
-            var key = $"{folder}/{monthFolder}{filename}";
-
-            // Create the S3 upload request
-            using var memoryStream = new MemoryStream();
-            await file.CopyToAsync(memoryStream);
-            memoryStream.Position = 0;
-
-            var contentType = DetermineContentType(fileExtension);
-
-            var putRequest = new PutObjectRequest
-            {
-                BucketName = bucketName,
-                Key = key,
-                InputStream = memoryStream,
-                ContentType = contentType
-            };
-
-            // Add metadata properly using the metadata dictionary
-            if (isPod && !string.IsNullOrEmpty(podDescription))
-            {
-                putRequest.Metadata.Add("pod-description", podDescription);
-            }
-
-            Log.Debug("Uploading {Type} file for job {JobId} to S3 path: {Key}",
-                isPod ? "POD photo" : "signature", jobId, key);
-
-            // Execute the upload
-            await s3Client.PutObjectAsync(putRequest);
-
-            Log.Information("Successfully uploaded {Type} file for job {JobId}",
-                isPod ? "POD photo" : "signature", jobId);
-
-            // Return the uploaded file information
             return Json(new
             {
-                success = true,
-                fileName = filename,
-                s3Key = key,
-                contentType,
-                size = file.Length,
-                uploadDate = now.ToString("o"),
-                isPOD = isPod,
-                podDescription
+                success = result.Success,
+                fileName = result.FileName,
+                s3Key = result.S3Key,
+                contentType = result.ContentType,
+                size = result.Size,
+                uploadDate = result.UploadDate.ToString("o"),
+                isPOD = result.IsPod,
+                podDescription = result.PodDescription
             });
-        }
-        catch (AmazonS3Exception e)
-        {
-            Log.Error(e, "S3 error encountered when uploading {Type} for job {JobId}. Message: {Message}",
-                isPod ? "POD photo" : "signature", jobId, e.Message);
-            return StatusCode(500, $"S3 error: {e.Message}");
         }
         catch (Exception e)
         {
-            Log.Error(e, "Unknown error encountered when uploading {Type} for job {JobId}. Message: {Message}",
-                isPod ? "POD photo" : "signature", jobId, e.Message);
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(UploadJobDeliveryPhotoOrSignature)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
-    }
-
-    private static string DetermineContentType(string fileExtension)
-    {
-        return fileExtension.ToLower() switch
-        {
-            ".jpg" or ".jpeg" => "image/jpeg",
-            ".png" => "image/png",
-            ".gif" => "image/gif",
-            ".pdf" => "application/pdf",
-            _ => "application/octet-stream" // Default content type
-        };
     }
 
     [HttpDelete]
     public async Task<IActionResult> DeleteJobDeliveryPhotoOrSignature(int jobId, string key)
     {
-        if (string.IsNullOrEmpty(key)) return BadRequest("File key is required");
-
         try
         {
-            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-
-            var deleteRequest = new DeleteObjectRequest
-            {
-                BucketName = bucketName,
-                Key = key
-            };
-
-            Log.Debug("Deleting file with key {Key} for job {JobId}", key, jobId);
-
-            await s3Client.DeleteObjectAsync(deleteRequest);
-
-            Log.Information("Successfully deleted file with key {Key} for job {JobId}", key, jobId);
+            var success = await jobPhotoService.DeleteJobPhotoOrSignatureAsync(jobId, key);
+            if (!success) return BadRequest("Failed to delete file or file key is required");
 
             return Json(new { success = true, message = "File deleted successfully" });
         }
-        catch (AmazonS3Exception e)
-        {
-            Log.Error(e, "S3 error encountered when deleting file for job {JobId}. Message: {Message}",
-                jobId, e.Message);
-            return StatusCode(500, $"S3 error: {e.Message}");
-        }
         catch (Exception e)
         {
-            Log.Error(e, "Unknown error encountered when deleting file for job {JobId}. Message: {Message}",
-                jobId, e.Message);
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(DeleteJobDeliveryPhotoOrSignature)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
-    private async Task<List<S3Object>> SearchDeliveryFilesByPatternAsync(
-        string bucketName,
-        string pattern,
-        int year,
-        int month
-    )
+    [HttpDelete]
+    public async Task<IActionResult> DeleteJobPickupPhotoOrSignature(int jobId, string key)
     {
-        var allResults = new List<S3Object>();
-        // Calculate next month and year (handling December rollover)
-        var nextMonth = month == 12 ? 1 : month + 1;
-        var nextYear = month == 12 ? year + 1 : year;
         try
         {
-            var monthPrefixes = new[] { $"{year}/{month:D2}/", $"{nextYear}/{nextMonth:D2}/" };
-
-            var folders = new[] { "DeliverySignatures", "DeliveryPhotos" };
-
-            foreach (var folder in folders)
-            {
-                foreach (var monthPrefix in monthPrefixes)
-                {
-                    var request = new ListObjectsV2Request
-                    {
-                        BucketName = bucketName,
-                        Prefix = $"{folder}/{monthPrefix}{pattern}",
-                        MaxKeys = 1000
-                    };
-
-                    var response = await s3Client.ListObjectsV2Async(request);
-                    allResults.AddRange(response.S3Objects);
-                    if (allResults.Count > 0)
-                    {
-                        break;
-                    }
-                }
-            }
-        }
-        catch (AmazonS3Exception e)
-        {
-            Log.Error(
-                e,
-                "Error encountered on server. Message:'{EMessage}' when writing an object", e.Message
-            );
+            var success = await jobPhotoService.DeleteJobPhotoOrSignatureAsync(jobId, key);
+            if (!success) return BadRequest("Failed to delete file or file key is required");
+            
+            return Json(new { success = true, message = "File deleted successfully" });
         }
         catch (Exception e)
         {
-            Log.Error(
-                e,
-                "Unknown encountered on server. Message:'{EMessage}' when writing an object", e.Message
-            );
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(DeleteJobPickupPhotoOrSignature)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
-
-        return allResults;
     }
-
+    
     public async Task<IActionResult> GetJobDeliveryPhotosAndSignature(int jobId, int year, int month)
     {
-        const string functionName = nameof(GetJobDeliveryPhotosAndSignature);
-        var traceId = Guid.NewGuid().ToString();
-
-        Log.Information("[{FunctionName}][{TraceId}] Starting - JobId: {JobId}, Year: {Year}, Month: {Month}",
-            functionName, traceId, jobId, year, month);
-
         try
         {
-            var allPodPhotos = new List<byte[]>();
-
-            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-            var key = $"{jobId}-";
-
-            Log.Debug(
-                "[{FunctionName}][{TraceId}] Searching S3 bucket {BucketName} for objects with key pattern: {Key}",
-                functionName, traceId, bucketName, key);
-
-            var s3List = await SearchDeliveryFilesByPatternAsync(bucketName, key, year, month);
-
-            Log.Information("[{FunctionName}][{TraceId}] Found {S3ListCount} S3 objects for key pattern: {Key}",
-                functionName, traceId, s3List.Count, key);
-
-            var processedCount = 0;
-            foreach (var s3Object in s3List)
-            {
-                var getObjectRequest = new GetObjectRequest
-                {
-                    BucketName = bucketName,
-                    Key = s3Object.Key
-                };
-
-                Log.Debug("[{FunctionName}][{TraceId}] Processing S3 object {ProcessedCount}/{TotalCount}: {S3Key}",
-                    functionName, traceId, ++processedCount, s3List.Count, s3Object.Key);
-
-                using var response = await s3Client.GetObjectAsync(getObjectRequest);
-                await using var responseStream = response.ResponseStream;
-                using var reader = new StreamReader(responseStream);
-                using var memoryStream = new MemoryStream();
-                await response.ResponseStream.CopyToAsync(memoryStream);
-
-                var photoBytes = memoryStream.ToArray();
-                allPodPhotos.Add(photoBytes);
-
-                Log.Debug(
-                    "[{FunctionName}][{TraceId}] Successfully retrieved S3 object {S3Key}, Size: {ByteSize} bytes",
-                    functionName, traceId, s3Object.Key, photoBytes.Length);
-            }
-
-            Log.Information(
-                "[{FunctionName}][{TraceId}] Successfully completed - Retrieved {PhotoCount} photos totaling {TotalBytes} bytes",
-                functionName, traceId, allPodPhotos.Count, allPodPhotos.Sum(p => p.Length));
-
+            var allPodPhotos = await jobPhotoService.GetDeliveryPhotosAsync(jobId, year, month);
             return Json(allPodPhotos);
-        }
-        catch (AmazonS3Exception s3Ex)
-        {
-            Log.Error(s3Ex, "[{FunctionName}][{TraceId}] S3 operation failed - {ErrorMessage}",
-                functionName, traceId,
-                ErrorMessageStringFormatter.FormatForLogging(s3Ex, nameof(JobController), functionName));
-
-            return StatusCode(500, ErrorMessageStringFormatter.Format(s3Ex));
         }
         catch (Exception e)
         {
-            Log.Error(e, "[{FunctionName}][{TraceId}] Unexpected error - {ErrorMessage}",
-                functionName, traceId,
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), functionName));
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(GetJobDeliveryPhotosAndSignature)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
 
+    public async Task<IActionResult> GetJobPickupPhotos(int jobId, int year, int month)
+    {
+        try
+        {
+            var allPickupPhotos = await jobPhotoService.GetPickupPhotosAsync(jobId, year, month);
+            return Json(allPickupPhotos);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(GetJobPickupPhotos)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -1686,229 +1554,105 @@ public class JobController(
         smtp.Send(message);
     }
 
-    private async Task<List<S3Object>> SearchFilesByPatternAsync(string bucketName, string pattern)
+    public async Task<IActionResult> IsFilesAttachedToJob(int jobId)
     {
-        var request = new ListObjectsV2Request
-        {
-            BucketName = bucketName,
-            Prefix = pattern,
-            MaxKeys = 1000 // Adjust if needed, but 1000 is the maximum allowed
-        };
-
-        var result = new List<S3Object>();
-
         try
         {
-            ListObjectsV2Response response;
-            do
-            {
-                response = await s3Client.ListObjectsV2Async(request);
-
-                result.AddRange(response.S3Objects);
-                request.ContinuationToken = response.NextContinuationToken;
-            } while (response.IsTruncated ?? false);
-        }
-        catch (AmazonS3Exception e)
-        {
-            Log.Error(e, "{UploadFileName} Error encountered. Message:'{EMessage}'", nameof(UploadFile), e.Message);
+            var hasFiles = await jobPhotoService.IsFilesAttachedToJobAsync(jobId);
+            return Json(hasFiles);
         }
         catch (Exception e)
         {
-            Log.Error(e, "{UploadFileName} Error encountered. Message:'{EMessage}'", nameof(UploadFile), e.Message);
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(IsFilesAttachedToJob)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
-
-        return result;
-    }
-
-    public async Task<IActionResult> IsFilesAttachedToJob(int jobId)
-    {
-        var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-        var key = $"JobAttachments/{jobId}-";
-        Log.Debug("Get S3 Object List for {Key}", key);
-        var s3List = await SearchFilesByPatternAsync(bucketName, key);
-        Log.Debug("Found {S3ListCount} objects for {Key}", s3List.Count, key);
-
-        return Json(s3List.Count > 0);
     }
 
     public async Task<IActionResult> GetAttachedFiles(int jobId)
     {
-        var s3Files = new List<S3FileInfo>();
         try
         {
-            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-            var key = $"JobAttachments/{jobId}-";
-            Log.Debug("Get S3 Object List for {Key}", key);
-            var s3List = await SearchFilesByPatternAsync(bucketName, key);
-            foreach (var s3Object in s3List)
-            {
-                var getObjectRequest = new GetObjectRequest
-                {
-                    BucketName = bucketName,
-                    Key = s3Object.Key
-                };
-                using var response = await s3Client.GetObjectAsync(getObjectRequest);
-                await using var responseStream = response.ResponseStream;
-                using var reader = new StreamReader(responseStream);
-                using var memoryStream = new MemoryStream();
-                await response.ResponseStream.CopyToAsync(memoryStream);
-                var fileName = response.Metadata["FileName"];
-                var s3FileInfo = new S3FileInfo
-                {
-                    S3Key = s3Object.Key,
-                    FileName = fileName,
-                    LastModified = s3Object.LastModified,
-                    Size = s3Object.Size
-                };
-                s3Files.Add(s3FileInfo);
-            }
+            var s3Files = await jobPhotoService.GetAttachedFilesAsync(jobId);
+            return Ok(s3Files);
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error {GetAttachedFilesName}: {EMessage}", nameof(GetAttachedFiles), e.Message);
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(GetAttachedFiles)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
-
-        return Ok(s3Files);
     }
+
 
     [HttpPost]
     public async Task<IActionResult> UploadFile([FromForm] FileUploadRequest request)
     {
         try
         {
-            var currentDate = infoService.GetCurrentTenantTime();
+            if (request?.File == null) return BadRequest("No file uploaded");
 
-            if (request?.File == null || request.File.Length == 0)
-                return BadRequest("No file uploaded");
+            var result = await jobPhotoService.UploadJobAttachmentAsync(request.JobId, request.File);
 
-            // Validate file type
-            var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif", "application/pdf" };
-            if (!allowedTypes.Contains(request.File.ContentType.ToLower()))
-                return BadRequest("Invalid file type. Only images and PDFs are allowed.");
+            if (!result.Success) return BadRequest(result.ErrorMessage);
 
-            // Validate file size (10MB max)
-            if (request.File.Length > 10 * 1024 * 1024)
-                return BadRequest("File size exceeds the limit of 10MB.");
-
-            using var memoryStream = new MemoryStream();
-            if (request.File == null)
-                return Ok(
-                    new { message = "File uploaded successfully", fileName = request.File.FileName }
-                );
-
-            await request.File.CopyToAsync(memoryStream);
-
-            var byteArray = memoryStream.ToArray();
-
-            var timestamp = currentDate.ToString("yyyyMMddHHmmss");
-            var key = $"JobAttachments/{request.JobId}-{timestamp}";
-
-            using var ms = new MemoryStream(byteArray);
-            try
-            {
-                var putRequest = new PutObjectRequest
-                {
-                    BucketName = Environment.GetEnvironmentVariable("S3BucketMars"),
-                    Key = key,
-                    ContentType = request.File.ContentType,
-                    InputStream = ms
-                };
-                putRequest.Metadata.Add("FileName", request.File.FileName);
-                await s3Client.PutObjectAsync(putRequest);
-            }
-            catch (AmazonS3Exception e)
-            {
-                Log.Error(
-                    e,
-                    $"{nameof(UploadFile)} Error encountered when writing job file upload object to S3: "
-                );
-            }
-            catch (Exception e)
-            {
-                Log.Error(
-                    e,
-                    $"{nameof(UploadFile)} Error encountered when writing file upload object to S3: "
-                );
-            }
-
-            return Ok(
-                new { message = "File uploaded successfully", fileName = request.File.FileName }
-            );
+            return Ok(new 
+            { 
+                message = "File uploaded successfully", 
+                fileName = result.FileName,
+                s3Key = result.S3Key,
+                size = result.Size,
+                contentType = result.ContentType,
+                uploadDate = result.UploadDate.ToString("o")
+            });
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            Log.Error(ex, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(UploadFile)));
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(UploadFile)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
     public async Task<IActionResult> DownloadFile(string key)
     {
-        var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
         try
         {
-            var request = new GetObjectRequest { BucketName = bucketName, Key = key };
+            var result = await jobPhotoService.DownloadFileAsync(key);
 
-            using var response = await s3Client.GetObjectAsync(request);
-            if (response.HttpStatusCode != HttpStatusCode.OK) return NotFound($"File {key} not found.");
-            var originalFileName = response.Metadata["FileName"];
-            var contentType = response.Headers.ContentType;
+            if (!result.Success) return result.ErrorMessage.Contains("not found") ? NotFound(result.ErrorMessage) : StatusCode(500, result.ErrorMessage);
 
-            // Read the stream into a memory stream to get the bytes
-            using var ms = new MemoryStream();
-            await response.ResponseStream.CopyToAsync(ms);
-            var fileBytes = ms.ToArray();
-
-            // Return file with proper headers
-            return File(
-                fileBytes,
-                contentType,
-                originalFileName
-            );
+            return File(result.FileBytes, result.ContentType, result.FileName);
         }
-        catch (AmazonS3Exception ex)
+        catch (Exception e)
         {
-            return ex.StatusCode == HttpStatusCode.NotFound
-                ? NotFound($"File {key} not found in bucket")
-                : StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(DownloadFile)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
     public async Task<IActionResult> DeleteFile(string key)
     {
-        var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-
         try
         {
-            var deleteObjectRequest = new DeleteObjectRequest
+            var success = await jobPhotoService.DeleteFileAsync(key);
+        
+            if (!success)
             {
-                BucketName = bucketName,
-                Key = key
-            };
-            await s3Client.DeleteObjectAsync(deleteObjectRequest);
-        }
-        catch (AmazonS3Exception ex)
-        {
-            Log.Error(
-                ex,
-                "{DeleteFileName} AWS S3 error occurred while deleting object {Key} from bucket {BucketName}. StatusCode: {HttpStatusCode}, ErrorCode: {ExErrorCode}",
-                nameof(DeleteFile), key, bucketName, ex.StatusCode, ex.ErrorCode
-            );
-        }
-        catch (Exception ex)
-        {
-            Log.Error(
-                ex,
-                "{DeleteFileName} An unexpected error occurred while deleting object {Key} from bucket {BucketName}",
-                nameof(DeleteFile), key, bucketName
-            );
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
+                return BadRequest("Failed to delete file or file key is required");
+            }
 
-        return Ok();
+            return Ok(new { message = "File deleted successfully" });
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(DeleteFile)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
     }
+
 
     [HttpPost]
     public async Task<IActionResult> UpdateNote(int jobId, string note)

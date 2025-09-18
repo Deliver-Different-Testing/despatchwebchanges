@@ -417,7 +417,6 @@ export interface IDispatchJob {
     isFlightJob: boolean;
     isAgentJob: boolean;
     isBulkJob: boolean;
-    allowAgentWithoutFlight: boolean;
 
     // Status and timing information
     speedId?: number;
