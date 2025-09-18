@@ -354,6 +354,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\driver-management-dashboard\interfaces\IAfterHoursCourierSchedule.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\driver-management-dashboard\interfaces\ICourierCompliance.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\driver-management-dashboard\interfaces\ICourierComplianceFilter.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\driver-management-dashboard\interfaces\ICourierDailyEarnings.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\driver-management-dashboard\interfaces\ICourierDataDashboard.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\driver-management-dashboard\interfaces\IDriverEmail.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\driver-management-dashboard\interfaces\IGroupEmailData.ts" />

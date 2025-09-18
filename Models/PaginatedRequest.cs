@@ -23,7 +23,8 @@ public class CourierAfterHoursFilterRequest : PaginatedRequest
 
 public class TodayActiveDriversFilterRequest : PaginatedRequest
 {
-    public string Location { get; set; }
     public string Status { get; set; }
     public int Fleet { get; set; }
 }
+
+

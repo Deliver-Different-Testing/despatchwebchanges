@@ -23,3 +23,10 @@ export interface ITodayActiveDriverPaginated extends IPaginatedResponse<ITodayAc
     totalDriversActiveToday: number;
     averageSessionTime: number;
 }
+
+export interface ICourierDailyEarningsPaginated extends IPaginatedResponse<ICourierDailyEarnings> {
+    totalEarningsToday: number;
+    averageHourlyRate: number;
+    totalActiveDrivers: number;
+    totalDeliveriesToday: number;
+}

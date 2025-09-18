@@ -7,7 +7,7 @@
                 <h2 class="md-title">Driver Management</h2>
                 <span flex></span>
 
-                <span style="font-size: medium;">{{::ctrl.greetUser()}}</span>
+                <span style="font-size: medium;">{{ctrl.greetUser()}}</span>
                 <md-button aria-label="Menu" class="md-icon-button" ng-click="ctrl.toggleSidenav()"
                            ng-mouseover="ctrl.toggleSidenav()">
                     <md-icon md-font-set="material-symbols-outlined" md-font-set="material-symbols-outlined">menu
@@ -374,7 +374,7 @@
                                     <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
                                     Refresh
                                 </md-button>
-                                
+
                                 <md-button class="md-raised" ng-click="ctrl.exportTodayActiveDrivers()">
                                     <md-icon md-font-set="material-symbols-outlined">download</md-icon>
                                     Export
@@ -402,20 +402,20 @@
                             </tr>
                             </thead>
                             <tbody md-body>
-                            <tr md-row ng-repeat="driver in ctrl.todayActiveDriversList track by driver.courierId"
+                            <tr md-row ng-repeat="driver in ctrl.todayActiveDriversList track by $index"
                                 class="table-row">
                                 <td md-cell>
-                                    <span class="code-badge">{{::driver.code}}</span>
+                                    <span class="code-badge">{{driver.code}}</span>
                                 </td>
-                                <td md-cell>{{::driver.name}}</td>
+                                <td md-cell>{{driver.name}}</td>
                                 <td md-cell>
-                                    <span class="fleet-badge">{{::driver.fleet}}</span>
-                                </td>
-                                <td md-cell>
-                                    <span class="time-value">{{::driver.loginTime | date:'HH:mm:ss'}}</span>
+                                    <span class="fleet-badge">{{driver.fleet}}</span>
                                 </td>
                                 <td md-cell>
-                                    <span class="time-value">{{::driver.logoutTime | date:'HH:mm:ss'}}</span>
+                                    <span class="time-value">{{driver.loginTime | date:'HH:mm:ss'}}</span>
+                                </td>
+                                <td md-cell>
+                                    <span class="time-value">{{driver.logoutTime | date:'HH:mm:ss'}}</span>
                                 </td>
                                 <td md-cell>
                                     <span class="duration-badge">{{driver.duration}}</span>
@@ -530,7 +530,7 @@
                                     <md-select ng-model="ctrl.complianceFilters.fleet"
                                                ng-change="ctrl.loadComplianceData()">
                                         <md-option value="0">All Fleets</md-option>
-                                        <md-option ng-repeat="option in ctrl.fleetOptions track by option.id"
+                                        <md-option ng-repeat="option in ctrl.fleetOptions track by $index"
                                                    ng-value="option.id">
                                             {{option.text}}
                                         </md-option>
@@ -578,7 +578,7 @@
                             </tr>
                             </thead>
                             <tbody md-body>
-                            <tr md-row ng-repeat="item in ctrl.complianceItems track by item.courierId"
+                            <tr md-row ng-repeat="item in ctrl.complianceItems track by $index"
                                 class="table-row">
                                 <td md-cell>
                                     <span class="code-badge">{{item.code}}</span>
@@ -720,13 +720,13 @@
                             </div>
 
                             <div class="filter-actions">
-                                <md-button class="md-raised md-accent" ng-click="ctrl.addAfterHoursAssignment()">
-                                    <md-icon md-font-set="material-symbols-outlined">add</md-icon>
-                                    Add Assignment
-                                </md-button>
                                 <md-button class="md-raised" ng-click="ctrl.refreshAfterHoursSchedule()">
                                     <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
                                     Refresh
+                                </md-button>
+                                <md-button class="md-raised" ng-click="ctrl.exportAfterHoursSchedule()">
+                                    <md-icon md-font-set="material-symbols-outlined">download</md-icon>
+                                    Export
                                 </md-button>
                             </div>
                         </div>
@@ -750,15 +750,15 @@
                             <tbody md-body>
                             <tr md-row ng-repeat="assignment in ctrl.afterHoursSchedule track by $index"
                                 class="table-row">
-                                <td md-cell>{{::assignment.courierName}}</td>
+                                <td md-cell>{{assignment.courierName}}</td>
                                 <td md-cell>
-                                    <span class="day-badge">{{::assignment.day}}</span>
+                                    <span class="day-badge">{{assignment.day}}</span>
                                 </td>
                                 <td md-cell>
-                                    <span class="time-badge start-time">{{::ctrl.formatScheduleTime(assignment.startTime)}}</span>
+                                    <span class="time-badge start-time">{{ctrl.formatScheduleTime(assignment.startTime)}}</span>
                                 </td>
                                 <td md-cell>
-                                    <span class="time-badge end-time">{{::ctrl.formatScheduleTime(assignment.endTime)}}</span>
+                                    <span class="time-badge end-time">{{ctrl.formatScheduleTime(assignment.endTime)}}</span>
                                 </td>
                                 <td md-cell>
                                     <span class="duration-badge">{{assignment.duration}}</span>
@@ -799,7 +799,7 @@
                                     <md-select ng-model="ctrl.emailFilters.fleet"
                                                ng-change="ctrl.loadComplianceData()">
                                         <md-option value="0">All Fleets</md-option>
-                                        <md-option ng-repeat="option in ctrl.fleetOptions"
+                                        <md-option ng-repeat="option in ctrl.fleetOptions track by option.id"
                                                    ng-value="option.id">
                                             {{option.text}}
                                         </md-option>
@@ -850,7 +850,7 @@
                             </tr>
                             </thead>
                             <tbody md-body>
-                            <tr md-row ng-repeat="driver in ctrl.getFilteredEmails()" class="table-row">
+                            <tr md-row ng-repeat="driver in ctrl.getFilteredEmails() track by $index" class="table-row">
                                 <td md-cell class="checkbox-column">
                                     <md-checkbox ng-checked="ctrl.isEmailSelected(driver.email)"
                                                  ng-click="ctrl.toggleEmailSelection(driver.email)"
@@ -884,6 +884,132 @@
                     </md-table-container>
 
                     <md-progress-linear md-mode="indeterminate" ng-if="ctrl.emailsLoading"></md-progress-linear>
+                </md-card>
+            </div>
+        </md-tab>
+
+        <!-- Driver Earnings Tab -->
+        <md-tab label="Driver Earnings" md-on-select="ctrl.onTabChange(5)">
+            <div class="tab-content">
+                <!-- Statistics Dashboard -->
+                <div class="stats-dashboard">
+                    <md-card class="stat-card valid-stat">
+                        <md-card-content>
+                            <div class="stat-details">
+                                <div class="stat-value">${{ctrl.driverEarningsStats.totalEarningsToday | number:2}}
+                                </div>
+                                <div class="stat-label">Total Earnings Today</div>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+
+                    <md-card class="stat-card warning-stat">
+                        <md-card-content>
+                            <div class="stat-details">
+                                <div class="stat-value">${{ctrl.driverEarningsStats.averageHourlyRate | number:2}}</div>
+                                <div class="stat-label">Average Hourly Rate</div>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+
+                    <md-card class="stat-card total-stat">
+                        <md-card-content>
+                            <div class="stat-details">
+                                <div class="stat-value">{{ctrl.driverEarningsStats.totalActiveDrivers}}</div>
+                                <div class="stat-label">Active Drivers</div>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+
+                    <md-card class="stat-card total-stat">
+                        <md-card-content>
+                            <div class="stat-details">
+                                <div class="stat-value">{{ctrl.driverEarningsStats.totalDeliveriesToday}}</div>
+                                <div class="stat-label">Total Deliveries</div>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+                </div>
+
+                <!-- Filters & Actions -->
+                <md-card class="filter-card">
+                    <md-toolbar class="widget-toolbar">
+                        <div class="md-toolbar-tools">
+                            <span class="material-symbols-outlined">filter_list</span>
+                            <span class="md-headline-title" flex
+                                  style="margin-left: 8px;">Driver Earnings Filters</span>
+                        </div>
+                    </md-toolbar>
+
+                    <md-card-content>
+                        <div class="filter-section">
+                            <div class="filter-controls">
+                                <md-input-container class="filter-input search-input">
+                                    <label>Search</label>
+                                    <input ng-model="ctrl.driverEarningsQuery.searchTerm"
+                                           ng-change="ctrl.loadDriverTodayEarnings()"
+                                           ng-model-options="{ debounce: 500 }">
+                                </md-input-container>
+                            </div>
+
+                            <div class="filter-actions">
+                                <md-button class="md-raised" ng-click="ctrl.refreshDriverEarnings()">
+                                    <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+                                    Refresh
+                                </md-button>
+
+                                <md-button class="md-raised" ng-click="ctrl.exportDriverEarnings()">
+                                    <md-icon md-font-set="material-symbols-outlined">download</md-icon>
+                                    Export
+                                </md-button>
+                            </div>
+                        </div>
+                    </md-card-content>
+                </md-card>
+
+                <!-- Driver Earnings Table -->
+                <md-card class="data-table-card">
+                    <md-table-container>
+                        <table md-table md-progress="ctrl.driverEarningsPromise" class="earnings-table">
+                            <thead md-head fix-head md-order="ctrl.driverEarningsQuery.orderBy"
+                                   md-on-reorder="ctrl.loadDriverTodayEarnings">
+                            <tr md-row>
+                                <th md-column md-order-by="name">Name</th>
+                                <th md-column md-order-by="hoursLogged">Hours Logged</th>
+                                <th md-column md-order-by="deliveries">Deliveries</th>
+                                <th md-column md-order-by="earnings">Earnings</th>
+                                <th md-column md-order-by="hourlyRate">Hourly Rate</th>
+                            </tr>
+                            </thead>
+                            <tbody md-body>
+                            <tr md-row ng-repeat="driver in ctrl.driverEarningsList track by $index"
+                                class="table-row">
+                                <td md-cell>{{driver.name}}</td>
+                                <td md-cell>
+                                    <span class="duration-badge">{{driver.hoursLogged | number:1}}h</span>
+                                </td>
+                                <td md-cell>
+                                    <span class="delivery-count">{{driver.deliveries}}</span>
+                                </td>
+                                <td md-cell>
+                                    <span class="earnings-value">${{driver.earnings | number:2}}</span>
+                                </td>
+                                <td md-cell>
+                                    <span class="rate-value">${{driver.hourlyRate | number:2}}/h</span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </md-table-container>
+
+                    <md-table-pagination
+                            md-limit="ctrl.driverEarningsQuery.pageSize"
+                            md-limit-options="[10, 25, 50, 100]"
+                            md-page="ctrl.driverEarningsQuery.page"
+                            md-total="{{ctrl.driverEarningsStats.totalActiveDrivers}}"
+                            md-on-paginate="ctrl.loadDriverTodayEarnings"
+                            md-page-select>
+                    </md-table-pagination>
                 </md-card>
             </div>
         </md-tab>

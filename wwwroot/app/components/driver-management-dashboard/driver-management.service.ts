@@ -4,7 +4,7 @@ import IDriverEmail from "./interfaces/IDriverEmail";
 import IGroupEmailData from "./interfaces/IGroupEmailData";
 import {
     ICourierAfterHoursPaginated,
-    ICourierCompliancePaginated, ITodayActiveDriverPaginated,
+    ICourierCompliancePaginated, ICourierDailyEarningsPaginated, ITodayActiveDriverPaginated,
 } from "../../interfaces/paginated-response.interface";
 import {ISuggestion} from "../../interfaces/job.interface";
 import {IPaginatedRequest} from "../../interfaces/paginated-request.interfaces";
@@ -182,6 +182,21 @@ class DriverManagementService implements angular.IServiceProvider {
         }
     }
 
+    async getDriverDailyEarnings(requestData: IPaginatedRequest): Promise<ICourierDailyEarningsPaginated> {
+        this.$log.debug("Getting today active drivers");
+        this.$log.debug("Search term: ", requestData.searchTerm);
+
+        const response = await this.$http.post<ICourierDailyEarningsPaginated>("courier/GetCourierDailyEarnings", {
+            // Pagination data
+            page: requestData.page,
+            pageSize: requestData.pageSize,
+            orderBy: requestData.orderBy,
+            sortDescending: requestData.sortDescending,
+            searchTerm: requestData.searchTerm
+        });
+
+        return response.data;
+    }
 }
 
 export default DriverManagementService;

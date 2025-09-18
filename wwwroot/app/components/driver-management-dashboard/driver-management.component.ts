@@ -20,7 +20,7 @@ import DriverManagementTabs from "./enums/DriverManagementTabs";
 import ITodayActiveDrivers from "./interfaces/ITodayActiveDrivers";
 import {
     ICourierAfterHoursPaginated,
-    ICourierCompliancePaginated,
+    ICourierCompliancePaginated, ICourierDailyEarningsPaginated,
     ITodayActiveDriverPaginated
 } from "../../interfaces/paginated-response.interface";
 
@@ -114,7 +114,23 @@ class DriverManagementController extends BaseController {
         onBreak: 0,
         averageSession: '0h 0m'
     };
-
+    
+    // Daily Driver Earnings
+    driverEarningsPromise?: Promise<ICourierDailyEarningsPaginated>;
+    driverEarningsList: ICourierDailyEarnings[] = [];
+    driverEarningsQuery: IPaginatedRequest = {
+        orderBy: "name",
+        pageSize: 10,
+        page: 1,
+        searchTerm: '',
+        sortDescending: false,
+    };
+    driverEarningsStats = {
+        totalEarningsToday: 0,
+        averageHourlyRate: 0,
+        totalActiveDrivers: 0,
+        totalDeliveriesToday: 0
+    };
 
     // Email Management
     driverEmails: IDriverEmail[] = [];
@@ -242,6 +258,16 @@ class DriverManagementController extends BaseController {
                     this.$log.debug('[loadInitialData] Driver emails loaded successfully');
                 } catch (error) {
                     this.$log.error('[loadInitialData] Error loading driver emails:', error);
+                    throw error;
+                }
+                break;
+            case DriverManagementTabs.DriverEarnings:
+                this.$log.debug('[loadInitialData] Tab 5 - Loading driver earnings...');
+                try {
+                    await this.loadDriverTodayEarnings();
+                    this.$log.debug('[loadInitialData] Driver earnings loaded successfully');
+                } catch (error) {
+                    this.$log.error('[loadInitialData] Error loading driver earnings:', error);
                     throw error;
                 }
                 break;
@@ -387,7 +413,22 @@ class DriverManagementController extends BaseController {
     }
 
     exportComplianceList(): void {
-        this.toastrService.showWarningToast('Export not implemented yet');
+        const data = this.complianceItems.map(item => ({
+            Code: item.code,
+            Name: item.name,
+            Type: item.complianceType,
+            'Item/Number': item.itemNumber,
+            'Expiry Date': item.expiryDate ? dayjs(item.expiryDate).format('DD/MM/YYYY') : '',
+            Status: this.getComplianceStatus(item.expiryDate).status,
+            'Days Until Expiry': (() => {
+                const status = this.getComplianceStatus(item.expiryDate);
+                if (status.daysUntil === -999) return '—';
+                if (status.daysUntil < 0) return `${Math.abs(status.daysUntil)} days overdue`;
+                return `${status.daysUntil} days`;
+            })()
+        }));
+
+        this.exportToCSV(data, 'Driver_Compliance');
     }
 
     // After Hours Methods
@@ -415,6 +456,18 @@ class DriverManagementController extends BaseController {
     formatScheduleTime(time: Date | undefined): string {
         if (!time) return '-';
         return formatMins(time);
+    }
+
+    exportAfterHoursSchedule(): void {
+        const data = this.afterHoursSchedule.map(item => ({
+            'Driver Name': item.courierName,
+            Day: item.day,
+            'Start Time': this.formatScheduleTime(item.startTime),
+            'End Time': this.formatScheduleTime(item.endTime),
+            Duration: item.duration
+        }));
+
+        this.exportToCSV(data, 'After_Hours_Schedule');
     }
 
 // Email Management Methods
@@ -592,7 +645,55 @@ class DriverManagementController extends BaseController {
     }
 
     exportTodayActiveDrivers(): void {
-        this.toastrService.showWarningToast('Export not implemented yet');
+        const data = this.todayActiveDriversList.map(item => ({
+            Code: item.code,
+            Name: item.name,
+            Fleet: item.fleet,
+            'Login Time': item.loginTime ? dayjs(item.loginTime).format('HH:mm:ss') : '',
+            'Logout Time': item.logoutTime ? dayjs(item.logoutTime).format('HH:mm:ss') : '',
+            Duration: item.duration,
+            Deliveries: item.deliveries,
+            Status: item.status
+        }));
+
+        this.exportToCSV(data, 'Today_Active_Drivers');
+    }
+    
+    /* Daily Driver Earnings */
+    async loadDriverTodayEarnings(): Promise<void> {
+        try {
+            this.driverEarningsPromise = this.driverManagementService.getDriverDailyEarnings(this.todayActiveDriversQuery);
+
+            const earningsResponse = await this.driverEarningsPromise;
+            this.driverEarningsList = earningsResponse.items;
+
+            this.driverEarningsStats = {
+                totalEarningsToday: earningsResponse.totalEarningsToday,
+                totalActiveDrivers: earningsResponse.totalActiveDrivers,
+                averageHourlyRate: earningsResponse.averageHourlyRate,
+                totalDeliveriesToday: earningsResponse.totalDeliveriesToday
+            };
+        } catch (error) {
+         this.$log.error('Error loading driver earnings:', error);
+         this.toastrService.showErrorToast('Failed to load driver earnings');
+        }
+    }
+    
+    async refreshDriverEarnings(): Promise<void> {
+        await this.loadDriverTodayEarnings();
+        this.toastrService.showSuccessToast('Driver earnings refreshed');
+    }
+
+    exportDriverEarnings(): void {
+        const data = this.driverEarningsList.map(item => ({
+            Name: item.name,
+            'Hours Logged': item.hoursLogged,
+            Deliveries: item.deliveries,
+            Earnings: item.earnings,
+            'Hourly Rate': item.hourlyRate
+        }));
+
+        this.exportToCSV(data, 'Driver_Earnings');
     }
 }
 
