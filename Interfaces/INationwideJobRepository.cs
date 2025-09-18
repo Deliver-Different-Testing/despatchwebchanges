@@ -58,4 +58,5 @@ public interface INationwideJobRepository
     Task<FlightCargoProcessingModel> CalculateCargoReadyTimeAsync(int jobId, string carrierFsCode,
         DateTime flightArrivalTime);
     Task<(GetArrivalAndDepartureAirportsDto fromAirport, GetArrivalAndDepartureAirportsDto toAirport)> GetArrivalAndDepartureAirports(int jobId, int? departureAirportId = null, int? arrivalAirportId = null);
+    Task<bool> CanAssignAgentToJobAsync(int agentJobId);
 }

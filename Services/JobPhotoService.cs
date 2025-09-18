@@ -1,0 +1,856 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Threading.Tasks;
+using Amazon.S3;
+using Amazon.S3.Model;
+using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
+using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
+using DespatchWeb.Models.Response;
+using Microsoft.AspNetCore.Http;
+using Serilog;
+
+namespace DespatchWeb.Services;
+
+public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
+{
+    public async Task<List<byte[]>> GetDeliveryPhotosAsync(int jobId, int year, int month)
+    {
+        var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+        var key = $"{jobId}-";
+
+        var s3Objects = await SearchFilesByPatternAsync(bucketName, key, year, month, JobPhotoType.Delivery);
+        return await GetPhotoBytesFromS3ObjectsAsync(s3Objects, bucketName);
+    }
+
+    public async Task<List<byte[]>> GetPickupPhotosAsync(int jobId, int year, int month)
+    {
+        var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+        var key = $"{jobId}-pickup-";
+
+        var s3Objects = await SearchFilesByPatternAsync(bucketName, key, year, month, JobPhotoType.Pickup);
+        return await GetPhotoBytesFromS3ObjectsAsync(s3Objects, bucketName);
+    }
+
+    public async Task<AwsUploadResult> UploadJobPhotoOrSignatureAsync(
+        int jobId,
+        IFormFile file,
+        JobPhotoType photoType,
+        bool isPod = true,
+        string podDescription = null)
+    {
+        if (file == null || file.Length == 0)
+            return new AwsUploadResult { Success = false, ErrorMessage = "No file was uploaded" };
+
+        try
+        {
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+            var folder = GetUploadFolder(photoType, isPod);
+
+            // Create the file path in format: [folder]/[year]/[month]/[jobId]-[timestamp]-[filename]
+            var now = DateTime.UtcNow;
+            var monthFolder = $"{now.Year}/{now:MM}/";
+
+            // Extract the file extension
+            var fileExtension = Path.GetExtension(file.FileName);
+
+            // Generate a unique filename with timestamp
+            var timestamp = now.ToString("yyyyMMddHHmmss");
+            var filename = $"{jobId}-{timestamp}{fileExtension}";
+
+            // Combine parts to form the full S3 key
+            var key = $"{folder}/{monthFolder}{filename}";
+
+            // Create the S3 upload request
+            using var memoryStream = new MemoryStream();
+            await file.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+
+            var contentType = DetermineContentType(fileExtension);
+
+            var putRequest = new PutObjectRequest
+            {
+                BucketName = bucketName,
+                Key = key,
+                InputStream = memoryStream,
+                ContentType = contentType
+            };
+
+            // Add metadata properly using the metadata dictionary
+            if (isPod && !string.IsNullOrEmpty(podDescription))
+                putRequest.Metadata.Add("pod-description", podDescription);
+
+            Log.Debug("Uploading {Type} file for job {JobId} to S3 path: {Key}",
+                isPod ? $"{photoType} POD photo" : $"{photoType} signature", jobId, key);
+
+            // Execute the upload
+            await s3Client.PutObjectAsync(putRequest);
+
+            Log.Information("Successfully uploaded {Type} file for job {JobId}",
+                isPod ? $"{photoType} POD photo" : $"{photoType} signature", jobId);
+
+            // Return the uploaded file information
+            return new AwsUploadResult
+            {
+                Success = true,
+                FileName = filename,
+                S3Key = key,
+                ContentType = contentType,
+                Size = file.Length,
+                UploadDate = now,
+                IsPod = isPod,
+                PodDescription = podDescription
+            };
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
+                    nameof(UploadJobPhotoOrSignatureAsync)));
+            ;
+
+            return new AwsUploadResult
+            {
+                Success = false,
+                ErrorMessage = e.Message
+            };
+        }
+    }
+
+    public async Task<bool> DeleteJobPhotoOrSignatureAsync(int jobId, string key)
+    {
+        if (string.IsNullOrEmpty(key))
+        {
+            Log.Warning("Attempted to delete file for job {JobId} with empty key", jobId);
+            return false;
+        }
+
+        try
+        {
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+
+            var deleteRequest = new DeleteObjectRequest
+            {
+                BucketName = bucketName,
+                Key = key
+            };
+
+            Log.Debug("Deleting file with key {Key} for job {JobId}", key, jobId);
+
+            await s3Client.DeleteObjectAsync(deleteRequest);
+
+            Log.Information("Successfully deleted file with key {Key} for job {JobId}", key, jobId);
+
+            return true;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
+                    nameof(DeleteJobPhotoOrSignatureAsync)));
+            ;
+            return false;
+        }
+    }
+
+
+    public async Task<bool> IsFilesAttachedToJobAsync(int jobId)
+    {
+        try
+        {
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+            var key = $"JobAttachments/{jobId}-";
+
+            Log.Debug("Checking for attached files with pattern {Key}", key);
+
+            var s3List = await SearchAttachmentFilesByPatternAsync(bucketName, key);
+
+            Log.Debug("Found {S3ListCount} objects for {Key}", s3List.Count, key);
+
+            return s3List.Count > 0;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error checking if files attached to job {JobId}: {Message}", jobId, e.Message);
+            return false;
+        }
+    }
+
+    public async Task<List<S3FileInfo>> GetAttachedFilesAsync(int jobId)
+    {
+        var s3Files = new List<S3FileInfo>();
+
+        try
+        {
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+            var key = $"JobAttachments/{jobId}-";
+
+            Log.Debug("Getting attached files with pattern {Key}", key);
+
+            var s3List = await SearchAttachmentFilesByPatternAsync(bucketName, key);
+
+            foreach (var s3Object in s3List)
+            {
+                try
+                {
+                    var getObjectRequest = new GetObjectRequest
+                    {
+                        BucketName = bucketName,
+                        Key = s3Object.Key
+                    };
+
+                    using var response = await s3Client.GetObjectAsync(getObjectRequest);
+                    var fileName = response.Metadata["FileName"];
+
+                    var s3FileInfo = new S3FileInfo
+                    {
+                        S3Key = s3Object.Key,
+                        FileName = fileName,
+                        LastModified = s3Object.LastModified,
+                        Size = s3Object.Size
+                    };
+
+                    s3Files.Add(s3FileInfo);
+                }
+                catch (Exception e)
+                {
+                    Log.Error(e, "Error retrieving file info for S3 object {Key}: {Message}", s3Object.Key, e.Message);
+                    // Continue processing other files even if one fails
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error getting attached files for job {JobId}: {Message}", jobId, e.Message);
+            throw;
+        }
+
+        return s3Files;
+    }
+
+    public async Task<AwsUploadResult> UploadJobAttachmentAsync(int jobId, IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return new AwsUploadResult { Success = false, ErrorMessage = "No file uploaded" };
+        }
+
+        // Validate file type
+        var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif", "application/pdf" }.ToList();
+        if (!allowedTypes.Contains(file.ContentType.ToLower()))
+        {
+            return new AwsUploadResult
+                { Success = false, ErrorMessage = "Invalid file type. Only images and PDFs are allowed." };
+        }
+
+        // Validate file size (10MB max)
+        if (file.Length > 10 * 1024 * 1024)
+        {
+            return new AwsUploadResult { Success = false, ErrorMessage = "File size exceeds the limit of 10MB." };
+        }
+
+        try
+        {
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+            var currentDate = DateTime.UtcNow; // You might want to inject a time service for this
+            var timestamp = currentDate.ToString("yyyyMMddHHmmss");
+            var key = $"JobAttachments/{jobId}-{timestamp}";
+
+            using var memoryStream = new MemoryStream();
+            await file.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+
+            var putRequest = new PutObjectRequest
+            {
+                BucketName = bucketName,
+                Key = key,
+                ContentType = file.ContentType,
+                InputStream = memoryStream
+            };
+
+            putRequest.Metadata.Add("FileName", file.FileName);
+
+            await s3Client.PutObjectAsync(putRequest);
+
+            Log.Information("Successfully uploaded attachment {FileName} for job {JobId}", file.FileName, jobId);
+
+            return new AwsUploadResult
+            {
+                Success = true,
+                FileName = file.FileName,
+                S3Key = key,
+                ContentType = file.ContentType,
+                Size = file.Length,
+                UploadDate = currentDate
+            };
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error uploading attachment {FileName} for job {JobId}: {Message}",
+                file.FileName, jobId, e.Message);
+
+            return new AwsUploadResult
+            {
+                Success = false,
+                ErrorMessage = e.Message
+            };
+        }
+    }
+
+    public async Task<AwsFileDownloadResult> DownloadFileAsync(string key)
+    {
+        if (string.IsNullOrEmpty(key))
+            return new AwsFileDownloadResult { Success = false, ErrorMessage = "File key is required" };
+
+        try
+        {
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+            var request = new GetObjectRequest { BucketName = bucketName, Key = key };
+
+            using var response = await s3Client.GetObjectAsync(request);
+
+            if (response.HttpStatusCode != HttpStatusCode.OK)
+                return new AwsFileDownloadResult { Success = false, ErrorMessage = $"File {key} not found." };
+
+            var originalFileName = response.Metadata["FileName"];
+            var contentType = response.Headers.ContentType;
+
+            // Read the stream into a memory stream to get the bytes
+            using var ms = new MemoryStream();
+            await response.ResponseStream.CopyToAsync(ms);
+            var fileBytes = ms.ToArray();
+
+            return new AwsFileDownloadResult
+            {
+                Success = true,
+                FileBytes = fileBytes,
+                ContentType = contentType,
+                FileName = originalFileName
+            };
+        }
+        catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            return new AwsFileDownloadResult { Success = false, ErrorMessage = $"File {key} not found in bucket" };
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error downloading file {Key}: {Message}", key, e.Message);
+            return new AwsFileDownloadResult { Success = false, ErrorMessage = e.Message };
+        }
+    }
+
+    public async Task<bool> DeleteFileAsync(string key)
+    {
+        if (string.IsNullOrEmpty(key))
+        {
+            Log.Warning("Attempted to delete file with empty key");
+            return false;
+        }
+
+        try
+        {
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+
+            var deleteObjectRequest = new DeleteObjectRequest
+            {
+                BucketName = bucketName,
+                Key = key
+            };
+
+            await s3Client.DeleteObjectAsync(deleteObjectRequest);
+
+            Log.Information("Successfully deleted file {Key}", key);
+
+            return true;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error deleting file {Key}: {Message}", key, e.Message);
+            return false;
+        }
+    }
+
+    public async Task<List<S3Object>> SearchFilesByPatternAsync(string bucketName, string pattern)
+    {
+        var allResults = new List<S3Object>();
+    
+        try
+        {
+            var request = new ListObjectsV2Request
+            {
+                BucketName = bucketName,
+                Prefix = pattern,
+                MaxKeys = 1000
+            };
+
+            ListObjectsV2Response response;
+            do
+            {
+                response = await s3Client.ListObjectsV2Async(request);
+                allResults.AddRange(response.S3Objects);
+                request.ContinuationToken = response.NextContinuationToken;
+            }
+            while (response.IsTruncated ?? false);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error searching files with pattern {Pattern}: {Message}", pattern, e.Message);
+            throw;
+        }
+
+        return allResults;
+    }
+    
+    public async Task<List<S3Object>> SearchFilesByPatternAsync(
+        string bucketName,
+        string pattern,
+        int year,
+        int month,
+        JobPhotoType photoType
+    )
+    {
+        var allResults = new List<S3Object>();
+        // Calculate next month and year (handling December rollover)
+        var nextMonth = month == 12 ? 1 : month + 1;
+        var nextYear = month == 12 ? year + 1 : year;
+
+        try
+        {
+            var monthPrefixes = new[] { $"{year}/{month:D2}/", $"{nextYear}/{nextMonth:D2}/" };
+            var folders = GetFoldersByPhotoType(photoType);
+
+            foreach (var folder in folders)
+            {
+                foreach (var monthPrefix in monthPrefixes)
+                {
+                    var request = new ListObjectsV2Request
+                    {
+                        BucketName = bucketName,
+                        Prefix = $"{folder}/{monthPrefix}{pattern}",
+                        MaxKeys = 1000
+                    };
+
+                    var response = await s3Client.ListObjectsV2Async(request);
+                    allResults.AddRange(response.S3Objects);
+
+                    if (allResults.Count > 0)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        catch (AmazonS3Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
+                    nameof(SearchFilesByPatternAsync)));
+            throw;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
+                    nameof(SearchFilesByPatternAsync)));
+            throw;
+        }
+
+        return allResults;
+    }
+
+    public async Task<bool> FileExistsAsync(string key)
+    {
+        if (string.IsNullOrEmpty(key)) return false;
+
+        try
+        {
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+            var request = new GetObjectMetadataRequest
+            {
+                BucketName = bucketName,
+                Key = key
+            };
+
+            await s3Client.GetObjectMetadataAsync(request);
+            return true;
+        }
+        catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            return false;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error checking if file exists {Key}: {Message}", key, e.Message);
+            throw;
+        }
+    }
+
+    public async Task<S3Object> GetFileMetadataAsync(string key)
+    {
+        try
+        {
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+            var request = new GetObjectMetadataRequest
+            {
+                BucketName = bucketName,
+                Key = key
+            };
+
+            var response = await s3Client.GetObjectMetadataAsync(request);
+
+            return new S3Object
+            {
+                Key = key,
+                Size = response.ContentLength,
+                LastModified = response.LastModified,
+                ETag = response.ETag
+            };
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error getting file metadata for {Key}: {Message}", key, e.Message);
+            throw;
+        }
+    }
+
+    public async Task<List<S3Object>> ListAllFilesInFolderAsync(string folderPath)
+    {
+        var allResults = new List<S3Object>();
+
+        try
+        {
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+            var request = new ListObjectsV2Request
+            {
+                BucketName = bucketName,
+                Prefix = folderPath.TrimEnd('/') + "/",
+                MaxKeys = 1000
+            };
+
+            ListObjectsV2Response response;
+            do
+            {
+                response = await s3Client.ListObjectsV2Async(request);
+                allResults.AddRange(response.S3Objects);
+                request.ContinuationToken = response.NextContinuationToken;
+            } while (response.IsTruncated ?? false);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error listing files in folder {FolderPath}: {Message}", folderPath, e.Message);
+            throw;
+        }
+
+        return allResults;
+    }
+
+    public async Task<long> GetTotalFileSizeForJobAsync(int jobId)
+    {
+        try
+        {
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+            var patterns = new[]
+            {
+                $"JobAttachments/{jobId}-",
+                $"DeliveryPhotos/{jobId}-",
+                $"DeliverySignatures/{jobId}-",
+                $"PickupPhotos/{jobId}-",
+                $"PickupSignatures/{jobId}-"
+            };
+
+            long totalSize = 0;
+
+            foreach (var pattern in patterns)
+            {
+                var files = await SearchFilesByPatternAsync(bucketName, pattern);
+                totalSize += files.Sum(f => f.Size ?? 0);
+            }
+
+            return totalSize;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error calculating total file size for job {JobId}: {Message}", jobId, e.Message);
+            throw;
+        }
+    }
+
+    public async Task<List<S3Object>> GetFilesByDateRangeAsync(string folderPath, DateTime startDate, DateTime endDate)
+    {
+        try
+        {
+            var allFiles = await ListAllFilesInFolderAsync(folderPath);
+
+            return allFiles
+                .Where(f => f.LastModified >= startDate && f.LastModified <= endDate)
+                .OrderByDescending(f => f.LastModified)
+                .ToList();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error getting files by date range in {FolderPath}: {Message}", folderPath, e.Message);
+            throw;
+        }
+    }
+
+    public async Task<AwsUploadResult> CopyFileAsync(string sourceKey, string destinationKey)
+    {
+        try
+        {
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+
+            var copyRequest = new CopyObjectRequest
+            {
+                SourceBucket = bucketName,
+                SourceKey = sourceKey,
+                DestinationBucket = bucketName,
+                DestinationKey = destinationKey
+            };
+
+            await s3Client.CopyObjectAsync(copyRequest);
+
+            var metadata = await GetFileMetadataAsync(destinationKey);
+
+            return new AwsUploadResult()
+            {
+                Success = true,
+                S3Key = destinationKey,
+                Size = metadata.Size ?? 0,
+                UploadDate = DateTime.UtcNow
+            };
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error copying file from {SourceKey} to {DestinationKey}: {Message}",
+                sourceKey, destinationKey, e.Message);
+
+            return new AwsUploadResult
+            {
+                Success = false,
+                ErrorMessage = e.Message
+            };
+        }
+    }
+
+    public async Task<bool> MoveFileAsync(string sourceKey, string destinationKey)
+    {
+        try
+        {
+            // Copy the file
+            var copyResult = await CopyFileAsync(sourceKey, destinationKey);
+
+            if (!copyResult.Success)
+            {
+                return false;
+            }
+
+            // Delete the original file
+            return await DeleteFileAsync(sourceKey);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error moving file from {SourceKey} to {DestinationKey}: {Message}",
+                sourceKey, destinationKey, e.Message);
+            return false;
+        }
+    }
+
+    public async Task<List<S3Object>> GetFilesByJobIdAsync(int jobId, string folderPath = null)
+    {
+        try
+        {
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+            var allFiles = new List<S3Object>();
+
+            var folders = string.IsNullOrEmpty(folderPath)
+                ? new[] { "JobAttachments", "DeliveryPhotos", "DeliverySignatures", "PickupPhotos", "PickupSignatures" }
+                : new[] { folderPath };
+
+            foreach (var folder in folders)
+            {
+                var pattern = $"{folder}/{jobId}-";
+                var files = await SearchFilesByPatternAsync(bucketName, pattern);
+                allFiles.AddRange(files);
+            }
+
+            return allFiles.OrderByDescending(f => f.LastModified).ToList();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error getting files for job {JobId}: {Message}", jobId, e.Message);
+            throw;
+        }
+    }
+
+// Helper method for batch operations
+    public async Task<AwsBatchOperationResult> DeleteMultipleFilesAsync(List<string> keys)
+    {
+        var results = new AwsBatchOperationResult { TotalFiles = keys.Count };
+
+        try
+        {
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+
+            // S3 supports batch delete up to 1000 objects
+            var batches = keys.Chunk(1000);
+
+            foreach (var batch in batches)
+            {
+                var deleteRequest = new DeleteObjectsRequest
+                {
+                    BucketName = bucketName,
+                    Objects = batch.Select(key => new KeyVersion { Key = key }).ToList()
+                };
+
+                var response = await s3Client.DeleteObjectsAsync(deleteRequest);
+                results.SuccessfulFiles += response.DeletedObjects.Count;
+                results.FailedFiles += response.DeleteErrors.Count;
+
+                foreach (var error in response.DeleteErrors)
+                {
+                    Log.Error("Failed to delete {Key}: {Code} - {Message}", error.Key, error.Code, error.Message);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error in batch delete operation: {Message}", e.Message);
+            results.FailedFiles = results.TotalFiles - results.SuccessfulFiles;
+        }
+
+        return results;
+    }
+
+    private async Task<List<S3Object>> SearchAttachmentFilesByPatternAsync(string bucketName, string pattern)
+    {
+        var allResults = new List<S3Object>();
+
+        try
+        {
+            var request = new ListObjectsV2Request
+            {
+                BucketName = bucketName,
+                Prefix = pattern,
+                MaxKeys = 1000
+            };
+
+            var response = await s3Client.ListObjectsV2Async(request);
+            allResults.AddRange(response.S3Objects);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error searching for attachment files with pattern {Pattern}: {Message}", pattern, e.Message);
+            throw;
+        }
+
+        return allResults;
+    }
+
+
+    private async Task<List<byte[]>> GetPhotoBytesFromS3ObjectsAsync(List<S3Object> s3Objects, string bucketName)
+    {
+        var photoBytes = new List<byte[]>();
+
+        foreach (var s3Object in s3Objects)
+        {
+            try
+            {
+                var getObjectRequest = new GetObjectRequest
+                {
+                    BucketName = bucketName,
+                    Key = s3Object.Key
+                };
+
+                using var response = await s3Client.GetObjectAsync(getObjectRequest);
+                using var memoryStream = new MemoryStream();
+                await response.ResponseStream.CopyToAsync(memoryStream);
+
+                photoBytes.Add(memoryStream.ToArray());
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "{Message}",
+                    ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
+                        nameof(GetPhotoBytesFromS3ObjectsAsync)));
+                // Continue processing other photos even if one fails
+            }
+        }
+
+        return photoBytes;
+    }
+
+    private static string[] GetFoldersByPhotoType(JobPhotoType photoType)
+    {
+        return photoType switch
+        {
+            JobPhotoType.Delivery => ["DeliverySignatures", "DeliveryPhotos"],
+            JobPhotoType.Pickup => ["PickupSignatures", "PickupPhotos"],
+            _ => throw new ArgumentOutOfRangeException(nameof(photoType), photoType, null)
+        };
+    }
+
+    private static string GetUploadFolder(JobPhotoType photoType, bool isPod)
+    {
+        return photoType switch
+        {
+            JobPhotoType.Delivery => isPod ? "DeliveryPhotos" : "DeliverySignatures",
+            JobPhotoType.Pickup => isPod ? "PickupPhotos" : "PickupSignatures",
+            _ => throw new ArgumentOutOfRangeException(nameof(photoType), photoType, null)
+        };
+    }
+
+    private static string DetermineContentType(string fileExtension)
+    {
+        return fileExtension.ToLower() switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            ".pdf" => "application/pdf",
+            _ => "application/octet-stream" // Default content type
+        };
+    }
+
+    private async Task<bool> ValidateFileIntegrityAsync(string key)
+    {
+        try
+        {
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+            var request = new GetObjectRequest
+            {
+                BucketName = bucketName,
+                Key = key
+            };
+
+            using var response = await s3Client.GetObjectAsync(request);
+            // Validate that we can read the file
+            await using var stream = response.ResponseStream;
+            var buffer = new byte[1024];
+            await stream.ReadAsync(buffer);
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private string GeneratePresignedUrl(string key, TimeSpan expiration)
+    {
+        var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+        var request = new GetPreSignedUrlRequest
+        {
+            BucketName = bucketName,
+            Key = key,
+            Expires = DateTime.UtcNow.Add(expiration),
+            Verb = HttpVerb.GET
+        };
+
+        return s3Client.GetPreSignedURL(request);
+    }
+}

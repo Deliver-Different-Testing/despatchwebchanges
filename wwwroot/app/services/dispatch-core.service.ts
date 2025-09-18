@@ -1104,6 +1104,16 @@ class DispatchCoreService implements angular.IServiceProvider {
         });
         return response.data;
     }
+    
+    async canAssignAgentToJob(agentJobId: number): Promise<boolean> {
+        const response = await this.$http.get<boolean>(`/nationwideJob/CanAssignAgentToJob`, {
+            params: {
+                agentJobId
+            }
+        });
+        
+        return response.data;
+    }
 }
 
 export default DispatchCoreService;
