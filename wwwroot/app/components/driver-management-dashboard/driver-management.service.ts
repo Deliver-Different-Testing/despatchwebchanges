@@ -4,11 +4,15 @@ import IDriverEmail from "./interfaces/IDriverEmail";
 import IGroupEmailData from "./interfaces/IGroupEmailData";
 import {
     ICourierAfterHoursPaginated,
-    ICourierCompliancePaginated,
+    ICourierCompliancePaginated, ITodayActiveDriverPaginated,
 } from "../../interfaces/paginated-response.interface";
 import {ISuggestion} from "../../interfaces/job.interface";
 import {IPaginatedRequest} from "../../interfaces/paginated-request.interfaces";
-import {IAfterHoursFilter, ICourierComplianceFilter} from "./interfaces/ICourierComplianceFilter";
+import {
+    IAfterHoursFilter,
+    ICourierComplianceFilter,
+    ITodayActiveDriverFilter
+} from "./interfaces/ICourierComplianceFilter";
 
 class DriverManagementService implements angular.IServiceProvider {
     static $inject = [
@@ -26,7 +30,7 @@ class DriverManagementService implements angular.IServiceProvider {
     $get(): any {
         return this;
     }
-    
+
     async searchAllCouriers(searchTerm: string): Promise<ISuggestion[]> {
         this.$log.debug("Searching couriers");
         this.$log.debug("Search term: ", searchTerm);
@@ -53,18 +57,6 @@ class DriverManagementService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async updateCourierDetails(courier: ICourierDataDashboard): Promise<ICourierDataDashboard> {
-        this.$log.debug("Updating courier details:", courier);
-
-        try {
-            const response = await this.$http.post<ICourierDataDashboard>("courier/UpdateCourierDetails", courier);
-            return response.data;
-        } catch (error) {
-            this.$log.error("Error updating courier details:", error);
-            throw error;
-        }
-    }
-
     async getCourierComplianceList(
         requestData: IPaginatedRequest,
         filters: ICourierComplianceFilter
@@ -87,34 +79,6 @@ class DriverManagementService implements angular.IServiceProvider {
 
         return response.data;
     }
-    
-    async saveComplianceItem(item: ICourierCompliance): Promise<ICourierCompliance> {
-        this.$log.debug("Saving compliance item:", item);
-
-        try {
-            const response = await this.$http.post<ICourierCompliance>("courier/SaveComplianceItem", item);
-            return response.data;
-        } catch (error) {
-            this.$log.error("Error saving compliance item:", error);
-            throw error;
-        }
-    }
-
-    async deleteComplianceItem(item: ICourierCompliance): Promise<void> {
-        this.$log.debug("Deleting compliance item:", item);
-
-        try {
-            await this.$http.delete("courier/DeleteComplianceItem", {
-                params: {
-                    code: item.code,
-                    type: item.complianceType
-                }
-            });
-        } catch (error) {
-            this.$log.error("Error deleting compliance item:", error);
-            throw error;
-        }
-    }
 
     async sendComplianceReminder(item: ICourierCompliance): Promise<void> {
         this.$log.debug("Sending compliance reminder for:", item);
@@ -134,13 +98,12 @@ class DriverManagementService implements angular.IServiceProvider {
         this.$log.debug("Sending bulk compliance reminders:", items.length);
 
         try {
-            await this.$http.post("courier/SendBulkComplianceReminders", { items });
+            await this.$http.post("courier/SendBulkComplianceReminders", {items});
         } catch (error) {
             this.$log.error("Error sending bulk reminders:", error);
             throw error;
         }
     }
-
 
     async getAfterHoursCourierScheduleList(requestData: IPaginatedRequest,
                                            filters: IAfterHoursFilter): Promise<ICourierAfterHoursPaginated> {
@@ -160,34 +123,6 @@ class DriverManagementService implements angular.IServiceProvider {
         });
 
         return response.data;
-    }
-
-    async saveAfterHoursSchedule(schedule: IAfterHoursCourierSchedule): Promise<IAfterHoursCourierSchedule> {
-        this.$log.debug("Saving after hours schedule:", schedule);
-
-        try {
-            const response = await this.$http.post<IAfterHoursCourierSchedule>("courier/SaveAfterHoursSchedule", schedule);
-            return response.data;
-        } catch (error) {
-            this.$log.error("Error saving after hours schedule:", error);
-            throw error;
-        }
-    }
-
-    async deleteAfterHoursSchedule(schedule: IAfterHoursCourierSchedule): Promise<void> {
-        this.$log.debug("Deleting after hours schedule:", schedule);
-
-        try {
-            await this.$http.delete("courier/DeleteAfterHoursSchedule", {
-                params: {
-                    courierId: schedule.courierId,
-                    day: schedule.day
-                }
-            });
-        } catch (error) {
-            this.$log.error("Error deleting after hours schedule:", error);
-            throw error;
-        }
     }
 
     async getDriverEmails(): Promise<IDriverEmail[]> {
@@ -213,34 +148,40 @@ class DriverManagementService implements angular.IServiceProvider {
         }
     }
 
-    async exportComplianceReport(): Promise<Blob> {
-        this.$log.debug("Exporting compliance report");
+    async getTodayActiveDriversAsync(requestData: IPaginatedRequest,
+                                     filters: ITodayActiveDriverFilter): Promise<ITodayActiveDriverPaginated> {
+        this.$log.debug("Getting today active drivers");
+        this.$log.debug("Search term: ", requestData.searchTerm);
 
+        const response = await this.$http.post<ITodayActiveDriverPaginated>("courier/GetTodayActiveDrivers", {
+            // Pagination data
+            page: requestData.page,
+            pageSize: requestData.pageSize,
+            orderBy: requestData.orderBy,
+            sortDescending: requestData.sortDescending,
+            searchTerm: requestData.searchTerm,
+
+            // Filter data
+            location: filters.location,
+            status: filters.status,
+            fleet: filters.fleet
+        });
+
+        return response.data;
+    }
+    
+    async getAllFleetOptions(): Promise<ISuggestion[]> {
+        this.$log.debug("Getting all fleet options");
+        
         try {
-            const response = await this.$http.get("courier/ExportComplianceReport", {
-                responseType: 'blob'
-            });
-            return response.data as Blob;
+            const response = await this.$http.get<ISuggestion[]>("courier/GetAllFleetOptions");
+            return response.data;
         } catch (error) {
-            this.$log.error("Error exporting compliance report:", error);
+            this.$log.error("Error getting all fleet options:", error);
             throw error;
         }
     }
 
-    async exportDriversList(format: string = 'csv'): Promise<Blob> {
-        this.$log.debug(`Exporting drivers list as ${format}`);
-
-        try {
-            const response = await this.$http.get("courier/ExportDriversList", {
-                params: { format },
-                responseType: 'blob'
-            });
-            return response.data as Blob;
-        } catch (error) {
-            this.$log.error("Error exporting drivers list:", error);
-            throw error;
-        }
-    }
 }
 
 export default DriverManagementService;

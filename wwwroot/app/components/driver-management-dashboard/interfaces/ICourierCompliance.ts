@@ -1,4 +1,5 @@
 ﻿interface ICourierCompliance {
+    courierId: number;
     code: string;
     name: string;
     complianceType: string;

@@ -118,7 +118,7 @@ public class CourierController(
         }
     }
 
-    public async Task<IActionResult> TruckCourierStatus(string courierId)
+    public async Task<IActionResult> TruckCourierStatus(int courierId)
     {
         try
         {
@@ -244,6 +244,39 @@ public class CourierController(
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
                     nameof(GetAfterHoursCourierSchedule)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> GetTodayActiveDrivers([FromBody] TodayActiveDriversFilterRequest request)
+    {
+        try
+        {
+            var todayActiveDrivers = await courierRepository.GetTodayActiveDriversAsync(request);
+            return Json(todayActiveDrivers);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(GetTodayActiveDrivers)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    public async Task<IActionResult> GetAllFleetOptions()
+    {
+        try
+        {
+            var fleetOptions = await courierRepository.GetAllFleetOptionsAsync();
+            return Json(fleetOptions);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(GetAllFleetOptions)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }

@@ -13,7 +13,7 @@ public class CourierComplianceFilterRequest : PaginatedRequest
 {
     public string Type { get; set; }
     public string Status { get; set; }
-    public string Fleet { get; set; }
+    public int Fleet { get; set; }
 }
 
 public class CourierAfterHoursFilterRequest : PaginatedRequest
@@ -21,7 +21,9 @@ public class CourierAfterHoursFilterRequest : PaginatedRequest
     public string Day { get; set; }
 }
 
-public class DriverEmailFilterRequest
+public class TodayActiveDriversFilterRequest : PaginatedRequest
 {
-    public string Fleet { get; set; }
+    public string Location { get; set; }
+    public string Status { get; set; }
+    public int Fleet { get; set; }
 }
