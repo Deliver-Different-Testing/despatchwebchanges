@@ -28,3 +28,11 @@ public class TodayActiveDriversPaginatedResponse : PaginatedResponse<TodayActive
     public int TotalDriversActiveToday { get; set; }
     public double AverageSessionTime { get; set; }
 }
+
+public class CourierDailyEarningsPaginatedResponse : PaginatedResponse<CourierDailyEarningsViewModel>
+{
+    public decimal TotalEarningsToday { get; set; }
+    public decimal AverageHourlyRate { get; set; }
+    public int TotalActiveDrivers { get; set; }
+    public int TotalDeliveriesToday { get; set; }
+}

@@ -280,4 +280,20 @@ public class CourierController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
+
+    public async Task<IActionResult> GetCourierDailyEarnings([FromBody] PaginatedRequest request)
+    {
+        try
+        {
+            var courierEarnings = await courierRepository.GetCourierDailyEarningsAsync(request);
+            return Json(courierEarnings);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(GetCourierDailyEarnings)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
 }

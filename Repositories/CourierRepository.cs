@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -822,7 +821,51 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
     {
         var courierData = await Context.TucCouriers
             .Where(c => c.UccrId == courierId)
-            .Select(CourierDataDashboardMapping())
+            .Select(c => new CourierDataDashboardViewModel
+            {
+                CourierId = c.UccrId,
+                BasicInformation = new BasicInformation
+                {
+                    Code = c.Code,
+                    FirstName = c.UccrName,
+                    Surname = c.UccrSurname,
+                    Email = c.UccrEmail,
+                    Address = c.UccrAddress
+                },
+                ContactInformation = new ContactInformation
+                {
+                    Mobile = c.UccrMobile,
+                    Home = c.PersonalMobile,
+                    GstNumber = c.UccrGst,
+                    IrdNumber = c.OpenForceNumber
+                },
+                VehicleInformation = new VehicleInformation
+                {
+                    Rego = c.VehiclePlateNnumber,
+                    VehicleYear = c.UccrVehicleYear,
+                    VehicleModel = c.UccrVehicleModel,
+                    VehicleInsurance = c.UccrInsurance != null ? c.UccrInsurance.UcicName : "None"
+                },
+                Compliance = new Compliance
+                {
+                    DangerousGoods = c.UccrDangerousGoods == 1,
+                    DangerousGoodsExpiry = c.DglicenseExpiry,
+                    DriversLicenceExpiry = c.DriversLicenseExpiry
+                },
+                BankingAndEmergency = new BankingAndEmergency
+                {
+                    EmergencyContact = false,
+                    Bank = c.UccrBankBranch,
+                    SecurityCheck = false
+                },
+                AdditionalInformation = new AdditionalInformation
+                {
+                    ContactSignDate = c.UccrStartDate,
+                    MobileInsurence = c.MobileInsurance,
+                    DailyProfitAdjust = 42,
+                    Notes = c.UccrNotes
+                }
+            })
             .AsNoTracking()
             .FirstOrDefaultAsync();
 
@@ -1089,53 +1132,6 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         return (int)duration.TotalHours + "h " + duration.Minutes + "m";
     }
 
-    private static Expression<Func<TucCourier, CourierDataDashboardViewModel>> CourierDataDashboardMapping() =>
-        c => new CourierDataDashboardViewModel
-        {
-            CourierId = c.UccrId,
-            BasicInformation = new BasicInformation
-            {
-                Code = c.Code,
-                FirstName = c.UccrName,
-                Surname = c.UccrSurname,
-                Email = c.UccrEmail,
-                Address = c.UccrAddress
-            },
-            ContactInformation = new ContactInformation
-            {
-                Mobile = c.UccrMobile,
-                Home = c.PersonalMobile,
-                GstNumber = c.UccrGst,
-                IrdNumber = c.OpenForceNumber
-            },
-            VehicleInformation = new VehicleInformation
-            {
-                Rego = c.VehiclePlateNnumber,
-                VehicleYear = c.UccrVehicleYear,
-                VehicleModel = c.UccrVehicleModel,
-                VehicleInsurance = c.UccrInsurance != null ? c.UccrInsurance.UcicName : "None"
-            },
-            Compliance = new Compliance
-            {
-                DangerousGoods = c.UccrDangerousGoods == 1,
-                DangerousGoodsExpiry = c.DglicenseExpiry,
-                DriversLicenceExpiry = c.DriversLicenseExpiry
-            },
-            BankingAndEmergency = new BankingAndEmergency
-            {
-                EmergencyContact = false,
-                Bank = c.UccrBankBranch,
-                SecurityCheck = false
-            },
-            AdditionalInformation = new AdditionalInformation
-            {
-                ContactSignDate = c.UccrStartDate,
-                MobileInsurence = c.MobileInsurance,
-                DailyProfitAdjust = 42,
-                Notes = c.UccrNotes
-            }
-        };
-
     public async Task<TodayActiveDriversPaginatedResponse> GetTodayActiveDriversAsync(
         TodayActiveDriversFilterRequest request)
     {
@@ -1186,7 +1182,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         var totalDriversActiveToday = await query.Where(c =>
             c.CourierLogInOut != null && c.CourierLogInOut.LogOutTime == null &&
             c.CourierLogInOut.LogInTime.Date == now.Date).CountAsync();
-      
+
         var sessionData = await query
             .Where(c => c.CourierLogInOut != null && c.CourierLogInOut.LogInTime.Date == now.Date)
             .Select(c => new { c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime })
@@ -1212,7 +1208,9 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
                 LoginTime = c.CourierLogInOut.LogInTime,
                 LogoutTime = c.CourierLogInOut.LogOutTime,
                 Duration = CourierActiveDuration(c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime ?? now),
-                Deliveries = c.JobDeliveryJourneys != null ? c.JobDeliveryJourneys.Count : 0,
+                Deliveries = c.TucJobUcjbCouriers != null
+                    ? c.TucJobUcjbCouriers.Count(j => j.UcjbDate.Date == now.Date)
+                    : 0,
                 Status = c.CourierLogInOut.LogOutTime == null ? "Active" : "Inactive"
             })
             .AsNoTracking()
@@ -1229,6 +1227,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             AverageSessionTime = averageSessionTime
         };
     }
+
 
     private static string CourierActiveDuration(DateTime loginTime, DateTime? logoutTime)
     {
@@ -1249,5 +1248,90 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             .ToListAsync();
 
         return fleetOptions;
+    }
+
+    public async Task<CourierDailyEarningsPaginatedResponse> GetCourierDailyEarningsAsync(PaginatedRequest request)
+    {
+        var now = infoService.GetCurrentTenantTime();
+
+        // Ensure valid page and pageSize
+        var page = Math.Max(1, request.Page);
+        var pageSize = Math.Max(1, Math.Min(100, request.PageSize));
+
+        var query = Context.TucCouriers
+            .Where(c => c.CourierLogInOut != null && c.CourierLogInOut.LogInTime.Date == now.Date).AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+        {
+            var searchPattern = $"%{request.SearchTerm}%";
+
+            query = query.Where(c =>
+                EF.Functions.Like(c.Code, searchPattern) ||
+                EF.Functions.Like(c.UccrName, searchPattern) ||
+                EF.Functions.Like(c.UccrSurname, searchPattern) ||
+                EF.Functions.Like(c.UccrMobile, searchPattern) ||
+                EF.Functions.Like(c.PersonalMobile, searchPattern) ||
+                EF.Functions.Like(c.VehiclePlateNnumber, searchPattern) ||
+                EF.Functions.Like(c.UccrVehicleModel, searchPattern) ||
+                EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern)
+            );
+        }
+        
+        var totalCount = await query.CountAsync();
+        var totalEarningsToday = await Context.TucJobs.SumAsync(j => j.CourierPayment ?? 0);
+        var averageHourlyRate = await GetAverageHourlyWageForDateAsync(now);
+        var totalActiveDrivers = await query.CountAsync();
+        var totalDeliveriesToday = await Context.TucJobs.CountAsync(j => j.UcjbJobDone && j.UcjbComplTime.HasValue && j.UcjbComplTime.Value.Date == now.Date);
+        
+        // Calculate total pages
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        
+        var courierDailyEarnings = await query.Select(c => new CourierDailyEarningsViewModel
+        {
+            CourierId = c.UccrId,
+            Name = c.UccrName + " " + c.UccrSurname,
+            HoursLogged =
+                EF.Functions.DateDiffMinute(c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime ?? now),
+            Deliveries = c.TucJobUcjbCouriers != null
+                ? c.TucJobUcjbCouriers.Count(j => j.UcjbDate.Date == now.Date)
+                : 0,
+            Earnings = c.TucJobUcjbCouriers != null ? c.TucJobUcjbCouriers.Sum(j => j.CourierPayment ?? 0) : 0,
+            HourlyRate = EF.Functions.DateDiffMinute(c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime ?? now) > 0
+                ? (c.TucJobUcjbCouriers != null ? c.TucJobUcjbCouriers.Sum(j => j.CourierPayment ?? 0) : 0) 
+                  / (EF.Functions.DateDiffMinute(c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime ?? now) / 60.0m)
+                : 0
+        }).AsNoTracking().ToListAsync();
+
+        return new CourierDailyEarningsPaginatedResponse
+        {
+            Items = courierDailyEarnings,
+            Page = page,
+            Pages = totalPages,
+            Total = totalCount,
+            TotalEarningsToday = totalEarningsToday,
+            AverageHourlyRate = averageHourlyRate,
+            TotalActiveDrivers = totalActiveDrivers  ,
+            TotalDeliveriesToday = totalDeliveriesToday
+        };
+    }
+
+    private async Task<decimal> GetAverageHourlyWageForDateAsync(DateTime date)
+    {
+        var courierData = await Context.TucCouriers
+            .Where(c => c.CourierLogInOut != null && c.CourierLogInOut.LogInTime.Date == date.Date)
+            .Select(c => new
+            {
+                HoursLogged = EF.Functions.DateDiffMinute(c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime ?? date),
+                Earnings = c.TucJobUcjbCouriers != null ? c.TucJobUcjbCouriers.Sum(j => j.CourierPayment ?? 0) : 0
+            })
+            .AsNoTracking()
+            .ToListAsync();
+
+        var hourlyRates = courierData
+            .Where(c => c.HoursLogged > 0)
+            .Select(c => c.Earnings / (c.HoursLogged / 60.0m))
+            .ToList();
+
+        return hourlyRates.Count != 0 ? hourlyRates.Average() : 0;
     }
 }
