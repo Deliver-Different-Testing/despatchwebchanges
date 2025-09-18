@@ -111,7 +111,6 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
                     nameof(UploadJobPhotoOrSignatureAsync)));
-            ;
 
             return new AwsUploadResult
             {
@@ -152,7 +151,6 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
                     nameof(DeleteJobPhotoOrSignatureAsync)));
-            ;
             return false;
         }
     }
@@ -175,7 +173,8 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error checking if files attached to job {JobId}: {Message}", jobId, e.Message);
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(IsFilesAttachedToJobAsync)));
             return false;
         }
     }
@@ -218,14 +217,16 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
                 }
                 catch (Exception e)
                 {
-                    Log.Error(e, "Error retrieving file info for S3 object {Key}: {Message}", s3Object.Key, e.Message);
+                    Log.Error(e, "{Message}", 
+                        ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(GetAttachedFilesAsync)));
                     // Continue processing other files even if one fails
                 }
             }
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error getting attached files for job {JobId}: {Message}", jobId, e.Message);
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(GetAttachedFilesAsync)));
             throw;
         }
 
@@ -249,9 +250,7 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
 
         // Validate file size (10MB max)
         if (file.Length > 10 * 1024 * 1024)
-        {
             return new AwsUploadResult { Success = false, ErrorMessage = "File size exceeds the limit of 10MB." };
-        }
 
         try
         {
@@ -290,9 +289,9 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error uploading attachment {FileName} for job {JobId}: {Message}",
-                file.FileName, jobId, e.Message);
-
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(UploadJobAttachmentAsync)));
+            
             return new AwsUploadResult
             {
                 Success = false,
@@ -338,7 +337,8 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error downloading file {Key}: {Message}", key, e.Message);
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(DownloadFileAsync)));
             return new AwsFileDownloadResult { Success = false, ErrorMessage = e.Message };
         }
     }
@@ -369,7 +369,8 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error deleting file {Key}: {Message}", key, e.Message);
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(DeleteFileAsync)));
             return false;
         }
     }
@@ -398,7 +399,8 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error searching files with pattern {Pattern}: {Message}", pattern, e.Message);
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(SearchFilesByPatternAsync)));
             throw;
         }
 
@@ -484,7 +486,8 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error checking if file exists {Key}: {Message}", key, e.Message);
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(FileExistsAsync)));
             throw;
         }
     }
@@ -512,7 +515,8 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error getting file metadata for {Key}: {Message}", key, e.Message);
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(GetFileMetadataAsync)));
             throw;
         }
     }
@@ -541,7 +545,8 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error listing files in folder {FolderPath}: {Message}", folderPath, e.Message);
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(ListAllFilesInFolderAsync)));
             throw;
         }
 
@@ -574,7 +579,8 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error calculating total file size for job {JobId}: {Message}", jobId, e.Message);
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(GetTotalFileSizeForJobAsync)));
             throw;
         }
     }
@@ -592,7 +598,8 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error getting files by date range in {FolderPath}: {Message}", folderPath, e.Message);
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(GetFilesByDateRangeAsync)));
             throw;
         }
     }
@@ -615,7 +622,7 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
 
             var metadata = await GetFileMetadataAsync(destinationKey);
 
-            return new AwsUploadResult()
+            return new AwsUploadResult
             {
                 Success = true,
                 S3Key = destinationKey,
@@ -625,8 +632,8 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error copying file from {SourceKey} to {DestinationKey}: {Message}",
-                sourceKey, destinationKey, e.Message);
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(CopyFileAsync)));
 
             return new AwsUploadResult
             {
@@ -653,8 +660,8 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error moving file from {SourceKey} to {DestinationKey}: {Message}",
-                sourceKey, destinationKey, e.Message);
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(MoveFileAsync)));
             return false;
         }
     }
@@ -681,51 +688,15 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error getting files for job {JobId}: {Message}", jobId, e.Message);
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(GetFilesByJobIdAsync)));
             throw;
         }
     }
 
 // Helper method for batch operations
-    public async Task<AwsBatchOperationResult> DeleteMultipleFilesAsync(List<string> keys)
-    {
-        var results = new AwsBatchOperationResult { TotalFiles = keys.Count };
 
-        try
-        {
-            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-
-            // S3 supports batch delete up to 1000 objects
-            var batches = keys.Chunk(1000);
-
-            foreach (var batch in batches)
-            {
-                var deleteRequest = new DeleteObjectsRequest
-                {
-                    BucketName = bucketName,
-                    Objects = batch.Select(key => new KeyVersion { Key = key }).ToList()
-                };
-
-                var response = await s3Client.DeleteObjectsAsync(deleteRequest);
-                results.SuccessfulFiles += response.DeletedObjects.Count;
-                results.FailedFiles += response.DeleteErrors.Count;
-
-                foreach (var error in response.DeleteErrors)
-                {
-                    Log.Error("Failed to delete {Key}: {Code} - {Message}", error.Key, error.Code, error.Message);
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "Error in batch delete operation: {Message}", e.Message);
-            results.FailedFiles = results.TotalFiles - results.SuccessfulFiles;
-        }
-
-        return results;
-    }
-
-    private async Task<List<S3Object>> SearchAttachmentFilesByPatternAsync(string bucketName, string pattern)
+private async Task<List<S3Object>> SearchAttachmentFilesByPatternAsync(string bucketName, string pattern)
     {
         var allResults = new List<S3Object>();
 
@@ -743,7 +714,8 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error searching for attachment files with pattern {Pattern}: {Message}", pattern, e.Message);
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(SearchAttachmentFilesByPatternAsync)));
             throw;
         }
 
@@ -773,9 +745,8 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
             }
             catch (Exception e)
             {
-                Log.Error(e, "{Message}",
-                    ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
-                        nameof(GetPhotoBytesFromS3ObjectsAsync)));
+                Log.Error(e, "{Message}", 
+                    ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(GetPhotoBytesFromS3ObjectsAsync)));
                 // Continue processing other photos even if one fails
             }
         }
@@ -813,44 +784,5 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
             ".pdf" => "application/pdf",
             _ => "application/octet-stream" // Default content type
         };
-    }
-
-    private async Task<bool> ValidateFileIntegrityAsync(string key)
-    {
-        try
-        {
-            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-            var request = new GetObjectRequest
-            {
-                BucketName = bucketName,
-                Key = key
-            };
-
-            using var response = await s3Client.GetObjectAsync(request);
-            // Validate that we can read the file
-            await using var stream = response.ResponseStream;
-            var buffer = new byte[1024];
-            await stream.ReadAsync(buffer);
-
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private string GeneratePresignedUrl(string key, TimeSpan expiration)
-    {
-        var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-        var request = new GetPreSignedUrlRequest
-        {
-            BucketName = bucketName,
-            Key = key,
-            Expires = DateTime.UtcNow.Add(expiration),
-            Verb = HttpVerb.GET
-        };
-
-        return s3Client.GetPreSignedURL(request);
     }
 }

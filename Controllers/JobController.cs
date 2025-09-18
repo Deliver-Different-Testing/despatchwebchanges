@@ -316,40 +316,6 @@ public class JobController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
-    
-    [HttpPost]
-    public async Task<IActionResult> UploadJobPickupPhotoOrSignature(
-        int jobId,
-        IFormFile file,
-        bool isPod = true,
-        string podDescription = null)
-    {
-        try
-        {
-            var result = await jobPhotoService.UploadJobPhotoOrSignatureAsync(
-                jobId, file, JobPhotoType.Pickup, isPod, podDescription);
-            if (!result.Success) return BadRequest(result.ErrorMessage);
-
-            return Json(new
-            {
-                success = result.Success,
-                fileName = result.FileName,
-                s3Key = result.S3Key,
-                contentType = result.ContentType,
-                size = result.Size,
-                uploadDate = result.UploadDate.ToString("o"),
-                isPOD = result.IsPod,
-                podDescription = result.PodDescription
-            });
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(UploadJobPickupPhotoOrSignature)));
-            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
-        }
-    }
-
 
     [HttpPost]
     public async Task<IActionResult> UploadJobDeliveryPhotoOrSignature(

@@ -36,6 +36,7 @@ class MegaMapController extends BaseController {
     hereMapConfig?: HereMapConfig;
     map: any;
     platform: any;
+    dataLoading: boolean = false;
 
     constructor(
         private $log: angular.ILogService,
@@ -123,6 +124,8 @@ class MegaMapController extends BaseController {
 
     async refreshData(): Promise<void> {
         try {
+            this.dataLoading = true;
+            
             // Get all jobs
             const jobs = await this.overviewService.getMegaMapData();
 
@@ -139,6 +142,8 @@ class MegaMapController extends BaseController {
         } catch (error) {
             this.toastrService.showErrorToast("Error updating data");
             this.$log.error("Error:", error);
+        } finally {
+            this.dataLoading = false
         }
     }
 

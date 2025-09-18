@@ -941,12 +941,22 @@ class DispatchCoreService implements angular.IServiceProvider {
             throw error;
         }
     }
+    async getJobPickupPhotos(jobId: number, year: number, month: number): Promise<any> {
+        const response = await this.$http.get<any>(
+            '/Job/GetJobPickupPhotos',
+            {
+                params: {
+                    jobId,
+                    year,
+                    month
+                }
+            }
+        );
 
-    async getJobDeliveryPhotosAndSignature(
-        jobId: number,
-        year: number,
-        month: number
-    ): Promise<any> {
+        return response.data;
+    }
+    
+    async getJobDeliveryPhotosAndSignature(jobId: number, year: number, month: number): Promise<any> {
         const response = await this.$http.get<any>(
             '/Job/GetJobDeliveryPhotosAndSignature',
             {

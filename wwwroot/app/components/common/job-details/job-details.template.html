@@ -3774,3 +3774,71 @@
         photos="ctrl.formattedPodPhotos"
         time-zone="ctrl.job.deliveryTimeZone.text">
 </pod-photo-viewer>
+
+<!-- Pickup Photos Section -->
+<div class="pod-photo-section pickup-photos-section"
+     ng-if="ctrl.job && ctrl.formattedPickupPhotos.length > 0">
+    <div class="section-header">
+        <div class="md-dense"
+             style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px;">
+            <div style="display: flex; align-items: center">
+                <md-icon md-font-set="material-symbols-outlined" style="margin-right: 8px">
+                    photo_library
+                </md-icon>
+                <span>Pickup Photos</span>
+                <span class="photo-count">{{ctrl.formattedPickupPhotos.length}} photos</span>
+            </div>
+        </div>
+    </div>
+
+    <md-divider></md-divider>
+
+    <!-- Pickup photos thumbnail grid -->
+    <div class="pod-thumbnails-container">
+        <md-grid-list
+                md-cols="5"
+                md-cols-sm="4"
+                md-cols-xs="3"
+                md-gutter="8px"
+                md-row-height="1:1">
+            <md-grid-tile
+                    ng-click="ctrl.openPodViewer($index, 'pickup')"
+                    ng-repeat="photo in ctrl.formattedPickupPhotos track by $index">
+                <img alt="Pickup Photo {{$index + 1}}"
+                     ng-src="{{'data:image/png;base64,' + photo.url}}"/>
+                <md-grid-tile-footer>
+                    <h3>Pickup {{$index + 1}}</h3>
+                </md-grid-tile-footer>
+            </md-grid-tile>
+        </md-grid-list>
+    </div>
+</div>
+
+<!-- No pickup photos message -->
+<div class="pod-photo-section pickup-photos-section"
+     ng-if="ctrl.formattedPickupPhotos.length === 0">
+    <div class="section-header">
+        <div class="md-dense"
+             style="display: flex; align-items: center; padding: 8px 16px">
+            <md-icon md-font-set="material-symbols-outlined" style="margin-right: 8px">
+                photo_library
+            </md-icon>
+            <span>Pickup Photos</span>
+        </div>
+    </div>
+
+    <md-divider></md-divider>
+
+    <div class="no-photos-message" style="padding: 24px; text-align: center">
+        <md-icon md-font-set="material-symbols-outlined"
+                 style="font-size: 48px; height: 48px; width: 48px; color: rgba(0, 0, 0, 0.54);">
+            photo_library
+        </md-icon>
+        <h3 style="margin: 16px 0 8px; color: rgba(0, 0, 0, 0.87)">
+            No Pickup Photos Available
+        </h3>
+        <p style="color: rgba(0, 0, 0, 0.54); margin: 0">
+            This completed job has no pickup photos attached.
+        </p>
+    </div>
+</div>

@@ -49,7 +49,16 @@
 
         <!-- Job Statistics Panel -->
         <md-card class="job-stats-panel">
-            <h2 class="md-subtitle">Job Overview</h2>
+            <md-toolbar class="md-accent">
+                <div class="md-toolbar-tools">
+                    <span class="material-symbols-outlined">map</span>
+                    <span class="md-headline-title" flex style="margin-left: 8px;">Job Overview</span>
+                    
+                    <div flex></div>
+                    <md-progress-circular ng-if="ctrl.dataLoading" class="md-hue-2" md-diameter="30px"></md-progress-circular>
+                </div>
+            </md-toolbar>
+            
             <div class="stats-grid">
                 <div class="stat-item">
                     <div class="stat-number">{{ctrl.jobs.length}}</div>
