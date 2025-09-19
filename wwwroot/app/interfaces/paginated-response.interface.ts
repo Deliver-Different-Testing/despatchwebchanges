@@ -1,5 +1,6 @@
 import ICourierCompliance from "../components/driver-management-dashboard/interfaces/ICourierCompliance";
 import ITodayActiveDrivers from "../components/driver-management-dashboard/interfaces/ITodayActiveDrivers";
+import IDriverEmail from "../components/driver-management-dashboard/interfaces/IDriverEmail";
 
 export interface IPaginatedResponse<T> {
     items: T[];

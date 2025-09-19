@@ -47,4 +47,6 @@ public interface ICourierRepository
     Task<TodayActiveDriversPaginatedResponse> GetTodayActiveDriversAsync(TodayActiveDriversFilterRequest request);
     Task<List<Suggestion>> GetAllFleetOptionsAsync();
     Task<CourierDailyEarningsPaginatedResponse> GetCourierDailyEarningsAsync(PaginatedRequest request);
+    Task<PaginatedResponse<CourierEmailViewModel>> GetCourierEmailsAsync(PaginatedRequest request);
+    Task SendEmailToCouriersAsync(GroupEmailDataViewModel request);
 }

@@ -1,0 +1,153 @@
+﻿<md-dialog aria-label="{{ ::ctrl.title }}" class="compose-email-dialog">
+    <form ng-cloak name="emailForm" novalidate>
+
+        <md-toolbar class="md-hue-1">
+            <div class="md-toolbar-tools">
+                <md-icon class="popup-icon" md-font-set="material-symbols-outlined">mail</md-icon>
+                <h2>{{ ::ctrl.title }}</h2>
+                <span flex></span>
+                <md-button class="md-icon-button close-dialog-button" ng-click="ctrl.clearForm()">
+                    <md-tooltip md-direction="bottom">Clear Form</md-tooltip>
+                    <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
+                        clear_all
+                    </md-icon>
+                </md-button>
+                
+                <md-button class="md-icon-button close-dialog-button" ng-click="ctrl.cancel()">
+                    <md-tooltip md-direction="bottom">Cancel</md-tooltip>
+                    <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
+                        close
+                    </md-icon>
+                </md-button>
+            </div>
+        </md-toolbar>
+
+        <md-dialog-content class="dialog-content" ng-cloak>
+            <div class="content-container">
+
+                <!-- Recipients Section -->
+                <div class="form-section recipients-section">
+                    <div class="section-header">
+                        <md-icon class="section-icon" md-font-set="material-symbols-outlined">group</md-icon>
+                        <h3 class="section-title">Recipients</h3>
+                        <div class="recipient-badge">
+                            {{ ctrl.getSelectedCount() }} selected
+                        </div>
+                    </div>
+
+                    <div class="recipients-container">
+                        <div class="recipients-list" ng-if="ctrl.getSelectedCount() > 0">
+                            <div class="recipient-chip" ng-repeat="courier in ctrl.selectedCouriers track by courier.id">
+                                <md-icon class="chip-icon" md-font-set="material-symbols-outlined">person</md-icon>
+                                <span class="chip-name">{{ courier.name }}</span>
+                                <span class="chip-email" ng-if="courier.email">{{ courier.email }}</span>
+                            </div>
+                        </div>
+                        <div class="empty-recipients" ng-if="ctrl.getSelectedCount() === 0">
+                            <md-icon md-font-set="material-symbols-outlined">group_off</md-icon>
+                            <span>No recipients selected</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Email Templates Section -->
+                <div class="form-section templates-section">
+                    <div class="section-header">
+                        <md-icon class="section-icon" md-font-set="material-symbols-outlined">description</md-icon>
+                        <h3 class="section-title">Quick Templates</h3>
+                    </div>
+
+                    <div class="templates-grid">
+                        <md-button class="template-button"
+                                   ng-click="ctrl.useTemplate('weekly_update')"
+                                   ng-disabled="ctrl.isLoading">
+                            <md-icon md-font-set="material-symbols-outlined">update</md-icon>
+                            <span>Weekly Update</span>
+                        </md-button>
+
+                        <md-button class="template-button"
+                                   ng-click="ctrl.useTemplate('urgent_notice')"
+                                   ng-disabled="ctrl.isLoading">
+                            <md-icon md-font-set="material-symbols-outlined">priority_high</md-icon>
+                            <span>Urgent Notice</span>
+                        </md-button>
+
+                        <md-button class="template-button"
+                                   ng-click="ctrl.useTemplate('schedule_change')"
+                                   ng-disabled="ctrl.isLoading">
+                            <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
+                            <span>Schedule Change</span>
+                        </md-button>
+
+                        <md-button class="template-button"
+                                   ng-click="ctrl.useTemplate('general_announcement')"
+                                   ng-disabled="ctrl.isLoading">
+                            <md-icon md-font-set="material-symbols-outlined">campaign</md-icon>
+                            <span>Announcement</span>
+                        </md-button>
+                    </div>
+                </div>
+
+                <!-- Email Composition Section -->
+                <div class="form-section composition-section">
+                    <div class="section-header">
+                        <md-icon class="section-icon" md-font-set="material-symbols-outlined">edit_note</md-icon>
+                        <h3 class="section-title">Compose Email</h3>
+                    </div>
+
+                    <div class="form-fields">
+                        <!-- Subject Field -->
+                        <md-input-container class="subject-field" flex>
+                            <label>Subject</label>
+                            <input name="emailSubject"
+                                   ng-model="ctrl.emailData.subject"
+                                   ng-disabled="ctrl.isLoading"
+                                   maxlength="200"
+                                   required/>
+                            <div ng-messages="emailForm.emailSubject.$error" ng-if="emailForm.emailSubject.$dirty">
+                                <div ng-message="required" class="error-message">Subject is required</div>
+                            </div>
+                        </md-input-container>
+
+                        <!-- Message Body Field -->
+                        <md-input-container class="message-field" flex>
+                            <label>Message</label>
+                            <textarea name="emailBody"
+                                      ng-model="ctrl.emailData.body"
+                                      ng-disabled="ctrl.isLoading"
+                                      md-maxlength="4000"
+                                      rows="4"
+                                      required
+                                      placeholder="Type your message here...">
+                            </textarea>
+                            <div ng-messages="emailForm.emailBody.$error" ng-if="emailForm.emailBody.$dirty">
+                                <div ng-message="required" class="error-message">Message is required</div>
+                            </div>
+                        </md-input-container>
+                    </div>
+                </div>
+            </div>
+        </md-dialog-content>
+
+        <md-dialog-actions class="dialog-actions">
+            <div class="actions-container">
+                <div class="loading-indicator" ng-if="ctrl.isLoading">
+                    <md-progress-circular md-diameter="20" md-mode="indeterminate"></md-progress-circular>
+                    <span class="loading-text">Preparing email...</span>
+                </div>
+
+                <div class="action-buttons" ng-if="!ctrl.isLoading">
+                    <md-button class="cancel-button" ng-click="ctrl.cancel()">
+                        Cancel
+                    </md-button>
+                    <md-button class="md-raised md-primary"
+                               ng-click="ctrl.submit()"
+                               ng-disabled="emailForm.$invalid || ctrl.getSelectedCount() === 0">
+                        <md-icon md-font-set="material-symbols-outlined">send</md-icon>
+                        <span>{{ ::ctrl.submitLabel || 'Send Email' }}</span>
+                    </md-button>
+                </div>
+            </div>
+        </md-dialog-actions>
+    </form>
+</md-dialog>

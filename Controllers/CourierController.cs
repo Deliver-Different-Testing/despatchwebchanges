@@ -285,6 +285,7 @@ public class CourierController(
     {
         try
         {
+            ArgumentNullException.ThrowIfNull(request);
             var courierEarnings = await courierRepository.GetCourierDailyEarningsAsync(request);
             return Json(courierEarnings);
         }
@@ -293,6 +294,42 @@ public class CourierController(
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
                     nameof(GetCourierDailyEarnings)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> GetAllCourierEmails(PaginatedRequest request)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            var courierEmails = await courierRepository.GetCourierEmailsAsync(request); 
+            return Json(courierEmails);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(GetAllCourierEmails)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SendEmailToCouriers(GroupEmailDataViewModel request)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            await courierRepository.SendEmailToCouriersAsync(request);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(SendEmailToCouriers),
+                    nameof(GetAllCourierEmails)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }

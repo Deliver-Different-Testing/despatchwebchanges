@@ -388,7 +388,7 @@
                 <md-card class="data-table-card">
                     <md-table-container>
                         <table md-table md-progress="ctrl.todayActiveDriversPromise" class="active-drivers-table">
-                            <thead md-head fix-head md-order="ctrl.todayActiveDriversQuery.orderBy"
+                            <thead md-head md-order="ctrl.todayActiveDriversQuery.orderBy"
                                    md-on-reorder="ctrl.loadTodayActiveDrivers">
                             <tr md-row>
                                 <th md-column md-order-by="code">Code</th>
@@ -564,7 +564,7 @@
                 <md-card class="data-table-card">
                     <md-table-container>
                         <table md-table md-progress="ctrl.compliancePromise" class="compliance-table">
-                            <thead md-head fix-head md-order="ctrl.complianceQuery.orderBy"
+                            <thead md-head md-order="ctrl.complianceQuery.orderBy"
                                    md-on-reorder="ctrl.loadComplianceData">
                             <tr md-row>
                                 <th md-column md-order-by="code">Code</th>
@@ -737,7 +737,7 @@
                 <md-card class="data-table-card">
                     <md-table-container>
                         <table md-table md-progress="ctrl.afterHoursSchedulePromise" class="schedule-table">
-                            <thead md-head fix-head md-order="ctrl.afterHoursQuery.orderBy"
+                            <thead md-head md-order="ctrl.afterHoursQuery.orderBy"
                                    md-on-reorder="ctrl.loadAfterHoursSchedule">
                             <tr md-row>
                                 <th md-column md-order-by="name">Driver Name</th>
@@ -790,35 +790,17 @@
                         <div class="filter-section">
                             <div class="filter-controls">
                                 <md-input-container class="search-input" flex="35">
-                                    <label>Search by Name, Email or Phone</label>
-                                    <input ng-model="ctrl.emailFilters.search">
-                                </md-input-container>
-
-                                <md-input-container class="filter-input">
-                                    <label>Filter by Fleet</label>
-                                    <md-select ng-model="ctrl.emailFilters.fleet"
-                                               ng-change="ctrl.loadComplianceData()">
-                                        <md-option value="0">All Fleets</md-option>
-                                        <md-option ng-repeat="option in ctrl.fleetOptions track by option.id"
-                                                   ng-value="option.id">
-                                            {{option.text}}
-                                        </md-option>
-                                    </md-select>
+                                    <label>Search</label>
+                                    <input ng-model="ctrl.driverEmailQuery.searchTerm"
+                                           ng-change="ctrl.loadDriverEmails()"
+                                           ng-model-options="{ debounce: 500 }">
                                 </md-input-container>
                             </div>
 
                             <div class="filter-actions">
-                                <md-button class="md-raised md-primary" ng-click="ctrl.composeGroupEmail()">
+                                <md-button class="md-raised md-primary" ng-click="ctrl.sendEmailToCourier($event)">
                                     <md-icon md-font-set="material-symbols-outlined">email</md-icon>
-                                    Compose Group Email
-                                </md-button>
-                                <md-button class="md-raised" ng-click="ctrl.selectAllEmails()">
-                                    <md-icon md-font-set="material-symbols-outlined">check_box</md-icon>
-                                    Select All
-                                </md-button>
-                                <md-button class="md-raised" ng-click="ctrl.deselectAllEmails()">
-                                    <md-icon md-font-set="material-symbols-outlined">check_box_outline_blank</md-icon>
-                                    Deselect All
+                                    Compose Email
                                 </md-button>
                                 <md-button class="md-raised" ng-click="ctrl.exportEmailList()">
                                     <md-icon md-font-set="material-symbols-outlined">download</md-icon>
@@ -832,13 +814,16 @@
                 <!-- Email List Table -->
                 <md-card class="data-table-card">
                     <md-table-container>
-                        <table md-table class="email-table">
-                            <thead md-head>
+                        <table md-table md-progress="ctrl.driverEmailPromise" class="email-table">
+                            <thead md-head md-order="ctrl.driverEmailQuery.orderBy"
+                                   md-on-reorder="ctrl.loadDriverEmails">
                             <tr md-row>
                                 <th md-column class="checkbox-column">
-                                    <md-checkbox ng-model="ctrl.selectAll"
-                                                 ng-change="ctrl.selectAll ? ctrl.selectAllEmails() : ctrl.deselectAllEmails()"
-                                                 aria-label="Select all">
+                                    <md-checkbox
+                                            class="md-primary"
+                                            ng-model="ctrl.selectAll"
+                                            ng-change="ctrl.selectAll ? ctrl.selectAllEmails() : ctrl.deselectAllEmails()"
+                                            aria-label="Select all">
                                     </md-checkbox>
                                 </th>
                                 <th md-column>Code</th>
@@ -850,11 +835,13 @@
                             </tr>
                             </thead>
                             <tbody md-body>
-                            <tr md-row ng-repeat="driver in ctrl.getFilteredEmails() track by $index" class="table-row">
+                            <tr md-row ng-repeat="driver in ctrl.driverEmailList track by driver.id" class="table-row">
                                 <td md-cell class="checkbox-column">
-                                    <md-checkbox ng-checked="ctrl.isEmailSelected(driver.email)"
-                                                 ng-click="ctrl.toggleEmailSelection(driver.email)"
-                                                 aria-label="Select {{driver.name}}">
+                                    <md-checkbox
+                                            class="md-primary"
+                                            ng-checked="driver.selected"
+                                            ng-click="driver.selected = !driver.selected"
+                                            aria-label="Select {{driver.name}}">
                                     </md-checkbox>
                                 </td>
                                 <td md-cell>
@@ -872,7 +859,8 @@
                                 </td>
                                 <td md-cell>
                                     <div class="table-actions">
-                                        <md-button class="md-icon-button" ng-click="ctrl.emailDriver(driver.email)">
+                                        <md-button class="md-icon-button"
+                                                   ng-click="ctrl.sendSingleEmailToCourier($event, driver)">
                                             <md-icon md-font-set="material-symbols-outlined">email</md-icon>
                                             <md-tooltip>Email</md-tooltip>
                                         </md-button>
@@ -882,8 +870,6 @@
                             </tbody>
                         </table>
                     </md-table-container>
-
-                    <md-progress-linear md-mode="indeterminate" ng-if="ctrl.emailsLoading"></md-progress-linear>
                 </md-card>
             </div>
         </md-tab>
@@ -971,7 +957,7 @@
                 <md-card class="data-table-card">
                     <md-table-container>
                         <table md-table md-progress="ctrl.driverEarningsPromise" class="earnings-table">
-                            <thead md-head fix-head md-order="ctrl.driverEarningsQuery.orderBy"
+                            <thead md-head md-order="ctrl.driverEarningsQuery.orderBy"
                                    md-on-reorder="ctrl.loadDriverTodayEarnings">
                             <tr md-row>
                                 <th md-column md-order-by="name">Name</th>

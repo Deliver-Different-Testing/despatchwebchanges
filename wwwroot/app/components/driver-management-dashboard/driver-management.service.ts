@@ -4,7 +4,7 @@ import IDriverEmail from "./interfaces/IDriverEmail";
 import IGroupEmailData from "./interfaces/IGroupEmailData";
 import {
     ICourierAfterHoursPaginated,
-    ICourierCompliancePaginated, ICourierDailyEarningsPaginated, ITodayActiveDriverPaginated,
+    ICourierCompliancePaginated, ICourierDailyEarningsPaginated, IPaginatedResponse, ITodayActiveDriverPaginated,
 } from "../../interfaces/paginated-response.interface";
 import {ISuggestion} from "../../interfaces/job.interface";
 import {IPaginatedRequest} from "../../interfaces/paginated-request.interfaces";
@@ -125,11 +125,11 @@ class DriverManagementService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getDriverEmails(): Promise<IDriverEmail[]> {
+    async getDriverEmails(requestData: IPaginatedRequest): Promise<IPaginatedResponse<IDriverEmail>> {
         this.$log.debug("Getting driver emails");
 
         try {
-            const response = await this.$http.get<IDriverEmail[]>("courier/GetDriverEmails");
+            const response = await this.$http.post<IPaginatedResponse<IDriverEmail>>("courier/GetAllCourierEmails", requestData);
             return response.data;
         } catch (error) {
             this.$log.error("Error getting driver emails:", error);
@@ -137,11 +137,11 @@ class DriverManagementService implements angular.IServiceProvider {
         }
     }
 
-    async sendGroupEmail(emailData: IGroupEmailData): Promise<void> {
-        this.$log.debug("Sending group email to:", emailData.recipients.length, "recipients");
-
+    async sendEmailToCouriers(emailData: IGroupEmailData): Promise<void> {
+        this.$log.debug("Sending group email");
+        
         try {
-            await this.$http.post("courier/SendGroupEmail", emailData);
+            await this.$http.post("courier/SendEmailToCouriers", emailData);
         } catch (error) {
             this.$log.error("Error sending group email:", error);
             throw error;
@@ -186,15 +186,7 @@ class DriverManagementService implements angular.IServiceProvider {
         this.$log.debug("Getting today active drivers");
         this.$log.debug("Search term: ", requestData.searchTerm);
 
-        const response = await this.$http.post<ICourierDailyEarningsPaginated>("courier/GetCourierDailyEarnings", {
-            // Pagination data
-            page: requestData.page,
-            pageSize: requestData.pageSize,
-            orderBy: requestData.orderBy,
-            sortDescending: requestData.sortDescending,
-            searchTerm: requestData.searchTerm
-        });
-
+        const response = await this.$http.post<ICourierDailyEarningsPaginated>("courier/GetCourierDailyEarnings", requestData);
         return response.data;
     }
 }
