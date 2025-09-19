@@ -20,15 +20,15 @@ import DriverManagementTabs from "./enums/DriverManagementTabs";
 import ITodayActiveDrivers from "./interfaces/ITodayActiveDrivers";
 import {
     ICourierAfterHoursPaginated,
-    ICourierCompliancePaginated, ICourierDailyEarningsPaginated,
+    ICourierCompliancePaginated, ICourierDailyEarningsPaginated, IPaginatedResponse,
     ITodayActiveDriverPaginated
 } from "../../interfaces/paginated-response.interface";
+import {ComposeEmailDialogService} from "../dialogs/compose-email-dialog/compose-email-dialog.service";
 
 class DriverManagementController extends BaseController {
     static $inject = [
         "$mdDialog",
         "$mdSidenav",
-        "$document",
         "$log",
         "$window",
         "$timeout",
@@ -36,7 +36,8 @@ class DriverManagementController extends BaseController {
         "$scope",
         "APP_CONFIG",
         "driverManagementService",
-        "toastrService"
+        "toastrService",
+        "composeEmailDialogService"
     ];
 
     private static LastActiveTabKey = `lastActiveTabDriverManagement_${ContactID}`;
@@ -114,7 +115,7 @@ class DriverManagementController extends BaseController {
         onBreak: 0,
         averageSession: '0h 0m'
     };
-    
+
     // Daily Driver Earnings
     driverEarningsPromise?: Promise<ICourierDailyEarningsPaginated>;
     driverEarningsList: ICourierDailyEarnings[] = [];
@@ -133,21 +134,23 @@ class DriverManagementController extends BaseController {
     };
 
     // Email Management
-    driverEmails: IDriverEmail[] = [];
-    emailsLoading: boolean = false;
-    selectedEmails: Set<string> = new Set();
-    selectAll: boolean = false;
-    emailFilters = {
-        fleet: '',
-        search: ''
+    driverEmailPromise?: Promise<IPaginatedResponse<IDriverEmail>>;
+    driverEmailList: IDriverEmail[] = [];
+    driverEmailQuery: IPaginatedRequest = {
+        orderBy: "code",
+        pageSize: 10,
+        page: 1,
+        searchTerm: '',
+        sortDescending: false,
     };
+    totalDriverEmails: number = 0;
+
     driverInformationLoading: boolean = false;
     fleetOptions?: ISuggestion[];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private $mdSidenav: angular.material.ISidenavService,
-        private $document: angular.IDocumentService,
         private $log: angular.ILogService,
         private $window: angular.IWindowService,
         $timeout: angular.ITimeoutService,
@@ -155,7 +158,8 @@ class DriverManagementController extends BaseController {
         $scope: angular.IScope,
         appConfig: IAppConfig,
         private driverManagementService: DriverManagementService,
-        private toastrService: ToastrService
+        private toastrService: ToastrService,
+        private composeEmailDialogService: ComposeEmailDialogService
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
@@ -185,6 +189,7 @@ class DriverManagementController extends BaseController {
         this.loadAfterHoursSchedule = this.loadAfterHoursSchedule.bind(this);
         this.loadComplianceData = this.loadComplianceData.bind(this);
         this.loadTodayActiveDrivers = this.loadTodayActiveDrivers.bind(this);
+        this.loadDriverEmails = this.loadDriverEmails.bind(this);
     }
 
     private loadLastActiveTab() {
@@ -471,98 +476,56 @@ class DriverManagementController extends BaseController {
     }
 
 // Email Management Methods
-    private async loadDriverEmails(): Promise<void> {
-        this.emailsLoading = true;
+    async loadDriverEmails(): Promise<void> {
         try {
-            this.driverEmails = await this.driverManagementService.getDriverEmails();
+            this.driverEmailPromise = this.driverManagementService.getDriverEmails(this.driverEmailQuery);
+
+            const driverEmailResponse = await this.driverEmailPromise;
+            this.driverEmailList = driverEmailResponse?.items ?? [];
+            this.totalDriverEmails = driverEmailResponse?.total ?? 0
         } catch (error) {
-            this.$log.error('Error loading driver emails:', error);
-            this.toastrService.showErrorToast('Failed to load driver emails');
-        } finally {
-            this.emailsLoading = false;
-        }
-    }
-
-    getFilteredEmails(): IDriverEmail[] {
-        let filtered = [...this.driverEmails];
-
-        if (this.emailFilters.fleet) {
-            filtered = filtered.filter(e => e.fleet === this.emailFilters.fleet);
-        }
-
-        if (this.emailFilters.search) {
-            const search = this.emailFilters.search.toLowerCase();
-            filtered = filtered.filter(e =>
-                e.name.toLowerCase().includes(search) ||
-                e.email.toLowerCase().includes(search) ||
-                e.phone.toLowerCase().includes(search)
-            );
-        }
-
-        return filtered;
-    }
-
-    toggleEmailSelection(email: string): void {
-        if (this.selectedEmails.has(email)) {
-            this.selectedEmails.delete(email);
-        } else {
-            this.selectedEmails.add(email);
+            this.$log.error('Error loading today active drivers:', error);
+            this.toastrService.showErrorToast('Failed to load today active drivers');
         }
     }
 
     selectAllEmails(): void {
-        this.getFilteredEmails().forEach(e => this.selectedEmails.add(e.email));
-        this.selectAll = true;
+        this.driverEmailList.forEach(e => e.selected = true);
     }
 
     deselectAllEmails(): void {
-        this.selectedEmails.clear();
-        this.selectAll = false;
+        this.driverEmailList.forEach(e => e.selected = false);
     }
 
-    isEmailSelected(email: string): boolean {
-        return this.selectedEmails.has(email);
+    async sendSingleEmailToCourier($event: MouseEvent, email: IDriverEmail): Promise<void> {
+        await this.openComposeEmailDialog($event, [email]);
     }
 
-    composeGroupEmail(): void {
-        if (this.selectedEmails.size === 0) {
-            this.toastrService.showWarningToast('Please select at least one driver');
-            return;
-        }
-
-        /*  this.$mdDialog.show({
-              template: require("./dialogs/group-email-dialog.template.html"),
-              controller: 'GroupEmailDialogController',
-              controllerAs: 'ctrl',
-              locals: {
-                  recipients: Array.from(this.selectedEmails)
-              },
-              parent: this.$document.parent(),
-              clickOutsideToClose: false
-          }).then(async (emailData: any) => {
-              if (emailData) {
-                  await this.sendGroupEmail(emailData);
-              }
-          });*/
-    }
-
-    private async sendGroupEmail(emailData: any): Promise<void> {
+    async sendEmailToCourier($event: MouseEvent): Promise<void> {
         try {
-            await this.driverManagementService.sendGroupEmail(emailData);
-            this.toastrService.showSuccessToast(`Email sent to ${this.selectedEmails.size} recipient(s)`);
-            this.deselectAllEmails();
+            const selectedEmails = this.driverEmailList.filter(e => e.selected);
+            if (selectedEmails.length === 0) {
+                this.toastrService.showWarningToast('No recipients selected');
+                return;
+            }
+
+            await this.openComposeEmailDialog($event, selectedEmails);
         } catch (error) {
-            this.$log.error('Error sending group email:', error);
-            this.toastrService.showErrorToast('Failed to send group email');
+            this.$log.error('Error sending email:', error);
+            this.toastrService.showErrorToast('Failed to send email');
         }
     }
 
-    emailDriver(email: string): void {
-        this.$window.location.href = `mailto:${email}`;
+    private async openComposeEmailDialog($event: MouseEvent, selectedEmails: IDriverEmail[]) {
+        const emailData = await this.composeEmailDialogService.openComposeEmailDialog($event, selectedEmails);
+        if (!emailData) return;
+
+        await this.driverManagementService.sendEmailToCouriers(emailData);
+        this.toastrService.showSuccessToast(`Email${selectedEmails.length > 1 ? 's' : ''} sent successfully`);
     }
 
     exportEmailList(): void {
-        const data = this.getFilteredEmails().map(item => ({
+        const data = this.driverEmailList.map(item => ({
             Code: item.code,
             Name: item.name,
             Email: item.email,
@@ -658,7 +621,7 @@ class DriverManagementController extends BaseController {
 
         this.exportToCSV(data, 'Today_Active_Drivers');
     }
-    
+
     /* Daily Driver Earnings */
     async loadDriverTodayEarnings(): Promise<void> {
         try {
@@ -674,11 +637,11 @@ class DriverManagementController extends BaseController {
                 totalDeliveriesToday: earningsResponse.totalDeliveriesToday
             };
         } catch (error) {
-         this.$log.error('Error loading driver earnings:', error);
-         this.toastrService.showErrorToast('Failed to load driver earnings');
+            this.$log.error('Error loading driver earnings:', error);
+            this.toastrService.showErrorToast('Failed to load driver earnings');
         }
     }
-    
+
     async refreshDriverEarnings(): Promise<void> {
         await this.loadDriverTodayEarnings();
         this.toastrService.showSuccessToast('Driver earnings refreshed');

@@ -1227,7 +1227,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             AverageSessionTime = averageSessionTime
         };
     }
-    
+
     private static string CourierActiveDuration(DateTime loginTime, DateTime? logoutTime)
     {
         if (!logoutTime.HasValue) return "Not Available";
@@ -1259,7 +1259,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
 
         var query = Context.TucCouriers
             .Where(c => c.CourierLogInOut != null && c.CourierLogInOut.LogInTime.Date == now.Date).AsQueryable();
-        
+
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
             var searchPattern = $"%{request.SearchTerm}%";
@@ -1275,30 +1275,36 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
                 EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern)
             );
         }
-        
+
         var totalCount = await query.CountAsync();
         var totalDeliveriesToday = await GetCompletedJobCountForDayAsync(now);
         var totalEarningsToday = await GetTotalCourierEarningsForDayAsync(now);
         var averageHourlyRate = await GetAverageHourlyWageForDateAsync(now);
-        
+
         // Calculate total pages
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-        
+
         var courierDailyEarnings = await query.Select(c => new CourierDailyEarningsViewModel
-        {
-            CourierId = c.UccrId,
-            Name = c.UccrName + " " + c.UccrSurname,
-            HoursLogged =
-                EF.Functions.DateDiffMinute(c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime ?? now),
-            Deliveries = c.TucJobUcjbCouriers != null
-                ? c.TucJobUcjbCouriers.Count(j => j.UcjbDate.Date == now.Date)
-                : 0,
-            Earnings = c.TucJobUcjbCouriers != null ? c.TucJobUcjbCouriers.Sum(j => j.CourierPayment ?? 0) : 0,
-            HourlyRate = EF.Functions.DateDiffMinute(c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime ?? now) > 0
-                ? (c.TucJobUcjbCouriers != null ? c.TucJobUcjbCouriers.Sum(j => j.CourierPayment ?? 0) : 0) 
-                  / (EF.Functions.DateDiffMinute(c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime ?? now) / 60.0m)
-                : 0
-        }).AsNoTracking().ToListAsync();
+            {
+                CourierId = c.UccrId,
+                Name = c.UccrName + " " + c.UccrSurname,
+                HoursLogged =
+                    EF.Functions.DateDiffMinute(c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime ?? now),
+                Deliveries = c.TucJobUcjbCouriers != null
+                    ? c.TucJobUcjbCouriers.Count(j => j.UcjbDate.Date == now.Date)
+                    : 0,
+                Earnings = c.TucJobUcjbCouriers != null ? c.TucJobUcjbCouriers.Sum(j => j.CourierPayment ?? 0) : 0,
+                HourlyRate =
+                    EF.Functions.DateDiffMinute(c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime ?? now) >
+                    0
+                        ? (c.TucJobUcjbCouriers != null ? c.TucJobUcjbCouriers.Sum(j => j.CourierPayment ?? 0) : 0)
+                          / (EF.Functions.DateDiffMinute(c.CourierLogInOut.LogInTime,
+                                 c.CourierLogInOut.LogOutTime ?? now) /
+                             60.0m)
+                        : 0
+            })
+            .AsNoTracking()
+            .ToListAsync();
 
         return new CourierDailyEarningsPaginatedResponse
         {
@@ -1308,7 +1314,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             Total = totalCount,
             TotalEarningsToday = totalEarningsToday,
             AverageHourlyRate = averageHourlyRate,
-            TotalActiveDrivers = totalCount  ,
+            TotalActiveDrivers = totalCount,
             TotalDeliveriesToday = totalDeliveriesToday
         };
     }
@@ -1318,7 +1324,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         var completedCount = await Context.TucJobs
             .Where(j => j.UcjbComplTime.HasValue && j.UcjbComplTime.Value.Date == now.Date)
             .CountAsync();
-        
+
         return completedCount;
     }
 
@@ -1328,17 +1334,18 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             .Where(j => j.UcjbComplTime.HasValue && j.UcjbComplTime.Value.Date == now.Date)
             .Select(j => j.CourierPayment)
             .SumAsync();
-        
+
         return totalEarnings ?? 0;
     }
-    
+
     private async Task<decimal> GetAverageHourlyWageForDateAsync(DateTime date)
     {
         var courierData = await Context.TucCouriers
             .Where(c => c.CourierLogInOut != null && c.CourierLogInOut.LogInTime.Date == date.Date)
             .Select(c => new
             {
-                HoursLogged = EF.Functions.DateDiffMinute(c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime ?? date),
+                HoursLogged =
+                    EF.Functions.DateDiffMinute(c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime ?? date),
                 Earnings = c.TucJobUcjbCouriers != null ? c.TucJobUcjbCouriers.Sum(j => j.CourierPayment ?? 0) : 0
             })
             .AsNoTracking()
@@ -1350,5 +1357,78 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             .ToList();
 
         return hourlyRates.Count != 0 ? hourlyRates.Average() : 0;
+    }
+
+    public async Task<PaginatedResponse<CourierEmailViewModel>> GetCourierEmailsAsync(PaginatedRequest request)
+    {
+        // Ensure valid page and pageSize
+        var page = Math.Max(1, request.Page);
+        var pageSize = Math.Max(1, Math.Min(100, request.PageSize));
+
+        var query = Context.TucCouriers
+            .Where(c => c.UccrEmail != null).AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+        {
+            var searchPattern = $"%{request.SearchTerm}%";
+
+            query = query.Where(c =>
+                EF.Functions.Like(c.Code, searchPattern) ||
+                EF.Functions.Like(c.UccrName, searchPattern) ||
+                EF.Functions.Like(c.UccrSurname, searchPattern) ||
+                EF.Functions.Like(c.UccrMobile, searchPattern) ||
+                EF.Functions.Like(c.PersonalMobile, searchPattern) ||
+                EF.Functions.Like(c.VehiclePlateNnumber, searchPattern) ||
+                EF.Functions.Like(c.UccrVehicleModel, searchPattern) ||
+                EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern)
+            );
+        }
+
+        var totalCount = await query.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        var courierEmails = await query.Select(c => new CourierEmailViewModel
+            {
+                CourierId = c.UccrId,
+                Code = c.Code,
+                Name = c.UccrName + " " + c.UccrSurname,
+                Email = c.UccrEmail,
+                Phone = c.UccrMobile,
+                Fleet = c.CourierFleet != null ? c.CourierFleet.UccfName : "Not Available"
+            })
+            .AsNoTracking()
+            .ToListAsync();
+
+
+        return new PaginatedResponse<CourierEmailViewModel>
+        {
+            Items = courierEmails,
+            Page = page,
+            Pages = totalPages,
+            Total = totalCount
+        };
+    }
+
+    public async Task SendEmailToCouriersAsync(GroupEmailDataViewModel request)
+    {
+        var emailsToSendTo = await Context.TucCouriers
+            .Where(c => request.CourierIds.Contains(c.UccrId))
+            .Select(c => c.UccrEmail)
+            .AsNoTracking()
+            .ToListAsync();
+
+        var manualMessages = emailsToSendTo.Select(email =>
+                new TucManualMessage
+                {
+                    SendToEmailAddress = email,
+                    ReplyToEmailAddress = Environment.GetEnvironmentVariable("ReplyToEmailAddress") ??
+                                          "support@deliverdifferent.com",
+                    Subject = request.Subject,
+                    UcmmMessage = request.Body
+                })
+            .ToList();
+
+        await Context.TucManualMessages.AddRangeAsync(manualMessages);
+        await Context.SaveChangesAsync();
     }
 }

@@ -1,10 +1,11 @@
 ﻿interface IDriverEmail {
+    courierId: number;
     code: string;
     name: string;
     email: string;
     phone: string;
     fleet: string;
-    isActive?: boolean;
+    selected: boolean;
 }
 
 export default IDriverEmail;
