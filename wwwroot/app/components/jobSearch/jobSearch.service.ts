@@ -1,6 +1,6 @@
 import {IDispatchJob} from "../../interfaces/job.interface";
 import dayjs from "dayjs";
-import {formatFullDate} from "../../functions/formatDates";
+import {formatDateForApi} from "../../functions/formatDates";
 import IScanDetailResult from "./interfaces/IScanDetailResult";
 
 class JobSearchService implements angular.IServiceProvider {
@@ -101,7 +101,7 @@ class JobSearchService implements angular.IServiceProvider {
         const response = await this.$http.get<IScanDetailResult[]>(
             `/Job/ScanJobDetail`, {
                 params: {
-                    runDate: formatFullDate(runDate),
+                    runDate: formatDateForApi(runDate),
                     scan
                 }
             }

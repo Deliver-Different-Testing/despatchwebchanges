@@ -29,7 +29,7 @@ import ConfigService from "./config.service";
 import {UpdatePodDetailsRequest} from "../interfaces/requests.interfaces";
 import {JobEventData} from "../components/dialogs/add-event-dialog/add-event-dialog.interfaces";
 import {DeliveryJourneyViewModel} from "../components/common/task-history/task-history.interfaces";
-import {formatFullDate} from "../functions/formatDates";
+import {formatDateForApi} from "../functions/formatDates";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = [
@@ -632,7 +632,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         });
 
         if (value instanceof Date) {
-            value = formatFullDate(value);
+            value = formatDateForApi(value);
         }
 
         const url: string = isRecurring
@@ -687,7 +687,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 );
 
                 // Format to YYYY-MM-DD HH:mm:ss
-                value = formatFullDate(combined);
+                value = formatDateForApi(combined);
             }
         }
 
@@ -702,7 +702,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             field === JobProperty.NextDue
         ) {
             if (value instanceof Date) {
-                value = formatFullDate(value);
+                value = formatDateForApi(value);
             }
         }
 
@@ -740,16 +740,16 @@ class DispatchCoreService implements angular.IServiceProvider {
 
         // Add date filter parameters - handle all options
         if (queryParams.dateCutoff) {
-            params.dateCutoff = formatFullDate(queryParams.dateCutoff);
+            params.dateCutoff = formatDateForApi(queryParams.dateCutoff);
         }
 
         // Add start and end date parameters if present
         if (queryParams.startDate) {
-            params.startDate = formatFullDate(queryParams.startDate);
+            params.startDate = formatDateForApi(queryParams.startDate);
         }
 
         if (queryParams.endDate) {
-            params.endDate = formatFullDate(queryParams.endDate);
+            params.endDate = formatDateForApi(queryParams.endDate);
         }
 
         const response = await this.$http.get<IDispatchJob[]>("job", {

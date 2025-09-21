@@ -34,7 +34,7 @@ import dayjs from "dayjs";
 import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
 import VoidJobConfirmationDialogService
     from "../../dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
-import {formatFullDate} from "../../../functions/formatDates";
+import {displayLongDate} from "../../../functions/formatDates";
 import JobPhotoType from "../../../enums/job-photo-type.enum";
 
 class JobDetailController extends BaseController {
@@ -468,7 +468,7 @@ class JobDetailController extends BaseController {
                 const podPhoto: PodPhoto = {
                     url: photoData,
                     timestamp: this.job?.completedTime
-                        ? formatFullDate(this.job.completedTime)
+                        ? displayLongDate(this.job.completedTime)
                         : undefined,
                     uploadedBy: this.job?.courierData?.courierName ?? "Unknown",
                     coordinates: {
