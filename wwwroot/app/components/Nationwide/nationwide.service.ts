@@ -6,7 +6,7 @@ import {
     RecoveryAgentJobViewModel, RemoveAgentRecoveryRequest, UpdateAgentRecoveryRequest
 } from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.interfaces";
 import IFlightCargoProcessing from "../dialogs/flight-agent-conformation-dialog/interfaces/IFlightCargoProcessing";
-import {formatFullDate} from "../../functions/formatDates";
+import {formatDateForApi} from "../../functions/formatDates";
 
 class NationwideService implements angular.IServiceProvider {
     static $inject = [
@@ -48,8 +48,8 @@ class NationwideService implements angular.IServiceProvider {
             params: {
                 order: queryParams.order ?? defaultParams.order,
                 orderDirection: queryParams.orderDirection ?? defaultParams.orderDirection,
-                startDate: queryParams.startDate ? formatFullDate(queryParams.startDate) : null,
-                dateCutoff: queryParams.dateCutoff ? formatFullDate(queryParams.dateCutoff) : null,
+                startDate: queryParams.startDate ? formatDateForApi(queryParams.startDate) : null,
+                dateCutoff: queryParams.dateCutoff ? formatDateForApi(queryParams.dateCutoff) : null,
                 isInternal: isInternal,
                 cid: ContactID,
                 clientIds: selectedClients,
@@ -84,7 +84,7 @@ class NationwideService implements angular.IServiceProvider {
         lastDepartureTime: Date | null;
     }> {
         const startTime = performance.now();
-        const formattedDate = formatFullDate(departureDate);
+        const formattedDate = formatDateForApi(departureDate);
 
         // Create a cache key based on the parameters
         const cacheKey = `flights_${jobId}_${formattedDate}_${airlineId || 'all'}_${departureAirportId || 'default'}`;
@@ -252,7 +252,7 @@ class NationwideService implements angular.IServiceProvider {
     }
     
     async calculateCargoReadyTime(jobId: number, carrierFsCode: string, arrivalTime: Date): Promise<IFlightCargoProcessing> {
-        const formattedArrivalTime =  formatFullDate(arrivalTime);
+        const formattedArrivalTime =  formatDateForApi(arrivalTime);
         this.$log.debug('formattedArrivalTime', formattedArrivalTime);
         const response = await this.$http.get<IFlightCargoProcessing>("nationwideJob/CalculateCargoReadyTime", {
             params: {

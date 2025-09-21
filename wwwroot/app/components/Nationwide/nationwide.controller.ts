@@ -40,7 +40,7 @@ import TasksService from "../../services/tasks.service";
 import JobListType from "../common/job-list/enums/jobListType";
 import RecoveryAgentManagementService
     from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.service";
-import {formatFullDate} from "../../functions/formatDates";
+import {formatDateForApi} from "../../functions/formatDates";
 import IContextMenuOption from "../../interfaces/context-menu-option.interface";
 
 class NationwideControl extends BaseController {
@@ -1327,10 +1327,10 @@ class NationwideControl extends BaseController {
                 fromAirportId: this.selectedOutboundAirport?.id,
                 toAirportId: this.selectedInboundAirport?.id,
                 flightNumber: flight.flightNumber,
-                departureDate: formatFullDate(flight.departureTime),
+                departureDate: formatDateForApi(flight.departureTime),
                 flightSegments: flight.flightSegments,
-                packageReadyTime: result.packageReadyTime ? formatFullDate(result.packageReadyTime) : undefined,
-                packageDeliverByTime: result.packageDeliverByTime ? formatFullDate(result.packageDeliverByTime) : undefined,
+                packageReadyTime: result.packageReadyTime ? formatDateForApi(result.packageReadyTime) : undefined,
+                packageDeliverByTime: result.packageDeliverByTime ? formatDateForApi(result.packageDeliverByTime) : undefined,
                 packageDeliveryNotes: result.packageDeliveryNotes
             };
             
