@@ -30,14 +30,14 @@ class JobFileUploadController extends BaseController {
     overallProgress: number = 0;
     currentUploadingFile: IUploadProgressFile | null = null;
     fileProgressMap: Map<string, number> = new Map();
-    
+
     constructor(
         private $http: angular.IHttpService,
         private $log: angular.ILogService,
         private $mdDialog: angular.material.IDialogService,
         private $window: angular.IWindowService,
         private toastrService: ToastrService,
-        public Upload: angular.angularFileUpload.IUploadService,
+        public $upload: angular.angularFileUpload.IUploadService,
         public bytesFilter: (bytes: number) => string,
         public jobId: number,
         public initialUploadType: FileUploadType = FileUploadType.NORMAL
@@ -97,12 +97,19 @@ class JobFileUploadController extends BaseController {
                 }
             }).then((response: angular.IHttpResponse<any>) => {
                 if (response.data && response.data.length) {
-                    // Transform the POD photos to match the IJobFile interface
                     const podPhotos = response.data.map((photo: any) => {
+                        // Preserve the original file extension if available
+                        let fileName = photo.fileName;
+                        if (!fileName) {
+                            const ext = photo.contentType ?
+                                photo.contentType.split('/')[1] : 'jpg';
+                            fileName = `POD_${dayjs().valueOf()}.${ext}`;
+                        }
+
                         return {
-                            fileName: photo.fileName || `POD_${dayjs().valueOf()}.jpg`,
+                            fileName: fileName,
                             s3Key: photo.s3Key,
-                            contentType: photo.contentType || 'image/jpeg',
+                            contentType: photo.contentType || 'application/octet-stream',
                             size: photo.size || 0,
                             uploadDate: photo.uploadDate || dayjs().toISOString(),
                             isPOD: true,
@@ -179,6 +186,10 @@ class JobFileUploadController extends BaseController {
                 isPOD: this.isPODUpload()
             };
 
+            if (file.type) {
+                formData.contentType = file.type;
+            }
+
             // Add POD description if this is a POD upload
             if (this.isPODUpload() && this.podDescription) {
                 formData.podDescription = this.podDescription;
@@ -188,7 +199,7 @@ class JobFileUploadController extends BaseController {
                 ? "/job/uploadJobDeliveryPhotoOrSignature"
                 : "/job/uploadFile";
 
-            const response = await this.Upload.upload({
+            const response = await this.$upload.upload({
                 url: endpoint,
                 method: 'POST',
                 data: formData,
@@ -226,7 +237,7 @@ class JobFileUploadController extends BaseController {
             this.toastrService.showErrorToast(`Failed to upload ${this.isPODUpload() ? 'POD photo' : 'file'}: ${file.name}. Please try again.`);
         }
     }
-    
+
     async downloadFile(file: { fileName: string; s3Key: string; isPOD?: boolean }): Promise<void> {
         try {
             // Determine the endpoint based on whether this is a POD file
@@ -251,8 +262,8 @@ class JobFileUploadController extends BaseController {
             this.$log.debug("Response received:", response);
             this.$log.debug("All headers:", response.headers());
 
-            // Get content type - fallback to image/jpeg if not found
-            const contentType = response.headers("content-type") || "image/jpeg";
+            // Get content type - use application/octet-stream as generic fallback
+            const contentType = response.headers("content-type") || "application/octet-stream";
 
             // Parse content disposition header
             const contentDisposition = response.headers("content-disposition");
