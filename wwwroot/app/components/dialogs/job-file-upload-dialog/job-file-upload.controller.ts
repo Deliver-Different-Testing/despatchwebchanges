@@ -2,6 +2,7 @@ import {FileUploadType} from "../../../enums/file-upload-type.enum";
 import ToastrService from "../../../services/toastr.service";
 import BaseController from "../../base-controller";
 import {IJobFile, IUploadProgressFile} from "./job-file-upload-dialog.interfaces";
+import dayjs from "dayjs";
 
 class JobFileUploadController extends BaseController {
     static $inject = [
@@ -24,7 +25,12 @@ class JobFileUploadController extends BaseController {
     selectedTabIndex: number = 0;
     showNormalTab: boolean = true;
     showPodTab: boolean = true;
-
+    totalFiles: number = 0;
+    completedFiles: number = 0;
+    overallProgress: number = 0;
+    currentUploadingFile: IUploadProgressFile | null = null;
+    fileProgressMap: Map<string, number> = new Map();
+    
     constructor(
         private $http: angular.IHttpService,
         private $log: angular.ILogService,
@@ -79,9 +85,9 @@ class JobFileUploadController extends BaseController {
         // If the POD tab is visible, also load additional POD photos from the specialized endpoint
         if (this.showPodTab) {
             // Get the current month and year for the POD photo search
-            const now = new Date();
-            const month = now.getMonth() + 1;
-            const year = now.getFullYear();
+            const now = dayjs();
+            const month = now.month() + 1;
+            const year = now.year();
 
             this.$http.get("/job/GetJobDeliveryPhotosAndSignature", {
                 params: {
@@ -94,11 +100,11 @@ class JobFileUploadController extends BaseController {
                     // Transform the POD photos to match the IJobFile interface
                     const podPhotos = response.data.map((photo: any) => {
                         return {
-                            fileName: photo.fileName || `POD_${new Date().getTime()}.jpg`,
+                            fileName: photo.fileName || `POD_${dayjs().valueOf()}.jpg`,
                             s3Key: photo.s3Key,
                             contentType: photo.contentType || 'image/jpeg',
                             size: photo.size || 0,
-                            uploadDate: photo.uploadDate || new Date().toISOString(),
+                            uploadDate: photo.uploadDate || dayjs().toISOString(),
                             isPOD: true,
                             podDescription: photo.podDescription || ''
                         };
@@ -128,9 +134,40 @@ class JobFileUploadController extends BaseController {
 
     async uploadFiles(files: File[]): Promise<void> {
         if (files && files.length) {
-            for (let i = 0; i < files.length; i++) {
-                await this.upload(files[i]);
+            // Initialize upload tracking
+            this.totalFiles = files.length;
+            this.completedFiles = 0;
+            this.overallProgress = 0;
+            this.fileProgressMap.clear();
+
+            // Add all files to the uploadingFiles array
+            for (let file of files) {
+                const uploadFile: IUploadProgressFile = {
+                    ...file,
+                    progress: 0,
+                    isPOD: this.isPODUpload(),
+                    podDescription: this.isPODUpload() ? this.podDescription : undefined
+                };
+                this.uploadingFiles.push(uploadFile);
+                const fileKey = `${file.name}_${file.size}`;
+                this.fileProgressMap.set(fileKey, 0);
             }
+
+            // Upload files sequentially
+            for (let i = 0; i < files.length; i++) {
+                this.currentUploadingFile = this.uploadingFiles[i];
+                await this.upload(files[i]);
+                this.completedFiles++;
+                this.updateOverallProgress();
+            }
+
+            // Clear upload tracking after all files are done
+            this.uploadingFiles = [];
+            this.currentUploadingFile = null;
+            this.totalFiles = 0;
+            this.completedFiles = 0;
+            this.overallProgress = 0;
+            this.fileProgressMap.clear();
         }
     }
 
@@ -166,32 +203,30 @@ class JobFileUploadController extends BaseController {
                 }
             });
 
+            // Mark this file as complete
+            const fileKey = `${file.name}_${file.size}`;
+            this.fileProgressMap.set(fileKey, 100);
+
             const fileType = this.isPODUpload() ? 'POD photo' : 'file';
             const message = `Success ${file.name} uploaded as ${fileType}`;
             this.toastrService.showSuccessToast(message);
             this.$log.debug(message + ". Response: " + JSON.stringify(response.data));
-            this.loadFiles();
+
+            // Only reload files after all uploads are complete
+            if (this.completedFiles === this.totalFiles - 1) {
+                this.loadFiles();
+            }
         } catch (error: any) {
+            // Mark this file as failed (optional: you could show the failed state)
+            const fileKey = `${file.name}_${file.size}`;
+            this.fileProgressMap.set(fileKey, 0);
+
             this.$log.error(`Error status: ${error.status}`);
             this.$log.error(`Error data: ${JSON.stringify(error.data)}`);
             this.toastrService.showErrorToast(`Failed to upload ${this.isPODUpload() ? 'POD photo' : 'file'}: ${file.name}. Please try again.`);
         }
     }
-
-    updateFileProgress(file: File, progress: number): void {
-        let index: number = this.uploadingFiles.findIndex((f: any) => f.name === file.name && f.size === file.size);
-        if (index === -1) {
-            this.uploadingFiles.push({
-                ...file,
-                progress: progress,
-                isPOD: this.isPODUpload(),
-                podDescription: this.isPODUpload() ? this.podDescription : undefined
-            });
-        } else {
-            this.uploadingFiles[index].progress = progress;
-        }
-    }
-
+    
     async downloadFile(file: { fileName: string; s3Key: string; isPOD?: boolean }): Promise<void> {
         try {
             // Determine the endpoint based on whether this is a POD file
@@ -247,7 +282,7 @@ class JobFileUploadController extends BaseController {
             link.click();
 
             // Cleanup
-            this.$window.setTimeout(() => {
+            this.registerTimeout(() => {
                 angular.element(link).remove();
                 this.$window.URL.revokeObjectURL(url);
             }, 100);
@@ -300,6 +335,34 @@ class JobFileUploadController extends BaseController {
                 }
             );
         }
+    }
+
+    updateFileProgress(file: File, progress: number): void {
+        const fileKey = `${file.name}_${file.size}`;
+        this.fileProgressMap.set(fileKey, progress);
+
+        // Update the specific file in the uploadingFiles array
+        let index: number = this.uploadingFiles.findIndex((f: any) => f.name === file.name && f.size === file.size);
+        if (index !== -1) {
+            this.uploadingFiles[index].progress = progress;
+        }
+
+        this.updateOverallProgress();
+    }
+
+    private updateOverallProgress(): void {
+        if (this.totalFiles === 0) return;
+
+        let totalProgress = 0;
+        this.fileProgressMap.forEach(progress => {
+            totalProgress += progress;
+        });
+
+        // Add completed files as 100% each
+        totalProgress += (this.completedFiles * 100);
+
+        // Calculate overall percentage
+        this.overallProgress = Math.round(totalProgress / this.totalFiles);
     }
 
     cancel(): void {

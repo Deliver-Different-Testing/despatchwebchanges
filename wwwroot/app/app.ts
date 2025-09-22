@@ -57,7 +57,7 @@ import TruckCourierStatusDialogService
 import MessagingService from "./services/messaging.service";
 import MessagingDialogService from "./components/dialogs/messaging-dialog/messaging-dialog.service";
 import MessagingDialogController from "./components/dialogs/messaging-dialog/messaging-dialog.controller";
-import CustomUrlService from "./services/custom-url-service";
+import CustomUrlService from "./services/custom-url.service";
 import ResolutionWarningService from "./components/dialogs/resolution-warning-dialog/resolution-warning.service";
 import VoidJobConfirmationDialogController
     from "./components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.controller";

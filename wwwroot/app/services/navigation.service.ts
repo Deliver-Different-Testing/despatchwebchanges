@@ -1,6 +1,6 @@
 import ToastrService from "./toastr.service";
 import IOpenJobOptions from "../interfaces/open-job-options.interface";
-import CustomUrlService from "./custom-url-service";
+import CustomUrlService from "./custom-url.service";
 
 class NavigationService implements angular.IServiceProvider {
     static $inject = [

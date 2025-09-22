@@ -6,11 +6,15 @@
             </md-icon>
             <h2>{{::ctrl.isPODUpload() ? 'POD Photos' : 'Attached Files'}}</h2>
             <span flex></span>
-            <md-button ng-if="::ctrl.isPODUpload()" class="md-button" ng-click="ctrl.skip()">
+            
+            <md-button ng-if="::ctrl.isPODUpload()" class="md-button" ng-click="ctrl.close()">
+                <md-icon aria-label="skip icon" md-font-set="material-symbols-outlined">double_arrow</md-icon>
                 <md-tooltip md-direction="bottom">Skip File Upload</md-tooltip>
                 Skip
             </md-button>
-            <md-button class="md-icon-button close-dialog-button" ng-click="ctrl.cancel()">
+            
+            <md-button ng-if="::!ctrl.isPODUpload()" class="md-icon-button close-dialog-button" 
+                       ng-click="ctrl.cancel()">
                 <md-tooltip md-direction="bottom">Close</md-tooltip>
                 <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">close</md-icon>
             </md-button>
@@ -21,7 +25,7 @@
         <div layout="column">
             <!-- Single Tab Mode -->
             <div ng-if="::!ctrl.showNormalTab || !ctrl.showPodTab">
-                <!-- Regular File Upload (Only) -->
+                <!-- Regular File Upload -->
                 <div ng-if="::ctrl.showNormalTab && !ctrl.showPodTab" layout="column">
                     <div
                             class="drop-box"
@@ -32,8 +36,7 @@
                             ngf-accept="'image/*,application/pdf'"
                             ngf-drag-over-class="'dragover'"
                             ngf-max-size="10MB"
-                            ngf-select
-                    >
+                            ngf-select>
                         <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px;">cloud_upload</md-icon>
                         <p>Drag and drop files here or click to upload</p>
                         <p class="md-caption">Accepted file types: Images, PDF. Max size: 10MB</p>
@@ -88,8 +91,7 @@
                             ngf-accept="'image/*'"
                             ngf-drag-over-class="'dragover'"
                             ngf-max-size="10MB"
-                            ngf-select
-                    >
+                            ngf-select>
                         <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px;">camera_alt</md-icon>
                         <p>Drag and drop POD photo here or click to upload</p>
                         <p class="md-caption">Accepted file types: Images only. Max size: 10MB</p>
@@ -144,8 +146,7 @@
                                     ngf-accept="'image/*,application/pdf'"
                                     ngf-drag-over-class="'dragover'"
                                     ngf-max-size="10MB"
-                                    ngf-select
-                            >
+                                    ngf-select>
                                 <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px;">cloud_upload</md-icon>
                                 <p>Drag and drop files here or click to upload</p>
                                 <p class="md-caption">Accepted file types: Images, PDF. Max size: 10MB</p>
@@ -201,8 +202,7 @@
                                     ngf-accept="'image/*'"
                                     ngf-drag-over-class="'dragover'"
                                     ngf-max-size="10MB"
-                                    ngf-select
-                            >
+                                    ngf-select>
                                 <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px;">camera_alt</md-icon>
                                 <p>Drag and drop POD photo here or click to upload</p>
                                 <p class="md-caption">Accepted file types: Images only. Max size: 10MB</p>
@@ -247,25 +247,36 @@
 
             <!-- Uploading Files Progress (Shared between both tabs) -->
             <div ng-if="ctrl.uploadingFiles.length > 0" class="uploads-progress-section">
-                <h3>Uploading Files</h3>
-                <div ng-repeat="file in ctrl.uploadingFiles" layout="column" class="upload-progress-item">
+                <h3>Uploading Files ({{ctrl.completedFiles}}/{{ctrl.totalFiles}})</h3>
+
+                <!-- Overall progress bar -->
+                <div layout="column" class="upload-progress-item">
                     <div layout="row" layout-align="space-between center">
-                        <span>{{file.name}} {{file.isPOD ? '(POD)' : ''}}</span>
-                        <span>{{file.progress}}%</span>
+                        <span>Overall Progress</span>
+                        <span>{{ctrl.overallProgress}}%</span>
                     </div>
-                    <div ng-if="file.isPOD && file.podDescription" class="pod-description-text">
-                        Description: {{file.podDescription}}
-                    </div>
-                    <md-progress-linear md-mode="determinate" value="{{file.progress}}"></md-progress-linear>
+                    <md-progress-linear md-mode="determinate" value="{{ctrl.overallProgress}}"></md-progress-linear>
+                </div>
+
+                <!-- Current file being uploaded -->
+                <div ng-if="ctrl.currentUploadingFile" class="current-file-info md-caption" style="margin-top: 8px;">
+                    <span>Currently uploading: {{ctrl.currentUploadingFile.name}} {{ctrl.currentUploadingFile.isPOD ? '(POD)' : ''}}</span>
+                    <span ng-if="ctrl.currentUploadingFile.isPOD && ctrl.currentUploadingFile.podDescription">
+            - {{ctrl.currentUploadingFile.podDescription}}
+        </span>
+                </div>
+
+                <!-- List of files in the queue -->
+                <div ng-if="ctrl.uploadingFiles.length > 1" class="md-caption" style="margin-top: 4px;">
+                    <span>Files in queue: {{ctrl.uploadingFiles.length - 1}}</span>
                 </div>
             </div>
+            
         </div>
     </md-dialog-content>
 
     <md-dialog-actions layout="row">
         <span flex></span>
-        <md-button class="md-raised md-primary" ng-click="ctrl.cancel()">
-            {{::ctrl.isPODUpload() ? 'Skip' : 'Close'}}
-        </md-button>
+        <md-button class="md-raised md-primary" ng-click="ctrl.cancel()">Complete</md-button>
     </md-dialog-actions>
 </md-dialog>
