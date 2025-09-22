@@ -78,6 +78,15 @@ class HomeController extends BaseController {
         '$interval',
     ];
 
+    private static MapZoomKey: string = `mapZoom-${ContactID}`;
+    private static LayoutKey: string = `layout-${ContactID}`;
+    private static LastActiveLayoutKey: string = `lastActiveLayout-${ContactID}`;
+    private static SelectedFilterKey: string = `selectedFilter-${ContactID}`;
+    private static SelectedViewsKey: string = `selectedViews-${ContactID}`;
+    private static DispatchFiltersKey: string = `disp-filters-${ContactID}`;
+    private static JobCutOffDateKey: string = `jobCutoffDate-${ContactID}`;
+    private static RefreshDurationIntervalKey: string = `refreshInterval-${AppPages.Dispatch}-${ContactID}`;
+
     readonly currentWorkListName: JobListType = JobListType.CurrentWorkList;
     readonly dispatchListName: JobListType = JobListType.DispatchJobList;
 
@@ -86,8 +95,8 @@ class HomeController extends BaseController {
         driverLocations: "#driverLocations .listActive"
     } as const;
 
+    
     private readonly currentAppPage: AppPages = AppPages.Dispatch;
-    private readonly refreshDurationIntervalKey: string = `refreshInterval-${AppPages.Dispatch}`;
     private readonly COURIER_URL: string = "/courier/AllActiveSearch";
 
     isLoadingData: boolean = false;
@@ -317,7 +326,7 @@ class HomeController extends BaseController {
         this.autoZoomEnabled = true;
 
         if (Modernizr.localstorage) {
-            const savedMapZoom = localStorage.getItem("mapZoom-" + ContactID);
+            const savedMapZoom = localStorage.getItem(HomeController.MapZoomKey);
             if (savedMapZoom) {
                 try {
                     const parsedMapZoom = JSON.parse(savedMapZoom);
@@ -481,7 +490,7 @@ class HomeController extends BaseController {
     private loadSavedRefreshInterval(): void {
         if (Modernizr.localstorage) {
             try {
-                const savedIntervalString = localStorage.getItem(`${this.refreshDurationIntervalKey}-${ContactID}`);
+                const savedIntervalString = localStorage.getItem(HomeController.RefreshDurationIntervalKey);
                 if (savedIntervalString) {
                     const refreshId = parseInt(savedIntervalString, 10) ?? 0;
                     this.selectedRefreshInterval = this.refreshIntervalOptions?.find(x => x.id == refreshId);
@@ -530,7 +539,7 @@ class HomeController extends BaseController {
             }
 
             if (Modernizr.localstorage) {
-                localStorage.setItem(`layouts-${ContactID}`, JSON.stringify(this.layouts));
+                localStorage.setItem(HomeController.LayoutKey, JSON.stringify(this.layouts));
             }
         }
     }
@@ -573,8 +582,8 @@ class HomeController extends BaseController {
         // Load saved layouts or use default
         if (Modernizr.localstorage) {
             try {
-                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(`layouts-${ContactID}`) || '[]');
-                const lastActiveLayout = localStorage.getItem(`lastActiveLayout-${ContactID}`);
+                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(HomeController.LayoutKey) ?? '');
+                const lastActiveLayout = localStorage.getItem(HomeController.LastActiveLayoutKey);
 
                 this.layouts = storedLayouts || [this.defaultLayout];
                 this.layouts[0] = this.defaultLayout; // Ensure default is always up to date
@@ -600,7 +609,7 @@ class HomeController extends BaseController {
                 if (index !== -1) {
                     this.layouts[index].layout = angular.copy(newValue);
                     if (Modernizr.localstorage) {
-                        localStorage.setItem(`layouts-${ContactID}`, JSON.stringify(this.layouts));
+                        localStorage.setItem(HomeController.LayoutKey, JSON.stringify(this.layouts));
                     }
                 }
             }
@@ -615,7 +624,7 @@ class HomeController extends BaseController {
         this.applyLayoutDimensions();
 
         if (Modernizr.localstorage) {
-            localStorage.setItem(`lastActiveLayout-${ContactID}`, layout.name);
+            localStorage.setItem(HomeController.LastActiveLayoutKey, layout.name);
         }
 
         this.applyScope();
@@ -651,8 +660,8 @@ class HomeController extends BaseController {
                 this.layouts.push(currentLayout);
 
                 if (Modernizr.localstorage) {
-                    localStorage.setItem(`layouts-${ContactID}`, JSON.stringify(this.layouts));
-                    localStorage.setItem(`lastActiveLayout-${ContactID}`, name);
+                    localStorage.setItem(HomeController.LayoutKey, JSON.stringify(this.layouts));
+                    localStorage.setItem(HomeController.LastActiveLayoutKey, name);
                 }
             });
     }
@@ -670,7 +679,7 @@ class HomeController extends BaseController {
             .then(() => {
                 this.layouts.splice(index, 1);
                 if (Modernizr.localstorage) {
-                    localStorage.setItem(`layouts-${ContactID}`, JSON.stringify(this.layouts));
+                    localStorage.setItem(HomeController.LayoutKey, JSON.stringify(this.layouts));
                 }
                 this.loadLayout(0);
                 this.toastrService.showSuccessToast("Layout deleted successfully");
@@ -679,7 +688,7 @@ class HomeController extends BaseController {
 
     static loadFilterFromStorage(): number {
         if (Modernizr.localstorage) {
-            const savedFilter = localStorage.getItem(`selectedFilter-${ContactID}`);
+            const savedFilter = localStorage.getItem(HomeController.SelectedFilterKey);
             return savedFilter ? parseInt(savedFilter) : 2; // Default to 2 if not found
         }
 
@@ -688,14 +697,14 @@ class HomeController extends BaseController {
 
     static saveViewsToStorage(views: any): void {
         if (Modernizr.localstorage) {
-            localStorage.setItem(`selectedViews-${ContactID}`, JSON.stringify(views));
+            localStorage.setItem(HomeController.SelectedViewsKey, JSON.stringify(views));
         }
     }
 
     loadViewsFromStorage(): any {
         if (Modernizr.localstorage) {
             try {
-                const savedViews = JSON.parse(localStorage.getItem(`selectedViews-${ContactID}`) || "");
+                const savedViews = JSON.parse(localStorage.getItem(HomeController.SelectedViewsKey) ?? '');
                 return savedViews || [];
             } catch (error: any) {
                 this.$log.error("Error loading views from storage:", error);
@@ -1691,7 +1700,7 @@ class HomeController extends BaseController {
             }
 
             if (Modernizr.localstorage) {
-                localStorage.setItem("disp-filters-" + ContactID, JSON.stringify(this.queryParams));
+                localStorage.setItem(HomeController.DispatchFiltersKey, JSON.stringify(this.queryParams));
             }
 
             const selectedClients = this.pickService.clients.map((a: any) => a.id);
@@ -1786,7 +1795,7 @@ class HomeController extends BaseController {
         this.jobCutoffDate = new Date();
 
         if (Modernizr.localstorage) {
-            localStorage.setItem(`jobCutoffDate-${ContactID}`, JSON.stringify(this.jobCutoffDate));
+            localStorage.setItem(HomeController.JobCutOffDateKey, JSON.stringify(this.jobCutoffDate));
         }
 
         this.queryParams.dateCutoff = this.jobCutoffDate;
@@ -2418,7 +2427,7 @@ class HomeController extends BaseController {
         this.selectedRefreshInterval = selectedInterval;
 
         if (Modernizr.localstorage && this.selectedRefreshInterval) {
-            localStorage.setItem(`${this.refreshDurationIntervalKey}-${ContactID}`, this.selectedRefreshInterval?.id.toString());
+            localStorage.setItem(HomeController.RefreshDurationIntervalKey, this.selectedRefreshInterval?.id.toString());
         }
 
         this.stopAutoRefresh();

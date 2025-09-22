@@ -357,7 +357,7 @@ class JobSearchController extends BaseController {
             }
 
             if (Modernizr.localstorage) {
-                localStorage.setItem(`layouts-${ContactID}`, JSON.stringify(this.layouts));
+                localStorage.setItem(JobSearchController.ContactIdKey, JSON.stringify(this.layouts));
             }
         }
     }

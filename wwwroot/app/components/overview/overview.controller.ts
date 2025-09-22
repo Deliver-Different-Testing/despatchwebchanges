@@ -9,7 +9,6 @@ import {ISuggestion} from "../../interfaces/job.interface";
 import greetUser from "../../functions/greetUser";
 import dayjs, {Dayjs} from "dayjs";
 import {DateRangeDialogController} from "../dialogs/date-range-dialog/date-range-dialog.controller";
-import {MapDialogController} from "../dialogs/map-dialog/map-dialog.controller";
 import MapDialogService from "../dialogs/map-dialog/map-dialog.service";
 
 class OverviewController extends BaseController {
@@ -28,7 +27,7 @@ class OverviewController extends BaseController {
         "$interval",
     ];
 
-    private readonly OverviewJobLimitDisplay: string = "overviewJobLimitDisplay";
+    private static OverviewJobLimitDisplay: string = `overviewJobLimitDisplay-${ContactID}`;
     isLoading: boolean;
     greeting: string;
     statistics: { active: number; inactive: number; completed: number };
@@ -153,7 +152,7 @@ class OverviewController extends BaseController {
             (newValue: number, oldValue: number) => {
                 if (newValue !== oldValue) {
                     if (Modernizr.localstorage) {
-                        localStorage.setItem(this.OverviewJobLimitDisplay, `${this.query.limit}`);
+                        localStorage.setItem(OverviewController.OverviewJobLimitDisplay, `${this.query.limit}`);
                     }
                 }
             }
@@ -161,7 +160,7 @@ class OverviewController extends BaseController {
     }
 
     private loadSavedLimit(): void {
-        const savedLimit = localStorage.getItem(this.OverviewJobLimitDisplay);
+        const savedLimit = localStorage.getItem(OverviewController.OverviewJobLimitDisplay);
         this.$log.debug(`Saved limit is: ${savedLimit}`);
         if (savedLimit) {
             this.query.limit = parseInt(savedLimit);

@@ -2152,6 +2152,27 @@ class JobDetailController extends BaseController {
     isUltraDenseView(): boolean {
         return this.viewDensity === 'ultradense';
     }
+
+    isPdfFile(photo: any): boolean {
+        if (!photo) return false;
+
+        // Check if the photo object has a contentType property
+        if (photo.contentType) {
+            return photo.contentType === 'application/pdf';
+        }
+
+        // Check if filename has .pdf extension
+        if (photo.fileName) {
+            return photo.fileName.toLowerCase().endsWith('.pdf');
+        }
+
+        // Check if the s3Key indicates it's a PDF
+        if (photo.s3Key) {
+            return photo.s3Key.toLowerCase().endsWith('.pdf');
+        }
+
+        return false;
+    }
 }
 
 const JobDetailComponent: angular.IComponentOptions = {

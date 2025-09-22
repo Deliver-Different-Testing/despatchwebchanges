@@ -87,7 +87,7 @@
                             ng-model="ctrl.podFiles"
                             ngf-change="ctrl.uploadFiles($files)"
                             ngf-drop
-                            ngf-multiple="false"
+                            ngf-multiple="true"
                             ngf-accept="'image/*,application/pdf'"
                             ngf-drag-over-class="'dragover'"
                             ngf-max-size="10MB"
@@ -198,13 +198,13 @@
                                     ng-model="ctrl.podFiles"
                                     ngf-change="ctrl.uploadFiles($files)"
                                     ngf-drop
-                                    ngf-multiple="false"
+                                    ngf-multiple="true"
                                     ngf-accept="'image/*,application/pdf'"
                                     ngf-drag-over-class="'dragover'"
                                     ngf-max-size="10MB"
                                     ngf-select>
                                 <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px;">camera_alt</md-icon>
-                                <p>Drag and drop POD photo here or click to upload</p>
+                                <p>Drag and drop a POD photo here or click to upload</p>
                                 <p class="md-caption">Accepted file types: Images, PDF. Max size: 10MB</p>
                             </div>
 
