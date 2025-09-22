@@ -173,8 +173,9 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(IsFilesAttachedToJobAsync)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
+                    nameof(IsFilesAttachedToJobAsync)));
             return false;
         }
     }
@@ -217,16 +218,18 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
                 }
                 catch (Exception e)
                 {
-                    Log.Error(e, "{Message}", 
-                        ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(GetAttachedFilesAsync)));
+                    Log.Error(e, "{Message}",
+                        ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
+                            nameof(GetAttachedFilesAsync)));
                     // Continue processing other files even if one fails
                 }
             }
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(GetAttachedFilesAsync)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
+                    nameof(GetAttachedFilesAsync)));
             throw;
         }
 
@@ -289,9 +292,10 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(UploadJobAttachmentAsync)));
-            
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
+                    nameof(UploadJobAttachmentAsync)));
+
             return new AwsUploadResult
             {
                 Success = false,
@@ -337,7 +341,7 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
+            Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(DownloadFileAsync)));
             return new AwsFileDownloadResult { Success = false, ErrorMessage = e.Message };
         }
@@ -369,7 +373,7 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
+            Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(DeleteFileAsync)));
             return false;
         }
@@ -378,7 +382,7 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
     public async Task<List<S3Object>> SearchFilesByPatternAsync(string bucketName, string pattern)
     {
         var allResults = new List<S3Object>();
-    
+
         try
         {
             var request = new ListObjectsV2Request
@@ -392,21 +396,22 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
             do
             {
                 response = await s3Client.ListObjectsV2Async(request);
-                allResults.AddRange(response.S3Objects);
+                if (response.S3Objects != null)
+                    allResults.AddRange(response.S3Objects);
                 request.ContinuationToken = response.NextContinuationToken;
-            }
-            while (response.IsTruncated ?? false);
+            } while (response.IsTruncated ?? false);
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(SearchFilesByPatternAsync)));
-            throw;
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
+                    nameof(SearchFilesByPatternAsync)));
+            return [];
         }
 
         return allResults;
     }
-    
+
     public async Task<List<S3Object>> SearchFilesByPatternAsync(
         string bucketName,
         string pattern,
@@ -437,12 +442,10 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
                     };
 
                     var response = await s3Client.ListObjectsV2Async(request);
-                    allResults.AddRange(response.S3Objects);
+                    if (response.S3Objects != null)
+                        allResults.AddRange(response.S3Objects);
 
-                    if (allResults.Count > 0)
-                    {
-                        break;
-                    }
+                    if (allResults.Count > 0) break;
                 }
             }
         }
@@ -451,252 +454,22 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
                     nameof(SearchFilesByPatternAsync)));
-            throw;
+            return [];
         }
         catch (Exception e)
         {
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
                     nameof(SearchFilesByPatternAsync)));
-            throw;
+            return [];
         }
 
         return allResults;
     }
 
-    public async Task<bool> FileExistsAsync(string key)
-    {
-        if (string.IsNullOrEmpty(key)) return false;
+    // Helper method for batch operations
 
-        try
-        {
-            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-            var request = new GetObjectMetadataRequest
-            {
-                BucketName = bucketName,
-                Key = key
-            };
-
-            await s3Client.GetObjectMetadataAsync(request);
-            return true;
-        }
-        catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-        {
-            return false;
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(FileExistsAsync)));
-            throw;
-        }
-    }
-
-    public async Task<S3Object> GetFileMetadataAsync(string key)
-    {
-        try
-        {
-            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-            var request = new GetObjectMetadataRequest
-            {
-                BucketName = bucketName,
-                Key = key
-            };
-
-            var response = await s3Client.GetObjectMetadataAsync(request);
-
-            return new S3Object
-            {
-                Key = key,
-                Size = response.ContentLength,
-                LastModified = response.LastModified,
-                ETag = response.ETag
-            };
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(GetFileMetadataAsync)));
-            throw;
-        }
-    }
-
-    public async Task<List<S3Object>> ListAllFilesInFolderAsync(string folderPath)
-    {
-        var allResults = new List<S3Object>();
-
-        try
-        {
-            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-            var request = new ListObjectsV2Request
-            {
-                BucketName = bucketName,
-                Prefix = folderPath.TrimEnd('/') + "/",
-                MaxKeys = 1000
-            };
-
-            ListObjectsV2Response response;
-            do
-            {
-                response = await s3Client.ListObjectsV2Async(request);
-                allResults.AddRange(response.S3Objects);
-                request.ContinuationToken = response.NextContinuationToken;
-            } while (response.IsTruncated ?? false);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(ListAllFilesInFolderAsync)));
-            throw;
-        }
-
-        return allResults;
-    }
-
-    public async Task<long> GetTotalFileSizeForJobAsync(int jobId)
-    {
-        try
-        {
-            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-            var patterns = new[]
-            {
-                $"JobAttachments/{jobId}-",
-                $"DeliveryPhotos/{jobId}-",
-                $"DeliverySignatures/{jobId}-",
-                $"PickupPhotos/{jobId}-",
-                $"PickupSignatures/{jobId}-"
-            };
-
-            long totalSize = 0;
-
-            foreach (var pattern in patterns)
-            {
-                var files = await SearchFilesByPatternAsync(bucketName, pattern);
-                totalSize += files.Sum(f => f.Size ?? 0);
-            }
-
-            return totalSize;
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(GetTotalFileSizeForJobAsync)));
-            throw;
-        }
-    }
-
-    public async Task<List<S3Object>> GetFilesByDateRangeAsync(string folderPath, DateTime startDate, DateTime endDate)
-    {
-        try
-        {
-            var allFiles = await ListAllFilesInFolderAsync(folderPath);
-
-            return allFiles
-                .Where(f => f.LastModified >= startDate && f.LastModified <= endDate)
-                .OrderByDescending(f => f.LastModified)
-                .ToList();
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(GetFilesByDateRangeAsync)));
-            throw;
-        }
-    }
-
-    public async Task<AwsUploadResult> CopyFileAsync(string sourceKey, string destinationKey)
-    {
-        try
-        {
-            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-
-            var copyRequest = new CopyObjectRequest
-            {
-                SourceBucket = bucketName,
-                SourceKey = sourceKey,
-                DestinationBucket = bucketName,
-                DestinationKey = destinationKey
-            };
-
-            await s3Client.CopyObjectAsync(copyRequest);
-
-            var metadata = await GetFileMetadataAsync(destinationKey);
-
-            return new AwsUploadResult
-            {
-                Success = true,
-                S3Key = destinationKey,
-                Size = metadata.Size ?? 0,
-                UploadDate = DateTime.UtcNow
-            };
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(CopyFileAsync)));
-
-            return new AwsUploadResult
-            {
-                Success = false,
-                ErrorMessage = e.Message
-            };
-        }
-    }
-
-    public async Task<bool> MoveFileAsync(string sourceKey, string destinationKey)
-    {
-        try
-        {
-            // Copy the file
-            var copyResult = await CopyFileAsync(sourceKey, destinationKey);
-
-            if (!copyResult.Success)
-            {
-                return false;
-            }
-
-            // Delete the original file
-            return await DeleteFileAsync(sourceKey);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(MoveFileAsync)));
-            return false;
-        }
-    }
-
-    public async Task<List<S3Object>> GetFilesByJobIdAsync(int jobId, string folderPath = null)
-    {
-        try
-        {
-            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-            var allFiles = new List<S3Object>();
-
-            var folders = string.IsNullOrEmpty(folderPath)
-                ? new[] { "JobAttachments", "DeliveryPhotos", "DeliverySignatures", "PickupPhotos", "PickupSignatures" }
-                : new[] { folderPath };
-
-            foreach (var folder in folders)
-            {
-                var pattern = $"{folder}/{jobId}-";
-                var files = await SearchFilesByPatternAsync(bucketName, pattern);
-                allFiles.AddRange(files);
-            }
-
-            return allFiles.OrderByDescending(f => f.LastModified).ToList();
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(GetFilesByJobIdAsync)));
-            throw;
-        }
-    }
-
-// Helper method for batch operations
-
-private async Task<List<S3Object>> SearchAttachmentFilesByPatternAsync(string bucketName, string pattern)
+    private async Task<List<S3Object>> SearchAttachmentFilesByPatternAsync(string bucketName, string pattern)
     {
         var allResults = new List<S3Object>();
 
@@ -714,8 +487,9 @@ private async Task<List<S3Object>> SearchAttachmentFilesByPatternAsync(string bu
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(SearchAttachmentFilesByPatternAsync)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
+                    nameof(SearchAttachmentFilesByPatternAsync)));
             throw;
         }
 
@@ -745,8 +519,9 @@ private async Task<List<S3Object>> SearchAttachmentFilesByPatternAsync(string bu
             }
             catch (Exception e)
             {
-                Log.Error(e, "{Message}", 
-                    ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService), nameof(GetPhotoBytesFromS3ObjectsAsync)));
+                Log.Error(e, "{Message}",
+                    ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
+                        nameof(GetPhotoBytesFromS3ObjectsAsync)));
                 // Continue processing other photos even if one fails
             }
         }
@@ -769,7 +544,7 @@ private async Task<List<S3Object>> SearchAttachmentFilesByPatternAsync(string bu
         return photoType switch
         {
             JobPhotoType.Delivery => isPod ? "DeliveryPhotos" : "DeliverySignatures",
-            JobPhotoType.Pickup => isPod ? "PickupPhotos" : "PickupSignatures",
+            JobPhotoType.Pickup => isPod ? "PickupPhotos" : "PickupScannedDocuments",
             _ => throw new ArgumentOutOfRangeException(nameof(photoType), photoType, null)
         };
     }
