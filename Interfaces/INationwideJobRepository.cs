@@ -57,4 +57,7 @@ public interface INationwideJobRepository
 
     Task<FlightRateCalculationDto> GetFlightRateCalculationDtoAsync(int jobId, string carrierCode, bool extraStopOffs,
         DateTime? bookTime);
+
+    Task<JobTypeFlightRatingDto> GetJobTypeFlightRatingDtoAsync(int speedId);
+    Task<decimal?> GetExtraItemMultiplierByExtraChargeIdAsync(int extraChargeId);
 }

@@ -24,7 +24,13 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         var key = $"{jobId}-";
 
         var s3Objects = await SearchFilesByPatternAsync(bucketName, key, year, month, JobPhotoType.Delivery);
-        return await GetPhotoBytesFromS3ObjectsAsync(s3Objects, bucketName);
+    
+        // Add defensive check
+        if (s3Objects != null && s3Objects.Count != 0) return await GetPhotoBytesFromS3ObjectsAsync(s3Objects, bucketName);
+        
+        // No data
+        Log.Debug("No delivery photos found for job {JobId} in {Year}/{Month:D2}", jobId, year, month);
+        return [];
     }
 
     public async Task<List<byte[]>> GetPickupPhotosAsync(int jobId, int year, int month)
@@ -33,7 +39,13 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         var key = $"{jobId}-";
 
         var s3Objects = await SearchFilesByPatternAsync(bucketName, key, year, month, JobPhotoType.Pickup);
-        return await GetPhotoBytesFromS3ObjectsAsync(s3Objects, bucketName);
+    
+        // Add defensive check
+        if (s3Objects != null && s3Objects.Count != 0) return await GetPhotoBytesFromS3ObjectsAsync(s3Objects, bucketName);
+        
+        // No data
+        Log.Debug("No pickup photos found for job {JobId} in {Year}/{Month:D2}", jobId, year, month);
+        return [];
     }
 
     public async Task<AwsUploadResult> UploadJobPhotoOrSignatureAsync(
@@ -236,6 +248,8 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         return s3Files;
     }
 
+    private static readonly string[] AllowedTypes = { "image/jpeg", "image/png", "image/gif", "application/pdf" };
+    
     public async Task<AwsUploadResult> UploadJobAttachmentAsync(int jobId, IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -244,8 +258,7 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
 
         // Validate file type
-        var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif", "application/pdf" }.ToList();
-        if (!allowedTypes.Contains(file.ContentType.ToLower()))
+        if (!AllowedTypes.Contains(file.ContentType.ToLower()))
         {
             return new AwsUploadResult
                 { Success = false, ErrorMessage = "Invalid file type. Only images and PDFs are allowed." };
@@ -471,7 +484,6 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
     }
 
     // Helper method for batch operations
-
     private async Task<List<S3Object>> SearchAttachmentFilesByPatternAsync(string bucketName, string pattern)
     {
         var allResults = new List<S3Object>();
@@ -486,7 +498,10 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
             };
 
             var response = await s3Client.ListObjectsV2Async(request);
-            allResults.AddRange(response.S3Objects);
+        
+            // Fix: Add defensive null checking
+            var objects = response?.S3Objects;
+            if (objects is { Count: > 0 }) allResults.AddRange(objects);
         }
         catch (Exception e)
         {
@@ -498,8 +513,8 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
 
         return allResults;
     }
-
-
+    
+    
     private async Task<List<byte[]>> GetPhotoBytesFromS3ObjectsAsync(List<S3Object> s3Objects, string bucketName)
     {
         var photoBytes = new List<byte[]>();
