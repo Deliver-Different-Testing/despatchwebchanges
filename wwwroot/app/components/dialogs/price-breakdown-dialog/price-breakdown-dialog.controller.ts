@@ -42,6 +42,8 @@ export class PriceBreakdownDialogController extends BaseController {
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private $log: angular.ILogService,
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
         public priceBreakdown: PriceBreakdown[],
@@ -49,6 +51,7 @@ export class PriceBreakdownDialogController extends BaseController {
         public isPrebook: boolean
     ) {
         super();
+        this.initServices($timeout, $interval);
 
         this.$log.debug('PriceBreakdownDialogController: Service instantiated');
         this.$log.debug('PriceBreakdownDialogController: isPrebook', isPrebook);
@@ -182,7 +185,7 @@ export class PriceBreakdownDialogController extends BaseController {
     async save() {
         try {
             this.isLoading = true;
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => this.registerTimeout(resolve, 500));
             this.$mdDialog.hide(this.priceBreakdown);
         } catch (error) {
             this.$log.error('PriceBreakdownDialogController: Error in save', error);

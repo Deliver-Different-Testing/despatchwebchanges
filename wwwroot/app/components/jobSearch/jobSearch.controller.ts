@@ -47,6 +47,9 @@ class JobSearchController extends BaseController {
         "additionalServicesDialogService",
         "jobFileUploadDialogService",
     ];
+    
+    private static ContactIdKey: string = `layoutsCS-${ContactID}`
+    private static LastActiveContactIdKey: string = `lastActiveLayoutCS-${ContactID}`
 
     readonly isUsCustomer: boolean;
     readonly isAdmin: boolean;
@@ -59,16 +62,13 @@ class JobSearchController extends BaseController {
     jobRecordSearchText: string;
     sort: any;
     searchCriteria: ISearchCriteria;
-    clientSelectedItem: any;
+    clientSelectedItem?: number;
     courierSelectedItem: any;
-    clientSearchText: any;
-    courierSearchText: any;
+    clientSearchText: string;
+    courierSearchText: string;
     showInput: any;
     inputWidth: any;
-    followupClient: any;
-    jobPromise: any;
-    bulkJobPromise: any;
-    scanPromise: any;
+    scanPromise?: Promise<IScanDetailResult[]>;
     options: any;
     boxes: any;
 
@@ -169,15 +169,7 @@ class JobSearchController extends BaseController {
 
         this.showInput = {};
         this.inputWidth = {};
-
-        this.followupClient = {
-            name: "All"
-        };
-
-        this.jobPromise = null;
-        this.bulkJobPromise = null;
-        this.scanPromise = null;
-
+        
         this.options = {
             "detail": {
                 "size": [{
@@ -328,7 +320,7 @@ class JobSearchController extends BaseController {
     }
 
     $onInit() {
-        this.initLayoutSystem(ContactID);
+        this.initLayoutSystem();
     }
 
     private updateBoxMetrics() {
@@ -371,7 +363,7 @@ class JobSearchController extends BaseController {
     }
 
     // Layouts
-    initLayoutSystem(ContactID: number) {
+    initLayoutSystem() {
         this.layouts = [];
         this.defaultLayout = {
             name: "Default",
@@ -413,8 +405,8 @@ class JobSearchController extends BaseController {
         // Load saved layouts or use default
         if (Modernizr.localstorage) {
             try {
-                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(`layoutsCS-${ContactID}`) || '[]');
-                const lastActiveLayout = localStorage.getItem(`lastActiveLayoutCS-${ContactID}`);
+                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(JobSearchController.ContactIdKey) || '[]');
+                const lastActiveLayout = localStorage.getItem(JobSearchController.LastActiveContactIdKey);
 
                 this.layouts = storedLayouts || [this.defaultLayout];
                 this.layouts[0] = this.defaultLayout; // Ensure default is always up to date
@@ -438,7 +430,7 @@ class JobSearchController extends BaseController {
                 if (index !== -1) {
                     this.layouts[index].layout = angular.copy(newValue);
                     if (Modernizr.localstorage) {
-                        localStorage.setItem(`layoutsCS-${ContactID}`, JSON.stringify(this.layouts));
+                        localStorage.setItem(JobSearchController.ContactIdKey, JSON.stringify(this.layouts));
                     }
                 }
             }
@@ -455,7 +447,7 @@ class JobSearchController extends BaseController {
             this.applyLayoutDimensions();
 
             if (Modernizr.localstorage) {
-                localStorage.setItem(`lastActiveLayoutCS-${ContactID}`, layout.name);
+                localStorage.setItem(JobSearchController.LastActiveContactIdKey, layout.name);
             }
         });
     }
@@ -508,8 +500,8 @@ class JobSearchController extends BaseController {
                 this.layouts.push(currentLayout);
 
                 if (Modernizr.localstorage) {
-                    localStorage.setItem(`layoutsCS-${ContactID}`, JSON.stringify(this.layouts));
-                    localStorage.setItem(`lastActiveLayoutCS-${ContactID}`, name);
+                    localStorage.setItem(JobSearchController.ContactIdKey, JSON.stringify(this.layouts));
+                    localStorage.setItem(JobSearchController.LastActiveContactIdKey, name);
                 }
             });
     }
@@ -527,7 +519,7 @@ class JobSearchController extends BaseController {
             .then(() => {
                 this.layouts.splice(index, 1);
                 if (Modernizr.localstorage) {
-                    localStorage.setItem(`layoutsCS-${ContactID}`, JSON.stringify(this.layouts));
+                    localStorage.setItem(JobSearchController.ContactIdKey, JSON.stringify(this.layouts));
                 }
                 this.loadLayout(0);
                 this.toastrService.showSuccessToast("Layout deleted successfully");

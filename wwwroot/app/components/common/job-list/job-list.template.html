@@ -253,7 +253,7 @@
                 </div>
 
                 <!-- Job Rows -->
-                <div ng-repeat-start="job in ctrl.filteredJobs track by (job.id + '_' + job.jobNo)"
+                <div ng-repeat-start="job in ctrl.filteredJobs track by $index"
                      class="job-row {{ctrl.getJobPriorityClass(job)}}"
                      ng-class="{
                              'selected': ctrl.selectedJob && ctrl.selectedJob.id === job.id,
@@ -418,7 +418,7 @@
                 <!-- Child Job Rows -->
                 <div ng-repeat-end
                      ng-if="job._isExpanded && ctrl.isMultiPartJob(job)"
-                     ng-repeat="childJob in job._groupChildren track by childJob.id"
+                     ng-repeat="childJob in job._groupChildren track by $index"
                      class="job-row child-job {{ctrl.getJobPriorityClass(childJob)}}"
                      ng-class="{
                              'selected': ctrl.selectedJob && ctrl.selectedJob.id === childJob.id,
