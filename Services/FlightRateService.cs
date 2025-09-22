@@ -115,10 +115,7 @@ public class FlightRateService(INationwideJobRepository repository, ITenantInfoS
             }
 
             // Get extra item multiplier
-            decimal extraItemMultiplier = 0;
-            var extraCharge = await repository.GetByIdAsync<ExtraCharge>(afr.ExtraChargeId ?? 0);
-            if (extraCharge?.ExtraItemMultiplier != null)
-                extraItemMultiplier = extraCharge.ExtraItemMultiplier.Value;
+            var extraItemMultiplier = await repository.GetExtraItemMultiplierByExtraChargeIdAsync(afr.ExtraChargeId ?? 0) ?? 0;
 
             // Calculate fuel surcharges
             var flightBaseChargeFuel = (afr.ApplyFlightBaseChargeFuel ?? false ?
@@ -156,22 +153,22 @@ public class FlightRateService(INationwideJobRepository repository, ITenantInfoS
             });
 
             // Get job type information
-            var jobType = await repository.GetByIdAsync<TucJobType>(afr.SpeedId ?? 0);
+            var jobType = await repository.GetJobTypeFlightRatingDtoAsync(afr.SpeedId ?? 0);
 
             if (jobType != null)
             {
                 rates.Add(new FlightRateDto
                 {
-                    JobTypeId = jobType.UcjtId,
-                    Name = jobType.UcjtName,
-                    Speed = jobType.UcjtName,
-                    Description = jobType.UcjtDescription,
+                    JobTypeId = jobType.JobTypeId,
+                    Name = jobType.JobTypeName,
+                    Speed = jobType.JobTypeName,
+                    Description = jobType.Description,
                     Rate = totalJobAmount + extraRates.Amount,
                     SaleRate = totalJobAmount + extraRates.DriverPay,
                     Availability = "Available",
                     AvailabilityColour = "#00FF00",
                     BookDate = bookTime,
-                    Duration = jobType.Minutes,
+                    Duration = jobType.Mins,
                     FlightRate = totalJobAmount
                 });
             }

@@ -88,13 +88,13 @@
                             ngf-change="ctrl.uploadFiles($files)"
                             ngf-drop
                             ngf-multiple="false"
-                            ngf-accept="'image/*'"
+                            ngf-accept="'image/*,application/pdf'"
                             ngf-drag-over-class="'dragover'"
                             ngf-max-size="10MB"
                             ngf-select>
                         <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px;">camera_alt</md-icon>
                         <p>Drag and drop POD photo here or click to upload</p>
-                        <p class="md-caption">Accepted file types: Images only. Max size: 10MB</p>
+                        <p class="md-caption">Accepted file types: Images, PDF. Max size: 10MB</p>
                     </div>
 
                     <!-- POD Files List -->
@@ -110,7 +110,7 @@
                             </tr>
                             </thead>
                             <tbody md-body>
-                            <tr md-row ng-repeat="file in ctrl.podFiles">
+                            <tr md-row ng-repeat="file in ctrl.podFiles track by $index">
                                 <td md-cell>{{file.fileName}}</td>
                                 <td md-cell>{{file.podDescription || 'No description'}}</td>
                                 <td md-cell>{{file.size | bytes}}</td>
@@ -199,13 +199,13 @@
                                     ngf-change="ctrl.uploadFiles($files)"
                                     ngf-drop
                                     ngf-multiple="false"
-                                    ngf-accept="'image/*'"
+                                    ngf-accept="'image/*,application/pdf'"
                                     ngf-drag-over-class="'dragover'"
                                     ngf-max-size="10MB"
                                     ngf-select>
                                 <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px;">camera_alt</md-icon>
                                 <p>Drag and drop POD photo here or click to upload</p>
-                                <p class="md-caption">Accepted file types: Images only. Max size: 10MB</p>
+                                <p class="md-caption">Accepted file types: Images, PDF. Max size: 10MB</p>
                             </div>
 
                             <!-- POD Files List -->

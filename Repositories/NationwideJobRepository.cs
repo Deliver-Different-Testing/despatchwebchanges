@@ -1011,6 +1011,33 @@ public class NationwideJobRepository(
         return data;
     }
 
+    public async Task<JobTypeFlightRatingDto> GetJobTypeFlightRatingDtoAsync(int speedId)
+    {
+        var data = await Context.TucJobTypes
+            .Where(s => s.UcjtId == speedId)
+            .Select(s => new JobTypeFlightRatingDto
+            {
+                JobTypeId = s.UcjtId,
+                JobTypeName = s.UcjtName,
+                Description = s.UcjtDescription,
+                Mins = s.Minutes
+            })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        return data;
+    }
+
+    public async Task<decimal?> GetExtraItemMultiplierByExtraChargeIdAsync(int extraChargeId)
+    {
+        var extraItemMultiplier = await Context.ExtraCharges
+            .Where(e => e.ExtraChargeId == extraChargeId)
+            .Select(e => e.ExtraItemMultiplier)
+            .FirstOrDefaultAsync();
+
+        return extraItemMultiplier;
+    }
+
     public async Task<ExtraRateResultDto> CalculateExtraRatesAsync(ExtraRateCalculationRequest request)
     {
         var result = await Context.UTL_fncJob_ExtraRate(
@@ -1040,7 +1067,7 @@ public class NationwideJobRepository(
             DriverPay = result.DriverPay ?? 0
         };
     }
-
+    
     public async Task<string> GetAgentNameAsync(int agentId)
     {
         // Get Agent Name
