@@ -1559,7 +1559,7 @@ class JobDetailController extends BaseController {
     async markJobAsDone($event: MouseEvent, job: IJob): Promise<void> {
         try {
             let completedTime: string | undefined;
-            if (job.completedTime === undefined) {
+            if (job.completedTime === undefined || job.completedTime === null) {
                 const result =
                     await this.editDateTimeDialogService.showEditDateAndTimeDialog(
                         $event,
