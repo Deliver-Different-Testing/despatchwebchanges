@@ -396,10 +396,12 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
             do
             {
                 response = await s3Client.ListObjectsV2Async(request);
-                if (response.S3Objects != null)
-                    allResults.AddRange(response.S3Objects);
-                request.ContinuationToken = response.NextContinuationToken;
-            } while (response.IsTruncated ?? false);
+                
+                var objects = response?.S3Objects;
+                if (objects is { Count: > 0 }) allResults.AddRange(objects);
+            
+                request.ContinuationToken = response?.NextContinuationToken;
+            } while (response?.IsTruncated ?? false);
         }
         catch (Exception e)
         {
@@ -442,8 +444,9 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
                     };
 
                     var response = await s3Client.ListObjectsV2Async(request);
-                    if (response.S3Objects != null)
-                        allResults.AddRange(response.S3Objects);
+                
+                    var objects = response?.S3Objects;
+                    if (objects is { Count: > 0 }) allResults.AddRange(objects);
 
                     if (allResults.Count > 0) break;
                 }
