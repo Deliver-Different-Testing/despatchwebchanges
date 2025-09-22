@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Dto;
+using DespatchWeb.Models.RequestModels;
 using Serilog;
 
 namespace DespatchWeb.Services;
@@ -14,27 +15,9 @@ public class FlightRateService(INationwideJobRepository repository, ITenantInfoS
     public async Task<decimal> GetCarrierFlightRateByJobIdAsync(int jobId, string carrierCode, bool extraStopOffs,
         DateTime? bookTime)
     {
-        var job = await repository.GetByIdAsync<TucJob>(jobId);
+        var flightRateDto = await repository.GetFlightRateCalculationDtoAsync(jobId, carrierCode, extraStopOffs, bookTime);
 
-        var dto = new FlightRateCalculationDto
-        {
-            ClientId = job.UcjbClientId ?? 0,
-            FromCity = job.PickupAddressLine5,
-            FromState = job.PickupAddressLine6,
-            ToCity = job.DeliveryAddressLine5,
-            ToState = job.DeliveryAddressLine6,
-            CarrierCode = carrierCode,
-            TotalWeight = job.UcjbWeight.HasValue ? (decimal)job.UcjbWeight.Value : 0,
-            Quantity = job.UcjbQty ?? 0,
-            TotalPallets = job.TucJobItemJobs.Count,
-            ExtraStopOffs = extraStopOffs ? 1 : 0,
-            BookTime = bookTime,
-            VehicleSizeId = job.UcjbSize ?? 0,
-            DangerousGoods = job.Dgdocument ?? false,
-            DryIceWeight = job.DryIceWeight ?? 0
-        };
-
-        var rates = await CalculateFlightRatesAsync(dto);
+        var rates = await CalculateFlightRatesAsync(flightRateDto);
         return rates.Count != 0 ? rates.First().Rate : 0;
     }
 
@@ -150,12 +133,27 @@ public class FlightRateService(INationwideJobRepository repository, ITenantInfoS
             var totalJobAmount = (flightBaseChargeAmount + flightBaseChargeFuel + weightBreakRate +
                                   cargoSurchargeAmount + cargoSurchargeFuel) *
                                  (1 + extraItemMultiplier * (dto.Quantity - 1));
-
+            
             // Calculate extra rates
-            var extraRates = await repository.CalculateExtraRatesAsync(
-                dto.TotalWeight, dto.Quantity, dto.Cubic, dto.TotalPallets, dto.ExtraStopOffs,
-                dto.VehicleSizeId, dto.DangerousGoods, dto.DryIceWeight, dto.WaitTime ?? null,
-                afr.ExtraChargeId, isHoliday, isAfterHours, afr.AirFreightFuelSurcharge ?? 0);
+            var extraRates = await repository.CalculateExtraRatesAsync(new ExtraRateCalculationRequest
+            {
+                TotalWeight = dto.TotalWeight,
+                Quantity = dto.Quantity,
+                Cubic = dto.Cubic,
+                TotalPallets = dto.TotalPallets,
+                ExtraStopOffs = dto.ExtraStopOffs,
+                VehicleSizeId = dto.VehicleSizeId,
+                DangerousGoods = dto.DangerousGoods,
+                DryIceWeight = dto.DryIceWeight,
+                WaitTime = dto.WaitTime,
+                ExtraChargeId = afr.ExtraChargeId,
+                IsHoliday = isHoliday,
+                IsAfterHours = isAfterHours,
+                FuelSurcharge = afr.AirFreightFuelSurcharge ?? 0,
+                FromZoneCongestionId = null,
+                ToZoneCongestionId = null,
+                Ppd = dto.Ppd
+            });
 
             // Get job type information
             var jobType = await repository.GetByIdAsync<TucJobType>(afr.SpeedId ?? 0);

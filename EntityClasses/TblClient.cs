@@ -569,6 +569,8 @@ public partial class TblClient
 
     public bool AddressBookOnly { get; set; }
 
+    public int? InvoiceScheduleId { get; set; }
+
     public int ClientId { get; set; }
 
     public string Name { get; set; }

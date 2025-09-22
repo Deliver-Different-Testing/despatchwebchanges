@@ -24,9 +24,9 @@ namespace DespatchWeb.EntityClasses
         }
 
         [DbFunction("UTL_fncJob_ExtraRate", "dbo")]
-        public IQueryable<UTL_fncJob_ExtraRateResult> UTL_fncJob_ExtraRate(decimal? TotalWeight, int? Quantity, decimal? Cubic, int? TotalPallets, int? ExtraStopOffs, int? VehicleSizeID, bool? DangerousGoods, decimal? DryIceWeight, int? WaitTime, int? ExtraChargeID, bool? Holiday, bool? Afterhours, int? FromZoneCongestionID, int? ToZoneCongestionID, decimal? MFV)
+        public IQueryable<UTL_fncJob_ExtraRateResult> UTL_fncJob_ExtraRate(decimal? TotalWeight, int? Quantity, decimal? Cubic, int? TotalPallets, int? ExtraStopOffs, int? VehicleSizeID, bool? DangerousGoods, decimal? DryIceWeight, int? WaitTime, int? ExtraChargeID, bool? Holiday, bool? Afterhours, int? FromZoneCongestionID, int? ToZoneCongestionID, decimal? MFV, decimal? PPD)
         {
-            return FromExpression(() => UTL_fncJob_ExtraRate(TotalWeight, Quantity, Cubic, TotalPallets, ExtraStopOffs, VehicleSizeID, DangerousGoods, DryIceWeight, WaitTime, ExtraChargeID, Holiday, Afterhours, FromZoneCongestionID, ToZoneCongestionID, MFV));
+            return FromExpression(() => UTL_fncJob_ExtraRate(TotalWeight, Quantity, Cubic, TotalPallets, ExtraStopOffs, VehicleSizeID, DangerousGoods, DryIceWeight, WaitTime, ExtraChargeID, Holiday, Afterhours, FromZoneCongestionID, ToZoneCongestionID, MFV, PPD));
         }
 
         [DbFunction("UTL_fncS_GetNationwideService_RawPrice", "dbo")]

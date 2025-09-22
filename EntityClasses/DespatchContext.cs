@@ -1193,6 +1193,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CourierId).HasColumnName("CourierID");
             entity.Property(e => e.CourierPayment).HasColumnType("money");
             entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
+            entity.Property(e => e.DeliverByTime).HasColumnType("datetime");
             entity.Property(e => e.DeliverByTimeZoneId).HasColumnName("DeliverByTimeZoneID");
             entity.Property(e => e.DeliverToContact).HasMaxLength(100);
             entity.Property(e => e.DeliverToLeaveId).HasColumnName("DeliverToLeaveID");
@@ -3303,6 +3304,8 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.UcclCode, "IDX_tucClient_ucclCode")
                 .IsUnique()
                 .HasFillFactor(80);
+
+            entity.HasIndex(e => e.InvoiceScheduleId, "IX_InvoiceScheduleId");
 
             entity.HasIndex(e => e.InvoiceTemplateId, "IX_InvoiceTemplateId");
 

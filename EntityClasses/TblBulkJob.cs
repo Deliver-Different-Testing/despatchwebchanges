@@ -227,6 +227,10 @@ public partial class TblBulkJob
 
     public int? DeliverByTimeZoneId { get; set; }
 
+    public DateTime? DeliverByTime { get; set; }
+
+    public int? DimensionsType { get; set; }
+
     public virtual TucClient Client { get; set; }
 
     public virtual TucCourier Courier { get; set; }
