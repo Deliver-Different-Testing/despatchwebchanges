@@ -85,7 +85,7 @@ else
 
 
 builder.Services.AddSingleton<IConnectionStringManager, ConnectionStringManager>();
-builder.Services.AddSingleton<IAmazonS3>(_ =>
+builder.Services.AddSingleton<IAmazonS3>(serviceProvider =>
 {
     var awsOptions = builder.Configuration.GetAWSOptions();
 
@@ -251,20 +251,25 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{addressId?}");
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
+var s3BucketMars = Environment.GetEnvironmentVariable("S3BucketMars");
+if (string.IsNullOrEmpty(s3BucketMars)) Log.Warning("S3BucketMars environment variable is not set");
 
 app.Run();
 return;
 
-//
 // Method to get SSO credentials from the information in the shared config file.
 static AWSCredentials LoadSsoCredentials(string profile)
 {
     var chain = new CredentialProfileStoreChain();
-    if (chain.TryGetAWSCredentials(profile, out var credentials)) return credentials;
-    
-    // If the SSO credentials are not found, use FallbackCredentialsFactory to get credentials
-    credentials = FallbackCredentialsFactory.GetCredentials();
-    return credentials ?? throw new Exception($"Failed to find the {profile} profile or any fallback credentials");
+    if (!chain.TryGetAWSCredentials(profile, out var credentials))
+    {
+        // If the SSO credentials are not found, use FallbackCredentialsFactory to get credentials
+        credentials = FallbackCredentialsFactory.GetCredentials();
+        if (credentials == null)
+            throw new Exception($"Failed to find the {profile} profile or any fallback credentials");
+    }
+    return credentials;
 }
+
