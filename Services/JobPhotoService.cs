@@ -30,7 +30,7 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
     public async Task<List<byte[]>> GetPickupPhotosAsync(int jobId, int year, int month)
     {
         var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-        var key = $"{jobId}-pickup-";
+        var key = $"{jobId}-";
 
         var s3Objects = await SearchFilesByPatternAsync(bucketName, key, year, month, JobPhotoType.Pickup);
         return await GetPhotoBytesFromS3ObjectsAsync(s3Objects, bucketName);
@@ -537,19 +537,15 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         return photoType switch
         {
             JobPhotoType.Delivery => ["DeliverySignatures", "DeliveryPhotos"],
-            JobPhotoType.Pickup => ["PickupSignatures", "PickupPhotos"],
+            JobPhotoType.Pickup => ["PickupScannedDocuments", "PickupPhotos"],
             _ => throw new ArgumentOutOfRangeException(nameof(photoType), photoType, null)
         };
     }
 
     private static string GetUploadFolder(JobPhotoType photoType, bool isPod)
     {
-        return photoType switch
-        {
-            JobPhotoType.Delivery => isPod ? "DeliveryPhotos" : "DeliverySignatures",
-            JobPhotoType.Pickup => isPod ? "PickupPhotos" : "PickupScannedDocuments",
-            _ => throw new ArgumentOutOfRangeException(nameof(photoType), photoType, null)
-        };
+        var folders = GetFoldersByPhotoType(photoType);
+        return isPod ? folders[1] : folders[0];
     }
 
     private static string DetermineContentType(string fileExtension)

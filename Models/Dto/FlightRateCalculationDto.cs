@@ -23,4 +23,5 @@ public class FlightRateCalculationDto
     public bool DangerousGoods { get; set; } = false;
     public decimal DryIceWeight { get; set; } = 0;
     public int? WaitTime { get; set; } = 0;
+    public decimal? Ppd { get; set; }
 }

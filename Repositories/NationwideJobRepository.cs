@@ -983,28 +983,53 @@ public class NationwideJobRepository(
             .ToListAsync();
     }
 
-    public async Task<ExtraRateResultDto> CalculateExtraRatesAsync(
-        decimal totalWeight, int quantity, decimal cubic, int totalPallets, int extraStopOffs,
-        int vehicleSizeId, bool dangerousGoods, decimal dryIceWeight, int? waitTime,
-        int? extraChargeId, bool isHoliday, bool isAfterHours, decimal fuelSurcharge,
-        int? fromZoneCongestionId = null, int? toZoneCongestionId = null)
+    public async Task<FlightRateCalculationDto> GetFlightRateCalculationDtoAsync(int jobId, string carrierCode, bool extraStopOffs, DateTime? bookTime)
+    {
+        var data = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new FlightRateCalculationDto
+            {
+                ClientId = j.UcjbClientId ?? 0,
+                FromCity = j.PickupAddressLine5,
+                FromState = j.PickupAddressLine6,
+                ToCity = j.DeliveryAddressLine5,
+                ToState = j.DeliveryAddressLine6,
+                CarrierCode = carrierCode,
+                TotalWeight = j.UcjbWeight.HasValue ? (decimal)j.UcjbWeight.Value : 0,
+                Quantity = j.UcjbQty ?? 0,
+                TotalPallets = j.TucJobItemJobs != null ? j.TucJobItemJobs.Count : 0,
+                ExtraStopOffs = extraStopOffs ? 1 : 0,
+                BookTime = bookTime,
+                VehicleSizeId = j.UcjbSize ?? 0,
+                DangerousGoods = j.Dgdocument ?? false,
+                DryIceWeight = j.DryIceWeight ?? 0,
+                Ppd = 0
+            })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        return data;
+    }
+
+    public async Task<ExtraRateResultDto> CalculateExtraRatesAsync(ExtraRateCalculationRequest request)
     {
         var result = await Context.UTL_fncJob_ExtraRate(
-                TotalWeight: totalWeight,
-                Quantity: quantity,
-                Cubic: cubic,
-                TotalPallets: totalPallets,
-                ExtraStopOffs: extraStopOffs,
-                VehicleSizeID: vehicleSizeId,
-                DangerousGoods: dangerousGoods,
-                DryIceWeight: dryIceWeight,
-                WaitTime: waitTime,
-                ExtraChargeID: extraChargeId,
-                Holiday: isHoliday,
-                Afterhours: isAfterHours,
-                FromZoneCongestionID: fromZoneCongestionId,
-                ToZoneCongestionID: toZoneCongestionId,
-                MFV: fuelSurcharge)
+                TotalWeight: request.TotalWeight,
+                Quantity: request.Quantity,
+                Cubic: request.Cubic,
+                TotalPallets: request.TotalPallets,
+                ExtraStopOffs: request.ExtraStopOffs,
+                VehicleSizeID: request.VehicleSizeId,
+                DangerousGoods: request.DangerousGoods,
+                DryIceWeight: request.DryIceWeight,
+                WaitTime: request.WaitTime,
+                ExtraChargeID: request.ExtraChargeId,
+                Holiday: request.IsHoliday,
+                Afterhours: request.IsAfterHours,
+                FromZoneCongestionID: request.FromZoneCongestionId,
+                ToZoneCongestionID: request.ToZoneCongestionId,
+                MFV: request.FuelSurcharge,
+                PPD: request.Ppd)
             .FirstOrDefaultAsync();
 
         if (result == null) return new ExtraRateResultDto { Amount = 0, DriverPay = 0 };

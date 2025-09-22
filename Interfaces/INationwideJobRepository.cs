@@ -41,12 +41,7 @@ public interface INationwideJobRepository
     Task<int?> GetAirFreightRateIdFromZoneComboAsync(int carrierId, string fromZoneName, string toZoneName);
     Task<List<AirFreightRate>> GetAirFreightRatesAsync(int airFreightRateId);
 
-    Task<ExtraRateResultDto> CalculateExtraRatesAsync(
-        decimal totalWeight, int quantity, decimal cubic, int totalPallets, int extraStopOffs,
-        int vehicleSizeId, bool dangerousGoods, decimal dryIceWeight, int? waitTime,
-        int? extraChargeId, bool isHoliday, bool isAfterHours, decimal fuelSurcharge,
-        int? fromZoneCongestionId = null, int? toZoneCongestionId = null);
-
+    Task<ExtraRateResultDto> CalculateExtraRatesAsync(ExtraRateCalculationRequest request);
     Task<string> GetAgentNameAsync(int agentId);
     Task<RecoveryAgentJobViewModel> GetRecoveryAgentDialogDataAsync(int jobId);
     Task<List<Suggestion>> GetAgentOptionsByAirportAsync(int airportId);
@@ -59,4 +54,7 @@ public interface INationwideJobRepository
         DateTime flightArrivalTime);
     Task<(GetArrivalAndDepartureAirportsDto fromAirport, GetArrivalAndDepartureAirportsDto toAirport)> GetArrivalAndDepartureAirports(int jobId, int? departureAirportId = null, int? arrivalAirportId = null);
     Task<bool> CanAssignAgentToJobAsync(int agentJobId);
+
+    Task<FlightRateCalculationDto> GetFlightRateCalculationDtoAsync(int jobId, string carrierCode, bool extraStopOffs,
+        DateTime? bookTime);
 }
