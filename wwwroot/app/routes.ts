@@ -1,3 +1,5 @@
+import IDfrntStateParams from "./interfaces/DfrntStateParams.interface";
+
 class RouterConfig {
     constructor(
         private $urlRouterProvider: angular.ui.IUrlRouterProvider,
@@ -31,7 +33,7 @@ class RouterConfig {
                 }
             },
             resolve: {
-                jobId: ['$stateParams', ($stateParams: any) => {
+                jobId: ['$stateParams', ($stateParams: IDfrntStateParams) => {
                     return $stateParams.jobId ? parseInt($stateParams.jobId, 10) : null;
                 }],
                 manifest: ['$http', async ($http: angular.IHttpService) => {
@@ -70,7 +72,7 @@ class RouterConfig {
                 }
             },
             resolve: {
-                jobId: ['$stateParams', ($stateParams: any) => {
+                jobId: ['$stateParams', ($stateParams: IDfrntStateParams) => {
                     return $stateParams.jobId ? parseInt($stateParams.jobId, 10) : null;
                 }],
                 manifest: ['$http', async ($http: angular.IHttpService) => {
