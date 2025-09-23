@@ -29,6 +29,7 @@ public static class JobStatusGroups
     public static readonly List<int> Completed =
     [
         (int)JobStatus.Completed,
-        (int)JobStatus.Undeliverable
+        (int)JobStatus.Undeliverable,
+        (int)JobStatus.Void
     ];
 }
