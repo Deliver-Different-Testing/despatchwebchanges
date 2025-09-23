@@ -1124,6 +1124,25 @@ class JobSearchController extends BaseController {
     async onBulkJobSelect(job: IDispatchJob): Promise<void> {
         await this.selectBulkJobDetail(job.id);
     }
+
+    async handleJobDispatch(job: IDispatchJob, courierId: number): Promise<boolean> {
+        try {
+            const jobsToDispatch = [job];
+            await this.dispatchJobService.dispatchJobs(courierId, jobsToDispatch);
+
+            // Inform the user
+            this.toastrService.showSuccessToast(`${job.jobNo} successfully dispatched`);
+            await this.refreshData();
+            
+            // Update the job's assigned courier display
+            job.assignedCourier = {id: courierId, text: ''};
+
+            return true;
+        } catch (error: any) {
+            this.$log.error("Error in dispatch:", error);
+            throw error;
+        }
+    }
 }
 
 const JobSearchComponent: angular.IComponentOptions = {

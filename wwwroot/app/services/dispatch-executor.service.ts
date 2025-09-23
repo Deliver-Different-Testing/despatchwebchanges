@@ -16,6 +16,11 @@ class DispatchExecutorService implements angular.IServiceProvider {
 
     private pickCouriers: ActiveCourierViewModel[] = [];
     private pickAllCouriers: ActiveCourierViewModel[] = [];
+    
+    private dispatchState = {
+        processing: false,
+        selectedJobs: new Set<number>()
+    };
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -30,6 +35,39 @@ class DispatchExecutorService implements angular.IServiceProvider {
         return this;
     }
 
+    async dispatchJobs(courierId: number, jobsToDispatch: IDispatchJob[]): Promise<void> {
+        if (this.dispatchState.processing) {
+            this.$log.warn("Dispatch already in progress");
+            return;
+        }
+        
+        if (!jobsToDispatch.length) {
+            this.$log.warn("No jobs selected for dispatch");
+            return;
+        }
+
+        try {
+            this.dispatchState.processing = true;
+
+            // Validate courier number
+            const courier = await this.DispatchData.getCourierById(courierId);
+            if (!courier) {
+                this.$log.error("Invalid courierId");
+            }
+
+            // Perform dispatch operation
+            await this.dispatchJobsByCourierId(courierId, jobsToDispatch);
+
+            // Clear selection state
+            this.dispatchState.selectedJobs.clear();
+        } catch (error: any) {
+            this.$log.error("Error dispatching jobs:", error);
+            throw error;
+        } finally {
+            this.dispatchState.processing = false;
+        }
+    }
+    
     async fetchCouriersData(): Promise<void> {
         this.$log.debug("Fetching couriers data...");
         try {

@@ -164,6 +164,7 @@ class JobsListController extends BaseController {
 
         switch (this.jobListType) {
             case JobListType.DispatchJobList:
+            case JobListType.JobSearchMainList:
                 this.allowDispatch = true;
                 this.allowSearch = true;
                 break;
@@ -171,7 +172,6 @@ class JobsListController extends BaseController {
             case JobListType.NationwideJobList:
             case JobListType.NationwidePodJobList:
             case JobListType.NationwideRepriceJobList:
-            case JobListType.JobSearchMainList:
             case JobListType.JobSearchBulkList:
                 this.allowDispatch = false;
                 this.allowSearch = true;
@@ -1349,7 +1349,6 @@ const JobsListComponent: angular.IComponentOptions = {
         onJobAction: '&',
         getContextMenuOptions: '&',
         onRefresh: '&',
-        dispatchState: '<',
         queryParams: '<',
         refreshInterval: '<?',
         jobListType: '<?',
