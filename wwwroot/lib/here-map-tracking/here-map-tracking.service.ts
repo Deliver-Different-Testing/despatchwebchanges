@@ -66,15 +66,6 @@ export class HereMapService {
             apikey: credentials.apiKey
         });
     }
-  
-    resizeMap(map: any): void {
-        if (map && map.getViewPort()) {
-            // Force the map to recalculate its size based on container
-            this.$window.setTimeout(() => {
-                map.getViewPort().resize();
-            }, 100); // Small delay to ensure DOM has settled
-        }
-    }
     
     resizeMapPreserveView(map: any): void {
         if (map && map.getViewPort()) {

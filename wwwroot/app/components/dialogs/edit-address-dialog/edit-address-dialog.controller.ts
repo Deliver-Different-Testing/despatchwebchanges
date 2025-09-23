@@ -74,6 +74,8 @@ class EditAddressDialogController extends BaseController {
 
         this.usStateList = getStates();
 
+        this.initializeHereMap();
+        
         // Handle state abbreviation for US addresses
         if (this.useUsFormat && this.addressDetails.addressLine6) {
             // Check if it's already an abbreviation
@@ -88,22 +90,11 @@ class EditAddressDialogController extends BaseController {
                 }
             }
         }
-
-        // Set up a map
-        this.initializeHereMap();
     }
 
-    $onInit() {
-        this.registerTimeout(() => {
-            if(this.addressDetails.latitude && this.addressDetails.longitude) {
-                this.updateMapPosition(this.addressDetails.latitude, this.addressDetails.longitude);
-            }
-        }, 300);
-    }
-
-    private initializeHereMap(): void {
+    private initializeHereMap(): void { 
         this.configService.getHereMapsKey()
-            .then((hereApiKey) => {
+            .then(hereApiKey => {
                 this.hereMapCredentials = {
                     apiKey: hereApiKey
                 };
@@ -112,27 +103,33 @@ class EditAddressDialogController extends BaseController {
                 this.hereMapConfig = {
                     center: {
                         lat: this.addressDetails.latitude || this.appConfig.US_Coordinates_Center.lat,
-                        lng: this.addressDetails.longitude ||  this.appConfig.US_Coordinates_Center.lng
+                        lng: this.addressDetails.longitude || this.appConfig.US_Coordinates_Center.lng
                     },
-                    zoom: 10,
+                    zoom: this.addressDetails.latitude && this.addressDetails.longitude ? 12 : 10,
                     job: {
                         id: 'edit-address',
                         pickup: {
-                            lat: this.addressDetails.latitude || 0,
-                            lng: this.addressDetails.longitude || 0
+                            lat: this.addressDetails.latitude || this.appConfig.US_Coordinates_Center.lat,
+                            lng: this.addressDetails.longitude || this.appConfig.US_Coordinates_Center.lng
                         }
-                        // No delivery for a single address
                     },
                     preserveView: false,
                     timestamp: dayjs().valueOf()
                 };
+
+                // If we already have coordinates, trigger an update after a map initializes
+                if (this.addressDetails.latitude && this.addressDetails.longitude) {
+                    this.registerTimeout(() => {
+                        this.updateMapPosition(this.addressDetails?.latitude ?? 0, this.addressDetails?.longitude ?? 0);
+                    }, 100);
+                }
             })
-            .catch((error) => {
+            .catch(error => {
                 this.$log.error('Error initializing HERE Maps:', error);
                 this.toastrService.showErrorToast('Error loading map. Please try again.');
             });
     }
-
+    
     onMapReady(map: any, platform: any): void {
         this.$log.debug('HERE Map ready:', map);
         this.mapInstance = map;
@@ -168,13 +165,18 @@ class EditAddressDialogController extends BaseController {
     }
 
     private updateMapPosition(lat: number, lng: number): void {
-        // Update the map config to reflect the new position
         this.hereMapConfig = {
             ...this.hereMapConfig,
+            center: {
+                lat: lat,
+                lng: lng
+            },
+            zoom: 12,
             job: {
                 id: 'edit-address',
                 pickup: {lat, lng}
             },
+            preserveView: false, 
             timestamp: dayjs().valueOf()
         };
 
@@ -262,7 +264,7 @@ class EditAddressDialogController extends BaseController {
             addressDetails.addressLine7,
             addressDetails.addressLine8,
         ]
-            .filter((line) => line && line.trim() !== "")
+            .filter(line => line && line.trim() !== "")
             .join(", ");
     }
 
