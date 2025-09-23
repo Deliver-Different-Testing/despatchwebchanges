@@ -174,9 +174,10 @@
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editPuDate($event, ctrl.job)">
                 <div class="metric-label">PU Time</div>
                 <div class="metric-value">
-                    {{ctrl.job.puTime ? (ctrl.job.puTime | momentFormat:'MM/DD HH:mm') + ' (' + ((ctrl.job.pickUpTimeZone ?
-                                ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort)
-                        + ')' : 'N/A'}}
+                <span ng-if="ctrl.job.puTime">
+                      {{ ctrl.job.puTime | momentFormat:'MM/DD HH:mm' }} ({{:: (ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort }})
+                    </span>
+                    <span ng-if="!ctrl.job.puTime">N/A</span>
                 </div>
             </div>
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editDeliverBy($event, ctrl.job)">
@@ -191,7 +192,10 @@
             <div class="metric-card" md-ink-ripple ng-click="ctrl.showPricingBreakdown($event, ctrl.job)">
                 <div class="metric-label">Dispatch</div>
                 <div class="metric-value">
-                    {{ctrl.job.dispatchTime ? (ctrl.job.dispatchTime | momentFormat:'MM/DD HH:mm') + ' (' + (ctrl.timeZone | timezoneShort) + ')' : 'N/A'}}
+                    <span ng-if="ctrl.job.dispatchTime">
+                      {{ ctrl.job.dispatchTime | momentFormat:'MM/DD HH:mm' }} ({{:: ctrl.timeZone | timezoneShort }})
+                    </span>
+                    <span ng-if="!ctrl.job.dispatchTime">N/A</span>
                 </div>
             </div>
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editPodName($event, ctrl.job)">
@@ -204,14 +208,20 @@
                  ng-click="!ctrl.job.locked && ctrl.editCompletedTime($event, ctrl.job)">
                 <div class="metric-label">POD Time</div>
                 <div class="metric-value">
-                    {{ctrl.job.completedTime ? (ctrl.job.completedTime | momentFormat:'MM/DD HH:mm') + ' (' + (ctrl.job.deliveryTimeZone.text | timezoneShort) + ')' : 'N/A'}}
+                    <span ng-if="ctrl.job.completedTime">
+                      {{ ctrl.job.completedTime | momentFormat:'MM/DD HH:mm' }} ({{:: ctrl.job.deliveryTimeZone.text | timezoneShort }})
+                    </span>
+                    <span ng-if="!ctrl.job.completedTime">N/A</span>
                 </div>
             </div>
             <div class="metric-card" md-ink-ripple
                  ng-click="!ctrl.job.locked && ctrl.editFollowUpTime($event, ctrl.job)">
                 <div class="metric-label">Follow Up</div>
                 <div class="metric-value">
-                    {{ctrl.job.followupTime ? (ctrl.job.followupTime | momentFormat:'MM/DD HH:mm') + ' (' + (ctrl.timeZone | timezoneShort) + ')' : 'N/A'}}
+                    <span ng-if="ctrl.job.followupTime">
+                      {{ ctrl.job.followupTime | momentFormat:'MM/DD HH:mm' }} ({{:: ctrl.timeZone | timezoneShort }})
+                    </span>
+                    <span ng-if="!ctrl.job.followupTime">N/A</span>
                 </div>
             </div>
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.clientClick($event, ctrl.job)">
@@ -1542,7 +1552,7 @@
                         <div class="pallet-summary-details">
                             <span class="pallet-summary-label">Total Weight</span>
                             <span class="pallet-summary-value">
-                        {{ctrl.getTotalPalletWeight()}} {{ctrl.isUsCustomer ? 'lbs' : 'kg'}}
+                        {{ctrl.getTotalPalletWeight()}} {{::ctrl.isUsCustomer ? 'lbs' : 'kg'}}
                     </span>
                         </div>
                     </div>
@@ -1552,7 +1562,7 @@
                         <div class="pallet-summary-details">
                             <span class="pallet-summary-label">Total Volume</span>
                             <span class="pallet-summary-value">
-                        {{ctrl.getTotalPalletVolume()}} {{ctrl.isUsCustomer ? 'in³' : 'cm³'}}
+                        {{ctrl.getTotalPalletVolume()}} {{::ctrl.isUsCustomer ? 'in³' : 'cm³'}}
                     </span>
                         </div>
                     </div>
