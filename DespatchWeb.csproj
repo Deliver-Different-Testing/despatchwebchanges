@@ -399,7 +399,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\home\home.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\home\home.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\mega-map\mega-map.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\mega-map\mega-map.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\mega-map\mega-map.module.ts" />

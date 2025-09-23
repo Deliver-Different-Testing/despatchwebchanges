@@ -28,7 +28,6 @@ import InterCourierChargeDialogService
 import {Coordinates} from "../overview/overview.interfaces";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {ContactID, FirstName} from "../../contants";
-import {DispatchState} from "./home.interfaces";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
 import {JobProperty} from "../../enums/job-property.enum";
 import NavigationService from "../../services/navigation.service";
@@ -127,7 +126,6 @@ class HomeController extends BaseController {
     driverLocations?: IClearListViewModel;
     truckCourierStatus?: ITruckCourierStatus;
     boxes?: Record<string, IBox>;
-    dispatchState: DispatchState;
     pickService: any;
     pickClients: any;
     pickChannels: any;
@@ -185,6 +183,7 @@ class HomeController extends BaseController {
     selectedRefreshInterval?: ISuggestion;
     private refreshIntervalPromise?: angular.IPromise<any>;
     private isAutoRefreshEnabled: boolean = false;
+    private selectedJobsForDispatch: Set<any>;
 
     constructor(
         private $document: angular.IDocumentService,
@@ -382,10 +381,8 @@ class HomeController extends BaseController {
                 showRefresh: 0,
             },
         };
-
-        this.dispatchState = {
-            processing: false, selectedJobs: new Set(),
-        };
+        
+        this.selectedJobsForDispatch = new Set();
 
         this.pickService = {
             clients: [], channel: [], channelTexts: {
@@ -414,7 +411,7 @@ class HomeController extends BaseController {
     }
 
     $onInit(): void {
-        this.initLayoutSystem(ContactID);
+        this.initLayoutSystem();
 
         this.registerInterval(async () => {
             await this.getUnreadMessageCount();
@@ -545,7 +542,7 @@ class HomeController extends BaseController {
     }
 
     // Layouts
-    initLayoutSystem(ContactID: number): void {
+    initLayoutSystem(): void {
         this.layouts = [];
         this.defaultLayout = {
             name: "Default",
@@ -945,7 +942,8 @@ class HomeController extends BaseController {
         try {
             const envelope = await this.getClearListEnvelope(clearListId);
             if (!envelope) {
-                throw new Error(`Failed to retrieve envelope for clear list ID: ${clearListId}`);
+                this.$log.error(`Failed to retrieve envelope for clear list ID: ${clearListId}`);
+                return;
             }
 
             const selectedClients = this.pickService.clients.map((client: { id: number }) => client.id);
@@ -994,13 +992,13 @@ class HomeController extends BaseController {
 
         // Prevent duplicate dispatch attempts
         if ($event === undefined) return;
-        // if (job.courierData || job.assignedAgent || job.assignedFlight) return;
+
         if (!selectedCourier || !selectedCourier.id) return;
 
         try {
-            this.dispatchState.selectedJobs.add(job.id);
+            this.selectedJobsForDispatch.add(job.id);
             await this.dispatchJobs(selectedCourier.id);
-            this.dispatchState.selectedJobs.clear();
+            this.selectedJobsForDispatch.clear();
 
             // Clear the search text after successful dispatch
             job.searchText = '';
@@ -1010,7 +1008,7 @@ class HomeController extends BaseController {
 
         } catch (error: any) {
             this.$log.error("Error in dispatch:", error);
-            this.dispatchState.selectedJobs.delete(job.id);
+            this.selectedJobsForDispatch.delete(job.id);
             job.assignedCourier = undefined;
         }
     }
@@ -1044,11 +1042,11 @@ class HomeController extends BaseController {
     selectForDispatch(job: IDispatchJob): void {
         const jobId = job.id;
 
-        if (this.dispatchState.selectedJobs.has(jobId)) {
-            this.dispatchState.selectedJobs.delete(jobId);
+        if (this.selectedJobsForDispatch.has(jobId)) {
+            this.selectedJobsForDispatch.delete(jobId);
             angular.element(`tr[data-jobid="${jobId}"]`).removeClass("active");
         } else {
-            this.dispatchState.selectedJobs.add(jobId);
+            this.selectedJobsForDispatch.add(jobId);
             angular.element(`tr[data-jobid="${jobId}"]`).addClass("active");
         }
     }
@@ -1138,11 +1136,6 @@ class HomeController extends BaseController {
     }
 
     async dispatchJobs(courierId: number): Promise<void> {
-        if (this.dispatchState.processing) {
-            this.$log.warn("Dispatch already in progress");
-            return;
-        }
-
         const jobsToDispatch = this.getJobsToDispatch();
 
         if (!jobsToDispatch.length) {
@@ -1151,19 +1144,10 @@ class HomeController extends BaseController {
         }
 
         try {
-            this.dispatchState.processing = true;
-
-            // Validate courier number
-            const courier = await this.DispatchData.getCourierById(courierId);
-            if (!courier) {
-                this.$log.error("Invalid courierId");
-            }
-
-            // Perform dispatch operation
-            await this.dispatchJobService.dispatchJobsByCourierId(courierId, jobsToDispatch);
-
+            await this.dispatchJobService.dispatchJobs(courierId, jobsToDispatch);
+            
             // Clear selection state
-            this.dispatchState.selectedJobs.clear();
+            this.selectedJobsForDispatch.clear();
 
             // If we have a current courier, update their job list
             if (this.currentCourier) {
@@ -1171,18 +1155,16 @@ class HomeController extends BaseController {
             }
 
             // Inform the user
-            this.toastrService.showSuccessToast(jobsToDispatch.length + " job(s) dispatched to " + courier.name);
+            this.toastrService.showSuccessToast(jobsToDispatch.length + " job(s) dispatched to " + this.currentCourier.name);
             await this.getJobList();
-        } catch (error: any) {
+        } catch (error) {
             this.$log.error("Error dispatching jobs:", error);
             throw error;
-        } finally {
-            this.dispatchState.processing = false;
         }
     }
 
     private getJobsToDispatch(): IDispatchJob[] {
-        return this.jobList.filter((job) => this.dispatchState.selectedJobs.has(job.id));
+        return this.jobList.filter((job) => this.selectedJobsForDispatch.has(job.id));
     }
 
     async reAllocateJobs(job: IDispatchJob): Promise<void> {
@@ -1989,7 +1971,7 @@ class HomeController extends BaseController {
     }
 
     isJobSelected(jobId: number): boolean {
-        return this.dispatchState.selectedJobs.has(jobId);
+        return this.selectedJobsForDispatch.has(jobId);
     }
 
     static updateCallData(callData: any, job: IDispatchJob, jobIdElement: any): void {
@@ -2368,9 +2350,9 @@ class HomeController extends BaseController {
 
     async handleJobDispatch(job: IDispatchJob, courierId: number): Promise<boolean> {
         try {
-            this.dispatchState.selectedJobs.add(job.id);
+            this.selectedJobsForDispatch.add(job.id);
             await this.dispatchJobs(courierId);
-            this.dispatchState.selectedJobs.clear();
+            this.selectedJobsForDispatch.clear();
 
             // Update the job's assigned courier display
             job.assignedCourier = {id: courierId, text: ''};
@@ -2378,7 +2360,7 @@ class HomeController extends BaseController {
             return true;
         } catch (error: any) {
             this.$log.error("Error in dispatch:", error);
-            this.dispatchState.selectedJobs.delete(job.id);
+            this.selectedJobsForDispatch.delete(job.id);
             throw error;
         }
     }
