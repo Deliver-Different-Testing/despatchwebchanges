@@ -149,10 +149,10 @@ class HereMapController {
             }
         }, HereMapController.RESIZE_DELAY);
     }
-    
+
     private handleConfigChange(newValues: any[], oldValues: any[]): void {
         const [newConfig, newCredentials] = newValues;
-        const [oldConfig] = oldValues || [{}];
+        const [oldConfig] = oldValues || [null, null];
 
         if (!newConfig || !newCredentials) {
             return;
@@ -163,6 +163,13 @@ class HereMapController {
             const initialized = this.initializeMap();
             if (!initialized) {
                 this.$log.warn('Map initialization failed');
+                return;
+            }
+
+            // For initial setup with a job, show it immediately
+            if (newConfig.job) {
+                this.$log.debug('Initial map setup with job');
+                this.showJobOnMap(newConfig.job, newConfig.courierLocation);
                 return;
             }
         }
@@ -177,36 +184,44 @@ class HereMapController {
             this.clearMap();
         }
     }
-    
+
     private shouldUpdateMap(newConfig: HereMapConfig, oldConfig: HereMapConfig): { shouldUpdate: boolean; reason: string } {
+        // If there's a job in the new config and no old config, always update
+        if (newConfig.job && !oldConfig.job) {
+            return { shouldUpdate: true, reason: 'Initial job setup' };
+        }
+
         // Check for a new job
-        const isNewJob = newConfig.job && (!oldConfig.job || newConfig.job.id !== oldConfig.job.id);
+        const isNewJob = newConfig.job && oldConfig.job && newConfig.job.id !== oldConfig.job.id;
         if (isNewJob) {
             return { shouldUpdate: true, reason: 'New job' };
         }
 
-        // Check for timestamp changes
-        const hasNewTimestamp = newConfig.job && oldConfig.job &&
-            newConfig.job.timestamp !== oldConfig.job.timestamp;
-        if (hasNewTimestamp) {
-            return { shouldUpdate: true, reason: 'New timestamp' };
+        // Check for timestamp changes (this is critical for forcing updates)
+        const hasNewTimestamp = newConfig.timestamp !== oldConfig.timestamp;
+        if (hasNewTimestamp && newConfig.job) {
+            return { shouldUpdate: true, reason: 'Timestamp update' };
         }
 
         // Check for coordinate changes
-        if(!newConfig.job || !oldConfig.job) return { shouldUpdate: false, reason: 'Old or new config is empty!' };
+        if (!newConfig.job || !oldConfig.job) {
+            return { shouldUpdate: false, reason: 'No job to compare' };
+        }
+
         const hasCoordinateChanges = this.hasCoordinateChanges(newConfig.job, oldConfig.job);
         if (hasCoordinateChanges) {
             return { shouldUpdate: true, reason: 'Coordinate changes' };
         }
 
         // Check for courier location changes
-        if(!newConfig.courierLocation || !oldConfig.courierLocation) return { shouldUpdate: false, reason: 'Old or new config is empty!' };
-        const hasCourierLocationChanges = this.hasCourierLocationChanges(
-            newConfig.courierLocation,
-            oldConfig.courierLocation
-        );
-        if (hasCourierLocationChanges) {
-            return { shouldUpdate: true, reason: 'Courier location changes' };
+        if (newConfig.courierLocation && oldConfig.courierLocation) {
+            const hasCourierLocationChanges = this.hasCourierLocationChanges(
+                newConfig.courierLocation,
+                oldConfig.courierLocation
+            );
+            if (hasCourierLocationChanges) {
+                return { shouldUpdate: true, reason: 'Courier location changes' };
+            }
         }
 
         return { shouldUpdate: false, reason: '' };
@@ -240,18 +255,22 @@ class HereMapController {
             this.centerMapOnIndex(newValue);
         }
     }
-    
-    private handleCourierLocationChange(newValue: CourierLocation, oldValue: CourierLocation): void {
-        if (newValue?.lat !== null &&
-            newValue?.lng !== null &&
-            (!oldValue || (newValue.lat !== oldValue.lat && newValue.lng !== oldValue.lng))) {
 
+    private handleCourierLocationChange(newValue: CourierLocation, oldValue: CourierLocation): void {
+        // Add null/undefined check for newValue
+        if (!newValue || newValue.lat === null || newValue.lat === undefined ||
+            newValue.lng === null || newValue.lng === undefined) {
+            return;
+        }
+
+        // Check if the courier location actually changed
+        if (!oldValue || (newValue.lat !== oldValue.lat || newValue.lng !== oldValue.lng)) {
             this.courierMarker = this.mapService.getHereCourierMarker(
                 newValue.lat,
                 newValue.lng,
                 this.courierMarker,
                 this.mapInstance.map,
-                false, 
+                false,
                 undefined
             );
 

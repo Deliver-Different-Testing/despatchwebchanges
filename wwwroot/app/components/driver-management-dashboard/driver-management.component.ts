@@ -625,7 +625,7 @@ class DriverManagementController extends BaseController {
     /* Daily Driver Earnings */
     async loadDriverTodayEarnings(): Promise<void> {
         try {
-            this.driverEarningsPromise = this.driverManagementService.getDriverDailyEarnings(this.todayActiveDriversQuery);
+            this.driverEarningsPromise = this.driverManagementService.getDriverDailyEarnings(this.driverEarningsQuery);
 
             const earningsResponse = await this.driverEarningsPromise;
             this.driverEarningsList = earningsResponse.items;

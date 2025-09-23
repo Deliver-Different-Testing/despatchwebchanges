@@ -31,7 +31,7 @@ class BaseController implements angular.IController {
                 this.$scopeService.$evalAsync();
             }
             this.pendingApply = false;
-        }, 16); // ~60fps
+        }, 16);
     }
     
     protected applyScope(): void {

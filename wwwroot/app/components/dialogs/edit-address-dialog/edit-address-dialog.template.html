@@ -78,14 +78,14 @@
                     <!-- Line 2 & 3: Unit/Suite and Street/House Number -->
                     <div class="form-row">
                         <md-input-container class="md-block form-field" flex="30">
-                            <label for="addressLine2">{{ ctrl.useUsFormat ? 'Unit/Suite' : 'Unit/Flat/Suite' }}</label>
+                            <label for="addressLine2">{{ ::ctrl.useUsFormat ? 'Unit/Suite' : 'Unit/Flat/Suite' }}</label>
                             <input id="addressLine2"
                                    ng-model="ctrl.addressDetails.addressLine2"
                                    ng-disabled="ctrl.isAddressLoading"/>
                         </md-input-container>
 
                         <md-input-container class="md-block form-field" flex="20">
-                            <label for="addressLine3">{{ ctrl.useUsFormat ? 'Street Number' : 'Street Number' }}</label>
+                            <label for="addressLine3">{{ ::ctrl.useUsFormat ? 'Street Number' : 'Street Number' }}</label>
                             <input id="addressLine3"
                                    ng-model="ctrl.addressDetails.addressLine3"
                                    type="text"
@@ -101,7 +101,7 @@
                     </div>
 
                     <!-- US Format: City, State, ZIP -->
-                    <div class="form-row" ng-if="ctrl.useUsFormat">
+                    <div class="form-row" ng-if="::ctrl.useUsFormat">
                         <md-input-container class="md-block form-field" flex="50">
                             <label for="city">City</label>
                             <input id="city"
@@ -158,11 +158,11 @@
                     <!-- Address Extras (Line 8) -->
                     <div class="form-row">
                         <md-input-container class="md-block form-field" flex="100">
-                            <label for="extras">{{ ctrl.useUsFormat ? 'Additional Notes' : 'Address Extras' }}</label>
+                            <label for="extras">{{ ::ctrl.useUsFormat ? 'Additional Notes' : 'Address Extras' }}</label>
                             <input id="extras"
                                    ng-model="ctrl.addressDetails.addressLine8"
                                    ng-disabled="ctrl.isAddressLoading"
-                                   placeholder="{{ ctrl.useUsFormat ? 'Gate code, delivery instructions, etc.' : 'Rural delivery, additional directions, etc.' }}"/>
+                                   placeholder="{{ ::ctrl.useUsFormat ? 'Gate code, delivery instructions, etc.' : 'Rural delivery, additional directions, etc.' }}"/>
                         </md-input-container>
                     </div>
 
@@ -262,7 +262,7 @@
 
                         <div class="form-row">
                             <md-input-container class="md-block form-field" flex="33">
-                                <label for="length">Length ({{ ctrl.useUsFormat ? 'in' : 'cm' }})</label>
+                                <label for="length">Length ({{ ::ctrl.useUsFormat ? 'in' : 'cm' }})</label>
                                 <input id="length"
                                        name="length"
                                        ng-model="ctrl.shipmentDetails.length"
@@ -277,7 +277,7 @@
                             </md-input-container>
 
                             <md-input-container class="md-block form-field" flex="33">
-                                <label for="depth">Width ({{ ctrl.useUsFormat ? 'in' : 'cm' }})</label>
+                                <label for="depth">Width ({{ ::ctrl.useUsFormat ? 'in' : 'cm' }})</label>
                                 <input id="depth"
                                        name="depth"
                                        ng-model="ctrl.shipmentDetails.depth"
@@ -292,7 +292,7 @@
                             </md-input-container>
 
                             <md-input-container class="md-block form-field" flex="33">
-                                <label for="height">Height ({{ ctrl.useUsFormat ? 'in' : 'cm' }})</label>
+                                <label for="height">Height ({{ ::ctrl.useUsFormat ? 'in' : 'cm' }})</label>
                                 <input id="height"
                                        name="height"
                                        ng-model="ctrl.shipmentDetails.height"

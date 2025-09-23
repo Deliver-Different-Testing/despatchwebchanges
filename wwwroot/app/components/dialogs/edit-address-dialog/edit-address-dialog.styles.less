@@ -1,12 +1,11 @@
-﻿// Professional Address Dialog Styles
+﻿@import "../../../../css/variables.less";
+
+// Professional Address Dialog Styles
 .address-edit-dialog {
   width: 90vw;
   max-width: 800px;
   max-height: 90vh;
-  border-radius: 12px;
-  box-shadow: 0 24px 38px 3px rgba(0, 0, 0, 0.14),
-  0 9px 46px 8px rgba(0, 0, 0, 0.12),
-  0 11px 15px -7px rgba(0, 0, 0, 0.2);
+  border-radius: @dialog-border-radius;
   
   // Dialog Content
   .dialog-content {
@@ -42,7 +41,7 @@
         content: '';
         width: 4px;
         height: 18px;
-        background: #1976d2;
+        background: @primary-blue;
         border-radius: 2px;
       }
     }
@@ -103,7 +102,7 @@
       background: #f8f9fa;
       padding: 16px;
       border-radius: 8px;
-      border-left: 4px solid #1976d2;
+      border-left: 4px solid @primary-blue;
     }
 
     .form-field {
@@ -145,7 +144,7 @@
 
       .card-icon {
         font-size: 24px;
-        color: #1976d2;
+        color: @primary-blue;
       }
 
       .card-title {
@@ -267,17 +266,17 @@
 .address-edit-dialog {
   md-input-container.md-input-focused {
     label {
-      color: #1976d2;
+      color: @primary-blue;
     }
 
     .md-input {
-      border-color: #1976d2;
+      border-color: @primary-blue;
     }
   }
 
   md-autocomplete.md-input-focused {
     label {
-      color: #1976d2;
+      color: @primary-blue;
     }
   }
 }
