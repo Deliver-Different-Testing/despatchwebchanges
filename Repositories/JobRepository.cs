@@ -1305,7 +1305,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             await Context.TucJobs
                 .Where(j => jobsToVoid.Contains(j.UcjbId))
                 .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(j => j.UcjbStatus, (int)JobStatus.Completed)
+                    .SetProperty(j => j.UcjbStatus, (int)JobStatus.Void)
                     .SetProperty(j => j.UcjbVoid, true));
 
             // Reset courier clear list for all affected couriers
@@ -1493,8 +1493,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
     public async Task<List<Suggestion>> GetStatusListAsync()
     {
-        return await Context
-            .TucJobStatuses.OrderBy(s => s.UcjsId)
+        return await Context.TucJobStatuses
+            .OrderBy(s => s.UcjsName)
             .Select(s => new Suggestion { Id = s.UcjsId, Text = s.UcjsName })
             .AsNoTracking()
             .ToListAsync();
@@ -1502,8 +1502,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
     public async Task<List<Suggestion>> EventTypeListAsync()
     {
-        return await Context
-            .TucEventTypes.Where(u => u.UcetGroup == "CS" || u.UcetGroup == "GE")
+        return await Context.TucEventTypes
+            .Where(u => u.UcetGroup == "CS" || u.UcetGroup == "GE")
             .OrderBy(u => u.UcetName)
             .Select(x => new Suggestion { Id = x.UcetId, Text = x.UcetName })
             .AsNoTracking()
@@ -2046,7 +2046,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         try
         {
             var query = Context.TucJobs.Where(j =>
-                j.UcjbStatus != (int)JobStatus.Completed && j.UcjbStatus != (int)JobStatus.Rejected
+                j.UcjbStatus != (int)JobStatus.Completed && j.UcjbStatus != (int)JobStatus.Rejected && j.UcjbStatus != (int)JobStatus.Void
             );
 
             // Apply date range filter

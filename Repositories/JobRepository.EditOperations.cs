@@ -410,9 +410,9 @@ public partial class JobRepository
                 archive.UcjbStatus = internalStatusId switch
                 {
                     // Handle status changes
-                    3 when archive.UcjbStatus != (int)JobStatus.AwaitingPod => (int)JobStatus.AwaitingPod,
-                    1 when archive.UcjbStatus != (int)JobStatus.Dispatched => (int)JobStatus.Dispatched,
-                    4 when archive.UcjbStatus != (int)JobStatus.Completed => (int)JobStatus.Completed,
+                    (int)InternalJobStatus.AwaitingPod when archive.UcjbStatus != (int)JobStatus.AwaitingPod => (int)JobStatus.AwaitingPod,
+                    (int)InternalJobStatus.NewJobs when archive.UcjbStatus != (int)JobStatus.Dispatched => (int)JobStatus.Dispatched,
+                    (int)InternalJobStatus.Reprice when archive.UcjbStatus != (int)JobStatus.Completed => (int)JobStatus.Completed,
                     _ => archive.UcjbStatus
                 };
                 break;
