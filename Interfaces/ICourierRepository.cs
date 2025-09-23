@@ -11,7 +11,7 @@ public interface ICourierRepository
 {
     Task<ActiveCouriersViewModel> GetCourierByIdAsync(int courierId);
 
-    Task<List<TruckCourierStatusViewModel>> TruckCourierStatusAsync(int courierId);
+    Task<TruckCourierStatusViewModel> TruckCourierStatusAsync(int courierId);
 
    Task<List<AvailableCourierPosition>> GetAvailableCouriersAsync(CourierLocationRequest data);
 

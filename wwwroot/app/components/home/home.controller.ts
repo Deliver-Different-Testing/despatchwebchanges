@@ -1909,7 +1909,10 @@ class HomeController extends BaseController {
     }
 
     async openTruckLoadingStatus($event: MouseEvent): Promise<void> {
-        if (!this.truckCourierStatus) return;
+        if (!this.truckCourierStatus) {
+            this.$log.error("No truck courier status available");
+            return
+        }
         await this.truckCourierStatusDialogService.showTruckLoadingStatus($event, this.truckCourierStatus);
     }
 

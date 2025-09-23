@@ -23,9 +23,12 @@ class TruckCourierStatusDialogController extends BaseController {
         $scope: angular.IScope,
         $interval: angular.IIntervalService,
         $timeout: angular.ITimeoutService,
-        public truckCourierStatus: ITruckCourierStatus) {
+        public truckCourierStatus: ITruckCourierStatus
+    ) {
         super();
         this.initServices($timeout, $interval, $scope);
+        
+        this.$log.debug("TruckCourierStatusDialogController instantiated");
     }
 
     async refresh(courierId: number) {
