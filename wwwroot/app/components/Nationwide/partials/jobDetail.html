@@ -2,6 +2,7 @@
     <job-detail-widget
             job-id="ctrl.currentJobId"
             app-page="ctrl.nationwidePageId"
-            on-status-change="ctrl.handleStatusChange($event)">
+            on-status-change="ctrl.handleStatusChange($event)"
+            on-job-update="ctrl.getJobList()">
     </job-detail-widget>
 </div>

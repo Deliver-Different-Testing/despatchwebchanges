@@ -46,48 +46,49 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         return courier;
     }
 
-    public async Task<List<TruckCourierStatusViewModel>> TruckCourierStatusAsync(int courierId)
+    public async Task<TruckCourierStatusViewModel> TruckCourierStatusAsync(int courierId)
     {
         try
         {
             ArgumentNullException.ThrowIfNull(courierId);
+            const string truckVehicleName = "Truck";
 
-            var truckStatusData = await Context
-                .TucCouriers
-                .Where(c => c.Active && c.UccrVehicle == "Truck" && c.UccrId == courierId)
+            var courierStatusData = await Context.TucCouriers
+                .Where(c => c.Active && c.UccrId == courierId)
                 .Select(c => new TruckCourierStatusViewModel
                 {
                     CourierId = c.UccrId,
                     CourierCode = c.Code,
                     FirstName = c.UccrName,
-                    MaxPallets = c.MaxPallets,
-                    MaxPayLoad = c.MaxPayload,
-                    CurrentPallets = c.TucJobUcjbCouriers
+                    LastUpdated = c.LastModified,
+                    MaxPallets = c.UccrVehicle == truckVehicleName ? c.MaxPallets : null,
+                    MaxPayLoad = c.UccrVehicle == truckVehicleName ? c.MaxPayload : null,
+                    CurrentPallets = c.UccrVehicle == truckVehicleName ? c.TucJobUcjbCouriers
                         .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
                         .SelectMany(d => d.TucJobItemJobs)
-                        .Sum(i => i.Items),
-                    CurrentWeight = c.TucJobUcjbCouriers
+                        .Sum(i => i.Items) : null,
+                    CurrentWeight = c.UccrVehicle == truckVehicleName ? c.TucJobUcjbCouriers
                         .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
                         .SelectMany(d => d.TucJobItemJobs)
-                        .Sum(i => i.Items * i.Weight),
-                    AvailablePallets = c.MaxPallets - c.TucJobUcjbCouriers
+                        .Sum(i => i.Items * i.Weight) : null,
+                    AvailablePallets = c.UccrVehicle == truckVehicleName ? c.MaxPallets - c.TucJobUcjbCouriers
                         .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
                         .SelectMany(d => d.TucJobItemJobs)
-                        .Sum(i => i.Items),
-                    AvailablePalletCapacity = c.MaxPayload - c.TucJobUcjbCouriers
+                        .Sum(i => i.Items) : null,
+                    AvailablePalletCapacity = c.UccrVehicle == truckVehicleName ? c.MaxPayload - c.TucJobUcjbCouriers
                         .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
                         .SelectMany(d => d.TucJobItemJobs)
-                        .Sum(i => i.Items * i.Weight)
+                        .Sum(i => i.Items * i.Weight) : null
                 })
                 .AsNoTracking()
                 .OrderBy(c => c.CourierCode)
-                .ToListAsync();
+                .FirstOrDefaultAsync();
 
-            return truckStatusData;
+            return courierStatusData;
         }
         catch (Exception e)
         {
-            Log.Error(e, "An error occured getting truck status for {CourierId}", courierId);
+            Log.Error(e, "An error occured getting courier status for {CourierId}", courierId);
             throw;
         }
     }

@@ -61,6 +61,8 @@ class JobDetailController extends BaseController {
     private static readonly FIELD_VISIBILITY_KEY = `jobDetail_fieldVisibility_${ContactID}`;
     private static readonly VIEW_DENSITY_KEY = `jobDetail_viewDensity_${ContactID}`;
 
+    onJobUpdate?: () => Promise<void>;
+    
     readonly isRecurringJob: boolean = false;
     readonly isBulkJob: boolean = false;
     readonly isUsCustomer: boolean = false;
@@ -1638,6 +1640,11 @@ class JobDetailController extends BaseController {
 
             await this.loadJobData(jobId);
 
+            // Notify parent to refresh the job list
+            if (this.onJobUpdate) {
+                await this.onJobUpdate();
+            }
+
             this.$log.debug("Job data refreshed");
         } catch (error) {
             this.isLoading = false;
@@ -2184,6 +2191,7 @@ const JobDetailComponent: angular.IComponentOptions = {
         isRecurringJob: "<",
         isBulkJob: "<",
         isEditMode: "<",
+        onJobUpdate: "&"
     },
     controller: JobDetailController,
     controllerAs: "ctrl",

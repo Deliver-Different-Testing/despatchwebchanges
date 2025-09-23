@@ -27,15 +27,15 @@ export interface ActiveCourierViewModel {
 }
 
 export interface ITruckCourierStatus {
-    id: number;
+    courierId: number;
     courierCode: string;
     firstName: string;
-    maxPallets: number | null;
-    maxPayLoad: number | null;
-    currentPallets: number;
-    currentWeight: number;
-    availablePalletCapacity: number | null;
-    availablePallets: number | null;
+    maxPallets?: number;
+    maxPayLoad?: number;
+    currentPallets?: number;
+    currentWeight?: number;
+    availablePalletCapacity?: number;
+    availablePallets?: number;
     lastUpdated: Date;
 }
 

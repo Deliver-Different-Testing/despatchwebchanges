@@ -271,7 +271,7 @@
                      ng-click="ctrl.selectJob(job, $event)">
 
                     <!-- Priority Column -->
-                    <div class="job-cell {{::ctrl.shouldShowPriorityColumn(job) ? 'priority' : ''}}">
+                    <div class="job-cell {{ctrl.shouldShowPriorityColumn(job) ? 'priority' : ''}}">
                         <!-- Expand/Collapse button for multipart jobs -->
                         <button ng-if="::ctrl.isMultiPartJob(job) && job.isParentOrSingle"
                                 class="expand-btn"
@@ -294,36 +294,36 @@
 
                     <!-- Time Column -->
                     <div class="job-cell time-cell">
-                        <div class="date">{{::ctrl.formatDeliveryTime(job)}} ({{::ctrl.timeZone | timezoneShort}})</div>
-                        <div class="time">{{::ctrl.formatDeliveryDate(job)}}</div>
+                        <div class="date">{{ctrl.formatDeliveryTime(job)}} ({{::ctrl.timeZone | timezoneShort}})</div>
+                        <div class="time">{{ctrl.formatDeliveryDate(job)}}</div>
                     </div>
 
                     <!-- Speed Column -->
                     <div class="job-cell speed-cell">
-                        <span class="speed-value">{{::job.speed || '-'}}</span>
+                        <span class="speed-value">{{job.speed || '-'}}</span>
                     </div>
 
                     <!-- Vehicle Type Column -->
                     <div class="job-cell vehicle-cell">
-                        <span class="vehicle-type">{{::job.vehicle.text || '-'}}</span>
+                        <span class="vehicle-type">{{job.vehicle.text || '-'}}</span>
                     </div>
 
                     <!-- Job ID Column -->
                     <div class="job-cell job-id-cell">
-                        <div class="job-id">{{::job.jobNo}}</div>
-                        <div class="client-name">{{::job.clientName}}</div>
+                        <div class="job-id">{{job.jobNo}}</div>
+                        <div class="client-name">{{job.clientName}}</div>
                     </div>
 
                     <!-- Pickup Column -->
                     <div class="job-cell route-cell pickup-cell">
-                        <div class="address">{{::ctrl.getPickupAddress(job)}}</div>
-                        <div class="city-state">{{::job.pickupAddress && job.pickupAddress.addressLine1 || ''}}</div>
+                        <div class="address">{{ctrl.getPickupAddress(job)}}</div>
+                        <div class="city-state">{{job.pickupAddress && job.pickupAddress.addressLine1 || ''}}</div>
                     </div>
 
                     <!-- Delivery Column -->
                     <div class="job-cell route-cell delivery-cell">
-                        <div class="address">{{::ctrl.getDeliveryAddress(job)}}</div>
-                        <div class="city-state">{{::job.deliveryAddress && job.deliveryAddress.addressLine1 || ''}}</div>
+                        <div class="address">{{ctrl.getDeliveryAddress(job)}}</div>
+                        <div class="city-state">{{job.deliveryAddress && job.deliveryAddress.addressLine1 || ''}}</div>
                     </div>
 
                     <!-- Courier Column -->
@@ -438,36 +438,36 @@
 
                     <!-- Time Column -->
                     <div class="job-cell time-cell">
-                        <div class="date">{{::ctrl.formatDeliveryDate(childJob)}}</div>
-                        <div class="time">{{::ctrl.formatDeliveryTime(childJob)}}</div>
+                        <div class="date">{{ctrl.formatDeliveryDate(childJob)}}</div>
+                        <div class="time">{{ctrl.formatDeliveryTime(childJob)}}</div>
                     </div>
 
                     <!-- Speed Column -->
                     <div class="job-cell speed-cell">
-                        <span class="speed-value">{{::childJob.speed || '-'}}</span>
+                        <span class="speed-value">{{childJob.speed || '-'}}</span>
                     </div>
 
                     <!-- Vehicle Type Column -->
                     <div class="job-cell vehicle-cell">
-                        <span class="vehicle-type">{{::childJob.vehicle.text || '-'}}</span>
+                        <span class="vehicle-type">{{childJob.vehicle.text || '-'}}</span>
                     </div>
 
                     <!-- Job ID Column -->
                     <div class="job-cell job-id-cell">
-                        <div class="job-id">{{::childJob.jobNo}}</div>
-                        <div class="client-name">{{::childJob.client}}</div>
+                        <div class="job-id">{{childJob.jobNo}}</div>
+                        <div class="client-name">{{childJob.client}}</div>
                     </div>
 
                     <!-- Pickup Column -->
                     <div class="job-cell route-cell pickup-cell">
-                        <div class="address">{{::ctrl.getPickupAddress(childJob)}}</div>
-                        <div class="city-state">{{::ctrl.getPickupCityState(childJob)}}</div>
+                        <div class="address">{{ctrl.getPickupAddress(childJob)}}</div>
+                        <div class="city-state">{{ctrl.getPickupCityState(childJob)}}</div>
                     </div>
 
                     <!-- Delivery Column -->
                     <div class="job-cell route-cell delivery-cell">
-                        <div class="address">{{::ctrl.getDeliveryAddress(childJob)}}</div>
-                        <div class="city-state">{{::ctrl.getDeliveryCityState(childJob)}}</div>
+                        <div class="address">{{ctrl.getDeliveryAddress(childJob)}}</div>
+                        <div class="city-state">{{ctrl.getDeliveryCityState(childJob)}}</div>
                     </div>
 
                     <!-- Courier Column -->

@@ -1,6 +1,5 @@
-<div class="basic-box-scroll">
-    <job-detail-widget
-            style="height: 100%;"
-            job-id="ctrl.currentJobId">
-    </job-detail-widget>
-</div>
+<job-detail-widget
+        style="height: 100%;"
+        job-id="ctrl.currentJobId"
+        on-job-update="ctrl.getJobList()">
+</job-detail-widget>

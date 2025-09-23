@@ -1,16 +1,21 @@
 import TruckCourierStatusDialogController from "./truck-courier-status-dialog.controller";
 import {ITruckCourierStatus} from "../../../interfaces/courier.interface";
+import DispatchCoreService from "../../../services/dispatch-core.service";
 
 class TruckCourierStatusDialogService implements angular.IServiceProvider {
     static $inject = [
         '$mdDialog',
-        '$document'
+        '$document',
+        '$log',
     ];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private $document: angular.IDocumentService,
-    ) {}
+        private $log: angular.ILogService,
+    ) {
+        this.$log.debug('TruckCourierStatusDialogService: Service instantiated');
+    }
 
     $get(): any {
         return this;
