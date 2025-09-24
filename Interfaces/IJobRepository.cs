@@ -132,7 +132,7 @@ public interface IJobRepository
         int staffId
     );
 
-    Task<int> QuickAddJobAsync(JobCreateViewModel request, int staffId);
+    Task<int> QuickAddJobAsync(JobCreateViewModel request);
     Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel);
     Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId);
 

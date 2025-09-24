@@ -11,6 +11,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         "$mdDialog",
         "$log",
         "DispatchData",
+        "$document",
         "toastrService"
     ];
 
@@ -26,6 +27,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         private $mdDialog: angular.material.IDialogService,
         private $log: angular.ILogService,
         private DispatchData: DispatchCoreService,
+        private $document: angular.IDocumentService,
         private toastrService: ToastrService,
     ) {
         this.$log.debug("DispatchExecutorService initialized");
@@ -155,10 +157,11 @@ class DispatchExecutorService implements angular.IServiceProvider {
                 await this.$mdDialog.show(
                     this.$mdDialog.alert()
                         .title("Unable to Restore")
-                        .textContent(`Courier with ID ${courierId} not found. Unable to restore job`)
+                        .textContent(`This courier was not found. Unable to restore job`)
                         .ok("Understood")
                 );
                 
+                this.$log.error(`Courier with ID ${courierId} not found. Unable to restore job`);
                 return;
             }
 
@@ -181,7 +184,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
                 this.$log.warn(`Could not find courier with ID ${courierId}`);
             }
         } catch (error) {
-            this.$log.error("Error in dispatchJobsBycourierId:", error);
+            this.$log.error("Error in dispatchJobsByCourierId:", error);
             throw error;
         }
     }
@@ -257,7 +260,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         const findCourierById = (couriers: ActiveCourierViewModel[], id: number): ActiveCourierViewModel | null =>
             couriers.find(c => c.courierId === id) || null;
 
-        // First try to find among active couriers
+        // First, try to find among active couriers
         const activeCourier = findCourierById(this.pickCouriers, courierNumber);
         if (activeCourier) {
             return activeCourier;
@@ -324,20 +327,20 @@ class DispatchExecutorService implements angular.IServiceProvider {
 
         if (job.courierData?.courierId) {
             const message = `Restore ${job.jobNo} prior to dispatching to another courier`;
-            console.warn("Job validation failed:", message);
+            this.$log.warn("Job validation failed:", message);
             return {isValid: false, message};
         }
 
         if (job.dgClass !== null && job.dgClass !== undefined && job.dgClass > 0) {
             if (!courier.dangerousGoods) {
                 const message = `DG job ${job.jobNo} can not be dispatched to courier ${courier.id} - doesn't have DGLicense.`;
-                console.warn("Job validation failed:", message);
+                this.$log.warn("Job validation failed:", message);
                 return {isValid: false, message};
             }
 
             if (dayjs(courier.dgLicenseExpiry) < dayjs().add(1, "days")) {
                 const message = `Courier ${courier.id} doesn't have a DGLicense or license has expired.`;
-                console.warn("Job validation failed:", message);
+                this.$log.warn("Job validation failed:", message);
                 return {isValid: false, message};
             }
         }
@@ -459,7 +462,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
 
     private async showAlertMessage(textContent: string) {
         const alert = this.$mdDialog.alert()
-            .parent(document.body)
+            .parent(this.$document.parent())
             .clickOutsideToClose(true)
             .title("Unable to Despatch")
             .textContent(textContent)

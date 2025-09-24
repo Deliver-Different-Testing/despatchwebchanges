@@ -1,9 +1,23 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Diagnostics;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace DespatchWeb.EntityClasses;
 
 public partial class DespatchContext
 {
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        if (Debugger.IsAttached)
+        {
+            optionsBuilder.LogTo(Console.WriteLine,
+                    [DbLoggerCategory.Database.Command.Name],
+                    LogLevel.Information)
+                .EnableSensitiveDataLogging();
+        }
+    }
+
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {
         // Tuc Job
@@ -13,13 +27,13 @@ public partial class DespatchContext
                 .WithMany(p => p.InverseParent)
                 .HasForeignKey(d => d.ParentId)
                 .OnDelete(DeleteBehavior.Restrict);
-            
+
             entity.HasOne(d => d.LoggedInContact)
                 .WithMany()
                 .HasForeignKey(d => d.LoggedInContactId)
                 .HasPrincipalKey(cc => cc.UcctId)
                 .OnDelete(DeleteBehavior.Restrict);
-            
+
             entity.HasOne<TblBulkJob>()
                 .WithMany()
                 .HasForeignKey(d => d.BulkParentId)
@@ -75,7 +89,7 @@ public partial class DespatchContext
                 .WithOne()
                 .HasForeignKey<TucJobNationwide>(d => d.UcnwJobId)
                 .OnDelete(DeleteBehavior.Restrict);
-            
+
             entity.HasMany(d => d.PricingBreakdowns)
                 .WithOne()
                 .HasForeignKey(p => p.JobId)
@@ -87,14 +101,14 @@ public partial class DespatchContext
                 .HasForeignKey(n => n.JobBookingId)
                 .HasPrincipalKey(j => j.UcjbId)
                 .OnDelete(DeleteBehavior.Restrict);
-            
+
             entity.HasOne(d => d.LoggedInContact)
                 .WithMany()
                 .HasForeignKey(d => d.LoggedInContactId)
                 .HasPrincipalKey(cc => cc.UcctId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
-        
+
         modelBuilder.Entity<TucNoteArchive>(entity =>
         {
             entity.HasOne<TucNoteType>()

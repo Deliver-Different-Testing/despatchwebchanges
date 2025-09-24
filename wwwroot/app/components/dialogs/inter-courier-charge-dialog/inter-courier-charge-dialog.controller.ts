@@ -7,51 +7,36 @@ import {
     FeatureInDevelopmentDialogService
 } from "../feature-in-development-dialog/feature-in-development-dialog.service";
 import {ISuggestion} from "../../../interfaces/job.interface";
+import IInterCourierData from "./interfaces/IInterCourierData";
 
 class InterCourierChargeDialogController extends BaseController {
     static $inject = [
         "$mdDialog",
-        "$http",
+        "$log",
         "DispatchData",
-        "toastrService",
-        "featureInDevelopmentDialogService"
+        "toastrService"
     ];
 
-    staffId: number;
     isLoading: boolean = false;
     courierChargeForm: any;
-    fromCourierSearchText: string = "";
-    toCourierSearchText: string = "";
-    fromCourierSelectedItem: { id: number; name: string } | null = null;
-    toCourierSelectedItem: { id: number; name: string } | null = null;
-
-    data: {
-        fromCourierId: number;
-        toCourierId: number;
-        reference: string;
-        zones: number;
-        amount: number;
-        staffId: number;
-    };
+    fromCourierSearchText?: string;
+    toCourierSearchText?: string;
+    fromCourierSelectedItem?: ISuggestion;
+    toCourierSelectedItem?: ISuggestion;
+    
+    data: IInterCourierData;
+    
+    clientSelectedItem?: ISuggestion;
+    clientSearchText?: string;
 
     constructor(
         private $mdDialog: material.IDialogService,
-        private $http: IHttpService,
+        private $log: angular.ILogService,
         private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
-        private featureInDevelopmentDialogService: FeatureInDevelopmentDialogService
     ) {
         super();
-
-        this.staffId = ContactID;
-        this.data = {
-            fromCourierId: 0,
-            toCourierId: 0,
-            reference: "",
-            zones: 0,
-            amount: 0.0,
-            staffId: this.staffId
-        };
+        this.data = {} as IInterCourierData;
     }
 
     async courierSearch(searchTerm: string): Promise<ISuggestion[]> {
@@ -62,8 +47,24 @@ class InterCourierChargeDialogController extends BaseController {
         try {
             const url = "/courier/AllActiveSearch";
             return await this.DispatchData.autocompleteSearch(searchTerm, url);
-        } catch (error: any) {
-            this.toastrService.showErrorToast(error.message);
+        } catch (error) {
+            this.toastrService.showErrorToast("An error occurred while searching. Please try again later.");
+            this.$log.error(error);
+            return [];
+        }
+    }
+
+    async clientSearch(searchTerm: string): Promise<ISuggestion[]> {
+        if (!searchTerm || searchTerm.length < 2) {
+            return [];
+        }
+
+        try {
+            const url = "/home/ActiveClients";
+            return await this.DispatchData.autocompleteSearch(searchTerm, url);
+        } catch (error) {
+            this.toastrService.showErrorToast("An error occurred while searching. Please try again later.");
+            this.$log.error(error);
             return [];
         }
     }
@@ -77,24 +78,12 @@ class InterCourierChargeDialogController extends BaseController {
         this.data.amount = zones * 7;
     }
 
-    async submit(data: {
-        fromCourierId: number;
-        toCourierId: number;
-        reference: string;
-        zones: number;
-        amount: number;
-        staffId: number;
-    }): Promise<void> {
-            // This feature needs to be properly set up for US. Until then, handle not working nicely
-                await this.featureInDevelopmentDialogService.openFeatureInDevelopmentDialog();
-                return;
-/*
+    async submit(data: IInterCourierData): Promise<void> {
+        try {
             this.isLoading = true;
 
             if (!this.courierChargeForm.$valid) {
-                this.toastrService.showWarningToast(
-                    "Please complete all the required fields."
-                );
+                this.toastrService.showWarningToast("Please complete all the required fields");
                 this.isLoading = false;
                 return;
             }
@@ -106,21 +95,21 @@ class InterCourierChargeDialogController extends BaseController {
             if (this.toCourierSelectedItem) {
                 data.toCourierId = this.toCourierSelectedItem.id;
             }
+            
+            if(this.clientSelectedItem) {
+                data.clientId = this.clientSelectedItem.id;
+            }
 
-            const url = "job/InterCourierCharge";
-            await this.$http.post(url, data, {
-                headers: {"Content-Type": "application/json"}
-            });
+            await this.DispatchData.createInterCourierCharge(data);
 
-            this.toastrService.showSuccessToast(
-                "Inter-Courier Charge saved successfully"
-            );
+            this.toastrService.showSuccessToast("Inter-Courier Charge saved successfully");
             this.$mdDialog.hide();
-        } catch (error: any) {
-            this.toastrService.showErrorToast(error.message);
+        } catch (error) {
+            this.toastrService.showErrorToast();
+            this.$log.error(error);
         } finally {
             this.isLoading = false;
-        }*/
+        }
     }
 
     cancel(): void {

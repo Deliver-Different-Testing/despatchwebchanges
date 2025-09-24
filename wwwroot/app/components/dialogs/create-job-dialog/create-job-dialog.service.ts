@@ -1,14 +1,12 @@
-﻿import {IServiceProvider} from "angular";
-import {ContactID} from "../../../contants";
-import {CreateJobDialogController} from "./create-job-dialog.controller";
+﻿import {CreateJobDialogController} from "./create-job-dialog.controller";
 
-class CreateJobDialogService implements  IServiceProvider {
+class CreateJobDialogService implements angular.IServiceProvider {
     static $inject = [
         '$mdDialog',
         '$log',
         '$document'
     ];
-    
+
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private $log: angular.ILogService,
@@ -16,11 +14,11 @@ class CreateJobDialogService implements  IServiceProvider {
     ) {
         this.$log.debug('CreateJobDialogService: Service instantiated');
     }
-    
+
     $get() {
         return this;
     }
-    
+
     async showCreateJobDialog($event: MouseEvent) {
         const newJobId: number = await this.$mdDialog.show({
             controller: CreateJobDialogController,
@@ -30,11 +28,9 @@ class CreateJobDialogService implements  IServiceProvider {
             targetEvent: $event,
             clickOutsideToClose: false,
             fullscreen: true,
-            locals: {
-                staffId: ContactID, despatcherName: FirstName
-            }
+            bindToController: true
         });
-        
+
         return newJobId;
     }
 }

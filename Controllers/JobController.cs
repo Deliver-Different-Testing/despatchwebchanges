@@ -1386,20 +1386,13 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> QuickCreateJob([FromBody] CreateJobRequest request)
+    public async Task<IActionResult> QuickCreateJob([FromBody] JobCreateViewModel request)
     {
         try
         {
             ArgumentNullException.ThrowIfNull(request);
-            ArgumentNullException.ThrowIfNull(request.StaffId);
-
-            if (!IsValidRequest(request))
-                return StatusCode(
-                    StatusCodes.Status500InternalServerError,
-                    new { message = "Bad Request" }
-                );
-
-            var jobId = await jobRepository.QuickAddJobAsync(request.Job, request.StaffId.Value);
+            
+            var jobId = await jobRepository.QuickAddJobAsync(request);
 
             //Check if jobId is valid before continuing
             if (jobId == 0)
@@ -1407,33 +1400,33 @@ public class JobController(
                     StatusCodes.Status500InternalServerError,
                     "Created Job Id is null"
                 );
-
-            // Add note
-            await jobRepository.SaveNoteAsync(jobId,
-                $"This job was created manually by {request.DespatcherName} via the Quick Create Job feature.");
-
+            
             return Json(jobId);
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error creating job");
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(QuickCreateJob)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
-
-    private static bool IsValidRequest(CreateJobRequest request) =>
-        !(request?.Job == null || request.Job.ClientId == 0 || request.StaffId == null);
-
-
+    
     [HttpPost]
-    public async Task<IActionResult> InterCourierCharge(
-        [FromBody] InterCourierChargeViewModel viewModel
-    )
+    public async Task<IActionResult> InterCourierCharge([FromBody] InterCourierChargeViewModel viewModel)
     {
-        ArgumentNullException.ThrowIfNull(viewModel);
+        try
+        {
+            ArgumentNullException.ThrowIfNull(viewModel);
 
-        await jobRepository.AddInterCourierChargeAsync(viewModel);
-        return Ok();
+            await jobRepository.AddInterCourierChargeAsync(viewModel);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(InterCourierCharge)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
     }
 
     public async Task<IActionResult> HasClientItemsAvailable(int clientId, int speedId)

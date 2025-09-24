@@ -378,10 +378,6 @@ export interface JobCreateViewModel {
     vehicleId: number;
 }
 
-export interface SuburbLookup extends ISuggestion {
-    alias: string;
-}
-
 export interface InternalStatus extends ISuggestion {
     defaultSchedule: string;
     defaultMins: number | null;

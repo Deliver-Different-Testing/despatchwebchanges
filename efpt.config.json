@@ -387,6 +387,10 @@
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[DD_stpJob_InsertExcelerator]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DD_stpJob_Rate_Described]",
          "ObjectType": 1
       },

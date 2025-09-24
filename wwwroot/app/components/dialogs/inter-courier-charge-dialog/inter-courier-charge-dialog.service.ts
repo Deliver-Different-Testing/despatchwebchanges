@@ -32,7 +32,8 @@ class InterCourierChargeDialogService implements IServiceProvider {
                 targetEvent: $event,
                 template: require("./inter-courier-charge-dialog.template.html"),
                 clickOutsideToClose: false,
-                fullscreen: true
+                fullscreen: true,
+                bindToController: true,
             });
 
             this.$log.debug("Inter-courier Charge Added!");

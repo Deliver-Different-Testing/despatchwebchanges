@@ -2,10 +2,19 @@ import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 import DispatchExecutorService from "../../../services/dispatch-executor.service";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
-import {IAddressViewModel, JobCreateViewModel, ISuggestion} from "../../../interfaces/job.interface";
+import {
+    IAddressViewModel,
+    JobCreateViewModel,
+    ISuggestion
+} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import {getStateByAbbreviation, getStates} from "../../../functions/usStates";
 import ICreateJobDialogControllerScope from "./interfaces/ICreateJobDialogControllerScope";
+import {IHereMapsLocationResult} from "../../../interfaces/heremaps-autocomplete.interfaces";
+import AddressLookupService from "../../../services/address-lookup.service";
+import IStateInfo from "../../../interfaces/state-info.interface";
+import dayjs from "dayjs";
+import handleAddressFieldsFromLookup from "../../../functions/handleAddressFieldsFromLookup";
 
 export class CreateJobDialogController extends BaseController {
     static $inject = [
@@ -13,109 +22,99 @@ export class CreateJobDialogController extends BaseController {
         "$log",
         "$mdDialog",
         "DispatchData",
+        "addressLookupService",
         "toastrService",
-        "$http",
         "dispatchJobService",
-        "staffId",
-        "despatcherName",
         "APP_CONFIG",
     ];
 
     private readonly isUsCustomer: boolean;
 
-    vehicleSearchText: string = "";
-    speedSearchText: string = "";
-    states: any;
+    vehicleSearchText?: string;
+    speedSearchText?: string;
+    states?: IStateInfo[];
     jobForm: any;
-    fromAddressSearchText: string = "";
-    toAddressSearchText: string = "";
-    searchClientText: string = "";
-    courierSearchText: string = "";
+    fromAddressSearchText?: string;
+    toAddressSearchText?: string;
+    searchClientText?: string;
+    courierSearchText?: string;
     isLoading: boolean = false;
-    selectedCourier: any = null;
-    selectedClient: any = null;
-    selectedVehicle: any = null;
-    selectedSpeed: any = null;
+    selectedCourier?: ISuggestion;
+    selectedClient?: ISuggestion;
+    selectedVehicle?: ISuggestion;
+    selectedSpeed?: ISuggestion;
     speedOptions: ISuggestion[] = [];
     jobDate: Date = new Date();
-    job: any;
+    job: JobCreateViewModel;
     vehicleSizes: ISuggestion[] = [];
+    selectedPickupAddress?: IHereMapsLocationResult;
+    selectedDeliveryAddress?: IHereMapsLocationResult;
 
     constructor(
         $scope: ICreateJobDialogControllerScope,
         private $log: angular.ILogService,
         private $mdDialog: angular.material.IDialogService,
-        private dispatchData: DispatchCoreService,
+        private DispatchData: DispatchCoreService,
+        private addressLookupService: AddressLookupService,
         private toastrService: ToastrService,
-        private $http: angular.IHttpService,
         public dispatchJobService: DispatchExecutorService,
-        public staffId: number,
-        public despatcherName: string,
         APP_CONFIG: IAppConfig,
     ) {
         super();
-
-        this.initializeOptions();
-        this.initializeFormData($scope);
-        this.initializeJob();
-
         this.isUsCustomer = APP_CONFIG.US_Customer;
-        if (this.isUsCustomer) {
-            this.states = getStates();
-        }
-    }
+        
+        Promise.all([
+            this.DispatchData.getSpeedList(),
+            this.DispatchData.getVehicleSizes()
+        ]).then(([speedOptions, vehicleSizes]) => {
+            this.speedOptions = speedOptions;
+            this.vehicleSizes = vehicleSizes;
+        });
 
-    private initializeFormData($scope: ICreateJobDialogControllerScope): void {
         this.jobForm = $scope.jobForm;
         this.fromAddressSearchText = "";
         this.toAddressSearchText = "";
         this.searchClientText = "";
         this.courierSearchText = "";
         this.isLoading = false;
-        this.selectedCourier = null;
-        this.selectedClient = null;
-        this.selectedVehicle = null;
-        this.selectedSpeed = null;
         this.speedOptions = [];
-        this.jobDate = new Date();
-    }
+        this.jobDate = dayjs().toDate();
 
-    private initializeOptions(): void {
-        Promise.all([
-            this.dispatchData.getSpeedList(),
-            this.dispatchData.getVehicleSizes()
-        ]).then(([speedOptions, vehicleSizes]) => {
-            this.speedOptions = speedOptions;
-            this.vehicleSizes = vehicleSizes;
-        });
-    }
-
-    private initializeJob(): void {
         this.job = {
-            clientId: "",
+            clientId: 0,
             deliverToContact: "",
-            pickupAddress: {},
-            deliveryAddress: {},
-            toAddress: "",
-            date: "",
-            fromContactName: "",
             podName: "",
-            jobNotes: "",
+            pickUpAddress: {} as IAddressViewModel,
+            deliveryAddress: {} as IAddressViewModel,
+            date: new Date(),
+            fromContactName: "",
+            refA: "",
+            refB: "",
             deliveryNotes: "",
             pickupNotes: "",
+            jobNotes: "",
             van: false,
             truck: false,
             pedal: false,
             attention: false,
-            vanOK: false,
+            vanOk: false,
             reprice: false,
             void: false,
+            done: false,
             charge: 0.0,
-            refA: "",
-            refB: "",
+            fromLat: 0,
+            fromLong: 0,
+            toLat: 0,
+            toLong: 0,
+            speedId: 0,
+            vehicleId: 0
         };
+        
+        if (this.isUsCustomer) {
+            this.states = getStates();
+        }
     }
-
+    
     vehicleSearch(searchText: string): ISuggestion[] {
         searchText = searchText.toLowerCase();
         return this.vehicleSizes.filter(item => item.text.toLowerCase().includes(searchText));
@@ -144,92 +143,19 @@ export class CreateJobDialogController extends BaseController {
 
     performAutocompleteSearch(searchTerm: string, url: string): Promise<ISuggestion[]> {
         try {
-            return this.dispatchData.autocompleteSearch(searchTerm, url);
+            return this.DispatchData.autocompleteSearch(searchTerm, url);
         } catch (error: any) {
             this.$log.error(`Search failed: ${error.message}`);
             return Promise.resolve([]);
         }
     }
 
-    async addressSearchAutocomplete(searchText: string): Promise<any[]> {
+    async addressSearchAutocomplete(searchText: string): Promise<IHereMapsLocationResult[]> {
         try {
-            const suggestions = await this.dispatchData.autocompleteAddressSearch(searchText);
-            return this.transformSuggestions(suggestions);
+            return await this.addressLookupService.autocompleteAddressSearch(searchText);
         } catch (error: any) {
-            this.toastrService.showErrorToast(error.message);
+            this.toastrService.showErrorToast("An error occurred while searching for addresses. Please try again.");
             return [];
-        }
-    }
-
-    private transformSuggestions(data: any): any[] {
-        return data.suggestions.map((obj: any) => ({
-            id: obj.locationId,
-            text: obj.label.split(", ").reverse().join(", ")
-        }));
-    }
-
-    async findSuburbByDistrict(district: string): Promise<any | null> {
-        try {
-            const ourSuburbsArray = await this.dispatchData.getSuburbList();
-            const lowerCaseDistrict = district.toLowerCase();
-            return ourSuburbsArray.find((localSuburb: any) =>
-                localSuburb.text.toLowerCase() === lowerCaseDistrict ||
-                (localSuburb.alias && localSuburb.alias.toLowerCase() === lowerCaseDistrict)
-            );
-        } catch (error: any) {
-            this.$log.error(`Failed to find suburb: ${error.message}`);
-            return null;
-        }
-    }
-
-    async addressSearchItemSelected(item: any, isToAddress: boolean): Promise<void> {
-        try {
-            const data: any = await this.dispatchData.getGeoCodeInformation(item);
-            const returnedLocation = data.Response.View[0].Result[0].Location;
-
-            this.$log.debug(`Suburb/City = ${returnedLocation.Address.District}`);
-            this.$log.debug(`PostCode/ZIP = ${returnedLocation.Address.PostalCode}`);
-
-            const addressDetails = isToAddress ? this.job.deliveryAddress : this.job.pickupAddress;
-
-            if (this.isUsCustomer) {
-                addressDetails.addressLine1 = returnedLocation.Address.Place;
-                addressDetails.addressLine2 = returnedLocation.Address.Subunit;
-                addressDetails.addressLine3 = returnedLocation.Address.HouseNumber;
-                addressDetails.addressLine4 = returnedLocation.Address.Street;
-                addressDetails.addressLine5 = returnedLocation.Address.City;
-                addressDetails.addressLine6 = returnedLocation.Address.State;
-                addressDetails.addressLine7 = returnedLocation.Address.PostalCode;
-
-                const stateObj = getStateByAbbreviation(returnedLocation.Address.State);
-                if (stateObj) {
-                    addressDetails.stateName = stateObj.name;
-                }
-            } else {
-                // NZ address format
-                addressDetails.addressLine1 = returnedLocation.Address.Place || ""; // Business name or building name
-                addressDetails.addressLine2 = returnedLocation.Address.Subunit || ""; // Apartment or unit number
-                addressDetails.addressLine3 = returnedLocation.Address.HouseNumber || "";
-                addressDetails.addressLine4 = returnedLocation.Address.Street || "";
-                addressDetails.addressLine5 = returnedLocation.Address.District || ""; // Suburb
-                addressDetails.addressLine6 = returnedLocation.Address.City || "";
-                addressDetails.addressLine7 = returnedLocation.Address.County || ""; // Region
-                addressDetails.addressLine8 = returnedLocation.Address.PostalCode || "";
-
-                const mappedSub = await this.findSuburbByDistrict(returnedLocation.Address.District);
-                if (mappedSub) {
-                    addressDetails.our_suburb = mappedSub.id;
-                } else {
-                    addressDetails.our_suburb = null;
-                    this.toastrService.showWarningToast("Matching suburb could not be found from this address. Please select manually.");
-                }
-            }
-
-            // Coordinates
-            addressDetails.latitude = returnedLocation.DisplayPosition.Latitude;
-            addressDetails.longitude = returnedLocation.DisplayPosition.Longitude;
-        } catch (error: any) {
-            this.$log.error("Error: ", error);
         }
     }
 
@@ -237,20 +163,90 @@ export class CreateJobDialogController extends BaseController {
         if (!this.isFormValid()) return;
 
         this.isLoading = true;
+
+
+        if(!this.selectedClient || !this.selectedSpeed || !this.selectedVehicle) {
+            this.toastrService.showWarningToast("Please select a client, speed and vehicle.");
+            return;
+        }
+
+        if(!this.selectedPickupAddress || !this.selectedDeliveryAddress) {
+            this.toastrService.showWarningToast("Please select a pickup and delivery address.");
+            return;
+        }
+        
         try {
-            this.applyFormValuesToJob(job);
-            const response = await this.createJob(job);
-            const jobId = response.data;
+            job.clientId = this.selectedClient.id;
+            job.date = this.jobDate;
+            job.speedId = this.selectedSpeed.id;
+            job.vehicleId = this.selectedVehicle.id;
+            
+            const formattedPickUpAddress = await this.processSelectedAddress(this.selectedPickupAddress, false);
+            if(!formattedPickUpAddress) {
+                this.toastrService.showErrorToast("An error occurred while searching for addresses. Please try again.");
+                this.$log.error("Error: ", formattedPickUpAddress);
+                return;
+            }
+            job.pickUpAddress = formattedPickUpAddress;
+            
+            const formattedDeliveryAddress = await this.processSelectedAddress(this.selectedDeliveryAddress, true);
+            if(!formattedDeliveryAddress) {
+                this.toastrService.showErrorToast("An error occurred while searching for addresses. Please try again.");
+                this.$log.error("Error: ", formattedDeliveryAddress);
+                return; 
+            }
+            job.deliveryAddress = formattedDeliveryAddress;
+            
+            // Create a new job and get the new job id
+            const newJobId = await this.DispatchData.quickCreateJob(job);
 
             if (this.selectedCourier) {
-                await this.dispatchJobIfCourierSelected(this.selectedCourier.id, jobId);
+                await this.dispatchJobIfCourierSelected(this.selectedCourier.id, newJobId);
             }
 
-            this.$mdDialog.hide(jobId);
-        } catch (error: any) {
-            this.$log.error(`Job creation failed: ${error.message}`);
+            this.toastrService.showSuccessToast("Job created successfully");
+            this.$mdDialog.hide(newJobId);
+        } catch (error) {
+            this.$log.error(`Job creation failed`);
         } finally {
             this.isLoading = false;
+        }
+    }
+
+    private async processSelectedAddress(item: IHereMapsLocationResult, isToAddress: boolean): Promise<IAddressViewModel | undefined> {
+        try {
+            this.$log.debug("Selected address item:", item);
+
+            if (!item || !item.id) {
+                this.$log.warn("No valid address item selected");
+                return;
+            }
+
+            const detailedLocation = await this.addressLookupService.getLocationDetailsById(item.id);
+            if (!detailedLocation) {
+                this.$log.warn("No valid address item selected");
+                this.toastrService.showErrorToast("An error occurred while searching for addresses. Please try again.");
+                return;
+            }
+
+            let addressDetails = isToAddress ? this.job.deliveryAddress : this.job.pickUpAddress;
+            addressDetails = handleAddressFieldsFromLookup(detailedLocation, addressDetails, this.isUsCustomer);
+
+            this.$log.debug(`Suburb/City = ${detailedLocation.address.district}`);
+            this.$log.debug(`PostCode/ZIP = ${detailedLocation.address.postalCode}`);
+
+            if (this.isUsCustomer && detailedLocation.address.stateCode) {
+                const stateObj = getStateByAbbreviation(detailedLocation.address.stateCode);
+
+                if (stateObj) {
+                    addressDetails.addressLine6 = stateObj.name;
+                }
+            }
+
+          return addressDetails;
+        } catch
+            (error: any) {
+            this.$log.error("Error: ", error);
         }
     }
 
@@ -258,38 +254,6 @@ export class CreateJobDialogController extends BaseController {
         if (this.jobForm.$valid) return true;
         this.toastrService.showWarningToast("Please complete all the required fields.");
         return false;
-    }
-
-    private applyFormValuesToJob(job: JobCreateViewModel): void {
-        job.clientId = this.selectedClient.id;
-        job.date = this.jobDate;
-        job.speedId = this.selectedSpeed.id;
-        job.vehicleId = this.selectedVehicle.id;
-
-        // Ensure the fullAddress is up to date for both pickup and delivery addresses
-        ["pickupAddress", "deliveryAddress"].forEach(addressType => {
-            const address = job[addressType as keyof JobCreateViewModel] as IAddressViewModel;
-            address.fullAddress = [
-                address.addressLine1,
-                address.addressLine2,
-                address.addressLine3,
-                address.addressLine4,
-                address.addressLine5,
-                address.addressLine6,
-                address.addressLine7,
-                address.addressLine8
-            ].filter(line => line && line.trim() !== "").join(", ");
-        });
-    }
-
-    private async createJob(job: JobCreateViewModel): Promise<any> {
-        const url = "job/QuickCreateJob/";
-        const callData = {
-            job,
-            staffId: this.staffId,
-            despatcherName: this.despatcherName
-        };
-        return this.$http.post(url, callData, {headers: {'Content-Type': "application/json"}});
     }
 
     async dispatchJobIfCourierSelected(courierId: number, jobId: number): Promise<void> {
