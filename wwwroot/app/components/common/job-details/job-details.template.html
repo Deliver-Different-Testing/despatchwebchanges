@@ -814,8 +814,9 @@
 
                             <md-list class="md-dense" flex>
                                 <md-list-item class="md-2-line md-long-text"
-                                              ng-if="ctrl.isFieldVisible('dispatcherName') || ctrl.isEditMode">
-                                    <md-icon
+                                              ng-if="ctrl.isFieldVisible('dispatcherName') || ctrl.isEditMode"
+                                              ng-click="ctrl.showItemNotEditableToaster('Dispatcher Name')">
+                                <md-icon
                                             class="md-avatar"
                                             aria-label="dispatcher"
                                             md-font-set="material-symbols-outlined">
@@ -1298,6 +1299,29 @@
                                          md-font-set="material-symbols-outlined"
                                          ng-click="ctrl.toggleFieldVisibility('speedName')">
                                     {{ ctrl.isFieldVisible('speedName') ? 'visibility' : 'visibility_off' }}
+                                </md-icon>
+                            </md-list-item>
+                            
+                            <md-list-item
+                                    ng-if="ctrl.isFieldVisible('notifiedSpeed') || ctrl.isEditMode"
+                                    class="md-2-line md-long-text" 
+                                    ng-click="ctrl.showItemNotEditableToaster('Notified Speed')">
+                                <md-icon
+                                        class="md-avatar"
+                                        aria-label="notified speed"
+                                        md-font-set="material-symbols-outlined">
+                                    notifications_active
+                                </md-icon>
+                                <div class="md-list-item-text">
+                                    <h3>Notified Speed</h3>
+                                    <p>{{ctrl.job.notify || 'N/A'}}</p>
+                                </div>
+
+                                <md-icon class="md-secondary"
+                                         ng-if="ctrl.isEditMode"
+                                         md-font-set="material-symbols-outlined"
+                                         ng-click="ctrl.toggleFieldVisibility('notifiedSpeed')">
+                                    {{ ctrl.isFieldVisible('notifiedSpeed') ? 'visibility' : 'visibility_off' }}
                                 </md-icon>
                             </md-list-item>
 
@@ -2981,7 +3005,8 @@
                                     <md-list class="md-dense" flex>
                                         <md-list-item
                                                 ng-if="ctrl.isFieldVisible('loggedInContactName') || ctrl.isEditMode"
-                                                class="md-2-line md-long-text">
+                                                class="md-2-line md-long-text" 
+                                                ng-click="ctrl.showItemNotEditableToaster('Logged In Contact')">
                                             <md-icon
                                                     class="md-avatar"
                                                     aria-label="logged in contact"
