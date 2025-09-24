@@ -5,14 +5,16 @@ import { FileUploadType } from "../../../enums/file-upload-type.enum";
 class JobFileUploadDialogService implements angular.IServiceProvider {
     static $inject = [
         '$mdDialog',
-        '$document'
+        '$document',
+        '$log',
     ];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private $document: angular.IDocumentService,
+        private $log: angular.ILogService,
     ) {
-        console.log('JobFileUploadDialogService: Service instantiated');
+        this.$log.debug('JobFileUploadDialogService: Service instantiated');
     }
 
     $get() {
@@ -36,11 +38,12 @@ class JobFileUploadDialogService implements angular.IServiceProvider {
                 bindToController: true,
             });
 
-            console.log("Job File Upload Dialog Closed");
+            this.$log.debug("Job File Upload Dialog Closed");
         } catch (error) {
             if (!error) {
-                console.log("User closed dialog");
+                this.$log.debug("User closed dialog");
             } else {
+                this.$log.error("Error in openJobFileUploadDialog", error);
                 throw error;
             }
         }

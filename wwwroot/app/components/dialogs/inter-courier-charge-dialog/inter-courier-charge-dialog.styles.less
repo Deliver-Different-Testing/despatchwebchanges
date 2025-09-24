@@ -1,21 +1,20 @@
 @import "../../../../css/variables.less";
 
-// Component-specific variables
-@dialog-width: 500px;
-@dialog-content-padding: @spacing;
-@dialog-content-padding-sides: @spacing + 10px;
-@input-margin: @spacing - 6px;
-@autocomplete-margin: @spacing + 2px;
-@progress-margin: @spacing - 6px;
-@not-found-padding: @spacing - 6px;
-@not-found-padding-sides: @spacing + 2px;
-@error-message-font-size: @font-sm;
-@error-message-padding-top: 4px;
-@dialog-max-height: 90vh;
-@dialog-elevation: 2;
-
 // Dialog Styles
 .inter-courier-charge-dialog {
+  @dialog-width: 500px;
+  @dialog-content-padding: @spacing;
+  @dialog-content-padding-sides: @spacing + 10px;
+  @input-margin: @spacing - 6px;
+  @autocomplete-margin: @spacing + 2px;
+  @progress-margin: @spacing - 6px;
+  @not-found-padding: @spacing - 6px;
+  @not-found-padding-sides: @spacing + 2px;
+  @error-message-font-size: @font-sm;
+  @error-message-padding-top: 4px;
+  @dialog-max-height: 90vh;
+  @dialog-elevation: 2;
+
   min-width: @dialog-width;
   border-radius: @dialog-border-radius;
 
@@ -79,15 +78,14 @@
     color: @primary-blue; 
     font-weight: @weight-semibold; 
   }
-}
 
-// Global overrides for this dialog
-.md-dialog-container {
-  .inter-courier-charge-dialog {
-    border-radius: @dialog-border-radius; 
+  .md-dialog-container {
+    .inter-courier-charge-dialog {
+      border-radius: @dialog-border-radius;
 
-    .md-dialog-content {
-      max-height: @dialog-max-height;
+      .md-dialog-content {
+        max-height: @dialog-max-height;
+      }
     }
   }
 }
