@@ -1,6 +1,6 @@
 import "./flight-agent-confirmation-dialog.layout.less";
 import BaseController from "../../base-controller";
-import {FlightSegmentViewModel, IFlightViewModel} from "../../Nationwide/nationwide.interfaces";
+import {IFlightSegment, IFlightViewModel} from "../../Nationwide/nationwide.interfaces";
 import {ISuggestion} from "../../../interfaces/job.interface";
 import getDangerousGoodsClassName from "../../../functions/getDangerousGoodsClassName";
 import {FlightAgentConfirmationDialogResult} from "../../../interfaces/dialog-result.interfaces";
@@ -184,7 +184,7 @@ class FlightAgentConformationDialogController extends BaseController {
         await this.calculateCargoProcessingTimes(lastFlight);
     }
 
-    private async calculateCargoProcessingTimes(lastFlight: FlightSegmentViewModel): Promise<void> {
+    private async calculateCargoProcessingTimes(lastFlight: IFlightSegment): Promise<void> {
         if (!lastFlight.arrivalAirportId) {
             this.toastrService.showWarningToast('No arrival airport ID found for cargo processing calculation');
             console.warn('No arrival airport ID found for cargo processing calculation');

@@ -1,4 +1,4 @@
-import { IFlightViewModel, FlightSegmentViewModel } from "../../Nationwide/nationwide.interfaces";
+import { IFlightViewModel, IFlightSegment } from "../../Nationwide/nationwide.interfaces";
 import "./flight-details-dialog.styles.less";
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
@@ -14,7 +14,7 @@ class FlightDetailsDialogController extends BaseController {
     error: string = '';
     timeZone: string = TimeZone;
     selectedTabIndex: number = 0;
-    currentSegment: FlightSegmentViewModel;
+    currentSegment: IFlightSegment;
     isDisplayingOverview: boolean = true;
 
     constructor(
@@ -97,7 +97,7 @@ class FlightDetailsDialogController extends BaseController {
         return 'N/A';
     }
 
-    getConnectionTime(firstSegment: FlightSegmentViewModel, secondSegment: FlightSegmentViewModel): string {
+    getConnectionTime(firstSegment: IFlightSegment, secondSegment: IFlightSegment): string {
         if (!firstSegment || !secondSegment) return '';
 
         // Calculate time difference in minutes

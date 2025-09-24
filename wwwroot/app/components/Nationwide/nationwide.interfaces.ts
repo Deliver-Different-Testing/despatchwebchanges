@@ -23,10 +23,10 @@ export interface IFlightViewModel {
     elapsedTime: number;
     score: number;
     connectionId: string;
-    flightSegments: FlightSegmentViewModel[];
+    flightSegments: IFlightSegment[];
 }
 
-export interface FlightSegmentViewModel {
+export interface IFlightSegment {
     segmentOrder: number;
     carrierFsCode: string;
     flightNumber: string;
@@ -73,7 +73,7 @@ export interface AssignFlightToJobRequest {
     toAirportId?: number;
     flightNumber: string;
     departureDate: Date | string;
-    flightSegments: FlightSegmentViewModel[];
+    flightSegments: IFlightSegment[];
     packageReadyTime?: Date | string;
     packageDeliverByTime?: Date | string;
     packageDeliveryNotes?: string;

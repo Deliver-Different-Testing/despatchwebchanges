@@ -3,7 +3,7 @@ import {LateEventType} from "../enums/late-event-type.enum";
 import {DaysOfWeek} from "../enums/days-of-week.enum";
 import {Frequency} from "../enums/frequency.enum";
 import {HolidayDeliveryOptions} from "../enums/holiday-delivery-options.enum";
-import {FlightSegmentViewModel } from "../components/Nationwide/nationwide.interfaces";
+import {IFlightSegment } from "../components/Nationwide/nationwide.interfaces";
 import {AirportViewModel} from "../components/dialogs/flight-details-dialog/flight-details-dialog.interfaces";
 
 export interface IJob {
@@ -187,7 +187,7 @@ export interface IAssignedFlight {
     expectedArrival?: Date;
     arrivalTimeZone: string;
     notes: string;
-    flightSegments?: FlightSegmentViewModel[];
+    flightSegments?: IFlightSegment[];
 }
 
 export interface IPalletInfo {

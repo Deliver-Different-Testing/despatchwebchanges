@@ -1,119 +1,439 @@
 @import "../../../../css/variables.less";
 
+// Pod Photo Viewer Dialog Styles
 .pod-photo-viewer-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.8);
-  z-index: 50;
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: @spacing * 2;
+  animation: fadeIn 0.2s ease-in-out;
 }
 
-.pod-photo-viewer-container {
-  position: relative;
-  width: 100%;
-  max-width: 800px;
-  margin: 0 16px;
+.pod-photo-viewer-dialog {
+  background: white;
+  border-radius: @dialog-border-radius;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+  0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 900px;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease-out;
+  overflow: hidden;
+}
 
-  .close-button {
-    position: absolute;
-    top: -48px;
-    right: 0;
-    color: white;
+// Header Section
+.dialog-header {
+  background: linear-gradient(135deg, @primary-blue 0%, darken(@primary-blue, 10%) 100%);
+  color: @text-light;
+  padding: @spacing * 1.5;
+  border-radius: @dialog-border-radius @dialog-border-radius 0 0;
+
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .header-title {
+    display: flex;
+    align-items: center;
+    gap: @spacing * 0.75;
+  }
+
+  .header-icon {
+    color: @text-light;
+    font-size: 24px;
+    opacity: 0.9;
+  }
+
+  .dialog-title {
+    margin: 0;
+    font-size: @font-xl;
+    font-weight: @weight-medium;
+    color: @text-light;
+    letter-spacing: -0.02em;
+  }
+
+  .photo-counter {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: @font-sm;
+    font-weight: @weight-medium;
+    letter-spacing: 0.02em;
+  }
+
+  .dialog-close-btn {
+    color: @text-light;
     background: transparent;
     border: none;
     cursor: pointer;
-    z-index: 2;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
 
     md-icon {
-      color: white;
-      font-size: 24px;
+      color: @text-light;
+      font-size: 20px;
     }
   }
+}
 
-  .photo-container {
-    position: relative;
+// Content Section
+.dialog-content {
+  flex: 1;
+  overflow: auto;
+  background: @main-background-color;
+  padding: @spacing * 2;
+  min-height: 400px;
+  max-height: 60vh;
+}
+
+.media-container {
+  position: relative;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
+  0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  min-height: 350px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .pod-media-image {
+    max-width: 100%;
+    max-height: 55vh;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+  }
+
+  .pdf-viewer-container {
     width: 100%;
+    height: 55vh;
 
-    .pod-image {
+    .pod-pdf-viewer {
       width: 100%;
-      height: auto;
-      border-radius: 4px;
+      height: 100%;
     }
+  }
+}
 
-    .nav-button {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      background-color: rgba(0, 0, 0, 0.5);
-      color: white;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+// Navigation Controls
+.navigation-controls {
+  .nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    color: @text-dark;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
 
-      &:hover {
-        background-color: rgba(0, 0, 0, 0.75);
-      }
+    &:hover:not(:disabled) {
+      background: @primary-blue;
+      border-color: @primary-blue;
+      transform: translateY(-50%) scale(1.1);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+      0 4px 6px -2px rgba(0, 0, 0, 0.05);
 
       md-icon {
-        color: white;
-        font-size: 24px;
+        color: @text-light;
       }
     }
 
-    .prev-button {
-      left: 16px;
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
     }
 
-    .next-button {
-      right: 16px;
+    md-icon {
+      font-size: 24px;
+      color: @text-dark;
+      transition: color 0.2s ease;
+    }
+
+    &.nav-btn-prev {
+      left: @spacing;
+    }
+
+    &.nav-btn-next {
+      right: @spacing;
     }
   }
+}
 
-  .indicator-dots {
+// Pagination Indicators
+.pagination-indicators {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: @spacing * 1.5;
+  gap: 8px;
+
+  .pagination-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.2);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover:not(.active) {
+      background-color: rgba(0, 0, 0, 0.4);
+      transform: scale(1.2);
+    }
+
+    &.active {
+      width: 24px;
+      border-radius: 4px;
+      background-color: @primary-blue;
+    }
+  }
+}
+
+// Loading State
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: @spacing * 4;
+  color: @text-muted;
+
+  md-progress-circular {
+    margin-bottom: @spacing;
+  }
+
+  .loading-text {
+    font-size: @font-base;
+    margin: @spacing 0 0;
+    color: @text-muted;
+  }
+}
+
+// Error State
+.pdf-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: @spacing * 4;
+  text-align: center;
+
+  .error-icon {
+    font-size: 48px;
+    color: @error-red;
+    opacity: 0.8;
+    margin-bottom: @spacing;
+  }
+
+  .error-message {
+    font-size: @font-lg;
+    color: @text-muted;
+    margin: @spacing 0 @spacing * 2;
+  }
+
+  .download-fallback-btn {
+    background: @primary-blue;
+    color: @text-light;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
     display: flex;
-    justify-content: center;
-    margin-top: 16px;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: @font-base;
+    font-weight: @weight-medium;
+    transition: all 0.2s ease;
 
-    .indicator-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background-color: rgba(255, 255, 255, 0.5);
-      margin: 0 4px;
-      padding: 0;
-      border: none;
-      cursor: pointer;
+    &:hover {
+      background: darken(@primary-blue, 10%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
 
-      &.active {
-        background-color: white;
-      }
+    md-icon {
+      font-size: 20px;
+    }
+  }
+}
+
+// Footer Section
+.dialog-footer {
+  background: white;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding: @spacing * 1.5;
+  border-radius: 0 0 @dialog-border-radius @dialog-border-radius;
+}
+
+.metadata-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: @spacing * 1.5;
+  margin-bottom: @spacing;
+
+  .metadata-item {
+    display: flex;
+    align-items: flex-start;
+    gap: @spacing * 0.75;
+
+    .metadata-icon {
+      color: @primary-blue;
+      font-size: 20px;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .metadata-content {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .metadata-label {
+      font-size: @font-xs;
+      color: @text-muted;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: @weight-medium;
+      margin-bottom: 2px;
+    }
+
+    .metadata-value {
+      font-size: @font-sm;
+      color: @text-dark;
+      font-weight: @weight-normal;
+      word-break: break-word;
+    }
+  }
+}
+
+.footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: @spacing;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+
+  .md-button {
+    background: @primary-blue;
+    color: @text-light;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: @font-sm;
+    font-weight: @weight-medium;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+
+    &:hover {
+      background: darken(@primary-blue, 10%);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    md-icon {
+      font-size: 18px;
+    }
+  }
+}
+
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .pod-photo-viewer-dialog {
+    width: 95vw;
+    max-height: 95vh;
+  }
+
+  .dialog-content {
+    padding: @spacing;
+  }
+
+  .dialog-header {
+    .header-title {
+      flex-wrap: wrap;
+    }
+
+    .dialog-title {
+      font-size: @font-lg;
     }
   }
 
-  .photo-info {
-    text-align: center;
-    margin-top: 8px;
-    color: white;
+  .metadata-grid {
+    grid-template-columns: 1fr;
+    gap: @spacing;
+  }
 
-    .timestamp {
-      font-size: 14px;
-      margin: 0;
-    }
+  .navigation-controls {
+    .nav-btn {
+      width: 40px;
+      height: 40px;
 
-    .uploader {
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.7);
-      margin: 4px 0 0;
+      &.nav-btn-prev {
+        left: 8px;
+      }
+
+      &.nav-btn-next {
+        right: 8px;
+      }
     }
   }
 }
