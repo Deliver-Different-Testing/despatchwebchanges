@@ -36,6 +36,7 @@ import VoidJobConfirmationDialogService
     from "../../dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
 import {displayLongDate} from "../../../functions/formatDates";
 import JobPhotoType from "../../../enums/job-photo-type.enum";
+import {IFlightSegment} from "../../Nationwide/nationwide.interfaces";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -394,7 +395,7 @@ class JobDetailController extends BaseController {
         return {tabIndex: -1, subJobIndex: -1};
     }
 
-    getConnectionTime(firstSegment: any, secondSegment: any): string {
+    getConnectionTime(firstSegment: IFlightSegment, secondSegment: IFlightSegment): string {
         if (!firstSegment || !secondSegment) return "";
 
         // Calculate time difference in minutes

@@ -1,86 +1,131 @@
 <div class="pod-photo-viewer-overlay" ng-if="ctrl.isOpen">
-    <div class="pod-photo-viewer-container">
-        <button
-                ng-click="ctrl.closeViewer()"
-                class="close-button md-icon-button">
-            <md-icon md-font-set="material-symbols-outlined">close</md-icon>
-        </button>
+    <div class="pod-photo-viewer-dialog">
+        <!-- Header Section -->
+        <div class="dialog-header">
+            <div class="header-content">
+                <div class="header-title">
+                    <md-icon class="header-icon" md-font-set="material-symbols-outlined">
+                        {{ctrl.isPdfFile(ctrl.photos[ctrl.currentIndex]) ? 'picture_as_pdf' : 'image'}}
+                    </md-icon>
+                    <h2 class="dialog-title">
+                        {{ctrl.isPdfFile(ctrl.photos[ctrl.currentIndex]) ? 'POD Document' : 'POD Photo'}}
+                    </h2>
+                    <span class="photo-counter" ng-if="ctrl.photos.length > 1">
+                        {{ctrl.currentIndex + 1}} / {{ctrl.photos.length}}
+                    </span>
+                </div>
+                <button class="dialog-close-btn md-icon-button"
+                        ng-click="ctrl.closeViewer()"
+                        aria-label="Close viewer">
+                    <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+                </button>
+            </div>
+        </div>
 
-        <div class="photo-container">
-            <!-- Show a regular image if it's not a PDF -->
-            <img
-                    ng-if="!ctrl.isPdfFile(ctrl.photos[ctrl.currentIndex])"
-                    ng-src="{{'data:image/png;base64,' + ctrl.photos[ctrl.currentIndex].url}}"
-                    alt="POD {{ctrl.currentIndex + 1}}"
-                    class="pod-image"
-            />
+        <!-- Content Section -->
+        <div class="dialog-content">
+            <div class="media-container">
+                <!-- Image Display -->
+                <img ng-if="!ctrl.isPdfFile(ctrl.photos[ctrl.currentIndex])"
+                     ng-src="{{'data:image/png;base64,' + ctrl.photos[ctrl.currentIndex].url}}"
+                     alt="Proof of Delivery {{ctrl.currentIndex + 1}}"
+                     class="pod-media-image" />
 
-            <!-- Show PDF using angular-pdfjs-viewer directive -->
-            <div ng-if="ctrl.isPdfFile(ctrl.photos[ctrl.currentIndex]) && ctrl.showPdfViewer" class="pdf-container">
-                <pdfjs-viewer
-                        data="ctrl.pdfData"
-                        download="true"
-                        print="true"
-                        open-file="false"
-                        on-init="ctrl.onPdfInit()"
-                        on-page-load="ctrl.onPdfPageLoad(pageNum)"
-                        class="pod-pdf-viewer">
-                </pdfjs-viewer>
+                <!-- PDF Display -->
+                <div ng-if="ctrl.isPdfFile(ctrl.photos[ctrl.currentIndex]) && ctrl.showPdfViewer"
+                     class="pdf-viewer-container">
+                    <pdfjs-viewer
+                            data="ctrl.pdfData"
+                            download="true"
+                            print="true"
+                            open-file="false"
+                            on-init="ctrl.onPdfInit()"
+                            on-page-load="ctrl.onPdfPageLoad(pageNum)"
+                            class="pod-pdf-viewer">
+                    </pdfjs-viewer>
+                </div>
 
-                <!-- Fallback message if PDF fails to load -->
-                <div ng-if="!ctrl.pdfData && !ctrl.pdfSrc" class="pdf-fallback-message">
-                    <p>Unable to display PDF.</p>
-                    <button ng-click="ctrl.downloadPdf(ctrl.photos[ctrl.currentIndex])" class="download-btn">
+                <!-- PDF Fallback -->
+                <div ng-if="ctrl.isPdfFile(ctrl.photos[ctrl.currentIndex]) && !ctrl.pdfData && !ctrl.pdfSrc"
+                     class="pdf-error-state">
+                    <md-icon class="error-icon" md-font-set="material-symbols-outlined">error_outline</md-icon>
+                    <p class="error-message">Unable to display PDF document</p>
+                    <button class="md-raised-button download-fallback-btn"
+                            ng-click="ctrl.downloadPdf(ctrl.photos[ctrl.currentIndex])">
                         <md-icon md-font-set="material-symbols-outlined">download</md-icon>
-                        Download PDF
+                        <span>Download PDF</span>
+                    </button>
+                </div>
+
+                <!-- Loading State -->
+                <div ng-if="ctrl.isPdfFile(ctrl.photos[ctrl.currentIndex]) && !ctrl.showPdfViewer"
+                     class="loading-state">
+                    <md-progress-circular md-mode="indeterminate" md-diameter="48"></md-progress-circular>
+                    <p class="loading-text">Loading document...</p>
+                </div>
+
+                <!-- Navigation Controls -->
+                <div class="navigation-controls" ng-if="ctrl.photos.length > 1">
+                    <button class="nav-btn nav-btn-prev md-icon-button"
+                            ng-click="ctrl.prevPhoto()"
+                            ng-disabled="ctrl.currentIndex === 0"
+                            aria-label="Previous photo">
+                        <md-icon md-font-set="material-symbols-outlined">navigate_before</md-icon>
+                    </button>
+
+                    <button class="nav-btn nav-btn-next md-icon-button"
+                            ng-click="ctrl.nextPhoto()"
+                            ng-disabled="ctrl.currentIndex === ctrl.photos.length - 1"
+                            aria-label="Next photo">
+                        <md-icon md-font-set="material-symbols-outlined">navigate_next</md-icon>
                     </button>
                 </div>
             </div>
 
-            <!-- Loading indicator for PDF -->
-            <div ng-if="ctrl.isPdfFile(ctrl.photos[ctrl.currentIndex]) && !ctrl.showPdfViewer" class="pdf-loading">
-                <md-progress-circular md-mode="indeterminate"></md-progress-circular>
-                <p>Loading PDF...</p>
+            <!-- Pagination Indicators -->
+            <div class="pagination-indicators" ng-if="ctrl.photos.length > 1">
+                <button ng-repeat="photo in ctrl.photos track by $index"
+                        class="pagination-dot"
+                        ng-class="{'active': ctrl.currentIndex === $index}"
+                        ng-click="ctrl.setPhotoIndex($index)"
+                        aria-label="Go to photo {{$index + 1}}">
+                </button>
             </div>
-
-            <!-- Navigation buttons -->
-            <button
-                    ng-click="ctrl.prevPhoto()"
-                    ng-show="ctrl.photos.length > 1"
-                    class="nav-button prev-button md-icon-button">
-                <md-icon md-font-set="material-symbols-outlined">chevron_left</md-icon>
-            </button>
-
-            <button
-                    ng-click="ctrl.nextPhoto()"
-                    ng-show="ctrl.photos.length > 1"
-                    class="nav-button next-button md-icon-button">
-                <md-icon md-font-set="material-symbols-outlined">chevron_right</md-icon>
-            </button>
         </div>
 
-        <!-- Indicator dots -->
-        <div class="indicator-dots" ng-show="ctrl.photos.length > 1">
-            <button
-                    ng-repeat="photo in ctrl.photos track by $index"
-                    ng-click="ctrl.setPhotoIndex($index)"
-                    class="indicator-dot"
-                    ng-class="{'active': ctrl.currentIndex === $index}"
-            ></button>
-        </div>
+        <!-- Footer Section -->
+        <div class="dialog-footer">
+            <div class="metadata-grid">
+                <div class="metadata-item">
+                    <md-icon class="metadata-icon" md-font-set="material-symbols-outlined">schedule</md-icon>
+                    <div class="metadata-content">
+                        <span class="metadata-label">Delivered</span>
+                        <span class="metadata-value">
+                            {{ctrl.photos[ctrl.currentIndex].timestamp | momentFormat:'MM/DD/YYYY HH:mm'}} 
+                            ({{ctrl.timeZone | timezoneShort}})
+                        </span>
+                    </div>
+                </div>
 
-        <!-- Photo/PDF info -->
-        <div class="photo-info">
-            <p class="timestamp">{{::ctrl.photos[ctrl.currentIndex].timestamp | momentFormat:'MM/DD/YYYY HH:mm'}} ({{::ctrl.timeZone | timezoneShort}})</p>
-            <p class="uploader">Delivered by {{::ctrl.photos[ctrl.currentIndex].uploadedBy}}</p>
-            <p class="coordinates" ng-if="ctrl.photos[ctrl.currentIndex].coordinates">
-                Location: {{::ctrl.photos[ctrl.currentIndex].coordinates.lat}},
-                {{::ctrl.photos[ctrl.currentIndex].coordinates.lng}}
-            </p>
-            <p class="file-type" ng-if="ctrl.isPdfFile(ctrl.photos[ctrl.currentIndex])">
-                <md-icon md-font-set="material-symbols-outlined">picture_as_pdf</md-icon>
-                PDF Document
-            </p>
+                <div class="metadata-item">
+                    <md-icon class="metadata-icon" md-font-set="material-symbols-outlined">person</md-icon>
+                    <div class="metadata-content">
+                        <span class="metadata-label">Delivered by</span>
+                        <span class="metadata-value">{{ctrl.photos[ctrl.currentIndex].uploadedBy}}</span>
+                    </div>
+                </div>
+
+                <div class="metadata-item" ng-if="ctrl.photos[ctrl.currentIndex].coordinates">
+                    <md-icon class="metadata-icon" md-font-set="material-symbols-outlined">location_on</md-icon>
+                    <div class="metadata-content">
+                        <span class="metadata-label">Location</span>
+                        <span class="metadata-value">
+                            {{ctrl.photos[ctrl.currentIndex].coordinates.lat | number:6}}, 
+                            {{ctrl.photos[ctrl.currentIndex].coordinates.lng | number:6}}
+                        </span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

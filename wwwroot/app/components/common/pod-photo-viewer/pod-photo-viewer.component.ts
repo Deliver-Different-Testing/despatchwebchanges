@@ -1,14 +1,14 @@
-import {PodPhoto} from "./pod-photo-viewer.interfaces";
 import "./pod-photo-viewer.styles.less";
+import {PodPhoto} from "./pod-photo-viewer.interfaces";
 import BaseController from "../../base-controller";
-import {IComponentOptions} from "angular";
 
 class PODPhotoViewerController extends BaseController {
     static $inject = [
         '$timeout',
+        '$interval',
         '$log',
     ];
-    
+
     photos: PodPhoto[] = [];
     timeZone?: string;
     isOpen: boolean = false;
@@ -21,9 +21,12 @@ class PODPhotoViewerController extends BaseController {
     pdfSrc: string = '';
     showPdfViewer: boolean = false;
 
-    constructor(private $timeout: angular.ITimeoutService,
-                private $log: angular.ILogService) {
+    constructor(
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
+        private $log: angular.ILogService) {
         super();
+        this.initServices($timeout, $interval);
     }
 
     $onInit() {
@@ -48,7 +51,7 @@ class PODPhotoViewerController extends BaseController {
 
     closeViewer() {
         this.showPdfViewer = false;
-        this.pdfData = null;
+        this.pdfData = null; 
         this.pdfSrc = '';
         if (this.onClose) {
             this.onClose();
@@ -105,11 +108,10 @@ class PODPhotoViewerController extends BaseController {
             this.pdfData = bytes;
 
             // Create blob URL as fallback
-            const blob = new Blob([bytes], { type: 'application/pdf' });
+            const blob = new Blob([bytes], {type: 'application/pdf'});
             this.pdfSrc = URL.createObjectURL(blob);
 
-            // Use $timeout to ensure DOM is updated
-            this.$timeout(() => {
+            this.registerTimeout(() => {
                 this.showPdfViewer = true;
             }, 100);
 
@@ -117,7 +119,7 @@ class PODPhotoViewerController extends BaseController {
             this.$log.error('Error loading PDF data:', error);
             // Fallback to data URL
             this.pdfSrc = `data:application/pdf;base64,${photo.url}`;
-            this.$timeout(() => {
+            this.registerTimeout(() => {
                 this.showPdfViewer = true;
             }, 100);
         }
@@ -144,7 +146,7 @@ class PODPhotoViewerController extends BaseController {
     }
 }
 
-export const PodPhotoViewerComponent: IComponentOptions = {
+export const PodPhotoViewerComponent: angular.IComponentOptions = {
     template: require("./pod-photo-viewer.template.html"),
     bindings: {
         photos: '<',
