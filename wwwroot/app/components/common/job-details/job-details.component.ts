@@ -467,6 +467,10 @@ class JobDetailController extends BaseController {
 
         return photosData.map((photoData: string, index: number) => {
             try {
+                // Determine if this is a PDF based on the data URL prefix or other indicators
+                const isPdf = photoData.startsWith('data:application/pdf') ||
+                    photoData.includes('JVBERi0'); // PDF magic number in base64
+
                 const podPhoto: PodPhoto = {
                     url: photoData,
                     timestamp: this.job?.completedTime
@@ -481,6 +485,10 @@ class JobDetailController extends BaseController {
                             ? (this.job?.deliveryAddress?.longitude ?? 0)
                             : (this.job?.pickupAddress?.longitude ?? 0),
                     },
+                    // Add the missing optional fields
+                    contentType: isPdf ? 'application/pdf' : 'image/png',
+                    fileName: `${photoType.toLowerCase()}_photo_${index + 1}.${isPdf ? 'pdf' : 'png'}`,
+                    s3Key: undefined // Set to undefined since we don't have this data
                 };
 
                 return podPhoto;
@@ -488,9 +496,8 @@ class JobDetailController extends BaseController {
                 this.$log.error(`Error processing ${photoType} photo ${index}:`, error);
                 return null;
             }
-        });
+        }).filter((photo: null) => photo !== null); // Filter out any null values from errors
     }
-    
     private initializeJobData(): void {
         if (!this.job) return;
 

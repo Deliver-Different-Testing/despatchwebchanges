@@ -11,6 +11,10 @@ import JobsListComponent from "../common/job-list/job-list.component";
 import JobHighlightService from "../common/job-list/job-highlight.service";
 import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
 import {CreateJobDialogController} from "../dialogs/create-job-dialog/create-job-dialog.controller";
+import InterCourierChargeDialogService
+    from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
+import InterCourierChargeDialogController
+    from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.controller";
 
 const jobSearchModule = angular.module('uDispatch.jobSearch', [
     'ngMap',
@@ -35,7 +39,8 @@ jobSearchModule
 
 jobSearchModule
     .controller("AdditionalServicesDialogController", AdditionalServicesDialogController)
-    .controller("CreateJobDialogController", CreateJobDialogController);
+    .controller("CreateJobDialogController", CreateJobDialogController)
+    .controller("InterCourierChargeDialog", InterCourierChargeDialogController);
 
 // Services
 jobSearchModule
@@ -44,6 +49,7 @@ jobSearchModule
     .service("dispatchJobService", DispatchExecutorService)
     .service("jobContextMenuService", JobContextMenuService)
     .service("jobHighlightService", JobHighlightService)
-    .service("createJobDialogService", CreateJobDialogService);
+    .service("createJobDialogService", CreateJobDialogService)
+    .service("interCourierChargeDialogService", InterCourierChargeDialogService);
 
 export default jobSearchModule;

@@ -25,6 +25,8 @@ import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dial
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import IScanDetailResult from "./interfaces/IScanDetailResult";
+import InterCourierChargeDialogService
+    from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
 
 class JobSearchController extends BaseController {
     static $inject = [
@@ -46,6 +48,7 @@ class JobSearchController extends BaseController {
         "createJobDialogService",
         "additionalServicesDialogService",
         "jobFileUploadDialogService",
+        'interCourierChargeDialogService'
     ];
     
     private static ContactIdKey: string = `layoutsCS-${ContactID}`
@@ -69,7 +72,6 @@ class JobSearchController extends BaseController {
     showInput: any;
     inputWidth: any;
     scanPromise?: Promise<IScanDetailResult[]>;
-    options: any;
     boxes: any;
 
     jobListType = JobListType.JobSearchMainList;
@@ -127,7 +129,8 @@ class JobSearchController extends BaseController {
         private messagingDialogService: MessagingDialogService,
         private createJobDialogService: CreateJobDialogService,
         private additionalServicesDialogService: AdditionalServicesDialogService,
-        private jobFileUploadDialogService: JobFileUploadDialogService
+        private jobFileUploadDialogService: JobFileUploadDialogService,
+        private interCourierChargeDialogService: InterCourierChargeDialogService
     ) {
         super();
 
@@ -169,48 +172,6 @@ class JobSearchController extends BaseController {
 
         this.showInput = {};
         this.inputWidth = {};
-        
-        this.options = {
-            "detail": {
-                "size": [{
-                    "id": 1, "label": "Bike"
-                }, {
-                    "id": 2, "label": "Car"
-                }, {
-                    "id": 3, "label": "Van"
-                }, {
-                    "id": 4, "label": "Truck"
-                }, {
-                    "id": 5, "label": "Scooter"
-                }], "tracking": [{
-                    "id": 1, "label": "Email"
-                }, {
-                    "id": 2, "label": "Mobile"
-                }, {
-                    "id": 3, "label": "Email & Mobile"
-                }], "DGClass": [{
-                    "id": 0, "label": "0"
-                }, {
-                    "id": 1, "label": "1"
-                }, {
-                    "id": 2, "label": "2"
-                }, {
-                    "id": 3, "label": "3"
-                }, {
-                    "id": 4, "label": "4"
-                }, {
-                    "id": 5, "label": "5"
-                }, {
-                    "id": 6, "label": "6"
-                }, {
-                    "id": 7, "label": "7"
-                }, {
-                    "id": 8, "label": "8"
-                }, {
-                    "id": 9, "label": "9"
-                }]
-            }
-        };
 
         this.boxes = {
             [JobSearchBoxes.SearchWidget]: {
@@ -308,8 +269,7 @@ class JobSearchController extends BaseController {
                 this.saveCurrentLayout()
             }
         };
-
-
+        
         this.deliveryHistoryConfig = {
             showSummaryStats: true,
             densityMode: DensityMode.Normal
@@ -626,22 +586,10 @@ class JobSearchController extends BaseController {
 
     async interCourierCharge($event: MouseEvent) {
         try {
-            await this.$mdDialog.show({
-                controller: 'InterCourierChargeDialog',
-                controllerAs: 'ctrl',
-                parent: this.$document.parent(),
-                targetEvent: $event,
-                templateUrl: "app/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.html",
-                clickOutsideToClose: false,
-                fullscreen: true,
-                locals: {
-                    staffId: ContactID,
-                },
-                bindToController: true
-            });
-
+            await this.interCourierChargeDialogService.showInterCourierCharge($event);
             this.$log.debug("Inter-courier Charge Added!");
         } catch (error) {
+            if(!error) return;
             this.$log.debug("Inter-courier Charge Canceled!");
         }
     }

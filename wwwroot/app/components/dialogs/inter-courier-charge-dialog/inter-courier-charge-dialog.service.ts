@@ -1,8 +1,7 @@
-import {IDocumentService, IServiceProvider, material} from "angular";
 import InterCourierChargeDialogController from "./inter-courier-charge-dialog.controller";
 import ToastrService from "../../../services/toastr.service";
 
-class InterCourierChargeDialogService implements IServiceProvider {
+class InterCourierChargeDialogService implements angular.IServiceProvider {
     static $inject = [
         '$mdDialog',
         '$log',
@@ -11,9 +10,9 @@ class InterCourierChargeDialogService implements IServiceProvider {
     ];
 
     constructor(
-        private $mdDialog: material.IDialogService,
+        private $mdDialog: angular.material.IDialogService,
         private $log: angular.ILogService,
-        private $document: IDocumentService,
+        private $document: angular.IDocumentService,
         private toastrService: ToastrService,
     ) {
         this.$log.debug('InterCourierChargeDialogService: Service instantiated');
@@ -38,8 +37,8 @@ class InterCourierChargeDialogService implements IServiceProvider {
 
             this.$log.debug("Inter-courier Charge Added!");
             this.toastrService.showSuccessToast("Inter-courier charge added successfully");
-        } catch (error: any) {
-            if (error === undefined) {
+        } catch (error) {
+            if (!error) {
                 this.$log.debug("Inter-courier Charge Canceled!");
             } else {
                 throw error;

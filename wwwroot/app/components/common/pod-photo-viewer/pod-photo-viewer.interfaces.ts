@@ -5,4 +5,7 @@ export interface PodPhoto {
     timestamp?: string;
     uploadedBy: string;
     coordinates?: Coordinates;
+    contentType?: string;
+    fileName?: string;
+    s3Key?: string;
 }
