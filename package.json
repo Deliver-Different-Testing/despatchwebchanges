@@ -13,6 +13,7 @@
     "angular-material": "^1.2.5",
     "angular-material-data-table": "^0.10.10",
     "angular-messages": "^1.8.2",
+    "angular-pdfjs-viewer": "^2.0.1",
     "angular-resizable": "^1.2.0",
     "angular-sanitize": "^1.8.2",
     "angular-ui-bootstrap": "^2.5.6",

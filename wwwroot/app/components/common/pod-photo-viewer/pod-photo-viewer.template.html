@@ -6,9 +6,8 @@
             <md-icon md-font-set="material-symbols-outlined">close</md-icon>
         </button>
 
-        <!-- Replace this section starting at line 8 -->
         <div class="photo-container">
-            <!-- Show an image if it's an image type -->
+            <!-- Show a regular image if it's not a PDF -->
             <img
                     ng-if="!ctrl.isPdfFile(ctrl.photos[ctrl.currentIndex])"
                     ng-src="{{'data:image/png;base64,' + ctrl.photos[ctrl.currentIndex].url}}"
@@ -16,29 +15,52 @@
                     class="pod-image"
             />
 
-            <!-- Show PDF embed if it's a PDF -->
-            <embed
-                    ng-if="ctrl.isPdfFile(ctrl.photos[ctrl.currentIndex])"
-                    type="application/pdf"
-                    ng-src="{{'data:application/pdf;base64,' + ctrl.photos[ctrl.currentIndex].url}}"
-                    style="width: 100%; height: 90vh;"
-                    class="pod-pdf"
-            />
+            <!-- Show PDF using angular-pdfjs-viewer directive -->
+            <div ng-if="ctrl.isPdfFile(ctrl.photos[ctrl.currentIndex]) && ctrl.showPdfViewer" class="pdf-container">
+                <pdfjs-viewer
+                        data="ctrl.pdfData"
+                        download="true"
+                        print="true"
+                        open-file="false"
+                        on-init="ctrl.onPdfInit()"
+                        on-page-load="ctrl.onPdfPageLoad(pageNum)"
+                        class="pod-pdf-viewer">
+                </pdfjs-viewer>
 
+                <!-- Fallback message if PDF fails to load -->
+                <div ng-if="!ctrl.pdfData && !ctrl.pdfSrc" class="pdf-fallback-message">
+                    <p>Unable to display PDF.</p>
+                    <button ng-click="ctrl.downloadPdf(ctrl.photos[ctrl.currentIndex])" class="download-btn">
+                        <md-icon md-font-set="material-symbols-outlined">download</md-icon>
+                        Download PDF
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading indicator for PDF -->
+            <div ng-if="ctrl.isPdfFile(ctrl.photos[ctrl.currentIndex]) && !ctrl.showPdfViewer" class="pdf-loading">
+                <md-progress-circular md-mode="indeterminate"></md-progress-circular>
+                <p>Loading PDF...</p>
+            </div>
+
+            <!-- Navigation buttons -->
             <button
                     ng-click="ctrl.prevPhoto()"
+                    ng-show="ctrl.photos.length > 1"
                     class="nav-button prev-button md-icon-button">
                 <md-icon md-font-set="material-symbols-outlined">chevron_left</md-icon>
             </button>
 
             <button
                     ng-click="ctrl.nextPhoto()"
+                    ng-show="ctrl.photos.length > 1"
                     class="nav-button next-button md-icon-button">
                 <md-icon md-font-set="material-symbols-outlined">chevron_right</md-icon>
             </button>
         </div>
 
-        <div class="indicator-dots">
+        <!-- Indicator dots -->
+        <div class="indicator-dots" ng-show="ctrl.photos.length > 1">
             <button
                     ng-repeat="photo in ctrl.photos track by $index"
                     ng-click="ctrl.setPhotoIndex($index)"
@@ -47,12 +69,17 @@
             ></button>
         </div>
 
+        <!-- Photo/PDF info -->
         <div class="photo-info">
             <p class="timestamp">{{::ctrl.photos[ctrl.currentIndex].timestamp | momentFormat:'MM/DD/YYYY HH:mm'}} ({{::ctrl.timeZone | timezoneShort}})</p>
             <p class="uploader">Delivered by {{::ctrl.photos[ctrl.currentIndex].uploadedBy}}</p>
             <p class="coordinates" ng-if="ctrl.photos[ctrl.currentIndex].coordinates">
                 Location: {{::ctrl.photos[ctrl.currentIndex].coordinates.lat}},
                 {{::ctrl.photos[ctrl.currentIndex].coordinates.lng}}
+            </p>
+            <p class="file-type" ng-if="ctrl.isPdfFile(ctrl.photos[ctrl.currentIndex])">
+                <md-icon md-font-set="material-symbols-outlined">picture_as_pdf</md-icon>
+                PDF Document
             </p>
         </div>
     </div>
