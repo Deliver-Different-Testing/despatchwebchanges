@@ -185,6 +185,7 @@ class JobDetailController extends BaseController {
 
             // Job Details section fields
             speedName: true,
+            notifiedSpeed: true,
             jobTypeDescription: true,
             sizeText: true,
             refA: true,
@@ -2186,6 +2187,10 @@ class JobDetailController extends BaseController {
         }
 
         return false;
+    }
+    
+    showItemNotEditableToaster(item: string): void {
+        this.toastrService.showInfoToast(`${item} is not editable`);
     }
 }
 
