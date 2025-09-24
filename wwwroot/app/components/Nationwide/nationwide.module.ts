@@ -11,10 +11,6 @@ import FlightAgentConformationDialogController
 import JobsListComponent from "../common/job-list/job-list.component";
 import TasksService from "../../services/tasks.service";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
-import InterCourierChargeDialogService
-    from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
-import InterCourierChargeDialogController
-    from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.controller";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
 import {TaskItemComponent} from "../common/task-item-component/task-item.component";
 import {
@@ -57,7 +53,6 @@ nationwideModule
     .service("flightAgentConfirmationDialogService", FlightAgentConfirmationDialogService)
     .service("agentInfoDialogService", AgentInfoDialogService)
     .service("additionalServicesDialogService", AdditionalServicesDialogService)
-    .service("interCourierChargeDialogService", InterCourierChargeDialogService)
     .service("dispatchJobService", DispatchExecutorService)
     .service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService)
     .service("jobContextMenuService", JobContextMenuService)
@@ -69,7 +64,6 @@ nationwideModule
     .controller("flightDetailsDialogController", FlightDetailsDialogController)
     .controller("flightAgentConformationDialogController", FlightAgentConformationDialogController)
     .controller("agentInfoDialogController", AgentInfoDialogController)
-    .controller("InterCourierChargeDialog", InterCourierChargeDialogController)
     .controller("AdditionalServicesDialogController", AdditionalServicesDialogController)
     .controller("recoveryAgentManagementController", RecoveryAgentManagementController);
 

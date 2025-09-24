@@ -81,21 +81,23 @@
                             flex-gt-sm
                             md-escape-options="clear"
                             md-floating-label="From Address"
-                            md-item-text="item.text"
+                            md-item-text="item.address.label"
                             md-items="item in ctrl.addressSearchAutocomplete(ctrl.fromAddressSearchText)"
                             md-min-length="3"
                             md-no-asterisk
                             md-search-text="ctrl.fromAddressSearchText"
-                            md-selected-item-change="ctrl.addressSearchItemSelected(item, false)"
+                            md-selected-item="ctrl.selectedPickupAddress"
                             placeholder="Start typing to search clients"
                             md-autoselect
                             required>
                         <md-item-template>
                             <span md-highlight-flags="^i"
-                                  md-highlight-text="ctrl.fromAddressSearchText">{{item.text}}</span>
+                                  md-highlight-text="ctrl.fromAddressSearchText">
+                                  {{item.address.label}}
+                            </span>
                         </md-item-template>
                         <md-not-found>
-                            No couriers matching "{{ctrl.fromAddressSearchText}}" were found.
+                            No address matching "{{ctrl.fromAddressSearchText}}" was found.
                         </md-not-found>
                     </md-autocomplete>
 
@@ -103,20 +105,22 @@
                             flex-gt-sm
                             md-escape-options="clear"
                             md-floating-label="To Address"
-                            md-item-text="item.text"
+                            md-item-text="item.address.label"
                             md-items="item in ctrl.addressSearchAutocomplete(ctrl.toAddressSearchText)"
                             md-min-length="3"
                             md-no-asterisk
                             md-search-text="ctrl.toAddressSearchText"
-                            md-selected-item-change="ctrl.addressSearchItemSelected(item, true)"
+                            md-selected-item="ctrl.selectedDeliveryAddress"
                             md-autoselect
                             placeholder="Start typing to search clients" required>
                         <md-item-template>
                             <span md-highlight-flags="^i"
-                                  md-highlight-text="ctrl.toAddressSearchText">{{item.text}}</span>
+                                  md-highlight-text="ctrl.toAddressSearchText">
+                                 {{item.address.label}}
+                            </span>
                         </md-item-template>
                         <md-not-found>
-                            No addresses matching "{{ctrl.toAddressSearchText}}" were found.
+                            No address matching "{{ctrl.toAddressSearchText}}" was found.
                         </md-not-found>
                     </md-autocomplete>
                 </div>

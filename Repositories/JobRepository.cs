@@ -1868,126 +1868,276 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         );
     }
 
-    public async Task<int> QuickAddJobAsync(JobCreateViewModel request, int staffId)
+    public async Task<int> QuickAddJobAsync(JobCreateViewModel request)
     {
-        // Generate request number
-        var jobNumber = await GenerateJobNumberAsync(staffId, request.SpeedId);
-
-        // Create a new job
-        var job = new TucJob
+        try
         {
-            UcjbClientId = request.ClientId,
-            UcjbNumber = jobNumber,
+            var staffId = _infoService.GetStaffId();
+            var now = _infoService.GetCurrentTenantTime();
 
-            // Pick Up Address
-            PickupAddressLine1 = request.PickUpAddress?.AddressLine1,
-            PickupAddressLine2 = request.PickUpAddress?.AddressLine2,
-            PickupAddressLine3 = request.PickUpAddress?.AddressLine3,
-            PickupAddressLine4 = request.PickUpAddress?.AddressLine4,
-            PickupAddressLine5 = request.PickUpAddress?.AddressLine5,
-            PickupAddressLine6 = request.PickUpAddress?.AddressLine6,
-            PickupAddressLine7 = request.PickUpAddress?.AddressLine7,
-            PickupAddressLine8 = request.PickUpAddress?.AddressLine8,
+            // Generate request number
+            var jobNumber = await GenerateJobNumberAsync(staffId, request.SpeedId);
+            var staffName = await GetStaffNameAsync(staffId);
+            var speed = await GetAllServiceTucJobType();
+            
+            var jobInput = new CreateMinimalTucJobInputModel
+            {
+                JobNumber = jobNumber,
+                FromAddress = request.PickUpAddress,
+                ToAddress = request.DeliveryAddress,
+                BookedBy = staffName,
+                ClientId = request.ClientId,
+                AgentCourierId = null,
+                Speed = speed.Text,
+                SpeedId = speed.Id,
+                Amount = request.Charge,
+                Reference = request.RefA,
+                ReferenceB = request.RefB,
+                Notes = request.JobNotes,
+                TenantCurrentTime = now,
+                LoggedInContactId = staffId,
+            
+                // Additional properties specific to QuickAdd
+                FromContactName = request.FromContactName,
+                ToContactName = request.DeliverToContact,
+                PickupNotes = request.PickupNotes,
+                DeliveryNotes = request.DeliveryNotes,
+                PickUpLatitude = request.PickUpAddress?.Latitude,
+                PickUpLongitude = request.PickUpAddress?.Longitude,
+                DeliveryLatitude = request.DeliveryAddress?.Latitude,
+                DeliveryLongitude = request.DeliveryAddress?.Longitude,
+                Pickup = request.Date,
+            
+                // Set other properties as needed
+                Hold = false
+            };
 
-            // Pick Up Coordinates
-            PickUpLatitude = request.FromLat,
-            PickUpLongitude = request.FromLong,
-
-            // Delivery Address
-            DeliveryAddressLine1 = request.DeliveryAddress?.AddressLine1,
-            DeliveryAddressLine2 = request.DeliveryAddress?.AddressLine2,
-            DeliveryAddressLine3 = request.DeliveryAddress?.AddressLine3,
-            DeliveryAddressLine4 = request.DeliveryAddress?.AddressLine4,
-            DeliveryAddressLine5 = request.DeliveryAddress?.AddressLine5,
-            DeliveryAddressLine6 = request.DeliveryAddress?.AddressLine6,
-            DeliveryAddressLine7 = request.DeliveryAddress?.AddressLine7,
-            DeliveryAddressLine8 = request.DeliveryAddress?.AddressLine8,
-
-            // Delivery Coordinates
-            DeliveryLatitude = request.ToLat,
-            DeliveryLongitude = request.ToLong,
-
-            // Auckland CBD (Could be removed later)
-            UcjbCbd = IsCbdLocation(request.ToLat, request.ToLong),
-
-            // Details
-            PickupFromContact = request.FromContactName,
-            UcjbDate = request.Date,
-            UcjbVoid = request.Void,
-            UcjbVan = request.Van,
-            UcjbAttention = request.Attention,
-            DeliverToContact = request.DeliverToContact,
-            UcjbPodname = request.PodName,
-            Truck = request.Truck,
-            VanOk = request.VanOk,
-            Reprice = request.Reprice,
-            UcjbAmount = request.Charge,
-            UcjbSpeed = request.SpeedId,
-
-            // References
-            UcjbClientRefa = request.RefA,
-            UcjbClientRefb = request.RefB,
-
-            // Manual
-            RatedManually = true,
-            UcjbType = (int)JobType.AllServices,
-            UcjbLocked = true,
-            SourceId = 13,
-            UcjbStatus = 6,
-            UcjbJobDone = true,
-            ProofOfDelivery = 0,
-            WhenPodnotificationSent = _infoService.GetCurrentTenantTime(),
-            UcjbReturn = false,
-            UcjbPaged = false
-        };
-
-        await Context.AddAsync(job);
-        await Context.SaveChangesAsync();
-
-        return job.UcjbId;
+            // Call the reusable function
+            var result = await CreateMinimalTucJobAsync(jobInput);
+            if (!result.Success) throw new Exception($"Failed to create quick add job: {result.Message}");
+            return result.JobId ?? throw new Exception("Failed to get job id from quick add job");
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(QuickAddJobAsync)));
+            throw;
+        }
     }
+
+
+    private async Task<CreateMinimalTucJobResponse> CreateMinimalTucJobAsync(CreateMinimalTucJobInputModel data,
+        CancellationToken cancellationToken = default)
+    {
+        // Output parameters
+        var jobIdParam = new OutputParameter<int?>();
+        var messageParam = new OutputParameter<string>();
+        var returnValueParam = new OutputParameter<int>();
+
+        try
+        {
+            await Context.Procedures.DD_stpJob_InsertExceleratorAsync(
+          bookedBy: data.BookedBy,
+            fromAddress: data.FromAddress?.FullAddress,
+            fromStreet: data.FromAddress != null ? (data.FromAddress.AddressLine3 + " " + data.FromAddress.AddressLine4).Trim() : null,
+            fromBuilding: data.FromAddress?.AddressLine2,
+            fromCompany: data.FromAddress?.AddressLine1,
+            fromCity: data.FromAddress?.AddressLine5,
+            fromState: data.FromAddress?.AddressLine6,
+            fromZipCode: data.FromAddress != null ? SafeParseZipCode(data.FromAddress.AddressLine7) : null,
+            speed: data.Speed,
+            speedID: data.SpeedId, 
+            toAddress: data.ToAddress?.FullAddress,
+            toStreet: data.ToAddress != null ? (data.ToAddress.AddressLine3 + " " + data.ToAddress.AddressLine4).Trim() : null,
+            toBuilding: data.ToAddress?.AddressLine2,
+            toCompany: data.ToAddress?.AddressLine1,
+            toCity: data.ToAddress?.AddressLine5,
+            toState: data.ToAddress?.AddressLine6,
+            toZipCode: data.ToAddress != null ? SafeParseZipCode(data.ToAddress.AddressLine7) : null,
+            toAddressType: data.ToAddressType,
+            referenceA: data.Reference,
+            referenceB: data.ReferenceB,
+            vehicleSizeID: data.VehicleSizeId,
+            totalWeight: null,
+            totalDistance: null,
+            @return: null,
+            courierNotes: data.Notes,
+            clientNotes: data.Notes,
+            pickupNotes: data.PickupNotes,
+            deliveryNotes: data.DeliveryNotes,
+            fromContactName: data.FromContactName,
+            fromPhoneNumber: data.FromPhoneNumber,
+            toContactName: data.ToContactName,
+            toPhoneNumber: data.ToPhoneNumber,
+            type: data.Type,
+            pickUpFrom: null,
+            quantity:null,
+            leaveNotHome: null,
+            jobNotificationType: data.JobNotificationType,
+            jobNotificationEmail: data.JobNotificationEmail,
+            jobNotificationMobile: data.JobNotificationMobile,
+            toAddressCode: data.ToAddressCode,
+            fromAddressCode: data.FromAddressCode,
+            clientID: data.ClientId,
+            time: data.TenantCurrentTime,
+            hold: data.Hold,
+            fixedAmount: data.Amount,
+            jobID: jobIdParam, // OUTPUT parameter
+            agentAmount: data.AgentAmount,
+            agentCourierID: data.AgentCourierId,
+            fuelSurchargeAmount: data.FuelSurchargeAmount,
+            ourRef: data.OurRef,
+            message: messageParam, // OUTPUT parameter
+            pickUpLatitude: SafeDecimalToString(data.PickUpLatitude),
+            pickUpLongitude: SafeDecimalToString(data.PickUpLongitude),
+            deliveryLatitude: SafeDecimalToString(data.DeliveryLatitude),
+            deliveryLongitude: SafeDecimalToString(data.DeliveryLongitude),
+            pickup: null,
+            dropoff: null,
+            privateRes: data.PrivateRes,
+            truckStartTime: data.TruckStartTime,
+            truckHours: null,
+            jobNumber: data.JobNumber,
+            storageState: null,
+            deliveryState:null,
+            sourceId: (int)JobSource.DespatchWeb,
+            totalPallets: data.TotalPallets,
+            extraStopOffs:null,
+            dryIceWeight: data.DryIceWeight,
+            cubic: data.Cubic,
+            waitTime: null,
+            dGClass: data.DgClass,
+            dGDocs: data.DgClass.HasValue,
+            loggedInContactId: data.LoggedInContactId,
+            additionalServiceIds: data.AdditionalServiceIds,
+            deliverByDateTime: data.DeliverByDateTime,
+            pickupTimeZone: data.PickupTimeZone,
+            deliverByTimeZone: data.DeliverByTimeZone,
+            recurringDays: data.RecurringDays,
+            recurringFrequency: data.RecurringFrequency,
+            recurringHoliday: null,
+            recurringInitialDays: data.RecurringInitialDays,
+            tenantCurrentTime: data.TenantCurrentTime,
+            dimensionsType: null,
+            cubicList: data.CubicList,
+            weightList: data.WeightList,
+            barcodeList: data.BarcodeList,
+            returnValue: returnValueParam, // OUTPUT parameter
+            cancellationToken: cancellationToken
+        );
+
+            var success = returnValueParam.Value == 0 || jobIdParam.Value.HasValue;
+            return new CreateMinimalTucJobResponse {
+                Success = success, 
+                JobId = jobIdParam.Value,
+                Message = messageParam.Value};
+
+            // Helper method to safely convert decimal to string
+            string SafeDecimalToString(decimal? value) => value?.ToString();
+
+            int? SafeParseZipCode(string zipCode)
+            {
+                if (string.IsNullOrWhiteSpace(zipCode) || !int.TryParse(zipCode, out int result))
+                    return null;
+                return result;
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository),
+                    nameof(CreateMinimalTucJobAsync)));
+            return new CreateMinimalTucJobResponse
+            {
+                Success = false,
+                Message = ex.Message
+            };
+        }
+    }
+
+    private async Task<string> GetStaffNameAsync(int staffId) => await Context.TucStaffs
+            .Where(s => s.UcstId == staffId)
+            .Select(s => s.UcstFirstName + " " + s.UcstLastName)
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+    private async Task<Suggestion> GetAllServiceTucJobType() => await Context.TucJobTypes
+            .Where(t => t.UcjtId == (int)JobType.AllServices)
+            .Select(t => new Suggestion
+            {
+                Id = t.UcjtId,
+                Text = t.SystemName
+            })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
 
     public async Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel)
     {
         try
         {
-            var note = $"From # {viewModel.FromCourierId} To # {viewModel.ToCourierId}";
+            var staffId = _infoService.GetStaffId();
             var currentTime = _infoService.GetCurrentTenantTime();
 
-            var fromJobNumber = await GenerateJobNumberAsync(viewModel.StaffId, (int)JobType.AllServices);
-            var toJobNumber = await GenerateJobNumberAsync(viewModel.StaffId, (int)JobType.AllServices);
+            var note = $"From # {viewModel.FromCourierId} To # {viewModel.ToCourierId}";
 
-            var fromJob = CreateJobEntry(
-                fromJobNumber,
-                viewModel.FromCourierId,
-                viewModel.Amount,
-                viewModel.Reference,
-                $"To # {viewModel.ToCourierId}",
-                "ICC",
-                note,
-                currentTime,
-                viewModel.StaffId
+            var fromJobNumber = await GenerateJobNumberAsync(staffId, (int)JobType.AllServices);
+            var toJobNumber = await GenerateJobNumberAsync(staffId, (int)JobType.AllServices);
+
+            var address = new AddressViewModel("Inter-Courier Charge", string.Empty, string.Empty, string.Empty,
+                string.Empty, string.Empty, string.Empty, string.Empty);
+
+            var staffName = await GetStaffNameAsync(staffId);
+            var speed = await GetAllServiceTucJobType();
+
+            var fromJobResult = await CreateMinimalTucJobAsync(
+                new CreateMinimalTucJobInputModel
+                {
+                    JobNumber = fromJobNumber,
+                    FromAddress = address,
+                    ToAddress = address,
+                    BookedBy = staffName,
+                    ClientId = viewModel.ClientId,
+                    AgentCourierId = viewModel.FromCourierId,
+                    Speed = speed.Text,
+                    SpeedId = speed.Id,
+                    Amount = viewModel.Amount,
+                    Reference = $"To # {viewModel.ToCourierId}",
+                    ReferenceB = "ICC",
+                    Notes = note,
+                    TenantCurrentTime = currentTime,
+                    LoggedInContactId = staffId
+                }
             );
-            await Context.TucJobs.AddAsync(fromJob);
 
-            var toJob = CreateJobEntry(
-                toJobNumber,
-                viewModel.ToCourierId,
-                viewModel.Amount,
-                viewModel.Reference,
-                $"From # {viewModel.FromCourierId}",
-                string.Empty,
-                note,
-                currentTime,
-                viewModel.StaffId
+            if (!fromJobResult.Success) throw new Exception($"Failed to create FROM job: {fromJobResult.Message}");
+
+            var toJobResult = await CreateMinimalTucJobAsync(
+                new CreateMinimalTucJobInputModel
+                {
+                    JobNumber = toJobNumber,
+                    FromAddress = address,
+                    ToAddress = address,
+                    BookedBy = staffName,
+                    ClientId = viewModel.ClientId,
+                    AgentCourierId = viewModel.ToCourierId,
+                    Speed = speed.Text,
+                    SpeedId = speed.Id,
+                    Amount = viewModel.Amount,
+                    Reference = $"From # {viewModel.FromCourierId}",
+                    ReferenceB = string.Empty,
+                    Notes = note,
+                    TenantCurrentTime = currentTime,
+                    LoggedInContactId = staffId
+                }
             );
-            await Context.TucJobs.AddAsync(toJob);
 
-            await Context.SaveChangesAsync();
+            if (!toJobResult.Success) throw new Exception($"Failed to create TO job: {toJobResult.Message}");
         }
         catch (Exception e)
         {
-            Log.Error(e, "An error occured adding a new inter-courier job");
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository),
+                    nameof(AddInterCourierChargeAsync)));
             throw;
         }
     }
@@ -2046,7 +2196,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         try
         {
             var query = Context.TucJobs.Where(j =>
-                j.UcjbStatus != (int)JobStatus.Completed && j.UcjbStatus != (int)JobStatus.Rejected && j.UcjbStatus != (int)JobStatus.Void
+                j.UcjbStatus != (int)JobStatus.Completed && j.UcjbStatus != (int)JobStatus.Rejected &&
+                j.UcjbStatus != (int)JobStatus.Void
             );
 
             // Apply date range filter
@@ -2230,65 +2381,6 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         await Context.Procedures.UTL_stpPPD_ExclusiveAmountAsync(clientId, amount, outputParam);
 
         return outputParam.Value ?? 0m;
-    }
-
-    private static TucJob CreateJobEntry(
-        string jobNumber,
-        int courierId,
-        decimal amount,
-        string reference,
-        string clientRefB,
-        string ourRef,
-        string note,
-        DateTime currentTime,
-        int staffId
-    )
-    {
-        return new TucJob
-        {
-            UcjbNumber = jobNumber,
-            UcjbDate = currentTime,
-            UcjbTime = currentTime,
-            UcjbType = (int)JobType.AllServices,
-            UcjbClientId = 911,
-            UcjbContact = $"Courier {courierId}",
-            UcjbChargeType = 3,
-            UcjbAmount = amount,
-            UcjbSpeed = 1,
-            PickupAddressLine1 = note,
-            DeliveryAddressLine1 = "ToSP",
-            UcjbSize = 1,
-            UcjbQty = 1,
-            UcjbCbd = false,
-            UcjbKm = 0,
-            UcjbFlightDetails = "FD",
-            UcjbWeight = 1,
-            UcjbCourierId = courierId,
-            UcjbClientRefa = reference[..Math.Min(reference.Length, 20)],
-            UcjbClientRefb = clientRefB[..Math.Min(clientRefB.Length, 15)],
-            UcjbOurRef = ourRef[..Math.Min(ourRef.Length, 20)],
-            UcjbOpId = staffId,
-            UcjbVan = false,
-            Truck = false,
-            UcjbReturn = false,
-            UcjbVoid = false,
-            UcjbAttention = false,
-            UcjbPickUpFrom = 0,
-            UcjbPaged = true,
-            UcjbClientCode = "ZZZ!!",
-            UcjbRefJobId = 0,
-            UcjbNotes = string.Empty,
-            UcjbStatus = 6,
-            UcjbComplTime = currentTime,
-            UcjbPodname = $"Courier {courierId}",
-            UcjbJobDone = true,
-            ProofOfDelivery = 0,
-            SourceId = 13,
-            Reprice = false,
-            FuelSurchargeAmount = 0,
-            DeliverToPrivateBusiness = 0,
-            UcjbDispTime = currentTime
-        };
     }
 
     private async Task<string> GenerateJobNumberAsync(
@@ -2556,7 +2648,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     JobId = jobId,
                     Date = group.Key,
                     Title = "Status Changed",
-                    Description = string.Join("; ", group.Select(s => s.Comments).Where(c => !string.IsNullOrWhiteSpace(c))),
+                    Description = string.Join("; ",
+                        group.Select(s => s.Comments).Where(c => !string.IsNullOrWhiteSpace(c))),
                     Icon = "update",
                     Tags = group.SelectMany(s => new[]
                         {
@@ -2568,8 +2661,12 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                             s.NewAgent != null && s.OldAgent != null
                                 ? $"Reassigned from Agent {s.OldAgent.UcagName} to {s.NewAgent.UcagName}"
                                 : null,
-                            s.NewAgent != null && s.OldAgent == null ? $"Assigned to Agent {s.NewAgent.UcagName}" : null,
-                            s.NewAgent == null && s.OldAgent != null ? $"Unassigned from Agent {s.OldAgent.UcagName}" : null,
+                            s.NewAgent != null && s.OldAgent == null
+                                ? $"Assigned to Agent {s.NewAgent.UcagName}"
+                                : null,
+                            s.NewAgent == null && s.OldAgent != null
+                                ? $"Unassigned from Agent {s.OldAgent.UcagName}"
+                                : null,
                             s.FieldName != null ? $"Field {s.FieldName} updated" : null,
                             s.FieldName != null && s.OldValue != null ? $"Old value: {s.OldValue}" : null,
                             s.FieldName != null && s.NewValue != null ? $"New value: {s.NewValue}" : null,
@@ -2614,7 +2711,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                             s.NewAgentId != null && s.OldAgentId != null
                                 ? $"Reassigned from Agent ID {s.OldAgentId} to {s.NewAgentId}"
                                 : null,
-                            s.NewAgentId != null && s.OldAgentId == null ? $"Assigned to Agent ID {s.NewAgentId}" : null,
+                            s.NewAgentId != null && s.OldAgentId == null
+                                ? $"Assigned to Agent ID {s.NewAgentId}"
+                                : null,
                             s.FieldName != null ? $"Field {s.FieldName} updated" : null,
                             s.FieldName != null && s.OldValue != null ? $"Old value: {s.OldValue}" : null,
                             s.FieldName != null && s.NewValue != null ? $"New value: {s.NewValue}" : null,
@@ -2632,7 +2731,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
         return statusUpdates;
     }
-    
+
     private async Task CloseTasksByJobIdAsync(int jobId, bool closeSingleJobTasksOnly = false)
     {
         List<int> jobIds;

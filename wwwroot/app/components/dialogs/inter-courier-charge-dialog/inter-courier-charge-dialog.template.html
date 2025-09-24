@@ -64,6 +64,31 @@
                         <div ng-messages="ctrl.courierChargeForm.toCourier.$error">
                             <div ng-message="required">This field is required.</div>
                         </div>
+                    </md-autocomplete>     
+                    
+                    <!-- Client -->
+                    <md-autocomplete
+                            md-selected-item="ctrl.clientSelectedItem"
+                            md-search-text="ctrl.clientSearchText"
+                            md-items="item in ctrl.clientSearch(ctrl.clientSearchText)"
+                            md-item-text="item.text"
+                            md-min-length="2"
+                            md-floating-label="Client"
+                            md-select-on-focus
+                            md-autoselect
+                            md-autocomplete-enter-select
+                            md-select-on-match="true"
+                            placeholder="Search Client..."
+                            required>
+                        <md-item-template>
+                            <span md-highlight-text="ctrl.clientSearchText">{{item.text}}</span>
+                        </md-item-template>
+                        <md-not-found>
+                            No couriers matching "{{ctrl.clientSearchText}}" were found.
+                        </md-not-found>
+                        <div ng-messages="ctrl.courierChargeForm.client.$error">
+                            <div ng-message="required">This field is required.</div>
+                        </div>
                     </md-autocomplete>
 
                     <!-- Reference -->
@@ -82,7 +107,7 @@
                             <input id="zones" type="number" ng-model="ctrl.data.zones" min="0" required ng-change="ctrl.updateAmountByZones(ctrl.data.zones)">
                             <div ng-messages="ctrl.courierChargeForm.zones.$error">
                                 <div ng-message="required">This field is required.</div>
-                                <div ng-message="min">Value must be 0 or greater.</div>
+                                <div ng-message="min">Value must be zero or greater.</div>
                             </div>
                         </md-input-container>
 
@@ -91,7 +116,7 @@
                             <input id="amount" type="number" ng-model="ctrl.data.amount" step="0.01" min="0" required>
                             <div ng-messages="ctrl.courierChargeForm.amount.$error">
                                 <div ng-message="required">This field is required.</div>
-                                <div ng-message="min">Value must be 0 or greater.</div>
+                                <div ng-message="min">Value must be zero or greater.</div>
                             </div>
                         </md-input-container>
                     </div>
@@ -105,7 +130,7 @@
                 <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.isLoading">
                     <md-progress-circular md-mode="indeterminate" md-diameter="18"></md-progress-circular>
                 </md-icon>
-                Save
+                Add Charge
             </md-button>
         </md-dialog-actions>
     </form>

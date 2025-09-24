@@ -11,6 +11,7 @@ import {getStateByAbbreviation, getStateByName, getStates} from "../../../functi
 import AddressLookupService from "../../../services/address-lookup.service";
 import {HereMapConfig, HereMapCredentials} from "../../../interfaces/hereMapCredentials.interfaces";
 import dayjs from "dayjs";
+import handleAddressFieldsFromLookup from "../../../functions/handleAddressFieldsFromLookup";
 
 class EditAddressDialogController extends BaseController {
     static $inject = [
@@ -208,7 +209,7 @@ class EditAddressDialogController extends BaseController {
             this.$log.debug("Selected address item:", selectedItem);
 
             if (!selectedItem || !selectedItem.id) {
-                console.warn("No valid address item selected");
+                this.$log.warn("No valid address item selected");
                 return;
             }
 
@@ -221,7 +222,8 @@ class EditAddressDialogController extends BaseController {
 
             let coordinates;
             if (detailedLocation) {
-                this.handleAddressFieldsFromLookup(detailedLocation);
+               this.addressDetails = handleAddressFieldsFromLookup(detailedLocation, this.addressDetails, this.useUsFormat);
+               
                 coordinates = {
                     lat: detailedLocation.position.lat,
                     lng: detailedLocation.position.lng
@@ -234,8 +236,6 @@ class EditAddressDialogController extends BaseController {
             }
 
             // Update address details coordinates
-            this.addressDetails.latitude = coordinates.lat;
-            this.addressDetails.longitude = coordinates.lng;
             this.addressDetails.fullAddress = selectedItem.address.label;
 
             // Update map to show new location

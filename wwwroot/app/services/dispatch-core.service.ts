@@ -11,9 +11,8 @@ import {
     IJobQueryParams,
     IParcelDimensions,
     PriceBreakdown,
-    SuburbLookup,
     ISuggestion,
-    VoidJobRequest, UpdateJobPackagesRequest,
+    VoidJobRequest, UpdateJobPackagesRequest, JobCreateViewModel,
 } from "../interfaces/job.interface";
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {
@@ -30,6 +29,7 @@ import {UpdatePodDetailsRequest} from "../interfaces/requests.interfaces";
 import {JobEventData} from "../components/dialogs/add-event-dialog/add-event-dialog.interfaces";
 import {DeliveryJourneyViewModel} from "../components/common/task-history/task-history.interfaces";
 import {formatDateForApi} from "../functions/formatDates";
+import IInterCourierData from "../components/dialogs/inter-courier-charge-dialog/interfaces/IInterCourierData";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = [
@@ -411,12 +411,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         );
         return response.data;
     }
-
-    async getSuburbList(): Promise<SuburbLookup[]> {
-        const response = await this.$http.get<SuburbLookup[]>("job/SuburbList");
-        return response.data;
-    }
-
+    
     async getSpeedList(): Promise<ISuggestion[]> {
         const response = await this.$http.get<ISuggestion[]>("job/SpeedList");
         return response.data;
@@ -795,39 +790,6 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async autocompleteAddressSearch(text: string) {
-        const hereMapsConfig = await this.configService.getHereMapsConfig();
-
-        const response = await this.$http({
-            url: "https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json",
-            method: "GET",
-            params: {
-                query: text,
-                app_id: hereMapsConfig.appId,
-                app_code: hereMapsConfig.appCode,
-                country: this.isUsCustomer ? "USA" : "NZL",
-                resultType: "areas,categories,chains,streets,localities,houseNumber",
-                maxresults: 10
-            }
-        });
-
-        return response.data;
-    }
-
-    async getGeoCodeInformation(item: ISuggestion): Promise<any> {
-        const hereMapsConfig = await this.configService.getHereMapsConfig();
-
-        const response = await this.$http.get("https://geocoder.cit.api.here.com/6.2/geocode.json", {
-            params: {
-                app_id: hereMapsConfig.appId,
-                app_code: hereMapsConfig.appCode,
-                locationId: item.id
-            }
-        });
-
-        return response.data;
-    }
-
     async autocompleteSearch(
         searchTerm: string,
         url: string
@@ -1123,6 +1085,15 @@ class DispatchCoreService implements angular.IServiceProvider {
         });
         
         return response.data;
+    }
+    
+    async quickCreateJob(job: JobCreateViewModel): Promise<number> {
+       const response = await this.$http.post<number>('/job/QuickCreateJob', job);
+       return response.data;
+    }
+    
+    async createInterCourierCharge(data: IInterCourierData) {
+        await this.$http.post("job/InterCourierCharge", data);
     }
 }
 
