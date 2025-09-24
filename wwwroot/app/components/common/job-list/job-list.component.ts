@@ -486,102 +486,72 @@ class JobsListController extends BaseController {
 
     private static matchesSearch(job: IDispatchJob, query: string): boolean {
         if (!query || query.trim() === '') return true;
-
+        
         query = query.toLowerCase().trim();
 
-        // Helper for word boundary matching
-        const containsWord: (value: any, searchQuery: string) => boolean = (value: any, searchQuery: string): boolean => {
+        const safeIncludes = (value: any): boolean => {
             if (value === null || value === undefined) return false;
-            const text = String(value).toLowerCase();
-
-            // Create regex for word boundary matching
-            // This ensures we match whole words, not substrings
-            const regex = new RegExp(`\\b${searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-            return regex.test(text);
+            return String(value).toLowerCase().includes(query);
         };
 
-        const searchAddress: (address?: IAddressViewModel) => boolean = (address?: IAddressViewModel): boolean => {
+        const searchAddress = (address?: IAddressViewModel): boolean => {
             if (!address) return false;
             return (
-                containsWord(address.addressLine1, query) ||
-                containsWord(address.addressLine2, query) ||
-                containsWord(address.addressLine3, query) ||
-                containsWord(address.addressLine4, query) ||
-                containsWord(address.addressLine5, query) ||
-                containsWord(address.addressLine6, query) ||
-                containsWord(address.addressLine7, query) ||
-                containsWord(address.addressLine8, query) ||
-                containsWord(address.fullAddress, query) ||
-                containsWord(address.address, query) ||
-                containsWord(address.our_suburb, query)
+                safeIncludes(address.addressLine1) ||
+                safeIncludes(address.addressLine2) ||
+                safeIncludes(address.addressLine3) ||
+                safeIncludes(address.addressLine4) ||
+                safeIncludes(address.addressLine5) ||
+                safeIncludes(address.addressLine6) ||
+                safeIncludes(address.addressLine7) ||
+                safeIncludes(address.addressLine8) ||
+                safeIncludes(address.fullAddress)
             );
         };
 
         // Helper function to search in flight information
-        const searchFlight: (flight?: IAssignedFlight) => boolean = (flight?: IAssignedFlight): boolean => {
+        const searchFlight = (flight?: IAssignedFlight): boolean => {
             if (!flight) return false;
             return (
-                containsWord(flight.flightNumber, query) ||
-                containsWord(flight.notes, query) ||
-                containsWord(flight.departureTimeZone, query) ||
-                containsWord(flight.arrivalTimeZone, query) ||
+                safeIncludes(flight.flightNumber) ||
                 flight.flightSegments?.some(segment =>
-                    containsWord(segment.carrierFsCode, query) ||
-                    containsWord(segment.flightNumber, query) ||
-                    containsWord(segment.departureAirportFsCode, query) ||
-                    containsWord(segment.arrivalAirportFsCode, query) ||
-                    containsWord(segment.departureTerminal, query) ||
-                    containsWord(segment.arrivalTerminal, query) ||
-                    containsWord(segment.departureAirportName, query) ||
-                    containsWord(segment.departureAirportCity, query) ||
-                    containsWord(segment.departureAirportCountry, query) ||
-                    containsWord(segment.arrivalAirportName, query) ||
-                    containsWord(segment.arrivalAirportCity, query) ||
-                    containsWord(segment.arrivalAirportCountry, query) ||
-                    containsWord(segment.aircraftName, query) ||
-                    containsWord(segment.aircraftType, query) ||
-                    containsWord(segment.airlineName, query)
+                    safeIncludes(segment.carrierFsCode) ||
+                    safeIncludes(segment.flightNumber) ||
+                    safeIncludes(segment.departureAirportName) ||
+                    safeIncludes(segment.departureAirportCity) ||
+                    safeIncludes(segment.departureAirportCountry) ||
+                    safeIncludes(segment.arrivalAirportName) ||
+                    safeIncludes(segment.arrivalAirportCity) ||
+                    safeIncludes(segment.arrivalAirportCountry) ||
+                    safeIncludes(segment.airlineName)
                 ) || false
             );
         };
 
         return (
             // Core job information
-            containsWord(job.jobNo, query) ||
-            containsWord(job.client, query) ||
-            containsWord(job.status, query) ||
-            containsWord(job.statusName, query) ||
+            safeIncludes(job.jobNo) ||
+            safeIncludes(job.client) ||
+            safeIncludes(job.statusName) ||
 
             // Courier information
-            containsWord(job.courier, query) ||
-            containsWord(job.assignedCourier?.text, query) ||
-            containsWord(job.courierData?.courierName, query) ||
-            containsWord(job.courierData?.courier, query) ||
+            safeIncludes(job.assignedCourier?.text) ||
 
             // Basic addresses
-            containsWord(job.from, query) ||
-            containsWord(job.toAddress, query) ||
-            containsWord(job.pickupContact, query) ||
-            containsWord(job.deliveryContact, query) ||
+            safeIncludes(job.pickupContact) ||
+            safeIncludes(job.deliveryContact) ||
 
             // Detailed address objects
             searchAddress(job.pickupAddress) ||
             searchAddress(job.deliveryAddress) ||
 
             // Job properties
-            containsWord(job.speed, query) ||
-            containsWord(job.notify, query) ||
-            containsWord(job.vehicle?.text, query) ||
-            containsWord(job.size?.text, query) ||
-            containsWord(job.childNotes, query) ||
-            containsWord(job.conNote, query) ||
-
-            // Search text and related jobs
-            containsWord(job.searchText, query) ||
-            job.relatedJobs?.some(relatedJob => containsWord(relatedJob.text, query)) ||
+            safeIncludes(job.speed) ||
+            safeIncludes(job.notify) ||
+            safeIncludes(job.conNote) ||
 
             // Agent information
-            containsWord(job.assignedAgent?.agentName, query) ||
+            safeIncludes(job.assignedAgent?.agentName) ||
 
             // Flight information
             searchFlight(job.assignedFlight)
