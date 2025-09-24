@@ -32,6 +32,7 @@ import "angular-material-data-table";
 import "angular-hotkeys/build/hotkeys";
 import "angular-bootstrap-contextmenu/contextMenu";
 import "angular-heremaps/dist/angular-heremaps";
+import 'angular-pdfjs-viewer/dist/angular-pdfjs-viewer'
 
 // Local libs
 import "../lib/ModernizerLocalStorage";
@@ -66,6 +67,7 @@ const app = angular.module("uDispatch", [
     "hereMapTracking.components",
     "fixed.table.header",
     "ngMaterialDatePicker",
+    "pdfjsViewer",
 ]);
 
 // Make the module available globally
