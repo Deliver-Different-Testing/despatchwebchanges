@@ -17,7 +17,6 @@ import DispatchMapComponent from "../common/dispatch-map/dispatch-map.component"
 import JobContextMenuService from "../../services/job-context-menu.service";
 import JobHighlightService from "../common/job-list/job-highlight.service";
 import {CreateJobDialogController} from "../dialogs/create-job-dialog/create-job-dialog.controller";
-import app from "../../app";
 import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
 
 const homeModule = angular.module('uDispatch.home', [

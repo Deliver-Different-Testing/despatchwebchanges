@@ -37,6 +37,26 @@ class PODPhotoViewerController extends BaseController {
     setPhotoIndex(index: number) {
         this.currentIndex = index;
     }
+
+    isPdfFile(photo: PodPhoto): boolean {
+        if (!photo) return false;
+
+        if ((photo as any).contentType) {
+            return (photo as any).contentType === 'application/pdf';
+        }
+
+        // Check if filename has .pdf extension
+        if ((photo as any).fileName) {
+            return (photo as any).fileName.toLowerCase().endsWith('.pdf');
+        }
+
+        // Check if the s3Key indicates it's a PDF
+        if ((photo as any).s3Key) {
+            return (photo as any).s3Key.toLowerCase().endsWith('.pdf');
+        }
+
+        return false;
+    }
 }
 
 export const PodPhotoViewerComponent: IComponentOptions = {
