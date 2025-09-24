@@ -1879,7 +1879,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             var jobNumber = await GenerateJobNumberAsync(staffId, request.SpeedId);
             var staffName = await GetStaffNameAsync(staffId);
             var speed = await GetAllServiceTucJobType();
-            
+
             var jobInput = new CreateMinimalTucJobInputModel
             {
                 JobNumber = jobNumber,
@@ -1896,7 +1896,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 Notes = request.JobNotes,
                 TenantCurrentTime = now,
                 LoggedInContactId = staffId,
-            
+
                 // Additional properties specific to QuickAdd
                 FromContactName = request.FromContactName,
                 ToContactName = request.DeliverToContact,
@@ -1907,7 +1907,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 DeliveryLatitude = request.DeliveryAddress?.Latitude,
                 DeliveryLongitude = request.DeliveryAddress?.Longitude,
                 Pickup = request.Date,
-            
+
                 // Set other properties as needed
                 Hold = false
             };
@@ -1937,100 +1937,106 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         try
         {
             await Context.Procedures.DD_stpJob_InsertExceleratorAsync(
-          bookedBy: data.BookedBy,
-            fromAddress: data.FromAddress?.FullAddress,
-            fromStreet: data.FromAddress != null ? (data.FromAddress.AddressLine3 + " " + data.FromAddress.AddressLine4).Trim() : null,
-            fromBuilding: data.FromAddress?.AddressLine2,
-            fromCompany: data.FromAddress?.AddressLine1,
-            fromCity: data.FromAddress?.AddressLine5,
-            fromState: data.FromAddress?.AddressLine6,
-            fromZipCode: data.FromAddress != null ? SafeParseZipCode(data.FromAddress.AddressLine7) : null,
-            speed: data.Speed,
-            speedID: data.SpeedId, 
-            toAddress: data.ToAddress?.FullAddress,
-            toStreet: data.ToAddress != null ? (data.ToAddress.AddressLine3 + " " + data.ToAddress.AddressLine4).Trim() : null,
-            toBuilding: data.ToAddress?.AddressLine2,
-            toCompany: data.ToAddress?.AddressLine1,
-            toCity: data.ToAddress?.AddressLine5,
-            toState: data.ToAddress?.AddressLine6,
-            toZipCode: data.ToAddress != null ? SafeParseZipCode(data.ToAddress.AddressLine7) : null,
-            toAddressType: data.ToAddressType,
-            referenceA: data.Reference,
-            referenceB: data.ReferenceB,
-            vehicleSizeID: data.VehicleSizeId,
-            totalWeight: null,
-            totalDistance: null,
-            @return: null,
-            courierNotes: data.Notes,
-            clientNotes: data.Notes,
-            pickupNotes: data.PickupNotes,
-            deliveryNotes: data.DeliveryNotes,
-            fromContactName: data.FromContactName,
-            fromPhoneNumber: data.FromPhoneNumber,
-            toContactName: data.ToContactName,
-            toPhoneNumber: data.ToPhoneNumber,
-            type: data.Type,
-            pickUpFrom: null,
-            quantity:null,
-            leaveNotHome: null,
-            jobNotificationType: data.JobNotificationType,
-            jobNotificationEmail: data.JobNotificationEmail,
-            jobNotificationMobile: data.JobNotificationMobile,
-            toAddressCode: data.ToAddressCode,
-            fromAddressCode: data.FromAddressCode,
-            clientID: data.ClientId,
-            time: data.TenantCurrentTime,
-            hold: data.Hold,
-            fixedAmount: data.Amount,
-            jobID: jobIdParam, // OUTPUT parameter
-            agentAmount: data.AgentAmount,
-            agentCourierID: data.AgentCourierId,
-            fuelSurchargeAmount: data.FuelSurchargeAmount,
-            ourRef: data.OurRef,
-            message: messageParam, // OUTPUT parameter
-            pickUpLatitude: SafeDecimalToString(data.PickUpLatitude),
-            pickUpLongitude: SafeDecimalToString(data.PickUpLongitude),
-            deliveryLatitude: SafeDecimalToString(data.DeliveryLatitude),
-            deliveryLongitude: SafeDecimalToString(data.DeliveryLongitude),
-            pickup: null,
-            dropoff: null,
-            privateRes: data.PrivateRes,
-            truckStartTime: data.TruckStartTime,
-            truckHours: null,
-            jobNumber: data.JobNumber,
-            storageState: null,
-            deliveryState:null,
-            sourceId: (int)JobSource.DespatchWeb,
-            totalPallets: data.TotalPallets,
-            extraStopOffs:null,
-            dryIceWeight: data.DryIceWeight,
-            cubic: data.Cubic,
-            waitTime: null,
-            dGClass: data.DgClass,
-            dGDocs: data.DgClass.HasValue,
-            loggedInContactId: data.LoggedInContactId,
-            additionalServiceIds: data.AdditionalServiceIds,
-            deliverByDateTime: data.DeliverByDateTime,
-            pickupTimeZone: data.PickupTimeZone,
-            deliverByTimeZone: data.DeliverByTimeZone,
-            recurringDays: data.RecurringDays,
-            recurringFrequency: data.RecurringFrequency,
-            recurringHoliday: null,
-            recurringInitialDays: data.RecurringInitialDays,
-            tenantCurrentTime: data.TenantCurrentTime,
-            dimensionsType: null,
-            cubicList: data.CubicList,
-            weightList: data.WeightList,
-            barcodeList: data.BarcodeList,
-            returnValue: returnValueParam, // OUTPUT parameter
-            cancellationToken: cancellationToken
-        );
+                bookedBy: data.BookedBy,
+                fromAddress: data.FromAddress?.FullAddress,
+                fromStreet: data.FromAddress != null
+                    ? (data.FromAddress.AddressLine3 + " " + data.FromAddress.AddressLine4).Trim()
+                    : null,
+                fromBuilding: data.FromAddress?.AddressLine2,
+                fromCompany: data.FromAddress?.AddressLine1,
+                fromCity: data.FromAddress?.AddressLine5,
+                fromState: data.FromAddress?.AddressLine6,
+                fromZipCode: data.FromAddress != null ? SafeParseZipCode(data.FromAddress.AddressLine7) : null,
+                speed: data.Speed,
+                speedID: data.SpeedId,
+                toAddress: data.ToAddress?.FullAddress,
+                toStreet: data.ToAddress != null
+                    ? (data.ToAddress.AddressLine3 + " " + data.ToAddress.AddressLine4).Trim()
+                    : null,
+                toBuilding: data.ToAddress?.AddressLine2,
+                toCompany: data.ToAddress?.AddressLine1,
+                toCity: data.ToAddress?.AddressLine5,
+                toState: data.ToAddress?.AddressLine6,
+                toZipCode: data.ToAddress != null ? SafeParseZipCode(data.ToAddress.AddressLine7) : null,
+                toAddressType: data.ToAddressType,
+                referenceA: data.Reference,
+                referenceB: data.ReferenceB,
+                vehicleSizeID: data.VehicleSizeId,
+                totalWeight: null,
+                totalDistance: null,
+                @return: null,
+                courierNotes: data.Notes,
+                clientNotes: data.Notes,
+                pickupNotes: data.PickupNotes,
+                deliveryNotes: data.DeliveryNotes,
+                fromContactName: data.FromContactName,
+                fromPhoneNumber: data.FromPhoneNumber,
+                toContactName: data.ToContactName,
+                toPhoneNumber: data.ToPhoneNumber,
+                type: data.Type,
+                pickUpFrom: null,
+                quantity: null,
+                leaveNotHome: null,
+                jobNotificationType: data.JobNotificationType,
+                jobNotificationEmail: data.JobNotificationEmail,
+                jobNotificationMobile: data.JobNotificationMobile,
+                toAddressCode: data.ToAddressCode,
+                fromAddressCode: data.FromAddressCode,
+                clientID: data.ClientId,
+                time: data.TenantCurrentTime,
+                hold: data.Hold,
+                fixedAmount: data.Amount,
+                jobID: jobIdParam, // OUTPUT parameter
+                agentAmount: data.AgentAmount,
+                agentCourierID: data.AgentCourierId,
+                fuelSurchargeAmount: data.FuelSurchargeAmount,
+                ourRef: data.OurRef,
+                message: messageParam, // OUTPUT parameter
+                pickUpLatitude: SafeDecimalToString(data.PickUpLatitude),
+                pickUpLongitude: SafeDecimalToString(data.PickUpLongitude),
+                deliveryLatitude: SafeDecimalToString(data.DeliveryLatitude),
+                deliveryLongitude: SafeDecimalToString(data.DeliveryLongitude),
+                pickup: null,
+                dropoff: null,
+                privateRes: data.PrivateRes,
+                truckStartTime: data.TruckStartTime,
+                truckHours: null,
+                jobNumber: data.JobNumber,
+                storageState: null,
+                deliveryState: null,
+                sourceId: (int)JobSource.DespatchWeb,
+                totalPallets: data.TotalPallets,
+                extraStopOffs: null,
+                dryIceWeight: data.DryIceWeight,
+                cubic: data.Cubic,
+                waitTime: null,
+                dGClass: data.DgClass,
+                dGDocs: data.DgClass.HasValue,
+                loggedInContactId: data.LoggedInContactId,
+                additionalServiceIds: data.AdditionalServiceIds,
+                deliverByDateTime: data.DeliverByDateTime,
+                pickupTimeZone: data.PickupTimeZone,
+                deliverByTimeZone: data.DeliverByTimeZone,
+                recurringDays: data.RecurringDays,
+                recurringFrequency: data.RecurringFrequency,
+                recurringHoliday: null,
+                recurringInitialDays: data.RecurringInitialDays,
+                tenantCurrentTime: data.TenantCurrentTime,
+                dimensionsType: null,
+                cubicList: data.CubicList,
+                weightList: data.WeightList,
+                barcodeList: data.BarcodeList,
+                returnValue: returnValueParam, // OUTPUT parameter
+                cancellationToken: cancellationToken
+            );
 
             var success = returnValueParam.Value == 0 || jobIdParam.Value.HasValue;
-            return new CreateMinimalTucJobResponse {
-                Success = success, 
+            return new CreateMinimalTucJobResponse
+            {
+                Success = success,
                 JobId = jobIdParam.Value,
-                Message = messageParam.Value};
+                Message = messageParam.Value
+            };
 
             // Helper method to safely convert decimal to string
             string SafeDecimalToString(decimal? value) => value?.ToString();
@@ -2056,20 +2062,20 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     }
 
     private async Task<string> GetStaffNameAsync(int staffId) => await Context.TucStaffs
-            .Where(s => s.UcstId == staffId)
-            .Select(s => s.UcstFirstName + " " + s.UcstLastName)
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
+        .Where(s => s.UcstId == staffId)
+        .Select(s => s.UcstFirstName + " " + s.UcstLastName)
+        .AsNoTracking()
+        .FirstOrDefaultAsync();
 
     private async Task<Suggestion> GetAllServiceTucJobType() => await Context.TucJobTypes
-            .Where(t => t.UcjtId == (int)JobType.AllServices)
-            .Select(t => new Suggestion
-            {
-                Id = t.UcjtId,
-                Text = t.SystemName
-            })
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
+        .Where(t => t.UcjtId == (int)JobType.AllServices)
+        .Select(t => new Suggestion
+        {
+            Id = t.UcjtId,
+            Text = t.SystemName
+        })
+        .AsNoTracking()
+        .FirstOrDefaultAsync();
 
     public async Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel)
     {
