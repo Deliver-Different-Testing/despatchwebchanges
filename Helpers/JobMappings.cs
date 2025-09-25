@@ -251,7 +251,7 @@ public static class JobMappings
                         DepartureTimeZone = nj.UcnwJob.FromAirport.Timezone,
                         FlightNumber = nj.UcnwFlightNo,
                         Notes = nj.UcnwNotes,
-                        // First check if there are any flight segments
+                        // First, check if there are any flight segments
                         FlightSegments =
                             j.Parent.InverseParent.SelectMany(childJob =>
                                     childJob.TucJobNationwides
@@ -946,10 +946,7 @@ public static class JobMappings
         FromAirportId = j.FromAirportId,
 
         AssignedFlight = null,
-
-        // Notes
-        Notes = j.TucNotes.Any() ? j.TucNotes.Select(note => new TucNoteViewModel(note)).ToList() : null,
-
+        
         FromSuburbId = (int)j.UcbkFrom,
         ToSuburbId = (int)j.UcbkTo,
 

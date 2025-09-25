@@ -8,11 +8,13 @@ import dayjs from "dayjs";
 
 class StickyNoteController extends BaseController {
     private previousJobId?: number;
+    private previousBulkJobId?: number;
     private readonly isRecurringJob: boolean = false;
 
     notes?: IJobNote[] = [];
     filteredNotes?: IJobNote[] = [];
     jobId?: number;
+    bulkJobId?: number;
     loading: boolean = false;
     noteCategories?: INoteType[];
     selectedCategory: string = 'all';
@@ -45,6 +47,10 @@ class StickyNoteController extends BaseController {
         if (this.jobId) {
             this.loadNotes();
         }
+        
+        if(this.bulkJobId) {
+           this.loadBulkNotes();
+        }
     }
 
     $onChanges(changes: angular.IOnChangesObject): void {
@@ -66,6 +72,24 @@ class StickyNoteController extends BaseController {
                     type: typeof currentValue
                 });
             }
+        }    
+        
+        if (changes['bulkJobId']) {
+            const currentValue = changes['bulkJobId'].currentValue;
+
+            if (currentValue && typeof currentValue === 'number') {
+                this.$log.debug('StickyNoteController - Valid bulkJobId detected:', currentValue);
+
+                if (this.previousBulkJobId !== currentValue) {
+                    this.previousBulkJobId = currentValue;
+                    this.loadNotes();
+                }
+            } else {
+                this.$log.debug('StickyNoteController - No valid bulkJobId change detected', {
+                    currentValue,
+                    type: typeof currentValue
+                });
+            }
         }
     }
 
@@ -74,6 +98,24 @@ class StickyNoteController extends BaseController {
 
         this.loading = true;
         this.noteService.getJobNotes(this.jobId, this.isRecurringJob)
+            .then(notes => {
+                this.notes = notes;
+                this.applyFilter();
+            })
+            .catch(error => {
+                this.$log.error('Error loading notes:', error);
+                this.toastrService.showErrorToast('Failed to load notes');
+            })
+            .finally(() => {
+                this.loading = false;
+            });
+    }
+
+    loadBulkNotes(): void {
+        if (!this.bulkJobId) return;
+
+        this.loading = true;
+        this.noteService.getBulkJobNotes(this.bulkJobId)
             .then(notes => {
                 this.notes = notes;
                 this.applyFilter();
@@ -126,8 +168,8 @@ class StickyNoteController extends BaseController {
             isImportant: false,
             jobId: !this.isRecurringJob ? this.jobId : undefined,
             jobBookingId: this.isRecurringJob ? this.jobId : undefined,
+            bulkJobId: this.bulkJobId != null ? this.bulkJobId : undefined,
             createdDate: dayjs().toDate(),
-            createdBy: ContactID
         };
 
         try {
@@ -233,6 +275,7 @@ const StickyNoteComponent: angular.IComponentOptions = {
     controllerAs: 'ctrl',
     bindings: {
         jobId: '<',
+        bulkJobId: '<',
         isRecurringJob: "<"
     }
 };

@@ -246,4 +246,6 @@ public partial class TblBulkJob
     public virtual TblBulkRegion Region { get; set; }
 
     public virtual TucJobType SpeedNavigation { get; set; }
+
+    public virtual ICollection<TblBulkJobNote> TblBulkJobNotes { get; set; } = new List<TblBulkJobNote>();
 }

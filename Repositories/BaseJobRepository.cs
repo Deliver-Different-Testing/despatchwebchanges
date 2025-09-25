@@ -230,6 +230,18 @@ public class BaseJobRepository(
         }
     }
 
+    public async Task<List<TucNoteViewModel>> GetBulkJobNotesByBulkJobIdAsync(int bulkJobId)
+    {
+        return await Context.TblBulkJobNotes
+            .Include(n => n.NoteType)
+            .Include(n => n.CreatedByNavigation)
+            .Include(n => n.UpdatedByNavigation)
+            .Where(n => n.BulkJobId == bulkJobId)
+            .AsNoTracking()
+            .Select(n => new TucNoteViewModel(n))
+            .ToListAsync();
+    }
+
     public async Task<List<TucNoteViewModel>> GetNotesByJobIdAsync(int jobId)
     {
         ArgumentNullException.ThrowIfNull(jobId);

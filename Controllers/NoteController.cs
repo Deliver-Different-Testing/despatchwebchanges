@@ -31,6 +31,23 @@ public class NoteController(
         }
     }
 
+    public async Task<IActionResult> GetBulkJobNotes(int bulkJobId)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(bulkJobId);
+
+            var bulkJobNotes = await jobRepository.GetBulkJobNotesByBulkJobIdAsync(bulkJobId);
+            return Json(bulkJobNotes);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(GetBulkJobNotes)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
     public async Task<IActionResult> GetRecurringNotes(int jobId)
     {
         try

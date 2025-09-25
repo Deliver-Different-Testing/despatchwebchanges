@@ -388,6 +388,7 @@ export interface IJobNote {
     noteTypeId: number;
     noteTypeName?: string;
     jobId?: number;
+    bulkJobId?: number;
     jobNumber?: string;
     jobBookingId?: number;
     noteText: string;
