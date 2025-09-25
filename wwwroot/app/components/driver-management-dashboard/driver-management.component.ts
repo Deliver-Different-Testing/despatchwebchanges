@@ -662,23 +662,40 @@ class DriverManagementController extends BaseController {
         this.exportToCSV(data, 'Driver_Earnings');
     }
     
+    async createNewSchedule($event: MouseEvent) {
+        const today = dayjs();
+
+        const newSchedule: IAfterHoursCourierSchedule = {
+            afterHoursScheduleId: 0,
+            courierId: 0,
+            courierName: '',
+            courierCode: '',
+            day: today.format('dddd'),
+            startTime: today.hour(17).minute(0).second(0).toDate(),
+            endTime: today.hour(21).minute(0).second(0).toDate(),
+            duration: '4 hours'
+        };
+
+        await this.openEditAfterHoursDialog($event, newSchedule);
+    }
+
     async openEditAfterHoursDialog($event: MouseEvent, afterHoursSchedule: IAfterHoursCourierSchedule) {
         try {
             const result = await this.editAfterhoursDialogService.openEditAfterhoursDialog($event, afterHoursSchedule);
-            if(!result) {
+            if (!result) {
                 this.$log.debug('Edit after hours is empty');
                 return;
             }
-            
+
             await this.driverManagementService.updateAfterHoursCourierSchedule(result);
             this.toastrService.showSuccessToast('After hours schedule updated successfully. Refreshing schedules..');
             await this.loadAfterHoursSchedule();
         } catch (error) {
-            if(!error) {
+            if (!error) {
                 this.$log.debug('Edit after hours is cancelled');
                 return;
             }
-            
+
             this.$log.error('Error editing after hours schedule:', error);
             this.toastrService.showErrorToast('Failed to edit after hours schedule');
         }

@@ -3,12 +3,14 @@ import ToastrService from "../../../services/toastr.service";
 import BaseController from "../../base-controller";
 import {IJobFile, IUploadProgressFile} from "./job-file-upload-dialog.interfaces";
 import dayjs from "dayjs";
+import DispatchCoreService from "../../../services/dispatch-core.service";
 
 class JobFileUploadController extends BaseController {
     static $inject = [
         "$http",
         "$log",
         "$mdDialog",
+        "DispatchData",
         "$window",
         "toastrService",
         "Upload",
@@ -35,6 +37,7 @@ class JobFileUploadController extends BaseController {
         private $http: angular.IHttpService,
         private $log: angular.ILogService,
         private $mdDialog: angular.material.IDialogService,
+        private DispatchData: DispatchCoreService,
         private $window: angular.IWindowService,
         private toastrService: ToastrService,
         public $upload: angular.angularFileUpload.IUploadService,
@@ -240,63 +243,8 @@ class JobFileUploadController extends BaseController {
 
     async downloadFile(file: { fileName: string; s3Key: string; isPOD?: boolean }): Promise<void> {
         try {
-            // Determine the endpoint based on whether this is a POD file
-            const isPodFile = file.isPOD !== undefined
-                ? file.isPOD
-                : (file.s3Key.includes('/DeliveryPhotos/') || file.s3Key.includes('/DeliverySignatures/'));
-
-            const endpoint = isPodFile ? "/job/DownloadDeliveryFile" : "/job/DownloadFile";
-
-            const response: angular.IHttpResponse<Blob> = await this.$http.get<Blob>(endpoint, {
-                params: {
-                    jobId: this.jobId,
-                    key: file.s3Key
-                },
-                responseType: "blob",
-                headers: {
-                    'Accept': "application/octet-stream"
-                }
-            });
-
-            // Log response for debugging
-            this.$log.debug("Response received:", response);
-            this.$log.debug("All headers:", response.headers());
-
-            // Get content type - use application/octet-stream as generic fallback
-            const contentType = response.headers("content-type") || "application/octet-stream";
-
-            // Parse content disposition header
-            const contentDisposition = response.headers("content-disposition");
-            let filename = file.fileName;
-
-            if (contentDisposition) {
-                // Parse the filename from content-disposition
-                const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-                const matches = filenameRegex.exec(contentDisposition);
-                if (matches != null && matches[1]) {
-                    // Remove quotes if present
-                    filename = matches[1].replace(/['"]/g, "");
-                }
-            }
-
-            // Create and trigger download
-            const blob = new Blob([response.data], {type: contentType});
-            const url = this.$window.URL.createObjectURL(blob);
-
-            const link = angular.element("<a></a>")[0] as HTMLAnchorElement;
-            link.href = url;
-            link.download = filename;
-            link.style.display = "none";
-
-            // Use angular.element for DOM manipulation
-            document.body.append(link);
-            link.click();
-
-            // Cleanup
-            this.registerTimeout(() => {
-                angular.element(link).remove();
-                this.$window.URL.revokeObjectURL(url);
-            }, 100);
+            await this.DispatchData.downloadFile(file.s3Key, file.fileName);
+            this.toastrService.showSuccessToast("File downloaded successfully");
         } catch (error) {
             this.$log.error("Download failed:", error);
             this.toastrService.showErrorToast("Failed to download file. Please try again.");

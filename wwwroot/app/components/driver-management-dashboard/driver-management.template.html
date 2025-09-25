@@ -720,6 +720,10 @@
                             </div>
 
                             <div class="filter-actions">
+                                <md-button class="md-raised" ng-click="ctrl.createNewSchedule($event)">
+                                    <md-icon md-font-set="material-symbols-outlined">calendar_add_on</md-icon>
+                                    Add Schedule
+                                </md-button>
                                 <md-button class="md-raised" ng-click="ctrl.refreshAfterHoursSchedule()">
                                     <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
                                     Refresh
@@ -746,10 +750,12 @@
                                 <th md-column md-order-by="startTime">Start Time</th>
                                 <th md-column md-order-by="endTime">End Time</th>
                                 <th md-column>Duration</th>
+                                <th md-column>Actions</th>
                             </tr>
                             </thead>
                             <tbody md-body>
-                            <tr md-row ng-repeat="assignment in ctrl.afterHoursSchedule track by assignment.afterHoursScheduleId"
+                            <tr md-row
+                                ng-repeat="assignment in ctrl.afterHoursSchedule track by assignment.afterHoursScheduleId"
                                 class="table-row">
                                 <td md-cell>{{assignment.courierName}}</td>
                                 <td md-cell>{{assignment.courierCode}}</td>
@@ -765,6 +771,11 @@
                                 <td md-cell>
                                     <span class="duration-badge">{{assignment.duration}}</span>
                                 </td>
+                                <td md-cell>
+                                    <md-button ng-click="ctrl.openEditAfterHoursDialog($event, assignment)">
+                                        Edit
+                                    </md-button>
+                                </td>
                             </tr>
                             </tbody>
                         </table>
@@ -778,7 +789,6 @@
                             md-on-paginate="ctrl.loadAfterHoursSchedule"
                             md-page-select>
                     </md-table-pagination>
-
                 </md-card>
             </div>
         </md-tab>
