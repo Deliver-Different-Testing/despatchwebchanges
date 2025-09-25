@@ -328,6 +328,8 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\compose-email-dialog\compose-email-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\create-job-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\interfaces\ICreateJobDialogControllerScope.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-afterhours-dialog\edit-afterhours-dialog.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-afterhours-dialog\edit-afterhours-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\flight-agent-conformation-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\interfaces\ICargoStatus.ts" />

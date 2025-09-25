@@ -1,0 +1,165 @@
+﻿/* Dialog Styling */
+.edit-afterhours-dialog {
+  min-width: 600px;
+  max-width: 800px;
+  width: 90vw;
+
+  .dialog-content {
+    padding: 24px;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  /* Section Styling */
+  .section-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: #424242;
+    margin: 0 0 16px 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .section-title::before {
+    content: '';
+    width: 4px;
+    height: 16px;
+    background-color: #1976d2;
+    margin-right: 8px;
+  }
+
+  .courier-info-section {
+    margin-bottom: 24px;
+  }
+
+  .schedule-section {
+    margin-top: 24px;
+  }
+
+  /* Courier Info Grid */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+
+  .info-item {
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    border-left: 3px solid #1976d2;
+  }
+
+  .info-label {
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  .info-value {
+    font-size: 16px;
+    color: #212121;
+    font-weight: 500;
+  }
+
+  /* Time Selection Row */
+  .time-selection-row {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    margin-top: 8px;
+  }
+
+  .time-input {
+    flex: 1;
+    min-width: 150px;
+  }
+
+  .duration-display {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .duration-field {
+    background-color: #f5f5f5 !important;
+    color: #666 !important;
+    font-weight: 500;
+  }
+
+  /* Validation Styling */
+  .validation-error {
+    color: #d32f2f;
+    font-size: 12px;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+  }
+
+  .validation-error md-icon {
+    font-size: 16px;
+    height: 16px;
+    width: 16px;
+    margin-right: 4px;
+  }
+
+  .time-logic-error {
+    background-color: #ffebee;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border-left: 3px solid #d32f2f;
+    margin-top: 16px;
+    font-size: 14px;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 600px) {
+    .edit-afterhours-dialog {
+      min-width: 100vw;
+      width: 100vw;
+      height: 100vh;
+      max-width: none;
+    }
+
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .time-selection-row {
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .time-input, .duration-display {
+      min-width: unset;
+    }
+  }
+
+  /* Focus and Hover States */
+  .md-button:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+  }
+
+  .md-button.md-primary:hover {
+    background-color: #1565c0 !important;
+  }
+
+  /* Material Design Input Enhancements */
+  md-input-container.md-focused .md-input {
+    border-color: #1976d2;
+  }
+
+  md-select.md-focused .md-select-value {
+    border-color: #1976d2;
+  }
+
+  /* Divider Styling */
+  md-divider {
+    margin: 24px 0;
+    border-color: #e0e0e0;
+  }
+}

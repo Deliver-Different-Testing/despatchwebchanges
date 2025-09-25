@@ -281,6 +281,8 @@ public partial class TucCourier
 
     public virtual ICollection<TblAfterHour> TblAfterHours { get; set; } = new List<TblAfterHour>();
 
+    public virtual ICollection<TblAfterhoursCourier> TblAfterhoursCouriers { get; set; } = new List<TblAfterhoursCourier>();
+
     public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; } = new List<TblBulkJob>();
 
     public virtual ICollection<TblBulkScan> TblBulkScanCouriers { get; set; } = new List<TblBulkScan>();

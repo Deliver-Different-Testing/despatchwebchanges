@@ -63,22 +63,30 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
                     LastUpdated = c.LastModified,
                     MaxPallets = c.UccrVehicle == truckVehicleName ? c.MaxPallets : null,
                     MaxPayLoad = c.UccrVehicle == truckVehicleName ? c.MaxPayload : null,
-                    CurrentPallets = c.UccrVehicle == truckVehicleName ? c.TucJobUcjbCouriers
-                        .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
-                        .SelectMany(d => d.TucJobItemJobs)
-                        .Sum(i => i.Items) : null,
-                    CurrentWeight = c.UccrVehicle == truckVehicleName ? c.TucJobUcjbCouriers
-                        .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
-                        .SelectMany(d => d.TucJobItemJobs)
-                        .Sum(i => i.Items * i.Weight) : null,
-                    AvailablePallets = c.UccrVehicle == truckVehicleName ? c.MaxPallets - c.TucJobUcjbCouriers
-                        .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
-                        .SelectMany(d => d.TucJobItemJobs)
-                        .Sum(i => i.Items) : null,
-                    AvailablePalletCapacity = c.UccrVehicle == truckVehicleName ? c.MaxPayload - c.TucJobUcjbCouriers
-                        .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
-                        .SelectMany(d => d.TucJobItemJobs)
-                        .Sum(i => i.Items * i.Weight) : null
+                    CurrentPallets = c.UccrVehicle == truckVehicleName
+                        ? c.TucJobUcjbCouriers
+                            .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
+                            .SelectMany(d => d.TucJobItemJobs)
+                            .Sum(i => i.Items)
+                        : null,
+                    CurrentWeight = c.UccrVehicle == truckVehicleName
+                        ? c.TucJobUcjbCouriers
+                            .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
+                            .SelectMany(d => d.TucJobItemJobs)
+                            .Sum(i => i.Items * i.Weight)
+                        : null,
+                    AvailablePallets = c.UccrVehicle == truckVehicleName
+                        ? c.MaxPallets - c.TucJobUcjbCouriers
+                            .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
+                            .SelectMany(d => d.TucJobItemJobs)
+                            .Sum(i => i.Items)
+                        : null,
+                    AvailablePalletCapacity = c.UccrVehicle == truckVehicleName
+                        ? c.MaxPayload - c.TucJobUcjbCouriers
+                            .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
+                            .SelectMany(d => d.TucJobItemJobs)
+                            .Sum(i => i.Items * i.Weight)
+                        : null
                 })
                 .AsNoTracking()
                 .OrderBy(c => c.CourierCode)
@@ -1036,8 +1044,8 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         var page = Math.Max(1, request.Page);
         var pageSize = Math.Max(1, Math.Min(100, request.PageSize));
 
-        var query = Context.TblAfterHours
-            .Where(c => c.CourierId.HasValue)
+        var query = Context.TblAfterhoursCouriers
+            .Where(c => c.Courier != null)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
@@ -1046,15 +1054,13 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
 
             query = query.Where(c =>
                 EF.Functions.Like(c.Courier.UccrName, searchPattern) ||
+                EF.Functions.Like(c.Courier.Code, searchPattern) ||
                 EF.Functions.Like(c.Courier.UccrSurname, searchPattern) ||
                 EF.Functions.Like(c.Courier.VehiclePlateNnumber, searchPattern) ||
                 EF.Functions.Like(c.Courier.UccrMobile, searchPattern) ||
                 EF.Functions.Like(c.Courier.PersonalMobile, searchPattern) ||
                 EF.Functions.Like(c.Courier.UccrEmail, searchPattern) ||
-                EF.Functions.Like(c.Courier.UccrVehicleModel, searchPattern) ||
-                EF.Functions.Like(c.Courier.UccrName + " " + c.Courier.UccrSurname, searchPattern) ||
-                EF.Functions.Like(c.DayName, searchPattern) ||
-                (c.Courier.Code != null && EF.Functions.Like(c.Courier.Code, searchPattern))
+                EF.Functions.Like(c.Courier.UccrVehicleModel, searchPattern)
             );
         }
 
@@ -1062,7 +1068,11 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         if (!string.IsNullOrWhiteSpace(request.Day)
             && !request.Day.Equals("all", StringComparison.CurrentCultureIgnoreCase))
         {
-            query = query.Where(c => EF.Functions.Like(c.DayName, request.Day));
+            if (Enum.TryParse<DayOfWeek>(request.Day, true, out var dayOfWeek))
+            {
+                var dayValue = (int)dayOfWeek;
+                query = query.Where(c => c.WeekDay == dayValue);
+            }
         }
 
         var totalCount = await query.CountAsync();
@@ -1079,9 +1089,12 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
                     .ThenByDescending(c => c.Courier.UccrSurname)
                 : query.OrderBy(c => c.Courier.UccrName)
                     .ThenBy(c => c.Courier.UccrSurname),
+            "code" => request.SortDescending
+                ? query.OrderByDescending(c => c.Courier.Code)
+                : query.OrderBy(c => c.Courier.Code),
             "day" => request.SortDescending
-                ? query.OrderByDescending(c => c.DayName)
-                : query.OrderBy(c => c.DayName),
+                ? query.OrderByDescending(c => c.WeekDay)
+                : query.OrderBy(c => c.WeekDay),
             "startTime" => request.SortDescending
                 ? query.OrderByDescending(c => c.StartTime)
                 : query.OrderBy(c => c.StartTime),
@@ -1100,9 +1113,17 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             .Take(pageSize)
             .Select(c => new AfterHoursCourierScheduleViewModel
             {
-                CourierId = c.CourierId.Value,
+                AfterHoursScheduleId = c.Id,
+                CourierId = c.CourierId,
                 CourierName = c.Courier.UccrName + " " + c.Courier.UccrSurname,
-                Day = c.DayName,
+                CourierCode = c.Courier.Code,
+                Day = c.WeekDay == 0 ? "Sunday" :
+                    c.WeekDay == 1 ? "Monday" :
+                    c.WeekDay == 2 ? "Tuesday" :
+                    c.WeekDay == 3 ? "Wednesday" :
+                    c.WeekDay == 4 ? "Thursday" :
+                    c.WeekDay == 5 ? "Friday" :
+                    c.WeekDay == 6 ? "Saturday" : "Unknown",
                 StartTime = c.StartTime,
                 EndTime = c.EndTime,
                 Duration = CalculateDuration(c.StartTime, c.EndTime)
@@ -1431,5 +1452,20 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
 
         await Context.TucManualMessages.AddRangeAsync(manualMessages);
         await Context.SaveChangesAsync();
+    }
+
+    public async Task UpdateAfterHoursCourierScheduleAsync(AfterHoursCourierScheduleViewModel request)
+    {
+        var dayOfWeek = (DayOfWeek)Enum.Parse(typeof(DayOfWeek), request.Day);
+
+        var rowsAffected = await Context.TblAfterhoursCouriers
+            .Where(c => c.Id == request.AfterHoursScheduleId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(e => e.StartTime, request.StartTime)
+                .SetProperty(e => e.EndTime, request.EndTime)
+                .SetProperty(e => e.WeekDay, (int)dayOfWeek)
+            );
+        
+        if (rowsAffected == 0) throw new Exception("After hours schedule not found");
     }
 }

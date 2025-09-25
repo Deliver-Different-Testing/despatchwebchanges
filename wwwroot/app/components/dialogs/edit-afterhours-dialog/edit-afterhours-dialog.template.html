@@ -1,0 +1,144 @@
+﻿<md-dialog aria-label="Edit Afterhours Schedule" class="edit-afterhours-dialog">
+    <form name="afterhoursForm" ng-submit="ctrl.save()" novalidate>
+
+        <!-- Dialog Header -->
+        <md-toolbar class="md-hue-1">
+            <div class="md-toolbar-tools">
+                <md-icon class="popup-icon" md-font-set="material-symbols-outlined">mail</md-icon>
+                <h2>Edit Afterhours Schedule</h2>
+                <span flex></span>
+                <md-button class="md-icon-button close-dialog-button" ng-click="ctrl.cancel()">
+                    <md-tooltip md-direction="bottom">Cancel</md-tooltip>
+                    <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
+                        close
+                    </md-icon>
+                </md-button>
+            </div>
+        </md-toolbar>
+
+        <!-- Dialog Content -->
+        <md-dialog-content class="dialog-content">
+            <div class="md-dialog-content">
+
+                <!-- Courier Information (Read-only) -->
+                <div class="courier-info-section">
+                    <h3 class="section-title">Courier Information</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Courier Name</span>
+                            <span class="info-value">{{ctrl.afterHourScheduleItem.courierName}}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Courier Code</span>
+                            <span class="info-value">{{ctrl.afterHourScheduleItem.courierCode}}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <md-divider></md-divider>
+
+                <!-- Schedule Details (Editable) -->
+                <div class="schedule-section">
+                    <h3 class="section-title">Schedule Details</h3>
+
+                    <!-- Day Selection -->
+                    <md-input-container class="md-block" md-no-float>
+                        <label>Day of Week</label>
+                        <md-select
+                                id="daySelect"
+                                ng-model="ctrl.editableSchedule.day"
+                                ng-change="ctrl.onDayChange()"
+                                required
+                                aria-label="Select day of week">
+                            <md-option ng-repeat="day in ctrl.daysOfWeek"
+                                       ng-value="day">
+                                {{day}}
+                            </md-option>
+                        </md-select>
+                        <div ng-messages="afterhoursForm.day.$error" ng-if="afterhoursForm.day.$dirty">
+                            <div ng-message="required" class="validation-error">Day selection is required</div>
+                        </div>
+                        <div ng-if="ctrl.validationErrors.day" class="validation-error">
+                            {{ctrl.validationErrors.day}}
+                        </div>
+                    </md-input-container>
+
+                    <!-- Time Selection Row -->
+                    <div class="time-selection-row">
+
+                        <!-- Start Time -->
+                        <md-input-container class="md-block time-input" md-no-float>
+                            <label>Start Time</label>
+                            <input type="time"
+                                   ng-model="ctrl.editableSchedule.startTime"
+                                   ng-change="ctrl.onTimeChange()"
+                                   required
+                                   aria-label="Start time"
+                                   name="startTime">
+                            <div ng-messages="afterhoursForm.startTime.$error" ng-if="afterhoursForm.startTime.$dirty">
+                                <div ng-message="required" class="validation-error">Start time is required</div>
+                            </div>
+                            <div ng-if="ctrl.validationErrors.startTime" class="validation-error">
+                                {{ctrl.validationErrors.startTime}}
+                            </div>
+                        </md-input-container>
+
+                        <!-- End Time -->
+                        <md-input-container class="md-block time-input" md-no-float>
+                            <label>End Time</label>
+                            <input type="time"
+                                   ng-model="ctrl.editableSchedule.endTime"
+                                   ng-change="ctrl.onTimeChange()"
+                                   required
+                                   aria-label="End time"
+                                   name="endTime">
+                            <div ng-messages="afterhoursForm.endTime.$error" ng-if="afterhoursForm.endTime.$dirty">
+                                <div ng-message="required" class="validation-error">End time is required</div>
+                            </div>
+                            <div ng-if="ctrl.validationErrors.endTime" class="validation-error">
+                                {{ctrl.validationErrors.endTime}}
+                            </div>
+                        </md-input-container>
+
+                        <!-- Duration (Read-only) -->
+                        <md-input-container class="md-block duration-display" md-no-float>
+                            <label>Duration</label>
+                            <input type="text"
+                                   ng-model="ctrl.editableSchedule.duration"
+                                   readonly
+                                   aria-label="Schedule duration"
+                                   class="duration-field">
+                        </md-input-container>
+
+                    </div>
+
+                    <!-- Time Logic Validation Error -->
+                    <div ng-if="ctrl.validationErrors.timeLogic" class="validation-error time-logic-error">
+                        <md-icon>error</md-icon>
+                        {{ctrl.validationErrors.timeLogic}}
+                    </div>
+
+                </div>
+
+            </div>
+        </md-dialog-content>
+
+        <!-- Dialog Actions -->
+        <md-dialog-actions layout="row">
+            <span flex></span>
+            <md-button type="button"
+                       ng-click="ctrl.cancel()"
+                       class="md-raised"
+                       aria-label="Cancel">
+                Cancel
+            </md-button>
+            <md-button type="submit"
+                       ng-disabled="!ctrl.isFormValid"
+                       class="md-raised md-primary"
+                       aria-label="Save changes">
+                Save Schedule
+            </md-button>
+        </md-dialog-actions>
+
+    </form>
+</md-dialog>

@@ -24,6 +24,7 @@ import {
     ITodayActiveDriverPaginated
 } from "../../interfaces/paginated-response.interface";
 import {ComposeEmailDialogService} from "../dialogs/compose-email-dialog/compose-email-dialog.service";
+import EditAfterhoursDialogService from "../dialogs/edit-afterhours-dialog/edit-afterhours-dialog.service";
 
 class DriverManagementController extends BaseController {
     static $inject = [
@@ -37,7 +38,8 @@ class DriverManagementController extends BaseController {
         "APP_CONFIG",
         "driverManagementService",
         "toastrService",
-        "composeEmailDialogService"
+        "composeEmailDialogService",
+        "editAfterhoursDialogService",
     ];
 
     private static LastActiveTabKey = `lastActiveTabDriverManagement_${ContactID}`;
@@ -159,7 +161,8 @@ class DriverManagementController extends BaseController {
         appConfig: IAppConfig,
         private driverManagementService: DriverManagementService,
         private toastrService: ToastrService,
-        private composeEmailDialogService: ComposeEmailDialogService
+        private composeEmailDialogService: ComposeEmailDialogService,
+        private editAfterhoursDialogService: EditAfterhoursDialogService
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
@@ -657,6 +660,28 @@ class DriverManagementController extends BaseController {
         }));
 
         this.exportToCSV(data, 'Driver_Earnings');
+    }
+    
+    async openEditAfterHoursDialog($event: MouseEvent, afterHoursSchedule: IAfterHoursCourierSchedule) {
+        try {
+            const result = await this.editAfterhoursDialogService.openEditAfterhoursDialog($event, afterHoursSchedule);
+            if(!result) {
+                this.$log.debug('Edit after hours is empty');
+                return;
+            }
+            
+            await this.driverManagementService.updateAfterHoursCourierSchedule(result);
+            this.toastrService.showSuccessToast('After hours schedule updated successfully. Refreshing schedules..');
+            await this.loadAfterHoursSchedule();
+        } catch (error) {
+            if(!error) {
+                this.$log.debug('Edit after hours is cancelled');
+                return;
+            }
+            
+            this.$log.error('Error editing after hours schedule:', error);
+            this.toastrService.showErrorToast('Failed to edit after hours schedule');
+        }
     }
 }
 

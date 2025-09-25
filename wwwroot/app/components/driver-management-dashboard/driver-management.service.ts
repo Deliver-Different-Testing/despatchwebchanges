@@ -146,6 +146,17 @@ class DriverManagementService implements angular.IServiceProvider {
             this.$log.error("Error sending group email:", error);
             throw error;
         }
+    } 
+    
+    async updateAfterHoursCourierSchedule(afterHoursSchedule: IAfterHoursCourierSchedule): Promise<void> {
+        this.$log.debug("Updating after hours courier schedule");
+        
+        try {
+            await this.$http.post("courier/UpdateAfterHoursCourierSchedule", afterHoursSchedule);
+        } catch (error) {
+            this.$log.error("Error updating after hours schedule:", error);
+            throw error;
+        }
     }
 
     async getTodayActiveDriversAsync(requestData: IPaginatedRequest,

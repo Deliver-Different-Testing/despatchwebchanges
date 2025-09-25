@@ -215,7 +215,7 @@ public class CourierController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> GetCourierComplianceList([FromBody] CourierComplianceFilterRequest  request)
+    public async Task<IActionResult> GetCourierComplianceList([FromBody] CourierComplianceFilterRequest request)
     {
         try
         {
@@ -299,12 +299,12 @@ public class CourierController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> GetAllCourierEmails(PaginatedRequest request)
+    public async Task<IActionResult> GetAllCourierEmails([FromBody] PaginatedRequest request)
     {
         try
         {
             ArgumentNullException.ThrowIfNull(request);
-            var courierEmails = await courierRepository.GetCourierEmailsAsync(request); 
+            var courierEmails = await courierRepository.GetCourierEmailsAsync(request);
             return Json(courierEmails);
         }
         catch (Exception e)
@@ -317,7 +317,7 @@ public class CourierController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> SendEmailToCouriers(GroupEmailDataViewModel request)
+    public async Task<IActionResult> SendEmailToCouriers([FromBody] GroupEmailDataViewModel request)
     {
         try
         {
@@ -330,6 +330,25 @@ public class CourierController(
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(SendEmailToCouriers),
                     nameof(GetAllCourierEmails)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> UpdateAfterHoursCourierSchedule(
+        [FromBody] AfterHoursCourierScheduleViewModel request)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            await courierRepository.UpdateAfterHoursCourierScheduleAsync(request);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(SendEmailToCouriers),
+                    nameof(UpdateAfterHoursCourierSchedule)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
