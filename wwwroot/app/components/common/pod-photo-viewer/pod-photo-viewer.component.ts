@@ -66,21 +66,23 @@ class PODPhotoViewerController extends BaseController {
     isPdfFile(photo: PodPhoto): boolean {
         if (!photo) return false;
 
-        if ((photo as any).contentType) {
-            return (photo as any).contentType === 'application/pdf';
-        }
-
         // Check if filename has .pdf extension
-        if ((photo as any).fileName) {
-            return (photo as any).fileName.toLowerCase().endsWith('.pdf');
+        if (photo.fileName) {
+            return photo.fileName.toLowerCase().endsWith('.pdf');
         }
 
         // Check if the s3Key indicates it's a PDF
-        if ((photo as any).s3Key) {
-            return (photo as any).s3Key.toLowerCase().endsWith('.pdf');
+        if (photo.s3Key) {
+            return photo.s3Key.toLowerCase().endsWith('.pdf');
         }
 
-        return false;
+        // Check if the data URL indicates it's a PDF
+        if (photo.url && photo.url.startsWith('data:application/pdf')) {
+            return true;
+        }
+
+        // Check for the PDF magic number in base64
+        return !!(photo.url && photo.url.includes('JVBERi0'));
     }
 
     private loadCurrentPhoto() {
@@ -98,8 +100,27 @@ class PODPhotoViewerController extends BaseController {
 
     private loadPdfData(photo: PodPhoto) {
         try {
+            // Handle different data formats
+            let base64Data: string;
+
+            if (photo.url.startsWith('data:application/pdf;base64,')) {
+                // Remove data URL prefix
+                base64Data = photo.url.replace('data:application/pdf;base64,', '');
+            } else if (photo.url.startsWith('data:')) {
+                // Handle other data URL formats
+                const commaIndex = photo.url.indexOf(',');
+                if (commaIndex !== -1) {
+                    base64Data = photo.url.substring(commaIndex + 1);
+                } else {
+                    base64Data = photo.url;
+                }
+            } else {
+                // Assume it's already base64
+                base64Data = photo.url;
+            }
+
             // Convert base64 to Uint8Array for better PDF.js compatibility
-            const binaryString = atob(photo.url);
+            const binaryString = atob(base64Data);
             const bytes = new Uint8Array(binaryString.length);
             for (let i = 0; i < binaryString.length; i++) {
                 bytes[i] = binaryString.charCodeAt(i);
