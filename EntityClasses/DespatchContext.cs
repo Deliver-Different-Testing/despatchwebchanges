@@ -57,6 +57,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TblBulkJob> TblBulkJobs { get; set; }
 
+    public virtual DbSet<TblBulkJobNote> TblBulkJobNotes { get; set; }
+
     public virtual DbSet<TblBulkRegion> TblBulkRegions { get; set; }
 
     public virtual DbSet<TblBulkRunSchedule> TblBulkRunSchedules { get; set; }
@@ -1318,6 +1320,41 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.Speed)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_tblBulkJob_tucJobType");
+        });
+
+        modelBuilder.Entity<TblBulkJobNote>(entity =>
+        {
+            entity.HasKey(e => e.NoteId).HasName("PK__tblBulkJ__EACE357F685011A3");
+
+            entity.ToTable("tblBulkJobNotes");
+
+            entity.Property(e => e.NoteId).HasColumnName("NoteID");
+            entity.Property(e => e.BulkJobId).HasColumnName("BulkJobID");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.NoteText).IsRequired();
+            entity.Property(e => e.NoteTypeId).HasColumnName("NoteTypeID");
+            entity.Property(e => e.ProcessedNotificationDate).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
+
+            entity.HasOne(d => d.BulkJob).WithMany(p => p.TblBulkJobNotes)
+                .HasForeignKey(d => d.BulkJobId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__tblBulkJo__BulkJ__5734971C");
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.TblBulkJobNoteCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
+                .HasConstraintName("FK__tblBulkJo__Creat__5A1103C7");
+
+            entity.HasOne(d => d.NoteType).WithMany(p => p.TblBulkJobNotes)
+                .HasForeignKey(d => d.NoteTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__tblBulkJo__NoteT__564072E3");
+
+            entity.HasOne(d => d.UpdatedByNavigation).WithMany(p => p.TblBulkJobNoteUpdatedByNavigations)
+                .HasForeignKey(d => d.UpdatedBy)
+                .HasConstraintName("FK__tblBulkJo__Updat__5B052800");
         });
 
         modelBuilder.Entity<TblBulkRegion>(entity =>

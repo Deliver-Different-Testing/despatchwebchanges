@@ -178,6 +178,7 @@ public interface IJobRepository
     Task<TucNoteViewModel> GetNoteByIdAsync(int noteId);
     Task DeleteNoteAsync(int noteId, CancellationToken cancellationToken = default);
     Task<List<NoteTypeViewModel>> GetNoteTypesAsync();
+    Task<List<TucNoteViewModel>> GetBulkJobNotesByBulkJobIdAsync(int bulkJobId);
     Task<List<TucNoteViewModel>> GetNotesByJobIdAsync(int jobId);
     Task<bool> IsJobParentAsync(int jobId);
     Task<JobLateCallDto> GetJobForLateCallAsync(int jobId);

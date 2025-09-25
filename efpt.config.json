@@ -91,6 +91,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tblBulkJobNotes]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tblBulkRegion]",
          "ObjectType": 0
       },

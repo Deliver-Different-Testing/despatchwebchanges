@@ -19,5 +19,7 @@ public partial class TucNoteType
 
     public bool IsSystemDefined { get; set; }
 
+    public virtual ICollection<TblBulkJobNote> TblBulkJobNotes { get; set; } = new List<TblBulkJobNote>();
+
     public virtual ICollection<TucNote> TucNotes { get; set; } = new List<TucNote>();
 }

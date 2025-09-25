@@ -77,6 +77,20 @@ class NoteService implements angular.IServiceProvider {
         }
     }
     
+    async getBulkJobNotes(bulkJobId: number): Promise<IJobNote[]> {
+        try {
+            const response = await this.$http.get<IJobNote[]>('note/GetBulkJobNotes', {
+                params: {
+                    bulkJobId,
+                }
+            });
+            return response.data;
+        } catch (error) {
+            this.$log.error('Error getting job notes:', error);
+            return [];
+        }
+    }
+    
     async getNoteTypes(): Promise<INoteType[]> {
         try {
             const response = await this.$http.get<INoteType[]>('note/GetNoteTypes');
