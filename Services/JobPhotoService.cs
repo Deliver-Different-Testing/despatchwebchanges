@@ -18,32 +18,30 @@ namespace DespatchWeb.Services;
 
 public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
 {
-    public async Task<List<byte[]>> GetDeliveryPhotosAsync(int jobId, int year, int month)
+    public async Task<List<object>> GetDeliveryPhotosAsync(int jobId, int year, int month)
     {
         var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
         var key = $"{jobId}-";
 
         var s3Objects = await SearchFilesByPatternAsync(bucketName, key, year, month, JobPhotoType.Delivery);
-    
-        // Add defensive check
-        if (s3Objects != null && s3Objects.Count != 0) return await GetPhotoBytesFromS3ObjectsAsync(s3Objects, bucketName);
+
+        if (s3Objects != null && s3Objects.Count != 0) 
+            return await GetPhotoBytesWithMetadataFromS3ObjectsAsync(s3Objects, bucketName);
         
-        // No data
         Log.Debug("No delivery photos found for job {JobId} in {Year}/{Month:D2}", jobId, year, month);
         return [];
     }
 
-    public async Task<List<byte[]>> GetPickupPhotosAsync(int jobId, int year, int month)
+    public async Task<List<object>>  GetPickupPhotosAsync(int jobId, int year, int month)
     {
         var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
         var key = $"{jobId}-";
 
         var s3Objects = await SearchFilesByPatternAsync(bucketName, key, year, month, JobPhotoType.Pickup);
-    
-        // Add defensive check
-        if (s3Objects != null && s3Objects.Count != 0) return await GetPhotoBytesFromS3ObjectsAsync(s3Objects, bucketName);
+
+        if (s3Objects != null && s3Objects.Count != 0) 
+            return await GetPhotoBytesWithMetadataFromS3ObjectsAsync(s3Objects, bucketName);
         
-        // No data
         Log.Debug("No pickup photos found for job {JobId} in {Year}/{Month:D2}", jobId, year, month);
         return [];
     }
@@ -167,7 +165,6 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
     }
 
-
     public async Task<bool> IsFilesAttachedToJobAsync(int jobId)
     {
         try
@@ -248,7 +245,7 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         return s3Files;
     }
 
-    private static readonly string[] AllowedTypes = { "image/jpeg", "image/png", "image/gif", "application/pdf" };
+    private static readonly string[] AllowedTypes = ["image/jpeg", "image/png", "image/gif", "application/pdf"];
     
     public async Task<AwsUploadResult> UploadJobAttachmentAsync(int jobId, IFormFile file)
     {
@@ -271,7 +268,7 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         try
         {
             var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-            var currentDate = DateTime.UtcNow; // You might want to inject a time service for this
+            var currentDate = DateTime.UtcNow;
             var timestamp = currentDate.ToString("yyyyMMddHHmmss");
             var key = $"JobAttachments/{jobId}-{timestamp}";
 
@@ -499,7 +496,6 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
 
             var response = await s3Client.ListObjectsV2Async(request);
         
-            // Fix: Add defensive null checking
             var objects = response?.S3Objects;
             if (objects is { Count: > 0 }) allResults.AddRange(objects);
         }
@@ -513,11 +509,10 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
 
         return allResults;
     }
-    
-    
-    private async Task<List<byte[]>> GetPhotoBytesFromS3ObjectsAsync(List<S3Object> s3Objects, string bucketName)
+
+    private async Task<List<object>> GetPhotoBytesWithMetadataFromS3ObjectsAsync(List<S3Object> s3Objects, string bucketName)
     {
-        var photoBytes = new List<byte[]>();
+        var photoData = new List<object>();
 
         foreach (var s3Object in s3Objects)
         {
@@ -533,18 +528,36 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
                 using var memoryStream = new MemoryStream();
                 await response.ResponseStream.CopyToAsync(memoryStream);
 
-                photoBytes.Add(memoryStream.ToArray());
+                var bytes = memoryStream.ToArray();
+                var base64Data = Convert.ToBase64String(bytes);
+                
+                // Determine content type from S3 metadata or file extension
+                var contentType = response.Headers.ContentType ?? DetermineContentTypeFromKey(s3Object.Key);
+                var fileName = ExtractFileNameFromKey(s3Object.Key);
+
+                photoData.Add(new
+                {
+                    url = base64Data,
+                    contentType,
+                    fileName,
+                    s3Key = s3Object.Key,
+                    size = s3Object.Size,
+                    uploadDate = s3Object.LastModified,
+                    podDescription = response.Metadata.Keys.Contains("pod-description") 
+                        ? response.Metadata["pod-description"] 
+                        : null
+                });
             }
             catch (Exception e)
             {
                 Log.Error(e, "{Message}",
                     ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
-                        nameof(GetPhotoBytesFromS3ObjectsAsync)));
+                        nameof(GetPhotoBytesWithMetadataFromS3ObjectsAsync)));
                 // Continue processing other photos even if one fails
             }
         }
 
-        return photoBytes;
+        return photoData;
     }
 
     private static string[] GetFoldersByPhotoType(JobPhotoType photoType)
@@ -573,5 +586,26 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
             ".pdf" => "application/pdf",
             _ => "application/octet-stream" // Default content type
         };
+    }
+
+    private static string DetermineContentTypeFromKey(string key)
+    {
+        var extension = Path.GetExtension(key).ToLower();
+        return extension switch
+        {
+            ".pdf" => "application/pdf",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            _ => "application/octet-stream"
+        };
+    }
+
+    private static string ExtractFileNameFromKey(string key)
+    {
+        var parts = key.Split('/');
+        if (parts.Length <= 0) return Path.GetFileName(key);
+        var lastPart = parts[^1];
+        return lastPart;
     }
 }

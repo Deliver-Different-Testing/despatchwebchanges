@@ -10,8 +10,8 @@ namespace DespatchWeb.Interfaces;
 public interface IJobPhotoService
 {
     // Photo/Signature methods
-    Task<List<byte[]>> GetDeliveryPhotosAsync(int jobId, int year, int month);
-    Task<List<byte[]>> GetPickupPhotosAsync(int jobId, int year, int month);
+    Task<List<object>> GetDeliveryPhotosAsync(int jobId, int year, int month);
+    Task<List<object>> GetPickupPhotosAsync(int jobId, int year, int month);
 
     Task<AwsUploadResult> UploadJobPhotoOrSignatureAsync(int jobId, IFormFile file, JobPhotoType photoType,
         bool isPod = true, string podDescription = null);

@@ -2187,7 +2187,13 @@ class JobDetailController extends BaseController {
             return photo.s3Key.toLowerCase().endsWith('.pdf');
         }
 
-        return false;
+        // Check if the data URL indicates it's a PDF
+        if (photo.url && photo.url.startsWith('data:application/pdf')) {
+            return true;
+        }
+
+        // Check for the PDF magic number in base64
+        return !!(photo.url && photo.url.includes('JVBERi0'));
     }
     
     showItemNotEditableToaster(item: string): void {
