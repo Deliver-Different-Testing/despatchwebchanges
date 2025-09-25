@@ -1,165 +1,359 @@
-﻿/* Dialog Styling */
+﻿@import "../../../../css/variables.less";
+
+// Dialog-specific variables
+@card-shadow: 0 1px 3px 0 rgba(0,0,0,0.2), 0 1px 1px 0 rgba(0,0,0,0.14), 0 2px 1px -1px rgba(0,0,0,0.12);
+@card-hover-shadow: 0 3px 6px 0 rgba(0,0,0,0.2), 0 2px 2px 0 rgba(0,0,0,0.14), 0 3px 1px -2px rgba(0,0,0,0.12);
+@input-height: 56px;
+@dialog-width: 720px;
+
+// Main Dialog Container
 .edit-afterhours-dialog {
-  min-width: 600px;
-  max-width: 800px;
-  width: 90vw;
+  width: @dialog-width;
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 4px;
 
-  .dialog-content {
-    padding: 24px;
-    max-height: 60vh;
-    overflow-y: auto;
-  }
-
-  /* Section Styling */
-  .section-title {
-    font-size: 16px;
-    font-weight: 500;
-    color: #424242;
-    margin: 0 0 16px 0;
-    display: flex;
-    align-items: center;
-  }
-
-  .section-title::before {
-    content: '';
-    width: 4px;
-    height: 16px;
-    background-color: #1976d2;
-    margin-right: 8px;
-  }
-
-  .courier-info-section {
-    margin-bottom: 24px;
-  }
-
-  .schedule-section {
-    margin-top: 24px;
-  }
-
-  /* Courier Info Grid */
-  .info-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 8px;
-  }
-
-  .info-item {
+  form {
     display: flex;
     flex-direction: column;
-    padding: 12px;
-    background-color: #f5f5f5;
-    border-radius: 4px;
-    border-left: 3px solid #1976d2;
+    height: 100%;
   }
 
-  .info-label {
-    font-size: 12px;
-    color: #666;
-    text-transform: uppercase;
-    font-weight: 500;
-    margin-bottom: 4px;
-  }
-
-  .info-value {
-    font-size: 16px;
-    color: #212121;
-    font-weight: 500;
-  }
-
-  /* Time Selection Row */
-  .time-selection-row {
-    display: flex;
-    gap: 16px;
-    align-items: flex-start;
-    margin-top: 8px;
-  }
-
-  .time-input {
+  // Dialog Content
+  .dialog-content {
     flex: 1;
-    min-width: 150px;
-  }
+    overflow-y: auto;
+    background-color: @main-background-color;
+    padding: 24px;
 
-  .duration-display {
-    flex: 1;
-    min-width: 120px;
-  }
-
-  .duration-field {
-    background-color: #f5f5f5 !important;
-    color: #666 !important;
-    font-weight: 500;
-  }
-
-  /* Validation Styling */
-  .validation-error {
-    color: #d32f2f;
-    font-size: 12px;
-    margin-top: 4px;
-    display: flex;
-    align-items: center;
-  }
-
-  .validation-error md-icon {
-    font-size: 16px;
-    height: 16px;
-    width: 16px;
-    margin-right: 4px;
-  }
-
-  .time-logic-error {
-    background-color: #ffebee;
-    padding: 8px 12px;
-    border-radius: 4px;
-    border-left: 3px solid #d32f2f;
-    margin-top: 16px;
-    font-size: 14px;
-  }
-
-  /* Responsive Design */
-  @media (max-width: 600px) {
-    .edit-afterhours-dialog {
-      min-width: 100vw;
-      width: 100vw;
-      height: 100vh;
-      max-width: none;
+    .content-container {
+      max-width: 100%;
     }
 
-    .info-grid {
-      grid-template-columns: 1fr;
+    // Material Cards
+    .content-card {
+      margin-bottom: 20px;
+      box-shadow: @card-shadow;
+      transition: box-shadow 0.3s ease;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      md-card-header {
+        padding: 16px 24px;
+        border-bottom: 1px solid rgba(0,0,0,0.12);
+        background-color: #fafafa;
+
+        .md-headline {
+          display: flex;
+          align-items: center;
+          font-size: @font-lg;
+          font-weight: @weight-medium;
+          color: @text-dark;
+          margin: 0;
+
+          .section-icon {
+            margin-right: 12px;
+            color: @primary-blue;
+          }
+        }
+      }
+
+      md-card-content {
+        padding: 24px;
+
+        .helper-text {
+          color: @text-muted;
+          font-size: @font-sm;
+          margin: 0 0 20px 0;
+        }
+      }
     }
 
-    .time-selection-row {
+    // Courier Search Field
+    .courier-search-field {
+      width: 100%;
+
+      .md-autocomplete-wrap {
+        height: @input-height;
+      }
+
+      input {
+        height: @input-height;
+        font-size: @font-base;
+      }
+    }
+
+    // Courier Info Card
+    .courier-info-card {
+      .info-row {
+        display: flex;
+        gap: 32px;
+
+        .info-field {
+          flex: 1;
+
+          label {
+            display: block;
+            color: @text-muted;
+            font-size: @font-xs;
+            font-weight: @weight-medium;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+          }
+
+          .info-value {
+            font-size: @font-lg;
+            color: @text-dark;
+            font-weight: @weight-normal;
+
+            &.courier-code {
+              font-family: 'Roboto Mono', monospace;
+              background-color: #f5f5f5;
+              padding: 8px 12px;
+              border-radius: 4px;
+              display: inline-block;
+            }
+          }
+        }
+      }
+    }
+
+    // Schedule Configuration
+    .schedule-card {
+      .form-group {
+        margin-bottom: 24px;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+
+      .full-width {
+        width: 100%;
+      }
+
+      // Time Selection Container
+      .time-selection-container {
+        .time-inputs {
+          display: flex;
+          align-items: flex-start;
+          gap: 24px;
+          margin-bottom: 24px;
+
+          .time-field {
+            flex: 1;
+
+            .time-input {
+              font-size: @font-lg;
+              font-weight: @weight-medium;
+            }
+          }
+
+          .time-arrow {
+            display: flex;
+            align-items: center;
+            padding-top: 20px;
+            color: @primary-blue;
+          }
+        }
+
+        // Duration Display
+        .duration-display {
+          display: flex;
+          align-items: center;
+          padding: 16px;
+          background-color: #e8f5e9;
+          border-radius: 4px;
+          border-left: 4px solid @primary-green;
+
+          .duration-icon {
+            color: @primary-green;
+            margin-right: 16px;
+          }
+
+          .duration-info {
+            flex: 1;
+
+            .duration-label {
+              display: block;
+              color: @text-muted;
+              font-size: @font-xs;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              margin-bottom: 4px;
+            }
+
+            .duration-value {
+              display: block;
+              color: @text-dark;
+              font-size: @font-xl;
+              font-weight: @weight-medium;
+            }
+          }
+        }
+      }
+
+      // Time Validation Error
+      .time-validation-error {
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        background-color: #ffebee;
+        border-radius: 4px;
+        color: @error-red;
+        margin-top: 16px;
+
+        md-icon {
+          margin-right: 8px;
+        }
+
+        span {
+          font-size: @font-sm;
+        }
+      }
+    }
+
+    // Error Messages
+    .error-message {
+      color: @error-red;
+      font-size: @font-xs;
+      margin-top: 4px;
+      display: block;
+    }
+  }
+
+  // Dialog Actions
+  .dialog-actions {
+    padding: 8px 16px;
+    background-color: white;
+    border-top: 1px solid rgba(0,0,0,0.12);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+
+    .md-button {
+      min-width: 120px;
+      font-weight: @weight-medium;
+      letter-spacing: 0.5px;
+
+      &:not(.md-raised) {
+        color: @text-muted;
+
+        &:hover {
+          background-color: rgba(0,0,0,0.04);
+        }
+      }
+
+      &.md-primary {
+        background-color: @primary-blue;
+        color: white;
+
+        &:hover:not([disabled]) {
+          background-color: darken(@primary-blue, 10%);
+        }
+
+        &[disabled] {
+          background-color: rgba(0,0,0,0.12) !important;
+          color: rgba(0,0,0,0.26) !important;
+        }
+      }
+    }
+  }
+
+  // Material Input Container Overrides
+  md-input-container {
+    margin: 18px 0;
+
+    label {
+      color: @text-muted;
+      font-size: @font-base;
+    }
+
+    &.md-input-focused label {
+      color: @primary-blue;
+    }
+
+    .md-input {
+      border-color: rgba(0,0,0,0.12);
+      font-size: @font-base;
+    }
+
+    &.md-input-focused .md-input {
+      border-color: @primary-blue;
+    }
+
+    &.md-input-invalid .md-input {
+      border-color: @error-red;
+    }
+  }
+
+  // Material Select Overrides
+  md-select {
+    margin: 0;
+
+    .md-select-value {
+      border-bottom-color: rgba(0,0,0,0.12);
+      min-height: 32px;
+
+      span {
+        font-size: @font-base;
+      }
+    }
+
+    &:focus .md-select-value {
+      border-bottom-color: @primary-blue;
+      border-bottom-width: 2px;
+    }
+  }
+
+  // Scrollbar Styling
+  .dialog-content {
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: @scroll-bar-color;
+      border-radius: 3px;
+
+      &:hover {
+        background: darken(@scroll-bar-color, 10%);
+      }
+    }
+  }
+
+  // Responsive Design
+  @media (max-width: 768px) {
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+
+    .dialog-content {
+      padding: 16px;
+    }
+
+    .courier-info-card .info-row {
       flex-direction: column;
-      gap: 0;
+      gap: 16px;
     }
 
-    .time-input, .duration-display {
-      min-width: unset;
+    .schedule-card .time-inputs {
+      flex-direction: column;
+
+      .time-arrow {
+        transform: rotate(90deg);
+        padding: 0;
+        margin: -8px 0;
+      }
     }
-  }
-
-  /* Focus and Hover States */
-  .md-button:hover {
-    background-color: rgba(0, 0, 0, 0.04);
-  }
-
-  .md-button.md-primary:hover {
-    background-color: #1565c0 !important;
-  }
-
-  /* Material Design Input Enhancements */
-  md-input-container.md-focused .md-input {
-    border-color: #1976d2;
-  }
-
-  md-select.md-focused .md-select-value {
-    border-color: #1976d2;
-  }
-
-  /* Divider Styling */
-  md-divider {
-    margin: 24px 0;
-    border-color: #e0e0e0;
   }
 }

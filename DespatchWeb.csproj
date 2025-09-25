@@ -443,6 +443,7 @@
     <TypeScriptCompile Include="wwwroot\app\enums\job-status.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\late-event-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\message-delivery-type.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\podPhotoType.ts" />
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\countSubJobs.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\formatDates.ts" />
@@ -454,6 +455,7 @@
     <TypeScriptCompile Include="wwwroot\app\functions\usStates.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\app-config.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\apiConfig.interface.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\aws.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\context-menu-option.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\courier.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\dfrnt-page-view-model.interface.ts" />

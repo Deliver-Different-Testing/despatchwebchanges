@@ -37,6 +37,7 @@ import VoidJobConfirmationDialogService
 import {displayLongDate} from "../../../functions/formatDates";
 import JobPhotoType from "../../../enums/job-photo-type.enum";
 import {IFlightSegment} from "../../Nationwide/nationwide.interfaces";
+import PodPhotoType from "../../../enums/podPhotoType";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -63,7 +64,7 @@ class JobDetailController extends BaseController {
     private static readonly VIEW_DENSITY_KEY = `jobDetail_viewDensity_${ContactID}`;
 
     onJobUpdate?: () => Promise<void>;
-    
+
     readonly isRecurringJob: boolean = false;
     readonly isBulkJob: boolean = false;
     readonly isUsCustomer: boolean = false;
@@ -467,14 +468,11 @@ class JobDetailController extends BaseController {
             return [];
         }
 
-        return photosData.map((photoData: string, index: number) => {
+        return photosData.map((photoData: any, index: number) => {
             try {
-                // Determine if this is a PDF based on the data URL prefix or other indicators
-                const isPdf = photoData.startsWith('data:application/pdf') ||
-                    photoData.includes('JVBERi0'); // PDF magic number in base64
-
+                // New format with S3 metadata
                 const podPhoto: PodPhoto = {
-                    url: photoData,
+                    url: photoData.data || '', // Will be empty for non-images
                     timestamp: this.job?.completedTime
                         ? displayLongDate(this.job.completedTime)
                         : undefined,
@@ -487,10 +485,9 @@ class JobDetailController extends BaseController {
                             ? (this.job?.deliveryAddress?.longitude ?? 0)
                             : (this.job?.pickupAddress?.longitude ?? 0),
                     },
-                    // Add the missing optional fields
-                    contentType: isPdf ? 'application/pdf' : 'image/png',
-                    fileName: `${photoType.toLowerCase()}_photo_${index + 1}.${isPdf ? 'pdf' : 'png'}`,
-                    s3Key: undefined // Set to undefined since we don't have this data
+                    contentType: photoData.contentType,
+                    fileName: photoData.fileName,
+                    s3Key: photoData.s3Key
                 };
 
                 return podPhoto;
@@ -498,8 +495,9 @@ class JobDetailController extends BaseController {
                 this.$log.error(`Error processing ${photoType} photo ${index}:`, error);
                 return null;
             }
-        }).filter((photo: null) => photo !== null); // Filter out any null values from errors
+        }).filter((photo: null) => photo !== null);
     }
+
     private initializeJobData(): void {
         if (!this.job) return;
 
@@ -1719,9 +1717,29 @@ class JobDetailController extends BaseController {
         }
     }
 
-    openPodViewer(index: number): void {
-        this.selectedPhotoIndex = index;
-        this.isPodViewerOpen = true;
+   async openPodViewer(index: number, photoType: PodPhotoType = PodPhotoType.Delivery): Promise<void> {
+        const photos = photoType === PodPhotoType.Pickup ? this.formattedPickupPhotos : this.formattedPodPhotos;
+        const photo = photos[index];
+
+        if (this.isImageFile(photo)) {
+            this.selectedPhotoIndex = index;
+            this.isPodViewerOpen = true;
+        } else {
+            // For non-image files, download them instead
+            await this.downloadFile(photo);
+        }
+    }
+
+    private async downloadFile(photo: PodPhoto): Promise<void> {
+        if (!photo || !photo.s3Key) return;
+
+        try {
+            await this.DispatchData.downloadFile(photo.s3Key, photo.fileName || 'file.png');
+            this.toastrService.showSuccessToast("File downloaded successfully");
+        } catch (error) {
+            this.$log.error('Error downloading file:', error);
+            this.toastrService.showErrorToast('Failed to download file');
+        }
     }
 
     closePodViewer(): void {
@@ -2187,17 +2205,38 @@ class JobDetailController extends BaseController {
             return photo.s3Key.toLowerCase().endsWith('.pdf');
         }
 
-        // Check if the data URL indicates it's a PDF
-        if (photo.url && photo.url.startsWith('data:application/pdf')) {
-            return true;
-        }
-
-        // Check for the PDF magic number in base64
-        return !!(photo.url && photo.url.includes('JVBERi0'));
+        return false;
     }
-    
+
     showItemNotEditableToaster(item: string): void {
         this.toastrService.showInfoToast(`${item} is not editable`);
+    }
+
+    isImageFile(photo: any): boolean {
+        if (!photo) return false;
+
+        // Check if the photo object has a contentType property
+        if (photo.contentType) {
+            return photo.contentType.startsWith('image/');
+        }
+
+        // Check if filename has image extension
+        if (photo.fileName) {
+            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+            return imageExtensions.some(ext =>
+                photo.fileName.toLowerCase().endsWith(ext)
+            );
+        }
+
+        // Check if the s3Key indicates it's an image
+        if (photo.s3Key) {
+            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+            return imageExtensions.some(ext =>
+                photo.s3Key.toLowerCase().endsWith(ext)
+            );
+        }
+
+        return false;
     }
 }
 

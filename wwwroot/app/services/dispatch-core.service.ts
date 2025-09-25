@@ -24,19 +24,20 @@ import {IEventGroupViewModel} from "../interfaces/event-group-view-model.interfa
 import {ClearListEnvelopeViewModel, DfrntPageViewModel,} from "../interfaces/dfrnt-page-view-model.interface";
 import {TaskTableFiltersRequest, TaskViewModel,} from "../components/task-dashboard/task-dashboard.interfaces";
 import {JobProperty} from "../enums/job-property.enum";
-import ConfigService from "./config.service";
 import {UpdatePodDetailsRequest} from "../interfaces/requests.interfaces";
 import {JobEventData} from "../components/dialogs/add-event-dialog/add-event-dialog.interfaces";
 import {DeliveryJourneyViewModel} from "../components/common/task-history/task-history.interfaces";
 import {formatDateForApi} from "../functions/formatDates";
 import IInterCourierData from "../components/dialogs/inter-courier-charge-dialog/interfaces/IInterCourierData";
+import {Is3PhotoInfo} from "../interfaces/aws.interfaces";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = [
         "$http",
         "$log",
-        "APP_CONFIG",
-        "configService"
+        "$window",
+        "$timeout",
+        "APP_CONFIG"
     ];
 
     private readonly isUsCustomer: boolean;
@@ -45,8 +46,9 @@ class DispatchCoreService implements angular.IServiceProvider {
     constructor(
         private $http: angular.IHttpService,
         private $log: angular.ILogService,
-        private appConfig: IAppConfig,
-        private configService: ConfigService
+        private $window: angular.IWindowService,
+        private $timeout: angular.ITimeoutService,
+        private appConfig: IAppConfig
     ) {
         this.isUsCustomer = this.appConfig.US_Customer;
         this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -903,8 +905,8 @@ class DispatchCoreService implements angular.IServiceProvider {
             throw error;
         }
     }
-    async getJobPickupPhotos(jobId: number, year: number, month: number): Promise<any> {
-        const response = await this.$http.get<any>(
+    async getJobPickupPhotos(jobId: number, year: number, month: number): Promise<Is3PhotoInfo[]> {
+        const response = await this.$http.get<Is3PhotoInfo[]>(
             '/Job/GetJobPickupPhotos',
             {
                 params: {
@@ -918,8 +920,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
     
-    async getJobDeliveryPhotosAndSignature(jobId: number, year: number, month: number): Promise<any> {
-        const response = await this.$http.get<any>(
+    async getJobDeliveryPhotosAndSignature(jobId: number, year: number, month: number): Promise<Is3PhotoInfo[]> {
+        const response = await this.$http.get<Is3PhotoInfo[]>(
             '/Job/GetJobDeliveryPhotosAndSignature',
             {
                 params: {
@@ -1094,6 +1096,65 @@ class DispatchCoreService implements angular.IServiceProvider {
     
     async createInterCourierCharge(data: IInterCourierData) {
         await this.$http.post("job/InterCourierCharge", data);
+    }
+
+    async downloadFile(s3Key: string, fileName: string): Promise<void> {
+        try {
+            const endpoint = "/job/DownloadFile";
+
+            const response: angular.IHttpResponse<Blob> = await this.$http.get<Blob>(endpoint, {
+                params: {
+                    key: s3Key
+                },
+                responseType: "blob",
+                headers: {
+                    'Accept': "application/octet-stream"
+                }
+            });
+
+            // Log response for debugging
+            this.$log.debug("Response received:", response);
+            this.$log.debug("All headers:", response.headers());
+
+            // Get content type - use application/octet-stream as generic fallback
+            const contentType = response.headers("content-type") || "application/octet-stream";
+
+            // Parse content disposition header
+            const contentDisposition = response.headers("content-disposition");
+            let filename = fileName;
+
+            if (contentDisposition) {
+                // Parse the filename from content-disposition
+                const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                const matches = filenameRegex.exec(contentDisposition);
+                if (matches != null && matches[1]) {
+                    // Remove quotes if present
+                    filename = matches[1].replace(/['"]/g, "");
+                }
+            }
+
+            // Create and trigger download
+            const blob = new Blob([response.data], {type: contentType});
+            const url = this.$window.URL.createObjectURL(blob);
+
+            const link = angular.element("<a></a>")[0] as HTMLAnchorElement;
+            link.href = url;
+            link.download = filename;
+            link.style.display = "none";
+
+            // Use angular.element for DOM manipulation
+            document.body.append(link);
+            link.click();
+
+            // Cleanup
+            this.$timeout(() => {
+                angular.element(link).remove();
+                this.$window.URL.revokeObjectURL(url);
+            }, 100);
+        } catch (error) {
+            this.$log.error("Download failed:", error);
+            throw error;
+        }
     }
 }
 
