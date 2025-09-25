@@ -1,4 +1,50 @@
-include:
-  - project: 'urgent-couriers/ci-templates'
-    file: 'ci-template.yml'
-    ref: 'main'
+stages:
+  - templating
+  - deploy
+
+image: 
+  name: "public.ecr.aws/ubuntu/ubuntu:20.04"
+
+generate-dynamic-pipeline:
+  stage: templating
+  before_script:
+    - echo 'Acquire::ForceIPv4 "true";' |  tee /etc/apt/apt.conf.d/99force-ipv4
+    - echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries
+    - sed -i -E 's|http://archive.ubuntu.com/ubuntu|http://ap-southeast-2.ec2.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+    - apt update && apt install -y jq curl
+  script:
+    # Send curl with auth bearer token to 
+    - 'curl -o tenants.json --location https://backstage.deliverdifferent.com/api/tenants/pipeline/all --header "Authorization: Bearer ${BACKSTAGE_AUTH_TOKEN}"'
+    - |
+      # Select the appropriate generator script based on CI_PROJECT_NAME
+      if [ "$CI_PROJECT_NAME" = "dbmigrationsv2" ]; then
+        echo "Using DB migrations generator for $CI_PROJECT_NAME"
+        GENERATOR_SCRIPT="generate-db-migrations-pipeline.sh"
+      elif [ "$CI_PROJECT_NAME" = "ssrs" ]; then
+        echo "Using SSRS generator for $CI_PROJECT_NAME"
+        GENERATOR_SCRIPT="generate-ssrs-pipeline.sh"
+      else
+        echo "Using standard generator for $CI_PROJECT_NAME"
+        GENERATOR_SCRIPT="generate-pipeline.sh"
+      fi
+      
+      # Download the appropriate generator script
+      curl -o $GENERATOR_SCRIPT --location "https://git.customd.com/api/v4/projects/730/repository/files/$GENERATOR_SCRIPT/raw" --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}"
+      chmod +x $GENERATOR_SCRIPT
+      source $GENERATOR_SCRIPT
+  artifacts:
+    paths:
+      - generated-pipeline.yml
+      - tenants.json
+      - .gitlab/*.yaml
+      - .gitlab/ci-includes/*.yml
+
+deploy-dynamic-pipeline:
+  stage: deploy
+  needs:
+    - job: generate-dynamic-pipeline
+      artifacts: true
+  trigger:
+    include:
+      - artifact: generated-pipeline.yml
+        job: generate-dynamic-pipeline
