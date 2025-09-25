@@ -741,6 +741,7 @@
                                    md-on-reorder="ctrl.loadAfterHoursSchedule">
                             <tr md-row>
                                 <th md-column md-order-by="name">Driver Name</th>
+                                <th md-column md-order-by="code">Driver Code</th>
                                 <th md-column md-order-by="day">Day</th>
                                 <th md-column md-order-by="startTime">Start Time</th>
                                 <th md-column md-order-by="endTime">End Time</th>
@@ -748,9 +749,10 @@
                             </tr>
                             </thead>
                             <tbody md-body>
-                            <tr md-row ng-repeat="assignment in ctrl.afterHoursSchedule track by $index"
+                            <tr md-row ng-repeat="assignment in ctrl.afterHoursSchedule track by assignment.afterHoursScheduleId"
                                 class="table-row">
                                 <td md-cell>{{assignment.courierName}}</td>
+                                <td md-cell>{{assignment.courierCode}}</td>
                                 <td md-cell>
                                     <span class="day-badge">{{assignment.day}}</span>
                                 </td>

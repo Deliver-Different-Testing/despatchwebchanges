@@ -51,6 +51,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TblAfterHour> TblAfterHours { get; set; }
 
+    public virtual DbSet<TblAfterhoursCourier> TblAfterhoursCouriers { get; set; }
+
     public virtual DbSet<TblAirport> TblAirports { get; set; }
 
     public virtual DbSet<TblBulkJob> TblBulkJobs { get; set; }
@@ -1100,6 +1102,22 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.Speed).WithMany(p => p.TblAfterHours)
                 .HasForeignKey(d => d.SpeedId)
                 .HasConstraintName("FK_tblAfterHours_tucJobType");
+        });
+
+        modelBuilder.Entity<TblAfterhoursCourier>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__tblAfter__3214EC27728AD932");
+
+            entity.ToTable("tblAfterhoursCourier");
+
+            entity.Property(e => e.Id).HasColumnName("ID");
+            entity.Property(e => e.CourierId).HasColumnName("CourierID");
+            entity.Property(e => e.EndTime).HasColumnType("datetime");
+            entity.Property(e => e.StartTime).HasColumnType("datetime");
+
+            entity.HasOne(d => d.Courier).WithMany(p => p.TblAfterhoursCouriers)
+                .HasForeignKey(d => d.CourierId)
+                .HasConstraintName("fk_tucCourier");
         });
 
         modelBuilder.Entity<TblAirport>(entity =>

@@ -31,6 +31,8 @@ public partial class VehicleSize
 
     public decimal FuelPercentage { get; set; }
 
+    public bool DefaultForBooking { get; set; }
+
     public virtual ICollection<AgentVehicle> AgentVehicles { get; set; } = new List<AgentVehicle>();
 
     public virtual ICollection<AirFreightRate> AirFreightRates { get; set; } = new List<AirFreightRate>();
