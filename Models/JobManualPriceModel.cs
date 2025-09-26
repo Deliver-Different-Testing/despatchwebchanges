@@ -9,4 +9,5 @@ public class JobManualPriceModel
     public decimal? CourierPayment { get; set; }
     public decimal? CourierFuel { get; set; }
     public decimal? CourierBonus { get; set; }
+    public string StatusName { get; set; }
 }

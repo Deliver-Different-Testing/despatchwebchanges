@@ -352,4 +352,23 @@ public class CourierController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
+    
+    [HttpPost]
+    public async Task<IActionResult> CreateAfterHoursCourierSchedule(
+        [FromBody] AfterHoursCourierScheduleViewModel request)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            await courierRepository.CreateAfterHoursCourierScheduleAsync(request);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(SendEmailToCouriers),
+                    nameof(UpdateAfterHoursCourierSchedule)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
 }

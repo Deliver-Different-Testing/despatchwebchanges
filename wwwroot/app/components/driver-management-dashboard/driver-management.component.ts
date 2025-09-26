@@ -6,7 +6,7 @@ import ToastrService from "../../services/toastr.service";
 import ICourierCompliance from "./interfaces/ICourierCompliance";
 import {ICourierDataDashboard} from "./interfaces/ICourierDataDashboard";
 import IDriverEmail from "./interfaces/IDriverEmail";
-import {formatMins} from "../../functions/formatDates";
+import {formatDayJsForApi} from "../../functions/formatDates";
 import {IAppConfig} from "../../interfaces/app-config.interface";
 import greetUser from "../../functions/greetUser";
 import {ISuggestion} from "../../interfaces/job.interface";
@@ -25,6 +25,7 @@ import {
 } from "../../interfaces/paginated-response.interface";
 import {ComposeEmailDialogService} from "../dialogs/compose-email-dialog/compose-email-dialog.service";
 import EditAfterhoursDialogService from "../dialogs/edit-afterhours-dialog/edit-afterhours-dialog.service";
+import {IAfterHoursCourierSchedule} from "./interfaces/IAfterHoursCourierSchedule";
 
 class DriverManagementController extends BaseController {
     static $inject = [
@@ -461,9 +462,8 @@ class DriverManagementController extends BaseController {
         }
     }
 
-    formatScheduleTime(time: Date | undefined): string {
-        if (!time) return '-';
-        return formatMins(time);
+    formatScheduleTime(time: dayjs.Dayjs | undefined): string {
+        return dayjs(time).format('HH:mm');
     }
 
     exportAfterHoursSchedule(): void {
@@ -664,6 +664,8 @@ class DriverManagementController extends BaseController {
     
     async createNewSchedule($event: MouseEvent) {
         const today = dayjs();
+        const startTime = today.hour(17).minute(0).second(0);
+        const endTime = today.hour(21).minute(0).second(0);
 
         const newSchedule: IAfterHoursCourierSchedule = {
             afterHoursScheduleId: 0,
@@ -671,15 +673,31 @@ class DriverManagementController extends BaseController {
             courierName: '',
             courierCode: '',
             day: today.format('dddd'),
-            startTime: today.hour(17).minute(0).second(0).toDate(),
-            endTime: today.hour(21).minute(0).second(0).toDate(),
-            duration: '4 hours'
+            startTime: startTime,
+            endTime: endTime,
+            duration: '4 hours',
+            formattedStartDate: formatDayJsForApi(startTime),
+            formattedEndDate: formatDayJsForApi(endTime),
         };
 
-        await this.openEditAfterHoursDialog($event, newSchedule);
+        const result = await this.openEditAfterHoursDialog($event, newSchedule);
+        if(!result) return;
+
+        await this.driverManagementService.createAfterHoursCourierSchedule(result);
+        this.toastrService.showSuccessToast('Successfully created');
+        await this.loadAfterHoursSchedule();
+    }
+    
+    async editAfterHoursSchedule($event: MouseEvent, afterHoursSchedule: IAfterHoursCourierSchedule) {
+        const result = await this.openEditAfterHoursDialog($event, afterHoursSchedule);
+        if(!result) return;
+        
+        await this.driverManagementService.updateAfterHoursCourierSchedule(result);
+        this.toastrService.showSuccessToast('After hours schedule updated successfully. Refreshing schedules..');
+        await this.loadAfterHoursSchedule();
     }
 
-    async openEditAfterHoursDialog($event: MouseEvent, afterHoursSchedule: IAfterHoursCourierSchedule) {
+    private async openEditAfterHoursDialog($event: MouseEvent, afterHoursSchedule: IAfterHoursCourierSchedule): Promise<IAfterHoursCourierSchedule | undefined> {
         try {
             const result = await this.editAfterhoursDialogService.openEditAfterhoursDialog($event, afterHoursSchedule);
             if (!result) {
@@ -687,9 +705,7 @@ class DriverManagementController extends BaseController {
                 return;
             }
 
-            await this.driverManagementService.updateAfterHoursCourierSchedule(result);
-            this.toastrService.showSuccessToast('After hours schedule updated successfully. Refreshing schedules..');
-            await this.loadAfterHoursSchedule();
+          return result;
         } catch (error) {
             if (!error) {
                 this.$log.debug('Edit after hours is cancelled');

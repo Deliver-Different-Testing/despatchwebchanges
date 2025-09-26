@@ -543,7 +543,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             )
             .ToListAsync();
 
-
+        // Update job status
+        await UpdateJobStatusesAsync(data, dbData, dbDataArchive);
+        
         // Log counts for diagnostics
         Log.Information("Processing {DbDataCount} active jobs and {Count} archived jobs", dbData.Count,
             dbDataArchive.Count);
@@ -759,6 +761,50 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 Log.Error("Inner exception: {InnerExceptionMessage}", ex.InnerException.Message);
 
             throw;
+        }
+    }
+
+    private async Task UpdateJobStatusesAsync(List<JobManualPriceModel> data, List<TucJob> dbData, List<TucJobArchive> dbDataArchive)
+    {
+        var statusNames = data.Where(d => !string.IsNullOrWhiteSpace(d.StatusName))
+            .Select(d => d.StatusName)
+            .Distinct()
+            .ToList();
+
+        if (statusNames.Count == 0)
+        {
+            Log.Information("No status updates requested");
+            return;
+        }
+
+        var statusLookup = await Context.TucJobStatuses
+            .Where(s => statusNames.Contains(s.UcjsName))
+            .AsNoTracking()
+            .ToDictionaryAsync(s => s.UcjsName, s => s.UcjsId);
+
+        // Update statuses for each job
+        foreach (var d in data.Where(d => !string.IsNullOrWhiteSpace(d.StatusName)))
+        {
+            var match = (dynamic)dbData.FirstOrDefault(j => j.UcjbId == d.Id)
+                        ?? dbDataArchive.FirstOrDefault(j => j.UcjbId == d.Id);
+
+            if (match == null)
+            {
+                Log.Warning("Job with ID {DId} not found for status update", d.Id);
+                continue;
+            }
+
+            if (statusLookup.TryGetValue(d.StatusName, out var statusId))
+            {
+                match.UcjbStatus = statusId;
+                Log.Information("Job {DId} status updated to {StatusName} (ID: {StatusId})", 
+                    d.Id, d.StatusName, statusId);
+            }
+            else
+            {
+                Log.Warning("Status name '{StatusName}' not found in database for job {DId}", 
+                    d.StatusName, d.Id);
+            }
         }
     }
 

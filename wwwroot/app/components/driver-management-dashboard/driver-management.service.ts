@@ -13,6 +13,9 @@ import {
     ICourierComplianceFilter,
     ITodayActiveDriverFilter
 } from "./interfaces/ICourierComplianceFilter";
+import {formatDateForApi} from "../../functions/formatDates";
+import dayjs from "dayjs";
+import {IAfterHoursCourierSchedule} from "./interfaces/IAfterHoursCourierSchedule";
 
 class DriverManagementService implements angular.IServiceProvider {
     static $inject = [
@@ -122,6 +125,15 @@ class DriverManagementService implements angular.IServiceProvider {
             day: filters.day,
         });
 
+        // Convert date strings to Dayjs objects
+        if (response.data && response.data.items) {
+            response.data.items = response.data.items.map(item => ({
+                ...item,
+                startTime: item.startTime ? dayjs(item.startTime) : undefined,
+                endTime: item.endTime ? dayjs(item.endTime) : undefined
+            }));
+        }
+
         return response.data;
     }
 
@@ -150,9 +162,36 @@ class DriverManagementService implements angular.IServiceProvider {
     
     async updateAfterHoursCourierSchedule(afterHoursSchedule: IAfterHoursCourierSchedule): Promise<void> {
         this.$log.debug("Updating after hours courier schedule");
+
+        const payload = {
+            ...afterHoursSchedule,
+            startTime: afterHoursSchedule.startTime?.toDate(),
+            endTime: afterHoursSchedule.endTime?.toDate(),
+            formattedStartDate: afterHoursSchedule.startTime ? formatDateForApi(afterHoursSchedule.startTime.toDate()) : '',
+            formattedEndDate: afterHoursSchedule.endTime ? formatDateForApi(afterHoursSchedule.endTime.toDate()) : ''
+        };
         
         try {
-            await this.$http.post("courier/UpdateAfterHoursCourierSchedule", afterHoursSchedule);
+            await this.$http.post("courier/UpdateAfterHoursCourierSchedule", payload);
+        } catch (error) {
+            this.$log.error("Error updating after hours schedule:", error);
+            throw error;
+        }
+    }
+
+    async createAfterHoursCourierSchedule(afterHoursSchedule: IAfterHoursCourierSchedule): Promise<void> {
+        this.$log.debug("Updating after hours courier schedule");
+
+        const payload = {
+            ...afterHoursSchedule,
+            startTime: afterHoursSchedule.startTime?.toDate(),
+            endTime: afterHoursSchedule.endTime?.toDate(),
+            formattedStartDate: afterHoursSchedule.startTime ? formatDateForApi(afterHoursSchedule.startTime.toDate()) : '',
+            formattedEndDate: afterHoursSchedule.endTime ? formatDateForApi(afterHoursSchedule.endTime.toDate()) : ''
+        };
+        
+        try {
+            await this.$http.post("courier/CreateAfterHoursCourierSchedule", payload);
         } catch (error) {
             this.$log.error("Error updating after hours schedule:", error);
             throw error;

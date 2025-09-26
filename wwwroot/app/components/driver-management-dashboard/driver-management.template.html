@@ -1,4 +1,4 @@
-﻿<md-content class="driver-management-container">
+﻿<md-content class="driver-management-container scrollable-container">
     <div>
         <md-toolbar class="md-hue-2 md-whiteframe-2dp">
             <div class="md-toolbar-tools">
@@ -772,7 +772,7 @@
                                     <span class="duration-badge">{{assignment.duration}}</span>
                                 </td>
                                 <td md-cell>
-                                    <md-button ng-click="ctrl.openEditAfterHoursDialog($event, assignment)">
+                                    <md-button ng-click="ctrl.editAfterHoursSchedule($event, assignment)">
                                         Edit
                                     </md-button>
                                 </td>
