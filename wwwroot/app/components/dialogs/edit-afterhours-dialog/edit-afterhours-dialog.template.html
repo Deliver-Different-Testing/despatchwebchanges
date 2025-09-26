@@ -1,6 +1,5 @@
 ﻿<md-dialog aria-label="Edit Afterhours Schedule" class="edit-afterhours-dialog">
     <form name="afterhoursForm" ng-submit="ctrl.save()" novalidate>
-
         <!-- Dialog Header -->
         <md-toolbar class="md-hue-1">
             <div class="md-toolbar-tools">
@@ -20,176 +19,143 @@
         <md-dialog-content class="dialog-content">
             <div class="content-container">
 
-                <!-- Courier Selection Card (New Schedule) -->
-                <md-card class="content-card" ng-if="ctrl.isNewSchedule">
-                    <md-card-header>
-                        <md-card-header-text>
-                            <span class="md-headline">
-                                <md-icon md-font-set="material-symbols-outlined" class="section-icon">person</md-icon>
-                                Select Courier
-                            </span>
-                        </md-card-header-text>
-                    </md-card-header>
+                <!-- Courier Selection (New Schedule) -->
+                <div class="selection-panel" ng-if="ctrl.isNewSchedule">
+                    <h3 class="section-title">
+                        <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">person</md-icon>
+                        Select Driver
+                    </h3>
+                    <p class="help-text">Search and select a driver to assign this schedule</p>
+                    <md-autocomplete
+                            class="driver-search"
+                            md-selected-item="ctrl.selectedCourier"
+                            md-selected-item-change="ctrl.courierSelected(item)"
+                            md-search-text="ctrl.courierSearchText"
+                            md-items="item in ctrl.courierSearch(ctrl.courierSearchText)"
+                            md-item-text="item.text"
+                            md-min-length="1"
+                            md-floating-label="Search for driver by name or code"
+                            md-clear-button="true"
+                            required>
+                        <md-item-template>
+                            <span md-highlight-text="ctrl.courierSearchText">{{item.text}}</span>
+                        </md-item-template>
+                        <md-not-found>
+                            No drivers found matching "{{ctrl.courierSearchText}}"
+                        </md-not-found>
+                    </md-autocomplete>
+                </div>
 
-                    <md-card-content>
-                        <p class="helper-text">Search and select a courier to assign to this schedule</p>
-
-                        <md-autocomplete
-                                class="courier-search-field"
-                                md-selected-item="ctrl.selectedCourier"
-                                md-search-text="ctrl.courierSearchText"
-                                md-items="item in ctrl.courierSearch(ctrl.courierSearchText)"
-                                md-item-text="item.text"
-                                md-min-length="1"
-                                md-floating-label="Courier name or code"
-                                md-clear-button="true"
-                                required>
-                            <md-item-template>
-                                <span md-highlight-text="ctrl.courierSearchText">{{item.text}}</span>
-                            </md-item-template>
-                            <md-not-found>
-                                No couriers found matching "{{ctrl.courierSearchText}}"
-                            </md-not-found>
-                        </md-autocomplete>
-                    </md-card-content>
-                </md-card>
-
-                <!-- Courier Information Card (Existing Schedule) -->
-                <md-card class="content-card courier-info-card" ng-if="!ctrl.isNewSchedule">
-                    <md-card-header>
-                        <md-card-header-text>
-                            <span class="md-headline">
-                                <md-icon md-font-set="material-symbols-outlined" class="section-icon">badge</md-icon>
-                                Courier Information
-                            </span>
-                        </md-card-header-text>
-                    </md-card-header>
-
-                    <md-card-content>
-                        <div class="info-row">
-                            <div class="info-field">
-                                <label>Name</label>
-                                <div class="info-value">{{ctrl.afterHourScheduleItem.courierName}}</div>
-                            </div>
-                            <div class="info-field">
-                                <label>Code</label>
-                                <div class="info-value courier-code">{{ctrl.afterHourScheduleItem.courierCode}}</div>
-                            </div>
+                <!-- Courier Information (Existing Schedule) -->
+                <div class="info-panel" ng-if="!ctrl.isNewSchedule">
+                    <h3 class="section-title">
+                        <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">badge</md-icon>
+                        Driver Information
+                    </h3>
+                    <div class="info-row">
+                        <div class="info-item">
+                            <label>Name</label>
+                            <div class="value">{{ctrl.editableAfterHoursSchedule.courierName}}</div>
                         </div>
-                    </md-card-content>
-                </md-card>
-
-                <!-- Schedule Configuration Card -->
-                <md-card class="content-card schedule-card">
-                    <md-card-header>
-                        <md-card-header-text>
-                            <span class="md-headline">
-                                <md-icon md-font-set="material-symbols-outlined" class="section-icon">event</md-icon>
-                                Schedule Configuration
-                            </span>
-                        </md-card-header-text>
-                    </md-card-header>
-
-                    <md-card-content>
-
-                        <!-- Day Selection -->
-                        <div class="form-group">
-                            <md-input-container class="full-width">
-                                <label>Day of Week</label>
-                                <md-select ng-model="ctrl.afterHourScheduleItem.day"
-                                           ng-change="ctrl.onDayChange()"
-                                           required>
-                                    <md-option ng-repeat="day in ctrl.daysOfWeek" ng-value="day">
-                                        {{day}}
-                                    </md-option>
-                                </md-select>
-                                <div class="error-message" ng-if="ctrl.validationErrors.day">
-                                    {{ctrl.validationErrors.day}}
-                                </div>
-                            </md-input-container>
+                        <div class="info-item">
+                            <label>Code</label>
+                            <div class="value code-value">{{ctrl.editableAfterHoursSchedule.courierCode}}</div>
                         </div>
+                    </div>
+                </div>
 
-                        <!-- Time Selection -->
-                        <div class="time-selection-container">
-                            <div class="time-inputs">
+                <!-- Schedule Configuration -->
+                <div class="schedule-panel">
+                    <h3 class="section-title">
+                        <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">schedule</md-icon>
+                        Schedule Details
+                    </h3>
 
-                                <!-- Start Time -->
-                                <md-input-container class="time-field">
-                                    <label>Start Time</label>
-                                    <input mdc-datetime-picker
-                                           date="false"
-                                           time="true"
-                                           type="text"
-                                           ng-model="ctrl.afterHourScheduleItem.startTime"
-                                           ng-change="ctrl.onTimeChange()"
-                                           format="HH:mm"
-                                           class="time-input"
-                                           edit-input="true"
-                                           show-icon="true"
-                                           placeholder="00:00"
-                                           required>
-                                    <div class="error-message" ng-if="ctrl.validationErrors.startTime">
-                                        {{ctrl.validationErrors.startTime}}
-                                    </div>
-                                </md-input-container>
+                    <!-- Day Selection -->
+                    <md-input-container class="full-width">
+                        <label>Day of Week</label>
+                        <md-select ng-model="ctrl.editableAfterHoursSchedule.day"
+                                   ng-change="ctrl.onDayChange()"
+                                   required>
+                            <md-option ng-repeat="day in ctrl.daysOfWeek" ng-value="day">
+                                {{day}}
+                            </md-option>
+                        </md-select>
+                        <div ng-messages="afterhoursForm.day.$error" ng-if="ctrl.validationErrors.day">
+                            <div ng-message="required">{{ctrl.validationErrors.day}}</div>
+                        </div>
+                    </md-input-container>
 
-                                <div class="time-arrow">
-                                    <md-icon md-font-set="material-symbols-outlined">arrow_forward</md-icon>
-                                </div>
-
-                                <!-- End Time -->
-                                <md-input-container class="time-field">
-                                    <label>End Time</label>
-                                    <input mdc-datetime-picker
-                                           date="false"
-                                           time="true"
-                                           type="text"
-                                           ng-model="ctrl.afterHourScheduleItem.endTime"
-                                           ng-change="ctrl.onTimeChange()"
-                                           format="HH:mm"
-                                           class="time-input"
-                                           edit-input="true"
-                                           show-icon="true"
-                                           placeholder="00:00"
-                                           required>
-                                    <div class="error-message" ng-if="ctrl.validationErrors.endTime">
-                                        {{ctrl.validationErrors.endTime}}
-                                    </div>
-                                </md-input-container>
-
+                    <!-- Time Selection -->
+                    <div class="time-row">
+                        <md-input-container class="time-field">
+                            <label>Start Time</label>
+                            <input mdc-datetime-picker
+                                   date="false"
+                                   time="true"
+                                   type="text"
+                                   ng-model="ctrl.startTime"
+                                   ng-model-options="{getterSetter: true}"
+                                   ng-change="ctrl.onTimeChange()"
+                                   format="HH:mm"
+                                   edit-input="true"
+                                   placeholder="HH:MM"
+                                   required>
+                            <div ng-messages="afterhoursForm.startTime.$error" ng-if="ctrl.validationErrors.startTime">
+                                <div ng-message="required">{{ctrl.validationErrors.startTime}}</div>
                             </div>
+                        </md-input-container>
 
-                            <!-- Duration Display -->
-                            <div class="duration-display" ng-show="ctrl.afterHourScheduleItem.duration">
-                                <md-icon md-font-set="material-symbols-outlined" class="duration-icon dialog-icon">schedule</md-icon>
-                                <div class="duration-info">
-                                    <span class="duration-label">Total Duration</span>
-                                    <span class="duration-value">{{ctrl.afterHourScheduleItem.duration}}</span>
-                                </div>
-                            </div>
+                        <div class="time-separator">
+                            <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">arrow_forward</md-icon>
                         </div>
 
-                        <!-- Time Validation Error -->
-                        <div class="time-validation-error" ng-if="ctrl.validationErrors.timeLogic">
-                            <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
-                            <span>{{ctrl.validationErrors.timeLogic}}</span>
-                        </div>
+                        <md-input-container class="time-field">
+                            <label>End Time</label>
+                            <input mdc-datetime-picker
+                                   date="false"
+                                   time="true"
+                                   type="text"
+                                   ng-model="ctrl.endTime"
+                                   ng-model-options="{getterSetter: true}"
+                                   ng-change="ctrl.onTimeChange()"
+                                   format="HH:mm"
+                                   edit-input="true"
+                                   placeholder="HH:MM"
+                                   required>
+                            <div ng-messages="afterhoursForm.endTime.$error" ng-if="ctrl.validationErrors.endTime">
+                                <div ng-message="required">{{ctrl.validationErrors.endTime}}</div>
+                            </div>
+                        </md-input-container>
+                    </div>
 
-                    </md-card-content>
-                </md-card>
+                    <!-- Duration Display -->
+                    <div class="duration-display" ng-if="ctrl.editableAfterHoursSchedule.duration">
+                        <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">timer</md-icon>
+                        <span class="duration-label">Total Duration</span>
+                        <span class="duration-value">{{ctrl.editableAfterHoursSchedule.duration}}</span>
+                    </div>
+
+                    <!-- Time Validation Error -->
+                    <div class="error-banner" ng-if="ctrl.validationErrors.timeLogic">
+                        <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">warning</md-icon>
+                        <span>{{ctrl.validationErrors.timeLogic}}</span>
+                    </div>
+                </div>
 
             </div>
         </md-dialog-content>
 
         <!-- Dialog Actions -->
         <md-dialog-actions class="dialog-actions">
-            <md-button type="button" ng-click="ctrl.cancel()" class="md-button">
+            <md-button ng-click="ctrl.cancel()" class="md-button">
                 Cancel
             </md-button>
             <md-button type="submit"
                        ng-disabled="!ctrl.isFormValid"
-                       class="md-raised md-primary">
-                {{ctrl.isNewSchedule ? 'Create' : 'Save'}} Schedule
+                       class="md-raised md-primary save-button">
+                <md-icon md-font-set="material-symbols-outlined">save</md-icon>
+                <span>{{ctrl.isNewSchedule ? 'Create' : 'Save'}} Schedule</span>
             </md-button>
         </md-dialog-actions>
 

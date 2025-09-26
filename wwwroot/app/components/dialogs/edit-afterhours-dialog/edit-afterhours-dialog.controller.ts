@@ -1,9 +1,15 @@
-﻿import BaseController from "../../base-controller";
+﻿import "./edit-afterhours-dialog.styles.less";
+import BaseController from "../../base-controller";
 import dayjs from "dayjs";
 import DispatchCoreService from "../../../services/dispatch-core.service";
-import {ActiveCourierViewModel} from "../../../interfaces/courier.interface";
 import {ISuggestion} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
+import duration from "dayjs/plugin/duration";
+import {IAfterHoursCourierSchedule} from "../../driver-management-dashboard/interfaces/IAfterHoursCourierSchedule";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+
+dayjs.extend(duration);
+dayjs.extend(isSameOrAfter);
 
 class EditAfterhoursDialogController extends BaseController {
     static $inject = [
@@ -22,9 +28,10 @@ class EditAfterhoursDialogController extends BaseController {
     ];
     isFormValid: boolean = true;
     validationErrors: { [key: string]: string } = {};
-    selectedCourier?: ActiveCourierViewModel;
+    selectedCourier?: ISuggestion;
     courierSearchText?: string;
-
+    editableAfterHoursSchedule: IAfterHoursCourierSchedule;
+    
     constructor(
         private $mdDialog: angular.material.IDialogService,
         $timeout: angular.ITimeoutService,
@@ -32,7 +39,7 @@ class EditAfterhoursDialogController extends BaseController {
         private DispatchData: DispatchCoreService,
         private $log: angular.ILogService,
         private toastrService: ToastrService,
-        public afterHourScheduleItem: IAfterHoursCourierSchedule
+        afterHourScheduleItem: IAfterHoursCourierSchedule
     ) {
         super();
         this.initServices($timeout, $interval);
@@ -41,10 +48,13 @@ class EditAfterhoursDialogController extends BaseController {
         if (afterHourScheduleItem.afterHoursScheduleId === 0) {
             this.isNewSchedule = true;
         }
+        
+        this.editableAfterHoursSchedule = angular.copy(afterHourScheduleItem);
+        this.validateForm();
     }
 
     $onInit() {
-        this.$log.debug('EditAfterhoursDialogController: Initialized with schedule:', this.afterHourScheduleItem);
+        this.$log.debug('EditAfterhoursDialogController: Initialized with schedule:', this.editableAfterHoursSchedule);
 
         // Focus on day field after dialog opens
         this.registerTimeout(() => {
@@ -69,33 +79,32 @@ class EditAfterhoursDialogController extends BaseController {
         this.isFormValid = true;
         this.validationErrors = {};
 
-        // Validate courier assignment
-        if (!this.afterHourScheduleItem.courierId) {
+        if (!this.editableAfterHoursSchedule.courierId) {
             this.isFormValid = false;
             this.validationErrors.courierSelection = 'Please select a courier';
         }
 
         // Validate day selection
-        if (!this.afterHourScheduleItem.day) {
+        if (!this.editableAfterHoursSchedule.day) {
             this.isFormValid = false;
             this.validationErrors.day = 'Please select a day';
         }
 
         // Validate start time
-        if (!this.afterHourScheduleItem.startTime) {
+        if (!this.editableAfterHoursSchedule.startTime) {
             this.isFormValid = false;
             this.validationErrors.startTime = 'Please select a start time';
         }
 
         // Validate end time
-        if (!this.afterHourScheduleItem.endTime) {
+        if (!this.editableAfterHoursSchedule.endTime) {
             this.isFormValid = false;
             this.validationErrors.endTime = 'Please select an end time';
         }
 
         // Validate time logic
-        if (this.afterHourScheduleItem.startTime && this.afterHourScheduleItem.endTime) {
-            if (this.afterHourScheduleItem.startTime >= this.afterHourScheduleItem.endTime) {
+        if (this.editableAfterHoursSchedule.startTime && this.editableAfterHoursSchedule.endTime) {
+            if (this.editableAfterHoursSchedule.startTime.isSameOrAfter(this.editableAfterHoursSchedule.endTime)) {
                 this.isFormValid = false;
                 this.validationErrors.timeLogic = 'End time must be after start time';
             }
@@ -114,31 +123,47 @@ class EditAfterhoursDialogController extends BaseController {
     }
 
     updateDuration(): void {
-        if (this.afterHourScheduleItem.startTime && this.afterHourScheduleItem.endTime) {
-            const start = dayjs(this.afterHourScheduleItem.startTime);
-            const end = dayjs(this.afterHourScheduleItem.endTime);
+        if (this.editableAfterHoursSchedule.startTime && this.editableAfterHoursSchedule.endTime) {
+            const start = dayjs(this.editableAfterHoursSchedule.startTime);
+            const end = dayjs(this.editableAfterHoursSchedule.endTime);
             const diff = end.diff(start);
 
             const duration = dayjs.duration(diff);
             const hours = Math.floor(duration.asHours());
             const minutes = duration.minutes();
 
-            this.afterHourScheduleItem.duration = hours > 0 || minutes > 0 ?
+            this.editableAfterHoursSchedule.duration = hours > 0 || minutes > 0 ?
                 `${hours}h ${minutes.toString().padStart(2, '0')}m` : '0h 00m';
         } else {
-            this.afterHourScheduleItem.duration = '';
+            this.editableAfterHoursSchedule.duration = '';
         }
     }
 
-    save(): void {
-        // If courier assigned
-        if (this.selectedCourier?.courierId) {
-            this.afterHourScheduleItem.courierId = this.selectedCourier?.courierId;
-        }
+    courierSelected(courier: ISuggestion) {
+        this.editableAfterHoursSchedule.courierId = courier.id;
+        this.validateForm();
+    }
 
+    get startTime(): Date | undefined {
+        return this.editableAfterHoursSchedule.startTime?.toDate();
+    }
+
+    set startTime(value: Date | undefined) {
+        this.editableAfterHoursSchedule.startTime = value ? dayjs(value) : undefined;
+    }
+
+    get endTime(): Date | undefined {
+        return this.editableAfterHoursSchedule.endTime?.toDate();
+    }
+
+    set endTime(value: Date | undefined) {
+        this.editableAfterHoursSchedule.endTime = value ? dayjs(value) : undefined;
+    }
+
+    save(): void {
         if (this.validateForm()) {
-            this.$log.debug('EditAfterhoursDialogController: Saving schedule:', this.afterHourScheduleItem);
-            this.$mdDialog.hide(this.afterHourScheduleItem);
+            this.$log.debug('EditAfterhoursDialogController: Saving schedule:', this.editableAfterHoursSchedule);
+            this.$mdDialog.hide(this.editableAfterHoursSchedule);
         } else {
             this.$log.warn('EditAfterhoursDialogController: Form validation failed');
         }

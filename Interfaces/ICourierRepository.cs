@@ -50,4 +50,5 @@ public interface ICourierRepository
     Task<PaginatedResponse<CourierEmailViewModel>> GetCourierEmailsAsync(PaginatedRequest request);
     Task SendEmailToCouriersAsync(GroupEmailDataViewModel request);
     Task UpdateAfterHoursCourierScheduleAsync(AfterHoursCourierScheduleViewModel request);
+    Task CreateAfterHoursCourierScheduleAsync(AfterHoursCourierScheduleViewModel request);
 }

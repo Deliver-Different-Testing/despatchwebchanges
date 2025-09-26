@@ -633,10 +633,7 @@ public class JobController(
             }
 
             // Log the first row as a sample
-            if (rows.Count != 0)
-            {
-                Log.Debug("Sample Row Data: {@FirstRow}", rows.First());
-            }
+            if (rows.Count != 0) Log.Debug("Sample Row Data: {@FirstRow}", rows.First());
 
             var options = new JsonSerializerOptions
             {

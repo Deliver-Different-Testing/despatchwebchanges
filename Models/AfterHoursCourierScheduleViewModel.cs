@@ -12,4 +12,6 @@ public class AfterHoursCourierScheduleViewModel
     public DateTime? StartTime { get; set; }
     public DateTime? EndTime { get; set; }
     public string Duration { get; set; }
+    public string FormattedStartDate { get; set; }
+    public string FormattedEndDate { get; set; }
 }

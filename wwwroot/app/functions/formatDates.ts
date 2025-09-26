@@ -4,6 +4,11 @@ export function formatDateForApi(date: Date | string): string {
     // Always use ISO 8601 format for backend communication
     return dayjs(date).format('YYYY-MM-DD HH:mm:ss');
 }
+export function formatDayJsForApi(date: dayjs.Dayjs): string {
+    // Always use ISO 8601 format for backend communication
+    return date.format('YYYY-MM-DD HH:mm:ss');
+}
+
 
 export function displayLongDate(date: Date | string, isUsCustomer: boolean = true): string {
     return isUsCustomer

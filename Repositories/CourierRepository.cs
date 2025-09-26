@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
@@ -1265,6 +1266,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
                 Id = f.UccfId,
                 Text = f.UccfName
             })
+            .OrderBy(f => f.Text)
             .AsNoTracking()
             .ToListAsync();
 
@@ -1457,15 +1459,48 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
     public async Task UpdateAfterHoursCourierScheduleAsync(AfterHoursCourierScheduleViewModel request)
     {
         var dayOfWeek = (DayOfWeek)Enum.Parse(typeof(DayOfWeek), request.Day);
-
+        var startTime = DateTime.Parse(request.FormattedStartDate);
+        var endTime = DateTime.Parse(request.FormattedEndDate);
+        
         var rowsAffected = await Context.TblAfterhoursCouriers
             .Where(c => c.Id == request.AfterHoursScheduleId)
             .ExecuteUpdateAsync(setters => setters
-                .SetProperty(e => e.StartTime, request.StartTime)
-                .SetProperty(e => e.EndTime, request.EndTime)
+                .SetProperty(e => e.StartTime, startTime)
+                .SetProperty(e => e.EndTime, endTime)
                 .SetProperty(e => e.WeekDay, (int)dayOfWeek)
             );
-        
+
         if (rowsAffected == 0) throw new Exception("After hours schedule not found");
+    }
+
+    public async Task CreateAfterHoursCourierScheduleAsync(AfterHoursCourierScheduleViewModel request)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(request.FormattedStartDate);
+            ArgumentNullException.ThrowIfNull(request.FormattedEndDate);
+
+            var dayOfWeek = (DayOfWeek)Enum.Parse(typeof(DayOfWeek), request.Day);
+            var startTime = DateTime.Parse(request.FormattedStartDate);
+            var endTime = DateTime.Parse(request.FormattedEndDate);
+
+            var schedule = new TblAfterhoursCourier
+            {
+                CourierId = request.CourierId,
+                WeekDay = (int)dayOfWeek,
+                StartTime = startTime,
+                EndTime = endTime
+            };
+            
+            await Context.TblAfterhoursCouriers.AddAsync(schedule);
+            await Context.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierRepository),
+                    nameof(CreateAfterHoursCourierScheduleAsync)));
+            throw;
+        }
     }
 }

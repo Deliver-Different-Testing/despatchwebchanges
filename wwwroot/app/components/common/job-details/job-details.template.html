@@ -1849,7 +1849,6 @@
         <md-icon md-font-set="material-symbols-outlined" style="font-size: 96px; color: #666; margin-bottom: 16px;">
             {{ ctrl.isPdfFile(ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex]) ? 'picture_as_pdf' : 'insert_drive_file' }}
         </md-icon>
-        <h3 style="margin-bottom: 8px;">{{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].fileName}}</h3>
         <p style="margin-bottom: 16px; color: #666;">Click below to download this file</p>
         <md-button class="md-raised md-primary" ng-click="ctrl.downloadFile(ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex])">
             <md-icon md-font-set="material-symbols-outlined">download</md-icon>
@@ -1882,7 +1881,7 @@
                     <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px; color: #666; margin-bottom: 8px;">
                         {{ ctrl.isPdfFile(photo) ? 'picture_as_pdf' : 'insert_drive_file' }}
                     </md-icon>
-                    <span style="font-size: 10px; text-align: center; color: #666;">{{photo.fileName}}</span>
+                    <span style="font-size: 10px; text-align: center; color: #666; margin-top: 20px;">{{photo.fileName}}</span>
                 </div>
 
                 <md-grid-tile-footer>
@@ -1976,7 +1975,7 @@
                     <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px; color: #666; margin-bottom: 8px;">
                         {{ ctrl.isPdfFile(photo) ? 'picture_as_pdf' : 'insert_drive_file' }}
                     </md-icon>
-                    <span style="font-size: 10px; text-align: center; color: #666;">{{photo.fileName}}</span>
+                    <span style="font-size: 10px; text-align: center; color: #666; margin-top: 20px;">{{photo.fileName}}</span>
                 </div>
 
                 <md-grid-tile-footer>

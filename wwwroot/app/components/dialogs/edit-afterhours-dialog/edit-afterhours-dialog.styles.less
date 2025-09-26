@@ -1,118 +1,105 @@
-﻿@import "../../../../css/variables.less";
+﻿// Import variables for consistency
+@import '../../../../css/variables.less';
 
-// Dialog-specific variables
-@card-shadow: 0 1px 3px 0 rgba(0,0,0,0.2), 0 1px 1px 0 rgba(0,0,0,0.14), 0 2px 1px -1px rgba(0,0,0,0.12);
-@card-hover-shadow: 0 3px 6px 0 rgba(0,0,0,0.2), 0 2px 2px 0 rgba(0,0,0,0.14), 0 3px 1px -2px rgba(0,0,0,0.12);
-@input-height: 56px;
-@dialog-width: 720px;
+// Dialog specific variables
+@dialog-max-width: 560px;
+@dialog-padding: 24px;
+@header-gradient-start: @primary-blue;
+@header-gradient-end: darken(@primary-blue, 8%);
 
-// Main Dialog Container
 .edit-afterhours-dialog {
-  width: @dialog-width;
-  max-width: 90vw;
-  max-height: 90vh;
-  border-radius: 4px;
-
-  form {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-  }
+  max-width: @dialog-max-width;
+  border-radius: @dialog-border-radius;
+  overflow: visible;
 
   // Dialog Content
   .dialog-content {
-    flex: 1;
+    padding: 0;
     overflow-y: auto;
-    background-color: @main-background-color;
-    padding: 24px;
+    max-height: 60vh;
+    background-color: #fafafa;
 
     .content-container {
-      max-width: 100%;
+      padding: @dialog-padding;
     }
 
-    // Material Cards
-    .content-card {
+    // Section Panels
+    .selection-panel,
+    .info-panel,
+    .schedule-panel {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
       margin-bottom: 20px;
-      box-shadow: @card-shadow;
-      transition: box-shadow 0.3s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
 
       &:last-child {
         margin-bottom: 0;
       }
+    }
 
-      md-card-header {
-        padding: 16px 24px;
-        border-bottom: 1px solid rgba(0,0,0,0.12);
-        background-color: #fafafa;
+    // Section Titles
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 16px;
+      font-weight: 500;
+      color: @text-dark;
+      margin: 0 0 16px 0;
 
-        .md-headline {
-          display: flex;
-          align-items: center;
-          font-size: @font-lg;
-          font-weight: @weight-medium;
-          color: @text-dark;
-          margin: 0;
-
-          .section-icon {
-            margin-right: 12px;
-            color: @primary-blue;
-          }
-        }
-      }
-
-      md-card-content {
-        padding: 24px;
-
-        .helper-text {
-          color: @text-muted;
-          font-size: @font-sm;
-          margin: 0 0 20px 0;
-        }
+      md-icon {
+        color: @primary-blue;
+        font-size: 22px;
+        width: 22px;
+        height: 22px;
       }
     }
 
-    // Courier Search Field
-    .courier-search-field {
+    // Help Text
+    .help-text {
+      color: @text-muted;
+      font-size: 13px;
+      margin: 0 0 16px 0;
+    }
+
+    // Driver Search Autocomplete
+    .driver-search {
       width: 100%;
 
-      .md-autocomplete-wrap {
-        height: @input-height;
-      }
-
       input {
-        height: @input-height;
-        font-size: @font-base;
+        font-size: 14px;
       }
     }
 
-    // Courier Info Card
-    .courier-info-card {
+    // Info Panel
+    .info-panel {
       .info-row {
         display: flex;
         gap: 32px;
 
-        .info-field {
+        .info-item {
           flex: 1;
 
           label {
             display: block;
+            font-size: 12px;
             color: @text-muted;
-            font-size: @font-xs;
-            font-weight: @weight-medium;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
+            font-weight: 500;
           }
 
-          .info-value {
-            font-size: @font-lg;
+          .value {
+            font-size: 16px;
             color: @text-dark;
-            font-weight: @weight-normal;
+            font-weight: 500;
 
-            &.courier-code {
-              font-family: 'Roboto Mono', monospace;
+            &.code-value {
+              font-family: 'Courier New', monospace;
               background-color: #f5f5f5;
-              padding: 8px 12px;
+              padding: 4px 8px;
               border-radius: 4px;
               display: inline-block;
             }
@@ -121,239 +108,266 @@
       }
     }
 
-    // Schedule Configuration
-    .schedule-card {
-      .form-group {
-        margin-bottom: 24px;
-
-        &:last-child {
-          margin-bottom: 0;
-        }
-      }
-
-      .full-width {
+    // Schedule Panel
+    .schedule-panel {
+      // Day Selection
+      md-input-container.full-width {
         width: 100%;
+        margin-bottom: 20px;
+
+        label {
+          font-size: 14px;
+        }
+
+        .md-select-value {
+          font-size: 14px;
+          padding: 8px 0;
+        }
       }
 
-      // Time Selection Container
-      .time-selection-container {
-        .time-inputs {
-          display: flex;
-          align-items: flex-start;
-          gap: 24px;
-          margin-bottom: 24px;
+      // Time Row
+      .time-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 20px;
 
-          .time-field {
-            flex: 1;
+        .time-field {
+          flex: 1;
 
-            .time-input {
-              font-size: @font-lg;
-              font-weight: @weight-medium;
-            }
+          label {
+            font-size: 14px;
           }
 
-          .time-arrow {
-            display: flex;
-            align-items: center;
-            padding-top: 20px;
-            color: @primary-blue;
+          input {
+            font-size: 16px;
+            font-weight: 500;
           }
         }
 
-        // Duration Display
-        .duration-display {
+        .time-separator {
           display: flex;
           align-items: center;
-          padding: 16px;
-          background-color: #e8f5e9;
-          border-radius: 4px;
-          border-left: 4px solid @primary-green;
+          height: 48px;
+          padding-top: 16px;
+          color: @text-muted;
 
-          .duration-icon {
-            color: @primary-green;
-            margin-right: 16px;
-          }
-
-          .duration-info {
-            flex: 1;
-
-            .duration-label {
-              display: block;
-              color: @text-muted;
-              font-size: @font-xs;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-              margin-bottom: 4px;
-            }
-
-            .duration-value {
-              display: block;
-              color: @text-dark;
-              font-size: @font-xl;
-              font-weight: @weight-medium;
-            }
+          md-icon {
+            font-size: 24px;
           }
         }
       }
 
-      // Time Validation Error
-      .time-validation-error {
+      // Duration Display
+      .duration-display {
         display: flex;
         align-items: center;
-        padding: 12px;
-        background-color: #ffebee;
-        border-radius: 4px;
-        color: @error-red;
-        margin-top: 16px;
+        gap: 12px;
+        padding: 12px 16px;
+        background-color: #e3f2fd;
+        border-radius: 6px;
+        margin-bottom: 16px;
 
         md-icon {
-          margin-right: 8px;
+          color: @primary-blue;
+          font-size: 24px;
         }
 
-        span {
-          font-size: @font-sm;
+        .duration-label {
+          font-size: 12px;
+          color: @text-muted;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .duration-value {
+          font-size: 18px;
+          font-weight: 600;
+          color: @text-dark;
+          margin-left: auto;
         }
       }
-    }
 
-    // Error Messages
-    .error-message {
-      color: @error-red;
-      font-size: @font-xs;
-      margin-top: 4px;
-      display: block;
+      // Error Banner
+      .error-banner {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        background-color: #fff3e0;
+        border: 1px solid #ffcc80;
+        border-radius: 6px;
+        color: #e65100;
+        font-size: 13px;
+
+        md-icon {
+          color: #ff9800;
+          font-size: 20px;
+        }
+      }
     }
   }
 
   // Dialog Actions
   .dialog-actions {
-    padding: 8px 16px;
-    background-color: white;
-    border-top: 1px solid rgba(0,0,0,0.12);
+    background: white;
+    border-top: 1px solid #e0e0e0;
+    padding: 12px 16px;
     display: flex;
     justify-content: flex-end;
     gap: 8px;
 
     .md-button {
-      min-width: 120px;
-      font-weight: @weight-medium;
+      min-width: 100px;
+      font-weight: 500;
       letter-spacing: 0.5px;
 
-      &:not(.md-raised) {
-        color: @text-muted;
-
-        &:hover {
-          background-color: rgba(0,0,0,0.04);
+      &.save-button {
+        md-icon {
+          margin-right: 8px;
+          font-size: 18px;
         }
-      }
 
-      &.md-primary {
-        background-color: @primary-blue;
-        color: white;
+        &:not([disabled]) {
+          background-color: @primary-blue !important;
+          color: white !important;
 
-        &:hover:not([disabled]) {
-          background-color: darken(@primary-blue, 10%);
+          &:hover {
+            background-color: darken(@primary-blue, 5%) !important;
+          }
         }
 
         &[disabled] {
-          background-color: rgba(0,0,0,0.12) !important;
-          color: rgba(0,0,0,0.26) !important;
+          background-color: #e0e0e0 !important;
+          color: rgba(0, 0, 0, 0.38) !important;
         }
       }
     }
   }
 
-  // Material Input Container Overrides
+  // Material Overrides
   md-input-container {
-    margin: 18px 0;
-
-    label {
-      color: @text-muted;
-      font-size: @font-base;
+    .md-errors-spacer {
+      min-height: 0;
     }
 
-    &.md-input-focused label {
-      color: @primary-blue;
+    &.md-input-invalid {
+      .md-input {
+        border-color: @error-red;
+      }
+
+      label {
+        color: @error-red;
+      }
     }
 
-    .md-input {
-      border-color: rgba(0,0,0,0.12);
-      font-size: @font-base;
-    }
-
-    &.md-input-focused .md-input {
-      border-color: @primary-blue;
-    }
-
-    &.md-input-invalid .md-input {
-      border-color: @error-red;
+    .md-input-messages-animation {
+      .md-input-message-animation {
+        font-size: 12px;
+        color: @error-red;
+        margin-top: 5px;
+      }
     }
   }
 
-  // Material Select Overrides
   md-select {
-    margin: 0;
-
-    .md-select-value {
-      border-bottom-color: rgba(0,0,0,0.12);
-      min-height: 32px;
-
-      span {
-        font-size: @font-base;
-      }
+    .md-select-icon {
+      color: rgba(0, 0, 0, 0.38);
     }
 
-    &:focus .md-select-value {
-      border-bottom-color: @primary-blue;
-      border-bottom-width: 2px;
-    }
-  }
-
-  // Scrollbar Styling
-  .dialog-content {
-    &::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: @scroll-bar-color;
-      border-radius: 3px;
-
-      &:hover {
-        background: darken(@scroll-bar-color, 10%);
+    &[aria-expanded="true"] {
+      .md-select-icon {
+        transform: rotate(180deg);
       }
     }
   }
 
-  // Responsive Design
-  @media (max-width: 768px) {
-    width: 100%;
-    max-width: 100%;
-    height: 100vh;
-    max-height: 100vh;
-    border-radius: 0;
+  // Scrollbar
+  .dialog-content::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .dialog-content::-webkit-scrollbar-track {
+    background: #f5f5f5;
+  }
+
+  .dialog-content::-webkit-scrollbar-thumb {
+    background: #c0c0c0;
+    border-radius: 3px;
+
+    &:hover {
+      background: #a0a0a0;
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 600px) {
+  .edit-afterhours-dialog {
+    width: calc(100vw - 32px);
+    max-width: calc(100vw - 32px);
+    margin: 16px;
 
     .dialog-content {
-      padding: 16px;
-    }
+      .content-container {
+        padding: 16px;
+      }
 
-    .courier-info-card .info-row {
-      flex-direction: column;
-      gap: 16px;
-    }
+      .schedule-panel {
+        .time-row {
+          flex-direction: column;
+          gap: 0;
 
-    .schedule-card .time-inputs {
-      flex-direction: column;
+          .time-separator {
+            display: none;
+          }
 
-      .time-arrow {
-        transform: rotate(90deg);
-        padding: 0;
-        margin: -8px 0;
+          .time-field {
+            width: 100%;
+          }
+        }
+      }
+
+      .info-panel {
+        .info-row {
+          flex-direction: column;
+          gap: 16px;
+        }
       }
     }
+
+    .dialog-actions {
+      flex-direction: column-reverse;
+      padding: 16px;
+
+      .md-button {
+        width: 100%;
+        margin: 0;
+
+        &:not(:first-child) {
+          margin-bottom: 8px;
+        }
+      }
+    }
+  }
+}
+
+// Animation
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.edit-afterhours-dialog {
+  .selection-panel,
+  .info-panel,
+  .schedule-panel {
+    animation: slideIn 0.3s ease-out;
   }
 }
