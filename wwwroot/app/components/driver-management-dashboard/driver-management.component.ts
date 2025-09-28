@@ -42,7 +42,7 @@ class DriverManagementController extends BaseController {
         "editAfterhoursDialogService",
     ];
 
-    private static LastActiveTabKey = `lastActiveTabDriverManagement_${ContactID}`;
+    private readonly LastActiveTabKey = `lastActiveTabDriverManagement_${ContactID}`;
 
     isUsCustomer: boolean = false;
 
@@ -166,14 +166,13 @@ class DriverManagementController extends BaseController {
         super();
         this.initServices($timeout, $interval, $scope);
         this.isUsCustomer = appConfig.US_Customer;
+        this.loadLastActiveTab();
         this.bindFunctions();
 
         console.log('Driver management component initialized');
     }
 
     $onInit(): void {
-        this.loadLastActiveTab();
-
         this.loadAllFleetOptions().then(() => {
             this.loadInitialData()
                 .then(() => {
@@ -195,12 +194,18 @@ class DriverManagementController extends BaseController {
     }
 
     private loadLastActiveTab() {
-        const lastActiveTab = localStorage.getItem(DriverManagementController.LastActiveTabKey);
-        console.log('Loading last active tab:', lastActiveTab);
+        if(Modernizr.localstorage) {
+            const lastActiveTab = localStorage.getItem(this.LastActiveTabKey);
+            console.log('Loading last active tab:', lastActiveTab);
 
-        if (lastActiveTab) {
-            this.selectedTab = parseInt(lastActiveTab);
-            console.log('Last active tab loaded:', this.selectedTab);
+            if (lastActiveTab) {
+                this.selectedTab = parseInt(lastActiveTab);
+                console.log('Last active tab loaded:', this.selectedTab);
+            } else {
+                console.warn("No active tab found");
+            }
+        } else {
+            console.warn('No active tab found:', this.selectedTab);
         }
     }
 
@@ -209,6 +214,9 @@ class DriverManagementController extends BaseController {
             () => this.selectedTab,
             async (newValue: number, oldValue: number) => {
                 if (newValue !== oldValue) {
+                    // Save tab
+                    this.saveLastActiveTab(newValue);
+                    
                     console.log('Selected tab changed:', newValue);
                     await this.loadInitialData();
                 }
@@ -312,11 +320,19 @@ class DriverManagementController extends BaseController {
         this.selectedTab = index;
 
         // Save the last active tab
-        localStorage.setItem(DriverManagementController.LastActiveTabKey, index.toString());
+        this.saveLastActiveTab(index);
 
         await this.loadInitialData();
     }
 
+    private saveLastActiveTab(index: number): void {
+        if(Modernizr.localstorage) {
+            localStorage.setItem(this.LastActiveTabKey, index.toString());
+        } else {
+            console.warn("Unable to save the last active tab. Local storage unavailable")
+        }
+    }
+    
     async selectDriver(courier: ISuggestion): Promise<void> {
         try {
             this.driverInformationLoading = true;
@@ -659,31 +675,39 @@ class DriverManagementController extends BaseController {
 
         this.exportToCSV(data, 'Driver_Earnings');
     }
-    
+
+    // Update createNewSchedule method to ensure proper async handling:
     async createNewSchedule($event: MouseEvent) {
-        const today = dayjs();
-        const startTime = today.hour(17).minute(0).second(0);
-        const endTime = today.hour(21).minute(0).second(0);
+        try {
+            const today = dayjs();
+            const startTime = today.hour(17).minute(0).second(0);
+            const endTime = today.hour(21).minute(0).second(0);
 
-        const newSchedule: IAfterHoursCourierSchedule = {
-            afterHoursScheduleId: 0,
-            courierId: 0,
-            courierName: '',
-            courierCode: '',
-            day: today.format('dddd'),
-            startTime: startTime,
-            endTime: endTime,
-            duration: '4 hours',
-            formattedStartDate: formatDayJsForApi(startTime),
-            formattedEndDate: formatDayJsForApi(endTime),
-        };
+            const newSchedule: IAfterHoursCourierSchedule = {
+                afterHoursScheduleId: 0,
+                courierId: 0,
+                courierName: '',
+                courierCode: '',
+                day: today.format('dddd'),
+                startTime: startTime,
+                endTime: endTime,
+                duration: '4 hours',
+                formattedStartDate: formatDayJsForApi(startTime),
+                formattedEndDate: formatDayJsForApi(endTime),
+            };
 
-        const result = await this.openEditAfterHoursDialog($event, newSchedule);
-        if(!result) return;
+            const result = await this.openEditAfterHoursDialog($event, newSchedule);
+            if(!result) return;
 
-        await this.driverManagementService.createAfterHoursCourierSchedule(result);
-        this.toastrService.showSuccessToast('Successfully created');
-        await this.loadAfterHoursSchedule();
+            await this.driverManagementService.createAfterHoursCourierSchedule(result);
+            this.toastrService.showSuccessToast('Successfully created');
+            await this.loadAfterHoursSchedule();
+
+            this.applyScope();
+        } catch (error) {
+            console.error('Error creating new schedule:', error);
+            this.toastrService.showErrorToast('Failed to create schedule');
+        }
     }
     
     async editAfterHoursSchedule($event: MouseEvent, afterHoursSchedule: IAfterHoursCourierSchedule) {

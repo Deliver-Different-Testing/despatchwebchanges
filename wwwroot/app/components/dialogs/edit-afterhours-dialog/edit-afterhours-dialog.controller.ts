@@ -29,6 +29,7 @@ class EditAfterhoursDialogController extends BaseController {
     validationErrors: { [key: string]: string } = {};
     selectedCourier?: ISuggestion;
     courierSearchText?: string;
+    
     editableAfterHoursSchedule: IAfterHoursCourierSchedule;
     
     constructor(
@@ -53,13 +54,28 @@ class EditAfterhoursDialogController extends BaseController {
 
     $onInit() {
         console.log('EditAfterhoursDialogController: Initialized with schedule:', this.editableAfterHoursSchedule);
+
+        // Force close any open select/autocomplete on click
+        this.registerTimeout(() => {
+            const dialogElement = document.querySelector('.edit-afterhours-dialog');
+            if (dialogElement) {
+                dialogElement.addEventListener('click', (e) => {
+                    const target = e.target as HTMLElement;
+                    // Close select if clicking outside select elements
+                    if (!target.closest('md-select') && !target.closest('md-autocomplete')) {
+                        angular.element(document.querySelectorAll('md-select-menu')).remove();
+                        angular.element(document.querySelectorAll('.md-autocomplete-suggestions')).remove();
+                    }
+                });
+            }
+        }, 100);
     }
 
-    courierSearch(searchText: string): Promise<ISuggestion[]> {
+    async courierSearch(searchText: string): Promise<ISuggestion[]> {
         try {
-            return this.DispatchData.autocompleteSearch(searchText, "/courier/AllActiveSearch");
-        } catch (error: any) {
-            console.error(`Search failed: ${error.message}`);
+            return await this.DispatchData.autocompleteSearch(searchText, "/courier/AllActiveSearch");
+        } catch (error) {
+            console.error(error);
             this.toastrService.showErrorToast("An error occurred while searching. Please try again later.");
             return Promise.resolve([]);
         }
@@ -105,6 +121,12 @@ class EditAfterhoursDialogController extends BaseController {
 
     onDayChange(): void {
         this.validateForm();
+
+        // Force close the select menu
+        this.registerTimeout(() => {
+            angular.element(document.querySelectorAll('md-select-menu')).remove();
+            angular.element(document.querySelectorAll('.md-select-menu-container')).remove();
+        }, 100);
     }
 
     onTimeChange(): void {
@@ -130,9 +152,34 @@ class EditAfterhoursDialogController extends BaseController {
     }
 
     courierSelected(courier: ISuggestion) {
+        if (!courier) return;
+
         this.editableAfterHoursSchedule.courierId = courier.id;
+        this.editableAfterHoursSchedule.courierName = courier.text;
+
+        // Extract courier code if present in format "CODE - Name"
+        const parts = courier.text.split(' - ');
+        if (parts.length > 0) {
+            this.editableAfterHoursSchedule.courierCode = parts[0];
+        }
+
         this.validateForm();
+
+        // Force Angular Material to close the autocomplete dropdown
+        this.registerTimeout(() => {
+            // Trigger the blur event on the input to close the dropdown
+            const autocompleteInput = document.querySelector('.edit-afterhours-dialog md-autocomplete input') as HTMLInputElement;
+            if (autocompleteInput) {
+                autocompleteInput.blur();
+            }
+
+            // Also remove any lingering dropdown containers
+            angular.element(document.querySelectorAll('.md-autocomplete-suggestions-container')).remove();
+            angular.element(document.querySelectorAll('.md-scroll-mask')).remove();
+            angular.element(document.querySelectorAll('.md-virtual-repeat-container')).remove();
+        }, 100);
     }
+
 
     get startTime(): Date | undefined {
         return this.editableAfterHoursSchedule.startTime?.toDate();

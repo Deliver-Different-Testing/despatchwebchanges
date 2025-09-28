@@ -736,8 +736,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         };
 
         // Add date filter parameters - handle all options
-        if (queryParams.dateCutoff) {
-            params.dateCutoff = formatDateForApi(queryParams.dateCutoff);
+        if (queryParams.endDate) {
+            params.dateCutoff = formatDateForApi(queryParams.endDate);
         }
 
         // Add start and end date parameters if present

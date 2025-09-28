@@ -1,5 +1,5 @@
 ﻿<md-dialog aria-label="Edit Afterhours Schedule" class="edit-afterhours-dialog">
-    <form name="afterhoursForm" ng-submit="ctrl.save()" novalidate>
+    <form name="afterhoursForm" ng-submit="$event.preventDefault(); ctrl.save()" novalidate>
         <!-- Dialog Header -->
         <md-toolbar class="md-hue-1">
             <div class="md-toolbar-tools">
@@ -37,6 +37,7 @@
                             md-min-length="2"
                             md-floating-label="Search driver..."
                             md-clear-button="true"
+                            md-escape-options="blur"
                             required>
                         <md-item-template>
                             <span md-highlight-text="ctrl.courierSearchText">{{item.text}}</span>
@@ -77,6 +78,7 @@
                         <label>Day of Week</label>
                         <md-select ng-model="ctrl.editableAfterHoursSchedule.day"
                                    ng-change="ctrl.onDayChange()"
+                                   md-on-close="ctrl.onDayChange()"
                                    required>
                             <md-option ng-repeat="day in ctrl.daysOfWeek" ng-value="day">
                                 {{day}}

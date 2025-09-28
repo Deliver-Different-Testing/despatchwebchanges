@@ -28,10 +28,9 @@ class EditAfterhoursDialogService implements angular.IServiceProvider {
                 template: require("./edit-afterhours-dialog.template.html"),
                 parent: this.$document.parent(),
                 targetEvent: $event,
-                clickOutsideToClose: true,
-                escapeToClose: true,
-                fullscreen: true,
-                hasBackdrop: true,
+                clickOutsideToClose: false,
+                escapeToClose: false,
+                fullscreen: false,
                 locals: {
                     afterHourScheduleItem
                 },
