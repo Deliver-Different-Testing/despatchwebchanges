@@ -31,7 +31,6 @@ class DriverManagementController extends BaseController {
     static $inject = [
         "$mdDialog",
         "$mdSidenav",
-        "$log",
         "$window",
         "$timeout",
         "$interval",
@@ -154,7 +153,6 @@ class DriverManagementController extends BaseController {
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private $mdSidenav: angular.material.ISidenavService,
-        private $log: angular.ILogService,
         private $window: angular.IWindowService,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
@@ -170,7 +168,7 @@ class DriverManagementController extends BaseController {
         this.isUsCustomer = appConfig.US_Customer;
         this.bindFunctions();
 
-        this.$log.debug('Driver management component initialized');
+        console.log('Driver management component initialized');
     }
 
     $onInit(): void {
@@ -183,7 +181,7 @@ class DriverManagementController extends BaseController {
                 })
                 .catch(error => {
                     this.toastrService.showErrorToast('Failed to initialize driver management');
-                    this.$log.error('Initialization error:', error);
+                    console.error('Initialization error:', error);
                 });
         });
     }
@@ -198,11 +196,11 @@ class DriverManagementController extends BaseController {
 
     private loadLastActiveTab() {
         const lastActiveTab = localStorage.getItem(DriverManagementController.LastActiveTabKey);
-        this.$log.debug('Loading last active tab:', lastActiveTab);
+        console.log('Loading last active tab:', lastActiveTab);
 
         if (lastActiveTab) {
             this.selectedTab = parseInt(lastActiveTab);
-            this.$log.debug('Last active tab loaded:', this.selectedTab);
+            console.log('Last active tab loaded:', this.selectedTab);
         }
     }
 
@@ -211,7 +209,7 @@ class DriverManagementController extends BaseController {
             () => this.selectedTab,
             async (newValue: number, oldValue: number) => {
                 if (newValue !== oldValue) {
-                    this.$log.debug('Selected tab changed:', newValue);
+                    console.log('Selected tab changed:', newValue);
                     await this.loadInitialData();
                 }
             }
@@ -223,69 +221,69 @@ class DriverManagementController extends BaseController {
     }
 
     private async loadInitialData(): Promise<void> {
-        this.$log.debug('[loadInitialData] Starting initial data load for tab:', this.selectedTab);
+        console.log('[loadInitialData] Starting initial data load for tab:', this.selectedTab);
 
         // Load data based on the selected tab
         switch (this.selectedTab) {
             case DriverManagementTabs.DriverDetails:
-                this.$log.debug('[loadInitialData] Tab 0 - Driver details already loaded');
+                console.log('[loadInitialData] Tab 0 - Driver details already loaded');
                 break;
             case DriverManagementTabs.TodayActive:
-                this.$log.debug('[loadInitialData] Tab 1 - Loading today active drivers...');
+                console.log('[loadInitialData] Tab 1 - Loading today active drivers...');
                 try {
                     await this.loadTodayActiveDrivers();
-                    this.$log.debug('[loadInitialData] Today active drivers loaded successfully');
+                    console.log('[loadInitialData] Today active drivers loaded successfully');
                 } catch (error) {
-                    this.$log.error('[loadInitialData] Error loading today active drivers:', error);
+                    console.error('[loadInitialData] Error loading today active drivers:', error);
                     throw error;
                 }
                 break;
             case DriverManagementTabs.DriverCompliance:
-                this.$log.debug('[loadInitialData] Tab 2 - Loading compliance data...');
+                console.log('[loadInitialData] Tab 2 - Loading compliance data...');
                 try {
                     await this.loadComplianceData();
-                    this.$log.debug('[loadInitialData] Compliance data loaded successfully');
+                    console.log('[loadInitialData] Compliance data loaded successfully');
                 } catch (error) {
-                    this.$log.error('[loadInitialData] Error loading compliance data:', error);
+                    console.error('[loadInitialData] Error loading compliance data:', error);
                     throw error;
                 }
                 break;
             case DriverManagementTabs.AfterHours:
-                this.$log.debug('[loadInitialData] Tab 3 - Loading after hours schedule...');
+                console.log('[loadInitialData] Tab 3 - Loading after hours schedule...');
                 try {
                     await this.loadAfterHoursSchedule();
-                    this.$log.debug('[loadInitialData] After hours schedule loaded successfully');
+                    console.log('[loadInitialData] After hours schedule loaded successfully');
                 } catch (error) {
-                    this.$log.error('[loadInitialData] Error loading after hours schedule:', error);
+                    console.error('[loadInitialData] Error loading after hours schedule:', error);
                     throw error;
                 }
                 break;
             case DriverManagementTabs.DriverEmails:
-                this.$log.debug('[loadInitialData] Tab 4 - Loading driver emails...');
+                console.log('[loadInitialData] Tab 4 - Loading driver emails...');
                 try {
                     await this.loadDriverEmails();
-                    this.$log.debug('[loadInitialData] Driver emails loaded successfully');
+                    console.log('[loadInitialData] Driver emails loaded successfully');
                 } catch (error) {
-                    this.$log.error('[loadInitialData] Error loading driver emails:', error);
+                    console.error('[loadInitialData] Error loading driver emails:', error);
                     throw error;
                 }
                 break;
             case DriverManagementTabs.DriverEarnings:
-                this.$log.debug('[loadInitialData] Tab 5 - Loading driver earnings...');
+                console.log('[loadInitialData] Tab 5 - Loading driver earnings...');
                 try {
                     await this.loadDriverTodayEarnings();
-                    this.$log.debug('[loadInitialData] Driver earnings loaded successfully');
+                    console.log('[loadInitialData] Driver earnings loaded successfully');
                 } catch (error) {
-                    this.$log.error('[loadInitialData] Error loading driver earnings:', error);
+                    console.error('[loadInitialData] Error loading driver earnings:', error);
                     throw error;
                 }
                 break;
             default:
-                this.$log.debug('[loadInitialData] Tab', this.selectedTab, '- No data loading required');
+                console.log('[loadInitialData] Tab', this.selectedTab, '- No data loading required');
                 break;
         }
 
-        this.$log.debug('[loadInitialData] Initial data load completed');
+        console.log('[loadInitialData] Initial data load completed');
     }
 
     greetUser() {
@@ -302,7 +300,7 @@ class DriverManagementController extends BaseController {
             try {
                 this.$mdSidenav("right").toggle();
             } catch (error) {
-                this.$log.debug('Sidenav not available:', error);
+                console.log('Sidenav not available:', error);
             }
         }
     }
@@ -310,7 +308,7 @@ class DriverManagementController extends BaseController {
     async onTabChange(index: number): Promise<void> {
         if (this.selectedTab === index) return;
 
-        this.$log.debug('Tab changed to:', index);
+        console.log('Tab changed to:', index);
         this.selectedTab = index;
 
         // Save the last active tab
@@ -332,7 +330,7 @@ class DriverManagementController extends BaseController {
             this.selectedDriverId = courier.id;
             this.selectedDriver = await this.driverManagementService.getCourierDetailsForDashboard(courier.id);
         } catch (error) {
-            this.$log.error('Error loading driver details:', error);
+            console.error('Error loading driver details:', error);
             this.toastrService.showErrorToast('Failed to load driver details');
         } finally {
             this.driverInformationLoading = false;
@@ -358,7 +356,7 @@ class DriverManagementController extends BaseController {
                 totalDrivers: complianceResponse.total
             };
         } catch (error) {
-            this.$log.error('Error loading compliance data:', error);
+            console.error('Error loading compliance data:', error);
             this.toastrService.showErrorToast('Failed to load compliance data');
         }
     }
@@ -386,7 +384,7 @@ class DriverManagementController extends BaseController {
             await this.driverManagementService.sendComplianceReminder(item);
             this.toastrService.showSuccessToast(`Reminder sent to ${item.name}`);
         } catch (error) {
-            this.$log.error('Error sending reminder:', error);
+            console.error('Error sending reminder:', error);
             this.toastrService.showErrorToast('Failed to send reminder');
         }
     }
@@ -415,7 +413,7 @@ class DriverManagementController extends BaseController {
         } catch (error) {
             // User canceled or error occurred
             if (error !== undefined) {
-                this.$log.error('Error sending bulk reminders:', error);
+                console.error('Error sending bulk reminders:', error);
                 this.toastrService.showErrorToast('Failed to send reminders');
             }
         }
@@ -457,7 +455,7 @@ class DriverManagementController extends BaseController {
                 todayCoverage: false // ToDo: Implement this
             }
         } catch (error) {
-            this.$log.error('Error loading after hours schedule:', error);
+            console.error('Error loading after hours schedule:', error);
             this.toastrService.showErrorToast('Failed to load after hours schedule');
         }
     }
@@ -487,7 +485,7 @@ class DriverManagementController extends BaseController {
             this.driverEmailList = driverEmailResponse?.items ?? [];
             this.totalDriverEmails = driverEmailResponse?.total ?? 0
         } catch (error) {
-            this.$log.error('Error loading today active drivers:', error);
+            console.error('Error loading today active drivers:', error);
             this.toastrService.showErrorToast('Failed to load today active drivers');
         }
     }
@@ -514,7 +512,7 @@ class DriverManagementController extends BaseController {
 
             await this.openComposeEmailDialog($event, selectedEmails);
         } catch (error) {
-            this.$log.error('Error sending email:', error);
+            console.error('Error sending email:', error);
             this.toastrService.showErrorToast('Failed to send email');
         }
     }
@@ -592,7 +590,7 @@ class DriverManagementController extends BaseController {
                 averageSession: this.formatSessionTime(todayActiveResponse.averageSessionTime)
             };
         } catch (error) {
-            this.$log.error('Error loading today active drivers:', error);
+            console.error('Error loading today active drivers:', error);
             this.toastrService.showErrorToast('Failed to load today active drivers');
         }
     }
@@ -640,7 +638,7 @@ class DriverManagementController extends BaseController {
                 totalDeliveriesToday: earningsResponse.totalDeliveriesToday
             };
         } catch (error) {
-            this.$log.error('Error loading driver earnings:', error);
+            console.error('Error loading driver earnings:', error);
             this.toastrService.showErrorToast('Failed to load driver earnings');
         }
     }
@@ -701,18 +699,18 @@ class DriverManagementController extends BaseController {
         try {
             const result = await this.editAfterhoursDialogService.openEditAfterhoursDialog($event, afterHoursSchedule);
             if (!result) {
-                this.$log.debug('Edit after hours is empty');
+                console.log('Edit after hours is empty');
                 return;
             }
 
           return result;
         } catch (error) {
             if (!error) {
-                this.$log.debug('Edit after hours is cancelled');
+                console.log('Edit after hours is cancelled');
                 return;
             }
 
-            this.$log.error('Error editing after hours schedule:', error);
+            console.error('Error editing after hours schedule:', error);
             this.toastrService.showErrorToast('Failed to edit after hours schedule');
         }
     }

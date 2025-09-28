@@ -17,7 +17,6 @@ class EditAfterhoursDialogController extends BaseController {
         '$timeout',
         '$interval',
         'DispatchData',
-        '$log',
         'toastrService',
         'afterHourScheduleItem',
     ];
@@ -37,13 +36,12 @@ class EditAfterhoursDialogController extends BaseController {
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
         private DispatchData: DispatchCoreService,
-        private $log: angular.ILogService,
         private toastrService: ToastrService,
         afterHourScheduleItem: IAfterHoursCourierSchedule
     ) {
         super();
         this.initServices($timeout, $interval);
-        this.$log.debug('EditAfterhoursDialogController: Controller instantiated');
+        console.log('EditAfterhoursDialogController: Controller instantiated');
 
         if (afterHourScheduleItem.afterHoursScheduleId === 0) {
             this.isNewSchedule = true;
@@ -54,22 +52,14 @@ class EditAfterhoursDialogController extends BaseController {
     }
 
     $onInit() {
-        this.$log.debug('EditAfterhoursDialogController: Initialized with schedule:', this.editableAfterHoursSchedule);
-
-        // Focus on day field after dialog opens
-        this.registerTimeout(() => {
-            const dayField = angular.element('#daySelect');
-            if (dayField.length) {
-                dayField.focus();
-            }
-        }, 300);
+        console.log('EditAfterhoursDialogController: Initialized with schedule:', this.editableAfterHoursSchedule);
     }
 
     courierSearch(searchText: string): Promise<ISuggestion[]> {
         try {
             return this.DispatchData.autocompleteSearch(searchText, "/courier/AllActiveSearch");
         } catch (error: any) {
-            this.$log.error(`Search failed: ${error.message}`);
+            console.error(`Search failed: ${error.message}`);
             this.toastrService.showErrorToast("An error occurred while searching. Please try again later.");
             return Promise.resolve([]);
         }
@@ -162,15 +152,15 @@ class EditAfterhoursDialogController extends BaseController {
 
     save(): void {
         if (this.validateForm()) {
-            this.$log.debug('EditAfterhoursDialogController: Saving schedule:', this.editableAfterHoursSchedule);
+            console.log('EditAfterhoursDialogController: Saving schedule:', this.editableAfterHoursSchedule);
             this.$mdDialog.hide(this.editableAfterHoursSchedule);
         } else {
-            this.$log.warn('EditAfterhoursDialogController: Form validation failed');
+            console.warn('EditAfterhoursDialogController: Form validation failed');
         }
     }
 
     cancel(): void {
-        this.$log.debug('EditAfterhoursDialogController: Dialog cancelled');
+        console.log('EditAfterhoursDialogController: Dialog cancelled');
         this.$mdDialog.cancel();
     }
 }

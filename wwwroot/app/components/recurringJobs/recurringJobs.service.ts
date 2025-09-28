@@ -1,4 +1,6 @@
 import {IPrebookListModel} from "./recurringJobs.interface";
+import dayjs, {Dayjs} from "dayjs";
+import {formatDayJsForApi} from "../../functions/formatDates";
 
 class RecurringJobsService {
     static $inject = [
@@ -7,12 +9,15 @@ class RecurringJobsService {
 
     constructor(
         private $http: angular.IHttpService
-    ) {}
+    ) {
+    }
 
-    async getPreBookJobs(active: boolean): Promise<IPrebookListModel[]> {
+    async getPreBookJobs(active: boolean, startDate: Date, endDate: Date): Promise<IPrebookListModel[]> {
         const response = await this.$http.get<IPrebookListModel[]>(`job/PreBookJobs`, {
             params: {
-                active
+                active,
+                startDate: dayjs(startDate).format(),
+                endDate: dayjs(endDate).format()
             }
         });
         return response.data;

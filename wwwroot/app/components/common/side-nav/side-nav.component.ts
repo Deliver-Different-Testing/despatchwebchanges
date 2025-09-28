@@ -6,7 +6,6 @@ import {FullName} from "../../../contants";
 
 class MaterialSidenavComponentController extends BaseController {
     static $inject = [
-        "$log",
         "$state",
         "$mdSidenav",
         "$timeout",
@@ -41,7 +40,6 @@ class MaterialSidenavComponentController extends BaseController {
     private readonly debouncedClose: () => void;
 
     constructor(
-        private $log: angular.ILogService,
         private $state: angular.ui.IStateService,
         private $mdSidenav: angular.material.ISidenavService,
         $timeout: angular.ITimeoutService,
@@ -88,13 +86,13 @@ class MaterialSidenavComponentController extends BaseController {
 
             if (this.sidenavElement.length) {
                 this.setupEventListeners();
-                this.$log.debug('Sidenav initialized successfully');
+                console.info('Sidenav initialized successfully');
             } else {
                 console.warn('Sidenav element not found');
                 this.registerTimeout(() => this.initializeSidenav(), 100);
             }
         } catch (error) {
-            this.$log.error('Failed to initialize sidenav:', error);
+            console.error('Failed to initialize sidenav:', error);
             this.registerTimeout(() => this.initializeSidenav(), 200);
         }
     }
@@ -162,7 +160,7 @@ class MaterialSidenavComponentController extends BaseController {
                 }, this.ANIMATION_DURATION);
             })
             .catch((error) => {
-                this.$log.error('Sidenav action failed:', error);
+                console.error('Sidenav action failed:', error);
                 this.navState.isAnimating = false;
                 this.applyScope();
             });

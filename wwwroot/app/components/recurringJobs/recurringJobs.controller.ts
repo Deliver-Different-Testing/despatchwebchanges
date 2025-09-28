@@ -1,5 +1,5 @@
 import {IAppConfig} from "../../interfaces/app-config.interface";
-import {IJob, ISuggestion} from "../../interfaces/job.interface";
+import {IDispatchJob, IJob, ISuggestion} from "../../interfaces/job.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import {ClientInternal, ContactID} from "../../contants";
@@ -9,11 +9,12 @@ import ToastrService from "../../services/toastr.service";
 import greetUser from "../../functions/greetUser";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import IContextMenuOption from "../../interfaces/context-menu-option.interface";
+import IDateFilterData from "../common/date-filter-menu/IDateFilterData";
+import dayjs from "dayjs";
 
 class RecurringJobsController extends BaseController {
     static $inject = [
         '$mdDialog',
-        '$log',
         '$state',
         '$filter',
         '$mdSidenav',
@@ -25,6 +26,9 @@ class RecurringJobsController extends BaseController {
         '$interval',
         'APP_CONFIG',
     ];
+    
+    private static RecurringJobsLayoutKey: string = `layouts-${ContactID}`;
+    private static RecurringJobsLastActiveLayoutKey: string = `lastActiveLayout-recurring-${ContactID}`
 
     readonly boxes = {
         jobList: {
@@ -46,6 +50,10 @@ class RecurringJobsController extends BaseController {
 
     readonly isUsCustomer: boolean;
 
+    dateFilterData: IDateFilterData = {
+        startDate: dayjs().toDate(),
+        endDate: dayjs().add(24, 'hours').toDate()
+    };
     currentJobId?: number;
     jobs: IJob[] = [];
     isAdmin: boolean = false;
@@ -60,7 +68,7 @@ class RecurringJobsController extends BaseController {
     filteredData: IPrebookListModel[] = [];
     pagedData: IPrebookListModel[] = [];
     searchText: string = "";
-    promise: angular.IPromise<any> | null = null;
+    promise?: Promise<IPrebookListModel[]>
     showInput: Record<string, boolean> = {};
     jobRecordSearchText: string = "";
     cancelledSelected?: boolean;
@@ -74,7 +82,6 @@ class RecurringJobsController extends BaseController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private $log: angular.ILogService,
         private $state: angular.ui.IStateService,
         private $filter: angular.IFilterService,
         private $mdSidenav: angular.material.ISidenavService,
@@ -108,7 +115,7 @@ class RecurringJobsController extends BaseController {
         });
 
         // Initial data load
-        this.refreshData().then(() => this.$log.debug("Data Refreshed"));
+        this.refreshData().then(() => console.info("Data Refreshed"));
     }
 
     saveLayout() {
@@ -141,8 +148,8 @@ class RecurringJobsController extends BaseController {
                 this.layouts.push(currentLayout);
 
                 if (Modernizr.localstorage) {
-                    localStorage.setItem(`layouts-recurring-${ContactID}`, JSON.stringify(this.layouts));
-                    localStorage.setItem(`lastActiveLayout-recurring-${ContactID}`, name);
+                    localStorage.setItem(RecurringJobsController.RecurringJobsLayoutKey, JSON.stringify(this.layouts));
+                    localStorage.setItem(RecurringJobsController.RecurringJobsLastActiveLayoutKey, name);
                 }
             });
     }
@@ -160,7 +167,7 @@ class RecurringJobsController extends BaseController {
             .then(() => {
                 this.layouts.splice(index, 1);
                 if (Modernizr.localstorage) {
-                    localStorage.setItem(`layouts-${ContactID}`, JSON.stringify(this.layouts));
+                    localStorage.setItem(RecurringJobsController.RecurringJobsLayoutKey, JSON.stringify(this.layouts));
                 }
                 this.loadLayout(0);
                 this.toastrService.showSuccessToast("Layout deleted successfully");
@@ -195,8 +202,8 @@ class RecurringJobsController extends BaseController {
         // Load saved layouts or use default
         if (Modernizr.localstorage) {
             try {
-                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(`layouts-recurring-${ContactID}`) || '[]');
-                const lastActiveLayout = localStorage.getItem(`lastActiveLayout-recurring-${ContactID}`);
+                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(RecurringJobsController.RecurringJobsLayoutKey) || '[]');
+                const lastActiveLayout = localStorage.getItem(RecurringJobsController.RecurringJobsLastActiveLayoutKey);
 
                 this.layouts = storedLayouts || [this.defaultLayout];
                 this.layouts[0] = this.defaultLayout; // Ensure default is always up to date
@@ -227,7 +234,7 @@ class RecurringJobsController extends BaseController {
                 try {
                     this.$mdSidenav("right").toggle();
                 } catch (retryError) {
-                    this.$log.error('Sidenav still not available:', retryError);
+                    console.error('Sidenav still not available:', retryError);
                 }
             }, 100);
         }
@@ -288,7 +295,7 @@ class RecurringJobsController extends BaseController {
             this.applyLayoutDimensions();
 
             if (Modernizr.localstorage) {
-                localStorage.setItem(`lastActiveLayout-recurring-${ContactID}`, layout.name);
+                localStorage.setItem(RecurringJobsController.RecurringJobsLastActiveLayoutKey, layout.name);
             }
         });
     }
@@ -312,7 +319,7 @@ class RecurringJobsController extends BaseController {
     }
 
     goToRunViewer(): void {
-        this.$log.debug("goToRunViewer.");
+        console.info("goToRunViewer.");
         this.$state.go("home");
     }
 
@@ -330,14 +337,14 @@ class RecurringJobsController extends BaseController {
         try {
             this.currentJobId = undefined;
             this.activeFilter = active;
-            this.promise = this.recurringJobsService.getPreBookJobs(active);
+            this.promise = this.recurringJobsService.getPreBookJobs(active, this.dateFilterData.startDate, this.dateFilterData.endDate);
 
             this.jobList = await this.promise;
             this.updateTable();
 
             return this.jobList;
         } catch (error) {
-            this.$log.error("Error loading prebook jobs:", error);
+            console.error("Error loading prebook jobs:", error);
             this.jobList = [];
             this.updateTable();
 
@@ -364,7 +371,7 @@ class RecurringJobsController extends BaseController {
     }
 
     async selectJobDetail(jobId: number): Promise<void> {
-        this.$log.debug('Selected job run: ', jobId);
+        console.info('Selected job run: ', jobId);
         if (!jobId) return;
         this.currentJobId = jobId;
     }
@@ -414,9 +421,9 @@ class RecurringJobsController extends BaseController {
             );
         } catch (error) {
             if (!error) {
-                this.$log.debug("User Canceled");
+                console.info("User Canceled");
             } else {
-                this.$log.debug("Error inactivating recurring jobs:", error);
+                console.info("Error inactivating recurring jobs:", error);
 
                 // Show an error dialog to the user
                 this.$mdDialog.show(
@@ -457,9 +464,9 @@ class RecurringJobsController extends BaseController {
             );
         } catch (error) {
             if (!error) {
-                this.$log.debug("User Canceled");
+                console.info("User Canceled");
             } else {
-                this.$log.debug("Error inactivating recurring job:", error);
+                console.info("Error inactivating recurring job:", error);
 
                 // Show an error dialog to the user
                 await this.$mdDialog.show(
@@ -503,9 +510,9 @@ class RecurringJobsController extends BaseController {
             );
         } catch (error) {
             if (!error) {
-                this.$log.debug("User Canceled");
+                console.info("User Canceled");
             } else {
-                this.$log.debug("Error sending prebook jobs:", error);
+                console.info("Error sending prebook jobs:", error);
 
                 // Show an error dialog to the user
                 await this.$mdDialog.show(
@@ -546,9 +553,9 @@ class RecurringJobsController extends BaseController {
             );
         } catch (error) {
             if (!error) {
-                this.$log.debug("User Canceled");
+                console.info("User Canceled");
             } else {
-                this.$log.debug("Error sending prebook job:", error);
+                console.info("Error sending prebook job:", error);
 
                 // Show an error dialog to the user
                 await this.$mdDialog.show(
@@ -569,6 +576,11 @@ class RecurringJobsController extends BaseController {
         };
 
         return this.jobContextMenuService.getRecurringJobMenuOptions(job, callbacks);
+    }
+
+    async refreshDataTimeSpan(dateFilterData: IDateFilterData): Promise<void> {
+        this.dateFilterData = dateFilterData;
+        await this.refreshData();
     }
 }
 

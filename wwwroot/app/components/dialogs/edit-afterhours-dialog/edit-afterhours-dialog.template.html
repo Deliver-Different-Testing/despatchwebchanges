@@ -25,16 +25,17 @@
                         <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">person</md-icon>
                         Select Driver
                     </h3>
-                    <p class="help-text">Search and select a driver to assign this schedule</p>
                     <md-autocomplete
-                            class="driver-search"
+                            md-autofocus="ctrl.isNewSchedule"
+                            md-autoselect="true"
+                            md-select-on-focus="true"
                             md-selected-item="ctrl.selectedCourier"
                             md-selected-item-change="ctrl.courierSelected(item)"
                             md-search-text="ctrl.courierSearchText"
                             md-items="item in ctrl.courierSearch(ctrl.courierSearchText)"
                             md-item-text="item.text"
-                            md-min-length="1"
-                            md-floating-label="Search for driver by name or code"
+                            md-min-length="2"
+                            md-floating-label="Search driver..."
                             md-clear-button="true"
                             required>
                         <md-item-template>
@@ -72,7 +73,7 @@
                     </h3>
 
                     <!-- Day Selection -->
-                    <md-input-container class="full-width">
+                    <md-input-container class="md-block">
                         <label>Day of Week</label>
                         <md-select ng-model="ctrl.editableAfterHoursSchedule.day"
                                    ng-change="ctrl.onDayChange()"
@@ -147,13 +148,13 @@
         </md-dialog-content>
 
         <!-- Dialog Actions -->
-        <md-dialog-actions class="dialog-actions">
+        <md-dialog-actions>
             <md-button ng-click="ctrl.cancel()" class="md-button">
                 Cancel
             </md-button>
             <md-button type="submit"
                        ng-disabled="!ctrl.isFormValid"
-                       class="md-raised md-primary save-button">
+                       class="md-raised md-primary">
                 <md-icon md-font-set="material-symbols-outlined">save</md-icon>
                 <span>{{ctrl.isNewSchedule ? 'Create' : 'Save'}} Schedule</span>
             </md-button>

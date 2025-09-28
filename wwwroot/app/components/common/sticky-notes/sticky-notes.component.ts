@@ -20,7 +20,6 @@ class StickyNoteController extends BaseController {
     selectedCategory: string = 'all';
 
     static $inject = [
-        '$log',
         'noteService',
         'noteManagementDialogService',
         'toastrService',
@@ -29,7 +28,6 @@ class StickyNoteController extends BaseController {
     ];
 
     constructor(
-        private $log: angular.ILogService,
         private noteService: NoteService,
         private noteManagementDialogService: NoteManagementDialogService,
         private toastrService: ToastrService,
@@ -54,20 +52,20 @@ class StickyNoteController extends BaseController {
     }
 
     $onChanges(changes: angular.IOnChangesObject): void {
-        this.$log.debug('StickyNoteController - $onChanges called with changes:', JSON.stringify(changes));
+        console.info('StickyNoteController - $onChanges called with changes:', JSON.stringify(changes));
 
         if (changes['jobId']) {
             const currentValue = changes['jobId'].currentValue;
 
             if (currentValue && typeof currentValue === 'number') {
-                this.$log.debug('StickyNoteController - Valid jobId detected:', currentValue);
+                console.info('StickyNoteController - Valid jobId detected:', currentValue);
 
                 if (this.previousJobId !== currentValue) {
                     this.previousJobId = currentValue;
                     this.loadNotes();
                 }
             } else {
-                this.$log.debug('StickyNoteController - No valid jobId change detected', {
+                console.info('StickyNoteController - No valid jobId change detected', {
                     currentValue,
                     type: typeof currentValue
                 });
@@ -78,14 +76,14 @@ class StickyNoteController extends BaseController {
             const currentValue = changes['bulkJobId'].currentValue;
 
             if (currentValue && typeof currentValue === 'number') {
-                this.$log.debug('StickyNoteController - Valid bulkJobId detected:', currentValue);
+                console.info('StickyNoteController - Valid bulkJobId detected:', currentValue);
 
                 if (this.previousBulkJobId !== currentValue) {
                     this.previousBulkJobId = currentValue;
                     this.loadNotes();
                 }
             } else {
-                this.$log.debug('StickyNoteController - No valid bulkJobId change detected', {
+                console.info('StickyNoteController - No valid bulkJobId change detected', {
                     currentValue,
                     type: typeof currentValue
                 });
@@ -103,7 +101,7 @@ class StickyNoteController extends BaseController {
                 this.applyFilter();
             })
             .catch(error => {
-                this.$log.error('Error loading notes:', error);
+                console.error('Error loading notes:', error);
                 this.toastrService.showErrorToast('Failed to load notes');
             })
             .finally(() => {
@@ -121,7 +119,7 @@ class StickyNoteController extends BaseController {
                 this.applyFilter();
             })
             .catch(error => {
-                this.$log.error('Error loading notes:', error);
+                console.error('Error loading notes:', error);
                 this.toastrService.showErrorToast('Failed to load notes');
             })
             .finally(() => {
@@ -178,7 +176,7 @@ class StickyNoteController extends BaseController {
             this.toastrService.showSuccessToast('Note added successfully');
         } catch (error) {
             if (!error) return;
-            this.$log.error("An error occured!")
+            console.error("An error occured!")
         }
     }
 
@@ -189,7 +187,7 @@ class StickyNoteController extends BaseController {
             this.toastrService.showSuccessToast('Note updated successfully');
         } catch (error) {
             if (!error) return;
-            this.$log.error("An error occured!")
+            console.error("An error occured!")
         }
     }
 
@@ -215,7 +213,7 @@ class StickyNoteController extends BaseController {
         } catch (error) {
             if (!error) return;
 
-            this.$log.error('Error deleting note:', error);
+            console.error('Error deleting note:', error);
             this.toastrService.showErrorToast('Failed to delete note');
         }
     }

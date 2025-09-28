@@ -1458,7 +1458,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
 
     public async Task UpdateAfterHoursCourierScheduleAsync(AfterHoursCourierScheduleViewModel request)
     {
-        var dayOfWeek = (DayOfWeek)Enum.Parse(typeof(DayOfWeek), request.Day);
+        var dayOfWeek = GetDayOfWeekAsInt(request.Day);
         var startTime = DateTime.Parse(request.FormattedStartDate);
         var endTime = DateTime.Parse(request.FormattedEndDate);
         
@@ -1467,7 +1467,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(e => e.StartTime, startTime)
                 .SetProperty(e => e.EndTime, endTime)
-                .SetProperty(e => e.WeekDay, (int)dayOfWeek)
+                .SetProperty(e => e.WeekDay, dayOfWeek)
             );
 
         if (rowsAffected == 0) throw new Exception("After hours schedule not found");
@@ -1480,14 +1480,14 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             ArgumentNullException.ThrowIfNull(request.FormattedStartDate);
             ArgumentNullException.ThrowIfNull(request.FormattedEndDate);
 
-            var dayOfWeek = (DayOfWeek)Enum.Parse(typeof(DayOfWeek), request.Day);
+            var dayOfWeek = GetDayOfWeekAsInt(request.Day);
             var startTime = DateTime.Parse(request.FormattedStartDate);
             var endTime = DateTime.Parse(request.FormattedEndDate);
 
             var schedule = new TblAfterhoursCourier
             {
                 CourierId = request.CourierId,
-                WeekDay = (int)dayOfWeek,
+                WeekDay = dayOfWeek,
                 StartTime = startTime,
                 EndTime = endTime
             };
@@ -1502,5 +1502,20 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
                     nameof(CreateAfterHoursCourierScheduleAsync)));
             throw;
         }
+    }
+    
+    private static int GetDayOfWeekAsInt(string dayOfWeek)
+    {
+        return dayOfWeek switch
+        {
+            "Monday" => 1,
+            "Tuesday" => 2,
+            "Wednesday" => 3,
+            "Thursday" => 4,
+            "Friday" => 5,
+            "Saturday" => 6,
+            "Sunday" => 7,
+            _ => 0
+        };
     }
 }

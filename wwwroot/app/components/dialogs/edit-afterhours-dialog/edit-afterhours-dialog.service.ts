@@ -4,15 +4,14 @@ import {IAfterHoursCourierSchedule} from "../../driver-management-dashboard/inte
 class EditAfterhoursDialogService implements angular.IServiceProvider {
     static $inject = [
         '$mdDialog',
-        '$document',
-        '$log',
+        '$document'
     ];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private $document: angular.IDocumentService,
-        private $log: angular.ILogService) {
-        this.$log.debug('EditAfterhoursDialogService: Service instantiated');
+    ) {
+        console.log('EditAfterhoursDialogService: Service instantiated');
     }
 
     $get() {
@@ -21,7 +20,7 @@ class EditAfterhoursDialogService implements angular.IServiceProvider {
 
     async openEditAfterhoursDialog($event: MouseEvent, afterHourScheduleItem: IAfterHoursCourierSchedule): Promise<IAfterHoursCourierSchedule | undefined> {
         try {
-            this.$log.debug('EditAfterhoursDialogService: Opening dialog for schedule:', afterHourScheduleItem);
+            console.log('EditAfterhoursDialogService: Opening dialog for schedule:', afterHourScheduleItem);
 
             const dialogConfig: angular.material.IDialogOptions = {
                 controller: EditAfterhoursDialogController,
@@ -29,7 +28,7 @@ class EditAfterhoursDialogService implements angular.IServiceProvider {
                 template: require("./edit-afterhours-dialog.template.html"),
                 parent: this.$document.parent(),
                 targetEvent: $event,
-                clickOutsideToClose: false,
+                clickOutsideToClose: true,
                 escapeToClose: true,
                 fullscreen: true,
                 hasBackdrop: true,
@@ -40,9 +39,10 @@ class EditAfterhoursDialogService implements angular.IServiceProvider {
             };
 
             const result = await this.$mdDialog.show(dialogConfig);
-            this.$log.debug('EditAfterhoursDialogService: Dialog resolved with:', result);
+            console.log('EditAfterhoursDialogService: Dialog resolved with:', result);
             return result;
         } catch (error) {
+            console.error("An error occurred in afterhours dialog: " + error);
             throw error;
         }
     }

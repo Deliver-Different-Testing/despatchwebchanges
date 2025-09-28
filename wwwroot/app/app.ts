@@ -63,6 +63,7 @@ import VoidJobConfirmationDialogController
     from "./components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.controller";
 import VoidJobConfirmationDialogService
     from "./components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
+import DateFilterMenuComponent from "./components/common/date-filter-menu/date-filter-menu.component";
 
 const app = (window as any).uDispatchApp;
 
@@ -159,11 +160,11 @@ app.config(["$qProvider", ($qProvider: angular.IQProvider) => {
         }
     }]);
 
-app.config(["$logProvider", ($logProvider: angular.ILogProvider) => {
+/*app.config(["$logProvider", ($logProvider: angular.ILogProvider) => {
     // Disable debug logging in production
     const isProduction = process.env.NODE_ENV === "production";
     $logProvider.debugEnabled(!isProduction);
-}]);
+}]);*/
 
 // Filters
 app.filter("bytes", () => bytesFilter);
@@ -178,6 +179,7 @@ app.component("materialSidenav", MaterialSidenavComponent);
 app.component("podPhotoViewer", PodPhotoViewerComponent);
 app.component("noData", NoDataComponent);
 app.component("stickyNote", StickyNoteComponent);
+app.component("dateFilterMenu", DateFilterMenuComponent);
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);

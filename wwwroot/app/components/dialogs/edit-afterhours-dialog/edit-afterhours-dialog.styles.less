@@ -1,13 +1,11 @@
-﻿// Import variables for consistency
-@import '../../../../css/variables.less';
-
-// Dialog specific variables
-@dialog-max-width: 560px;
-@dialog-padding: 24px;
-@header-gradient-start: @primary-blue;
-@header-gradient-end: darken(@primary-blue, 8%);
+﻿@import '../../../../css/variables.less';
 
 .edit-afterhours-dialog {
+  @dialog-max-width: 560px;
+  @dialog-padding: 24px;
+  @header-gradient-start: @primary-blue;
+  @header-gradient-end: darken(@primary-blue, 8%);
+  
   max-width: @dialog-max-width;
   border-radius: @dialog-border-radius;
   overflow: visible;
@@ -15,8 +13,7 @@
   // Dialog Content
   .dialog-content {
     padding: 0;
-    overflow-y: auto;
-    max-height: 60vh;
+    overflow-y: visible;
     background-color: #fafafa;
 
     .content-container {
@@ -63,15 +60,6 @@
       margin: 0 0 16px 0;
     }
 
-    // Driver Search Autocomplete
-    .driver-search {
-      width: 100%;
-
-      input {
-        font-size: 14px;
-      }
-    }
-
     // Info Panel
     .info-panel {
       .info-row {
@@ -97,7 +85,6 @@
             font-weight: 500;
 
             &.code-value {
-              font-family: 'Courier New', monospace;
               background-color: #f5f5f5;
               padding: 4px 8px;
               border-radius: 4px;
@@ -110,21 +97,6 @@
 
     // Schedule Panel
     .schedule-panel {
-      // Day Selection
-      md-input-container.full-width {
-        width: 100%;
-        margin-bottom: 20px;
-
-        label {
-          font-size: 14px;
-        }
-
-        .md-select-value {
-          font-size: 14px;
-          padding: 8px 0;
-        }
-      }
-
       // Time Row
       .time-row {
         display: flex;
@@ -206,168 +178,5 @@
         }
       }
     }
-  }
-
-  // Dialog Actions
-  .dialog-actions {
-    background: white;
-    border-top: 1px solid #e0e0e0;
-    padding: 12px 16px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-
-    .md-button {
-      min-width: 100px;
-      font-weight: 500;
-      letter-spacing: 0.5px;
-
-      &.save-button {
-        md-icon {
-          margin-right: 8px;
-          font-size: 18px;
-        }
-
-        &:not([disabled]) {
-          background-color: @primary-blue !important;
-          color: white !important;
-
-          &:hover {
-            background-color: darken(@primary-blue, 5%) !important;
-          }
-        }
-
-        &[disabled] {
-          background-color: #e0e0e0 !important;
-          color: rgba(0, 0, 0, 0.38) !important;
-        }
-      }
-    }
-  }
-
-  // Material Overrides
-  md-input-container {
-    .md-errors-spacer {
-      min-height: 0;
-    }
-
-    &.md-input-invalid {
-      .md-input {
-        border-color: @error-red;
-      }
-
-      label {
-        color: @error-red;
-      }
-    }
-
-    .md-input-messages-animation {
-      .md-input-message-animation {
-        font-size: 12px;
-        color: @error-red;
-        margin-top: 5px;
-      }
-    }
-  }
-
-  md-select {
-    .md-select-icon {
-      color: rgba(0, 0, 0, 0.38);
-    }
-
-    &[aria-expanded="true"] {
-      .md-select-icon {
-        transform: rotate(180deg);
-      }
-    }
-  }
-
-  // Scrollbar
-  .dialog-content::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .dialog-content::-webkit-scrollbar-track {
-    background: #f5f5f5;
-  }
-
-  .dialog-content::-webkit-scrollbar-thumb {
-    background: #c0c0c0;
-    border-radius: 3px;
-
-    &:hover {
-      background: #a0a0a0;
-    }
-  }
-}
-
-// Responsive Design
-@media (max-width: 600px) {
-  .edit-afterhours-dialog {
-    width: calc(100vw - 32px);
-    max-width: calc(100vw - 32px);
-    margin: 16px;
-
-    .dialog-content {
-      .content-container {
-        padding: 16px;
-      }
-
-      .schedule-panel {
-        .time-row {
-          flex-direction: column;
-          gap: 0;
-
-          .time-separator {
-            display: none;
-          }
-
-          .time-field {
-            width: 100%;
-          }
-        }
-      }
-
-      .info-panel {
-        .info-row {
-          flex-direction: column;
-          gap: 16px;
-        }
-      }
-    }
-
-    .dialog-actions {
-      flex-direction: column-reverse;
-      padding: 16px;
-
-      .md-button {
-        width: 100%;
-        margin: 0;
-
-        &:not(:first-child) {
-          margin-bottom: 8px;
-        }
-      }
-    }
-  }
-}
-
-// Animation
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.edit-afterhours-dialog {
-  .selection-panel,
-  .info-panel,
-  .schedule-panel {
-    animation: slideIn 0.3s ease-out;
   }
 }
