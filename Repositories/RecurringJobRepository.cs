@@ -157,13 +157,14 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
         return Tuple.Create(total, jobList);
     }
 
-    public async Task<List<PrebookListViewModel>> PreBookJobListAsync(bool active)
+    public async Task<List<PrebookListViewModel>> PreBookJobListAsync(bool active, DateTime startDate, DateTime endDate)
     {
-        var prebooks = await Context
-            .TucJobBookings
+        var prebooks = await Context.TucJobBookings
+            .Where(j => j.UcbkNextDue.HasValue && j.UcbkNextDue.Value.Date >= startDate.Date
+                                               && j.UcbkNextDue.HasValue && j.UcbkNextDue.Value.Date <= endDate.Date)
             .Where(j => j.UcbkOneOff == false && (j.ParentId == null || j.ParentId == j.UcbkId) &&
                         j.UcbkActive == active)
-            .OrderBy(j => j.UcbkDate)
+            .OrderBy(j => j.UcbkNextDue)
             .ThenBy(j => j.UcbkTime)
             .ThenBy(j => j.UcbkJobNumber)
             .Select(j => new PrebookListViewModel

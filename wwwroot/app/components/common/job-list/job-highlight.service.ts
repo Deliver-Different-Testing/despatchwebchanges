@@ -4,12 +4,8 @@ class JobHighlightService implements angular.IServiceProvider {
     private highlightedRelatedJobIds: number[] = [];
     private listeners: Array<(jobIds: number[]) => void> = [];
 
-    static $inject = [
-        '$log'
-    ];
-
-    constructor(private $log: angular.ILogService) {
-        this.$log.debug('JobHighlightService: Service instantiated');
+    constructor() {
+        console.log('JobHighlightService: Service instantiated');
     }
     
     $get() { 
@@ -17,18 +13,18 @@ class JobHighlightService implements angular.IServiceProvider {
     }
 
     updateHighlightedRelatedJobs(selectedJob: IDispatchJob | IJob): void {
-        this.$log.debug('Updating highlighted related jobs');
+        console.log('Updating highlighted related jobs');
         this.highlightedRelatedJobIds = [];
 
         if (!selectedJob || !selectedJob.relatedJobs || selectedJob.relatedJobs.length === 0) {
-            this.$log.debug('No related jobs found or selected job is null');
+            console.log('No related jobs found or selected job is null');
             this.notifyListeners();
             return;
         }
 
         this.highlightedRelatedJobIds = selectedJob.relatedJobs.map((relatedJob: any) => relatedJob.id);
         this.notifyListeners();
-        this.$log.debug('Highlighted related jobs updated:', this.highlightedRelatedJobIds);
+        console.log('Highlighted related jobs updated:', this.highlightedRelatedJobIds);
     }
     
     getHighlightedRelatedJobIds(): number[] {
@@ -52,19 +48,19 @@ class JobHighlightService implements angular.IServiceProvider {
     }
     
     private notifyListeners(): void {
-        this.$log.debug('Notifying job highlight listeners');
+        console.log('Notifying job highlight listeners');
         
         this.listeners.forEach((listener: (jobIds: number[]) => void) => {
             try {
                 listener([...this.highlightedRelatedJobIds]);
             } catch (error) {
-                this.$log.error('Error notifying job highlight listener:', error);
+                console.error('Error notifying job highlight listener:', error);
             }
         });
     }
 
     clearHighlights(): void {
-        this.$log.debug('Clearing all job highlights');
+        console.log('Clearing all job highlights');
         this.highlightedRelatedJobIds = [];
         this.notifyListeners();
     }

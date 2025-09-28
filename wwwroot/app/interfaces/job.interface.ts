@@ -308,7 +308,6 @@ export interface IAgentInfoDialog extends  IAgent {
 export interface IJobQueryParams {
     order?: string;
     orderDirection?: string;
-    dateCutoff?: Date;
     startDate?: Date;
     endDate?: Date;
 }

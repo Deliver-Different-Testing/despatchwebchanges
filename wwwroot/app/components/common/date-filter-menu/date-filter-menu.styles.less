@@ -1,0 +1,224 @@
+﻿@import '../../../../css/variables';
+
+.date-filter-menu {
+  width: 400px;
+  max-width: 30vw;
+  overflow: hidden;
+  border-radius: @dialog-border-radius;
+}
+
+/* Header Styling */
+.date-filter-header {
+  margin-top: -10px;
+  border-radius: 8px 8px 0 0;
+  min-height: 56px;
+
+  .md-toolbar-tools {
+    padding: 0 16px;
+
+    .header-icon {
+      margin-right: 12px;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .timezone-label {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.8);
+      background: rgba(0, 0, 0, 0.1);
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+  }
+}
+
+/* Content Area */
+.date-filter-content {
+  padding: 20px;
+  background: #ffffff;
+}
+
+/* Range Selection */
+.range-selection-section {
+  margin-bottom: 16px;
+
+  .range-radio-group {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+
+    .range-option {
+      margin: 8px 0;
+
+      .option-label {
+        font-size: 14px;
+        font-weight: 500;
+        color: rgba(0, 0, 0, 0.87);
+      }
+    }
+  }
+}
+
+/* Divider */
+.section-divider {
+  margin: 16px 0;
+  opacity: 0.12;
+}
+
+/* Date Time Picker Section */
+.custom-date-section {
+  animation: slideDown 0.3s ease-out;
+}
+
+.date-picker-container {
+  display: flex;
+  flex-direction: row;
+  gap: 16px; 
+  align-items: flex-start; 
+
+  .date-time-picker {
+    flex: 1; 
+    min-width: 220px; 
+    margin: 8px 0;
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      color: rgba(0, 0, 0, 0.6);
+
+      .date-icon {
+        color: rgba(0, 0, 0, 0.54);
+      }
+    }
+
+    // Style the mdc-datetime-picker input
+    .dtp-input {
+      font-size: 14px;
+      padding: 4px 0;
+      width: 100%;
+
+      &.md-input {
+        min-height: 30px;
+      }
+    }
+
+    // Style for the calendar and clear buttons
+    .dtp-btn-calendar {
+      position: absolute;
+      right: 28px;
+      top: 16px;
+      padding: 0;
+      min-width: 24px;
+      min-height: 24px;
+      line-height: 24px;
+
+      md-icon {
+        color: rgba(0, 0, 0, 0.54);
+      }
+    }
+
+    .dtp-clear {
+      position: absolute;
+      right: 0;
+      top: 16px;
+      padding: 0;
+      min-width: 24px;
+      min-height: 24px;
+      line-height: 24px;
+      font-size: 16px;
+      color: rgba(0, 0, 0, 0.38);
+
+      &:hover {
+        color: rgba(0, 0, 0, 0.54);
+      }
+    }
+
+    // Ensure proper spacing for buttons
+    &.md-input-has-placeholder {
+      padding-right: 56px;
+    }
+  }
+}
+
+/* Action Buttons */
+.filter-actions {
+  padding-top: 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  gap: 8px;
+}
+
+/* Accessibility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Animation */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* DateTime Picker Dialog Overrides */
+.dtp-picker-datetime {
+  .dtp-actual-day.active {
+    background: @primary-color;
+  }
+
+  .dtp-actual-time {
+    color: @primary-color;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+  .date-filter-menu {
+    width: 100%;
+    max-width: 480px;
+  }
+
+  // Stack date pickers vertically on small screens
+  .date-picker-container {
+    flex-direction: column;
+    gap: 8px;
+
+    .date-time-picker {
+      width: 100%;
+      min-width: unset;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .date-filter-menu {
+    width: 360px;
+  }
+
+  .date-filter-content {
+    padding: 16px;
+  }
+
+  .date-picker-container {
+    flex-direction: column; // Stack vertically on very small screens
+
+    .date-time-picker {
+      margin: 6px 0;
+      width: 100%;
+    }
+  }
+}

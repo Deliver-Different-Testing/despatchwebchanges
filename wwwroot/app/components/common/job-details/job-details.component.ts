@@ -42,7 +42,6 @@ import PodPhotoType from "../../../enums/podPhotoType";
 class JobDetailController extends BaseController {
     static $inject = [
         "$scope",
-        "$log",
         "$mdDialog",
         "toastrService",
         "DispatchData",
@@ -95,7 +94,6 @@ class JobDetailController extends BaseController {
 
     constructor(
         $scope: angular.IScope,
-        private $log: angular.ILogService,
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
@@ -146,14 +144,14 @@ class JobDetailController extends BaseController {
     }
 
     $onInit(): void {
-        this.$log.debug("$onInit called - jobId:", this.jobId);
+        console.log("$onInit called - jobId:", this.jobId);
 
         this.DispatchData.getInternalStatusList()
             .then((statusList: InternalStatus[]) => {
                 this.internalStatusList = statusList;
             })
             .catch((error) => {
-                this.$log.error("Error loading internal status list:", error);
+                console.error("Error loading internal status list:", error);
             });
 
         if (this.jobId) {
@@ -232,10 +230,10 @@ class JobDetailController extends BaseController {
     }
 
     $onChanges(changes: angular.IOnChangesObject) {
-        this.$log.debug("$onChanges called with changes:", changes);
+        console.log("$onChanges called with changes:", changes);
 
         if (changes["jobId"]) {
-            this.$log.debug("jobId changed:", changes["jobId"].currentValue);
+            console.log("jobId changed:", changes["jobId"].currentValue);
 
             if (changes["jobId"].currentValue) {
                 return this.loadJobData(changes["jobId"].currentValue);
@@ -247,7 +245,7 @@ class JobDetailController extends BaseController {
 
     $onDestroy(): void {
         super.$onDestroy();
-        this.$log.debug("$onDestroy called - cleaning up resources");
+        console.log("$onDestroy called - cleaning up resources");
 
         // Clean up delivery photos
         this.formattedPodPhotos?.forEach(photo => {
@@ -275,7 +273,7 @@ class JobDetailController extends BaseController {
         }
 
         this.processingTabChange = true;
-        this.$log.debug(`Switching to tab ${index}`);
+        console.log(`Switching to tab ${index}`);
 
         try {
             if (!this.job || !this.jobGroups || this.jobGroups.length <= index) {
@@ -289,7 +287,7 @@ class JobDetailController extends BaseController {
             const targetJob = targetJobGroup.job;
 
             if (targetJob && targetJob.id && targetJob.id !== this.jobId) {
-                this.$log.debug(
+                console.log(
                     `Loading related job: ${targetJob.id} (${targetJob.text})`
                 );
 
@@ -301,7 +299,7 @@ class JobDetailController extends BaseController {
                 this.selectedRelatedJob = targetJobGroup;
                 this.selectedSubJobIndex = -1;
             } else {
-                this.$log.debug(
+                console.log(
                     `Already on the selected job or invalid job data`
                 );
             }
@@ -327,7 +325,7 @@ class JobDetailController extends BaseController {
 
             this.initializeJobData();
             if (!this.job) {
-                this.$log.debug("No job data returned from server");
+                console.log("No job data returned from server");
                 return;
             }
 
@@ -346,7 +344,7 @@ class JobDetailController extends BaseController {
                 await this.loadPodPhotos();
             }
         } catch (error) {
-            this.$log.error("Error loading job data:", error);
+            console.error("Error loading job data:", error);
             this.toastrService.showErrorToast("Failed to load job details");
         } finally {
             this.isLoading = false;
@@ -360,13 +358,13 @@ class JobDetailController extends BaseController {
         const {tabIndex, subJobIndex} = this.findJobInGroups(jobId);
 
         if (tabIndex !== -1) {
-            this.$log.debug(`Setting selectedTabIndex to ${tabIndex}, subJobIndex to ${subJobIndex}`);
+            console.log(`Setting selectedTabIndex to ${tabIndex}, subJobIndex to ${subJobIndex}`);
             this.selectedTabIndex = tabIndex;
             this.selectedRelatedJob = this.jobGroups[tabIndex];
             this.selectedSubJobIndex = subJobIndex;
 
             if (subJobIndex !== -1) {
-                this.$log.debug(`Current job is a subjob at index ${subJobIndex}`);
+                console.log(`Current job is a subjob at index ${subJobIndex}`);
             }
         } else {
             this.selectedTabIndex = 0;
@@ -417,11 +415,11 @@ class JobDetailController extends BaseController {
 
     private async loadPodPhotos(): Promise<void> {
         if (!this.job?.completedTime) {
-            this.$log.debug("No POD time available for job");
+            console.log("No POD time available for job");
             return;
         }
 
-        this.$log.debug(`Loading POD and pickup photos for job: ${this.job.id}`);
+        console.log(`Loading POD and pickup photos for job: ${this.job.id}`);
 
         try {
             const completedTime = dayjs(this.job?.completedTime);
@@ -448,7 +446,7 @@ class JobDetailController extends BaseController {
             // Process pickup photos
             this.formattedPickupPhotos = this.processPhotoData(pickupPhotosData, JobPhotoType.Pickup);
 
-            this.$log.debug(
+            console.log(
                 `Successfully processed ${this.formattedPodPhotos.length} delivery photos and ${this.formattedPickupPhotos.length} pickup photos`
             );
 
@@ -456,7 +454,7 @@ class JobDetailController extends BaseController {
             this.setupPhotoKeyboardNavigation();
         } catch (error) {
             this.toastrService.showErrorToast("Failed to load POD/pickup photos");
-            this.$log.error("Error loading photos:", error);
+            console.error("Error loading photos:", error);
             this.formattedPodPhotos = [];
             this.formattedPickupPhotos = [];
             this.handleError(error);
@@ -492,7 +490,7 @@ class JobDetailController extends BaseController {
 
                 return podPhoto;
             } catch (error) {
-                this.$log.error(`Error processing ${photoType} photo ${index}:`, error);
+                console.error(`Error processing ${photoType} photo ${index}:`, error);
                 return null;
             }
         }).filter((photo: null) => photo !== null);
@@ -501,12 +499,12 @@ class JobDetailController extends BaseController {
     private initializeJobData(): void {
         if (!this.job) return;
 
-        this.$log.debug("Initializing job data:", this.job.id);
+        console.log("Initializing job data:", this.job.id);
 
         this.jobAddressIcon = this.job?.assignedFlight ? "flight_takeoff" : "pin_drop";
 
         if (typeof this.job.daysOfWeek === "number" && this.job.daysOfWeek > 0) {
-            this.$log.debug("Original daysOfWeek bitmap value:", this.job.daysOfWeek);
+            console.log("Original daysOfWeek bitmap value:", this.job.daysOfWeek);
 
             const daysArray = [];
             const dayValues = [
@@ -525,14 +523,14 @@ class JobDetailController extends BaseController {
                 }
             }
 
-            this.$log.debug("Converted daysOfWeek to array:", daysArray);
+            console.log("Converted daysOfWeek to array:", daysArray);
 
             this.job.daysOfWeek = daysArray as any;
         }
 
         if (this.job.holidayDeliveryOption) {
             this.job.holidayDeliveryOption = Number(this.job.holidayDeliveryOption);
-            this.$log.debug(
+            console.log(
                 "Set holiday delivery option to:",
                 this.job.holidayDeliveryOption
             );
@@ -540,7 +538,7 @@ class JobDetailController extends BaseController {
 
         if (this.job.frequency) {
             this.job.frequency = Number(this.job.frequency);
-            this.$log.debug("Set frequency to:", this.job.frequency);
+            console.log("Set frequency to:", this.job.frequency);
         }
     }
 
@@ -911,18 +909,18 @@ class JobDetailController extends BaseController {
                     $event
                 );
             if (!newAddress) {
-                this.$log.debug("User closed dialog");
+                console.log("User closed dialog");
                 return;
             }
 
             await this.processAddressUpdate(job, newAddress, isDeliveryAddress);
         } catch (error) {
             if (!error) {
-                this.$log.debug("User closed dialog");
+                console.log("User closed dialog");
                 return;
             }
 
-            this.$log.error("Error updating GPS:", error);
+            console.error("Error updating GPS:", error);
         } finally {
             this.applyScope();
         }
@@ -934,7 +932,7 @@ class JobDetailController extends BaseController {
         isDeliveryAddress: boolean
     ): Promise<void> {
         try {
-            this.$log.debug(`isDeliveryAddress: ${isDeliveryAddress}`);
+            console.log(`isDeliveryAddress: ${isDeliveryAddress}`);
 
             await this.updateJobRateAndAddress(
                 job,
@@ -957,7 +955,7 @@ class JobDetailController extends BaseController {
         const addressField = isDeliveryAddress
             ? "deliveryAddress"
             : "pickupAddress";
-        this.$log.debug(`Address Field: ${addressField}`);
+        console.log(`Address Field: ${addressField}`);
 
         job[addressField] = newAddress;
         return job;
@@ -985,7 +983,7 @@ class JobDetailController extends BaseController {
                 );
             }
         } catch (error) {
-            this.$log.error("Error updating job rate and address:", error);
+            console.error("Error updating job rate and address:", error);
             throw error;
         }
     }
@@ -1283,7 +1281,7 @@ class JobDetailController extends BaseController {
     }
 
     async jobTypeClick($event: MouseEvent, job: IJob): Promise<void> {
-        this.$log.debug("jobTypeClick initiated", {
+        console.log("jobTypeClick initiated", {
             eventType: $event.type,
             jobId: job.id,
             currentJobType: job.jobType,
@@ -1304,7 +1302,7 @@ class JobDetailController extends BaseController {
             },
         ];
 
-        this.$log.debug("Showing select dialog", {
+        console.log("Showing select dialog", {
             jobId: job.id,
             jobTypeDes: job.jobTypeDescription,
             availableOptions: data.length,
@@ -1319,9 +1317,9 @@ class JobDetailController extends BaseController {
                 "Job Type",
                 job.jobTypeDescription
             );
-            this.$log.debug("Select dialog completed}");
+            console.log("Select dialog completed}");
         } catch (error) {
-            this.$log.error("Error showing select dialog:", error);
+            console.error("Error showing select dialog:", error);
             throw error;
         }
     }
@@ -1418,7 +1416,7 @@ class JobDetailController extends BaseController {
             // Ensure rate is decimal
             const numericRate = parseFloat(job.charge.replace(/[^\d.-]/g, ""));
             if (isNaN(numericRate)) {
-                this.$log.error("Failed to convert rate to a number");
+                console.error("Failed to convert rate to a number");
             }
 
             if (job.bulkJob) {
@@ -1439,7 +1437,7 @@ class JobDetailController extends BaseController {
                 );
             }
         } catch (error) {
-            this.$log.error("Error updating job:", error);
+            console.error("Error updating job:", error);
             this.toastrService.showErrorToast(
                 "Failed to update job. Please try again."
             );
@@ -1465,19 +1463,19 @@ class JobDetailController extends BaseController {
         value: boolean,
         useCharge: boolean = true
     ): Promise<void> {
-        this.$log.debug(
+        console.log(
             `[JobDetailsComponentController] Start toggleJobProperty - property: ${property}, useCharge: ${useCharge}`
         );
 
         if (!job || !job.id) {
-            this.$log.debug(`[JobDetailsComponentController] Error: Invalid job data`);
+            console.log(`[JobDetailsComponentController] Error: Invalid job data`);
             this.toastrService.showErrorToast(`Cannot update: Invalid job data`);
             return;
         }
 
         try {
             const newValue = !value;
-            this.$log.debug(
+            console.log(
                 `[JobDetailsComponentController] Toggling ${property} for job ${
                     job.jobNo || job.id
                 } from ${!newValue} to ${newValue}`
@@ -1489,7 +1487,7 @@ class JobDetailController extends BaseController {
                 jobID: job.id,
             };
 
-            this.$log.debug(
+            console.log(
                 `[JobDetailsComponentController] Calling updateField with data:`,
                 callData
             );
@@ -1497,7 +1495,7 @@ class JobDetailController extends BaseController {
             await this.updateField(job, callData);
 
             if (property === JobProperty.Reprice && newValue) {
-                this.$log.debug(
+                console.log(
                     `[JobDetailsComponentController] Special handling for reprice - updating internal status`
                 );
                 const repriceStatusId = 4;
@@ -1509,21 +1507,21 @@ class JobDetailController extends BaseController {
                 );
             }
 
-            this.$log.debug(
+            console.log(
                 `[JobDetailsComponentController] Update successful for ${property}`
             );
             this.toastrService.showSuccessToast(`${job.jobNo} updated`);
 
-            this.$log.debug(
+            console.log(
                 `[JobDetailsComponentController] Refreshing job details for ID: ${job.id}`
             );
             await this.refreshJobDetails(job.id);
 
-            this.$log.debug(
+            console.log(
                 `[JobDetailsComponentController] Toggle operation completed for ${property}`
             );
         } catch (error) {
-            this.$log.error(
+            console.error(
                 `[JobDetailsComponentController] Error toggling ${property}:`,
                 error
             );
@@ -1534,7 +1532,7 @@ class JobDetailController extends BaseController {
     }
 
     async toggleProperty(job: IJob, property: JobProperty, value: boolean): Promise<void> {
-        this.$log.debug(
+        console.log(
             `[JobDetailsComponentController] Toggling property '${property}' for job ${
                 job?.jobNo || job?.id || "unknown"
             }`
@@ -1554,13 +1552,13 @@ class JobDetailController extends BaseController {
         ];
 
         const useCharge = propertiesUsingDefaultCharge.includes(property);
-        this.$log.debug(
+        console.log(
             `[JobDetailsComponentController] Using default charge: ${useCharge}`
         );
 
         await this.toggleJobProperty(job, property, value, useCharge);
 
-        this.$log.debug(
+        console.log(
             `[JobDetailsComponentController] Property '${property}' toggle completed`
         );
     }
@@ -1622,7 +1620,7 @@ class JobDetailController extends BaseController {
                 }
             }
 
-            this.$log.debug("[JobDetailsComponentController] Marking job as done]");
+            console.log("[JobDetailsComponentController] Marking job as done]");
 
             const requestData: UpdatePodDetailsRequest = {
                 jobId: job.id,
@@ -1642,7 +1640,7 @@ class JobDetailController extends BaseController {
 
     private async refreshJobDetails(jobId: number): Promise<void> {
         try {
-            this.$log.debug(`Refreshing job details for jobId: ${jobId}`);
+            console.log(`Refreshing job details for jobId: ${jobId}`);
             this.isLoading = true;
 
             await this.loadJobData(jobId);
@@ -1652,7 +1650,7 @@ class JobDetailController extends BaseController {
                 await this.onJobUpdate();
             }
 
-            this.$log.debug("Job data refreshed");
+            console.log("Job data refreshed");
         } catch (error) {
             this.isLoading = false;
             this.toastrService.showErrorToast("Failed to refresh job details");
@@ -1661,9 +1659,9 @@ class JobDetailController extends BaseController {
 
     private handleError(error: any): void {
         if (!error) {
-            this.$log.debug("User closed dialog");
+            console.log("User closed dialog");
         } else {
-            this.$log.error("Error: ", error);
+            console.error("Error: ", error);
             this.toastrService.showErrorToast();
         }
     }
@@ -1737,7 +1735,7 @@ class JobDetailController extends BaseController {
             await this.DispatchData.downloadFile(photo.s3Key, photo.fileName || 'file.png');
             this.toastrService.showSuccessToast("File downloaded successfully");
         } catch (error) {
-            this.$log.error('Error downloading file:', error);
+            console.error('Error downloading file:', error);
             this.toastrService.showErrorToast('Failed to download file');
         }
     }
@@ -1759,7 +1757,7 @@ class JobDetailController extends BaseController {
                         .textContent("Sorry no photo for this job.")
                         .ok("OK")
                 );
-                this.$log.debug("Alert closed.");
+                console.log("Alert closed.");
                 return;
             }
 
@@ -1800,7 +1798,7 @@ class JobDetailController extends BaseController {
             );
             await this.refreshJobDetails(job.id);
         } catch (error) {
-            this.$log.error("Error in displayPriceBreakdown:", error);
+            console.error("Error in displayPriceBreakdown:", error);
             this.toastrService.showErrorToast(
                 "An error occurred while fetching the price breakdown. Please try again."
             );
@@ -1817,7 +1815,7 @@ class JobDetailController extends BaseController {
         const newReadStatus = !job.readTrackerInfo?.hasBeenRead;
         const actionText = newReadStatus ? "read" : "unread";
 
-        this.$log.debug(
+        console.log(
             `Marking job ${job.jobNo} as ${actionText}`
         );
 
@@ -1852,7 +1850,7 @@ class JobDetailController extends BaseController {
                 `Job ${job.jobNo} marked as ${actionText}`
             );
         } catch (error) {
-            this.$log.error(`Error marking job as ${actionText}:`, error);
+            console.error(`Error marking job as ${actionText}:`, error);
             this.toastrService.showErrorToast(
                 `Failed to mark job as ${actionText}. Please try again.`
             );
@@ -1872,7 +1870,7 @@ class JobDetailController extends BaseController {
     }
 
     async updateDaysOfWeek(job: IJob): Promise<void> {
-        this.$log.debug("Updating days of week from array:", job.daysOfWeek);
+        console.log("Updating days of week from array:", job.daysOfWeek);
 
         let daysValue = 0;
         if (Array.isArray(job.daysOfWeek)) {
@@ -1883,7 +1881,7 @@ class JobDetailController extends BaseController {
             daysValue = job.daysOfWeek;
         }
 
-        this.$log.debug("Days bitmask value calculated:", daysValue);
+        console.log("Days bitmask value calculated:", daysValue);
 
         try {
             await this.DispatchData.updateJobDetail(
@@ -1896,7 +1894,7 @@ class JobDetailController extends BaseController {
             this.toastrService.showSuccessToast(`${job.jobNo} days updated`);
             await this.refreshJobDetails(job.id);
         } catch (error) {
-            this.$log.error("Error updating days of week:", error);
+            console.error("Error updating days of week:", error);
             this.handleError(error);
         }
     }
@@ -1905,7 +1903,7 @@ class JobDetailController extends BaseController {
         if (!job.frequency) return;
 
         const frequencyValue = Number(job.frequency);
-        this.$log.debug("Updating frequency to:", frequencyValue);
+        console.log("Updating frequency to:", frequencyValue);
 
         try {
             await this.DispatchData.updateJobDetail(
@@ -1918,7 +1916,7 @@ class JobDetailController extends BaseController {
             this.toastrService.showSuccessToast(`${job.jobNo} frequency updated`);
             await this.refreshJobDetails(job.id);
         } catch (error) {
-            this.$log.error("Error updating frequency:", error);
+            console.error("Error updating frequency:", error);
             this.handleError(error);
         }
     }
@@ -1927,7 +1925,7 @@ class JobDetailController extends BaseController {
         if (!job.holidayDeliveryOption) return;
 
         const holidayOptionValue = Number(job.holidayDeliveryOption);
-        this.$log.debug("Updating holiday delivery option to:", holidayOptionValue);
+        console.log("Updating holiday delivery option to:", holidayOptionValue);
 
         try {
             await this.DispatchData.updateJobDetail(
@@ -1942,7 +1940,7 @@ class JobDetailController extends BaseController {
             );
             await this.refreshJobDetails(job.id);
         } catch (error) {
-            this.$log.error("Error updating holiday delivery option:", error);
+            console.error("Error updating holiday delivery option:", error);
             this.handleError(error);
         }
     }
@@ -1995,7 +1993,7 @@ class JobDetailController extends BaseController {
 
         try {
             this.isLoading = true;
-            this.$log.debug(
+            console.log(
                 `Loading subjob details for ID: ${subJob.id}`
             );
 
@@ -2014,7 +2012,7 @@ class JobDetailController extends BaseController {
             // Restore the preserved data
             if (originalRelatedJobs) {
                 if (!this.job) {
-                    this.$log.error("Failed to load subjob details");
+                    console.error("Failed to load subjob details");
                     return;
                 }
 
@@ -2029,11 +2027,11 @@ class JobDetailController extends BaseController {
             // Broadcast the subj ob change
             this.$rootScope.$broadcast("subJobChanged", this.job);
 
-            this.$log.debug(
+            console.log(
                 `Successfully loaded subjob: ${subJob.id}`
             );
         } catch (error) {
-            this.$log.error(
+            console.error(
                 `Error loading subjob details:`,
                 error
             );
@@ -2057,7 +2055,7 @@ class JobDetailController extends BaseController {
                 true
             );
         } catch (error) {
-            this.$log.error("Error updating active:", error);
+            console.error("Error updating active:", error);
             this.handleError(error);
         }
     }
@@ -2077,7 +2075,7 @@ class JobDetailController extends BaseController {
                 );
             }
         } catch (error) {
-            this.$log.error("Error updating void:", error);
+            console.error("Error updating void:", error);
             this.handleError(error);
         }
     }
@@ -2111,7 +2109,7 @@ class JobDetailController extends BaseController {
                 return {...this.defaultFieldVisibility, ...parsedVisibility};
             }
         } catch (error) {
-            this.$log.warn('Failed to load field visibility from localStorage:', error);
+            console.warn('Failed to load field visibility from localStorage:', error);
         }
 
         // Return a copy of defaults if no stored data or error
@@ -2125,7 +2123,7 @@ class JobDetailController extends BaseController {
                 JSON.stringify(this.fieldVisibility)
             );
         } catch (error) {
-            this.$log.warn('Failed to save field visibility to localStorage:', error);
+            console.warn('Failed to save field visibility to localStorage:', error);
         }
     }
 
@@ -2155,7 +2153,7 @@ class JobDetailController extends BaseController {
                 this.viewDensity = stored as 'normal' | 'dense' | 'ultradense';
             }
         } catch (error) {
-            this.$log.warn('Failed to load view density from localStorage:', error);
+            console.warn('Failed to load view density from localStorage:', error);
         }
     }
 
@@ -2163,7 +2161,7 @@ class JobDetailController extends BaseController {
         try {
             localStorage.setItem(JobDetailController.VIEW_DENSITY_KEY, this.viewDensity);
         } catch (error) {
-            this.$log.warn('Failed to save view density to localStorage:', error);
+            console.warn('Failed to save view density to localStorage:', error);
         }
     }
 

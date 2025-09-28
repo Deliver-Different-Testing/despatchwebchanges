@@ -20,14 +20,12 @@ import {IAfterHoursCourierSchedule} from "./interfaces/IAfterHoursCourierSchedul
 class DriverManagementService implements angular.IServiceProvider {
     static $inject = [
         "$http",
-        "$log",
     ];
 
     constructor(
         private $http: angular.IHttpService,
-        private $log: angular.ILogService,
     ) {
-        this.$log.debug('DriverManagementService: Service instantiated');
+        console.log('DriverManagementService: Service instantiated');
     }
 
     $get(): any {
@@ -35,8 +33,8 @@ class DriverManagementService implements angular.IServiceProvider {
     }
 
     async searchAllCouriers(searchTerm: string): Promise<ISuggestion[]> {
-        this.$log.debug("Searching couriers");
-        this.$log.debug("Search term: ", searchTerm);
+        console.log("Searching couriers");
+        console.log("Search term: ", searchTerm);
 
         const response = await this.$http.get<ISuggestion[]>("courier/SearchAllCouriers", {
             params: {
@@ -48,8 +46,8 @@ class DriverManagementService implements angular.IServiceProvider {
     }
 
     async getCourierDetailsForDashboard(courierId: number): Promise<ICourierDataDashboard> {
-        this.$log.debug("Getting courier details for dashboard");
-        this.$log.debug("Courier ID: ", courierId);
+        console.log("Getting courier details for dashboard");
+        console.log("Courier ID: ", courierId);
 
         const response = await this.$http.get<ICourierDataDashboard>("courier/GetCourierDetailsForDashboard", {
             params: {
@@ -64,7 +62,7 @@ class DriverManagementService implements angular.IServiceProvider {
         requestData: IPaginatedRequest,
         filters: ICourierComplianceFilter
     ): Promise<ICourierCompliancePaginated> {
-        this.$log.debug("Getting courier compliance list with filters:", filters);
+        console.log("Getting courier compliance list with filters:", filters);
 
         const response = await this.$http.post<ICourierCompliancePaginated>("courier/GetCourierComplianceList", {
             // Pagination data
@@ -84,7 +82,7 @@ class DriverManagementService implements angular.IServiceProvider {
     }
 
     async sendComplianceReminder(item: ICourierCompliance): Promise<void> {
-        this.$log.debug("Sending compliance reminder for:", item);
+        console.log("Sending compliance reminder for:", item);
 
         try {
             await this.$http.post("courier/SendComplianceReminder", {
@@ -92,26 +90,26 @@ class DriverManagementService implements angular.IServiceProvider {
                 type: item.complianceType
             });
         } catch (error) {
-            this.$log.error("Error sending compliance reminder:", error);
+            console.error("Error sending compliance reminder:", error);
             throw error;
         }
     }
 
     async sendBulkComplianceReminders(items: ICourierCompliance[]): Promise<void> {
-        this.$log.debug("Sending bulk compliance reminders:", items.length);
+        console.log("Sending bulk compliance reminders:", items.length);
 
         try {
             await this.$http.post("courier/SendBulkComplianceReminders", {items});
         } catch (error) {
-            this.$log.error("Error sending bulk reminders:", error);
+            console.error("Error sending bulk reminders:", error);
             throw error;
         }
     }
 
     async getAfterHoursCourierScheduleList(requestData: IPaginatedRequest,
                                            filters: IAfterHoursFilter): Promise<ICourierAfterHoursPaginated> {
-        this.$log.debug("Getting after hours courier schedule");
-        this.$log.debug("Search term: ", requestData.searchTerm);
+        console.log("Getting after hours courier schedule");
+        console.log("Search term: ", requestData.searchTerm);
 
         const response = await this.$http.post<ICourierAfterHoursPaginated>("courier/GetAfterHoursCourierSchedule", {
             // Pagination data
@@ -138,30 +136,30 @@ class DriverManagementService implements angular.IServiceProvider {
     }
 
     async getDriverEmails(requestData: IPaginatedRequest): Promise<IPaginatedResponse<IDriverEmail>> {
-        this.$log.debug("Getting driver emails");
+        console.log("Getting driver emails");
 
         try {
             const response = await this.$http.post<IPaginatedResponse<IDriverEmail>>("courier/GetAllCourierEmails", requestData);
             return response.data;
         } catch (error) {
-            this.$log.error("Error getting driver emails:", error);
+            console.error("Error getting driver emails:", error);
             throw error;
         }
     }
 
     async sendEmailToCouriers(emailData: IGroupEmailData): Promise<void> {
-        this.$log.debug("Sending group email");
+        console.log("Sending group email");
         
         try {
             await this.$http.post("courier/SendEmailToCouriers", emailData);
         } catch (error) {
-            this.$log.error("Error sending group email:", error);
+            console.error("Error sending group email:", error);
             throw error;
         }
     } 
     
     async updateAfterHoursCourierSchedule(afterHoursSchedule: IAfterHoursCourierSchedule): Promise<void> {
-        this.$log.debug("Updating after hours courier schedule");
+        console.log("Updating after hours courier schedule");
 
         const payload = {
             ...afterHoursSchedule,
@@ -174,13 +172,13 @@ class DriverManagementService implements angular.IServiceProvider {
         try {
             await this.$http.post("courier/UpdateAfterHoursCourierSchedule", payload);
         } catch (error) {
-            this.$log.error("Error updating after hours schedule:", error);
+            console.error("Error updating after hours schedule:", error);
             throw error;
         }
     }
 
     async createAfterHoursCourierSchedule(afterHoursSchedule: IAfterHoursCourierSchedule): Promise<void> {
-        this.$log.debug("Updating after hours courier schedule");
+        console.log("Updating after hours courier schedule");
 
         const payload = {
             ...afterHoursSchedule,
@@ -193,15 +191,15 @@ class DriverManagementService implements angular.IServiceProvider {
         try {
             await this.$http.post("courier/CreateAfterHoursCourierSchedule", payload);
         } catch (error) {
-            this.$log.error("Error updating after hours schedule:", error);
+            console.error("Error updating after hours schedule:", error);
             throw error;
         }
     }
 
     async getTodayActiveDriversAsync(requestData: IPaginatedRequest,
                                      filters: ITodayActiveDriverFilter): Promise<ITodayActiveDriverPaginated> {
-        this.$log.debug("Getting today active drivers");
-        this.$log.debug("Search term: ", requestData.searchTerm);
+        console.log("Getting today active drivers");
+        console.log("Search term: ", requestData.searchTerm);
 
         const response = await this.$http.post<ITodayActiveDriverPaginated>("courier/GetTodayActiveDrivers", {
             // Pagination data
@@ -221,20 +219,20 @@ class DriverManagementService implements angular.IServiceProvider {
     }
     
     async getAllFleetOptions(): Promise<ISuggestion[]> {
-        this.$log.debug("Getting all fleet options");
+        console.log("Getting all fleet options");
         
         try {
             const response = await this.$http.get<ISuggestion[]>("courier/GetAllFleetOptions");
             return response.data;
         } catch (error) {
-            this.$log.error("Error getting all fleet options:", error);
+            console.error("Error getting all fleet options:", error);
             throw error;
         }
     }
 
     async getDriverDailyEarnings(requestData: IPaginatedRequest): Promise<ICourierDailyEarningsPaginated> {
-        this.$log.debug("Getting today active drivers");
-        this.$log.debug("Search term: ", requestData.searchTerm);
+        console.log("Getting today active drivers");
+        console.log("Search term: ", requestData.searchTerm);
 
         const response = await this.$http.post<ICourierDailyEarningsPaginated>("courier/GetCourierDailyEarnings", requestData);
         return response.data;

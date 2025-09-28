@@ -20,7 +20,6 @@ import {formatMins} from "../../../functions/formatDates";
 
 class JobsListController extends BaseController {
     static $inject = [
-        '$log',
         'DispatchData',
         'jobHighlightService',
         'autoCompleteDialogService',
@@ -106,7 +105,6 @@ class JobsListController extends BaseController {
     selectAllState: boolean = false;
 
     constructor(
-        private $log: angular.ILogService,
         private DispatchData: DispatchCoreService,
         private jobHighlightService: JobHighlightService,
         private autoCompleteDialogService: AutoCompleteDialogService,
@@ -201,18 +199,18 @@ class JobsListController extends BaseController {
     }
 
     shouldGroupJobs(): boolean {
-        this.$log.debug('shouldGroupJobs - jobListType:', this.jobListType);
+        console.log('shouldGroupJobs - jobListType:', this.jobListType);
 
         const shouldGroup = !this.jobListType.toLowerCase().includes('nationwide')
             && !this.jobListType.toLowerCase().includes('jobsearch');
 
-        this.$log.debug('shouldGroupJobs - result:', shouldGroup);
+        console.log('shouldGroupJobs - result:', shouldGroup);
         return shouldGroup;
     }
 
     private groupJobs() {
         if (!this.jobs) {
-            this.$log.debug('No jobs to group');
+            console.log('No jobs to group');
             return;
         }
 
@@ -222,7 +220,7 @@ class JobsListController extends BaseController {
 
         for (let job of this.jobs) {
             if (processedIds.has(job.id)) {
-                this.$log.warn(`Duplicate job ID found: ${job.id}`);
+                console.warn(`Duplicate job ID found: ${job.id}`);
                 continue;
             }
             processedIds.add(job.id);
@@ -256,7 +254,7 @@ class JobsListController extends BaseController {
     toggleJobGroup(job: IDispatchJob) {
         if (!this.isMultiPartJob(job)) return;
 
-        this.$log.debug('Before toggle:', {
+        console.log('Before toggle:', {
             jobNo: job.jobNo,
             isExpanded: job._isExpanded,
             childCount: job._groupChildren?.length
@@ -265,7 +263,7 @@ class JobsListController extends BaseController {
         job._isExpanded = !job._isExpanded;
         this.applyScope();
 
-        this.$log.debug('After toggle:', {
+        console.log('After toggle:', {
             jobNo: job.jobNo,
             isExpanded: job._isExpanded,
             childCount: job._groupChildren?.length
@@ -731,7 +729,7 @@ class JobsListController extends BaseController {
                         this.hideCourierAssignment(job);
                     }
                 } catch (error) {
-                    this.$log.error('Error performing courier search:', error);
+                    console.error('Error performing courier search:', error);
                     // Handle error appropriately - maybe show a toast or log
                 }
             }
@@ -752,7 +750,7 @@ class JobsListController extends BaseController {
                 job.searchText = '';
             }
         } catch (error) {
-            this.$log.error("Error in dispatch:", error);
+            console.error("Error in dispatch:", error);
             job.assignedCourier = undefined;
         }
     }
@@ -814,7 +812,7 @@ class JobsListController extends BaseController {
             const url = this.COURIER_URL;
             return this.DispatchData.autocompleteSearch(searchText, url);
         } catch (error: any) {
-            this.$log.error("Error in courier search:", error.message);
+            console.error("Error in courier search:", error.message);
             return [];
         }
     }
@@ -875,7 +873,7 @@ class JobsListController extends BaseController {
                     const savedWidths = JSON.parse(saved);
                     this.columnWidths = {...this.defaultColumnWidths, ...savedWidths};
                 } catch (error) {
-                    this.$log.error('Error loading column widths:', error);
+                    console.error('Error loading column widths:', error);
                 }
             }
         }
@@ -895,7 +893,7 @@ class JobsListController extends BaseController {
                     const savedSort = JSON.parse(saved);
                     this.sortState = {...this.sortState, ...savedSort};
                 } catch (error) {
-                    this.$log.error('Error loading sort state:', error);
+                    console.error('Error loading sort state:', error);
                 }
             }
         }
@@ -1193,7 +1191,7 @@ class JobsListController extends BaseController {
             this.toastrService.showSuccessToast(`${this.selectedJobs.length} jobs dispatched successfully`);
         } catch (error) {
             if (!error) return;
-            this.$log.error('Error in bulk assign:', error);
+            console.error('Error in bulk assign:', error);
             this.toastrService.showErrorToast('Error occured while assigning courier');
         }
     }
@@ -1222,7 +1220,7 @@ class JobsListController extends BaseController {
             this.toastrService.showSuccessToast(`${selectedJobIds.length} jobs restored successfully`);
         } catch (error) {
             if (!error) return;
-            this.$log.error("Error in bulk restore:", error);
+            console.error("Error in bulk restore:", error);
             this.toastrService.showErrorToast('Error occured while restoring jobs');
         }
     }
@@ -1270,7 +1268,7 @@ class JobsListController extends BaseController {
             this.clearSelection();
         } catch (error) {
             if (!error) return;
-            this.$log.error("Error in bulk toggle read status:", error);
+            console.error("Error in bulk toggle read status:", error);
             this.toastrService.showErrorToast(`Error occurred while updating jobs read status`);
         }
     }

@@ -21,7 +21,7 @@ public interface IRecurringJobRepository
         int pageSize
     );
 
-    Task<List<PrebookListViewModel>> PreBookJobListAsync(bool active);
+    Task<List<PrebookListViewModel>> PreBookJobListAsync(bool active, DateTime startDate, DateTime endDate);
     Task<PrebookListViewModel> GetPrebookJobByIdAsync(int jobBookingId);
 
     Task UpdateTucJobRecurringAsync(int jobId, JobProperty property, string value);

@@ -308,6 +308,8 @@
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="wwwroot\app\components\base-controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\date-filter-menu\date-filter-menu.component.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\date-filter-menu\IDateFilterData.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\enums\jobCategory.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\job-highlight.service.ts" />
