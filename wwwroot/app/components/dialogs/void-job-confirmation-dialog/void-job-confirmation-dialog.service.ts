@@ -28,7 +28,8 @@ class VoidJobConfirmationDialogService implements angular.IServiceProvider {
             clickOutsideToClose: true,
             locals: {
                 job
-            }
+            },
+            bindToController: true
         });
     }
 }

@@ -1371,6 +1371,51 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             throw;
         }
     }
+    
+    public async Task VoidBulkJobAsync(int bulkJobId, string voidReason, bool voidSingleJobOnly = false)
+    {
+        try
+        {
+            List<int> jobsToVoid;
+
+            if (voidSingleJobOnly)
+                jobsToVoid = [bulkJobId];
+            else
+                jobsToVoid = await GetAllRelatedBulkJobIdsIncludingParentAsync(bulkJobId);
+
+            // Add Notes
+            foreach (var bulkId in jobsToVoid) await SaveBulkNoteAsync(bulkId, voidReason);
+
+            var courierMapping = await Context.TblBulkJobs
+                .Where(jt => jobsToVoid.Contains(jt.BulkJobId))
+                .Where(jt => jt.CourierId.HasValue)
+                .Select(jt => new { jt.JobId, jt.CourierId })
+                .Distinct()
+                .ToDictionaryAsync(jt => jt.JobId, jt => jt.CourierId ?? 0);
+
+            await Context.TblBulkJobs
+                .Where(j => jobsToVoid.Contains(j.BulkJobId))
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.JobStatus, (int)JobStatus.Void)
+                    .SetProperty(j => j.Void, true));
+
+            // Reset courier clear list for all affected couriers
+            var resetTasks = courierMapping.Values
+                .Select(courierId => Context.Procedures.UTL_stpCourier_ResetClearListAreaOrderAsync(courierId));
+
+            await Task.WhenAll(resetTasks);
+
+            // Close tasks based on the voiding scope
+            await CloseTasksByJobIdAsync(bulkJobId, voidSingleJobOnly);
+
+            await Context.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error voiding job {JobId} (SingleOnly: {VoidSingleJobOnly})", bulkJobId, voidSingleJobOnly);
+            throw;
+        }
+    }
 
     private async Task<List<int>> GetAllRelatedJobIdsIncludingParentAsync(int jobId)
     {
@@ -1406,7 +1451,43 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         }
 
         return relatedJobIds;
-    }
+    }    
+    
+    private async Task<List<int>> GetAllRelatedBulkJobIdsIncludingParentAsync(int bulkJobId)
+    {
+        List<int> relatedBulkJobIds;
+
+        // Close tasks for all related jobs (original behavior)
+        var parentId = await Context.TblBulkJobs
+            .Where(j => j.BulkJobId == bulkJobId)
+            .Select(j => j.BulkParentId)
+            .FirstOrDefaultAsync();
+
+        if (parentId.HasValue)
+        {
+            relatedBulkJobIds = await Context.TblBulkJobs
+                .Where(j => j.BulkJobId == bulkJobId)
+                .SelectMany(x => x.Parent.InverseParent)
+                .Select(j => j.BulkJobId)
+                .ToListAsync();
+
+            // Add parentId
+            relatedBulkJobIds.Add(parentId.Value);
+        }
+        else
+        {
+            relatedBulkJobIds = await Context.TblBulkJobs
+                .Where(j => j.BulkJobId == bulkJobId)
+                .SelectMany(x => x.InverseParent)
+                .Select(j => j.BulkJobId)
+                .ToListAsync();
+
+            // Add this jobId
+            relatedBulkJobIds.Add(bulkJobId);
+        }
+
+        return relatedBulkJobIds;
+    } 
 
     public async Task SplitJobAsync(int jobId, string user) =>
         await Context.Procedures.DES_stpJob_SplitJobAsync(jobId, false, user);
@@ -2794,7 +2875,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             jobIds = await GetAllRelatedJobIdsIncludingParentAsync(jobId);
 
         await Context.TucEvents
-            .Where(t => jobIds.Contains(t.UcevJobId.Value) && !t.UcevClosed)
+            .Where(t => jobIds.Contains(t.UcevJobId.Value)  && !t.UcevClosed)
             .ExecuteUpdateAsync(t => t.SetProperty(e => e.UcevClosed, true));
     }
 

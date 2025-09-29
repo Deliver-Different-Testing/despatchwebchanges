@@ -77,6 +77,7 @@ public interface IJobRepository
     Task RestoreSplitJobsAsync(List<int> jobIds);
     Task RestoreJobsAsync(List<int> jobIds);
     Task VoidJobAsync(int jobId, string voidReason, bool voidSingleJobOnly = false);
+    Task VoidBulkJobAsync(int bulkJobId, string voidReason, bool voidSingleJobOnly = false);
     Task SplitJobAsync(int jobId, string user);
     Task<string> UnSplitJobAsync(int jobId);
 

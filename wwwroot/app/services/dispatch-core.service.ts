@@ -12,7 +12,7 @@ import {
     IParcelDimensions,
     PriceBreakdown,
     ISuggestion,
-    VoidJobRequest, UpdateJobPackagesRequest, JobCreateViewModel,
+    VoidJobRequest, UpdateJobPackagesRequest, JobCreateViewModel, VoidBulkJobRequest,
 } from "../interfaces/job.interface";
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {
@@ -211,6 +211,16 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
 
         await this.$http.post(`job/Void`, data);
+    }   
+    
+    async voidBulkJob(bulkJobId: number, voidSingleJobOnly: boolean, voidReason?: string): Promise<void> {
+        const data: VoidBulkJobRequest = {
+            bulkJobId,
+            voidSingleJobOnly,
+            voidReason
+        }
+
+        await this.$http.post(`job/VoidBulkJob`, data);
     }
 
     async restoreJobs(jobIds: number[]): Promise<void> {

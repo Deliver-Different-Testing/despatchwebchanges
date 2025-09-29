@@ -3,7 +3,7 @@ import {LateEventType} from "../enums/late-event-type.enum";
 import {DaysOfWeek} from "../enums/days-of-week.enum";
 import {Frequency} from "../enums/frequency.enum";
 import {HolidayDeliveryOptions} from "../enums/holiday-delivery-options.enum";
-import {IFlightSegment } from "../components/Nationwide/nationwide.interfaces";
+import {IFlightSegment} from "../components/Nationwide/nationwide.interfaces";
 import {AirportViewModel} from "../components/dialogs/flight-details-dialog/flight-details-dialog.interfaces";
 
 export interface IJob {
@@ -300,7 +300,7 @@ export interface IAgent {
     agentEmail?: string;
 }
 
-export interface IAgentInfoDialog extends  IAgent {
+export interface IAgentInfoDialog extends IAgent {
     airports?: AirportViewModel[];
     address?: IAddressViewModel;
 }
@@ -442,7 +442,7 @@ export interface IDispatchJob {
     deliveryLatitude?: number;
     pickupContact?: string;
     deliveryContact?: string;
-    
+
     // Routing data
     direct?: boolean;
     speed?: string;
@@ -453,7 +453,7 @@ export interface IDispatchJob {
     client?: string;
     clientId?: number;
     clientName?: string;
-    
+
     jobType?: number;
     minutes?: number;
     pickupTime?: number;
@@ -531,8 +531,15 @@ export interface JobGroup {
     subJobs: ISuggestion[];
 }
 
-export interface VoidJobRequest {
+export interface VoidJobRequest extends VoidJobRequestBase {
     jobId: number;
+}
+
+export interface VoidBulkJobRequest extends VoidJobRequestBase {
+    bulkJobId: number;
+}
+
+interface VoidJobRequestBase {
     voidSingleJobOnly: boolean;
     voidReason?: string;
 }
@@ -541,6 +548,6 @@ export interface IBulkUpdateRequest {
     jobIds: number[];
 }
 
-export interface IBulkReadUpdateRequest extends  IBulkUpdateRequest {
+export interface IBulkReadUpdateRequest extends IBulkUpdateRequest {
     shouldMarkAsRead: boolean;
 }
