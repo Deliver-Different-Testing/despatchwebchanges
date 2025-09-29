@@ -179,6 +179,30 @@
                                                      md-font-set="material-symbols-outlined"></md-icon>
                                         </md-button>
                                     </div>
+
+                                    <div class="row-overflow" id="box-{{box.name}}-{{$index}}" layout="row"
+                                         ng-if="ctrl.boxes[box.name].showSearch">
+                                        <md-button class="md-icon-button" ng-click="ctrl.openSearch(box.name, $index)">
+                                            <md-icon md-font-set="material-symbols-outlined"
+                                                     ng-if="!ctrl.showInput[box.name + '-' + $index]">
+                                                search
+                                            </md-icon>
+                                            <md-icon md-font-set="material-symbols-outlined"
+                                                     ng-if="ctrl.showInput[box.name + '-' + $index]">
+                                                close
+                                            </md-icon>
+                                        </md-button>
+
+                                        <md-input-container class="md-block search-input-container" md-no-float
+                                                            ng-if="ctrl.showInput[box.name + '-' + $index]">
+                                            <md-icon md-font-set="material-symbols-outlined">search</md-icon>
+                                            <input class="search-input"
+                                                   ng-change="ctrl.updateTable()"
+                                                   ng-model="ctrl.searchText"
+                                                   placeholder="Search jobs..."
+                                                   type="text">
+                                        </md-input-container>
+                                    </div>
                                 </div>
                             </md-toolbar>
 
