@@ -187,7 +187,7 @@ public class BaseJobRepository(
 
         return query;
     }
-    
+
     public async Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(
         List<int> selectedViewIds)
     {
@@ -232,15 +232,34 @@ public class BaseJobRepository(
 
     public async Task<List<TucNoteViewModel>> GetBulkJobNotesByBulkJobIdAsync(int bulkJobId)
     {
-        return await Context.TblBulkJobNotes
-            .Include(n => n.NoteType)
-            .Include(n => n.CreatedByNavigation)
-            .Include(n => n.UpdatedByNavigation)
+        var bulkNotes = await Context.TblBulkJobNotes
             .Where(n => n.BulkJobId == bulkJobId)
+            .Select(n => new TucNoteViewModel
+            {
+                NoteId = n.NoteId,
+                NoteTypeId = n.NoteTypeId,
+                NoteTypeName = n.NoteType != null ? n.NoteType.NoteTypeName : string.Empty,
+                BulkJobId = n.BulkJobId,
+                JobNumber = n.BulkJob != null ? n.BulkJob.JobNumber : string.Empty,
+                NoteText = n.NoteText,
+                IsImportant = n.IsImportant,
+                CreatedDate = n.CreatedDate,
+                CreatedByName = n.CreatedBy.HasValue && n.CreatedByNavigation != null
+                    ? FormatName(n.CreatedByNavigation.UcstFirstName, n.CreatedByNavigation.UcstLastName)
+                    : string.Empty,
+                UpdatedDate = n.UpdatedDate,
+                UpdatedBy = n.UpdatedBy,
+                UpdatedByName = n.UpdatedBy.HasValue && n.UpdatedByNavigation != null
+                    ? FormatName(n.UpdatedByNavigation.UcstFirstName, n.UpdatedByNavigation.UcstLastName)
+                    : string.Empty
+            })
             .AsNoTracking()
-            .Select(n => new TucNoteViewModel(n))
             .ToListAsync();
+
+        return bulkNotes;
     }
+
+    private static string FormatName(string firstName, string lastName) => string.Concat(firstName, " ", lastName);
 
     public async Task<List<TucNoteViewModel>> GetNotesByJobIdAsync(int jobId)
     {
@@ -276,7 +295,29 @@ public class BaseJobRepository(
             : await UpdateNoteAsync(viewModel, staffId, currentTime, cancellationToken);
     }
 
-    protected async Task SaveBulkNoteAsync(int bulkJobId, string noteText, bool isImportant = false,
+    public async Task SaveBulkNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(viewModel);
+        ArgumentNullException.ThrowIfNull(viewModel.BulkJobId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(viewModel.NoteText, nameof(viewModel.NoteText));
+
+        // If a note type is not found, default to the internal note
+        var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == viewModel.NoteTypeId, cancellationToken: cancellationToken);
+        if (!noteTypeExists) viewModel.NoteTypeId = (int)NoteType.InternalNote;
+
+        var newNote = new TblBulkJobNote
+        {
+            BulkJobId = viewModel.BulkJobId.Value,
+            IsImportant = viewModel.IsImportant,
+            NoteText = viewModel.NoteText   ,
+            NoteTypeId = viewModel.NoteTypeId,
+        };
+
+        await Context.TblBulkJobNotes.AddAsync(newNote, cancellationToken);
+        await Context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task SaveBulkNoteAsync(int bulkJobId, string noteText, bool isImportant = false,
         NoteType noteType = NoteType.InternalNote)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(noteText, nameof(noteText));
@@ -292,7 +333,7 @@ public class BaseJobRepository(
             NoteText = noteText,
             NoteTypeId = (int)noteType,
         };
-        
+
         await Context.TblBulkJobNotes.AddAsync(newNote);
         await Context.SaveChangesAsync();
     }
@@ -305,7 +346,7 @@ public class BaseJobRepository(
         // If a note type is not found, default to the internal note
         var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
         if (!noteTypeExists) noteType = NoteType.InternalNote;
-        
+
         var viewModel = new TucNoteViewModel
         {
             JobId = isRecurringJob ? null : jobId,
@@ -625,7 +666,7 @@ public class BaseJobRepository(
                 );
                 return (requiredDeliveryDateTime - now).TotalMinutes;
             }
-            
+
             if (!job.JobTypeMins.HasValue) return null;
             var minutesToAdd = job.JobTypeMins ?? 0;
 

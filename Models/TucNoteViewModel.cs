@@ -58,29 +58,6 @@ public class TucNoteViewModel
             : string.Empty;
     }
 
-    public TucNoteViewModel(TblBulkJobNote note)
-    {
-        if (note == null) return;
-
-        NoteId = note.NoteId;
-        NoteTypeId = note.NoteTypeId;
-        NoteTypeName = note.NoteType?.NoteTypeName;
-        BulkJobId = note.BulkJobId;
-        JobNumber = note.BulkJob?.JobNumber;
-        NoteText = note.NoteText;
-        IsImportant = note.IsImportant;
-        CreatedDate = note.CreatedDate;
-        CreatedBy = note.CreatedBy;
-        CreatedByName = note.CreatedBy.HasValue && note.CreatedByNavigation != null
-            ? FormatName(note.CreatedByNavigation.UcstFirstName, note.CreatedByNavigation.UcstLastName)
-            : string.Empty;
-        UpdatedDate = note.UpdatedDate;
-        UpdatedBy = note.UpdatedBy;
-        UpdatedByName = note.UpdatedBy.HasValue && note.UpdatedByNavigation != null
-            ? FormatName(note.UpdatedByNavigation.UcstFirstName, note.UpdatedByNavigation.UcstLastName)
-            : string.Empty;
-    }
-
     // Method to map from viewmodel to entity
     public TucNote ToEntity()
     {

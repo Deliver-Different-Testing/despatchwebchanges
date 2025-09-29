@@ -20,13 +20,17 @@ class NoteService implements angular.IServiceProvider {
 
     async createNote(noteViewModel: IJobNote): Promise<IJobNote> {
         try {
-            const formattedViewModel = {
-                ...noteViewModel,
-                createdDate: dayjs(noteViewModel.createdDate).format(),
-                updatedDate: noteViewModel.updatedDate ? dayjs(noteViewModel.updatedDate).format() : undefined
-            };
-
-            const response = await this.$http.post<IJobNote>('note/CreateNote', formattedViewModel);
+            const response = await this.$http.post<IJobNote>('note/CreateNote', noteViewModel);
+            return response.data;
+        } catch (error) {
+            this.$log.error('Error creating note:', error);
+            throw error;
+        }
+    } 
+    
+    async createBulkJobNote(noteViewModel: IJobNote): Promise<IJobNote> {
+        try {
+            const response = await this.$http.post<IJobNote>('note/CreateBulkJobNote', noteViewModel);
             return response.data;
         } catch (error) {
             this.$log.error('Error creating note:', error);
@@ -34,17 +38,18 @@ class NoteService implements angular.IServiceProvider {
         }
     }
 
-    async updateNote(staffId: number, noteViewModel: IJobNote): Promise<void> {
+    async updateNote(noteViewModel: IJobNote): Promise<void> {
         try {
-            const formattedViewModel = {
-                ...noteViewModel,
-                createdDate: dayjs(noteViewModel.createdDate).format(),
-                updatedDate: noteViewModel.updatedDate ? dayjs(noteViewModel.updatedDate).format() : undefined
-            };
-
-            await this.$http.post('note/UpdateNote', formattedViewModel, {
-                params: { staffId }
-            });
+            await this.$http.post('note/UpdateNote', noteViewModel);
+        } catch (error) {
+            this.$log.error('Error updating note:', error);
+            throw error;
+        }
+    }
+  
+    async updateBulkJobNote(noteViewModel: IJobNote): Promise<void> {
+        try {
+            await this.$http.post('note/UpdateBulkJobNote', noteViewModel);
         } catch (error) {
             this.$log.error('Error updating note:', error);
             throw error;

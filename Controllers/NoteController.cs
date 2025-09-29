@@ -70,11 +70,8 @@ public class NoteController(
     {
         try
         {
-            if (noteViewModel == null)
-                return BadRequest("Note data is required.");
-
-            if (noteViewModel.NoteId != 0)
-                return BadRequest("Note ID should not be provided for new notes.");
+            ArgumentNullException.ThrowIfNull(noteViewModel);
+            ArgumentNullException.ThrowIfNull(noteViewModel.NoteId);
 
             var savedNoteId = await jobRepository.SaveNoteAsync(noteViewModel);
 
@@ -85,6 +82,25 @@ public class NoteController(
         {
             Log.Error(ex, "{Message}", 
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(CreateNote)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+    
+   [HttpPost]
+    public async Task<ActionResult<TucNoteViewModel>> CreateBulkJobNote([FromBody] TucNoteViewModel noteViewModel)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(noteViewModel);
+            ArgumentNullException.ThrowIfNull(noteViewModel.NoteId);
+
+            await jobRepository.SaveBulkNoteAsync(noteViewModel);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(CreateBulkJobNote)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
@@ -109,6 +125,30 @@ public class NoteController(
         {
             Log.Error(ex, "{Message}", 
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(UpdateNote)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }   
+    
+    [HttpPost]
+    public async Task<IActionResult> UpdateBulkJobNote([FromBody] TucNoteViewModel noteViewModel)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(noteViewModel);
+
+            // Check if a note exists
+            var existingNote = await jobRepository.GetNoteByIdAsync(noteViewModel.NoteId);
+            if (existingNote == null)
+                return NotFound($"Note with ID {noteViewModel.NoteId} not found.");
+
+            await jobRepository.SaveBulkNoteAsync(noteViewModel);
+
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(UpdateBulkJobNote)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }

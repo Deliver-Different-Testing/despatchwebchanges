@@ -171,7 +171,7 @@ class StickyNoteController extends BaseController {
         };
 
         try {
-            await this.noteManagementDialogService.openNoteDialog($event, emptyNote, ContactID);
+            await this.noteManagementDialogService.openNoteDialog($event, emptyNote);
             this.loadNotes();
             this.toastrService.showSuccessToast('Note added successfully');
         } catch (error) {
@@ -182,7 +182,7 @@ class StickyNoteController extends BaseController {
 
     async editNote($event: MouseEvent, note: IJobNote): Promise<void> {
         try {
-            await this.noteManagementDialogService.openNoteDialog($event, note, ContactID);
+            await this.noteManagementDialogService.openNoteDialog($event, note);
             this.loadNotes();
             this.toastrService.showSuccessToast('Note updated successfully');
         } catch (error) {
