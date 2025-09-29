@@ -51,8 +51,8 @@ class JobSearchController extends BaseController {
         'interCourierChargeDialogService'
     ];
     
-    private static ContactIdKey: string = `layoutsCS-${ContactID}`
-    private static LastActiveContactIdKey: string = `lastActiveLayoutCS-${ContactID}`
+    private readonly ContactIdKey: string = `layoutsCS-${ContactID}`
+    private readonly LastActiveContactIdKey: string = `lastActiveLayoutCS-${ContactID}`
 
     readonly isUsCustomer: boolean;
     readonly isAdmin: boolean;
@@ -317,7 +317,7 @@ class JobSearchController extends BaseController {
             }
 
             if (Modernizr.localstorage) {
-                localStorage.setItem(JobSearchController.ContactIdKey, JSON.stringify(this.layouts));
+                localStorage.setItem(this.ContactIdKey, JSON.stringify(this.layouts));
             }
         }
     }
@@ -365,8 +365,8 @@ class JobSearchController extends BaseController {
         // Load saved layouts or use default
         if (Modernizr.localstorage) {
             try {
-                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(JobSearchController.ContactIdKey) || '[]');
-                const lastActiveLayout = localStorage.getItem(JobSearchController.LastActiveContactIdKey);
+                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(this.ContactIdKey) || '[]');
+                const lastActiveLayout = localStorage.getItem(this.LastActiveContactIdKey);
 
                 this.layouts = storedLayouts || [this.defaultLayout];
                 this.layouts[0] = this.defaultLayout; // Ensure default is always up to date
@@ -390,7 +390,7 @@ class JobSearchController extends BaseController {
                 if (index !== -1) {
                     this.layouts[index].layout = angular.copy(newValue);
                     if (Modernizr.localstorage) {
-                        localStorage.setItem(JobSearchController.ContactIdKey, JSON.stringify(this.layouts));
+                        localStorage.setItem(this.ContactIdKey, JSON.stringify(this.layouts));
                     }
                 }
             }
@@ -407,7 +407,7 @@ class JobSearchController extends BaseController {
             this.applyLayoutDimensions();
 
             if (Modernizr.localstorage) {
-                localStorage.setItem(JobSearchController.LastActiveContactIdKey, layout.name);
+                localStorage.setItem(this.LastActiveContactIdKey, layout.name);
             }
         });
     }
@@ -460,8 +460,8 @@ class JobSearchController extends BaseController {
                 this.layouts.push(currentLayout);
 
                 if (Modernizr.localstorage) {
-                    localStorage.setItem(JobSearchController.ContactIdKey, JSON.stringify(this.layouts));
-                    localStorage.setItem(JobSearchController.LastActiveContactIdKey, name);
+                    localStorage.setItem(this.ContactIdKey, JSON.stringify(this.layouts));
+                    localStorage.setItem(this.LastActiveContactIdKey, name);
                 }
             });
     }
@@ -479,7 +479,7 @@ class JobSearchController extends BaseController {
             .then(() => {
                 this.layouts.splice(index, 1);
                 if (Modernizr.localstorage) {
-                    localStorage.setItem(JobSearchController.ContactIdKey, JSON.stringify(this.layouts));
+                    localStorage.setItem(this.ContactIdKey, JSON.stringify(this.layouts));
                 }
                 this.loadLayout(0);
                 this.toastrService.showSuccessToast("Layout deleted successfully");

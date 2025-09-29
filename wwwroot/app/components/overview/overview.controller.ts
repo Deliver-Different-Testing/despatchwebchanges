@@ -27,7 +27,8 @@ class OverviewController extends BaseController {
         "$interval",
     ];
 
-    private static OverviewJobLimitDisplay: string = `overviewJobLimitDisplay-${ContactID}`;
+    private readonly OverviewJobLimitDisplay: string = `overviewJobLimitDisplay-${ContactID}`;
+    
     isLoading: boolean;
     greeting: string;
     statistics: { active: number; inactive: number; completed: number };
@@ -152,7 +153,7 @@ class OverviewController extends BaseController {
             (newValue: number, oldValue: number) => {
                 if (newValue !== oldValue) {
                     if (Modernizr.localstorage) {
-                        localStorage.setItem(OverviewController.OverviewJobLimitDisplay, `${this.query.limit}`);
+                        localStorage.setItem(this.OverviewJobLimitDisplay, `${this.query.limit}`);
                     }
                 }
             }
@@ -160,7 +161,7 @@ class OverviewController extends BaseController {
     }
 
     private loadSavedLimit(): void {
-        const savedLimit = localStorage.getItem(OverviewController.OverviewJobLimitDisplay);
+        const savedLimit = localStorage.getItem(this.OverviewJobLimitDisplay);
         this.$log.debug(`Saved limit is: ${savedLimit}`);
         if (savedLimit) {
             this.query.limit = parseInt(savedLimit);

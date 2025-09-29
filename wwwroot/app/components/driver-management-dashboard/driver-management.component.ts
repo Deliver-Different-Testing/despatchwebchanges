@@ -26,6 +26,7 @@ import {
 import {ComposeEmailDialogService} from "../dialogs/compose-email-dialog/compose-email-dialog.service";
 import EditAfterhoursDialogService from "../dialogs/edit-afterhours-dialog/edit-afterhours-dialog.service";
 import {IAfterHoursCourierSchedule} from "./interfaces/IAfterHoursCourierSchedule";
+import {AppPages} from "../../enums/app-pages.enum";
 
 class DriverManagementController extends BaseController {
     static $inject = [
@@ -42,7 +43,7 @@ class DriverManagementController extends BaseController {
         "editAfterhoursDialogService",
     ];
 
-    private readonly LastActiveTabKey = `lastActiveTabDriverManagement_${ContactID}`;
+    private readonly LastActiveTabKey = `lastActiveTab-${AppPages.DriverManagement}-${ContactID}`;
 
     isUsCustomer: boolean = false;
 
