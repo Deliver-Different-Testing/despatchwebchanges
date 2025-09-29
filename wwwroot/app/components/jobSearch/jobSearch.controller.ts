@@ -27,11 +27,11 @@ import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-fi
 import IScanDetailResult from "./interfaces/IScanDetailResult";
 import InterCourierChargeDialogService
     from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
+import JobSearchDateRange from "./enums/JobSearchDateRange";
 
 class JobSearchController extends BaseController {
     static $inject = [
         '$scope',
-        '$log',
         'uCSData',
         '$mdDialog',
         '$document',
@@ -59,9 +59,7 @@ class JobSearchController extends BaseController {
     mapCenter: Coordinates;
     mapZoom: number;
     jobDetailFabIsOpen: boolean = false;
-    dateSearchRange: number;
-    scanList: IScanDetailResult[];
-    jobRecordSearchText: string;
+    dateSearchRange: JobSearchDateRange;
     searchCriteria: ISearchCriteria;
     clientSelectedItem?: number;
     courierSelectedItem: any;
@@ -69,8 +67,10 @@ class JobSearchController extends BaseController {
     courierSearchText: string;
     showInput: any;
     inputWidth: any;
+    
     scanPromise?: Promise<IScanDetailResult[]>;
-    boxes: any;
+    scanList: IScanDetailResult[];
+    boxes?: Record<string, IBox>;
 
     jobListType = JobListType.JobSearchMainList;
     bulkJobListType = JobListType.JobSearchBulkList;
@@ -83,7 +83,6 @@ class JobSearchController extends BaseController {
     timeZone: string = TimeZone;
     jobList?: IDispatchJob[];
     bulkJobList?: IDispatchJob[];
-    pickRegions?: ISuggestion[];
     currentJob?: IDispatchJob;
     currentSelection?: string;
     currentJobId?: number;
@@ -111,7 +110,6 @@ class JobSearchController extends BaseController {
 
     constructor(
         $scope: angular.IScope,
-        private $log: angular.ILogService,
         private jobSearchService: JobSearchService,
         private $mdDialog: angular.material.IDialogService,
         private $document: angular.IDocumentService,
@@ -144,20 +142,15 @@ class JobSearchController extends BaseController {
         this.mapZoom = 12;
 
         this.jobDetailFabIsOpen = false;
-        this.dateSearchRange = 1; // Set to a fortnight
+        this.dateSearchRange = JobSearchDateRange.Fortnight;
         
         this.scanList = [];
-
-        this.jobRecordSearchText = "";
-
+        
         const now = dayjs();
-        const sevenDaysBefore = now.subtract(7, 'day');
-        const sevenDaysAfter = now.add(7, 'day');
-
         this.searchCriteria = {
-            date: now.toDate(),
-            from_date: sevenDaysBefore.toDate(),
-            to_date: sevenDaysAfter.toDate(),
+            date: now,
+            from_date:  now.subtract(7, 'day'),
+            to_date: now.add(7, 'day'),
             followupClient: "All",
             includeClosed: true
         };
@@ -492,7 +485,7 @@ class JobSearchController extends BaseController {
             try {
                 this.$mdSidenav("right").toggle();
             } catch (error) {
-                this.$log.debug('Sidenav not available:', error);
+                console.log('Sidenav not available:', error);
             }
         }
     }
@@ -520,9 +513,9 @@ class JobSearchController extends BaseController {
                 await this.selectJob(job);
                 this.toastrService.showSuccessToast('Job dispatched to courier ' + courierNumber);
             }
-            // If courierNumber is falsy, it means the user clicked cancel, so we do nothing
         } catch (error) {
-            this.$log.error('Error in selectAndDispatchJob:', error);
+            if(!error) return;
+            console.error('Error in selectAndDispatchJob:', error);
         }
     }
 
@@ -540,9 +533,9 @@ class JobSearchController extends BaseController {
 
             // Then load the new job
             await this.selectJobDetail(newJobId);
-            this.$log.debug('Dialog closed!');
+            console.log('Dialog closed!');
         } catch (error) {
-            this.$log.error('Error in createNewJob:', error);
+            console.error('Error in createNewJob:', error);
         }
     }
 
@@ -563,19 +556,19 @@ class JobSearchController extends BaseController {
 
             await this.additionalServicesDialogService.showAdditionalServicesDialog($event, job);
         } catch (error) {
-            this.$log.error('Error in showAdditionalServicesMenu:', error);
+            console.error('Error in showAdditionalServicesMenu:', error);
         }
     }
 
     async openFileAttachmentDialog($event: MouseEvent, job: IDispatchJob) {
         try {
             await this.jobFileUploadDialogService.openJobFileUploadDialog($event, job);
-            this.$log.debug('Job File Upload Dialog Closed!');
+            console.log('Job File Upload Dialog Closed!');
         } catch (error) {
             if (error === undefined) {
-                this.$log.debug('User canceled!');
+                console.log('User canceled!');
             } else {
-                this.$log.error('Error in openFileAttachmentDialog:', error);
+                console.error('Error in openFileAttachmentDialog:', error);
             }
         }
     }
@@ -583,38 +576,13 @@ class JobSearchController extends BaseController {
     async interCourierCharge($event: MouseEvent) {
         try {
             await this.interCourierChargeDialogService.showInterCourierCharge($event);
-            this.$log.debug("Inter-courier Charge Added!");
+            console.log("Inter-courier Charge Added!");
         } catch (error) {
             if(!error) return;
-            this.$log.debug("Inter-courier Charge Canceled!");
+            console.log("Inter-courier Charge Canceled!");
         }
     }
-
-    openSearch(boxName: string, index: number) {
-        const boxID = boxName + '-' + index;
-        if (this.showInput[boxID]) {
-            this.showInput[boxID] = false;
-            this.inputWidth[boxID] = 31;
-        } else {
-            this.inputWidth[boxID] = 200;
-            this.showInput[boxID] = true;
-        }
-    }
-
-    async filterRegion(region: ISuggestion) {
-        if (!this.pickRegions) return;
-
-        try {
-            const sr = this.pickRegions.find(obj => obj.id === region.id);
-            if (!sr) return;
-            this.searchCriteria.regions = [sr];
-
-            await Promise.all([this.refreshData(), this.refreshBulkData()]);
-        } catch (error) {
-            this.$log.debug('Error in filterRegion:', error);
-        }
-    }
-
+    
     async unlockJob(currentJob: IDispatchJob) {
         await this.DispatchData.updateJobDetail(currentJob.id, JobProperty.Locked, false, currentJob.preBook ?? false)
     }
@@ -649,7 +617,7 @@ class JobSearchController extends BaseController {
             }
         } catch (error) {
             // User clicked 'No' or an error occurred
-            this.$log.debug('Un-split job cancelled or error occurred:', error);
+            console.log('Un-split job cancelled or error occurred:', error);
         }
     }
 
@@ -677,7 +645,7 @@ class JobSearchController extends BaseController {
             await this.selectJobDetail(job.id);
         } catch (error) {
             this.toastrService.showErrorToast('Error in restoring job');
-            this.$log.error('Error in restoreJob:', error);
+            console.error('Error in restoreJob:', error);
         }
     }
 
@@ -748,7 +716,7 @@ class JobSearchController extends BaseController {
     private handleError(error: any) {
         if (!error) return;
 
-        this.$log.error("Error in _handleError:", error);
+        console.error("Error in _handleError:", error);
     }
 
     async sendPOD($event: MouseEvent) {
@@ -815,7 +783,7 @@ class JobSearchController extends BaseController {
                 this.searchCriteria.wild,
             );
         } catch (error) {
-            this.$log.error('Error in refreshBulkData:', error);
+            console.error('Error in refreshBulkData:', error);
         } finally {
             this.isBulkJobListLoading = false;
             this.applyScope();
@@ -855,10 +823,10 @@ class JobSearchController extends BaseController {
                 document.body.removeChild(link);
                 window.URL.revokeObjectURL(url);
             } else {
-                this.$log.error("Error downloading jobs");
+                console.error("Error downloading jobs");
             }
         } catch (error) {
-            this.$log.error("Failed to download jobs:", error);
+            console.error("Failed to download jobs:", error);
         } finally {
             this.applyScope();
         }
@@ -881,7 +849,7 @@ class JobSearchController extends BaseController {
         const index = file.name.lastIndexOf(".");
         if (index < 1 || !['.xls', '.xlsx', '.csv'].includes(file.name.substring(index, file.name.length).toLowerCase())) {
             fileElement.val(null);
-            this.$log.error("Please upload correct file type, file extension should be .xls, .xlsx or .csv");
+            console.error("Please upload correct file type, file extension should be .xls, .xlsx or .csv");
             return;
         }
 
@@ -897,7 +865,7 @@ class JobSearchController extends BaseController {
 
     async selectJobDetail(jobId: number) {
         try {
-            this.$log.debug("select Job  " + jobId);
+            console.log("select Job  " + jobId);
 
             this.isBulkJob = false;
             this.currentJob = await this.DispatchData.getDispatchJobDetail(jobId);
@@ -906,7 +874,7 @@ class JobSearchController extends BaseController {
 
             // Update the map with just this job
             if (!this.currentJob) {
-                this.$log.debug("Job not found");
+                console.log("Job not found");
                 return;
             }
 
@@ -922,7 +890,7 @@ class JobSearchController extends BaseController {
             this.scanPromise = this.jobSearchService.getScanDetail(this.currentJob.booked, this.currentJob.jobNo);
             this.scanList = await this.scanPromise;
         } catch (error) {
-            this.$log.error('Error in selectJobDetail:', error);
+            console.error('Error in selectJobDetail:', error);
         } finally {
             this.applyScope();
         }
@@ -930,7 +898,7 @@ class JobSearchController extends BaseController {
 
     async selectBulkJobDetail(bulkJobId: number) {
         try {
-            this.$log.debug("select Job  " + bulkJobId);
+            console.log("select Job  " + bulkJobId);
 
             this.isBulkJob = true;
             this.currentJob = await this.jobSearchService.getDispatchBulkJobDetail(bulkJobId);
@@ -949,7 +917,7 @@ class JobSearchController extends BaseController {
             this.scanPromise = this.jobSearchService.getScanDetail(this.currentJob.booked, this.currentJob.jobNo);
             this.scanList = await this.scanPromise;
         } catch (error) {
-            this.$log.error('Error in selectJobDetail:', error);
+            console.error('Error in selectJobDetail:', error);
         } finally {
             this.applyScope();
         }
@@ -983,7 +951,7 @@ class JobSearchController extends BaseController {
         await this.refreshAllData();
     }
 
-    onSearchRangeChange(dateRangeOption: number) {
+    onSearchRangeChange(dateRangeOption: JobSearchDateRange) {
         try {
             const now = dayjs().startOf('day');
             const firstDayOfMonth = now.startOf('month');
@@ -992,24 +960,24 @@ class JobSearchController extends BaseController {
             const oneWeekAhead = now.add(7, 'day');
 
             switch (dateRangeOption) {
-                case 1:
-                    this.searchCriteria.from_date = oneWeekAgo.toDate();
-                    this.searchCriteria.to_date = oneWeekAhead.toDate();
+                case JobSearchDateRange.Fortnight:
+                    this.searchCriteria.from_date = oneWeekAgo;
+                    this.searchCriteria.to_date = oneWeekAhead;
                     break;
-                case 2:
-                    this.searchCriteria.from_date = now.toDate();
-                    this.searchCriteria.to_date = now.toDate();
+                case JobSearchDateRange.Today:
+                    this.searchCriteria.from_date = now;
+                    this.searchCriteria.to_date = now;
                     break;
-                case 3:
-                    this.searchCriteria.from_date = firstDayOfMonth.toDate();
-                    this.searchCriteria.to_date = lastDayOfMonth.toDate();
+                case JobSearchDateRange.Month:
+                    this.searchCriteria.from_date = firstDayOfMonth;
+                    this.searchCriteria.to_date = lastDayOfMonth;
                     break;
-                case 4:
+                case JobSearchDateRange.Custom:
                     // This option is empty as ng-if is used on the page to show custom date range options
                     break;
             }
         } catch (error) {
-            this.$log.debug("Error: ", error);
+            console.log("Error: ", error);
         }
     }
 
@@ -1083,7 +1051,7 @@ class JobSearchController extends BaseController {
 
             return true;
         } catch (error: any) {
-            this.$log.error("Error in dispatch:", error);
+            console.error("Error in dispatch:", error);
             throw error;
         }
     }

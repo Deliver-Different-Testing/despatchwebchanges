@@ -1,6 +1,6 @@
 import {IDispatchJob} from "../../interfaces/job.interface";
 import dayjs from "dayjs";
-import {formatDateForApi} from "../../functions/formatDates";
+import {formatDateForApi, formatDayJsForApi} from "../../functions/formatDates";
 import IScanDetailResult from "./interfaces/IScanDetailResult";
 
 class JobSearchService implements angular.IServiceProvider {
@@ -17,8 +17,8 @@ class JobSearchService implements angular.IServiceProvider {
     }
 
     async getPodJobs(
-        fromDate: Date,
-        toDate: Date,
+        fromDate: dayjs.Dayjs,
+        toDate: dayjs.Dayjs,
         courierId?: number,
         clientId?: number,
         wild?: string,
@@ -31,8 +31,8 @@ class JobSearchService implements angular.IServiceProvider {
                     clientId: clientId,
                     wild: wild,
                     job: job,
-                    fromDate: dayjs(fromDate).format(),
-                    toDate: dayjs(toDate).format(),
+                    fromDate: fromDate.toISOString(),
+                    toDate: toDate.toISOString()
                 }
             }
         );
@@ -41,8 +41,8 @@ class JobSearchService implements angular.IServiceProvider {
     }
 
     async podJobsDownload(
-        fromDate: Date,
-        toDate: Date,
+        fromDate: dayjs.Dayjs,
+        toDate: dayjs.Dayjs,
         courierId?: number,
         clientId?: number,
         wild?: string,
@@ -56,8 +56,8 @@ class JobSearchService implements angular.IServiceProvider {
                     clientId,
                     wild,
                     job,
-                    fromDate: dayjs(fromDate).format(),
-                    toDate: dayjs(toDate).format()
+                    fromDate: fromDate.toISOString(),
+                    toDate: toDate.toISOString()
                 },
                 responseType: "blob"
             }
@@ -74,8 +74,8 @@ class JobSearchService implements angular.IServiceProvider {
     }
 
     async searchBulkJobs(
-        fromDate: Date,
-        toDate: Date,
+        fromDate: dayjs.Dayjs,
+        toDate: dayjs.Dayjs,
         courierId?: number,
         clientId?: number,
         job?: string,
@@ -89,8 +89,8 @@ class JobSearchService implements angular.IServiceProvider {
                     clientId,
                     job,
                     wild,
-                    fromDate: dayjs(fromDate).format(),
-                    toDate: dayjs(toDate).format()
+                    fromDate: fromDate.toISOString(),
+                    toDate: toDate.toISOString()
                 }
             }
         );

@@ -7,16 +7,16 @@
                     ng-change="ctrl.onSearchRangeChange(ctrl.dateSearchRange)"
                     ng-model="ctrl.dateSearchRange"
                     aria-labelledby="dateRange">
-                <md-radio-button value="1">Fortnight</md-radio-button>
-                <md-radio-button value="2">Today</md-radio-button>
-                <md-radio-button value="3">Month</md-radio-button>
-                <md-radio-button value="4">Custom</md-radio-button>
+                <md-radio-button value="fortnight">Fortnight</md-radio-button>
+                <md-radio-button value="today">Today</md-radio-button>
+                <md-radio-button value="month">Month</md-radio-button>
+                <md-radio-button value="custom">Custom</md-radio-button>
             </md-radio-group>
         </div>
 
         <md-divider style="margin: 10px;"></md-divider>
 
-        <div class="space" layout="column" layout-align="center end" ng-if="ctrl.dateSearchRange == 4">
+        <div class="space" layout="column" layout-align="center end" ng-if="ctrl.dateSearchRange == 'custom'">
             <div>
                 <label id="from-datepicker-header">From: </label>
                 <md-datepicker
