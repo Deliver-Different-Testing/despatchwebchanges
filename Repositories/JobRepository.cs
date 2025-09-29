@@ -3007,6 +3007,16 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         return bookingInfo?.HasParent ?? false;
     }
 
+    public async Task<bool> IsBulkJobParent(int bulkJobId)
+    {
+        var isParent = await Context.TblBulkJobs
+            .Where(j => j.BulkJobId == bulkJobId)
+            .Select(j => j.ParentId.HasValue || j.BulkParentId.HasValue)
+            .FirstOrDefaultAsync();
+
+        return isParent;
+    }
+
     public async Task<List<NoteTypeViewModel>> GetNoteTypesAsync()
     {
         var noteTypes = await Context.TucNoteTypes
@@ -3078,6 +3088,77 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             foreach (var parcel in existingParcelsToUpdate)
             {
                 await Context.TucJobItems
+                    .Where(i => i.ItemId == parcel.ItemId!.Value)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(i => i.Height, parcel.Height ?? 0)
+                        .SetProperty(i => i.Length, parcel.Length ?? 0)
+                        .SetProperty(i => i.Depth, parcel.Depth ?? 0)
+                        .SetProperty(i => i.Notes, parcel.ItemName));
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository),
+                    nameof(UpdatePackagesForJobAsync)));
+            throw;
+        }
+    }
+    
+    public async Task UpdatePackagesForBulkJobAsync(int bulkJobId, List<ParcelDimensions> parcels)
+    {
+        if (parcels == null || parcels.Count == 0) return;
+
+        try
+        {
+            var effectiveJobId = await GetBulkJobRelationshipInfoAsync(bulkJobId);
+
+            // Process existing and new parcels separately
+            var newParcels = new List<TblBulkJobItem>();
+            var existingParcelsToUpdate = new List<ParcelDimensions>();
+
+            // Get the maximum existing ItemId for this job
+            var maxItemId = await Context.TblBulkJobItems
+                .Where(i => i.JobId == effectiveJobId)
+                .MaxAsync(i => (int?)i.ItemId) ?? 0;
+
+            // Get next ItemId for new parcels
+            var nextItemId = maxItemId + 1;
+
+            foreach (var parcel in parcels)
+            {
+                if (parcel.ItemId == null)
+                {
+                    var newItem = new TblBulkJobItem
+                    {
+                        JobId = effectiveJobId,
+                        ChildJobId = null,
+                        Height = parcel.Height ?? 0,
+                        Length = parcel.Length ?? 0,
+                        Depth = parcel.Depth ?? 0,
+                        Notes = parcel.ItemName,
+                        ItemId = nextItemId++ // Increment for each new item
+                    };
+
+                    newParcels.Add(newItem);
+                }
+                else
+                {
+                    existingParcelsToUpdate.Add(parcel);
+                }
+            }
+
+            // Add new parcels
+            if (newParcels.Count > 0)
+            {
+                await Context.TblBulkJobItems.AddRangeAsync(newParcels);
+                await Context.SaveChangesAsync();
+            }
+
+            // Update existing items using ExecuteUpdateAsync
+            foreach (var parcel in existingParcelsToUpdate)
+            {
+                await Context.TblBulkJobItems
                     .Where(i => i.ItemId == parcel.ItemId!.Value)
                     .ExecuteUpdateAsync(setters => setters
                         .SetProperty(i => i.Height, parcel.Height ?? 0)

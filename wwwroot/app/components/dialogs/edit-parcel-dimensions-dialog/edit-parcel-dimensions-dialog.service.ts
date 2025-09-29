@@ -18,7 +18,6 @@ class EditParcelDimensionsDialogService {
         return this;
     }
 
-
     async showJobDimensionsDialog($event: MouseEvent, job: IJob) {
         await this.$mdDialog.show({
             controller: EditParcelDimensionsDialogController,
@@ -29,8 +28,9 @@ class EditParcelDimensionsDialogService {
             clickOutsideToClose: false,
             fullscreen: false,
             locals: {
-                jobId: job.id,
-                parcels: job.parcelDimensions
+                parcels: job.parcelDimensions,
+                jobId: job.bulkJob ? undefined : job.id,
+                bulkJobId: job.bulkJob ? job.id : undefined,
             },
             bindToController: true
         });

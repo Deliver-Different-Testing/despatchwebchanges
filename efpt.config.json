@@ -91,6 +91,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tblBulkJobItems]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tblBulkJobNotes]",
          "ObjectType": 0
       },

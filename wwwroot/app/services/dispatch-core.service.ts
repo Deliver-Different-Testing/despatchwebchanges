@@ -12,7 +12,7 @@ import {
     IParcelDimensions,
     PriceBreakdown,
     ISuggestion,
-    VoidJobRequest, UpdateJobPackagesRequest, JobCreateViewModel, VoidBulkJobRequest,
+    VoidJobRequest, UpdateJobPackagesRequest, JobCreateViewModel, VoidBulkJobRequest, UpdateBulkJobPackagesRequest,
 } from "../interfaces/job.interface";
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {
@@ -101,6 +101,17 @@ class DispatchCoreService implements angular.IServiceProvider {
             "job/IsJobParent", {
                 params: {
                     jobId,
+                }
+            }
+        );
+        return response.data;
+    }   
+    
+    async isBulkJobParent(bulkJobId: number): Promise<boolean> {
+        const response = await this.$http.get<boolean>(
+            "job/IsBulkJobParent", {
+                params: {
+                    jobId: bulkJobId,
                 }
             }
         );
@@ -841,6 +852,21 @@ class DispatchCoreService implements angular.IServiceProvider {
             };
             
             const response = await this.$http.post("job/UpdateJobPackages", data);
+            return response.data;
+        } catch (error) {
+            this.$log.error("Error updating packages:", error);
+            throw error;
+        }
+    } 
+    
+    async updateBulkJobPackages(bulkJobId: number, parcels: IParcelDimensions[]): Promise<any> {
+        try {
+            const data: UpdateBulkJobPackagesRequest = {
+                bulkJobId,
+                parcels
+            };
+            
+            const response = await this.$http.post("job/UpdateBulkJobPackages", data);
             return response.data;
         } catch (error) {
             this.$log.error("Error updating packages:", error);

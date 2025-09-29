@@ -1689,10 +1689,32 @@ public class JobController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
+    
+    [HttpPost]
+    public async Task<IActionResult> UpdateBulkJobPackages([FromBody] UpdateBulkJobPackagesRequest request)
+    {
+        try
+        {
+            await jobRepository.UpdatePackagesForBulkJobAsync(request.BulkJobId, request.Parcels);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(UpdateBulkJobPackages)));;
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
 
     public async Task<IActionResult> IsJobParent(int jobId)
     {
         var isParent = await jobRepository.IsJobParentAsync(jobId);
+        return Json(isParent);
+    }  
+    
+    public async Task<IActionResult> IsBulkJobParent(int bulkJobId)
+    {
+        var isParent = await jobRepository.IsBulkJobParent(bulkJobId);
         return Json(isParent);
     }
 

@@ -166,8 +166,15 @@ export interface IJob {
     calculateDimsOncePerJob: boolean;
 }
 
-export interface UpdateJobPackagesRequest {
+export interface UpdateBulkJobPackagesRequest extends  UpdateJobPackagesBase {
+    bulkJobId: number;
+}
+
+export interface UpdateJobPackagesRequest extends UpdateJobPackagesBase {
     jobId: number;
+}
+
+interface UpdateJobPackagesBase {
     parcels: IParcelDimensions[];
 }
 

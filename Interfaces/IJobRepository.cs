@@ -168,6 +168,7 @@ public interface IJobRepository
 
     Task<List<MegaMapResponse>> GetJobsForMegaMapAsync();
     Task UpdatePackagesForJobAsync(int jobId, List<ParcelDimensions> parcels);
+    Task UpdatePackagesForBulkJobAsync(int bulkJobId, List<ParcelDimensions> parcels);
 
     Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(List<int> selectedViewIds);
 
@@ -186,6 +187,7 @@ public interface IJobRepository
     Task<List<TucNoteViewModel>> GetBulkJobNotesByBulkJobIdAsync(int bulkJobId);
     Task<List<TucNoteViewModel>> GetNotesByJobIdAsync(int jobId);
     Task<bool> IsJobParentAsync(int jobId);
+    Task<bool> IsBulkJobParent(int bulkJobId);
     Task<JobLateCallDto> GetJobForLateCallAsync(int jobId);
     Task UpdateJobReadStatusAsync(int jobId, bool hasBeenRead);
     Task AddNewTucNoteTypeAsync(NoteTypeViewModel noteType);
