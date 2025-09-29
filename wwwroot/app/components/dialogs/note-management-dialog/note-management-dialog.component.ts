@@ -9,8 +9,7 @@ class NoteManagementDialogController {
         '$log',
         'noteService',
         'toastrService',
-        'model',
-        'staffId'
+        'model'
     ];
 
     noteTypes: INoteType[] = [];
@@ -39,13 +38,12 @@ class NoteManagementDialogController {
         private noteService: NoteService,
         private toastrService: ToastrService,
         model: IJobNote,
-        private staffId: number
     ) {
         this.model = angular.copy(model || this.createEmptyNote());
         this.isNew = this.model.noteId === 0;
         this.title = this.isNew ? 'Add Note' : 'Edit Note';
 
-        this.loadNoteTypes();
+        this.loadNoteTypes().then(r => console.log("Note Types Loaded!"));
     }
 
     private createEmptyNote(): IJobNote {
@@ -54,8 +52,6 @@ class NoteManagementDialogController {
             noteTypeId: 0,
             noteText: '',
             isImportant: false,
-            createdDate: new Date(),
-            createdBy: this.staffId
         };
     }
 
@@ -81,19 +77,21 @@ class NoteManagementDialogController {
             this.isSubmitting = true;
 
             if (this.isNew) {
-                // For new notes, set creation metadata
-                this.model.createdDate = new Date();
-                this.model.createdBy = this.staffId;
-
-                await this.noteService.createNote(this.model);
+                if(this.model.bulkJobId) {
+                    await this.noteService.createBulkJobNote(this.model);
+                } else {
+                    await this.noteService.createNote(this.model);
+                }
+                
                 this.toastrService.showSuccessToast('Note created successfully');
                 this.$mdDialog.hide();
             } else {
-                // For updates, set the update metadata
-                this.model.updatedDate = new Date();
-                this.model.updatedBy = this.staffId;
-
-                await this.noteService.updateNote(this.staffId, this.model);
+                if(this.model.bulkJobId) {
+                    await this.noteService.updateBulkJobNote(this.model);
+                } else {
+                    await this.noteService.updateNote(this.model);
+                }
+                
                 this.toastrService.showSuccessToast('Note updated successfully');
                 this.$mdDialog.hide();
             }

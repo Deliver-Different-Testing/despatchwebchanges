@@ -19,7 +19,7 @@ class NoteManagementDialogService implements angular.IServiceProvider {
         return this;
     }
 
-    async openNoteDialog($event: MouseEvent, model: IJobNote | null, staffId: number) {
+    async openNoteDialog($event: MouseEvent, model: IJobNote | null,) {
         await this.$mdDialog.show({
             controller: NoteManagementDialogController,
             controllerAs: 'ctrl',
@@ -28,8 +28,7 @@ class NoteManagementDialogService implements angular.IServiceProvider {
             targetEvent: $event,
             clickOutsideToClose: false,
             locals: {
-                model,
-                staffId
+                model
             }
         });
     }
