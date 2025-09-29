@@ -686,7 +686,12 @@ public static class JobMappings
         DeliveryTimeZone =
             j.DeliverByTimeZoneId != null
                 ? new Suggestion { Id = j.DeliverByTimeZone.Id, Text = j.DeliverByTimeZone.Name }
-                : null
+                : null,
+        
+        ParcelDimensions = GetPackagesForBulkJob(j, j.Parent,
+            j.TblBulkJobItems, j.Parent.TblBulkJobItems,
+            j.TblBulkJobItems),
+        
     };
 
     public static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping =
@@ -1159,8 +1164,45 @@ public static class JobMappings
 
     private static List<ParcelDimensions> ConvertToParcelDimensions(ICollection<TucJobItem> items) =>
         items?.Select(CreateParcelDimensions).ToList() ?? [];
+    
+    private static ParcelDimensions CreateParcelDimensions(TucJobItem item)
+    {
+        return new ParcelDimensions
+        {
+            ItemId = item.ItemId,
+            ItemName = item.Notes,
+            Height = item.Height,
+            Depth = item.Depth,
+            Length = item.Length
+        };
+    }
+    
+    private static List<ParcelDimensions> GetPackagesForBulkJob(
+        TblBulkJob job,
+        TblBulkJob parent,
+        ICollection<TblBulkJobItem> jobItems,
+        ICollection<TblBulkJobItem> parentJobItems,
+        ICollection<TblBulkJobItem> childJobItems)
+    {
+        // Priority 1: Child items if available
+        if (HasItems(childJobItems))
+            return ConvertToParcelDimensions(childJobItems);
 
-    private static ParcelDimensions CreateParcelDimensions(dynamic item)
+        // Priority 2: Job items if this is a root job or self-referencing job
+        if ((parent == null || job.ParentId == job.BulkJobId) && HasItems(jobItems))
+            return ConvertToParcelDimensions(jobItems);
+
+        // Priority 3: Parent items as fallback
+        return ConvertToParcelDimensions(parentJobItems);
+    }
+
+    private static bool HasItems(ICollection<TblBulkJobItem> items) =>
+        items is { Count: > 0 };
+
+    private static List<ParcelDimensions> ConvertToParcelDimensions(ICollection<TblBulkJobItem> items) =>
+        items?.Select(CreateParcelDimensions).ToList() ?? [];
+    
+    private static ParcelDimensions CreateParcelDimensions(TblBulkJobItem item)
     {
         return new ParcelDimensions
         {

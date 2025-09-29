@@ -7,11 +7,11 @@ import BaseController from "../../base-controller";
 export class EditParcelDimensionsDialogController extends BaseController {
     static $inject = [
         "$mdDialog",
-        "$log",
         "toastrService",
         "DispatchData",
+        "parcels",
         "jobId",
-        "parcels"
+        "bulkJobId",
     ];
 
     selectedParcelIndex: number = 0;
@@ -28,11 +28,11 @@ export class EditParcelDimensionsDialogController extends BaseController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private $log: angular.ILogService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
-        public jobId: number,
-        public parcels: IParcelDimensions[]
+        public parcels: IParcelDimensions[],
+        private jobId?: number,
+        private bulkJobId?: number,
     ) {
         super();
     }
@@ -42,10 +42,19 @@ export class EditParcelDimensionsDialogController extends BaseController {
             this.parcels = [this.initializeParcel()];
         }
 
-        this.DispatchData.isJobParent(this.jobId).then(isParentJob => {
-            this.isParentJob = isParentJob;
-        });
-
+        if(this.jobId) {
+            this.DispatchData.isJobParent(this.jobId).then(isParentJob => {
+                this.isParentJob = isParentJob;
+            });
+        } else if(this.bulkJobId) {
+            this.DispatchData.isJobParent(this.bulkJobId).then(isParentJob => {
+                this.isParentJob = isParentJob;
+            });
+        } else {
+            this.toastrService.showErrorToast("No JobId or BulkJobId was provided. Something went wrong.");
+            return;
+        }
+      
         this.parcels.forEach(parcel => {
             parcel.length = typeof parcel.length === 'number' ? parcel.length : undefined;
             parcel.depth = typeof parcel.depth === 'number' ? parcel.depth : undefined;
@@ -185,7 +194,7 @@ export class EditParcelDimensionsDialogController extends BaseController {
 
     async submit() {
         if (!this.isValid()) {
-            this.toastrService.showErrorToast('Please fix validation errors before saving');
+            this.toastrService.showWarningToast('Please fix validation errors before saving');
             return;
         }
 
@@ -198,13 +207,20 @@ export class EditParcelDimensionsDialogController extends BaseController {
                 }
             });
 
-            await this.DispatchData.updatePackages(this.jobId, this.parcels);
+            if(this.jobId) {
+                await this.DispatchData.updatePackages(this.jobId, this.parcels);
+            } else if(this.bulkJobId) {
+                await this.DispatchData.updateBulkJobPackages(this.bulkJobId, this.parcels);
+            } else {
+                this.toastrService.showErrorToast("No JobId or BulkJobId was provided. Something went wrong.");
+                return;
+            }
 
             const count = this.parcels.length;
             this.toastrService.showSuccessToast(`Successfully updated ${count} ${count === 1 ? "parcel" : "parcels"}`);
             this.$mdDialog.hide(this.parcels);
         } catch (error: any) {
-            this.$log.error("An error occurred while updating packages:", error);
+            console.error("An error occurred while updating packages:", error);
             this.toastrService.showErrorToast(error.message || 'Failed to update parcels');
         } finally {
             this.isLoading = false;

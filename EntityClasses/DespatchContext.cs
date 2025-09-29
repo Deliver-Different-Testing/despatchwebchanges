@@ -57,6 +57,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TblBulkJob> TblBulkJobs { get; set; }
 
+    public virtual DbSet<TblBulkJobItem> TblBulkJobItems { get; set; }
+
     public virtual DbSet<TblBulkJobNote> TblBulkJobNotes { get; set; }
 
     public virtual DbSet<TblBulkRegion> TblBulkRegions { get; set; }
@@ -1320,6 +1322,26 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.Speed)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_tblBulkJob_tucJobType");
+        });
+
+        modelBuilder.Entity<TblBulkJobItem>(entity =>
+        {
+            entity.HasKey(e => new { e.JobId, e.ItemId });
+
+            entity.ToTable("tblBulkJobItems", tb => tb.HasTrigger("trg_UpdateBulkJobTotals"));
+
+            entity.Property(e => e.JobId).HasColumnName("JobID");
+            entity.Property(e => e.ItemId).HasColumnName("ItemID");
+            entity.Property(e => e.ChildJobId).HasColumnName("ChildJobID");
+            entity.Property(e => e.Cubic).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.Dgclass).HasColumnName("DGClass");
+            entity.Property(e => e.Do).HasColumnName("DO");
+            entity.Property(e => e.Notes).HasMaxLength(4000);
+            entity.Property(e => e.Pu).HasColumnName("PU");
+
+            entity.HasOne(d => d.ChildJob).WithMany(p => p.TblBulkJobItems)
+                .HasForeignKey(d => d.ChildJobId)
+                .HasConstraintName("FK__tblBulkJo__Child__1B1FAD15");
         });
 
         modelBuilder.Entity<TblBulkJobNote>(entity =>

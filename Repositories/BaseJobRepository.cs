@@ -584,31 +584,34 @@ public class BaseJobRepository(
     protected async Task<int> GetJobRelationshipInfoAsync(int jobId)
     {
         if (jobId == 0) return 0;
-        var jobInfo = await Context.TucJobs
+        var effectiveJobId = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
-            .Select(j => new
-            {
-                EffectiveJobId = j.ParentId ?? j.UcjbId
-            })
-            .AsNoTracking()
+            .Select(j => j.ParentId ?? j.UcjbId)
             .FirstOrDefaultAsync();
 
-        return jobInfo.EffectiveJobId;
+        return effectiveJobId;
+    }   
+    
+    protected async Task<int> GetBulkJobRelationshipInfoAsync(int bulkJobId)
+    {
+        if (bulkJobId == 0) return 0;
+        var effectiveJobId = await Context.TblBulkJobs
+            .Where(j => j.BulkJobId == bulkJobId)
+            .Select(j =>j.BulkParentId ?? j.BulkJobId)
+            .FirstOrDefaultAsync();
+
+        return effectiveJobId;
     }
 
     protected async Task<int> GetJobBookingRelationshipInfoAsync(int bookingId)
     {
         if (bookingId == 0) return 0;
-        var jobInfo = await Context.TucJobBookings
+        var effectiveJobId = await Context.TucJobBookings
             .Where(j => j.UcbkId == bookingId)
-            .Select(j => new
-            {
-                EffectiveJobId = j.ParentId ?? j.UcbkId
-            })
-            .AsNoTracking()
+            .Select(j => j.ParentId ?? j.UcbkId)
             .FirstOrDefaultAsync();
 
-        return jobInfo.EffectiveJobId;
+        return effectiveJobId;
     }
 
     protected static string GetTrackingName(int trackingMethodId)
