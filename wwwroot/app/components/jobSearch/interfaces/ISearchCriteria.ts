@@ -1,16 +1,15 @@
-﻿import {ISuggestion} from "../../../interfaces/job.interface";
+﻿import dayjs from "dayjs";
 
 interface ISearchCriteria {
     client?: number;
     courier?: number;
-    date: Date;
-    from_date: Date;
-    to_date: Date;
+    date: dayjs.Dayjs;
+    from_date: dayjs.Dayjs;
+    to_date: dayjs.Dayjs;
     followupClient: string;
     includeClosed: boolean;
     wild?: string;
     job?: string;
-    regions?: ISuggestion[];
 }
 
 export default ISearchCriteria;

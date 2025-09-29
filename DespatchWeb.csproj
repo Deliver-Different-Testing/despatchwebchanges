@@ -368,6 +368,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\home\enums\DispatchBoxes.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\home\home.module.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\enums\jobSearchBoxes.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\jobSearch\enums\JobSearchDateRange.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\enums\podSearchResponse.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\interfaces\IScanDetailResult.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\jobSearch.module.ts" />
