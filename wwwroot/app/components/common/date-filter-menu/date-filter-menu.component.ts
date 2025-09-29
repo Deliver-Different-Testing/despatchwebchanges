@@ -19,7 +19,7 @@ class DateFilterMenuComponent implements angular.IController {
         this.onSearchRangeChange = this.onSearchRangeChange.bind(this);
         this.clearDateFilter = this.clearDateFilter.bind(this);
         this.applyDateFilter = this.applyDateFilter.bind(this);
-        this.isLast24Hours = this.isLast24Hours.bind(this);
+        this.isNext24Hours = this.isNext24Hours.bind(this);
     }
 
     $onInit() {
@@ -36,7 +36,7 @@ class DateFilterMenuComponent implements angular.IController {
             this.dateFilterData = changes.dateFilterData.currentValue;
             
             // Set the initial search range based on the dates
-            if (this.isLast24Hours()) {
+            if (this.isNext24Hours()) {
                 this.dateSearchRange = 1;
             } else {
                 this.dateSearchRange = 2;
@@ -44,18 +44,18 @@ class DateFilterMenuComponent implements angular.IController {
         }
     }
 
-    private isLast24Hours(): boolean {
+    private isNext24Hours(): boolean {
         if (!this.dateFilterData) return true;
 
-        const startTime = this.dateFilterData.startDate?.getTime() || 0;
-        const endTime = this.dateFilterData.endDate?.getTime() || 0;
-        const epochStart = new Date(0).getTime();
-        const now = dayjs();
-        const tomorrow = now.add(24, 'hours');
+        const startTime = dayjs(this.dateFilterData.startDate).valueOf();
+        const endTime = dayjs(this.dateFilterData.endDate).valueOf();
 
-        // Check if it matches the "last 24 hours" pattern
-        return startTime === epochStart &&
-            Math.abs(endTime - tomorrow.valueOf()) < 60000; // within 1 minute
+        const now = dayjs();
+        const next24Hours = now.add(24, 'hours');
+
+        // Check if it matches the "next 24 hours" pattern
+        return Math.abs(startTime - now.valueOf()) < 60000 && // within 1 minute of now
+            Math.abs(endTime - next24Hours.valueOf()) < 60000; // within 1 minute of 24 hours from now
     }
 
     async refreshData() {

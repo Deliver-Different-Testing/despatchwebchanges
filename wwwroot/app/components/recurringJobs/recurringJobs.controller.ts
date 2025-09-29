@@ -1,5 +1,5 @@
 import {IAppConfig} from "../../interfaces/app-config.interface";
-import {IDispatchJob, IJob, ISuggestion} from "../../interfaces/job.interface";
+import {IJob, ISuggestion} from "../../interfaces/job.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import {ClientInternal, ContactID} from "../../contants";
@@ -11,6 +11,7 @@ import JobContextMenuService from "../../services/job-context-menu.service";
 import IContextMenuOption from "../../interfaces/context-menu-option.interface";
 import IDateFilterData from "../common/date-filter-menu/IDateFilterData";
 import dayjs from "dayjs";
+import {AppPages} from "../../enums/app-pages.enum";
 
 class RecurringJobsController extends BaseController {
     static $inject = [
@@ -27,8 +28,9 @@ class RecurringJobsController extends BaseController {
         'APP_CONFIG',
     ];
     
-    private static RecurringJobsLayoutKey: string = `layouts-${ContactID}`;
-    private static RecurringJobsLastActiveLayoutKey: string = `lastActiveLayout-recurring-${ContactID}`
+    private readonly RecurringJobsLayoutKey: string = `layouts-${AppPages.Recurring}-${ContactID}`;
+    private readonly RecurringJobsLastActiveLayoutKey: string = `lastActiveLayout-${AppPages.Recurring}-${ContactID}`
+    private readonly DateFilterKey: string = `dateFilter-${AppPages.Dispatch}-${ContactID}`;
 
     readonly boxes = {
         jobList: {
@@ -50,10 +52,7 @@ class RecurringJobsController extends BaseController {
 
     readonly isUsCustomer: boolean;
 
-    dateFilterData: IDateFilterData = {
-        startDate: dayjs().toDate(),
-        endDate: dayjs().add(24, 'hours').toDate()
-    };
+    dateFilterData: IDateFilterData;
     currentJobId?: number;
     jobs: IJob[] = [];
     isAdmin: boolean = false;
@@ -98,6 +97,13 @@ class RecurringJobsController extends BaseController {
 
         this.isUsCustomer = appConfig.US_Customer;
         this.isAdmin = ClientInternal;
+
+        // Date filter
+        this.dateFilterData = {
+            startDate: dayjs().toDate(),
+            endDate: dayjs().add(24, 'hours').toDate()
+        };
+        this.loadDateFilterFromStorage();
 
         this.initializeLayout();
     }
@@ -148,8 +154,8 @@ class RecurringJobsController extends BaseController {
                 this.layouts.push(currentLayout);
 
                 if (Modernizr.localstorage) {
-                    localStorage.setItem(RecurringJobsController.RecurringJobsLayoutKey, JSON.stringify(this.layouts));
-                    localStorage.setItem(RecurringJobsController.RecurringJobsLastActiveLayoutKey, name);
+                    localStorage.setItem(this.RecurringJobsLayoutKey, JSON.stringify(this.layouts));
+                    localStorage.setItem(this.RecurringJobsLastActiveLayoutKey, name);
                 }
             });
     }
@@ -167,7 +173,7 @@ class RecurringJobsController extends BaseController {
             .then(() => {
                 this.layouts.splice(index, 1);
                 if (Modernizr.localstorage) {
-                    localStorage.setItem(RecurringJobsController.RecurringJobsLayoutKey, JSON.stringify(this.layouts));
+                    localStorage.setItem(this.RecurringJobsLayoutKey, JSON.stringify(this.layouts));
                 }
                 this.loadLayout(0);
                 this.toastrService.showSuccessToast("Layout deleted successfully");
@@ -202,8 +208,8 @@ class RecurringJobsController extends BaseController {
         // Load saved layouts or use default
         if (Modernizr.localstorage) {
             try {
-                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(RecurringJobsController.RecurringJobsLayoutKey) || '[]');
-                const lastActiveLayout = localStorage.getItem(RecurringJobsController.RecurringJobsLastActiveLayoutKey);
+                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(this.RecurringJobsLayoutKey) || '[]');
+                const lastActiveLayout = localStorage.getItem(this.RecurringJobsLastActiveLayoutKey);
 
                 this.layouts = storedLayouts || [this.defaultLayout];
                 this.layouts[0] = this.defaultLayout; // Ensure default is always up to date
@@ -295,7 +301,7 @@ class RecurringJobsController extends BaseController {
             this.applyLayoutDimensions();
 
             if (Modernizr.localstorage) {
-                localStorage.setItem(RecurringJobsController.RecurringJobsLastActiveLayoutKey, layout.name);
+                localStorage.setItem(this.RecurringJobsLastActiveLayoutKey, layout.name);
             }
         });
     }
@@ -579,8 +585,43 @@ class RecurringJobsController extends BaseController {
     }
 
     async refreshDataTimeSpan(dateFilterData: IDateFilterData): Promise<void> {
+        console.log('refreshDataTimeSpan called with data ', dateFilterData);
         this.dateFilterData = dateFilterData;
+
+        this.saveDateFilterToStorage();
         await this.refreshData();
+    }
+
+    private saveDateFilterToStorage(): void {
+        if (Modernizr.localstorage && this.dateFilterData) {
+            try {
+                localStorage.setItem(this.DateFilterKey, JSON.stringify(this.dateFilterData));
+            } catch (error) {
+                console.error('Error saving date filter to storage:', error);
+            }
+        }
+    }
+
+    private loadDateFilterFromStorage(): void {
+        if (Modernizr.localstorage) {
+            try {
+                const savedDateFilter = localStorage.getItem(this.DateFilterKey);
+                if (savedDateFilter) {
+                    const parsedDateFilter = JSON.parse(savedDateFilter);
+                    this.dateFilterData = {
+                        startDate: dayjs(parsedDateFilter.startDate).toDate(),
+                        endDate: dayjs(parsedDateFilter.endDate).toDate()
+                    };
+                }
+            } catch (error) {
+                console.error('Error loading date filter from storage:', error);
+                // Keep default values if parsing fails
+                this.dateFilterData = {
+                    startDate: dayjs().toDate(),
+                    endDate: dayjs().add(24, 'hours').toDate()
+                };
+            }
+        }
     }
 }
 

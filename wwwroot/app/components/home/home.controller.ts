@@ -78,13 +78,14 @@ class HomeController extends BaseController {
         '$interval',
     ];
 
-    private static MapZoomKey: string = `mapZoom-${ContactID}`;
-    private static LayoutKey: string = `layout-${ContactID}`;
-    private static LastActiveLayoutKey: string = `lastActiveLayout-${ContactID}`;
-    private static SelectedFilterKey: string = `selectedFilter-${ContactID}`;
-    private static SelectedViewsKey: string = `selectedViews-${ContactID}`;
-    private static DispatchFiltersKey: string = `disp-filters-${ContactID}`;
-    private static RefreshDurationIntervalKey: string = `refreshInterval-${AppPages.Dispatch}-${ContactID}`;
+    private readonly MapZoomKey: string = `mapZoom-${AppPages.Dispatch}-${ContactID}`;
+    private readonly LayoutKey: string = `layout-${ContactID}`;
+    private readonly LastActiveLayoutKey: string = `lastActiveLayout-${ContactID}`;
+    private readonly SelectedFilterKey: string = `selectedFilter-${AppPages.Dispatch}-${ContactID}`;
+    private readonly SelectedViewsKey: string = `selectedViews-${AppPages.Dispatch}-${ContactID}`;
+    private readonly DispatchFiltersKey: string = `disp-filters-${AppPages.Dispatch}-${ContactID}`;
+    private readonly RefreshDurationIntervalKey: string = `refreshInterval-${AppPages.Dispatch}-${ContactID}`;
+    private readonly DateFilterKey: string = `dateFilter-${AppPages.Dispatch}-${ContactID}`;
 
     readonly currentWorkListName: JobListType = JobListType.CurrentWorkList;
     readonly dispatchListName: JobListType = JobListType.DispatchJobList;
@@ -98,10 +99,7 @@ class HomeController extends BaseController {
     private readonly currentAppPage: AppPages = AppPages.Dispatch;
     private readonly COURIER_URL: string = "/courier/AllActiveSearch";
 
-    dateFilterData: IDateFilterData = {
-        startDate: dayjs().toDate(),
-        endDate: dayjs().add(24, 'hours').toDate()
-    };
+    dateFilterData: IDateFilterData;
     isLoadingData: boolean = false;
     showDriverLocationsNoData: boolean = false;
     showDriverLocationsData: boolean = false;
@@ -217,6 +215,13 @@ class HomeController extends BaseController {
         this.greeting = greetUser(FirstName);
         this.timeZone = TimeZone;
         this.browserTimeZone = dayjs.tz.guess();
+        
+        // Date filter
+        this.dateFilterData = {
+            startDate: dayjs().toDate(),
+            endDate: dayjs().add(24, 'hours').toDate()
+        };
+        this.loadDateFilterFromStorage();
 
         // Views and Layout
         this.initialViewSet = false;
@@ -317,7 +322,7 @@ class HomeController extends BaseController {
         this.autoZoomEnabled = true;
 
         if (Modernizr.localstorage) {
-            const savedMapZoom = localStorage.getItem(HomeController.MapZoomKey);
+            const savedMapZoom = localStorage.getItem(this.MapZoomKey);
             if (savedMapZoom) {
                 try {
                     const parsedMapZoom = JSON.parse(savedMapZoom);
@@ -464,7 +469,7 @@ class HomeController extends BaseController {
     private loadSavedRefreshInterval(): void {
         if (Modernizr.localstorage) {
             try {
-                const savedIntervalString = localStorage.getItem(HomeController.RefreshDurationIntervalKey);
+                const savedIntervalString = localStorage.getItem(this.RefreshDurationIntervalKey);
                 if (savedIntervalString) {
                     const refreshId = parseInt(savedIntervalString, 10) ?? 0;
                     this.selectedRefreshInterval = this.refreshIntervalOptions?.find(x => x.id == refreshId);
@@ -513,7 +518,7 @@ class HomeController extends BaseController {
             }
 
             if (Modernizr.localstorage) {
-                localStorage.setItem(HomeController.LayoutKey, JSON.stringify(this.layouts));
+                localStorage.setItem(this.LayoutKey, JSON.stringify(this.layouts));
             }
         }
     }
@@ -556,8 +561,8 @@ class HomeController extends BaseController {
         // Load saved layouts or use default
         if (Modernizr.localstorage) {
             try {
-                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(HomeController.LayoutKey) ?? '');
-                const lastActiveLayout = localStorage.getItem(HomeController.LastActiveLayoutKey);
+                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(this.LayoutKey) ?? '');
+                const lastActiveLayout = localStorage.getItem(this.LastActiveLayoutKey);
 
                 this.layouts = storedLayouts || [this.defaultLayout];
                 this.layouts[0] = this.defaultLayout; // Ensure default is always up to date
@@ -583,7 +588,7 @@ class HomeController extends BaseController {
                 if (index !== -1) {
                     this.layouts[index].layout = angular.copy(newValue);
                     if (Modernizr.localstorage) {
-                        localStorage.setItem(HomeController.LayoutKey, JSON.stringify(this.layouts));
+                        localStorage.setItem(this.LayoutKey, JSON.stringify(this.layouts));
                     }
                 }
             }
@@ -598,7 +603,7 @@ class HomeController extends BaseController {
         this.applyLayoutDimensions();
 
         if (Modernizr.localstorage) {
-            localStorage.setItem(HomeController.LastActiveLayoutKey, layout.name);
+            localStorage.setItem(this.LastActiveLayoutKey, layout.name);
         }
 
         this.applyScope();
@@ -634,8 +639,8 @@ class HomeController extends BaseController {
                 this.layouts.push(currentLayout);
 
                 if (Modernizr.localstorage) {
-                    localStorage.setItem(HomeController.LayoutKey, JSON.stringify(this.layouts));
-                    localStorage.setItem(HomeController.LastActiveLayoutKey, name);
+                    localStorage.setItem(this.LayoutKey, JSON.stringify(this.layouts));
+                    localStorage.setItem(this.LastActiveLayoutKey, name);
                 }
             });
     }
@@ -653,32 +658,32 @@ class HomeController extends BaseController {
             .then(() => {
                 this.layouts.splice(index, 1);
                 if (Modernizr.localstorage) {
-                    localStorage.setItem(HomeController.LayoutKey, JSON.stringify(this.layouts));
+                    localStorage.setItem(this.LayoutKey, JSON.stringify(this.layouts));
                 }
                 this.loadLayout(0);
                 this.toastrService.showSuccessToast("Layout deleted successfully");
             });
     }
 
-    static loadFilterFromStorage(): number {
+    loadFilterFromStorage(): number {
         if (Modernizr.localstorage) {
-            const savedFilter = localStorage.getItem(HomeController.SelectedFilterKey);
+            const savedFilter = localStorage.getItem(this.SelectedFilterKey);
             return savedFilter ? parseInt(savedFilter) : 2; // Default to 2 if not found
         }
 
         return 2; // Default value if localStorage not available
     }
 
-    static saveViewsToStorage(views: any): void {
+    saveViewsToStorage(views: any): void {
         if (Modernizr.localstorage) {
-            localStorage.setItem(HomeController.SelectedViewsKey, JSON.stringify(views));
+            localStorage.setItem(this.SelectedViewsKey, JSON.stringify(views));
         }
     }
 
     loadViewsFromStorage(): any {
         if (Modernizr.localstorage) {
             try {
-                const savedViews = JSON.parse(localStorage.getItem(HomeController.SelectedViewsKey) ?? '');
+                const savedViews = JSON.parse(localStorage.getItem(this.SelectedViewsKey) ?? '');
                 return savedViews || [];
             } catch (error: any) {
                 console.error("Error loading views from storage:", error);
@@ -730,7 +735,7 @@ class HomeController extends BaseController {
             if (this.selectedViews.length === 0) {
                 this.views[0].selected = true;
                 this.selectedViews.push(this.views[0]);
-                HomeController.saveViewsToStorage(this.selectedViews);
+                this.saveViewsToStorage(this.selectedViews);
             }
 
             // Set the flag to indicate views are initialized
@@ -745,7 +750,7 @@ class HomeController extends BaseController {
 
         this.selectedViews = this.views;
 
-        HomeController.saveViewsToStorage(this.selectedViews);
+        this.saveViewsToStorage(this.selectedViews);
         this.updateMapForSelectedViews();
 
         await Promise.all([
@@ -761,7 +766,7 @@ class HomeController extends BaseController {
 
         this.selectedViews = [];
 
-        HomeController.saveViewsToStorage(this.selectedViews);
+        this.saveViewsToStorage(this.selectedViews);
         this.updateMapForSelectedViews();
 
         await Promise.all([
@@ -783,7 +788,7 @@ class HomeController extends BaseController {
         }
 
         // Save filtered views
-        HomeController.saveViewsToStorage(this.selectedViews);
+        this.saveViewsToStorage(this.selectedViews);
 
         // Update map bounds for a new selection
         this.updateMapForSelectedViews();
@@ -1659,7 +1664,7 @@ class HomeController extends BaseController {
             }
 
             if (Modernizr.localstorage) {
-                localStorage.setItem(HomeController.DispatchFiltersKey, JSON.stringify(this.queryParams));
+                localStorage.setItem(this.DispatchFiltersKey, JSON.stringify(this.queryParams));
             }
 
             const selectedClients = this.pickService.clients.map((a: any) => a.id);
@@ -2305,7 +2310,7 @@ class HomeController extends BaseController {
         this.selectedRefreshInterval = selectedInterval;
 
         if (Modernizr.localstorage && this.selectedRefreshInterval) {
-            localStorage.setItem(HomeController.RefreshDurationIntervalKey, this.selectedRefreshInterval?.id.toString());
+            localStorage.setItem(this.RefreshDurationIntervalKey, this.selectedRefreshInterval?.id.toString());
         }
 
         this.stopAutoRefresh();
@@ -2316,7 +2321,6 @@ class HomeController extends BaseController {
 
         this.applyScope();
     }
-
 
     private startAutoRefresh(): void {
         if (!this.selectedRefreshInterval || this.selectedRefreshInterval.id <= 0) {
@@ -2409,7 +2413,41 @@ class HomeController extends BaseController {
     async refreshDataTimeSpan(dateFilterData: IDateFilterData): Promise<void> {
         console.log('refreshDataTimeSpan called with data ', dateFilterData);
         this.dateFilterData = dateFilterData;
+        
+        this.saveDateFilterToStorage();
         await this.getData();
+    }
+
+    private saveDateFilterToStorage(): void {
+        if (Modernizr.localstorage && this.dateFilterData) {
+            try {
+                localStorage.setItem(this.DateFilterKey, JSON.stringify(this.dateFilterData));
+            } catch (error) {
+                console.error('Error saving date filter to storage:', error);
+            }
+        }
+    }
+
+    private loadDateFilterFromStorage(): void {
+        if (Modernizr.localstorage) {
+            try {
+                const savedDateFilter = localStorage.getItem(this.DateFilterKey);
+                if (savedDateFilter) {
+                    const parsedDateFilter = JSON.parse(savedDateFilter);
+                    this.dateFilterData = {
+                        startDate: dayjs(parsedDateFilter.startDate).toDate(),
+                        endDate: dayjs(parsedDateFilter.endDate).toDate()
+                    };
+                }
+            } catch (error) {
+                console.error('Error loading date filter from storage:', error);
+                // Keep default values if parsing fails
+                this.dateFilterData = {
+                    startDate: dayjs().toDate(),
+                    endDate: dayjs().add(24, 'hours').toDate()
+                };
+            }
+        }
     }
 }
 

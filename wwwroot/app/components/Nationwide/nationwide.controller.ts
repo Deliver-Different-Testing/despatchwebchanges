@@ -75,15 +75,16 @@ class NationwideControl extends BaseController {
         'recoveryAgentManagementService',
     ];
 
-    private static NationwideLayoutKey: string = `layoutsNW-${ContactID}`;
-    private static NationwideLastActiveLayoutKey: string = `lastActiveLayoutNW-${ContactID}`;
-    
+    private readonly NationwideLayoutKey: string = `layoutsNW-${ContactID}`;
+    private readonly NationwideLastActiveLayoutKey: string = `lastActiveLayoutNW-${ContactID}`;
+    private readonly refreshDurationIntervalKey: string = `refreshInterval-${AppPages.Domestic}-${ContactID}`;
+    private readonly DateFilterKey: string = `dateFilter-${AppPages.Domestic}-${ContactID}`;
+
     readonly nationwideJobList: JobListType = JobListType.NationwideJobList;
     readonly nationwidePodJobList: JobListType = JobListType.NationwidePodJobList;
     readonly nationwideRepriceJobList: JobListType = JobListType.NationwideRepriceJobList;
     readonly nationwidePageId: number = AppPages.Domestic;
 
-    private readonly refreshDurationIntervalKey: string = `refreshInterval-${AppPages.Domestic}`;
 
     readonly isUsCustomer: boolean = false;
     private tasksLoadingInBackground: boolean = false;
@@ -176,10 +177,7 @@ class NationwideControl extends BaseController {
     showAgentList: boolean = false;
 
     browserTimeZone: string;
-    dateFilterData: IDateFilterData = {
-        startDate: dayjs().toDate(),
-        endDate: dayjs().add(24, 'hours').toDate()
-    };
+    dateFilterData: IDateFilterData;
     
     unReadMessageCount: number = 0;
 
@@ -239,6 +237,13 @@ class NationwideControl extends BaseController {
         this.timeZone = TimeZone;
         this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+        // Date filter
+        this.dateFilterData = {
+            startDate: dayjs().toDate(),
+            endDate: dayjs().add(24, 'hours').toDate()
+        };
+        this.loadDateFilterFromStorage();
+        
         this.watchEvent("angular-resizable.resizeEnd", (_, args: {
             id?: string,
             width: number,
@@ -319,8 +324,8 @@ class NationwideControl extends BaseController {
         // Load saved layouts or use default
         if (Modernizr.localstorage) {
             try {
-                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(NationwideControl.NationwideLayoutKey) || '[]');
-                const lastActiveLayout = localStorage.getItem(NationwideControl.NationwideLastActiveLayoutKey);
+                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(this.NationwideLayoutKey) || '[]');
+                const lastActiveLayout = localStorage.getItem(this.NationwideLastActiveLayoutKey);
 
                 this.layouts = storedLayouts || [this.defaultLayout];
                 this.layouts[0] = this.defaultLayout; // Ensure default is always up to date
@@ -347,7 +352,7 @@ class NationwideControl extends BaseController {
                 if (index !== -1) {
                     this.layouts[index].layout = angular.copy(newValue);
                     if (Modernizr.localstorage) {
-                        localStorage.setItem(NationwideControl.NationwideLayoutKey, JSON.stringify(this.layouts));
+                        localStorage.setItem(this.NationwideLayoutKey, JSON.stringify(this.layouts));
                     }
                 }
             }
@@ -583,7 +588,7 @@ class NationwideControl extends BaseController {
             }
 
             if (Modernizr.localstorage) {
-                localStorage.setItem(NationwideControl.NationwideLayoutKey, JSON.stringify(this.layouts));
+                localStorage.setItem(this.NationwideLayoutKey, JSON.stringify(this.layouts));
             }
         }
     }
@@ -719,7 +724,7 @@ class NationwideControl extends BaseController {
         this.applyLayoutDimensions();
 
         if (Modernizr.localstorage) {
-            localStorage.setItem(NationwideControl.NationwideLastActiveLayoutKey, layout.name);
+            localStorage.setItem(this.NationwideLastActiveLayoutKey, layout.name);
         }
 
         this.applyScope();
@@ -759,8 +764,8 @@ class NationwideControl extends BaseController {
             this.layout = currentLayout.layout;
 
             if (Modernizr.localstorage) {
-                localStorage.setItem(NationwideControl.NationwideLayoutKey, JSON.stringify(this.layouts));
-                localStorage.setItem(NationwideControl.NationwideLastActiveLayoutKey, layoutName);
+                localStorage.setItem(this.NationwideLayoutKey, JSON.stringify(this.layouts));
+                localStorage.setItem(this.NationwideLastActiveLayoutKey, layoutName);
             }
 
             this.applyScope();
@@ -792,7 +797,7 @@ class NationwideControl extends BaseController {
             this.layouts.splice(index, 1);
 
             if (Modernizr.localstorage) {
-                localStorage.setItem(NationwideControl.NationwideLayoutKey, JSON.stringify(this.layouts));
+                localStorage.setItem(this.NationwideLayoutKey, JSON.stringify(this.layouts));
             }
 
             if (this.currentLayoutName === this.layouts[index]?.name) {
@@ -2182,8 +2187,43 @@ class NationwideControl extends BaseController {
     }
     
     async refreshDataTimeSpan(dateFilterData: IDateFilterData) {
+        console.log('refreshDataTimeSpan called with data ', dateFilterData);
         this.dateFilterData = dateFilterData;
+        
+        this.saveDateFilterToStorage();
         await this.getJobList();
+    }
+
+    private saveDateFilterToStorage(): void {
+        if (Modernizr.localstorage && this.dateFilterData) {
+            try {
+                localStorage.setItem(this.DateFilterKey, JSON.stringify(this.dateFilterData));
+            } catch (error) {
+                console.error('Error saving date filter to storage:', error);
+            }
+        }
+    }
+
+    private loadDateFilterFromStorage(): void {
+        if (Modernizr.localstorage) {
+            try {
+                const savedDateFilter = localStorage.getItem(this.DateFilterKey);
+                if (savedDateFilter) {
+                    const parsedDateFilter = JSON.parse(savedDateFilter);
+                    this.dateFilterData = {
+                        startDate: dayjs(parsedDateFilter.startDate).toDate(),
+                        endDate: dayjs(parsedDateFilter.endDate).toDate()
+                    };
+                }
+            } catch (error) {
+                console.error('Error loading date filter from storage:', error);
+                // Keep default values if parsing fails
+                this.dateFilterData = {
+                    startDate: dayjs().toDate(),
+                    endDate: dayjs().add(24, 'hours').toDate()
+                };
+            }
+        }
     }
 }
 
