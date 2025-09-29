@@ -40,7 +40,15 @@ public partial class DespatchContext
                 .HasPrincipalKey(b => b.BulkJobId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
-
+        
+        modelBuilder.Entity<TblBulkJob>(entity =>
+        {
+            entity.HasOne(d => d.Parent)
+                .WithMany(p => p.InverseParent)
+                .HasForeignKey(d => d.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+        
         // Tuc Job Archive 
         modelBuilder.Entity<TucJobArchive>(entity =>
         {

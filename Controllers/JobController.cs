@@ -966,6 +966,29 @@ public class JobController(
             );
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
+    }  
+    
+    [HttpPost]
+    public async Task<IActionResult> VoidBulkJob([FromBody] VoidBulkJobRequest requestData)
+    {
+        try
+        {
+            await jobRepository.VoidJobAsync(requestData.BulkJobId,
+                requestData.VoidReason,
+                requestData.VoidSingleJobOnly);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(
+                ex,
+                "Error voiding {SingleJobString} Job(s) with ID {JobId}. Error: {ErrorMessage}",
+                requestData.BulkJobId,
+                requestData.VoidSingleJobOnly ? "Single" : "All",
+                ex.Message
+            );
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
     }
 
     [HttpPost]

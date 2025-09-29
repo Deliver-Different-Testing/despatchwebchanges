@@ -276,6 +276,27 @@ public class BaseJobRepository(
             : await UpdateNoteAsync(viewModel, staffId, currentTime, cancellationToken);
     }
 
+    protected async Task SaveBulkNoteAsync(int bulkJobId, string noteText, bool isImportant = false,
+        NoteType noteType = NoteType.InternalNote)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(noteText, nameof(noteText));
+
+        // If a note type is not found, default to the internal note
+        var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
+        if (!noteTypeExists) noteType = NoteType.InternalNote;
+
+        var newNote = new TblBulkJobNote
+        {
+            BulkJobId = bulkJobId,
+            IsImportant = isImportant,
+            NoteText = noteText,
+            NoteTypeId = (int)noteType,
+        };
+        
+        await Context.TblBulkJobNotes.AddAsync(newNote);
+        await Context.SaveChangesAsync();
+    }
+
     public async Task SaveNoteAsync(int jobId, string noteText, bool isImportant = false,
         bool isRecurringJob = false, NoteType noteType = NoteType.InternalNote)
     {
@@ -284,8 +305,7 @@ public class BaseJobRepository(
         // If a note type is not found, default to the internal note
         var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
         if (!noteTypeExists) noteType = NoteType.InternalNote;
-
-
+        
         var viewModel = new TucNoteViewModel
         {
             JobId = isRecurringJob ? null : jobId,

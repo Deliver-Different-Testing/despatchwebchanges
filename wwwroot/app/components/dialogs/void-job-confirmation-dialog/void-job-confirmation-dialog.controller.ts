@@ -26,10 +26,15 @@ class VoidJobConfirmationDialogController extends BaseController {
 
     async confirm() {
         try {
-            if (this.voidReasonText === undefined || this.voidReasonText.trim() === '') {
+            if (!this.voidReasonText || this.voidReasonText.trim() === '') {
                 this.toastrService.showWarningToast('Please enter a reason for voiding this job.');
             }
-            await this.DispatchData.voidJob(this.job.id, this.voidSingleJobOnly, this.voidReasonText);
+            
+            if(this.job.isBulkJob) {
+                await this.DispatchData.voidBulkJob(this.job.id, this.voidSingleJobOnly, this.voidReasonText);
+            } else {
+                await this.DispatchData.voidJob(this.job.id, this.voidSingleJobOnly, this.voidReasonText);
+            }
 
             this.voidSingleJobOnly
                 ? this.toastrService.showSuccessToast(`Job ${this.job.jobNo} has been voided successfully. Related jobs will not be voided.`)
