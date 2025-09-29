@@ -60,10 +60,8 @@ class JobSearchController extends BaseController {
     mapZoom: number;
     jobDetailFabIsOpen: boolean = false;
     dateSearchRange: number;
-    searchBox: any;
     scanList: IScanDetailResult[];
     jobRecordSearchText: string;
-    sort: any;
     searchCriteria: ISearchCriteria;
     clientSelectedItem?: number;
     courierSelectedItem: any;
@@ -147,12 +145,10 @@ class JobSearchController extends BaseController {
 
         this.jobDetailFabIsOpen = false;
         this.dateSearchRange = 1; // Set to a fortnight
-
-        this.searchBox = "";
+        
         this.scanList = [];
 
         this.jobRecordSearchText = "";
-        this.sort = [];
 
         const now = dayjs();
         const sevenDaysBefore = now.subtract(7, 'day');

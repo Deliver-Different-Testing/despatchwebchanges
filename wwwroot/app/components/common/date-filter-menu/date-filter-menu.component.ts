@@ -1,6 +1,7 @@
 ﻿import "./date-filter-menu.styles.less";
 import dayjs from "dayjs";
 import IDateFilterData from "./IDateFilterData";
+import setDateFilterDefaults from "../../../functions/setDateFilterDefaults";
 
 class DateFilterMenuComponent implements angular.IController {
     onRefreshData?: (data: {dateFilterData: IDateFilterData }) => Promise<void>;
@@ -11,15 +12,6 @@ class DateFilterMenuComponent implements angular.IController {
     constructor() {
         console.log("Component: DateFilterMenuComponent");
         this.browserTimeZone = dayjs.tz.guess();
-        this.bindMethods();
-    }
-
-    private bindMethods(): void {
-        this.refreshData = this.refreshData.bind(this);
-        this.onSearchRangeChange = this.onSearchRangeChange.bind(this);
-        this.clearDateFilter = this.clearDateFilter.bind(this);
-        this.applyDateFilter = this.applyDateFilter.bind(this);
-        this.isNext24Hours = this.isNext24Hours.bind(this);
     }
 
     $onInit() {
@@ -50,8 +42,9 @@ class DateFilterMenuComponent implements angular.IController {
         const startTime = dayjs(this.dateFilterData.startDate).valueOf();
         const endTime = dayjs(this.dateFilterData.endDate).valueOf();
 
-        const now = dayjs();
-        const next24Hours = now.add(24, 'hours');
+        const defaultDate = setDateFilterDefaults();
+        const now = defaultDate.startDate
+        const next24Hours = defaultDate.endDate;
 
         // Check if it matches the "next 24 hours" pattern
         return Math.abs(startTime - now.valueOf()) < 60000 && // within 1 minute of now
@@ -80,15 +73,14 @@ class DateFilterMenuComponent implements angular.IController {
 
         if (optionSelected == 1) {
             // 24 Hours mode - reset to defaults
-            this.dateFilterData.startDate = dayjs().toDate();
-            this.dateFilterData.endDate = dayjs().add(24, 'hours').toDate();
+            this.dateFilterData = setDateFilterDefaults();
         } else if (optionSelected == 2) {
             // Custom mode - set reasonable defaults if dates are not set
-            if (!this.dateFilterData.startDate || this.dateFilterData.startDate.getTime() === new Date(0).getTime()) {
-                this.dateFilterData.startDate = dayjs().subtract(7, 'days').toDate();
+            if (!this.dateFilterData.startDate || this.dateFilterData.startDate.valueOf() === 0) {
+                this.dateFilterData.startDate = dayjs().subtract(7, 'days');
             }
-            if (!this.dateFilterData.endDate || this.dateFilterData.endDate.getTime() === new Date(0).getTime()) {
-                this.dateFilterData.endDate = dayjs().toDate();
+            if (!this.dateFilterData.endDate || this.dateFilterData.endDate.valueOf() === 0) {
+                this.dateFilterData.endDate = dayjs();
             }
         }
 
@@ -96,34 +88,10 @@ class DateFilterMenuComponent implements angular.IController {
     }
 
     async clearDateFilter(): Promise<void> {
-        console.log("Clearing date filter");
-
         if (!this.dateFilterData) return;
-
-        // 24-hour mode
-        this.dateFilterData.startDate = dayjs().toDate();
-        this.dateFilterData.endDate = dayjs().add(24, 'hours').toDate();
-
-        await this.refreshData();
-    }
-
-    async applyDateFilter(): Promise<void> {
-        console.log("Applying date filter");
-
-        // Validate dates before applying
-        if (this.dateSearchRange == 2) {
-            if (!this.dateFilterData?.startDate || !this.dateFilterData?.endDate) {
-                console.warn("Both start and end dates must be selected");
-                return;
-            }
-
-            // Ensure end date is after start date
-            if (this.dateFilterData.startDate > this.dateFilterData.endDate) {
-                console.warn("End date must be after start date");
-                return;
-            }
-        }
-
+        console.log("Clearing date filter");
+       
+        this.dateFilterData = setDateFilterDefaults();
         await this.refreshData();
     }
 }

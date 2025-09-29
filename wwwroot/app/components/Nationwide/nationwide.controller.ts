@@ -43,6 +43,7 @@ import RecoveryAgentManagementService
 import {formatDateForApi} from "../../functions/formatDates";
 import IContextMenuOption from "../../interfaces/context-menu-option.interface";
 import IDateFilterData from "../common/date-filter-menu/IDateFilterData";
+import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -91,7 +92,7 @@ class NationwideControl extends BaseController {
     greeting: string;
     isDataLoading: boolean = false;
     layouts: any[] = [];
-    defaultLayout?: any;
+    defaultLayout?: ILayout;
     currentLayoutIndex: number = 0;
     currentLayoutName: string = "Default";
     layout?: { columns: IColumn[] };
@@ -238,10 +239,7 @@ class NationwideControl extends BaseController {
         this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
         // Date filter
-        this.dateFilterData = {
-            startDate: dayjs().toDate(),
-            endDate: dayjs().add(24, 'hours').toDate()
-        };
+        this.dateFilterData = setDateFilterDefaults();
         this.loadDateFilterFromStorage();
         
         this.watchEvent("angular-resizable.resizeEnd", (_, args: {
@@ -1427,16 +1425,16 @@ class NationwideControl extends BaseController {
         if(!this.dateFilterData?.startDate || !this.dateFilterData?.endDate) return;
         
         if (dataTypes.includes(JobDataType.NEW)) {
-            this.jobFilters.startDate = this.dateFilterData.startDate;
-            this.jobFilters.endDate = this.dateFilterData.endDate;
+            this.jobFilters.startDate = this.dateFilterData.startDate.toDate();
+            this.jobFilters.endDate = this.dateFilterData.endDate.toDate();
         }
         if (dataTypes.includes(JobDataType.POD)) {
-            this.jobPodFilters.startDate = this.dateFilterData.startDate;
-            this.jobPodFilters.endDate = this.dateFilterData.endDate;
+            this.jobPodFilters.startDate = this.dateFilterData.startDate.toDate();
+            this.jobPodFilters.endDate = this.dateFilterData.endDate.toDate();
         }
         if (dataTypes.includes(JobDataType.REPRICE)) {
-            this.jobRepriceFilters.startDate = this.dateFilterData.startDate;
-            this.jobRepriceFilters.endDate = this.dateFilterData.endDate;
+            this.jobRepriceFilters.startDate = this.dateFilterData.startDate.toDate();
+            this.jobRepriceFilters.endDate = this.dateFilterData.endDate.toDate();
         }
     }
 
@@ -2211,17 +2209,14 @@ class NationwideControl extends BaseController {
                 if (savedDateFilter) {
                     const parsedDateFilter = JSON.parse(savedDateFilter);
                     this.dateFilterData = {
-                        startDate: dayjs(parsedDateFilter.startDate).toDate(),
-                        endDate: dayjs(parsedDateFilter.endDate).toDate()
+                        startDate: dayjs(parsedDateFilter.startDate),
+                        endDate: dayjs(parsedDateFilter.endDate)
                     };
                 }
             } catch (error) {
                 console.error('Error loading date filter from storage:', error);
                 // Keep default values if parsing fails
-                this.dateFilterData = {
-                    startDate: dayjs().toDate(),
-                    endDate: dayjs().add(24, 'hours').toDate()
-                };
+                this.dateFilterData = setDateFilterDefaults();
             }
         }
     }

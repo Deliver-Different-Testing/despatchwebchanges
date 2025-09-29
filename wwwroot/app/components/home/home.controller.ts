@@ -48,6 +48,7 @@ import JobListType from "../common/job-list/enums/jobListType";
 import IContextMenuOption from "../../interfaces/context-menu-option.interface";
 import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
 import IDateFilterData from "../common/date-filter-menu/IDateFilterData";
+import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
 
 class HomeController extends BaseController {
     static $inject = [
@@ -217,10 +218,7 @@ class HomeController extends BaseController {
         this.browserTimeZone = dayjs.tz.guess();
         
         // Date filter
-        this.dateFilterData = {
-            startDate: dayjs().toDate(),
-            endDate: dayjs().add(24, 'hours').toDate()
-        };
+        this.dateFilterData = setDateFilterDefaults();
         this.loadDateFilterFromStorage();
 
         // Views and Layout
@@ -1682,8 +1680,8 @@ class HomeController extends BaseController {
                 orderDirection: orderDirection,
             };
             
-            params.startDate = this.dateFilterData.startDate;
-            params.endDate = this.dateFilterData.endDate;
+            params.startDate = this.dateFilterData.startDate.toDate();
+            params.endDate = this.dateFilterData.endDate.toDate();
 
             const result = await this.dispatchJobService.getJobListWithCourierData(
                 params,
@@ -2435,17 +2433,14 @@ class HomeController extends BaseController {
                 if (savedDateFilter) {
                     const parsedDateFilter = JSON.parse(savedDateFilter);
                     this.dateFilterData = {
-                        startDate: dayjs(parsedDateFilter.startDate).toDate(),
-                        endDate: dayjs(parsedDateFilter.endDate).toDate()
+                        startDate: dayjs(parsedDateFilter.startDate),
+                        endDate: dayjs(parsedDateFilter.endDate)
                     };
                 }
             } catch (error) {
                 console.error('Error loading date filter from storage:', error);
                 // Keep default values if parsing fails
-                this.dateFilterData = {
-                    startDate: dayjs().toDate(),
-                    endDate: dayjs().add(24, 'hours').toDate()
-                };
+                this.dateFilterData = setDateFilterDefaults();
             }
         }
     }
