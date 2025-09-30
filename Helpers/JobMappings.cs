@@ -19,7 +19,7 @@ public static class JobMappings
             HasBeenRead = j.TucJobReadTracker != null && j.TucJobReadTracker.HasBeenRead,
             IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.UcjbId,
             ParentId = j.ParentId,
-            
+
             // For remain time calculation
             DeliverByTime = j.DeliverByTime,
             RequiredDeliveryTime = j.RequiredDeliveryTime,
@@ -33,10 +33,12 @@ public static class JobMappings
             Time = j.UcjbTime,
             Booked = CombineDateAndTime(j.UcjbDate, j.UcjbTime),
             IsFlightJob = j.UcjbSpeedNavigation != null
-                          && j.UcjbSpeedNavigation.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
+                          && j.UcjbSpeedNavigation.GroupingId ==
+                          (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
             IsAgentJob = j.UcjbSpeedNavigation != null
-                         && j.UcjbSpeedNavigation.GroupingId != (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
-            
+                         && j.UcjbSpeedNavigation.GroupingId !=
+                         (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
+
             Courier = j.UcjbCourierId != null ? j.UcjbCourier.Code : null,
             CourierData =
                 j.UcjbCourierId != null
@@ -164,7 +166,14 @@ public static class JobMappings
             FollowupTime = j.FollowupTime,
             Van = j.UcjbVan,
             Truck = j.Truck ?? false,
-            DgClass = j.Dgclass
+            DgClass = j.Dgclass,
+
+            PickUpTimeZone = j.PickupTimeZone != null
+                ? new Suggestion { Id = j.PickupTimeZone.Id, Text = j.PickupTimeZone.Name }
+                : null,
+            DeliveryTimeZone = j.DeliverByTimeZone != null
+                ? new Suggestion { Id = j.DeliverByTimeZone.Id, Text = j.DeliverByTimeZone.Name }
+                : null
         };
 
     public static readonly Expression<Func<TucJob, JobViewModel>> JobMapping = j => new JobViewModel
@@ -410,7 +419,7 @@ public static class JobMappings
 
         // Location data
         PickUpLatitude = j.PickUpLatitude,
-        
+
         PickUpLongitude = j.PickUpLongitude,
         DeliveryLatitude = j.DeliveryLatitude,
         DeliveryLongitude = j.DeliveryLongitude,
@@ -554,8 +563,8 @@ public static class JobMappings
                 : null,
 
         Locked = j.UcjbLocked ?? false
-    };   
-    
+    };
+
     public static readonly Expression<Func<TblBulkJob, JobViewModel>> BulkJobMapping = j => new JobViewModel
     {
         ClientId = j.ClientId,
@@ -620,7 +629,7 @@ public static class JobMappings
             Latitude = decimal.Parse(j.DeliveryLatitude),
             Longitude = decimal.Parse(j.DeliveryLongitude)
         },
-        
+
         // Tracking info
         TrackingMethod = j.TrackingMethod,
         TrackingMobile = j.TrackingMobile,
@@ -654,7 +663,7 @@ public static class JobMappings
         AlertLatePickup = j.Client != null ? j.Client.AlertLatePickUp : null,
         AlertLateDelivery = j.Client != null ? j.Client.AlertLateDelivery : null,
         Items = j.Qty,
-        
+
         FromContactName = j.PickupFromContact,
         FromContactNumber = j.PickupFromPhone,
 
@@ -673,11 +682,11 @@ public static class JobMappings
         StatusId = j.JobStatus,
         Status = j.JobStatusNavigation != null ? j.JobStatusNavigation.UcjsCode : null,
         StatusName = j.JobStatusNavigation != null ? j.JobStatusNavigation.UcjsName : null,
-        
+
         IsArchived = false,
         PreBook = false,
         IsBulkJob = true,
-        
+
         // Timezones
         PickUpTimeZone =
             j.PickupTimeZone != null
@@ -687,11 +696,10 @@ public static class JobMappings
             j.DeliverByTimeZoneId != null
                 ? new Suggestion { Id = j.DeliverByTimeZone.Id, Text = j.DeliverByTimeZone.Name }
                 : null,
-        
+
         ParcelDimensions = GetPackagesForBulkJob(j, j.Parent,
             j.TblBulkJobItems, j.Parent.TblBulkJobItems,
             j.TblBulkJobItems),
-        
     };
 
     public static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping =
@@ -951,7 +959,7 @@ public static class JobMappings
         FromAirportId = j.FromAirportId,
 
         AssignedFlight = null,
-        
+
         FromSuburbId = (int)j.UcbkFrom,
         ToSuburbId = (int)j.UcbkTo,
 
@@ -1106,7 +1114,7 @@ public static class JobMappings
                 : j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName
                 : string.Empty
         };
-    
+
     private static string FormatDate(DateTime? date)
     {
         var dateToUse = date ?? DateTime.MinValue;
@@ -1164,7 +1172,7 @@ public static class JobMappings
 
     private static List<ParcelDimensions> ConvertToParcelDimensions(ICollection<TucJobItem> items) =>
         items?.Select(CreateParcelDimensions).ToList() ?? [];
-    
+
     private static ParcelDimensions CreateParcelDimensions(TucJobItem item)
     {
         return new ParcelDimensions
@@ -1176,7 +1184,7 @@ public static class JobMappings
             Length = item.Length
         };
     }
-    
+
     private static List<ParcelDimensions> GetPackagesForBulkJob(
         TblBulkJob job,
         TblBulkJob parent,
@@ -1201,7 +1209,7 @@ public static class JobMappings
 
     private static List<ParcelDimensions> ConvertToParcelDimensions(ICollection<TblBulkJobItem> items) =>
         items?.Select(CreateParcelDimensions).ToList() ?? [];
-    
+
     private static ParcelDimensions CreateParcelDimensions(TblBulkJobItem item)
     {
         return new ParcelDimensions

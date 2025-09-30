@@ -3,25 +3,23 @@ import {AssignFlightToJobRequest, IFlightViewModel} from "./nationwide.interface
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {
     AddAgentRecoveryRequest,
-    RecoveryAgentJobViewModel, RemoveAgentRecoveryRequest, UpdateAgentRecoveryRequest
+    RecoveryAgentJobViewModel,
+    RemoveAgentRecoveryRequest,
+    UpdateAgentRecoveryRequest
 } from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.interfaces";
 import IFlightCargoProcessing from "../dialogs/flight-agent-conformation-dialog/interfaces/IFlightCargoProcessing";
-import {formatDateForApi} from "../../functions/formatDates";
+import {formatDateForApi, formatDateForApiWithTzs} from "../../functions/formatDates";
+import dayjs from "dayjs";
 
 class NationwideService implements angular.IServiceProvider {
     static $inject = [
         "$http",
-        "$log",
     ];
-
-    private flightCache: Map<string, { timestamp: number, data: any }> = new Map();
-    private CACHE_DURATION = 5 * 60 * 1000;
 
     constructor(
         private $http: angular.IHttpService,
-        private $log: angular.ILogService
     ) {
-        this.$log.debug('NationwideService: Service instantiated');
+        console.debug('NationwideService: Service instantiated');
     }
 
     $get(): any {
@@ -49,7 +47,7 @@ class NationwideService implements angular.IServiceProvider {
                 order: queryParams.order ?? defaultParams.order,
                 orderDirection: queryParams.orderDirection ?? defaultParams.orderDirection,
                 startDate: queryParams.startDate ? formatDateForApi(queryParams.startDate) : null,
-                dateCutoff: queryParams.dateCutoff ? formatDateForApi(queryParams.dateCutoff) : null,
+                dateCutoff: queryParams.endDate ? formatDateForApi(queryParams.endDate) : null,
                 isInternal: isInternal,
                 cid: ContactID,
                 clientIds: selectedClients,
@@ -73,30 +71,20 @@ class NationwideService implements angular.IServiceProvider {
 
     async getFlightOptions(
         jobId: number,
-        departureDate: string | Date,
+        departureDate: dayjs.Dayjs,
+        timezone: string,
         airlineId?: number,
         departureAirportId?: number,
         arrivalAirportId?: number,
-        minimumLayoverMinutes: number = 0
+        minimumLayoverMinutes: number = 0,
     ): Promise<{
         flights: IFlightViewModel[];
         message: string | null;
-        lastDepartureTime: Date | null;
+        lastDepartureTime: dayjs.Dayjs | null;
     }> {
-        const startTime = performance.now();
-        const formattedDate = formatDateForApi(departureDate);
+        const formattedDate = formatDateForApiWithTzs(departureDate, timezone);
 
-        // Create a cache key based on the parameters
-        const cacheKey = `flights_${jobId}_${formattedDate}_${airlineId || 'all'}_${departureAirportId || 'default'}`;
-        const cachedData = this.flightCache.get(cacheKey);
-
-        // Return cached data if it's still valid
-        if (cachedData && (Date.now() - cachedData.timestamp < this.CACHE_DURATION)) {
-            this.$log.debug('Retrieved flight data from cache for job', jobId);
-            return cachedData.data;
-        }
-
-        this.$log.debug(`Fetching flight data for job ${jobId} with departure ${formattedDate}`);
+        console.debug(`Fetching flight data for job ${jobId} with departure ${formattedDate}`);
 
         try {
             const response = await this.$http.get<IFlightViewModel[]>("nationwideJob/GetScheduledFlightOptions", {
@@ -112,33 +100,20 @@ class NationwideService implements angular.IServiceProvider {
 
             const flights = response.data;
 
-            let lastDepartureTime: Date | null = null;
+            let lastDepartureTime: dayjs.Dayjs | null = null;
             if (flights && flights.length > 0) {
                 const lastFlight = flights[flights.length - 1];
                 lastDepartureTime = lastFlight.departureTime;
             }
 
-            const result = {
+            return {
                 flights,
                 message: response.data.length === 0
                     ? "Sorry, we couldn't find any flights between these airports on the selected date. Please try different dates or airports."
                     : null,
                 lastDepartureTime
             };
-
-            // Store in cache
-            this.flightCache.set(cacheKey, {
-                timestamp: Date.now(),
-                data: result
-            });
-
-            const endTime = performance.now();
-            this.$log.debug(`Flight request completed in ${(endTime - startTime).toFixed(2)}ms for job ${jobId}, received ${response.data.length} flights`);
-
-            return result;
         } catch (error) {
-            const endTime = performance.now();
-            console.error(`Flight request failed after ${(endTime - startTime).toFixed(2)}ms`, error);
             throw error;
         }
     }
@@ -250,10 +225,10 @@ class NationwideService implements angular.IServiceProvider {
 
         await this.$http.post(`nationwideJob/RemoveAgentRecoveryJob`, data);
     }
-    
-    async calculateCargoReadyTime(jobId: number, carrierFsCode: string, arrivalTime: Date): Promise<IFlightCargoProcessing> {
-        const formattedArrivalTime =  formatDateForApi(arrivalTime);
-        this.$log.debug('formattedArrivalTime', formattedArrivalTime);
+
+    async calculateCargoReadyTime(jobId: number, carrierFsCode: string, arrivalTime: dayjs.Dayjs): Promise<IFlightCargoProcessing> {
+        const formattedArrivalTime = formatDateForApi(arrivalTime);
+        console.debug('formattedArrivalTime', formattedArrivalTime);
         const response = await this.$http.get<IFlightCargoProcessing>("nationwideJob/CalculateCargoReadyTime", {
             params: {
                 jobId,

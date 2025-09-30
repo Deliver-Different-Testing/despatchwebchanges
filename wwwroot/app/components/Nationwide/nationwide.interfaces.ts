@@ -1,10 +1,11 @@
 import {Coordinates} from "../overview/overview.interfaces";
+import dayjs from "dayjs";
 
 export interface IFlightViewModel {
     airline: string;
     flightNumber: string;
-    departureTime: Date;
-    arrivalTime: Date;
+    departureTime: dayjs.Dayjs;
+    arrivalTime: dayjs.Dayjs;
     departureAirport: string;
     arrivalAirport: string;
     duration: string;
@@ -30,8 +31,8 @@ export interface IFlightSegment {
     segmentOrder: number;
     carrierFsCode: string;
     flightNumber: string;
-    departureTime: Date;
-    arrivalTime: Date;
+    departureTime: dayjs.Dayjs;
+    arrivalTime: dayjs.Dayjs;
     departureAirportFsCode: string;
     departureTerminal?: string;
     arrivalAirportFsCode: string;
@@ -72,9 +73,9 @@ export interface AssignFlightToJobRequest {
     fromAirportId?: number;
     toAirportId?: number;
     flightNumber: string;
-    departureDate: Date | string;
+    departureDate: dayjs.Dayjs | string;
     flightSegments: IFlightSegment[];
-    packageReadyTime?: Date | string;
+    packageReadyTime?: dayjs.Dayjs | string;
     packageDeliverByTime?: Date | string;
     packageDeliveryNotes?: string;
 }

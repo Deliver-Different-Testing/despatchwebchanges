@@ -190,7 +190,7 @@ public class NationwideJobController(
         {
             return await flightService.GetFlightDetailsByFlightNumberAsync(
                 request.FlightNumber,
-                DateTime.Parse(request.DepartureDate),
+                request.DepartureDate,
                 request.JobId);
         }
         catch (Exception ex)

@@ -1,6 +1,5 @@
 import {IPrebookListModel} from "./recurringJobs.interface";
-import dayjs, {Dayjs} from "dayjs";
-import {formatDayJsForApi} from "../../functions/formatDates";
+import dayjs from "dayjs";
 
 class RecurringJobsService {
     static $inject = [

@@ -34,16 +34,19 @@ import AgentInfoDialogService from "../dialogs/agent-info-dialog/agent-info-dial
 import dayjs from "dayjs";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import MessagingService from "../../services/messaging.service";
-import {ContactID} from "../../contants";
+import {ContactID, TimeZone} from "../../contants";
 import {StatusFilter} from "../task-dashboard/enums/status-filter";
 import TasksService from "../../services/tasks.service";
 import JobListType from "../common/job-list/enums/jobListType";
 import RecoveryAgentManagementService
     from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.service";
-import {formatDateForApi} from "../../functions/formatDates";
+import {formatDateForApiWithTzs} from "../../functions/formatDates";
 import IContextMenuOption from "../../interfaces/context-menu-option.interface";
 import IDateFilterData from "../common/date-filter-menu/IDateFilterData";
 import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
+import timezone from "dayjs/plugin/timezone";
+
+dayjs.extend(timezone);
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -75,7 +78,7 @@ class NationwideControl extends BaseController {
         'tasksService',
         'recoveryAgentManagementService',
     ];
-
+    
     private readonly NationwideLayoutKey: string = `layoutsNW-${ContactID}`;
     private readonly NationwideLastActiveLayoutKey: string = `lastActiveLayoutNW-${ContactID}`;
     private readonly refreshDurationIntervalKey: string = `refreshInterval-${AppPages.Domestic}-${ContactID}`;
@@ -236,7 +239,7 @@ class NationwideControl extends BaseController {
         this.greeting = greetUser(FirstName);
         this.isUsCustomer = this.appConfig.US_Customer;
         this.timeZone = TimeZone;
-        this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        this.browserTimeZone = dayjs.tz.guess()
 
         // Date filter
         this.dateFilterData = setDateFilterDefaults();
@@ -1257,7 +1260,8 @@ class NationwideControl extends BaseController {
 
             this.flightListPromise = this.nationwideService.getFlightOptions(
                 this.currentJob.id,
-                departureDate.toDate(),
+                departureDate,
+                this.currentJob.pickUpTimeZone?.text ??  this.browserTimeZone,
                 airlineId,
                 departureAirportId,
                 arrivalAirportId,
@@ -1330,10 +1334,10 @@ class NationwideControl extends BaseController {
                 fromAirportId: this.selectedOutboundAirport?.id,
                 toAirportId: this.selectedInboundAirport?.id,
                 flightNumber: flight.flightNumber,
-                departureDate: formatDateForApi(flight.departureTime),
+                departureDate: formatDateForApiWithTzs(flight.departureTime, flight.departureTimeZone),
                 flightSegments: flight.flightSegments,
-                packageReadyTime: result.packageReadyTime ? formatDateForApi(result.packageReadyTime) : undefined,
-                packageDeliverByTime: result.packageDeliverByTime ? formatDateForApi(result.packageDeliverByTime) : undefined,
+                packageReadyTime: result.packageReadyTime ? formatDateForApiWithTzs(result.packageReadyTime, flight.arrivalTimeZone) : undefined,
+                packageDeliverByTime: result.packageDeliverByTime ? formatDateForApiWithTzs(result.packageDeliverByTime, flight.arrivalTimeZone) : undefined,
                 packageDeliveryNotes: result.packageDeliveryNotes
             };
             

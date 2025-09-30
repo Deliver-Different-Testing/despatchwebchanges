@@ -4,6 +4,7 @@ import BaseController from "../../base-controller";
 import {IJobFile, IUploadProgressFile} from "./job-file-upload-dialog.interfaces";
 import dayjs from "dayjs";
 import DispatchCoreService from "../../../services/dispatch-core.service";
+import {formatDateForApiWithTzs} from "../../../functions/formatDates";
 
 class JobFileUploadController extends BaseController {
     static $inject = [
@@ -11,7 +12,6 @@ class JobFileUploadController extends BaseController {
         "$log",
         "$mdDialog",
         "DispatchData",
-        "$window",
         "toastrService",
         "Upload",
         "bytesFilter",
@@ -38,7 +38,6 @@ class JobFileUploadController extends BaseController {
         private $log: angular.ILogService,
         private $mdDialog: angular.material.IDialogService,
         private DispatchData: DispatchCoreService,
-        private $window: angular.IWindowService,
         private toastrService: ToastrService,
         public $upload: angular.angularFileUpload.IUploadService,
         public bytesFilter: (bytes: number) => string,
@@ -114,7 +113,7 @@ class JobFileUploadController extends BaseController {
                             s3Key: photo.s3Key,
                             contentType: photo.contentType || 'application/octet-stream',
                             size: photo.size || 0,
-                            uploadDate: photo.uploadDate || dayjs().toISOString(),
+                            uploadDate: photo.uploadDate || formatDateForApiWithTzs(dayjs()),
                             isPOD: true,
                             podDescription: photo.podDescription || ''
                         };

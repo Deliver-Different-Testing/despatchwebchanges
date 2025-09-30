@@ -16,12 +16,13 @@
     <div id="driverLocations" ng-if="ctrl.showDriverLocationsData">
         <div class="container-fluid">
             <div class="row">
-                <div class="col-xs-3" ng-repeat="area in ctrl.driverLocations.areas">
+                <div class="col-xs-3" ng-repeat="area in ctrl.driverLocations.areas track by area.id">
                     <div class="driverLocations-list" ng-style="{ 'height': area.percentHeight + '%' }">
                         <md-button class="md-raised"
                                    ng-class="{'listActive': area.isActive}"
                                    ng-click="ctrl.selectAndActivateArea(area)">
-                            {{area.name}} {{area.totalRemaining}}
+                            <md-icon md-font-set="material-symbols-outlined">location_on</md-icon>
+                            {{area.name}} - {{area.totalRemaining}}
                         </md-button>
                         <div class="driverLocations-list-items">
                             <table>
