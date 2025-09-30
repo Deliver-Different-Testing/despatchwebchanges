@@ -1791,6 +1791,11 @@ class JobDetailController extends BaseController {
 
     async showPricingBreakdown($event: MouseEvent, job: IJob): Promise<void> {
         try {
+            if(job.bulkJob) {
+                this.toastrService.showWarningToast("Pricing breakdown is not currently available for bulk jobs.");
+                return;
+            }
+            
             await this.priceBreakdownDialogService.openPriceBreakdownDialog(
                 $event,
                 job.id,

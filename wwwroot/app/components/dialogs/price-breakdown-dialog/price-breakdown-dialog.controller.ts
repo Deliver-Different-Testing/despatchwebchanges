@@ -7,7 +7,8 @@ import DispatchCoreService from "../../../services/dispatch-core.service";
 export class PriceBreakdownDialogController extends BaseController {
     static $inject = [
         '$mdDialog',
-        '$log',
+        '$timeout',
+        '$interval',
         'toastrService',
         'DispatchData',
         'priceBreakdown',
@@ -41,7 +42,6 @@ export class PriceBreakdownDialogController extends BaseController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private $log: angular.ILogService,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
         private toastrService: ToastrService,
@@ -53,9 +53,9 @@ export class PriceBreakdownDialogController extends BaseController {
         super();
         this.initServices($timeout, $interval);
 
-        this.$log.debug('PriceBreakdownDialogController: Service instantiated');
-        this.$log.debug('PriceBreakdownDialogController: isPrebook', isPrebook);
-        this.$log.debug('PriceBreakdownDialogController: jobId', jobId);
+        console.debug('PriceBreakdownDialogController: Service instantiated');
+        console.debug('PriceBreakdownDialogController: isPrebook', isPrebook);
+        console.debug('PriceBreakdownDialogController: jobId', jobId);
 
         // Initialize if not provided
         if (!this.priceBreakdown) {
@@ -137,7 +137,7 @@ export class PriceBreakdownDialogController extends BaseController {
 
             this.cancelEdit();
         } catch (error) {
-            this.$log.error('PriceBreakdownDialogController: Error in save', error);
+            console.error('PriceBreakdownDialogController: Error in save', error);
             this.toastrService.showErrorToast('An error occurred while saving the price breakdown');
         } finally {
             this.isSaving = false;
@@ -158,7 +158,7 @@ export class PriceBreakdownDialogController extends BaseController {
                 }
                 this.toastrService.showSuccessToast('Price breakdown deleted successfully');
             } catch (error) {
-                this.$log.error('PriceBreakdownDialogController: Error in delete', error);
+                console.error('PriceBreakdownDialogController: Error in delete', error);
                 this.toastrService.showErrorToast('An error occurred while deleting the price breakdown');
             } finally {
                 this.isLoading = false;
@@ -188,7 +188,7 @@ export class PriceBreakdownDialogController extends BaseController {
             await new Promise(resolve => this.registerTimeout(resolve, 500));
             this.$mdDialog.hide(this.priceBreakdown);
         } catch (error) {
-            this.$log.error('PriceBreakdownDialogController: Error in save', error);
+            console.error('PriceBreakdownDialogController: Error in save', error);
             this.toastrService.showErrorToast('An error occurred while saving');
         } finally {
             this.isLoading = false;

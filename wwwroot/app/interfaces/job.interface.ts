@@ -146,7 +146,7 @@ export interface IJob {
     searchText?: string;
     deliverByTime?: Date;
     distance: number;
-    readTrackerInfo: IReadTrackerInfoViewModel;
+    readTrackerInfo: IReadTrackerInfo;
     inActiveBy?: ISuggestion;
     inActiveDate?: Date;
     firstDue?: Date;
@@ -527,7 +527,7 @@ export interface ILateCallRequest {
     calculationRequired: boolean;
 }
 
-export interface IReadTrackerInfoViewModel {
+export interface IReadTrackerInfo {
     hasBeenRead: boolean;
     readBy: string;
     readDate: Date | null;
