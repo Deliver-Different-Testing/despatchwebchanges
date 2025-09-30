@@ -898,8 +898,10 @@ class HomeController extends BaseController {
     
     private async processClearListJobs(selectedClearListId: number): Promise<void> {
         try {
+            console.log("Processing clear list jobs:", selectedClearListId);
+            
             const selectedClients = this.pickService.clients.map((client: { id: number }) => client.id);
-            const jobs = await this.DispatchData.getClearListJobs(
+            const result = await this.dispatchJobService.getJobListWithCourierData(
                 this.queryParams,
                 selectedClients,
                 ClientInternal ?? false,
@@ -907,8 +909,26 @@ class HomeController extends BaseController {
                 selectedClearListId
             );
 
-            console.log("ClearList Jobs:", jobs);
-            this.jobList = HomeController.initializeJobSearchFields(jobs);
+            if (result.items?.length > 0) {
+                console.log("Processing clear list jobs:", result.items);
+                this.jobList = HomeController.initializeJobSearchFields(result.items);
+
+                if (!this.currentCourier) {
+                    this.mapJobList = this.jobList;
+                }
+                
+                console.log("Clear list Job list:", this.jobList);
+            } else {
+                console.log("No jobs found for clear list:", selectedClearListId);
+                this.jobList = [];
+
+                if (!this.currentCourier) {
+                    this.mapJobList = [];
+                }
+            }
+
+            this.jobsCurrentList = undefined;
+            
         } catch (error) {
             console.error("Error fetching jobs for clear list:", error);
             this.jobList = [];
