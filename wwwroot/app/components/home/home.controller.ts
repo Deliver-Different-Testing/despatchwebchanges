@@ -872,22 +872,6 @@ class HomeController extends BaseController {
         return components.join(" ").trim();
     }
 
-    openSearch(boxName: string, index: number): void {
-        const boxID = boxName + "-" + index;
-
-        if (!this.inputWidth) {
-            this.inputWidth = {};
-        }
-
-        if (this.showInput[boxID]) {
-            this.showInput[boxID] = false;
-            this.inputWidth[boxID] = 31;
-        } else {
-            this.inputWidth[boxID] = 200;
-            this.showInput[boxID] = true;
-        }
-    }
-
     async unlockJob(currentJob: IDispatchJob): Promise<void> {
         await this.DispatchData.updateJobDetail(currentJob.id, JobProperty.Locked, false, currentJob.preBook ?? false)
     }
@@ -898,8 +882,10 @@ class HomeController extends BaseController {
 
     async selectClearList(selectedClearList: IAreaClearList): Promise<void> {
         try {
-            if (!selectedClearList) return;
-            if (!this.shouldProcessJobs()) return;
+            if (!selectedClearList) {
+                this.toastrService.showErrorToast("An error occurred while selecting a clear list. Please try again.");
+                return;
+            }
 
             await this.processClearListJobs(selectedClearList.id);
         } catch (error) {
@@ -907,14 +893,7 @@ class HomeController extends BaseController {
             this.jobList = [];
         }
     }
-
-    private shouldProcessJobs(): boolean {
-        if (!this.driverLocations || !this.driverLocations.areas) return false;
-
-        const activeAreas = this.driverLocations.areas.filter((area: IAreaClearList) => area.isActive);
-        return activeAreas.length <= 1;
-    }
-
+    
     private async processClearListJobs(clearListId: number): Promise<void> {
         try {
             const envelope = await this.getClearListEnvelope(clearListId);
@@ -2451,14 +2430,12 @@ class HomeController extends BaseController {
         });
 
         // Then process jobs if needed
-        if (this.shouldProcessJobs()) {
             try {
                 await this.processClearListJobs(selectedArea.id);
             } catch (error) {
                 console.error("Clear list processing error:", error);
                 this.jobList = [];
             }
-        }
 
         this.applyScope();
     }

@@ -507,6 +507,9 @@ export interface IDispatchJob {
     van?: boolean;
     truck?: boolean;
 
+    pickUpTimeZone?: ISuggestion;
+    deliveryTimeZone?: ISuggestion;
+
     _isExpanded?: boolean;
     _groupChildren?: IDispatchJob[];
 }

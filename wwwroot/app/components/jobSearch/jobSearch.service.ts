@@ -1,6 +1,6 @@
 import {IDispatchJob} from "../../interfaces/job.interface";
 import dayjs from "dayjs";
-import {formatDateForApi, formatDayJsForApi} from "../../functions/formatDates";
+import {formatDateForApi} from "../../functions/formatDates";
 import IScanDetailResult from "./interfaces/IScanDetailResult";
 
 class JobSearchService implements angular.IServiceProvider {
@@ -31,8 +31,8 @@ class JobSearchService implements angular.IServiceProvider {
                     clientId: clientId,
                     wild: wild,
                     job: job,
-                    fromDate: fromDate.toISOString(),
-                    toDate: toDate.toISOString()
+                    fromDate: fromDate.format(),
+                    toDate: toDate.format()
                 }
             }
         );
@@ -56,8 +56,8 @@ class JobSearchService implements angular.IServiceProvider {
                     clientId,
                     wild,
                     job,
-                    fromDate: fromDate.toISOString(),
-                    toDate: toDate.toISOString()
+                    fromDate: fromDate.format(),
+                    toDate: toDate.format()
                 },
                 responseType: "blob"
             }
@@ -89,8 +89,8 @@ class JobSearchService implements angular.IServiceProvider {
                     clientId,
                     job,
                     wild,
-                    fromDate: fromDate.toISOString(),
-                    toDate: toDate.toISOString()
+                    fromDate: fromDate.format(),
+                    toDate: toDate.format()
                 }
             }
         );

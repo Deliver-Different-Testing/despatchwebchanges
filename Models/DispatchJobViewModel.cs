@@ -8,7 +8,7 @@ public class DispatchJobViewModel
     // Core identifiers
     public int Id { get; set; }
     public string JobNo { get; set; }
-    
+
     public bool IsFlightJob { get; set; }
     public bool IsAgentJob { get; set; }
     public bool IsArchived { get; set; }
@@ -43,7 +43,7 @@ public class DispatchJobViewModel
     public decimal? PickUpLatitude { get; set; }
     public decimal? DeliveryLongitude { get; set; }
     public decimal? DeliveryLatitude { get; set; }
-    
+
     public string PickupContact { get; set; }
     public string DeliveryContact { get; set; }
 
@@ -95,12 +95,14 @@ public class DispatchJobViewModel
     // UI helper fields
     public List<Suggestion> RelatedJobs { get; set; }
 
-    public string ConNote {get;set;}
+    public string ConNote { get; set; }
     public DateTime? FollowupTime { get; set; }
     public bool Van { get; set; }
-    public bool Truck { get; set; } 
-    
+    public bool Truck { get; set; }
+
     public DateTime? DeliverByTime { get; set; }
     public DateTime? RequiredDeliveryTime { get; set; }
     public int? JobTypeMins { get; set; }
+    public Suggestion PickUpTimeZone { get; set; }
+    public Suggestion DeliveryTimeZone { get; set; }
 }

@@ -6,7 +6,6 @@ import ToastrService from "../../services/toastr.service";
 import ICourierCompliance from "./interfaces/ICourierCompliance";
 import {ICourierDataDashboard} from "./interfaces/ICourierDataDashboard";
 import IDriverEmail from "./interfaces/IDriverEmail";
-import {formatDayJsForApi} from "../../functions/formatDates";
 import {IAppConfig} from "../../interfaces/app-config.interface";
 import greetUser from "../../functions/greetUser";
 import {ISuggestion} from "../../interfaces/job.interface";
@@ -27,6 +26,7 @@ import {ComposeEmailDialogService} from "../dialogs/compose-email-dialog/compose
 import EditAfterhoursDialogService from "../dialogs/edit-afterhours-dialog/edit-afterhours-dialog.service";
 import {IAfterHoursCourierSchedule} from "./interfaces/IAfterHoursCourierSchedule";
 import {AppPages} from "../../enums/app-pages.enum";
+import {formatDateForApi} from "../../functions/formatDates";
 
 class DriverManagementController extends BaseController {
     static $inject = [
@@ -693,8 +693,8 @@ class DriverManagementController extends BaseController {
                 startTime: startTime,
                 endTime: endTime,
                 duration: '4 hours',
-                formattedStartDate: formatDayJsForApi(startTime),
-                formattedEndDate: formatDayJsForApi(endTime),
+                formattedStartDate: formatDateForApi(startTime),
+                formattedEndDate: formatDateForApi(endTime),
             };
 
             const result = await this.openEditAfterHoursDialog($event, newSchedule);
