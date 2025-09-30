@@ -2,7 +2,12 @@ import OverviewService from "./overview.service";
 import ToastrService from "../../services/toastr.service";
 import NavigationService from "../../services/navigation.service";
 import OverviewFiltersService from "./services/overview-filters.service";
-import {OverviewQueryParams, OverviewTableChildJob, OverviewTableParentJob} from "./overview.interfaces";
+import {
+    IOverViewDateSearchRange, IOverviewQuery, IOverviewStatistics,
+    OverviewQueryParams,
+    OverviewTableChildJob,
+    OverviewTableParentJob
+} from "./overview.interfaces";
 import "./overview.styles.less";
 import BaseController from "../base-controller";
 import {ISuggestion} from "../../interfaces/job.interface";
@@ -10,6 +15,7 @@ import greetUser from "../../functions/greetUser";
 import dayjs, {Dayjs} from "dayjs";
 import {DateRangeDialogController} from "../dialogs/date-range-dialog/date-range-dialog.controller";
 import MapDialogService from "../dialogs/map-dialog/map-dialog.service";
+import {IPaginatedResponse} from "../../interfaces/paginated-response.interface";
 
 class OverviewController extends BaseController {
     static $inject = [
@@ -28,17 +34,11 @@ class OverviewController extends BaseController {
     ];
 
     private readonly OverviewJobLimitDisplay: string = `overviewJobLimitDisplay-${ContactID}`;
-    
+
     isLoading: boolean;
     greeting: string;
-    statistics: { active: number; inactive: number; completed: number };
-    query: {
-        order: string;
-        direction: string;
-        page: number;
-        limit: number;
-        total: number;
-    };
+    statistics: IOverviewStatistics;
+    query: IOverviewQuery;
 
     regionsLoading: boolean;
     speedsLoading: boolean;
@@ -47,11 +47,11 @@ class OverviewController extends BaseController {
     deliveries: any[];
     regions: ISuggestion[];
     speeds: ISuggestion[];
-    promise: Promise<any> | null;
+    promise?: Promise<IPaginatedResponse<OverviewTableParentJob>>;
 
     search: string;
 
-    dateRange: { start: Dayjs | null; end: Dayjs | null };
+    dateRange: IOverViewDateSearchRange;
     selectedRegions: ISuggestion[];
     allRegionsSelected: boolean;
     selectedSpeeds: ISuggestion[];
@@ -99,13 +99,12 @@ class OverviewController extends BaseController {
         this.deliveries = [];
         this.regions = [];
         this.speeds = [];
-        this.promise = null;
 
         // Search properties
         this.search = "";
 
         // Filters
-        this.dateRange = {start: null, end: null};
+        this.dateRange = {};
         this.selectedRegions = [];
         this.allRegionsSelected = false;
         this.selectedSpeeds = [];
@@ -352,8 +351,8 @@ class OverviewController extends BaseController {
     async showDateRangeDialog($event: MouseEvent) {
         try {
             const dialogDateRange = {
-                start: this.dateRange.start ? this.dateRange.start.toDate() : null,
-                end: this.dateRange.end ? this.dateRange.end.toDate() : null,
+                start: this.dateRange.start,
+                end: this.dateRange.end
             };
 
             const result = await this.$mdDialog.show({
@@ -371,8 +370,8 @@ class OverviewController extends BaseController {
             });
 
             this.dateRange = {
-                start: result.start ? dayjs(result.start) : null,
-                end: result.end ? dayjs(result.end) : null,
+                start: result.start,
+                end: result.end
             };
 
             this.overviewFiltersService.updateFilters({
@@ -405,7 +404,7 @@ class OverviewController extends BaseController {
         }
     }
 
-    formatDate(date: Dayjs | null): string {
+    formatDate(date: Dayjs | undefined): string {
         return date ? date.format("MMM D, YYYY") : "";
     }
 
@@ -414,10 +413,7 @@ class OverviewController extends BaseController {
             $event.stopPropagation();
         }
 
-        this.dateRange = {
-            start: null,
-            end: null,
-        };
+        this.dateRange = {};
 
         this.overviewFiltersService.updateFilters({
             dateRange: this.dateRange,
@@ -427,7 +423,7 @@ class OverviewController extends BaseController {
     }
 
     async showMap($event: MouseEvent, delivery: OverviewTableParentJob) {
-       await this.mapDialogService.openMapDialog($event, delivery);
+        await this.mapDialogService.openMapDialog($event, delivery);
     }
 
     openJobDetail(delivery: OverviewTableParentJob) {

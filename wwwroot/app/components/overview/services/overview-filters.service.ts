@@ -1,21 +1,17 @@
 import {ISuggestion} from "../../../interfaces/job.interface";
-import {Dayjs} from "dayjs";
+import {IOverViewDateSearchRange} from "../overview.interfaces";
 
 class OverviewFiltersService implements angular.IServiceProvider {
     selectedRegions: ISuggestion[];
     selectedSpeeds: ISuggestion[];
-    dateRange: { start: Dayjs | null, end: Dayjs | null };
+    dateRange: IOverViewDateSearchRange;
     filterChangeCallbacks: Array<() => void>;
 
     constructor() {
         this.selectedRegions = [];
         this.selectedSpeeds = [];
 
-        this.dateRange = {
-            start: null,
-            end: null
-        };
-
+        this.dateRange = {};
         this.filterChangeCallbacks = [];
     }
 
@@ -28,9 +24,9 @@ class OverviewFiltersService implements angular.IServiceProvider {
     }
 
     updateFilters(filters: {
-        selectedRegions?: Array<{ id: number }>,
-        selectedSpeeds?: Array<{ id: number }>,
-        dateRange?: { start: Dayjs | null, end: Dayjs | null }
+        selectedRegions?: ISuggestion[],
+        selectedSpeeds?: ISuggestion[],
+        dateRange?: IOverViewDateSearchRange,
     }): void {
         Object.assign(this, filters);
         this.filterChangeCallbacks.forEach(callback => callback());

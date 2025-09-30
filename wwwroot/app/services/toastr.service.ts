@@ -8,16 +8,14 @@ enum ToastType {
 class ToastrService implements angular.IServiceProvider {
     static $inject = [
         "$mdToast",
-        "$log",
         "$document"
     ];
 
     constructor(
         private $mdToast: angular.material.IToastService,
-        private $log: angular.ILogService,
         private $document: angular.IDocumentService
     ) {
-        this.$log.log("Toastr service initialized");
+        console.log("Toastr service initialized");
     }
 
     $get() {
@@ -25,22 +23,22 @@ class ToastrService implements angular.IServiceProvider {
     }
 
     showInfoToast(infoMessage: string) {
-       this.$log.info("Info:", infoMessage);
+       console.info("Info:", infoMessage);
         return this.showToast(infoMessage, ToastType.INFO);
     }
 
     showErrorToast(errorMessage: string = "An unexpected error occurred. Please try again or contact support") {
-        this.$log.error("Error:", errorMessage);
+        console.error("Error:", errorMessage);
         return this.showToast(errorMessage, ToastType.ERROR);
     }
 
     showSuccessToast(successMessage: string) {
-        this.$log.debug("Success:", successMessage);
+        console.debug("Success:", successMessage);
         return this.showToast(successMessage, ToastType.SUCCESS);
     }
 
     showWarningToast(warningMessage: string) {
-        this.$log.warn("Warning:", warningMessage);
+        console.warn("Warning:", warningMessage);
         return this.showToast(warningMessage, ToastType.WARNING);
     }
 

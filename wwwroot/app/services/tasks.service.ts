@@ -23,7 +23,6 @@ interface PageFilterNames {
 class TasksService implements angular.IServiceProvider {
     static $inject = [
         "$http",
-        "$log",
         'DispatchData'
     ];
 
@@ -55,6 +54,10 @@ class TasksService implements angular.IServiceProvider {
         [AppPages.MegaMap]: {
             staff: `selectedSupportTypeMegaMapFilter-${ContactID}`,
             eventType: `selectedSupportTypeMegaMapFilter-${ContactID}`
+        } ,
+        [AppPages.DriverManagement]: {
+            staff: `selectedSupportType-${AppPages.DriverManagement}-Filter-${ContactID}`,
+            eventType: `selectedSupportType-${AppPages.DriverManagement}-Filter-${ContactID}`
         }
     };
 
@@ -70,10 +73,9 @@ class TasksService implements angular.IServiceProvider {
 
     constructor(
         private $http: angular.IHttpService,
-        private $log: angular.ILogService,
         private DispatchData: DispatchCoreService
     ) {
-        this.$log.debug("Tasks service initialized");
+        console.debug("Tasks service initialized");
 
         // Initialize background loading states for all pages
         Object.values(AppPages).forEach(page => {
@@ -138,7 +140,7 @@ class TasksService implements angular.IServiceProvider {
                 return staff;
             })
             .catch((error: any) => {
-                this.$log.error('Error loading staff list:', error);
+                console.error('Error loading staff list:', error);
                 this.staffListPromise = undefined;
                 return [];
             });
@@ -161,7 +163,7 @@ class TasksService implements angular.IServiceProvider {
                 return eventTypes;
             })
             .catch((error: any) => {
-                this.$log.error('Error loading event types list:', error);
+                console.error('Error loading event types list:', error);
                 this.eventTypesPromise = undefined;
                 return [];
             });
@@ -178,7 +180,7 @@ class TasksService implements angular.IServiceProvider {
 
             return {staffList, eventTypesList};
         } catch (error) {
-            this.$log.error('Error loading lists:', error);
+            console.error('Error loading lists:', error);
             return {staffList: [], eventTypesList: []};
         }
     }
@@ -205,7 +207,7 @@ class TasksService implements angular.IServiceProvider {
         // Add page context for potential future use
         if (appPage) {
             // This could be used for page-specific filtering logic if needed
-            this.$log.debug(`Building filter request for page: ${AppPages[appPage]}`);
+            console.debug(`Building filter request for page: ${AppPages[appPage]}`);
         }
 
         switch (filterType) {
@@ -249,7 +251,7 @@ class TasksService implements angular.IServiceProvider {
             if (onProgress) onProgress(false);
             return tasks || [];
         } catch (error) {
-            this.$log.error("Error loading tasks:", error);
+            console.error("Error loading tasks:", error);
             if (onError) onError(error);
             if (onProgress) onProgress(false);
             return [];
@@ -266,7 +268,7 @@ class TasksService implements angular.IServiceProvider {
 
         // Cancel previous loading for this job if still in progress
         if (this.jobTaskLoadingStates[loadingKey]) {
-            this.$log.debug(`Cancelling previous task loading for job ${jobId} on ${AppPages[appPage]}`);
+            console.debug(`Cancelling previous task loading for job ${jobId} on ${AppPages[appPage]}`);
             return; // Skip this request
         }
 
@@ -276,7 +278,7 @@ class TasksService implements angular.IServiceProvider {
             try {
                 // Check if this loading is still relevant
                 if (!this.jobTaskLoadingStates[loadingKey]) {
-                    this.$log.debug(`Task loading cancelled for job ${jobId}`);
+                    console.debug(`Task loading cancelled for job ${jobId}`);
                     return;
                 }
 
@@ -288,7 +290,7 @@ class TasksService implements angular.IServiceProvider {
                 }
             } catch (error) {
                 if (this.jobTaskLoadingStates[loadingKey]) {
-                    this.$log.error(`Error loading tasks for job ${jobId}:`, error);
+                    console.error(`Error loading tasks for job ${jobId}:`, error);
                     callback([], error);
                 }
             } finally {
@@ -300,7 +302,7 @@ class TasksService implements angular.IServiceProvider {
     cancelJobTaskLoading(appPage: AppPages, jobId?: number): void {
         const loadingKey = `${appPage}-${jobId || 'all'}`;
         if (this.jobTaskLoadingStates[loadingKey]) {
-            this.$log.debug(`Manually cancelling task loading for job ${jobId}`);
+            console.debug(`Manually cancelling task loading for job ${jobId}`);
             this.jobTaskLoadingStates[loadingKey] = false;
         }
     }
@@ -326,7 +328,7 @@ class TasksService implements angular.IServiceProvider {
 
         const filterName = this.PAGE_FILTER_MAPPING[appPage]?.staff;
         if (!filterName) {
-            this.$log.warn(`No staff filter mapping found for page: ${AppPages[appPage]}`);
+            console.warn(`No staff filter mapping found for page: ${AppPages[appPage]}`);
             return StatusFilter.All;
         }
 
@@ -338,7 +340,7 @@ class TasksService implements angular.IServiceProvider {
 
         const filterName = this.PAGE_FILTER_MAPPING[appPage]?.eventType;
         if (!filterName) {
-            this.$log.warn(`No event type filter mapping found for page: ${AppPages[appPage]}`);
+            console.warn(`No event type filter mapping found for page: ${AppPages[appPage]}`);
             return StatusFilter.All;
         }
 
@@ -350,7 +352,7 @@ class TasksService implements angular.IServiceProvider {
 
         const filterName = this.PAGE_FILTER_MAPPING[appPage]?.staff;
         if (!filterName) {
-            this.$log.warn(`No staff filter mapping found for page: ${AppPages[appPage]}`);
+            console.warn(`No staff filter mapping found for page: ${AppPages[appPage]}`);
             return;
         }
 
@@ -362,7 +364,7 @@ class TasksService implements angular.IServiceProvider {
 
         const filterName = this.PAGE_FILTER_MAPPING[appPage]?.eventType;
         if (!filterName) {
-            this.$log.debug(`No event type filter mapping found for page: ${AppPages[appPage]}`);
+            console.debug(`No event type filter mapping found for page: ${AppPages[appPage]}`);
             return;
         }
 
@@ -412,7 +414,7 @@ class TasksService implements angular.IServiceProvider {
         if (!hasJobId) {
             const message = "This task has no job attached";
             onWarning(message);
-            this.$log.warn('[TaskService] No jobId provided for task:', task.id);
+            console.warn('[TaskService] No jobId provided for task:', task.id);
         }
         return hasJobId;
     }
@@ -431,7 +433,7 @@ class TasksService implements angular.IServiceProvider {
                 const tasks = await this.DispatchData.getAllTasks(filterRequest);
                 callback(tasks || []);
             } catch (error) {
-                this.$log.error("Error loading tasks with debounce:", error);
+                console.error("Error loading tasks with debounce:", error);
                 callback([], error);
             }
         }, delay);
