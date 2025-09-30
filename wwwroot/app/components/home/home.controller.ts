@@ -90,13 +90,7 @@ class HomeController extends BaseController {
 
     readonly currentWorkListName: JobListType = JobListType.CurrentWorkList;
     readonly dispatchListName: JobListType = JobListType.DispatchJobList;
-
-    private readonly DOM_SELECTORS = {
-        areaGroup: "#area-group .btn",
-        driverLocations: "#driverLocations .listActive"
-    } as const;
-
-
+    
     private readonly currentAppPage: AppPages = AppPages.Dispatch;
     private readonly COURIER_URL: string = "/courier/AllActiveSearch";
 
@@ -216,7 +210,7 @@ class HomeController extends BaseController {
         this.greeting = greetUser(FirstName);
         this.timeZone = TimeZone;
         this.browserTimeZone = dayjs.tz.guess();
-        
+
         // Date filter
         this.dateFilterData = setDateFilterDefaults();
         this.loadDateFilterFromStorage();
@@ -390,7 +384,7 @@ class HomeController extends BaseController {
                 buttonClasses: "topBarActive btn-sm btn-clients",
             },
         };
-        
+
         this.initRefreshIntervalOptions();
         this.loadSavedRefreshInterval();
         this.initializeTaskService();
@@ -828,9 +822,14 @@ class HomeController extends BaseController {
 
     setActiveArea(selectedArea: IAreaClearList): void {
         if (!this.driverLocations) return;
-        this.driverLocations?.areas.forEach((area: IAreaClearList) => {
+
+        // Set isActive for the selected area and clear others
+        this.driverLocations.areas.forEach((area: IAreaClearList) => {
             area.isActive = area === selectedArea;
         });
+
+        // Apply scope to trigger Angular Material's ng-class updates
+        this.applyScope();
     }
 
     static attention(job: IDispatchJob): string {
@@ -900,13 +899,9 @@ class HomeController extends BaseController {
     async selectClearList(selectedClearList: IAreaClearList): Promise<void> {
         try {
             if (!selectedClearList) return;
+            if (!this.shouldProcessJobs()) return;
 
-            const areaGroupButtons = angular.element(this.DOM_SELECTORS.areaGroup);
-            areaGroupButtons.removeClass("topBarActive");
-
-            if (this.shouldProcessJobs()) {
-                await this.processClearListJobs(selectedClearList.id);
-            }
+            await this.processClearListJobs(selectedClearList.id);
         } catch (error) {
             console.error("Clear list processing error:", error);
             this.jobList = [];
@@ -914,8 +909,10 @@ class HomeController extends BaseController {
     }
 
     private shouldProcessJobs(): boolean {
-        const activeLocations = angular.element(this.DOM_SELECTORS.driverLocations);
-        return activeLocations.length <= 1;
+        if (!this.driverLocations || !this.driverLocations.areas) return false;
+
+        const activeAreas = this.driverLocations.areas.filter((area: IAreaClearList) => area.isActive);
+        return activeAreas.length <= 1;
     }
 
     private async processClearListJobs(clearListId: number): Promise<void> {
@@ -1289,7 +1286,7 @@ class HomeController extends BaseController {
                 this.currentWorkSelection = ` for Courier ${this.currentCourier.courier}`;
                 await this.getCurrentJobs(foundCourier.courierId);
 
-                // Update map to show only this courier's jobs
+                // Update the map to show only this courier's jobs
                 this.mapJobList = [...(this.jobsCurrentList || [])];
 
                 try {
@@ -1299,7 +1296,7 @@ class HomeController extends BaseController {
                 }
             } else {
                 console.warn("Courier not found in active or all couriers list");
-                this.toastrService.showErrorToast("An unexpected occur occured. Please contact support.");
+                this.toastrService.showErrorToast("An unexpected error occurred. Please contact support.");
             }
         } catch (error: any) {
             console.error("Error selecting courier:", error);
@@ -1679,7 +1676,7 @@ class HomeController extends BaseController {
                 order: orderBy,
                 orderDirection: orderDirection,
             };
-            
+
             params.startDate = this.dateFilterData.startDate.toDate();
             params.endDate = this.dateFilterData.endDate.toDate();
 
@@ -2411,7 +2408,7 @@ class HomeController extends BaseController {
     async refreshDataTimeSpan(dateFilterData: IDateFilterData): Promise<void> {
         console.log('refreshDataTimeSpan called with data ', dateFilterData);
         this.dateFilterData = dateFilterData;
-        
+
         this.saveDateFilterToStorage();
         await this.getData();
     }
@@ -2443,6 +2440,27 @@ class HomeController extends BaseController {
                 this.dateFilterData = setDateFilterDefaults();
             }
         }
+    }
+
+    async selectAndActivateArea(selectedArea: IAreaClearList): Promise<void> {
+        if (!selectedArea || !this.driverLocations) return;
+
+        // First, set the active state
+        this.driverLocations.areas.forEach((area: IAreaClearList) => {
+            area.isActive = area === selectedArea;
+        });
+
+        // Then process jobs if needed
+        if (this.shouldProcessJobs()) {
+            try {
+                await this.processClearListJobs(selectedArea.id);
+            } catch (error) {
+                console.error("Clear list processing error:", error);
+                this.jobList = [];
+            }
+        }
+
+        this.applyScope();
     }
 }
 

@@ -133,3 +133,22 @@ export interface ViewJob {
     mileage: number;
     driverName: string;
 }
+
+export interface IOverViewDateSearchRange {
+    start?: Dayjs;
+    end?: Dayjs;
+}
+
+export interface IOverviewStatistics {
+    active: number;
+    inactive: number;
+    completed: number;
+}
+
+export interface IOverviewQuery {
+    order: string;
+    direction: string;
+    page: number;
+    limit: number;
+    total: number;
+}
