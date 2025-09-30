@@ -16,7 +16,8 @@ namespace DespatchWeb.Repositories;
 
 public class BaseJobRepository(
     IDbContextFactory<DespatchContext> contextFactory,
-    ITenantInfoService infoService, IClearListEnvelopeService clearListEnvelopeService)
+    ITenantInfoService infoService,
+    IClearListEnvelopeService clearListEnvelopeService)
     : BaseRepository(contextFactory)
 {
     protected const string Space = " ";
@@ -40,8 +41,10 @@ public class BaseJobRepository(
             ClearListEnvelopeViewModel clearListEnvelope = null;
             if (selectedClearListId.HasValue)
             {
+                Log.Debug("'ClearListId {ClearListID} provided. Getting ClearListEnvelope", selectedClearListId);
                 var country = isUsTenant ? Country.Us : Country.Nz;
-                clearListEnvelope = await clearListEnvelopeService.GetClearListAreaEnvelopeAsync(selectedClearListId.Value, country);
+                clearListEnvelope =
+                    await clearListEnvelopeService.GetClearListAreaEnvelopeAsync(selectedClearListId.Value, country);
             }
 
             query = ApplyGeographicFilters(query, clearListEnvelope);
@@ -134,14 +137,22 @@ public class BaseJobRepository(
         ClearListEnvelopeViewModel clearListEnvelope
     )
     {
-        if (clearListEnvelope == null)
-            return query;
+        if (clearListEnvelope == null) return query;
+        Log.Debug("Applying geographic filters");
+        Log.Debug("Clear list envelope: {ClearListEnvelope}", clearListEnvelope);
 
         return query.Where(j =>
-            j.DeliveryLatitude >= clearListEnvelope.MinimumLatitude
-            && j.DeliveryLatitude <= clearListEnvelope.MaximumLatitude
-            && j.DeliveryLongitude >= clearListEnvelope.MinimumLongitude
-            && j.DeliveryLongitude <= clearListEnvelope.MaximumLongitude
+            // Either pickup is within the envelope
+            (j.PickUpLatitude >= clearListEnvelope.MinimumLatitude
+             && j.PickUpLatitude <= clearListEnvelope.MaximumLatitude
+             && j.PickUpLongitude >= clearListEnvelope.MinimumLongitude
+             && j.PickUpLongitude <= clearListEnvelope.MaximumLongitude)
+            ||
+            // Or delivery is within the envelope
+            (j.DeliveryLatitude >= clearListEnvelope.MinimumLatitude
+             && j.DeliveryLatitude <= clearListEnvelope.MaximumLatitude
+             && j.DeliveryLongitude >= clearListEnvelope.MinimumLongitude
+             && j.DeliveryLongitude <= clearListEnvelope.MaximumLongitude)
         );
     }
 
@@ -309,14 +320,15 @@ public class BaseJobRepository(
         ArgumentException.ThrowIfNullOrWhiteSpace(viewModel.NoteText, nameof(viewModel.NoteText));
 
         // If a note type is not found, default to the internal note
-        var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == viewModel.NoteTypeId, cancellationToken: cancellationToken);
+        var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == viewModel.NoteTypeId,
+            cancellationToken: cancellationToken);
         if (!noteTypeExists) viewModel.NoteTypeId = (int)NoteType.InternalNote;
 
         var newNote = new TblBulkJobNote
         {
             BulkJobId = viewModel.BulkJobId.Value,
             IsImportant = viewModel.IsImportant,
-            NoteText = viewModel.NoteText   ,
+            NoteText = viewModel.NoteText,
             NoteTypeId = viewModel.NoteTypeId,
         };
 
@@ -597,14 +609,14 @@ public class BaseJobRepository(
             .FirstOrDefaultAsync();
 
         return effectiveJobId;
-    }   
-    
+    }
+
     protected async Task<int> GetBulkJobRelationshipInfoAsync(int bulkJobId)
     {
         if (bulkJobId == 0) return 0;
         var effectiveJobId = await Context.TblBulkJobs
             .Where(j => j.BulkJobId == bulkJobId)
-            .Select(j =>j.BulkParentId ?? j.BulkJobId)
+            .Select(j => j.BulkParentId ?? j.BulkJobId)
             .FirstOrDefaultAsync();
 
         return effectiveJobId;
