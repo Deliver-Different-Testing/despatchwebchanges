@@ -8,12 +8,10 @@ enum ToastType {
 class ToastrService implements angular.IServiceProvider {
     static $inject = [
         "$mdToast",
-        "$document"
     ];
 
     constructor(
         private $mdToast: angular.material.IToastService,
-        private $document: angular.IDocumentService
     ) {
         console.log("Toastr service initialized");
     }
@@ -23,7 +21,7 @@ class ToastrService implements angular.IServiceProvider {
     }
 
     showInfoToast(infoMessage: string) {
-       console.info("Info:", infoMessage);
+        console.info("Info:", infoMessage);
         return this.showToast(infoMessage, ToastType.INFO);
     }
 
@@ -46,9 +44,8 @@ class ToastrService implements angular.IServiceProvider {
         const preset = this.$mdToast.simple()
             .textContent(message)
             .position("top right")
-            .toastClass(`md-${type}-toast md-toast-custom`)
             .hideDelay(3000)
-            .parent(this.$document.parent())
+            .parent(angular.element(document.body))
             .theme(`${type}-toast`);
 
         return this.$mdToast.show(preset);
