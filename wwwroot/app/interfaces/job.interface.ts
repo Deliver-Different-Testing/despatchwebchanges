@@ -5,6 +5,7 @@ import {Frequency} from "../enums/frequency.enum";
 import {HolidayDeliveryOptions} from "../enums/holiday-delivery-options.enum";
 import {IFlightSegment} from "../components/Nationwide/nationwide.interfaces";
 import {AirportViewModel} from "../components/dialogs/flight-details-dialog/flight-details-dialog.interfaces";
+import dayjs from "dayjs";
 
 export interface IJob {
     id: number;
@@ -315,8 +316,8 @@ export interface IAgentInfoDialog extends IAgent {
 export interface IJobQueryParams {
     order?: string;
     orderDirection?: string;
-    startDate?: Date;
-    endDate?: Date;
+    startDate?: dayjs.Dayjs;
+    endDate?:  dayjs.Dayjs;
 }
 
 export interface PriceBreakdown {

@@ -47,7 +47,7 @@ export class EditParcelDimensionsDialogController extends BaseController {
                 this.isParentJob = isParentJob;
             });
         } else if(this.bulkJobId) {
-            this.DispatchData.isJobParent(this.bulkJobId).then(isParentJob => {
+            this.DispatchData.isBulkJobParent(this.bulkJobId).then(isParentJob => {
                 this.isParentJob = isParentJob;
             });
         } else {

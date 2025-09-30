@@ -12,8 +12,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Repositories;
 
-public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFactory, ITenantInfoService infoService)
-    : BaseJobRepository(contextFactory, infoService), IRecurringJobRepository
+public class RecurringJobRepository(
+    IDbContextFactory<DespatchContext> contextFactory,
+    ITenantInfoService infoService,
+    IClearListEnvelopeService clearListEnvelopeService)
+    : BaseJobRepository(contextFactory, infoService, clearListEnvelopeService), IRecurringJobRepository
 {
     private readonly ITenantInfoService _infoService = infoService;
 

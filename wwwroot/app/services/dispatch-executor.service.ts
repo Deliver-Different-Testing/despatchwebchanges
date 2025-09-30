@@ -102,7 +102,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
             clientCount: selectedClients?.length,
             isInternal,
             selectedAreas,
-            dateCutoff: queryParams.dateCutoff,
+            dateCutoff: queryParams.endDate,
             startDate: queryParams.startDate,
             endDate: queryParams.endDate
         });
@@ -113,7 +113,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
             const params = {
                 ...queryParams,
                 // Make sure we're not accidentally setting undefined parameters
-                dateCutoff: queryParams.dateCutoff || undefined,
+                dateCutoff: queryParams.endDate || undefined,
                 startDate: queryParams.startDate || undefined,
                 endDate: queryParams.endDate || undefined
             };

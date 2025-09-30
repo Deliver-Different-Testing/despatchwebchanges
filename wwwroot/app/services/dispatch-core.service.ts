@@ -3,8 +3,7 @@ import {
     IAddressViewModel,
     IClearListViewModel,
     ClientItemsViewModel,
-    IEditAddressDialogViewModel, IBulkReadUpdateRequest, IClearListEnvelope,
-    IDispatchJob,
+    IEditAddressDialogViewModel, IBulkReadUpdateRequest, IDispatchJob,
     IJob,
     ILateCallRequest,
     InternalStatus,
@@ -34,7 +33,6 @@ import {Is3PhotoInfo} from "../interfaces/aws.interfaces";
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = [
         "$http",
-        "$log",
         "$window",
         "$timeout",
         "APP_CONFIG"
@@ -45,7 +43,6 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     constructor(
         private $http: angular.IHttpService,
-        private $log: angular.ILogService,
         private $window: angular.IWindowService,
         private $timeout: angular.ITimeoutService,
         private appConfig: IAppConfig
@@ -105,13 +102,13 @@ class DispatchCoreService implements angular.IServiceProvider {
             }
         );
         return response.data;
-    }   
-    
+    }
+
     async isBulkJobParent(bulkJobId: number): Promise<boolean> {
         const response = await this.$http.get<boolean>(
             "job/IsBulkJobParent", {
                 params: {
-                    jobId: bulkJobId,
+                    bulkJobId,
                 }
             }
         );
@@ -222,8 +219,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
 
         await this.$http.post(`job/Void`, data);
-    }   
-    
+    }
+
     async voidBulkJob(bulkJobId: number, voidSingleJobOnly: boolean, voidReason?: string): Promise<void> {
         const data: VoidBulkJobRequest = {
             bulkJobId,
@@ -434,7 +431,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         );
         return response.data;
     }
-    
+
     async getSpeedList(): Promise<ISuggestion[]> {
         const response = await this.$http.get<ISuggestion[]>("job/SpeedList");
         return response.data;
@@ -476,7 +473,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 headers: {"Content-Type": "application/json"},
             });
         } catch (error) {
-            this.$log.error("Error in lateCall:", error);
+            console.error("Error in lateCall:", error);
             throw error;
         }
     }
@@ -575,7 +572,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     ): Promise<void> {
         try {
             const endpoint = this.getAddressEndpoint(prebook, addressType);
-            this.$log.debug(`Using endpoint: ${endpoint}`);
+            console.debug(`Using endpoint: ${endpoint}`);
 
             const requestBody = {
                 jobId,
@@ -583,10 +580,10 @@ class DispatchCoreService implements angular.IServiceProvider {
                 address: addressData
             };
 
-            this.$log.debug(`Address Update Request:`, requestBody);
+            console.debug(`Address Update Request:`, requestBody);
             await this.$http.post(endpoint, requestBody);
         } catch (error) {
-            this.$log.error(`Failed to update ${addressType} address:`, error);
+            console.error(`Failed to update ${addressType} address:`, error);
             throw error; // Re-throw to allow the caller to handle if needed
         }
     }
@@ -642,7 +639,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         value: string | Date | number | boolean,
         isRecurring: boolean
     ): Promise<any> {
-        this.$log.debug("Starting updateJobDetail:", {
+        console.debug("Starting updateJobDetail:", {
             jobId,
             field,
             initialValue: value,
@@ -666,12 +663,12 @@ class DispatchCoreService implements angular.IServiceProvider {
                     isRecurring,
                 }
             });
-            this.$log.debug("API response received:", {
+            console.debug("API response received:", {
                 data: response.data,
             });
             return response.data;
         } catch (error) {
-            this.$log.error("API request failed:", {
+            console.error("API request failed:", {
                 error: error instanceof Error ? error.message : "Unknown error",
                 parameters: {jobId, field: field, value: value},
             });
@@ -782,32 +779,19 @@ class DispatchCoreService implements angular.IServiceProvider {
         selectedClients: string[],
         internal: boolean,
         selectedAreas: DfrntPageViewModel[],
-        selectedClearList: IClearListEnvelope
+        selectedClearListId: number
     ): Promise<IDispatchJob[]> {
-        const despatchViewIds = selectedAreas.map(view => view.id);
-
-        const defaultParams = {
-            order: "time",
-            orderDirection: "asc",
-        };
-
-        // Create params object
         const params: Record<string, any> = {
-            order: queryParams.order ?? defaultParams.order,
-            orderDirection: queryParams.orderDirection ?? defaultParams.orderDirection,
+            order: queryParams.order ?? "time",
+            orderDirection: queryParams.orderDirection ?? "asc",
             isInternal: internal,
-            cid: ContactID,
             clientIds: selectedClients.join(","),
-            despatchViewIds,
-            'clearListEnvelope.minimumLatitude': selectedClearList.minimumLatitude,
-            'clearListEnvelope.maximumLatitude': selectedClearList.maximumLatitude,
-            'clearListEnvelope.minimumLongitude': selectedClearList.minimumLongitude,
-            'clearListEnvelope.maximumLongitude': selectedClearList.maximumLongitude
+            despatchViewIds: selectedAreas.map(view => view.id),
+            selectedClearListId
         };
 
         const response = await this.$http.get<IDispatchJob[]>(
-            'job/GetJobsByClearListEnvelope',
-            {params: params}
+            'job/GetJobsByClearListEnvelope', {params}
         );
 
         return response.data;
@@ -819,7 +803,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     ): Promise<ISuggestion[]> {
         const response = await this.$http.get<ISuggestion[]>(url, {
             params: {
-                searchTerm: searchTerm,
+                searchTerm,
             },
         });
 
@@ -830,7 +814,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         const response = await this.$http.get<boolean>(
             `job/IsFilesAttachedToJob`, {
                 params: {
-                    jobId: jobId,
+                    jobId,
                 },
             }
         );
@@ -850,26 +834,26 @@ class DispatchCoreService implements angular.IServiceProvider {
                 jobId,
                 parcels
             };
-            
+
             const response = await this.$http.post("job/UpdateJobPackages", data);
             return response.data;
         } catch (error) {
-            this.$log.error("Error updating packages:", error);
+            console.error("Error updating packages:", error);
             throw error;
         }
-    } 
-    
+    }
+
     async updateBulkJobPackages(bulkJobId: number, parcels: IParcelDimensions[]): Promise<any> {
         try {
             const data: UpdateBulkJobPackagesRequest = {
                 bulkJobId,
                 parcels
             };
-            
+
             const response = await this.$http.post("job/UpdateBulkJobPackages", data);
             return response.data;
         } catch (error) {
-            this.$log.error("Error updating packages:", error);
+            console.error("Error updating packages:", error);
             throw error;
         }
     }
@@ -899,7 +883,7 @@ class DispatchCoreService implements angular.IServiceProvider {
 
             return response.data;
         } catch (error) {
-            this.$log.error("Error adding price component:", error);
+            console.error("Error adding price component:", error);
             throw error;
         }
     }
@@ -917,7 +901,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 }
             );
         } catch (error) {
-            this.$log.error("Error updating price breakdown:", error);
+            console.error("Error updating price breakdown:", error);
             throw error;
         }
     }
@@ -937,10 +921,11 @@ class DispatchCoreService implements angular.IServiceProvider {
                 }
             );
         } catch (error) {
-            this.$log.error("Error deleting price breakdown:", error);
+            console.error("Error deleting price breakdown:", error);
             throw error;
         }
     }
+
     async getJobPickupPhotos(jobId: number, year: number, month: number): Promise<Is3PhotoInfo[]> {
         const response = await this.$http.get<Is3PhotoInfo[]>(
             '/Job/GetJobPickupPhotos',
@@ -955,7 +940,7 @@ class DispatchCoreService implements angular.IServiceProvider {
 
         return response.data;
     }
-    
+
     async getJobDeliveryPhotosAndSignature(jobId: number, year: number, month: number): Promise<Is3PhotoInfo[]> {
         const response = await this.$http.get<Is3PhotoInfo[]>(
             '/Job/GetJobDeliveryPhotosAndSignature',
@@ -967,7 +952,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 }
             }
         );
-        
+
         return response.data;
     }
 
@@ -989,7 +974,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 if (filters.endDate) params.endDate = filters.endDate;
 
                 if (Object.keys(params).length > 0) {
-                    this.$log.debug(`Query params:`, params);
+                    console.debug(`Query params:`, params);
                 }
             }
 
@@ -999,7 +984,7 @@ class DispatchCoreService implements angular.IServiceProvider {
 
             return response.data;
         } catch (error) {
-            this.$log.error("Error fetching tasks:", error);
+            console.error("Error fetching tasks:", error);
             return [];
         }
     }
@@ -1021,13 +1006,13 @@ class DispatchCoreService implements angular.IServiceProvider {
                 null,
                 {
                     params: {
-                        jobId: jobId,
-                        hasBeenRead: hasBeenRead
+                        jobId,
+                        hasBeenRead
                     }
                 }
             );
         } catch (error) {
-            this.$log.error("Error updating job read status:", error);
+            console.error("Error updating job read status:", error);
             throw error;
         }
     }
@@ -1046,7 +1031,7 @@ class DispatchCoreService implements angular.IServiceProvider {
 
             return response.data;
         } catch (error) {
-            this.$log.error("Error updating packages:", error);
+            console.error("Error updating packages:", error);
             throw error;
         }
     }
@@ -1065,7 +1050,7 @@ class DispatchCoreService implements angular.IServiceProvider {
 
             return response.data;
         } catch (error) {
-            this.$log.error("Error updating packages:", error);
+            console.error("Error updating packages:", error);
             throw error;
         }
     }
@@ -1086,7 +1071,8 @@ class DispatchCoreService implements angular.IServiceProvider {
             null, {
                 params: {
                     eventName,
-                    notes, clientId,
+                    notes,
+                    clientId,
                     jobNumber,
                     despatcherName,
                 }
@@ -1114,22 +1100,22 @@ class DispatchCoreService implements angular.IServiceProvider {
         });
         return response.data;
     }
-    
+
     async canAssignAgentToJob(agentJobId: number): Promise<boolean> {
         const response = await this.$http.get<boolean>(`/nationwideJob/CanAssignAgentToJob`, {
             params: {
                 agentJobId
             }
         });
-        
+
         return response.data;
     }
-    
+
     async quickCreateJob(job: JobCreateViewModel): Promise<number> {
-       const response = await this.$http.post<number>('/job/QuickCreateJob', job);
-       return response.data;
+        const response = await this.$http.post<number>('/job/QuickCreateJob', job);
+        return response.data;
     }
-    
+
     async createInterCourierCharge(data: IInterCourierData) {
         await this.$http.post("job/InterCourierCharge", data);
     }
@@ -1149,8 +1135,8 @@ class DispatchCoreService implements angular.IServiceProvider {
             });
 
             // Log response for debugging
-            this.$log.debug("Response received:", response);
-            this.$log.debug("All headers:", response.headers());
+            console.debug("Response received:", response);
+            console.debug("All headers:", response.headers());
 
             // Get content type - use application/octet-stream as generic fallback
             const contentType = response.headers("content-type") || "application/octet-stream";
@@ -1188,7 +1174,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 this.$window.URL.revokeObjectURL(url);
             }, 100);
         } catch (error) {
-            this.$log.error("Download failed:", error);
+            console.error("Download failed:", error);
             throw error;
         }
     }

@@ -16,7 +16,7 @@ namespace DespatchWeb.Repositories;
 
 public class BaseJobRepository(
     IDbContextFactory<DespatchContext> contextFactory,
-    ITenantInfoService infoService)
+    ITenantInfoService infoService, IClearListEnvelopeService clearListEnvelopeService)
     : BaseRepository(contextFactory)
 {
     protected const string Space = " ";
@@ -29,13 +29,20 @@ public class BaseJobRepository(
         string clientIds,
         List<int> selectedViewIds,
         NationwideWidget? windowPane = null,
-        ClearListEnvelopeViewModel clearListEnvelope = null
+        int? selectedClearListId = null
     )
     {
         try
         {
             var query = await BuildBaseQuery(selectedViewIds, isUsTenant);
             if (query == null) return [];
+
+            ClearListEnvelopeViewModel clearListEnvelope = null;
+            if (selectedClearListId.HasValue)
+            {
+                var country = isUsTenant ? Country.Us : Country.Nz;
+                clearListEnvelope = await clearListEnvelopeService.GetClearListAreaEnvelopeAsync(selectedClearListId.Value, country);
+            }
 
             query = ApplyGeographicFilters(query, clearListEnvelope);
 

@@ -40,7 +40,7 @@ public interface IJobRepository
         bool isUsTenant,
         string clientIds,
         List<int> selectedViewIds,
-        ClearListEnvelopeViewModel clearListEnvelope = null);
+        int? selectedClearListId = null);
 
     Task DispatchSelectedJobsAsync(int courierId, int dispId, List<int> jobIds);
     Task SwapPodAsync(string job1, string job2);

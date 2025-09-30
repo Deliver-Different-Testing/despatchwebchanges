@@ -146,6 +146,7 @@ builder.Services.AddScoped<IAddAgentRecoveryJobService, AddAgentRecoveryJobServi
 builder.Services.AddScoped<IAddressLookupService, AddressLookupService>();
 builder.Services.AddScoped<IPodExportService, PodExportService>();
 builder.Services.AddScoped<IJobPhotoService, JobPhotoService>();
+builder.Services.AddScoped<IClearListEnvelopeService, ClearListEnvelopeService>();
 
 // Register DespatchContext with a fake connection string
 builder.Services.AddDbContextFactory<DespatchContext>(options =>
@@ -154,7 +155,7 @@ builder.Services.AddDbContextFactory<DespatchContext>(options =>
 builder.Services.AddScoped<IDbContextFactory<DespatchContext>, DynamicDespatchDbContextFactory>();
 
 
-var domain = Environment.GetEnvironmentVariable("Domain") ?? "";
+var domain = Environment.GetEnvironmentVariable("Domain") ?? string.Empty;
 if (string.IsNullOrEmpty(domain))
 {
     throw new InvalidOperationException(
@@ -228,7 +229,7 @@ app.MapHealthChecks("/healthz", new HealthCheckOptions
 var provider = new FileExtensionContentTypeProvider {
     Mappings = {
         [".tpl"] = "text/plain",
-        [".map"] = "application/json"  // Add this line
+        [".map"] = "application/json" 
     }
 };
 
@@ -263,13 +264,9 @@ return;
 static AWSCredentials LoadSsoCredentials(string profile)
 {
     var chain = new CredentialProfileStoreChain();
-    if (!chain.TryGetAWSCredentials(profile, out var credentials))
-    {
-        // If the SSO credentials are not found, use FallbackCredentialsFactory to get credentials
-        credentials = FallbackCredentialsFactory.GetCredentials();
-        if (credentials == null)
-            throw new Exception($"Failed to find the {profile} profile or any fallback credentials");
-    }
-    return credentials;
+    if (chain.TryGetAWSCredentials(profile, out var credentials)) return credentials;
+    // If the SSO credentials are not found, use FallbackCredentialsFactory to get credentials
+    credentials = FallbackCredentialsFactory.GetCredentials();
+    return credentials ?? throw new Exception($"Failed to find the {profile} profile or any fallback credentials");
 }
 
