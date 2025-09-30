@@ -59,7 +59,8 @@ class DispatchMapController extends BaseController {
     googleMapsUrl: string | null = null;
     map: google.maps.Map | null = null;
     tooltip: google.maps.InfoWindow | null = null;
-
+    clearListId?: number;
+    
     constructor(
         private NgMap: angular.map.INgMap,
         private configService: ConfigService,
@@ -172,49 +173,49 @@ class DispatchMapController extends BaseController {
     $onChanges(changes: angular.IOnChangesObject) {
         console.log('[DispatchMapController] $onChanges called with changes:', changes);
 
-        // If map isn't ready, store changes to apply later
+        // If a map isn't ready, store changes to apply later
         if (!this.mapInstance) {
             console.log('[DispatchMapController] Map instance not ready yet, storing changes for later');
 
-            if ('jobs' in changes && changes.jobs.currentValue) {
+            if (changes['jobs'] && changes['jobs'].currentValue) {
                 console.log(`[DispatchMapController] Storing jobs array with ${changes.jobs.currentValue.length} jobs`);
-                this.pendingChanges.jobs = changes.jobs.currentValue;
+                this.pendingChanges.jobs = changes['jobs'].currentValue;
             }
 
-            if ('currentJob' in changes && changes.currentJob.currentValue) {
+            if (changes['currentJob'] && changes['currentJob'].currentValue) {
                 console.log('[DispatchMapController] Storing current job for later');
-                this.pendingChanges.currentJob = changes.currentJob.currentValue;
+                this.pendingChanges.currentJob = changes['currentJob'].currentValue;
             }
 
-            if ('mapCenter' in changes && changes.mapCenter.currentValue) {
-                this.pendingChanges.mapCenter = changes.mapCenter.currentValue;
+            if (changes['mapCenter'] && changes['mapCenter'].currentValue) {
+                this.pendingChanges.mapCenter = changes['mapCenter'].currentValue;
             }
 
-            if ('mapZoom' in changes && changes.mapZoom.currentValue) {
-                this.pendingChanges.mapZoom = changes.mapZoom.currentValue;
+            if (changes['mapZoom'] && changes['mapZoom'].currentValue) {
+                this.pendingChanges.mapZoom = changes['mapZoom'].currentValue;
             }
 
-            if ('showAvailableCouriers' in changes) {
-                this.pendingChanges.showAvailableCouriers = changes.showAvailableCouriers.currentValue;
+            if (changes['showAvailableCouriers'] && changes['showAvailableCouriers'].currentValue) {
+                this.pendingChanges.showAvailableCouriers = changes['showAvailableCouriers'].currentValue;
             }
 
             return;
         }
 
-        // Apply changes normally when map is ready
-        if (changes.mapCenter && changes.mapCenter.currentValue) {
+        // Apply changes normally when a map is ready
+        if (changes['mapCenter'] && changes['mapCenter'].currentValue) {
             this.mapInstance.setCenter(changes.mapCenter.currentValue);
         }
 
         // Handle jobs and currentJob changes
-        if ('jobs' in changes || 'currentJob' in changes) {
+        if (changes['jobs'] || changes['currentJob']) {
             console.log('[DispatchMapController] Jobs or currentJob changed, updating markers...');
 
-            if ('jobs' in changes) {
+            if (changes['jobs']) {
                 console.log(`[DispatchMapController] Jobs array changed: ${changes.jobs.currentValue?.length || 0} jobs available`);
             }
 
-            if ('currentJob' in changes) {
+            if (changes['currentJob']) {
                 console.log(`[DispatchMapController] Current job changed: ${changes.currentJob.currentValue?.jobNo || 'none'}`);
             }
 
@@ -222,18 +223,18 @@ class DispatchMapController extends BaseController {
             return this.updateDisplayedJobs();
         }
 
-        if (changes.showAvailableCouriers) {
-            if (changes.showAvailableCouriers.currentValue) {
-                return this.fetchCourierPositions();
+        if (changes['showAvailableCouriers']) {
+            if (changes['showAvailableCouriers'].currentValue) {
+                this.fetchCourierPositions().then(r => console.log('[DispatchMapController] Courier positions fetched:', r));
             } else {
                 this.clearCourierMarkers();
             }
         }
 
-        if (changes.autoZoomEnabled &&
-            changes.autoZoomEnabled.isFirstChange() &&
-            changes.autoZoomEnabled.currentValue !== undefined) {
-            this.autoZoomEnabled = changes.autoZoomEnabled.currentValue;
+        if (changes['autoZoomEnabled'] &&
+            changes['autoZoomEnabled'].isFirstChange() &&
+            changes['autoZoomEnabled'].currentValue !== undefined) {
+            this.autoZoomEnabled = changes['autoZoomEnabled'].currentValue;
             this.saveAutoZoomPreference();
 
             if (this.autoZoomEnabled && this.markers.length > 0) {
@@ -241,8 +242,16 @@ class DispatchMapController extends BaseController {
             }
         }
 
-        if (changes.mapZoom && changes.mapZoom.isFirstChange() && changes.mapZoom.currentValue) {
-            this.initialMapZoom = changes.mapZoom.currentValue;
+        if (changes['mapZoom'] && changes['mapZoom'].isFirstChange()
+            && changes['mapZoom'].currentValue) {
+            this.initialMapZoom = changes['mapZoom'].currentValue;
+        }
+        
+        if(changes['clearListId'] && changes['clearListId'].currentValue) {
+            this.clearListId = changes['clearListId'].currentValue;
+            
+            if(!this.clearListId) return;
+            this.updateMapWithClearListEnvelope(this.clearListId).then(_ => console.log('[DispatchMapController] Clear list envelope updated:'));
         }
     }
 
@@ -369,7 +378,7 @@ class DispatchMapController extends BaseController {
 
         console.log('[DispatchMapController] Using default area for courier search');
         const center = this.mapCenter || this.AppConfig.US_Coordinates_Center;
-        const offset = 0.5; // Approximate 50km radius bounds
+        const offset = 0.5; // Approximate 50 km radius bounds
 
         return {
             west: Number(center.lng) - offset,
@@ -967,9 +976,33 @@ class DispatchMapController extends BaseController {
         this.mapInstance!.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(mapControlsDiv);
     }
 
+    async updateMapWithClearListEnvelope(clearListId: number): Promise<any> {
+        if (!clearListId) {
+            console.log('[DispatchMapController] No clear list ID provided');
+            return null;
+        }
+
+        try {
+            console.log(`[DispatchMapController] Fetching envelope for clear list: ${clearListId}`);
+
+            const envelopeData = await this.DispatchData.getDriverDestinationEnvelope(clearListId);
+
+            if (envelopeData) {
+                this.fitMapToEnvelope(envelopeData, 13);
+                return envelopeData;
+            } else {
+                console.log('[DispatchMapController] No envelope data received');
+                return null;
+            }
+        } catch (error) {
+            console.error('[DispatchMapController] Error fetching clear list envelope:', error);
+            throw error;
+        }
+    }
+    
     fitMapToEnvelope(envelopeData: ClearListEnvelopeViewModel, zoomLevel?: number): void {
         if (!this.mapInstance || !envelopeData) {
-            console.log('[DispatchMapController] Cannot fit to envelope - map instance or data not available');
+            console.log('[DispatchMapController] No map instance or envelope data provided');
             return;
         }
 
@@ -997,31 +1030,6 @@ class DispatchMapController extends BaseController {
             console.error('[DispatchMapController] Error fitting map to envelope:', error);
         }
     }
-
-    async updateMapWithClearListEnvelope(clearListId: number): Promise<any> {
-        if (!clearListId) {
-            console.log('[DispatchMapController] No clear list ID provided');
-            return null;
-        }
-
-        try {
-            console.log(`[DispatchMapController] Fetching envelope for clear list: ${clearListId}`);
-
-            const envelopeData = await this.DispatchData.getDriverDestinationEnvelope(clearListId);
-
-            if (envelopeData) {
-                this.fitMapToEnvelope(envelopeData, 13);
-                return envelopeData;
-            } else {
-                console.log('[DispatchMapController] No envelope data received');
-                return null;
-            }
-        } catch (error) {
-            console.error('[DispatchMapController] Error fetching clear list envelope:', error);
-            throw error;
-        }
-    }
-
 }
 
 const DispatchMapComponent: angular.IComponentOptions = {

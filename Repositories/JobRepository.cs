@@ -18,8 +18,8 @@ using CourierLocation = DespatchWeb.Models.Response.CourierLocation;
 
 namespace DespatchWeb.Repositories;
 
-public partial class JobRepository(IDbContextFactory<DespatchContext> contextFactory, ITenantInfoService infoService)
-    : BaseJobRepository(contextFactory, infoService), IJobRepository
+public partial class JobRepository(IDbContextFactory<DespatchContext> contextFactory, ITenantInfoService infoService, IClearListEnvelopeService clearListEnvelopeService)
+    : BaseJobRepository(contextFactory, infoService, clearListEnvelopeService), IJobRepository
 {
     private readonly ITenantInfoService _infoService = infoService;
 
@@ -976,11 +976,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         bool isUsTenant,
         string clientIds,
         List<int> selectedViewIds,
-        ClearListEnvelopeViewModel clearListEnvelope = null)
+        int? selectedClearListId = null)
     {
-        if (!isInternal && string.IsNullOrEmpty(clientIds))
-            return [];
-
         return await DespatchQry(
             AppPage.Dispatch,
             queryParams,
@@ -989,7 +986,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             clientIds,
             selectedViewIds,
             null,
-            clearListEnvelope
+            selectedClearListId
         );
     }
 
@@ -2449,9 +2446,6 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             return DateTime.MinValue;
         }
     }
-
-    private static bool IsCbdLocation(decimal latitude, decimal longitude) =>
-        latitude is >= -37.81897m and <= -37.80647m && longitude is >= 144.95573m and <= 144.97737m;
 
     private async Task<JobInfo> GetJobInfo(int jobId)
     {

@@ -117,30 +117,30 @@ public class JobController(
     public async Task<IActionResult> GetJobsByClearListEnvelope(
         JobQueryParams queryParams,
         bool isInternal,
-        int cid,
         string clientIds,
         [FromQuery] List<int> despatchViewIds,
-        [FromQuery] ClearListEnvelopeViewModel clearListEnvelope
+        int selectedClearListId
     )
     {
+        var staffId = infoService.GetStaffId();
         try
         {
             var isUsTenant = infoService.IsUsTenant();
 
             if (!isInternal)
-                await clientAccessValidator.ValidateClientAccessAsync(cid, clientIds);
+                await clientAccessValidator.ValidateClientAccessAsync(staffId, clientIds);
 
             // Get jobs
-            var result = await jobRepository.JobListAsync(
+            var jobs = await jobRepository.JobListAsync(
                 queryParams,
                 isInternal,
                 isUsTenant,
                 clientIds,
                 despatchViewIds,
-                clearListEnvelope
+                selectedClearListId
             );
 
-            return Json(result);
+            return Json(jobs);
         }
         catch (Exception e)
         {

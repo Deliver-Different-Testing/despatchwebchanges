@@ -882,6 +882,8 @@ class HomeController extends BaseController {
 
     async selectClearList(selectedClearList: IAreaClearList): Promise<void> {
         try {
+            console.log("Selecting clear list:", selectedClearList);
+            
             if (!selectedClearList) {
                 this.toastrService.showErrorToast("An error occurred while selecting a clear list. Please try again.");
                 return;
@@ -894,52 +896,23 @@ class HomeController extends BaseController {
         }
     }
     
-    private async processClearListJobs(clearListId: number): Promise<void> {
+    private async processClearListJobs(selectedClearListId: number): Promise<void> {
         try {
-            const envelope = await this.getClearListEnvelope(clearListId);
-            if (!envelope) {
-                console.error(`Failed to retrieve envelope for clear list ID: ${clearListId}`);
-                return;
-            }
-
             const selectedClients = this.pickService.clients.map((client: { id: number }) => client.id);
             const jobs = await this.DispatchData.getClearListJobs(
                 this.queryParams,
                 selectedClients,
                 ClientInternal ?? false,
                 this.selectedViews,
-                envelope
+                selectedClearListId
             );
 
+            console.log("ClearList Jobs:", jobs);
             this.jobList = HomeController.initializeJobSearchFields(jobs);
         } catch (error) {
             console.error("Error fetching jobs for clear list:", error);
             this.jobList = [];
         }
-    }
-
-    async getClearListEnvelope(clearListId: number): Promise<any> {
-        try {
-            this.clearListId = clearListId;
-            return await this.waitForEnvelopeUpdate();
-        } catch (error: any) {
-            console.error("Error getting clear list envelope:", error);
-            throw error;
-        }
-    }
-
-    onEnvelopeUpdate(data: any): void {
-        this.envelopeData = data;
-        if (this.envelopePromiseResolve) {
-            this.envelopePromiseResolve(data);
-            this.envelopePromiseResolve = null;
-        }
-    }
-
-    private waitForEnvelopeUpdate(): Promise<any> {
-        return new Promise((resolve) => {
-            this.envelopePromiseResolve = resolve;
-        });
     }
 
     async handleDispatchSelection(selectedCourier: ISuggestion, model: ISuggestion, label: string, $event: MouseEvent, job: IDispatchJob): Promise<void> {
@@ -1654,10 +1627,9 @@ class HomeController extends BaseController {
             const params: IJobQueryParams = {
                 order: orderBy,
                 orderDirection: orderDirection,
+                startDate: this.queryParams.startDate,
+                endDate: this.queryParams.endDate,
             };
-
-            params.startDate = this.dateFilterData.startDate.toDate();
-            params.endDate = this.dateFilterData.endDate.toDate();
 
             const result = await this.dispatchJobService.getJobListWithCourierData(
                 params,

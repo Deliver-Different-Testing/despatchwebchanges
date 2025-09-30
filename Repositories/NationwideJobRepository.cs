@@ -21,8 +21,9 @@ namespace DespatchWeb.Repositories;
 
 public class NationwideJobRepository(
     IDbContextFactory<DespatchContext> contextFactory,
-    ITenantInfoService infoService)
-    : BaseJobRepository(contextFactory, infoService), INationwideJobRepository
+    ITenantInfoService infoService,
+    IClearListEnvelopeService clearListEnvelopeService)
+    : BaseJobRepository(contextFactory, infoService, clearListEnvelopeService), INationwideJobRepository
 {
     private readonly ITenantInfoService _infoService = infoService;
 
@@ -983,7 +984,8 @@ public class NationwideJobRepository(
             .ToListAsync();
     }
 
-    public async Task<FlightRateCalculationDto> GetFlightRateCalculationDtoAsync(int jobId, string carrierCode, bool extraStopOffs, DateTime? bookTime)
+    public async Task<FlightRateCalculationDto> GetFlightRateCalculationDtoAsync(int jobId, string carrierCode,
+        bool extraStopOffs, DateTime? bookTime)
     {
         var data = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
@@ -1067,7 +1069,7 @@ public class NationwideJobRepository(
             DriverPay = result.DriverPay ?? 0
         };
     }
-    
+
     public async Task<string> GetAgentNameAsync(int agentId)
     {
         // Get Agent Name
@@ -1289,7 +1291,7 @@ public class NationwideJobRepository(
         int? timeZoneId = null;
         if (!string.IsNullOrEmpty(airportTimezone))
             timeZoneId = await GetTimeZoneIdByNameAsync(airportTimezone);
-        
+
         if (isDeliveryAddress)
         {
             job.DeliveryAddressLine1 = airport.AddressLine1;
