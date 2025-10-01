@@ -21,8 +21,6 @@ public interface ITaskRepository
 
     Task AddEventAsync(
         int jobId,
-        int staffId,
-        string despatcherName,
         string notes,
         int eventType,
         DateTime? dueDate = null,

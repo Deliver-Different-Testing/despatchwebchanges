@@ -18,7 +18,7 @@ import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import {ClearListEnvelopeViewModel, DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {JobStatus} from "../../enums/job-status.enum";
 import BaseController from "../base-controller";
-import {ExtendedTask, TaskTableFiltersRequest, TaskViewModel} from "../task-dashboard/task-dashboard.interfaces";
+import {ExtendedTask, TaskViewModel} from "../task-dashboard/task-dashboard.interfaces";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 import {EditAddressDialogService} from "../dialogs/edit-address-dialog/edit-address-dialog.service";
 import {AppPages} from "../../enums/app-pages.enum";
@@ -111,7 +111,6 @@ class HomeController extends BaseController {
     isUsCustomer: boolean;
     selectedCourier?: ISuggestion;
     jobDetailFabIsOpen: boolean = false;
-    courierListFabIsOpen: boolean = false;
     isCheckingAttachments: boolean = false;
     hasAttachedFile: boolean = false;
     views: DfrntPageViewModel[];
@@ -135,7 +134,6 @@ class HomeController extends BaseController {
     map: any;
     courierSearchText?: string;
     courierSearchOpen: boolean = false;
-    inputWidth: Record<string, number> = {};
     currentCourier: any;
     courier: any;
     jobsCurrentList?: IDispatchJob[];
@@ -1969,48 +1967,7 @@ class HomeController extends BaseController {
                 return 'All Supports';
         }
     }
-
-    private buildFilterRequest(filterType: string): TaskTableFiltersRequest {
-        let filters: TaskTableFiltersRequest = {};
-        filters.jobId = this.currentJobId;
-        filters.showCompleted = false;
-
-        if (this.staffFilter && this.staffFilter !== StatusFilter.All) {
-            filters.staffId = parseInt(this.staffFilter, 10);
-        }
-
-        if (this.eventTypeFilter && this.eventTypeFilter !== StatusFilter.All) {
-            filters.eventTypeId = parseInt(this.eventTypeFilter, 10);
-        }
-
-        switch (filterType) {
-            case 'mine':
-                filters.staffId = ContactID;
-                filters.orderBy = 'assignedTo';
-                filters.orderDirection = 'desc';
-                break;
-            case 'unassigned':
-                filters.staffId = -1;
-                filters.orderBy = 'assignedTo';
-                filters.orderDirection = 'desc';
-                break;
-            case 'newest':
-                filters.orderBy = 'created';
-                filters.orderDirection = 'desc';
-                break;
-            case 'oldest':
-                filters.orderBy = 'created';
-                filters.orderDirection = 'asc';
-                break;
-            default:
-                filters.orderBy = 'created';
-                filters.orderDirection = 'desc';
-                break;
-        }
-
-        return filters;
-    }
-
+    
     async loadSupports(filterType: string = this.supportsFilter): Promise<void> {
         try {
             this.supportsLoading = true;

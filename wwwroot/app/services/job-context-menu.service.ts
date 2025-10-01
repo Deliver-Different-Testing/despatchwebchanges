@@ -545,8 +545,6 @@ class JobContextMenuService implements angular.IServiceProvider {
                 lateType,
                 lateTime: minsAway,
                 calculationRequired: true,
-                staffId: ContactID,
-                despatcherName: FirstName
             };
 
             await this.DispatchData.lateCall(lateCallRequest);

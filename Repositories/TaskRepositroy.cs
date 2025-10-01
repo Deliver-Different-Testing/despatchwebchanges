@@ -7,6 +7,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,7 +26,7 @@ public class TaskRepository(
         if (filters != null) query = ApplyFilters(query, filters);
 
         query = ApplyOrdering(query, filters, today);
-        
+
         var tasks = await query
             .Select(TaskMapping)
             .AsNoTracking()
@@ -72,22 +73,22 @@ public class TaskRepository(
             .Where(e => e.UcevId == eventId)
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(e => e.UcevClosed, closed));
-    
+
         if (rowsAffected == 0) throw new ArgumentException($"Event with ID {eventId} not found.");
     }
 
     public async Task UpdateEventDateAsync(int eventId, string date)
     {
         var newDate = DateTime.Parse(date).Date;
-    
+
         var existingEvent = await Context.TucEvents
             .Where(e => e.UcevId == eventId)
             .Select(e => new { e.UcevDueTime })
             .FirstOrDefaultAsync();
         ArgumentNullException.ThrowIfNull(existingEvent);
-    
+
         var existingTime = existingEvent.UcevDueTime.TimeOfDay;
-    
+
         await Context.TucEvents
             .Where(e => e.UcevId == eventId)
             .ExecuteUpdateAsync(setters => setters
@@ -100,7 +101,7 @@ public class TaskRepository(
             .Where(e => e.UcevId == eventId)
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(e => e.UcevDueTime, DateTime.Parse(time)));
-    
+
         if (rowsAffected == 0)
             throw new ArgumentException($"Event with ID {eventId} not found.");
     }
@@ -111,11 +112,11 @@ public class TaskRepository(
             .Where(e => e.UcevId == eventId)
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(e => e.UcevStaffIdin, staffId));
-    
+
         if (rowsAffected == 0)
             throw new ArgumentException($"Event with ID {eventId} not found.");
     }
-    
+
     public async Task<List<Suggestion>> GetEventGroupsAsync()
     {
         var eventGroups = await Context
@@ -283,8 +284,6 @@ public class TaskRepository(
 
     public async Task AddEventAsync(
         int jobId,
-        int staffId,
-        string despatcherName,
         string notes,
         int eventType,
         DateTime? dueDate = null,
@@ -293,8 +292,25 @@ public class TaskRepository(
         bool close = false
     )
     {
-        var job = await Context.TucJobs.FindAsync(jobId);
-        ArgumentNullException.ThrowIfNull(job, "Job not found");
+        var staffInfoTask = infoService.GetStaffInfoAsync();
+        var jobTask = Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new JobEventDto
+            {
+                UcjbNumber = j.UcjbNumber,
+                UcjbClientId = j.UcjbClientId,
+                UcjbContact = j.UcjbContact,
+                UcjbCourierId = j.UcjbCourierId,
+                UcjbSpeed = j.UcjbSpeed
+            })
+            .FirstOrDefaultAsync();
+
+        await Task.WhenAll(staffInfoTask, jobTask);
+
+        var staffInfo = await staffInfoTask;
+        var job = await jobTask;
+
+        ArgumentNullException.ThrowIfNull(job);
 
         var currentDate = infoService.GetCurrentTenantTime();
 
@@ -307,17 +323,17 @@ public class TaskRepository(
             type: eventType,
             lateTime: lateTime,
             etaTime: etaTime,
-            staffIdIn: staffId,
+            staffIdIn: staffInfo.Id,
             staffIdOut: null,
             responseTime: null,
             notes: notes,
             pageCourier: false,
             closed: close,
-            originator: staffId,
+            originator: staffInfo.Id,
             description: notes,
             courierId: job.UcjbCourierId,
             jobId: jobId,
-            despatcher: despatcherName,
+            despatcher: staffInfo.Text,
             jobType: job.UcjbSpeed,
             dueTime: dueDate
         );

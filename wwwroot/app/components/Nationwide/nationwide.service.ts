@@ -35,21 +35,14 @@ class NationwideService implements angular.IServiceProvider {
     ): Promise<IDispatchJob[]> {
         const despatchViewIds = selectedAreas.map(area => area.id);
 
-        const defaultParams = {
-            status: 'all',
-            order: 'time',
-            orderDirection: 'asc'
-        };
-
         const url = `nationwidejob/${endpoint}`;
         const response = await this.$http.get<IDispatchJob[]>(url, {
             params: {
-                order: queryParams.order ?? defaultParams.order,
-                orderDirection: queryParams.orderDirection ?? defaultParams.orderDirection,
-                startDate: queryParams.startDate ? formatDateForApi(queryParams.startDate) : null,
-                dateCutoff: queryParams.endDate ? formatDateForApi(queryParams.endDate) : null,
+                order: queryParams.order ?? 'time',
+                orderDirection: queryParams.orderDirection ?? 'asc',
+                startDate: queryParams.startDate ? formatDateForApiWithTzs(queryParams.startDate) : null,
+                dateCutoff: queryParams.endDate ? formatDateForApiWithTzs(queryParams.endDate) : null,
                 isInternal: isInternal,
-                cid: ContactID,
                 clientIds: selectedClients,
                 despatchViewIds
             }
@@ -226,8 +219,8 @@ class NationwideService implements angular.IServiceProvider {
         await this.$http.post(`nationwideJob/RemoveAgentRecoveryJob`, data);
     }
 
-    async calculateCargoReadyTime(jobId: number, carrierFsCode: string, arrivalTime: dayjs.Dayjs): Promise<IFlightCargoProcessing> {
-        const formattedArrivalTime = formatDateForApi(arrivalTime);
+    async calculateCargoReadyTime(jobId: number, carrierFsCode: string, arrivalTime: dayjs.Dayjs, timezone?: string): Promise<IFlightCargoProcessing> {
+        const formattedArrivalTime = formatDateForApiWithTzs(arrivalTime, timezone);
         console.debug('formattedArrivalTime', formattedArrivalTime);
         const response = await this.$http.get<IFlightCargoProcessing>("nationwideJob/CalculateCargoReadyTime", {
             params: {
