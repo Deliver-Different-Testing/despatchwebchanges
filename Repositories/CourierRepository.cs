@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
@@ -361,10 +362,10 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             .ToListAsync();
     }
 
-    public async Task<ClearListViewModel> GetClearListsAsync(
-        List<int> despatchViewIds
-    )
+    public async Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds)
     {
+        if (Debugger.IsAttached) return ClearListTestData.GetTopFiveUsCities();
+        
         if (despatchViewIds.Count == 0) return new ClearListViewModel();
 
         try

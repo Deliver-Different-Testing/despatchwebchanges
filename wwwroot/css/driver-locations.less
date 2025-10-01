@@ -1,7 +1,5 @@
-﻿// Import app variables
-@import 'variables.less';
+﻿@import 'variables.less';
 
-// Component Styles
 .driver-locations-loader {
   position: sticky;
   top: 0;
@@ -26,61 +24,101 @@
   .driver-locations-container {
     height: 100%;
     width: 100%;
-    padding: 8px;
+    padding: 6px;
+  }
+
+  .driver-locations-grid-wrapper {
+    height: 100%;
+    width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: @main-background-color;
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: @scroll-bar-color;
+      border-radius: 3px;
+
+      &:hover {
+        background: darken(@scroll-bar-color, 10%);
+      }
+    }
   }
 
   .driver-locations-grid {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
     gap: 8px;
-    height: 100%;
-    width: 100%;
+    padding: 3px;
+
+    @media (min-width: 1400px) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    @media (min-width: 900px) and (max-width: 1399px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: 899px) {
+      grid-template-columns: 1fr;
+    }
   }
 
   .location-column {
-    flex: 1;
-    min-width: 200px;
-    max-width: 350px;
     display: flex;
     flex-direction: column;
     background-color: white;
     border: 1px solid lighten(@standard-grey, 30%);
-    border-radius: 4px;
+    border-radius: 3px;
     overflow: hidden;
+    min-height: 210px;
+    max-height: 350px;
 
-    // Area button header
     .area-button {
       width: 100%;
       margin: 0;
       border-radius: 0;
-      min-height: 48px;
-      padding: 8px 12px;
+      min-height: 34px;
+      padding: 6px 8px;
       display: flex;
       align-items: center;
       justify-content: flex-start;
-      gap: 8px;
+      gap: 6px;
       text-transform: uppercase;
       font-weight: @weight-medium;
-      font-size: @font-sm;
+      font-size: 11px;
       background-color: white !important;
       border-bottom: 2px solid @main-background-color;
+      flex-shrink: 0;
 
       md-icon {
-        font-size: 18px;
-        margin-right: 4px;
+        font-size: 14px;
+        margin-right: 3px;
       }
 
       .area-name {
         flex: 1;
         text-align: left;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .area-count {
         background-color: @primary-blue;
         color: white;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: @font-xs;
+        padding: 1px 6px;
+        border-radius: 8px;
+        font-size: 10px;
         font-weight: @weight-semibold;
+        flex-shrink: 0;
       }
 
       &.md-accent {
@@ -102,16 +140,83 @@
     }
   }
 
-  // Courier list container
+  .courier-list-wrapper {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
   .courier-list-container {
     flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 6px;
 
-    // Custom scrollbar
     &::-webkit-scrollbar {
-      width: 4px;
+      height: 4px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: @main-background-color;
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: @scroll-bar-color;
+      border-radius: 3px;
+
+      &:hover {
+        background: darken(@scroll-bar-color, 10%);
+      }
+    }
+  }
+
+  .courier-section {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 6px;
+    flex-shrink: 0;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: @weight-semibold;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding: 3px 6px;
+      margin-bottom: 3px;
+      opacity: 0.7;
+    }
+
+    &.section-top .section-label {
+      color: @status-new-text;
+    }
+
+    &.section-middle .section-label {
+      color: @status-awaiting-text;
+    }
+
+    &.section-bottom .section-label {
+      color: @status-despatched-text;
+    }
+  }
+
+  .courier-items-horizontal {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 3px;
+
+    &::-webkit-scrollbar {
+      height: 4px;
     }
 
     &::-webkit-scrollbar-track {
@@ -119,173 +224,174 @@
     }
 
     &::-webkit-scrollbar-thumb {
-      background: @scroll-bar-color;
+      background: lighten(@scroll-bar-color, 20%);
       border-radius: 2px;
-      opacity: 0.5;
-
-      &:hover {
-        opacity: 0.8;
-      }
     }
   }
 
-  // Courier items
   .courier-item {
-    padding: 6px 8px;
-    margin-bottom: 4px;
+    flex-shrink: 0;
+    padding: 6px 7px;
     cursor: pointer;
     transition: all 0.2s ease;
     border-radius: 3px;
-    border-left: 3px solid transparent;
+    border-left: 2px solid transparent;
+    min-width: 84px;
+    max-width: 140px;
     display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 32px;
+    flex-direction: column;
+    gap: 4px;
 
     &:hover {
-      transform: translateX(2px);
+      transform: translateY(-1px);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
 
     &.is-active {
       border-left-color: @primary-blue;
-      background-color: fade(@primary-blue, 10%);
+      box-shadow: 0 0 0 1px @primary-blue;
     }
 
     .courier-number {
       font-weight: @weight-semibold;
-      font-size: @font-sm;
+      font-size: 12px;
       white-space: nowrap;
 
       .job-count {
         font-weight: @weight-normal;
         opacity: 0.7;
-        margin-left: 4px;
+        margin-left: 3px;
+        font-size: 10px;
       }
     }
 
     .destination-tags {
-      flex: 1;
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
+      gap: 2px;
 
       .destination-tag {
         display: inline-block;
-        padding: 2px 6px;
-        background-color: @main-background-color;
+        padding: 2px 4px;
+        background-color: rgba(255, 255, 255, 0.8);
         border-radius: 2px;
-        font-size: @font-xs;
+        font-size: 9px;
         color: @text-muted;
         white-space: nowrap;
-        max-width: 100px;
+        max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
+        border: 1px solid rgba(0, 0, 0, 0.1);
       }
     }
   }
 
-  // Section-specific colors
   .section-top {
-    background-color: @status-new-bg;
-    border-left-color: @status-blue;
+    .courier-item {
+      background-color: @status-new-bg;
+      border-left-color: @status-blue;
 
-    .courier-number {
-      color: @status-new-text;
-    }
+      .courier-number {
+        color: @status-new-text;
+      }
 
-    &:hover {
-      background-color: darken(@status-new-bg, 3%);
-    }
+      &:hover {
+        background-color: darken(@status-new-bg, 3%);
+      }
 
-    &.is-active {
-      background-color: fade(@primary-blue, 15%);
-      border-left-color: @primary-blue;
+      &.is-active {
+        background-color: darken(@status-new-bg, 5%);
+      }
     }
   }
 
   .section-middle {
-    background-color: @status-awaiting-bg;
-    border-left-color: lighten(@status-awaiting-text, 30%);
+    .courier-item {
+      background-color: @status-awaiting-bg;
+      border-left-color: lighten(@status-awaiting-text, 30%);
 
-    .courier-number {
-      color: @status-awaiting-text;
-    }
+      .courier-number {
+        color: @status-awaiting-text;
+      }
 
-    &:hover {
-      background-color: darken(@status-awaiting-bg, 3%);
-    }
+      &:hover {
+        background-color: darken(@status-awaiting-bg, 3%);
+      }
 
-    &.is-active {
-      background-color: fade(@primary-blue, 15%);
-      border-left-color: @primary-blue;
+      &.is-active {
+        background-color: darken(@status-awaiting-bg, 5%);
+      }
     }
   }
 
   .section-bottom {
-    background-color: @status-despatched-bg;
-    border-left-color: lighten(@status-despatched-text, 30%);
+    .courier-item {
+      background-color: @status-despatched-bg;
+      border-left-color: lighten(@status-despatched-text, 30%);
 
-    .courier-number {
-      color: @status-despatched-text;
-    }
+      .courier-number {
+        color: @status-despatched-text;
+      }
 
-    &:hover {
-      background-color: darken(@status-despatched-bg, 3%);
-    }
+      &:hover {
+        background-color: darken(@status-despatched-bg, 3%);
+      }
 
-    &.is-active {
-      background-color: fade(@primary-blue, 15%);
-      border-left-color: @primary-blue;
+      &.is-active {
+        background-color: darken(@status-despatched-bg, 5%);
+      }
     }
   }
 
-  // Drag and Drop Visual Feedback
   .draggable-row {
     &.ui-draggable-dragging {
       opacity: 0.8;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
       z-index: 1000;
+      transform: scale(1.05);
     }
   }
 
   .droppable-row {
     &.ui-droppable-hover {
-      border: 1px dashed @primary-blue;
+      border: 2px dashed @primary-blue;
       background-color: fade(@primary-blue, 20%);
     }
   }
 
-  // Responsive adjustments
-  @media (max-width: 992px) {
+  @media (max-width: 899px) {
     .location-column {
-      min-width: 180px;
+      max-height: 280px;
     }
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 600px) {
     .driver-locations-grid {
-      overflow-x: auto;
-      overflow-y: hidden;
-      flex-wrap: nowrap;
+      grid-template-columns: 1fr;
+      gap: 6px;
     }
 
     .location-column {
-      min-width: 250px;
-      height: 100%;
+      min-height: 175px;
+      max-height: 245px;
     }
-  }
 
-  @media (max-width: 480px) {
     .courier-item {
+      min-width: 70px;
       padding: 4px 6px;
 
       .courier-number {
-        font-size: @font-xs;
+        font-size: 11px;
       }
 
       .destination-tag {
-        max-width: 60px;
+        font-size: 8px;
       }
+    }
+
+    .section-label {
+      font-size: 9px;
+      padding: 2px 4px;
     }
   }
 }

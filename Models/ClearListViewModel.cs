@@ -38,7 +38,6 @@ public class CourierData
     public int? CourierId { get; set; }
     public string CourierName { get; set; }
     public string CourierMobile { get; set; }
-    public string CourierNumber { get; set; }
 }
 
 public class Destination
