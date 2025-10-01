@@ -1,34 +1,6 @@
 ﻿// Import app variables
 @import 'variables.less';
 
-// Component-specific variables
-@card-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-@card-shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.15);
-@card-shadow-active: 0 1px 2px rgba(0, 0, 0, 0.08);
-
-@border-radius: 8px;
-@border-radius-small: 4px;
-@spacing-unit: 8px;
-
-// Section colors aligned with app status colors
-// Top section - New/Preassigned items
-@top-bg: @status-new-bg;
-@top-accent: @status-blue;
-@top-hover: lighten(@status-blue, 10%);
-@top-text: @status-new-text;
-
-// Middle section - In progress items  
-@middle-bg: @status-awaiting-bg;
-@middle-accent: lighten(@status-awaiting-text, 30%);
-@middle-hover: lighten(@status-awaiting-bg, 5%);
-@middle-text: @status-awaiting-text;
-
-// Bottom section - Dispatched items
-@bottom-bg: @status-despatched-bg;
-@bottom-accent: lighten(@status-despatched-text, 40%);
-@bottom-hover: lighten(@status-despatched-bg, 5%);
-@bottom-text: @status-despatched-text;
-
 // Component Styles
 .driver-locations-loader {
   position: sticky;
@@ -38,66 +10,89 @@
 
 .driver-locations-wrapper {
   height: 100%;
+  width: 100%;
   overflow: hidden;
   background-color: @main-background-color;
-  padding: @spacing;
+  display: flex;
+  flex-direction: column;
 }
 
 #driverLocations {
   height: 100%;
+  width: 100%;
+  flex: 1;
+  overflow: hidden;
 
   .driver-locations-container {
     height: 100%;
+    width: 100%;
+    padding: 8px;
   }
 
   .driver-locations-grid {
     display: flex;
-    gap: @spacing-unit * 2;
+    gap: 8px;
     height: 100%;
+    width: 100%;
   }
 
   .location-column {
     flex: 1;
-    min-width: 280px;
+    min-width: 200px;
+    max-width: 350px;
     display: flex;
     flex-direction: column;
     background-color: white;
-    border-radius: @border-radius;
-    box-shadow: @card-shadow;
+    border: 1px solid lighten(@standard-grey, 30%);
+    border-radius: 4px;
     overflow: hidden;
-  }
 
-  // Area Header Styles
-  .area-header {
-    padding: @spacing-unit;
-    background: linear-gradient(135deg, white 0%, @main-background-color 100%);
-    border-bottom: 1px solid lighten(@standard-grey, 30%);
-
+    // Area button header
     .area-button {
       width: 100%;
       margin: 0;
-      padding: @spacing-unit * 1.5;
+      border-radius: 0;
+      min-height: 48px;
+      padding: 8px 12px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: @spacing-unit;
+      justify-content: flex-start;
+      gap: 8px;
       text-transform: uppercase;
       font-weight: @weight-medium;
       font-size: @font-sm;
-      letter-spacing: 0.5px;
-      transition: all 0.3s ease;
+      background-color: white !important;
+      border-bottom: 2px solid @main-background-color;
+
+      md-icon {
+        font-size: 18px;
+        margin-right: 4px;
+      }
+
+      .area-name {
+        flex: 1;
+        text-align: left;
+      }
+
+      .area-count {
+        background-color: @primary-blue;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: @font-xs;
+        font-weight: @weight-semibold;
+      }
 
       &.md-accent {
         background-color: @primary-blue !important;
-        color: @text-light !important;
+        color: white !important;
 
-        .area-icon {
-          color: @text-light !important;
+        md-icon {
+          color: white !important;
         }
 
         .area-count {
-          background-color: rgba(255, 255, 255, 0.2);
-          color: @text-light;
+          background-color: rgba(255, 255, 255, 0.3);
         }
       }
 
@@ -105,216 +100,142 @@
         background-color: @hover-color !important;
       }
     }
-
-    .area-icon {
-      font-size: 20px;
-    }
-
-    .area-name {
-      flex: 1;
-      font-size: @font-base;
-    }
-
-    .area-count {
-      background-color: @primary-blue;
-      color: @text-light;
-      font-weight: @weight-semibold;
-      min-height: 24px;
-      height: 24px;
-      line-height: 24px;
-      padding: 0 @spacing-unit;
-    }
   }
 
-  // Courier List Styles
+  // Courier list container
   .courier-list-container {
     flex: 1;
-    overflow: hidden;
-    position: relative;
-  }
-
-  .courier-list {
-    height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: @spacing-unit;
+    padding: 4px;
 
     // Custom scrollbar
     &::-webkit-scrollbar {
-      width: 6px;
+      width: 4px;
     }
 
     &::-webkit-scrollbar-track {
-      background: @main-background-color;
-      border-radius: 3px;
+      background: transparent;
     }
 
     &::-webkit-scrollbar-thumb {
       background: @scroll-bar-color;
-      border-radius: 3px;
+      border-radius: 2px;
+      opacity: 0.5;
 
       &:hover {
-        background: darken(@scroll-bar-color, 10%);
+        opacity: 0.8;
       }
     }
   }
 
-  // Courier Section Styles
-  .courier-section {
-    margin-bottom: @spacing-unit * 2;
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-  }
-
-  // Courier Card Styles
-  .courier-card {
-    margin-bottom: @spacing-unit;
+  // Courier items
+  .courier-item {
+    padding: 6px 8px;
+    margin-bottom: 4px;
+    cursor: pointer;
     transition: all 0.2s ease;
-    cursor: move;
+    border-radius: 3px;
+    border-left: 3px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 32px;
 
-    &:last-child {
-      margin-bottom: 0;
+    &:hover {
+      transform: translateX(2px);
     }
 
-    .courier-card-content {
-      margin: 0;
-      padding: @spacing-unit * 1.5;
-      cursor: pointer;
-      transition: all 0.2s ease;
-
-      &:hover {
-        box-shadow: @card-shadow-hover;
-        transform: translateY(-2px);
-      }
-
-      &:active {
-        box-shadow: @card-shadow-active;
-        transform: translateY(0);
-      }
+    &.is-active {
+      border-left-color: @primary-blue;
+      background-color: fade(@primary-blue, 10%);
     }
 
-    &.is-active .courier-card-content {
-      border-left: 4px solid @primary-blue;
-      background-color: fade(@primary-blue, 5%);
-    }
-
-    .courier-header {
-      display: flex;
-      align-items: center;
-      gap: @spacing-unit;
-      margin-bottom: @spacing-unit;
-
-      .courier-number {
-        font-weight: @weight-semibold;
-        font-size: @font-lg;
-        color: @text-dark;
-      }
+    .courier-number {
+      font-weight: @weight-semibold;
+      font-size: @font-sm;
+      white-space: nowrap;
 
       .job-count {
-        background-color: lighten(@standard-grey, 30%);
-        color: @text-muted;
-        min-height: 20px;
-        height: 20px;
-        line-height: 20px;
-        padding: 0 @spacing-unit;
-        font-size: @font-xs;
-        font-weight: @weight-medium;
+        font-weight: @weight-normal;
+        opacity: 0.7;
+        margin-left: 4px;
       }
     }
 
-    .destination-list {
+    .destination-tags {
+      flex: 1;
       display: flex;
       flex-wrap: wrap;
-      gap: @spacing-unit / 2;
+      gap: 4px;
 
-      .destination-chip {
+      .destination-tag {
+        display: inline-block;
+        padding: 2px 6px;
         background-color: @main-background-color;
-        color: @text-muted;
+        border-radius: 2px;
         font-size: @font-xs;
-        min-height: 22px;
-        height: 22px;
-        line-height: 22px;
-        padding: 0 @spacing-unit;
-        margin: 0;
+        color: @text-muted;
+        white-space: nowrap;
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
     }
   }
 
-  // Section-specific Colors
+  // Section-specific colors
   .section-top {
-    .courier-card-content {
-      background: linear-gradient(135deg, @top-bg 0%, white 100%);
-      border-left: 3px solid @top-accent;
+    background-color: @status-new-bg;
+    border-left-color: @status-blue;
 
-      &:hover {
-        background: linear-gradient(135deg, @top-hover 0%, white 100%);
-      }
-
-      .courier-number {
-        color: @top-text;
-      }
-
-      .job-count {
-        background-color: @top-accent;
-        color: @text-dark;
-      }
+    .courier-number {
+      color: @status-new-text;
     }
 
-    .courier-card.is-active .courier-card-content {
+    &:hover {
+      background-color: darken(@status-new-bg, 3%);
+    }
+
+    &.is-active {
+      background-color: fade(@primary-blue, 15%);
       border-left-color: @primary-blue;
-      background: linear-gradient(135deg, lighten(@top-accent, 20%) 0%, white 100%);
     }
   }
 
   .section-middle {
-    .courier-card-content {
-      background: linear-gradient(135deg, @middle-bg 0%, white 100%);
-      border-left: 3px solid @middle-accent;
+    background-color: @status-awaiting-bg;
+    border-left-color: lighten(@status-awaiting-text, 30%);
 
-      &:hover {
-        background: linear-gradient(135deg, @middle-hover 0%, white 100%);
-      }
-
-      .courier-number {
-        color: @middle-text;
-      }
-
-      .job-count {
-        background-color: @middle-accent;
-        color: @text-light;
-      }
+    .courier-number {
+      color: @status-awaiting-text;
     }
 
-    .courier-card.is-active .courier-card-content {
+    &:hover {
+      background-color: darken(@status-awaiting-bg, 3%);
+    }
+
+    &.is-active {
+      background-color: fade(@primary-blue, 15%);
       border-left-color: @primary-blue;
-      background: linear-gradient(135deg, lighten(@middle-accent, 20%) 0%, white 100%);
     }
   }
 
   .section-bottom {
-    .courier-card-content {
-      background: linear-gradient(135deg, @bottom-bg 0%, white 100%);
-      border-left: 3px solid @bottom-accent;
+    background-color: @status-despatched-bg;
+    border-left-color: lighten(@status-despatched-text, 30%);
 
-      &:hover {
-        background: linear-gradient(135deg, @bottom-hover 0%, white 100%);
-      }
-
-      .courier-number {
-        color: @bottom-text;
-      }
-
-      .job-count {
-        background-color: @bottom-accent;
-        color: @text-dark;
-      }
+    .courier-number {
+      color: @status-despatched-text;
     }
 
-    .courier-card.is-active .courier-card-content {
+    &:hover {
+      background-color: darken(@status-despatched-bg, 3%);
+    }
+
+    &.is-active {
+      background-color: fade(@primary-blue, 15%);
       border-left-color: @primary-blue;
-      background: linear-gradient(135deg, lighten(@bottom-accent, 20%) 0%, white 100%);
     }
   }
 
@@ -322,61 +243,49 @@
   .draggable-row {
     &.ui-draggable-dragging {
       opacity: 0.8;
-      transform: rotate(2deg);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
       z-index: 1000;
-
-      .courier-card-content {
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-      }
     }
   }
 
   .droppable-row {
     &.ui-droppable-hover {
-      .courier-card-content {
-        border: 2px dashed @primary-blue;
-        background-color: fade(@primary-blue, 10%);
-      }
+      border: 1px dashed @primary-blue;
+      background-color: fade(@primary-blue, 20%);
     }
   }
 
-  // Responsive Design
+  // Responsive adjustments
+  @media (max-width: 992px) {
+    .location-column {
+      min-width: 180px;
+    }
+  }
+
   @media (max-width: 768px) {
     .driver-locations-grid {
-      flex-direction: column;
+      overflow-x: auto;
+      overflow-y: hidden;
+      flex-wrap: nowrap;
+    }
 
-      .location-column {
-        min-width: 100%;
-        max-height: 400px;
-      }
+    .location-column {
+      min-width: 250px;
+      height: 100%;
     }
   }
 
   @media (max-width: 480px) {
-    .courier-card-content {
-      padding: @spacing-unit;
+    .courier-item {
+      padding: 4px 6px;
 
-      .courier-header {
-        .courier-number {
-          font-size: @font-base;
-        }
-      }
-
-      .destination-chip {
+      .courier-number {
         font-size: @font-xs;
       }
-    }
-  }
-}
 
-// Animation Classes
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+      .destination-tag {
+        max-width: 60px;
+      }
+    }
   }
 }
