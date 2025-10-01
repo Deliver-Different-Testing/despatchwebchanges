@@ -47,8 +47,8 @@ export class PriceBreakdownDialogController extends BaseController {
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
         public priceBreakdown: PriceBreakdown[],
-        public jobId: number,
-        public isPrebook: boolean
+        private jobId: number,
+        private isPrebook: boolean
     ) {
         super();
         this.initServices($timeout, $interval);

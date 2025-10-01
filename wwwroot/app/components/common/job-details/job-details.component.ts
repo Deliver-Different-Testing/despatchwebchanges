@@ -155,7 +155,7 @@ class JobDetailController extends BaseController {
             });
 
         if (this.jobId) {
-            this.loadJobData(this.jobId);
+            this.loadJobData(this.jobId).then(_ => console.log("Job data loaded:"));
         }
 
         // Apply UI tweaks
@@ -590,12 +590,14 @@ class JobDetailController extends BaseController {
                 $event,
                 title,
                 fieldName,
-                dateTime,
+                dayjs(dateTime),
                 timezone
             );
+
             await this.processDateTimeUpdateResult(job, result);
         } catch (error) {
             this.handleError(error);
+            return undefined;
         }
     }
 
@@ -612,9 +614,10 @@ class JobDetailController extends BaseController {
                 $event,
                 title,
                 field,
-                dateTime,
+                dayjs(dateTime),
                 timezone
             );
+
             await this.processDateTimeUpdateResult(job, result);
         } catch (error) {
             this.handleError(error);
@@ -635,9 +638,10 @@ class JobDetailController extends BaseController {
                     $event,
                     title,
                     fieldName,
-                    dateTime,
+                    dayjs(dateTime),
                     timezone
                 );
+
             await this.processDateTimeUpdateResult(job, result);
         } catch (error) {
             this.handleError(error);
@@ -654,14 +658,16 @@ class JobDetailController extends BaseController {
                     job.id,
                     result.fieldName,
                     result.value,
-                    job.charge
+                    job.charge,
+                    result.timezone
                 );
             } else {
                 await this.DispatchData.updateJobDetail(
                     job.id,
                     result.fieldName,
                     result.value,
-                    job.preBook
+                    job.preBook,
+                    result.timezone
                 );
             }
 
@@ -799,7 +805,11 @@ class JobDetailController extends BaseController {
         );
 
         // Begin a job-done process
-        if (this.job === undefined) return;
+        if(!this.job) {
+            this.toastrService.showWarningToast("Unable to mark job as done");
+            return;
+        }
+        
         await this.markJobAsDone($event, this.job);
     }
 
@@ -942,21 +952,7 @@ class JobDetailController extends BaseController {
             this.handleError(error);
         }
     }
-
-    private updateJobAddressUs(
-        job: IJob,
-        newAddress: IEditAddressDialogViewModel,
-        isDeliveryAddress: boolean
-    ): IJob {
-        const addressField = isDeliveryAddress
-            ? "deliveryAddress"
-            : "pickupAddress";
-        console.log(`Address Field: ${addressField}`);
-
-        job[addressField] = newAddress;
-        return job;
-    }
-
+    
     private async updateJobRateAndAddress(
         job: IJob,
         addressResult: IEditAddressDialogViewModel,
@@ -1708,7 +1704,7 @@ class JobDetailController extends BaseController {
         }
     }
 
-   async openPodViewer(index: number, photoType: PodPhotoType = PodPhotoType.Delivery): Promise<void> {
+    async openPodViewer(index: number, photoType: PodPhotoType = PodPhotoType.Delivery): Promise<void> {
         const photos = photoType === PodPhotoType.Pickup ? this.formattedPickupPhotos : this.formattedPodPhotos;
         const photo = photos[index];
 
@@ -1784,18 +1780,18 @@ class JobDetailController extends BaseController {
 
     async showPricingBreakdown($event: MouseEvent, job: IJob): Promise<void> {
         try {
-            if(job.bulkJob) {
+            if (job.bulkJob) {
                 this.toastrService.showWarningToast("Price breakdown is not currently available for scheduled jobs.");
                 return;
             }
-            
-           const newAmount = await this.priceBreakdownDialogService.openPriceBreakdownDialog(
+
+            const newAmount = await this.priceBreakdownDialogService.openPriceBreakdownDialog(
                 $event,
                 job.id,
                 job.preBook
             );
-            
-            if(!newAmount || !this.job) return;
+
+            if (!newAmount || !this.job) return;
             this.job.charge = newAmount;
             await this.refreshJobDetails(job.id);
         } catch (error) {

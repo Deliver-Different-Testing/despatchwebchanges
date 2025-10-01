@@ -1,12 +1,15 @@
 import "./edit-date-time-dialog.less";
 import ToastrService from "../../../services/toastr.service";
 import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interfaces";
-import {ISuggestion, ITimeZoneSuggestion} from "../../../interfaces/job.interface";
+import {ISuggestion} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import {JobProperty} from "../../../enums/job-property.enum";
-import {findWindows} from "windows-iana";
 import {TimeZone} from "../../../contants";
-import dayjs from "dayjs";
+import dayjs, {Dayjs} from "dayjs";
+import timezone from "dayjs/plugin/timezone";
+import {formatDateForApiWithTzs} from "../../../functions/formatDates";
+
+dayjs.extend(timezone);
 
 export class EditDateTimeDialogController extends BaseController {
     static $inject = [
@@ -23,9 +26,9 @@ export class EditDateTimeDialogController extends BaseController {
         "showTime",
     ];
 
-    isLoading?: boolean;
+    isLoading: boolean = false;
     browserTimeZone?: string;
-    selectedTimeZone?: string;
+    selectedTimeZone: string;
     selectedDate?: Date;
     selectedTime?: Date;
 
@@ -37,28 +40,26 @@ export class EditDateTimeDialogController extends BaseController {
         $interval: angular.IIntervalService,
         public readonly title: string,
         public readonly fieldName: JobProperty,
-        public dateTime?: Date,
+        public dateTime?: Dayjs,
         defaultTimeZone?: ISuggestion,
         public showDate: boolean = true,
         public showTime: boolean = true,
     ) {
         super();
         this.initServices($timeout, $interval);
-        
-        const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        this.browserTimeZone = findWindows(browserTimeZone)[0];
+
+        this.browserTimeZone = dayjs.tz.guess();
         this.selectedTimeZone = defaultTimeZone?.text ?? TimeZone;
 
         this.initializeDateTimeInputs();
 
-        this.registerTimeout(() => {
-            if (!this.dateTime) {
-                this.dateTime = new Date();
-                this.initializeDateTimeInputs();
-            }
-        });
-
-        this.isLoading = false;
+        if (!this.dateTime) {
+            console.log('No dateTime provided, setting to current time');
+            this.dateTime = dayjs();
+            console.log('Current time:', this.dateTime);
+            console.log('Selected time zone:', this.selectedTimeZone);
+            this.initializeDateTimeInputs();
+        }
     }
 
     private initializeDateTimeInputs(): void {
@@ -88,15 +89,13 @@ export class EditDateTimeDialogController extends BaseController {
                         .hour(timeValue.hour())
                         .minute(timeValue.minute())
                         .second(0)
-                        .millisecond(0)
-                        .toDate();
+                        .millisecond(0);
                 }
             } else if (this.showDate && !this.showTime) {
                 // Date only - set to midnight (00:00:00)
                 if (this.selectedDate) {
                     this.dateTime = dayjs(this.selectedDate)
-                        .startOf('day')
-                        .toDate();
+                        .startOf('day');
                 }
             } else if (this.showTime && !this.showDate) {
                 // Time only - use minimum date (1900-01-01) with the selected time
@@ -106,11 +105,15 @@ export class EditDateTimeDialogController extends BaseController {
                         .hour(timeValue.hour())
                         .minute(timeValue.minute())
                         .second(0)
-                        .millisecond(0)
-                        .toDate();
+                        .millisecond(0);
                 }
             }
-            this.$log.debug('DateTime updated:', this.dateTime?.toISOString?.());
+
+            if (this.dateTime) {
+                this.$log.debug('DateTime updated:', formatDateForApiWithTzs(this.dateTime, this.selectedTimeZone));
+            } else {
+                this.$log.debug('DateTime not updated');
+            }
         } catch (error) {
             this.$log.error('Error updating dateTime:', error);
             this.dateTime = undefined;
@@ -141,7 +144,8 @@ export class EditDateTimeDialogController extends BaseController {
 
             const result: IDialogDateTimeResult = {
                 fieldName: this.fieldName,
-                value: this.dateTime
+                value: this.dateTime,
+                timezone: this.selectedTimeZone,
             };
 
             this.$log.debug('Submitting result:', result);
@@ -153,7 +157,7 @@ export class EditDateTimeDialogController extends BaseController {
             this.isLoading = false;
         }
     }
-    
+
     cancel(): void {
         this.$mdDialog.cancel();
     }
