@@ -2388,6 +2388,31 @@ class HomeController extends BaseController {
 
         this.applyScope();
     }
+
+    async clearDriverLocationFilter(): Promise<void> {
+        if (!this.driverLocations) return;
+
+        // Deactivate all areas
+        this.driverLocations.areas.forEach((area: IAreaClearList) => {
+            area.isActive = false;
+        });
+
+        // Reset to show all jobs (not filtered by clear list)
+        try {
+            await this.getJobList();
+
+            if (this.currentCourier) {
+                await this.getCurrentJobs(this.currentCourier.courierId);
+            } else if (!this.currentJob) {
+                this.mapJobList = [...this.jobList];
+            }
+        } catch (error) {
+            console.error("Error clearing driver location filter:", error);
+            this.toastrService.showErrorToast("Error clearing filter. Please try again.");
+        }
+
+        this.applyScope();
+    }
 }
 
 const HomeComponent: angular.IComponentOptions = {

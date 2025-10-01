@@ -28,7 +28,10 @@
                                    ng-class="{'md-accent': area.isActive}"
                                    ng-click="ctrl.selectAndActivateArea(area)">
                             <md-icon md-font-set="material-symbols-outlined">location_on</md-icon>
-                            <span class="area-name">{{area.name}}</span>
+                            <span class="area-name">
+                                {{area.name}}
+                            <md-tooltip md-direction="bottom">{{area.name}}</md-tooltip>
+                            </span>
                             <span class="area-count">{{area.totalRemaining}}</span>
                         </md-button>
 
@@ -49,7 +52,8 @@
 
                                             <div class="courier-number">
                                                 {{section.courierNumber}}
-                                                <span class="job-count" ng-if="section.jobCount">({{section.jobCount}})</span>
+                                                <span class="job-count"
+                                                      ng-if="section.jobCount">({{section.jobCount}})</span>
                                             </div>
                                             <div class="destination-tags">
                                                 <span class="destination-tag"
