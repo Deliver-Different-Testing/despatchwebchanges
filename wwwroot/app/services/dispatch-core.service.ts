@@ -26,9 +26,10 @@ import {JobProperty} from "../enums/job-property.enum";
 import {UpdatePodDetailsRequest} from "../interfaces/requests.interfaces";
 import {JobEventData} from "../components/dialogs/add-event-dialog/add-event-dialog.interfaces";
 import {DeliveryJourneyViewModel} from "../components/common/task-history/task-history.interfaces";
-import {formatDateForApi, formatDateForApiWithTzs} from "../functions/formatDates";
+import {formatDateForApiWithTzs} from "../functions/formatDates";
 import IInterCourierData from "../components/dialogs/inter-courier-charge-dialog/interfaces/IInterCourierData";
 import {Is3PhotoInfo} from "../interfaces/aws.interfaces";
+import dayjs from "dayjs";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = [
@@ -634,8 +635,9 @@ class DispatchCoreService implements angular.IServiceProvider {
     async updateJobDetail(
         jobId: number,
         field: JobProperty | string,
-        value: string | Date | number | boolean,
-        isRecurring: boolean
+        value: any,
+        isRecurring: boolean,
+        timezone?: string // For dates
     ): Promise<any> {
         console.debug("Starting updateJobDetail:", {
             jobId,
@@ -644,8 +646,9 @@ class DispatchCoreService implements angular.IServiceProvider {
             preBook: isRecurring,
         });
 
-        if (value instanceof Date) {
-            value = formatDateForApi(value);
+        // Handle time fields
+        if (value instanceof Date || dayjs.isDayjs(value)) {
+            value = formatDateForApiWithTzs(value, timezone);
         }
 
         const url: string = isRecurring
@@ -677,44 +680,13 @@ class DispatchCoreService implements angular.IServiceProvider {
     async updateBulkJobDetail(
         bulkJobId: number,
         field: string,
-        value: string | number | Date | boolean,
+        value: any,
         rate: number | string,
+        timezone?: string // For dates
     ): Promise<void> {
         // Handle time fields
-        if (field === JobProperty.Time || field === JobProperty.CompletedTime) {
-            if (value instanceof Date) {
-                // Format as YYYY-MM-DD HH:mm:ss using current date and time from value
-                const today = new Date();
-                const timeDate = value as Date;
-
-                // Create a new date with today's date and the time from the value
-                const combined = new Date(
-                    today.getFullYear(),
-                    today.getMonth(),
-                    today.getDate(),
-                    timeDate.getHours(),
-                    timeDate.getMinutes(),
-                    timeDate.getSeconds()
-                );
-
-                // Format to YYYY-MM-DD HH:mm:ss
-                value = formatDateForApi(combined);
-            }
-        }
-
-        // Handle date fields
-        if (
-            field === JobProperty.Date ||
-            field === JobProperty.StopDate ||
-            field === JobProperty.RestartDate ||
-            field === JobProperty.InActiveDate ||
-            field === JobProperty.FirstDue ||
-            field === JobProperty.LastDone ||
-            field === JobProperty.NextDue
-        ) {
-            if (value instanceof Date) {
-                value = formatDateForApi(value);
-            }
+        if (value instanceof Date || dayjs.isDayjs(value)) {
+            value = formatDateForApiWithTzs(value, timezone);
         }
 
         await this.$http.post(

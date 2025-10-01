@@ -13,23 +13,48 @@ export function formatDateForApi(date: Date | dayjs.Dayjs | string): string {
 }
 
 export function formatDateForApiWithTzs(date: Date | dayjs.Dayjs | string, timeZone?: string): string {
-    if(!timeZone) timeZone = dayjs.tz.guess();
-    // Provide the timeZone to ensure the correct conversion
-    // Use this going forward to keep track of timezones properly
-    // Defaults to the user's timezone if not provided'
-    
+    if(!timeZone) timeZone = TimeZone;
+
     console.log('[formatDateForApiWithTzs] Starting conversion', {
         inputDate: date,
         timeZone: timeZone,
     });
 
-    const result = dayjs.tz(date, timeZone).format();
+    let dayjsDate;
+
+    if (date instanceof Date) {
+        // Extract the date/time components from the Date object
+        // Format them as a string without timezone info
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0'); // getMonth() is 0-based
+        const day = String(date.getDate()).padStart(2, '0');
+        const hour = String(date.getHours()).padStart(2, '0');
+        const minute = String(date.getMinutes()).padStart(2, '0');
+        const second = String(date.getSeconds()).padStart(2, '0');
+
+        // Create a date string without a timezone
+        const dateString = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+
+        // Parse this string as being in the target timezone
+        dayjsDate = dayjs.tz(dateString, 'YYYY-MM-DD HH:mm:ss', timeZone);
+    } else if (typeof date === 'string') {
+        // If the string already has timezone info, strip it first
+        // Otherwise parse as-is in the target timezone
+        const dateWithoutTz = date.replace(/[+-]\d{2}:\d{2}$/, '').replace(/Z$/, '');
+        dayjsDate = dayjs.tz(dateWithoutTz, timeZone);
+    } else {
+        // It's already a dayjs object - format without timezone then reparse
+        const dateString = date.format('YYYY-MM-DD HH:mm:ss');
+        dayjsDate = dayjs.tz(dateString, 'YYYY-MM-DD HH:mm:ss', timeZone);
+    }
+
+    const result = dayjsDate.format();
 
     console.log('[formatDateForApiWithTzs] Conversion complete', {
         input: date,
         timeZone: timeZone,
         output: result,
-        outputTimezone: dayjs.tz(date, timeZone).format('Z'), // logs the offset like +05:30
+        outputTimezone: dayjsDate.format('Z'),
     });
 
     return result;

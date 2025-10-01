@@ -163,27 +163,34 @@
                 <div class="metric-label">Booked</div>
                 <div class="metric-value">
                     {{ctrl.job.createdDate ? (ctrl.job.createdDate | momentFormat:'MMM DD') : '—'}}
+                    ({{:: ctrl.timeZone | timezoneShort }})
                 </div>
             </div>
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editStartTime($event, ctrl.job)">
                 <div class="metric-label">Start Time</div>
                 <div class="metric-value">
-                    {{ctrl.job.time ? (ctrl.job.time | momentFormat:'HH:mm') : '—'}}
+                    {{ctrl.job.time ? (ctrl.job.time | momentFormat:'HH:mm') : '—'}} ({{:: ctrl.timeZone | timezoneShort
+                    }})
                 </div>
             </div>
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editPuDate($event, ctrl.job)">
                 <div class="metric-label">PU Time</div>
                 <div class="metric-value">
                 <span ng-if="ctrl.job.puTime">
-                      {{ ctrl.job.puTime | momentFormat:'MM/DD HH:mm' }} ({{:: (ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort }})
+                      {{ ctrl.job.puTime | momentFormat:'MM/DD HH:mm'
+                    }} ({{:: (ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort
+                    }})
                     </span>
-                    <span ng-if="!ctrl.job.puTime">N/A</span>
+                    <span ng-if="!ctrl.job.puTime">-</span>
                 </div>
             </div>
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editDeliverBy($event, ctrl.job)">
                 <div class="metric-label">Deliver By</div>
-                <div class="metric-value">
-                    {{ctrl.job.deliverByTime ? (ctrl.job.deliverByTime | momentFormat:'MMM DD HH:mm') : '—'}}
+                <div class="metric-value" ng-if="ctrl.job.deliverByTime">
+                    {{ctrl.job.deliverByTime | momentFormat:'MMM DD HH:mm' }} ({{:: (ctrl.job.deliveryTimeZone ? ctrl.job.deliveryTimeZone.text : ctrl.timeZone) | timezoneShort}})
+                </div>
+                <div class="metric-value" ng-if="!ctrl.job.deliverByTime">
+                    -
                 </div>
             </div>
         </div>
@@ -195,13 +202,13 @@
                     <span ng-if="ctrl.job.dispatchTime">
                       {{ ctrl.job.dispatchTime | momentFormat:'MM/DD HH:mm' }} ({{:: ctrl.timeZone | timezoneShort }})
                     </span>
-                    <span ng-if="!ctrl.job.dispatchTime">N/A</span>
+                    <span ng-if="!ctrl.job.dispatchTime">-</span>
                 </div>
             </div>
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editPodName($event, ctrl.job)">
                 <div class="metric-label">POD Name</div>
                 <div class="metric-value">
-                    {{ctrl.job.podName || 'N/A'}}
+                    {{ctrl.job.podName || '-'}}
                 </div>
             </div>
             <div class="metric-card" md-ink-ripple
@@ -209,9 +216,10 @@
                 <div class="metric-label">POD Time</div>
                 <div class="metric-value">
                     <span ng-if="ctrl.job.completedTime">
-                      {{ ctrl.job.completedTime | momentFormat:'MM/DD HH:mm' }} ({{:: ctrl.job.deliveryTimeZone.text | timezoneShort }})
+                      {{ ctrl.job.completedTime | momentFormat:'MM/DD HH:mm'
+                        }} ({{:: ctrl.job.deliveryTimeZone.text | timezoneShort }})
                     </span>
-                    <span ng-if="!ctrl.job.completedTime">N/A</span>
+                    <span ng-if="!ctrl.job.completedTime">-</span>
                 </div>
             </div>
             <div class="metric-card" md-ink-ripple
@@ -221,13 +229,13 @@
                     <span ng-if="ctrl.job.followupTime">
                       {{ ctrl.job.followupTime | momentFormat:'MM/DD HH:mm' }} ({{:: ctrl.timeZone | timezoneShort }})
                     </span>
-                    <span ng-if="!ctrl.job.followupTime">N/A</span>
+                    <span ng-if="!ctrl.job.followupTime">-</span>
                 </div>
             </div>
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.clientClick($event, ctrl.job)">
                 <div class="metric-label">Client Name</div>
                 <div class="metric-value">
-                    {{ctrl.job.clientName || 'N/A'}}
+                    {{ctrl.job.clientName || '-'}}
                 </div>
             </div>
         </div>
@@ -556,7 +564,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Agent Name</h3>
-                                    <p>{{::ctrl.job.assignedAgent.agentName || 'N/A'}}</p>
+                                    <p>{{::ctrl.job.assignedAgent.agentName || '-'}}</p>
                                 </div>
                             </md-list-item>
 
@@ -569,7 +577,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Agent Rate</h3>
-                                    <p>{{::ctrl.job.assignedAgent.agentRate || 'N/A'}}</p>
+                                    <p>{{::ctrl.job.assignedAgent.agentRate || '-'}}</p>
                                 </div>
                             </md-list-item>
 
@@ -582,7 +590,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Agent Ranking</h3>
-                                    <p>{{::ctrl.job.assignedAgent.agentRanking || 'N/A'}}</p>
+                                    <p>{{::ctrl.job.assignedAgent.agentRanking || '-'}}</p>
                                 </div>
                             </md-list-item>
 
@@ -595,7 +603,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Agent Phone</h3>
-                                    <p>{{::ctrl.job.assignedAgent.agentPhone || 'N/A'}}</p>
+                                    <p>{{::ctrl.job.assignedAgent.agentPhone || '-'}}</p>
                                 </div>
                                 <md-button
                                         class="md-secondary md-icon-button"
@@ -615,7 +623,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Agent Email</h3>
-                                    <p>{{::ctrl.job.assignedAgent.agentEmail || 'N/A'}}</p>
+                                    <p>{{::ctrl.job.assignedAgent.agentEmail || '-'}}</p>
                                 </div>
                                 <md-button
                                         class="md-secondary md-icon-button"
@@ -775,7 +783,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Leave Parcel</h3>
-                                    <p>{{ctrl.job.deliverToLeaveId || 'N/A'}}</p>
+                                    <p>{{ctrl.job.deliverToLeaveId || '-'}}</p>
                                 </div>
                             </md-list-item>
                         </md-list>
@@ -817,7 +825,7 @@
                                 <md-list-item class="md-2-line md-long-text"
                                               ng-if="ctrl.isFieldVisible('dispatcherName') || ctrl.isEditMode"
                                               ng-click="ctrl.showItemNotEditableToaster('Dispatcher Name')">
-                                <md-icon
+                                    <md-icon
                                             class="md-avatar"
                                             aria-label="dispatcher"
                                             md-font-set="material-symbols-outlined">
@@ -825,7 +833,7 @@
                                     </md-icon>
                                     <div class="md-list-item-text">
                                         <h3>Dispatcher Name</h3>
-                                        <p>{{ctrl.job.dispatcherName || 'N/A'}}</p>
+                                        <p>{{ctrl.job.dispatcherName || '-'}}</p>
                                     </div>
 
                                     <md-icon class="md-secondary"
@@ -870,7 +878,7 @@
                                     </md-icon>
                                     <div class="md-list-item-text">
                                         <h3>Courier Mobile</h3>
-                                        <p>{{ctrl.job.courierData.courierMobile || 'N/A'}}</p>
+                                        <p>{{ctrl.job.courierData.courierMobile || '-'}}</p>
                                     </div>
 
                                     <md-icon class="md-secondary"
@@ -892,7 +900,7 @@
                                     </md-icon>
                                     <div class="md-list-item-text">
                                         <h3>Schedule Name</h3>
-                                        <p>{{::ctrl.job.scheduleName || 'N/A'}}</p>
+                                        <p>{{::ctrl.job.scheduleName || '-'}}</p>
                                     </div>
 
                                     <md-icon class="md-secondary"
@@ -1022,7 +1030,7 @@
                                     </md-icon>
                                     <div class="md-list-item-text">
                                         <h3>First Due</h3>
-                                        <p>{{ctrl.job.firstDue ? (ctrl.job.firstDue | date:'MM/dd') : 'N/A'}}</p>
+                                        <p>{{ctrl.job.firstDue ? (ctrl.job.firstDue | date:'MM/dd') : '-'}}</p>
                                     </div>
                                 </md-list-item>
 
@@ -1039,7 +1047,7 @@
                                     </md-icon>
                                     <div class="md-list-item-text">
                                         <h3>Stop Date</h3>
-                                        <p>{{ctrl.job.stopDate ? (ctrl.job.stopDate | date:'MM/dd') : 'N/A'}}</p>
+                                        <p>{{ctrl.job.stopDate ? (ctrl.job.stopDate | date:'MM/dd') : '-'}}</p>
                                     </div>
                                 </md-list-item>
 
@@ -1057,7 +1065,7 @@
                                     </md-icon>
                                     <div class="md-list-item-text">
                                         <h3>Restart Date</h3>
-                                        <p>{{ctrl.job.restartDate ? (ctrl.job.restartDate | date:'MM/dd') : 'N/A'}}</p>
+                                        <p>{{ctrl.job.restartDate ? (ctrl.job.restartDate | date:'MM/dd') : '-'}}</p>
                                     </div>
                                 </md-list-item>
 
@@ -1149,7 +1157,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Account</h3>
-                                    <p>{{ctrl.job.client || 'N/A'}}</p>
+                                    <p>{{ctrl.job.client || '-'}}</p>
                                 </div>
 
                                 <md-icon
@@ -1196,7 +1204,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Logged-in Contact</h3>
-                                    <p>{{ctrl.job.loggedInContactName || 'N/A'}}</p>
+                                    <p>{{ctrl.job.loggedInContactName || '-'}}</p>
                                 </div>
 
                                 <md-icon class="md-secondary"
@@ -1220,7 +1228,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Name</h3>
-                                    <p>{{ctrl.job.fromContactName || 'N/A'}}</p>
+                                    <p>{{ctrl.job.fromContactName || '-'}}</p>
                                 </div>
 
                                 <md-icon class="md-secondary"
@@ -1244,7 +1252,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Phone</h3>
-                                    <p>{{ctrl.job.fromContactNumber || 'N/A'}}</p>
+                                    <p>{{ctrl.job.fromContactNumber || '-'}}</p>
                                 </div>
 
                                 <md-icon class="md-secondary"
@@ -1292,7 +1300,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Speed</h3>
-                                    <p>{{ctrl.job.speedName || 'N/A'}}</p>
+                                    <p>{{ctrl.job.speedName || '-'}}</p>
                                 </div>
 
                                 <md-icon class="md-secondary"
@@ -1302,10 +1310,10 @@
                                     {{ ctrl.isFieldVisible('speedName') ? 'visibility' : 'visibility_off' }}
                                 </md-icon>
                             </md-list-item>
-                            
+
                             <md-list-item
                                     ng-if="ctrl.isFieldVisible('notifiedSpeed') || ctrl.isEditMode"
-                                    class="md-2-line md-long-text" 
+                                    class="md-2-line md-long-text"
                                     ng-click="ctrl.showItemNotEditableToaster('Notified Speed')">
                                 <md-icon
                                         class="md-avatar"
@@ -1315,7 +1323,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Notified Speed</h3>
-                                    <p>{{ctrl.job.notify || 'N/A'}}</p>
+                                    <p>{{ctrl.job.notify || '-'}}</p>
                                 </div>
 
                                 <md-icon class="md-secondary"
@@ -1497,7 +1505,7 @@
                             ng-class-odd="'pallet-row-alt'">
 
                             <td class="pallet-cell-item">
-                                <span class="pallet-item-id">{{pallet.itemId || 'N/A'}}</span>
+                                <span class="pallet-item-id">{{pallet.itemId || '-'}}</span>
                             </td>
 
                             <td class="pallet-cell-qty">
@@ -1613,7 +1621,7 @@
                                 <span class="timing-label">Tracking:</span>
                                 <span class="timing-value"
                                 >{{ctrl.getTrackingMethod(ctrl.job.trackingMethod) ||
-                                'N/A'}}</span
+                                '-'}}</span
                                 >
                             </div>
                         </md-list-item>
@@ -1635,7 +1643,7 @@
                             </md-icon>
                             <div class="md-list-item-text">
                                 <h3>Mobile</h3>
-                                <p>{{ctrl.job.trackingMobile || 'N/A'}}</p>
+                                <p>{{ctrl.job.trackingMobile || '-'}}</p>
                             </div>
                         </md-list-item>
 
@@ -1649,7 +1657,7 @@
                             </md-icon>
                             <div class="md-list-item-text">
                                 <h3>Email</h3>
-                                <p>{{ctrl.job.trackingEmail || 'N/A'}}</p>
+                                <p>{{ctrl.job.trackingEmail || '-'}}</p>
                             </div>
                         </md-list-item>
                     </md-list>
@@ -1847,10 +1855,12 @@
          ng-if="ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex] && !ctrl.isImageFile(ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex])"
          style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; background: #f5f5f5;">
         <md-icon md-font-set="material-symbols-outlined" style="font-size: 96px; color: #666; margin-bottom: 16px;">
-            {{ ctrl.isPdfFile(ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex]) ? 'picture_as_pdf' : 'insert_drive_file' }}
+            {{ ctrl.isPdfFile(ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex]) ? 'picture_as_pdf' : 'insert_drive_file'
+            }}
         </md-icon>
         <p style="margin-bottom: 16px; color: #666;">Click below to download this file</p>
-        <md-button class="md-raised md-primary" ng-click="ctrl.downloadFile(ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex])">
+        <md-button class="md-raised md-primary"
+                   ng-click="ctrl.downloadFile(ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex])">
             <md-icon md-font-set="material-symbols-outlined">download</md-icon>
             Download File
         </md-button>
@@ -1878,7 +1888,8 @@
                 <!-- Show file icon for non-image files -->
                 <div ng-if="!ctrl.isImageFile(photo) || !photo.url"
                      style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f5f5f5; cursor: pointer;">
-                    <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px; color: #666; margin-bottom: 8px;">
+                    <md-icon md-font-set="material-symbols-outlined"
+                             style="font-size: 48px; color: #666; margin-bottom: 8px;">
                         {{ ctrl.isPdfFile(photo) ? 'picture_as_pdf' : 'insert_drive_file' }}
                     </md-icon>
                     <span style="font-size: 10px; text-align: center; color: #666; margin-top: 20px;">{{photo.fileName}}</span>
@@ -1888,7 +1899,8 @@
                     <h3>
                         {{::photo.timestamp | date:'shortTime'}}
                         ({{::ctrl.job.deliveryTimeZone.text | timezoneShort}})
-                        <md-icon ng-if="!ctrl.isImageFile(photo)" md-font-set="material-symbols-outlined" style="font-size: 16px; margin-left: 4px;">
+                        <md-icon ng-if="!ctrl.isImageFile(photo)" md-font-set="material-symbols-outlined"
+                                 style="font-size: 16px; margin-left: 4px;">
                             download
                         </md-icon>
                     </h3>
@@ -1972,7 +1984,8 @@
                 <!-- Show file icon for non-image files -->
                 <div ng-if="!ctrl.isImageFile(photo) || !photo.url"
                      style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f5f5f5; cursor: pointer;">
-                    <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px; color: #666; margin-bottom: 8px;">
+                    <md-icon md-font-set="material-symbols-outlined"
+                             style="font-size: 48px; color: #666; margin-bottom: 8px;">
                         {{ ctrl.isPdfFile(photo) ? 'picture_as_pdf' : 'insert_drive_file' }}
                     </md-icon>
                     <span style="font-size: 10px; text-align: center; color: #666; margin-top: 20px;">{{photo.fileName}}</span>
@@ -1981,7 +1994,8 @@
                 <md-grid-tile-footer>
                     <h3>
                         Pickup {{$index + 1}}
-                        <md-icon ng-if="!ctrl.isImageFile(photo)" md-font-set="material-symbols-outlined" style="font-size: 16px; margin-left: 4px;">
+                        <md-icon ng-if="!ctrl.isImageFile(photo)" md-font-set="material-symbols-outlined"
+                                 style="font-size: 16px; margin-left: 4px;">
                             download
                         </md-icon>
                     </h3>
@@ -2015,7 +2029,7 @@
             No Pickup Photos Available
         </h3>
         <p style="color: rgba(0, 0, 0, 0.54); margin: 0">
-            This completed job has no pickup photos attached.
+            This job has no pickup photos attached.
         </p>
     </div>
 </div>

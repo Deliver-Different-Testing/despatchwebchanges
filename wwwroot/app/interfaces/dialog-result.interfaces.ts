@@ -11,7 +11,7 @@ export interface ISelectDialogResult extends IDialogResult {
 }
 
 export interface IDialogDateTimeResult extends IDialogResult {
-    // Add additional parameters here if needed
+    timezone: string;
 }
 
 export interface FlightAgentConfirmationDialogResult {
