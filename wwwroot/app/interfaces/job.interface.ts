@@ -86,7 +86,7 @@ export interface IJob {
     refB: string;
     ourRef: string;
     sigNotRequired: string;
-    charge: string;
+    charge: number;
     date: string;
     dispatchTime?: Date;
     booked: Date;

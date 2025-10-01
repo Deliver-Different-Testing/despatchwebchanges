@@ -9,17 +9,14 @@ public class JobViewModel : DispatchJobViewModel
 {
     public DateTime? BookedDate { get; set; }
     public bool Van { get; set; }
-    public int? JobRelationshipTypeId { get; set; }
     public bool? VanOk { get; set; }
     public bool? Void { get; set; }
     public bool? Truck { get; set; }
-    public bool? Pedal { get; set; }
     public bool? Reprice { get; set; }
     public bool? Attention { get; set; }
     public string SpeedName { get; set; }
     public string RunName { get; set; }
 
-    public string Source { get; set; }
     public string NotifiedName { get; set; }
     public string AcceptedName { get; set; }
 
@@ -51,9 +48,7 @@ public class JobViewModel : DispatchJobViewModel
 
     [Obsolete("Use DeliveryAddress instead. This property will be removed in a future version.")]
     public string ToCity { get; set; }
-
-    public decimal? GstRate { get; set; }
-    public string ContactName { get; set; }
+    
     public string LoggedInContactName { get; set; }
 
     [JsonPropertyName("deliverToContact")] public string DeliverToContact { get; set; }
@@ -63,11 +58,8 @@ public class JobViewModel : DispatchJobViewModel
     public string TrackingEmail { get; set; }
     public string UdStatus { get; set; }
     public byte[] PodPhoto { get; set; }
-    public byte[] DeliverySignature { get; set; }
-    public List<byte[]> PodPhotos { get; set; }
     public string PodName { get; set; }
     public string ToContactPhone { get; set; }
-    public string SpeedAccepted { get; set; }
     public int? AcceptedJobTypeId { get; set; }
     public int? NotifiedJobTypeId { get; set; }
     public double? Weight { get; set; }
@@ -76,7 +68,7 @@ public class JobViewModel : DispatchJobViewModel
     public string RefB { get; set; }
     public string OurRef { get; set; }
     public string SigNotRequired { get; set; }
-    public string Charge { get; set; }
+    public decimal? Charge { get; set; }
     public string Date { get; set; }
     public DateTime? DispatchTime { get; set; }
     public DateTime? PuTime { get; set; }
@@ -85,26 +77,17 @@ public class JobViewModel : DispatchJobViewModel
     public int? InternalStatusId { get; set; }
     public string ConNote {get;set;}
     public List<PalletInfo> PalletInfo { get; set; }
-    public decimal? CourierLatitude { get; set; }
-    public decimal? CourierLongitude { get; set; }
-    public int? RunOrder { get; set; }
-    public bool? AllowDispatch { get; set; }
+
     public bool? DgDocumentation { get; set; }
-    public int? TruckWeightLimit { get; set; }
-    public DateTime? TruckStartTime { get; set; }
-    public double? TruckHours { get; set; }
+
     public bool? PrivateRes { get; set; }
     public DateTime? CompletedTime { get; set; }
     public string FromContactName { get; set; }
     public string FromContactNumber { get; set; }
-    public bool? RatedManually { get; set; }
-    public int? SizeId { get; set; }
-    public bool? OneOff { get; set; }
+
 
     public string ScheduleName { get; set; }
-    public bool? AirportOnly { get; set; }
-    public bool? HasNationwide { get; set; }
-    public string DispatcherName { get; set; }
+
     public DateTime? CreatedDate { get; set; }
 
     public List<ParcelDimensions> ParcelDimensions { get; set; }

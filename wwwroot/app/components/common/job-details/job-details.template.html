@@ -156,7 +156,7 @@
             <div class="metric-card" md-ink-ripple ng-click="ctrl.showPricingBreakdown($event, ctrl.job)">
                 <div class="metric-label">Pricing</div>
                 <div class="metric-value">
-                    {{ctrl.job.charge || '—'}}
+                    {{ctrl.job.charge | currency }}
                 </div>
             </div>
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editBookedDate($event, ctrl.job)">

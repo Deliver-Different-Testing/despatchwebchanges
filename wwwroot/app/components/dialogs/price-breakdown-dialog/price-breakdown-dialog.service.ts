@@ -17,15 +17,15 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
         console.debug('PriceBreakdownDialogService: Service instantiated');
     }
 
-    $get() {
+    $get(): this {
         return this;
     }
 
-    async openPriceBreakdownDialog($event: MouseEvent, jobId: number, isPrebook: boolean = false) {
+    async openPriceBreakdownDialog($event: MouseEvent, jobId: number, isPrebook: boolean = false): Promise<number | undefined> {
         try {
             const priceBreakdown: PriceBreakdown[] = await this.DispatchData.getPriceBreakdown(jobId, isPrebook);
 
-            await this.$mdDialog.show({
+            const newAmount: number = await this.$mdDialog.show({
                 controller: PriceBreakdownDialogController,
                 controllerAs: 'ctrl',
                 template: require("./price-breakdown-dialog.template.html"),
@@ -40,10 +40,12 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
                 },
                 bindToController: true,
             });
-
+            
             console.debug('PriceBreakdownDialogService: Dialog closed!');
+
+            return newAmount;
         } catch (error) {
-            if(error === undefined) {
+            if(!error) {
                 console.debug('User closed dialog');
                 return;
             }

@@ -654,9 +654,7 @@ class JobDetailController extends BaseController {
                     job.id,
                     result.fieldName,
                     result.value,
-                    job.charge,
-                    FirstName,
-                    ContactID
+                    job.charge
                 );
             } else {
                 await this.DispatchData.updateJobDetail(
@@ -716,9 +714,7 @@ class JobDetailController extends BaseController {
                             job.id,
                             fieldName,
                             result.value,
-                            job.charge,
-                            FirstName,
-                            ContactID
+                            job.charge
                         );
                     } else {
                         await this.DispatchData.updateJobDetail(
@@ -1414,8 +1410,7 @@ class JobDetailController extends BaseController {
 
         try {
             // Ensure rate is decimal
-            const numericRate = parseFloat(job.charge.replace(/[^\d.-]/g, ""));
-            if (isNaN(numericRate)) {
+            if (isNaN(job.charge)) {
                 console.error("Failed to convert rate to a number");
             }
 
@@ -1424,9 +1419,7 @@ class JobDetailController extends BaseController {
                     job.id,
                     callData.field,
                     callData.value,
-                    numericRate,
-                    FirstName,
-                    ContactID
+                    job.charge
                 );
             } else {
                 await this.DispatchData.updateJobDetail(
@@ -1792,15 +1785,18 @@ class JobDetailController extends BaseController {
     async showPricingBreakdown($event: MouseEvent, job: IJob): Promise<void> {
         try {
             if(job.bulkJob) {
-                this.toastrService.showWarningToast("Pricing breakdown is not currently available for bulk jobs.");
+                this.toastrService.showWarningToast("Price breakdown is not currently available for scheduled jobs.");
                 return;
             }
             
-            await this.priceBreakdownDialogService.openPriceBreakdownDialog(
+           const newAmount = await this.priceBreakdownDialogService.openPriceBreakdownDialog(
                 $event,
                 job.id,
                 job.preBook
             );
+            
+            if(!newAmount || !this.job) return;
+            this.job.charge = newAmount;
             await this.refreshJobDetails(job.id);
         } catch (error) {
             console.error("Error in displayPriceBreakdown:", error);

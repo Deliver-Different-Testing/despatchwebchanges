@@ -1366,18 +1366,17 @@ public class JobController(
         int bulkJobId,
         string field,
         string value,
-        decimal? rate,
-        string despatcherName,
-        int staffId
+        decimal? rate
     )
     {
+        var staffInfo = await infoService.GetStaffInfoAsync();
         await jobRepository.UpdateBulkJobAsync(
             bulkJobId,
             field,
             value,
             rate,
-            despatcherName,
-            staffId
+            staffInfo.Text,
+            staffInfo.Id
         );
         return Ok();
     }
