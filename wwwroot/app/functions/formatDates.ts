@@ -16,6 +16,7 @@ export function formatDateForApiWithTzs(date: Date | dayjs.Dayjs | string, timeZ
     if(!timeZone) timeZone = dayjs.tz.guess();
     // Provide the timeZone to ensure the correct conversion
     // Use this going forward to keep track of timezones properly
+    // Defaults to the user's timezone if not provided'
     
     console.log('[formatDateForApiWithTzs] Starting conversion', {
         inputDate: date,

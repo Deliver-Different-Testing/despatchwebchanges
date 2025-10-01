@@ -199,8 +199,7 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddPriceComponent(int staffId, string despatcherName,
-        [FromBody] ChargeViewModel breakdown)
+    public async Task<IActionResult> AddPriceComponent([FromBody] ChargeViewModel breakdown)
     {
         try
         {
@@ -215,8 +214,6 @@ public class JobController(
             {
                 await taskRepository.AddEventAsync(
                     jobId ?? 0,
-                    staffId,
-                    despatcherName,
                     "Manually rated price",
                     (int)EventType.ChangePrice);
             }
@@ -232,8 +229,7 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdatePriceComponent(int staffId, string despatcherName,
-        [FromBody] ChargeViewModel breakdown)
+    public async Task<IActionResult> UpdatePriceComponent([FromBody] ChargeViewModel breakdown)
     {
         try
         {
@@ -249,8 +245,6 @@ public class JobController(
             {
                 await taskRepository.AddEventAsync(
                     jobId ?? 0,
-                    staffId,
-                    despatcherName,
                     "Manually rated price",
                     (int)EventType.ChangePrice);
             }
@@ -266,7 +260,7 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> DeletePriceComponent(int staffId, string despatcherName, int jobId, int chargeId)
+    public async Task<IActionResult> DeletePriceComponent(int jobId, int chargeId)
     {
         try
         {
@@ -276,8 +270,6 @@ public class JobController(
 
             await taskRepository.AddEventAsync(
                 jobId,
-                staffId,
-                despatcherName,
                 "Manually rated price",
                 (int)EventType.ChangePrice);
 
@@ -297,9 +289,9 @@ public class JobController(
         return Ok();
     }
 
-    public async Task<IActionResult> VoidPrebookJob(int jobId, string despatcher, int staffId)
+    public async Task<IActionResult> VoidPrebookJob(int jobId)
     {
-        await jobRepository.VoidPrebookJobAsync(jobId, despatcher, staffId);
+        await jobRepository.VoidPrebookJobAsync(jobId);
         return Ok();
     }
 
@@ -771,8 +763,6 @@ public class JobController(
             {
                 await CreateLateNotificationEvent(
                     job.Id,
-                    request.StaffId,
-                    request.DespatcherName,
                     lateStatus.EventType,
                     lateStatus.LateTime,
                     job.JobTime.AddMinutes(lateStatus.LateTime)
@@ -876,16 +866,12 @@ public class JobController(
 
     private async Task CreateLateNotificationEvent(
         int jobId,
-        int staffId,
-        string contact,
         int eventType,
         int lateTime,
         DateTime etaTime)
     {
         await taskRepository.AddEventAsync(
             jobId,
-            staffId,
-            contact,
             "Late Call from Despatch",
             eventType,
             null,
@@ -1111,7 +1097,7 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddRestoreEvent(int jobId, int staffId, string despatcherName)
+    public async Task<IActionResult> AddRestoreEvent(int jobId)
     {
         try
         {
@@ -1119,9 +1105,7 @@ public class JobController(
 
             await taskRepository.AddEventAsync(
                 jobId,
-                staffId,
-                despatcherName,
-                $"Restored by {despatcherName} at {currentDate.ToShortDateString()} {currentDate.ToShortTimeString()}",
+                $"Restored at {currentDate.ToShortDateString()} {currentDate.ToShortTimeString()}",
                 (int)EventType.RestoreJob,
                 null,
                 33
@@ -1137,15 +1121,10 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddPriceSuburbChangeEvent(
-        int staffId,
-        int jobId,
-        string despatcherName)
+    public async Task<IActionResult> AddPriceSuburbChangeEvent(int jobId)
     {
         await taskRepository.AddEventAsync(
             jobId,
-            staffId,
-            despatcherName,
             "Changed Price or Suburb",
             (int)EventType.ChangePrice
         );
@@ -1159,8 +1138,6 @@ public class JobController(
         try
         {
             await taskRepository.AddEventAsync(data.JobId,
-                data.StaffId,
-                data.DespatcherName,
                 data.Notes,
                 data.EventTypeId,
                 data.EventDueDate);

@@ -26,7 +26,8 @@ import {ComposeEmailDialogService} from "../dialogs/compose-email-dialog/compose
 import EditAfterhoursDialogService from "../dialogs/edit-afterhours-dialog/edit-afterhours-dialog.service";
 import {IAfterHoursCourierSchedule} from "./interfaces/IAfterHoursCourierSchedule";
 import {AppPages} from "../../enums/app-pages.enum";
-import {formatDateForApi} from "../../functions/formatDates";
+import {formatDateForApi, formatDateForApiWithTzs} from "../../functions/formatDates";
+import {TimeZone} from "../../contants";
 
 class DriverManagementController extends BaseController {
     static $inject = [
@@ -44,7 +45,8 @@ class DriverManagementController extends BaseController {
     ];
 
     private readonly LastActiveTabKey = `lastActiveTab-${AppPages.DriverManagement}-${ContactID}`;
-
+    private timeZone: string = TimeZone;
+    
     isUsCustomer: boolean = false;
 
     // Tab state
@@ -693,8 +695,8 @@ class DriverManagementController extends BaseController {
                 startTime: startTime,
                 endTime: endTime,
                 duration: '4 hours',
-                formattedStartDate: formatDateForApi(startTime),
-                formattedEndDate: formatDateForApi(endTime),
+                formattedStartDate: formatDateForApiWithTzs(startTime, this.timeZone),
+                formattedEndDate: formatDateForApiWithTzs(endTime, this.timeZone),
             };
 
             const result = await this.openEditAfterHoursDialog($event, newSchedule);

@@ -133,15 +133,12 @@ public class CourierController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddFollowupEvent(int jobId, int staffId,
-        string despatcherName)
+    public async Task<IActionResult> AddFollowupEvent(int jobId)
     {
         try
         {
             await taskRepository.AddEventAsync(
                 jobId,
-                staffId,
-                despatcherName,
                 "Follow up dangerous goods license with courier",
                 (int)EventType.DangerousGoods);
             return Json("OK");

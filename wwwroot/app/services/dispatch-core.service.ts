@@ -26,7 +26,7 @@ import {JobProperty} from "../enums/job-property.enum";
 import {UpdatePodDetailsRequest} from "../interfaces/requests.interfaces";
 import {JobEventData} from "../components/dialogs/add-event-dialog/add-event-dialog.interfaces";
 import {DeliveryJourneyViewModel} from "../components/common/task-history/task-history.interfaces";
-import {formatDateForApi} from "../functions/formatDates";
+import {formatDateForApi, formatDateForApiWithTzs} from "../functions/formatDates";
 import IInterCourierData from "../components/dialogs/inter-courier-charge-dialog/interfaces/IInterCourierData";
 import {Is3PhotoInfo} from "../interfaces/aws.interfaces";
 
@@ -128,9 +128,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     async addFollowupEvent(jobId: number): Promise<any> {
         const response = await this.$http.post("job/AddFollowupEvent", null, {
             params: {
-                jobId,
-                ContactID,
-                FirstName,
+                jobId
             },
         });
 
@@ -742,35 +740,14 @@ class DispatchCoreService implements angular.IServiceProvider {
         internal: boolean,
         selectedAreas: ISuggestion[]
     ): Promise<IDispatchJob[]> {
-        const despatchViewIds = selectedAreas.map(area => area.id);
+        const params = this.buildJobParams(
+            queryParams,
+            selectedClients,
+            internal,
+            selectedAreas.map(area => area.id)
+        );
 
-        const params: Record<string, any> = {
-            order: queryParams.order ?? "time",
-            orderDirection: queryParams.orderDirection ?? "asc",
-            isInternal: internal,
-            cid: ContactID,
-            clientIds: selectedClients.length ? selectedClients.join(",") : "",
-            despatchViewIds
-        };
-
-        // Add date filter parameters - handle all options
-        if (queryParams.endDate) {
-            params.dateCutoff = formatDateForApi(queryParams.endDate);
-        }
-
-        // Add start and end date parameters if present
-        if (queryParams.startDate) {
-            params.startDate = formatDateForApi(queryParams.startDate);
-        }
-
-        if (queryParams.endDate) {
-            params.endDate = formatDateForApi(queryParams.endDate);
-        }
-
-        const response = await this.$http.get<IDispatchJob[]>("job", {
-            params: params
-        });
-
+        const response = await this.$http.get<IDispatchJob[]>("job", { params });
         return response.data;
     }
 
@@ -781,20 +758,55 @@ class DispatchCoreService implements angular.IServiceProvider {
         selectedAreas: DfrntPageViewModel[],
         selectedClearListId: number
     ): Promise<IDispatchJob[]> {
+        const params = this.buildJobParams(
+            queryParams,
+            selectedClients,
+            internal,
+            selectedAreas.map(view => view.id),
+            { selectedClearListId }
+        );
+
+        const response = await this.$http.get<IDispatchJob[]>(
+            'job/GetJobsByClearListEnvelope',
+            { params }
+        );
+        return response.data;
+    }
+
+    private buildJobParams(
+        queryParams: IJobQueryParams,
+        selectedClients: string[],
+        internal: boolean,
+        despatchViewIds: (string | number)[],
+        additionalParams: Record<string, any> = {}
+    ): Record<string, any> {
         const params: Record<string, any> = {
             order: queryParams.order ?? "time",
             orderDirection: queryParams.orderDirection ?? "asc",
             isInternal: internal,
-            clientIds: selectedClients.join(","),
-            despatchViewIds: selectedAreas.map(view => view.id),
-            selectedClearListId
+            clientIds: selectedClients.length ? selectedClients.join(",") : "",
+            despatchViewIds,
+            ...additionalParams
         };
 
-        const response = await this.$http.get<IDispatchJob[]>(
-            'job/GetJobsByClearListEnvelope', {params}
-        );
+        // Add date filter parameters
+        this.applyDateFilters(params, queryParams);
 
-        return response.data;
+        return params;
+    }
+
+    private applyDateFilters(
+        params: Record<string, any>,
+        queryParams: IJobQueryParams
+    ): void {
+        if (queryParams.startDate) {
+            params.startDate = formatDateForApiWithTzs(queryParams.startDate);
+        }
+
+        if (queryParams.endDate) {
+            params.endDate = formatDateForApiWithTzs(queryParams.endDate);
+            params.dateCutoff = formatDateForApiWithTzs(queryParams.endDate);
+        }
     }
 
     async autocompleteSearch(

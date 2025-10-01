@@ -13,7 +13,7 @@ import {
     ICourierComplianceFilter,
     ITodayActiveDriverFilter
 } from "./interfaces/ICourierComplianceFilter";
-import {formatDateForApi} from "../../functions/formatDates";
+import {formatDateForApi, formatDateForApiWithTzs} from "../../functions/formatDates";
 import dayjs from "dayjs";
 import {IAfterHoursCourierSchedule} from "./interfaces/IAfterHoursCourierSchedule";
 
@@ -163,10 +163,8 @@ class DriverManagementService implements angular.IServiceProvider {
 
         const payload = {
             ...afterHoursSchedule,
-            startTime: afterHoursSchedule.startTime?.toDate(),
-            endTime: afterHoursSchedule.endTime?.toDate(),
-            formattedStartDate: afterHoursSchedule.startTime ? formatDateForApi(afterHoursSchedule.startTime.toDate()) : '',
-            formattedEndDate: afterHoursSchedule.endTime ? formatDateForApi(afterHoursSchedule.endTime.toDate()) : ''
+            startTime: afterHoursSchedule.startTime ? formatDateForApiWithTzs(afterHoursSchedule.startTime, afterHoursSchedule.timezone) : null,
+            endTime: afterHoursSchedule.endTime ? formatDateForApiWithTzs(afterHoursSchedule.endTime, afterHoursSchedule.timezone) : null,
         };
         
         try {
@@ -182,10 +180,8 @@ class DriverManagementService implements angular.IServiceProvider {
 
         const payload = {
             ...afterHoursSchedule,
-            startTime: afterHoursSchedule.startTime?.toDate(),
-            endTime: afterHoursSchedule.endTime?.toDate(),
-            formattedStartDate: afterHoursSchedule.startTime ? formatDateForApi(afterHoursSchedule.startTime.toDate()) : '',
-            formattedEndDate: afterHoursSchedule.endTime ? formatDateForApi(afterHoursSchedule.endTime.toDate()) : ''
+            startTime: afterHoursSchedule.startTime ? formatDateForApiWithTzs(afterHoursSchedule.startTime, afterHoursSchedule.timezone) : null,
+            endTime: afterHoursSchedule.endTime ? formatDateForApiWithTzs(afterHoursSchedule.endTime, afterHoursSchedule.timezone) : null,
         };
         
         try {

@@ -1,32 +1,82 @@
 using System;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Services;
 
-public class TenantInfoService(IHttpContextAccessor contextAccessor) : ITenantInfoService
+public class TenantInfoService(
+    IHttpContextAccessor contextAccessor,
+    IDbContextFactory<DespatchContext> contextFactory,
+    IMemoryCache cache) : ITenantInfoService
 {
+    private DespatchContext _context;
+    private DespatchContext Context => _context ??= contextFactory.CreateDbContext();
+
+    private string _cachedTimeZone;
+    private string _cachedCountryCode;
+    private int? _cachedStaffId;
+    private TimeZoneInfo _cachedTimeZoneInfo;
+    private CultureInfo _cachedCultureInfo;
+
+    private string GetTimeZone() => _cachedTimeZone ??= contextAccessor.HttpContext?.User.Claims
+        .FirstOrDefault(x => x.Type == "TimeZone")?.Value;
+
+    private string GetCountryCode() => _cachedCountryCode ??= contextAccessor.HttpContext?.User.Claims
+        .FirstOrDefault(x => x.Type == "CountryCode")?.Value;
+
+    private TimeZoneInfo GetTimeZoneInfo()
+    {
+        if (_cachedTimeZoneInfo != null) return _cachedTimeZoneInfo;
+        var timeZone = GetTimeZone();
+        _cachedTimeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timeZone ?? "UTC");
+        return _cachedTimeZoneInfo;
+    }
+
+    private CultureInfo GetCultureInfo()
+    {
+        if (_cachedCultureInfo != null) return _cachedCultureInfo;
+        var countryCode = GetCountryCode();
+        var cultureCode = countryCode switch
+        {
+            "US" => "en-US",
+            "GB" => "en-GB",
+            "AU" => "en-AU",
+            "NZ" => "en-NZ",
+            _ => "en-US"
+        };
+        _cachedCultureInfo = new CultureInfo(cultureCode);
+        return _cachedCultureInfo;
+    }
+
     public DateTime GetCurrentTenantTime()
     {
-        var tenantTimeZone = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "TimeZone")?.Value;
-        var tenantTimeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTimeZone ?? string.Empty);
-        var utcDateTime = DateTime.UtcNow;
-
-        return TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tenantTimeZoneInfo);
+        var tenantTimeZoneInfo = GetTimeZoneInfo();
+        return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tenantTimeZoneInfo);
     }
 
     public DateTime GetCurrentTimeFromTimeZone(TimeZone timeZone)
     {
-        if (timeZone is null) return GetCurrentTenantTime();
-        
-        var currentTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, 
-            TimeZoneInfo.FindSystemTimeZoneById(timeZone.Name));
+        if (timeZone is null)
+            return GetCurrentTenantTime();
 
-        return currentTime;
+        // Cache TimeZoneInfo objects at application level since they don't change
+        var cacheKey = $"timezone_info_{timeZone.Name}";
+        var timeZoneInfo = cache.GetOrCreate(cacheKey, entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
+            return TimeZoneInfo.FindSystemTimeZoneById(timeZone.Name);
+        });
+
+        return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZoneInfo);
     }
 
     public string FormatDateForTenant(DateTime? dateTime)
@@ -34,33 +84,49 @@ public class TenantInfoService(IHttpContextAccessor contextAccessor) : ITenantIn
         if (!dateTime.HasValue)
             return string.Empty;
 
-        var countryCode = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CountryCode")?.Value;
-
-        var cultureCode = countryCode switch
-        {
-            "US" => "en-US",
-            "GB" => "en-GB",
-            "AU" => "en-AU",
-            "NZ" => "en-NZ",
-            _ => "en-US" // Default fallback
-        };
-
-        var culture = new CultureInfo(cultureCode);
-
-        return dateTime.Value.ToString("g", culture); // "g" is a short date /time pattern
+        var culture = GetCultureInfo();
+        return dateTime.Value.ToString("g", culture);
     }
+
 
     public int GetStaffId()
     {
-        var staffId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "StaffID")?.Value;
-        return int.Parse(staffId ?? string.Empty);
+        if (_cachedStaffId.HasValue) return _cachedStaffId.Value;
+        var staffIdString = contextAccessor.HttpContext?.User.Claims
+            .FirstOrDefault(x => x.Type == "StaffID")?.Value;
+        _cachedStaffId = int.Parse(staffIdString ?? "0");
+        return _cachedStaffId.Value;
     }
 
     public bool IsUsTenant()
     {
+        var countryCode = GetCountryCode();
         var usa = Country.Us.GetDescription();
-        var countryCode = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CountryCode")?.Value;
-
         return countryCode?.ToUpper().Equals(usa) ?? false;
+    }
+
+    public async Task<Suggestion> GetStaffInfoAsync()
+    {
+        var staffId = GetStaffId();
+
+        // Cache key unique per staff member
+        var cacheKey = $"staff_info_{staffId}";
+
+        return await cache.GetOrCreateAsync(cacheKey, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(8);
+
+            var staff = await Context.TucStaffs
+                .Where(s => s.UcstId == staffId)
+                .Select(s => new Suggestion
+                {
+                    Id = s.UcstId,
+                    Text = s.UcstFirstName + " " + s.UcstLastName
+                })
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+
+            return staff;
+        });
     }
 }

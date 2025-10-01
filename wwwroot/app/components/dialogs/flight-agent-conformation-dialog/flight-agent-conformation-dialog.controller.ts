@@ -204,7 +204,8 @@ class FlightAgentConformationDialogController extends BaseController {
             const cargoProcessing = await this.nationwideService.calculateCargoReadyTime(
                 this.jobId,
                 lastFlight.carrierFsCode,
-                lastFlight.arrivalTime
+                lastFlight.arrivalTime,
+                lastFlight.arrivalAirportTimeZone
             );
 
             console.debug('Cargo processing response received:', cargoProcessing);

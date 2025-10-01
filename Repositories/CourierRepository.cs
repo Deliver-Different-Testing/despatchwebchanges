@@ -1262,15 +1262,16 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
 
     public async Task UpdateAfterHoursCourierScheduleAsync(AfterHoursCourierScheduleViewModel request)
     {
+        ArgumentNullException.ThrowIfNull(request.StartTime);
+        ArgumentNullException.ThrowIfNull(request.EndTime);
+        
         var dayOfWeek = GetDayOfWeekAsInt(request.Day);
-        var startTime = DateTime.Parse(request.FormattedStartDate);
-        var endTime = DateTime.Parse(request.FormattedEndDate);
         
         var rowsAffected = await Context.TblAfterhoursCouriers
             .Where(c => c.Id == request.AfterHoursScheduleId)
             .ExecuteUpdateAsync(setters => setters
-                .SetProperty(e => e.StartTime, startTime)
-                .SetProperty(e => e.EndTime, endTime)
+                .SetProperty(e => e.StartTime, request.StartTime.Value)
+                .SetProperty(e => e.EndTime, request.EndTime.Value)
                 .SetProperty(e => e.WeekDay, dayOfWeek)
             );
 
@@ -1281,19 +1282,17 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
     {
         try
         {
-            ArgumentNullException.ThrowIfNull(request.FormattedStartDate);
-            ArgumentNullException.ThrowIfNull(request.FormattedEndDate);
+            ArgumentNullException.ThrowIfNull(request.StartTime);
+            ArgumentNullException.ThrowIfNull(request.EndTime);
 
             var dayOfWeek = GetDayOfWeekAsInt(request.Day);
-            var startTime = DateTime.Parse(request.FormattedStartDate);
-            var endTime = DateTime.Parse(request.FormattedEndDate);
-
+            
             var schedule = new TblAfterhoursCourier
             {
                 CourierId = request.CourierId,
                 WeekDay = dayOfWeek,
-                StartTime = startTime,
-                EndTime = endTime
+                StartTime = request.StartTime.Value,
+                EndTime = request.EndTime.Value
             };
             
             await Context.TblAfterhoursCouriers.AddAsync(schedule);

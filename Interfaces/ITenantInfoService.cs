@@ -1,4 +1,6 @@
 using System;
+using System.Threading.Tasks;
+using DespatchWeb.Models;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Interfaces;
@@ -10,4 +12,5 @@ public interface ITenantInfoService
     string FormatDateForTenant(DateTime? dateTime);
     int GetStaffId();
     bool IsUsTenant();
+    Task<Suggestion> GetStaffInfoAsync();
 }

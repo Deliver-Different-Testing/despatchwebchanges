@@ -8,7 +8,6 @@ export interface IAfterHoursCourierSchedule {
     day: string;
     startTime?: Dayjs;
     endTime?: Dayjs;
+    timezone?: string;
     duration: string;
-    formattedStartDate: string;
-    formattedEndDate: string;
 }

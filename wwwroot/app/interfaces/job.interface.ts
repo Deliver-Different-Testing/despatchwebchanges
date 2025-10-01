@@ -526,8 +526,6 @@ export interface ILateCallRequest {
     jobId: number;
     lateType: LateEventType;
     lateTime: number;
-    staffId: number;
-    despatcherName: string;
     calculationRequired: boolean;
 }
 

@@ -300,10 +300,7 @@ public class BaseJobRepository(
     public async Task<int> SaveNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
-        if (viewModel.JobBookingId == null)
-        {
-            ArgumentNullException.ThrowIfNull(viewModel.JobId, nameof(viewModel.JobId));
-        }
+            ArgumentNullException.ThrowIfNull(viewModel.JobId);
 
         var staffId = infoService.GetStaffId();
         var currentTime = infoService.GetCurrentTenantTime();
@@ -317,7 +314,7 @@ public class BaseJobRepository(
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(viewModel.BulkJobId);
-        ArgumentException.ThrowIfNullOrWhiteSpace(viewModel.NoteText, nameof(viewModel.NoteText));
+        ArgumentException.ThrowIfNullOrWhiteSpace(viewModel.NoteText);
 
         // If a note type is not found, default to the internal note
         var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == viewModel.NoteTypeId,
@@ -339,7 +336,7 @@ public class BaseJobRepository(
     public async Task SaveBulkNoteAsync(int bulkJobId, string noteText, bool isImportant = false,
         NoteType noteType = NoteType.InternalNote)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(noteText, nameof(noteText));
+        ArgumentException.ThrowIfNullOrWhiteSpace(noteText);
 
         // If a note type is not found, default to the internal note
         var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
@@ -360,7 +357,7 @@ public class BaseJobRepository(
     public async Task SaveNoteAsync(int jobId, string noteText, bool isImportant = false,
         bool isRecurringJob = false, NoteType noteType = NoteType.InternalNote)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(noteText, nameof(noteText));
+        ArgumentException.ThrowIfNullOrWhiteSpace(noteText);
 
         // If a note type is not found, default to the internal note
         var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);

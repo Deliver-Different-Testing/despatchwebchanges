@@ -200,6 +200,7 @@ class EditAfterhoursDialogController extends BaseController {
     save(): void {
         if (this.validateForm()) {
             console.log('EditAfterhoursDialogController: Saving schedule:', this.editableAfterHoursSchedule);
+            this.editableAfterHoursSchedule.timezone = TimeZone;
             this.$mdDialog.hide(this.editableAfterHoursSchedule);
         } else {
             console.warn('EditAfterhoursDialogController: Form validation failed');

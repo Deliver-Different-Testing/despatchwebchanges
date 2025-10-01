@@ -1820,8 +1820,11 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     public async Task SendPrebookJobAsync(int jobId) =>
         await Context.Procedures.DES_stpJobBooking_InsertJobAndChildrenAsync(jobId);
 
-    public async Task VoidPrebookJobAsync(int jobId, string despatcher, int staffId) =>
-        await Context.Procedures.DESWEB_stpVoidPrebookJobAsync(jobId, despatcher, staffId);
+    public async Task VoidPrebookJobAsync(int jobId)
+    {
+        var staffInfo = await _infoService.GetStaffInfoAsync();
+        await Context.Procedures.DESWEB_stpVoidPrebookJobAsync(jobId, staffInfo.Text, staffInfo.Id);
+    }
 
     public async Task UpdateDeliveryAddressAsync(UpdateAddressRequest request)
     {
