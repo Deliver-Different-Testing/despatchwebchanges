@@ -475,7 +475,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         ClearListAreaDto clearList,
         int percentHeight
     )
-    {
+    {     
         var clearListData = await GetClearListCouriers(clearList.ClearListAreaId);
         if (clearListData is null)
             return null;
@@ -558,8 +558,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         int displayOrder
     )
     {
-        if (data == null)
-            return [];
+        if (data == null) return [];
 
         return data
             .Where(c => c.DisplayOrder == displayOrder)
