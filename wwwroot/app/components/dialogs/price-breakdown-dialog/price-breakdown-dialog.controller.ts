@@ -118,14 +118,14 @@ export class PriceBreakdownDialogController extends BaseController {
                     costAmount: this.selectedPriceBreakdown.costAmount,
                 };
 
-                const chargeId = await this.addPriceBreakdown(newBreakdown);
+                const chargeId = await this.DispatchData.addPriceBreakdown(newBreakdown);
                 if (chargeId) {
                     newBreakdown.chargeId = chargeId;
                     this.priceBreakdown.push(newBreakdown);
                     this.toastrService.showSuccessToast('Price breakdown added successfully');
                 }
             } else {
-                await this.updatePriceBreakdown(this.selectedPriceBreakdown);
+                await this.DispatchData.updatePriceBreakdown(this.selectedPriceBreakdown);
 
                 // Update in the local array
                 const index = this.priceBreakdown.findIndex(pb => pb.chargeId === this.selectedPriceBreakdown?.chargeId);
@@ -149,7 +149,7 @@ export class PriceBreakdownDialogController extends BaseController {
             try {
                 this.isLoading = true;
 
-                await this.deletePriceBreakdown(item.chargeId);
+                await this.DispatchData.deletePriceBreakdown(item.chargeId, this.jobId);
 
                 // Remove from the local array
                 const index = this.priceBreakdown.findIndex(pb => pb.chargeId === item.chargeId);
@@ -165,19 +165,7 @@ export class PriceBreakdownDialogController extends BaseController {
             }
         }
     }
-
-    private async updatePriceBreakdown(priceBreakdown: PriceBreakdown) {
-        await this.DispatchData.updatePriceBreakdown(priceBreakdown);
-    }
-
-    private async addPriceBreakdown(priceBreakdown: PriceBreakdown) {
-        return await this.DispatchData.addPriceBreakdown(priceBreakdown);
-    }
-
-    private async deletePriceBreakdown(chargeId: number) {
-        await this.DispatchData.deletePriceBreakdown(chargeId, this.jobId);
-    }
-
+    
     cancel() {
         this.$mdDialog.cancel();
     }
@@ -185,8 +173,7 @@ export class PriceBreakdownDialogController extends BaseController {
     async save() {
         try {
             this.isLoading = true;
-            await new Promise(resolve => this.registerTimeout(resolve, 500));
-            this.$mdDialog.hide(this.priceBreakdown);
+            this.$mdDialog.hide(this.totalAmount);
         } catch (error) {
             console.error('PriceBreakdownDialogController: Error in save', error);
             this.toastrService.showErrorToast('An error occurred while saving');

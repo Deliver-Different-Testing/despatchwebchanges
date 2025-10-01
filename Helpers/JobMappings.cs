@@ -473,9 +473,13 @@ public static class JobMappings
         // References and amounts
         RefA = j.UcjbClientRefa,
         RefB = j.UcjbClientRefb,
-        Charge = j.UcjbAmount != null ? $"{j.UcjbAmount:C}" : null,
         OurRef = j.UcjbOurRef,
 
+        // Pricing 
+        Charge = j.PricingBreakdowns != null 
+            ? j.PricingBreakdowns.Sum(p => p.ChargeAmount)
+            :  j.UcjbAmount,
+        
         // Status
         StatusId = j.UcjbStatus,
         Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsCode : null,
@@ -675,7 +679,7 @@ public static class JobMappings
         // References and amounts
         RefA = j.ClientRefa,
         RefB = j.ClientRefb,
-        Charge = j.Amount != null ? $"{j.Amount:C}" : null,
+        Charge = j.Amount,
         OurRef = j.OurRef,
 
         // Status
@@ -837,7 +841,7 @@ public static class JobMappings
             // References and amounts
             RefA = j.UcjbClientRefa,
             RefB = j.UcjbClientRefb,
-            Charge = j.UcjbAmount != null ? $"{j.UcjbAmount:C}" : null,
+            Charge = j.UcjbAmount,
             OurRef = j.UcjbOurRef,
 
             StatusId = j.UcjbStatus,
@@ -1014,9 +1018,13 @@ public static class JobMappings
         // References and amounts
         RefA = j.UcbkClientRefa,
         RefB = j.UcbkClientRefb,
-        Charge = j.UcbkAmount != null ? $"{j.UcbkAmount:C}" : null,
         OurRef = j.UcbkOurRef,
 
+        // Pricing
+        Charge = j.PricingBreakdowns != null 
+            ? j.PricingBreakdowns.Sum(p => p.ChargeAmount)
+            :  j.UcbkAmount,
+        
         // Size - has navigation in the archive
         Size =
             j.UcbkSizeNavigation != null

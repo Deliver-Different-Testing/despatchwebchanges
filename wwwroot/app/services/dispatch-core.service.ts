@@ -679,8 +679,6 @@ class DispatchCoreService implements angular.IServiceProvider {
         field: string,
         value: string | number | Date | boolean,
         rate: number | string,
-        despatcherName: string,
-        staffId: number
     ): Promise<void> {
         // Handle time fields
         if (field === JobProperty.Time || field === JobProperty.CompletedTime) {
@@ -727,8 +725,6 @@ class DispatchCoreService implements angular.IServiceProvider {
                     field,
                     value,
                     rate,
-                    despatcherName,
-                    staffId
                 }
             }
         );
