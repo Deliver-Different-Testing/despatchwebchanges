@@ -1,396 +1,137 @@
-﻿@import 'variables.less';
-
-.driver-locations-loader {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.driver-locations-wrapper {
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-  background-color: @main-background-color;
-  display: flex;
-  flex-direction: column;
-}
+﻿@import "variables.less";
 
 #driverLocations {
-  height: 100%;
-  width: 100%;
-  flex: 1;
-  overflow: hidden;
-
-  .driver-locations-container {
-    height: 100%;
-    width: 100%;
-    padding: 6px;
+  .col-xs-3 {
+    padding: 4px;
   }
 
-  .driver-locations-grid-wrapper {
-    height: 100%;
-    width: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
-
-    &::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background: @main-background-color;
-      border-radius: 3px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: @scroll-bar-color;
-      border-radius: 3px;
-
-      &:hover {
-        background: darken(@scroll-bar-color, 10%);
-      }
-    }
-  }
-
-  .driver-locations-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
-    gap: 8px;
-    padding: 3px;
-
-    @media (min-width: 1400px) {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    @media (min-width: 900px) and (max-width: 1399px) {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    @media (max-width: 899px) {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .location-column {
-    display: flex;
-    flex-direction: column;
-    background-color: white;
-    border: 1px solid lighten(@standard-grey, 30%);
-    border-radius: 3px;
+  .driverLocations-list {
+    margin-bottom: 10px;
+    background: #bfbfbf;
+    border-radius: 2px;
     overflow: hidden;
-    min-height: 210px;
-    max-height: 350px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
 
-    .area-button {
-      width: 100%;
-      margin: 0;
-      border-radius: 0;
-      min-height: 34px;
-      padding: 6px 8px;
+    .driverLocations-list-title {
+      background: #5d5d5d;
+      color: #FFF;
+      padding: 8px 16px;
+      position: relative;
+      cursor: pointer;
+      min-height: 48px;
       display: flex;
       align-items: center;
-      justify-content: flex-start;
-      gap: 6px;
-      text-transform: uppercase;
-      font-weight: @weight-medium;
-      font-size: 11px;
-      background-color: white !important;
-      border-bottom: 2px solid @main-background-color;
-      flex-shrink: 0;
-
-      md-icon {
-        margin-right: 3px;
-      }
-
-      .area-name {
-        flex: 1;
-        text-align: left;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .area-count {
-        background-color: @primary-blue;
-        color: white;
-        padding: 1px 6px;
-        border-radius: 8px;
-        font-size: 10px;
-        font-weight: @weight-semibold;
-        flex-shrink: 0;
-      }
-
-      &.md-accent {
-        background-color: @primary-blue !important;
-        color: white !important;
-
-        md-icon {
-          color: white !important;
-        }
-
-        .area-count {
-          background-color: rgba(255, 255, 255, 0.3);
-        }
-      }
-
-      &:hover:not(.md-accent) {
-        background-color: @hover-color !important;
-      }
-    }
-  }
-
-  .courier-list-wrapper {
-    flex: 1;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .courier-list-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 6px;
-
-    &::-webkit-scrollbar {
-      height: 4px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background: @main-background-color;
-      border-radius: 3px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: @scroll-bar-color;
-      border-radius: 3px;
+      font-weight: 500;
+      transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
       &:hover {
-        background: darken(@scroll-bar-color, 10%);
-      }
-    }
-  }
-
-  .courier-section {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 6px;
-    flex-shrink: 0;
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-
-    .section-label {
-      font-size: 10px;
-      font-weight: @weight-semibold;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-      padding: 3px 6px;
-      margin-bottom: 3px;
-      opacity: 0.7;
-    }
-
-    &.section-top .section-label {
-      color: @status-new-text;
-    }
-
-    &.section-middle .section-label {
-      color: @status-awaiting-text;
-    }
-
-    &.section-bottom .section-label {
-      color: @status-despatched-text;
-    }
-  }
-
-  .courier-items-horizontal {
-    display: flex;
-    gap: 4px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding-bottom: 3px;
-
-    &::-webkit-scrollbar {
-      height: 4px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: lighten(@scroll-bar-color, 20%);
-      border-radius: 2px;
-    }
-  }
-
-  .courier-item {
-    flex-shrink: 0;
-    padding: 6px 7px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    border-radius: 3px;
-    border-left: 2px solid transparent;
-    min-width: 84px;
-    max-width: 140px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-
-    &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-
-    &.is-active {
-      border-left-color: @primary-blue;
-      box-shadow: 0 0 0 1px @primary-blue;
-    }
-
-    .courier-number {
-      font-weight: @weight-semibold;
-      font-size: 12px;
-      white-space: nowrap;
-
-      .job-count {
-        font-weight: @weight-normal;
-        opacity: 0.7;
-        margin-left: 3px;
-        font-size: 10px;
+        background-color: #707070;
       }
     }
 
-    .destination-tags {
+    .listActive {
+      background-color: @primary-color;
+      color: #000;
+
+      &:hover {
+        background-color: darken(@primary-color, 5%);
+      }
+
+      &:active {
+        background-color: darken(@primary-color, 10%);
+      }
+    }
+
+    table {
+      width: 100%;
+    }
+
+    .driverLocations-list-items {
+      position: relative;
+      overflow: auto;
+      height: 100%;
+      margin-top: -22px;
+      padding-top: 22px;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
       display: flex;
-      flex-wrap: wrap;
-      gap: 2px;
+      flex-direction: column;
 
-      .destination-tag {
-        display: inline-block;
-        padding: 2px 4px;
-        background-color: rgba(255, 255, 255, 0.8);
-        border-radius: 2px;
-        font-size: 9px;
-        color: @text-muted;
-        white-space: nowrap;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        border: 1px solid rgba(0, 0, 0, 0.1);
-      }
-    }
-  }
-
-  .section-top {
-    .courier-item {
-      background-color: @status-new-bg;
-      border-left-color: @status-blue;
-
-      .courier-number {
-        color: @status-new-text;
+      &::-webkit-scrollbar {
+        display: none;
       }
 
-      &:hover {
-        background-color: darken(@status-new-bg, 3%);
+      .driverLocations-list-items-item {
+        display: flex;
+        align-items: center;
+        background-color: #bae1ff;
+        border-bottom: 1px solid #a4d2f5;
+        transition: background-color 0.15s ease-in-out;
+
+        &:hover {
+          background-color: darken(#bae1ff, 5%);
+        }
+
+        &.active {
+          background-color: darken(#bae1ff, 10%);
+        }
+
+        .driverLocations-list-items-item-number {
+          padding: 4px 8px;
+          min-width: 33px;
+          background: #94c5ea;
+          text-align: center;
+          font-weight: 700;
+
+          &.active {
+            background-color: darken(#94c5ea, 5%);
+          }
+        }
+
+        .driverLocations-list-items-item-dest {
+          padding: 2px 4px;
+          display: inline-block;
+          background: #efefef;
+          border: 1px solid #CCC;
+          margin: 2px 0 2px 4px;
+          border-radius: 2px;
+          flex-grow: 1;
+        }
       }
 
-      &.is-active {
-        background-color: darken(@status-new-bg, 5%);
-      }
-    }
-  }
+      .driverLocations-list-items-middle {
+        background-color: #d4c7ff;
+        border-bottom: 1px solid #c6b6fd;
 
-  .section-middle {
-    .courier-item {
-      background-color: @status-awaiting-bg;
-      border-left-color: lighten(@status-awaiting-text, 30%);
+        &:hover {
+          background-color: darken(#d4c7ff, 5%);
+        }
 
-      .courier-number {
-        color: @status-awaiting-text;
-      }
+        .driverLocations-list-items-item-number {
+          background: #bdaeef;
 
-      &:hover {
-        background-color: darken(@status-awaiting-bg, 3%);
+          &.active {
+            background-color: darken(#bdaeef, 5%);
+          }
+        }
       }
 
-      &.is-active {
-        background-color: darken(@status-awaiting-bg, 5%);
+      .driverLocations-list-items-bottom {
+        background-color: #ffdfba;
+        border-bottom: 1px solid #efcea9;
+
+        &:hover {
+          background-color: darken(#ffdfba, 5%);
+        }
+
+        .driverLocations-list-items-item-number {
+          background: #ffc888;
+
+          &.active {
+            background-color: darken(#ffc888, 5%);
+          }
+        }
       }
-    }
-  }
-
-  .section-bottom {
-    .courier-item {
-      background-color: @status-despatched-bg;
-      border-left-color: lighten(@status-despatched-text, 30%);
-
-      .courier-number {
-        color: @status-despatched-text;
-      }
-
-      &:hover {
-        background-color: darken(@status-despatched-bg, 3%);
-      }
-
-      &.is-active {
-        background-color: darken(@status-despatched-bg, 5%);
-      }
-    }
-  }
-
-  .draggable-row {
-    &.ui-draggable-dragging {
-      opacity: 0.8;
-      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
-      z-index: 1000;
-      transform: scale(1.05);
-    }
-  }
-
-  .droppable-row {
-    &.ui-droppable-hover {
-      border: 2px dashed @primary-blue;
-      background-color: fade(@primary-blue, 20%);
-    }
-  }
-
-  @media (max-width: 899px) {
-    .location-column {
-      max-height: 280px;
-    }
-  }
-
-  @media (max-width: 600px) {
-    .driver-locations-grid {
-      grid-template-columns: 1fr;
-      gap: 6px;
-    }
-
-    .location-column {
-      min-height: 175px;
-      max-height: 245px;
-    }
-
-    .courier-item {
-      min-width: 70px;
-      padding: 4px 6px;
-
-      .courier-number {
-        font-size: 11px;
-      }
-
-      .destination-tag {
-        font-size: 8px;
-      }
-    }
-
-    .section-label {
-      font-size: 9px;
-      padding: 2px 4px;
     }
   }
 }

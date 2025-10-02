@@ -13,6 +13,11 @@ import IDateFilterData from "../common/date-filter-menu/IDateFilterData";
 import dayjs from "dayjs";
 import {AppPages} from "../../enums/app-pages.enum";
 import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 class RecurringJobsController extends BaseController {
     static $inject = [
@@ -31,9 +36,9 @@ class RecurringJobsController extends BaseController {
     
     private readonly RecurringJobsLayoutKey: string = `layouts-${AppPages.Recurring}-${ContactID}`;
     private readonly RecurringJobsLastActiveLayoutKey: string = `lastActiveLayout-${AppPages.Recurring}-${ContactID}`
-    private readonly DateFilterKey: string = `dateFilter-${AppPages.Dispatch}-${ContactID}`;
+    private readonly DateFilterKey: string = `dateFilter-${AppPages.Recurring}-${ContactID}`;
 
-    readonly boxes = {
+    readonly boxes: Record<string, IBox> = {
         jobList: {
             title: "Recurring Jobs List",
             icon: "list_alt",
@@ -53,6 +58,7 @@ class RecurringJobsController extends BaseController {
 
     readonly isUsCustomer: boolean;
 
+    browserTimeZone: string;
     dateFilterData: IDateFilterData;
     currentJobId?: number;
     jobs: IJob[] = [];
@@ -98,6 +104,7 @@ class RecurringJobsController extends BaseController {
 
         this.isUsCustomer = appConfig.US_Customer;
         this.isAdmin = ClientInternal;
+        this.browserTimeZone = dayjs.tz.guess();
 
         // Date filter
         this.dateFilterData = setDateFilterDefaults();
@@ -342,7 +349,7 @@ class RecurringJobsController extends BaseController {
             this.currentJobId = undefined;
             this.activeFilter = active;
             this.promise = this.recurringJobsService.getPreBookJobs(active, 
-                this.dateFilterData.startDate.toDate(), this.dateFilterData.endDate.toDate());
+                this.dateFilterData.startDate, this.dateFilterData.endDate);
 
             this.jobList = await this.promise;
             this.updateTable();
@@ -410,7 +417,7 @@ class RecurringJobsController extends BaseController {
 
             // User clicked 'Yes'
             const voidJobs = jobIds.map(jobId =>
-                this.recurringJobsService.voidPrebookJob(jobId, FirstName, ContactID)
+                this.recurringJobsService.voidPrebookJob(jobId)
             );
 
             await Promise.all(voidJobs);
@@ -456,7 +463,7 @@ class RecurringJobsController extends BaseController {
             await this.$mdDialog.show(confirm);
 
             // User clicked 'Yes'
-            await this.recurringJobsService.voidPrebookJob(jobId, FirstName, ContactID);
+            await this.recurringJobsService.voidPrebookJob(jobId);
 
             await this.refreshData();
 

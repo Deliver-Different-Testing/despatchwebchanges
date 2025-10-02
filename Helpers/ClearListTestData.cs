@@ -4,53 +4,73 @@ namespace DespatchWeb.Helpers;
 
 public static class ClearListTestData
 {
-    public static ClearListViewModel GetTopFiveUsCities()
+    public static ClearListViewModel GenerateClearListViewModel()
     {
         return new ClearListViewModel
         {
             Areas =
             [
-                GetNewYorkCity(),
-                GetLosAngeles(),
-                GetChicago(),
-                GetHouston(),
-                GetPhoenix()
+                GetCentral1(),
+                GetWestMid0(),
+                GetEastMid10(),
+                GetMangere3()
             ]
         };
     }
 
-    private static AreaClearList GetNewYorkCity()
+    private static AreaClearList GetCentral1()
     {
         return new AreaClearList
         {
             Id = 1,
-            Name = "New York City",
+            Name = "Central 1",
             Order = 1,
-            PercentHeight = 33,
-            TotalRemaining = 45,
+            PercentHeight = 25,
+            TotalRemaining = 43,
             Top =
             [
                 new ClearListSection
                 {
-                    CourierNumber = "NYC001",
-                    JobCount = 8,
+                    CourierNumber = "43",
+                    JobCount = 12,
                     CourierData = new CourierData
                     {
-                        Courier = "NYC001",
-                        Location = "Manhattan - Midtown",
-                        Pu = "12",
-                        Del = "8",
-                        Lrm = "5",
-                        Eta2Lrm = "15m",
-                        CourierId = 1001,
+                        Courier = "43",
+                        Location = "Central Auckland",
+                        Pu = "15",
+                        Del = "12",
+                        Lrm = "8",
+                        Eta2Lrm = "25m",
+                        CourierId = 43,
                         CourierName = "John Smith",
-                        CourierMobile = "(212) 555-0101"
+                        CourierMobile = "(021) 555-0043"
                     },
                     Destinations =
                     [
-                        new Destination { Id = 1, Label = "Empire State Building" },
-                        new Destination { Id = 2, Label = "Times Square" },
-                        new Destination { Id = 3, Label = "Central Park South" }
+                        new Destination { Id = 1, Label = "A1" },
+                        new Destination { Id = 2, Label = "C1" }
+                    ]
+                },
+                new ClearListSection
+                {
+                    CourierNumber = "44",
+                    JobCount = 8,
+                    CourierData = new CourierData
+                    {
+                        Courier = "44",
+                        Location = "City Central",
+                        Pu = "18",
+                        Del = "14",
+                        Lrm = "10",
+                        Eta2Lrm = "30m",
+                        CourierId = 44,
+                        CourierName = "Sarah Wilson",
+                        CourierMobile = "(021) 555-0044"
+                    },
+                    Destinations =
+                    [
+                        new Destination { Id = 3, Label = "S1" },
+                        new Destination { Id = 4, Label = "C1" }
                     ]
                 }
             ],
@@ -58,379 +78,573 @@ public static class ClearListTestData
             [
                 new ClearListSection
                 {
-                    CourierNumber = "NYC002",
-                    JobCount = 12,
+                    CourierNumber = "11",
+                    JobCount = 15,
                     CourierData = new CourierData
                     {
-                        Courier = "NYC002",
-                        Location = "Brooklyn - Downtown",
-                        Pu = "15",
-                        Del = "10",
-                        Lrm = "8",
-                        Eta2Lrm = "22m",
-                        CourierId = 1002,
-                        CourierName = "Maria Rodriguez",
-                        CourierMobile = "(718) 555-0102"
+                        Courier = "11",
+                        Location = "South Central",
+                        Pu = "8",
+                        Del = "6",
+                        Lrm = "4",
+                        Eta2Lrm = "15m",
+                        CourierId = 11,
+                        CourierName = "Mike Johnson",
+                        CourierMobile = "(021) 555-0011"
                     },
-                    Destinations =
-                    [
-                        new Destination { Id = 4, Label = "Brooklyn Bridge Park" },
-                        new Destination { Id = 5, Label = "DUMBO" }
-                    ]
+                    Destinations = [new Destination { Id = 5, Label = "S1" }]
+                },
+                new ClearListSection
+                {
+                    CourierNumber = "5080",
+                    JobCount = 18,
+                    CourierData = new CourierData
+                    {
+                        Courier = "5080",
+                        Location = "Special Delivery",
+                        Pu = "120",
+                        Del = "80",
+                        Lrm = "40",
+                        Eta2Lrm = "45m",
+                        CourierId = 5080,
+                        CourierName = "Team Lead",
+                        CourierMobile = "(021) 555-5080"
+                    },
+                    Destinations = [new Destination { Id = 6, Label = "SD" }]
                 }
             ],
             Bottom =
             [
                 new ClearListSection
                 {
-                    CourierNumber = "NYC003",
-                    JobCount = 6,
+                    CourierNumber = "97",
+                    JobCount = 7,
                     CourierData = new CourierData
                     {
-                        Courier = "NYC003",
-                        Location = "Queens - Astoria",
-                        Pu = "8",
-                        Del = "5",
-                        Lrm = "3",
-                        Eta2Lrm = "18m",
-                        CourierId = 1003,
-                        CourierName = "David Chen",
-                        CourierMobile = "(347) 555-0103"
+                        Courier = "97",
+                        Location = "West Auckland",
+                        Pu = "25",
+                        Del = "18",
+                        Lrm = "12",
+                        Eta2Lrm = "35m",
+                        CourierId = 97,
+                        CourierName = "Emma Davis",
+                        CourierMobile = "(021) 555-0097"
                     },
-                    Destinations = [new Destination { Id = 6, Label = "Queensboro Plaza" }]
+                    Destinations = [new Destination { Id = 7, Label = "W3" }]
+                },
+                new ClearListSection
+                {
+                    CourierNumber = "33",
+                    JobCount = 11,
+                    CourierData = new CourierData
+                    {
+                        Courier = "33",
+                        Location = "East Auckland",
+                        Pu = "12",
+                        Del = "9",
+                        Lrm = "6",
+                        Eta2Lrm = "20m",
+                        CourierId = 33,
+                        CourierName = "James Brown",
+                        CourierMobile = "(021) 555-0033"
+                    },
+                    Destinations = [new Destination { Id = 8, Label = "E2" }]
                 }
             ]
         };
     }
 
-    private static AreaClearList GetLosAngeles()
+    private static AreaClearList GetWestMid0()
     {
         return new AreaClearList
         {
             Id = 2,
-            Name = "Los Angeles",
+            Name = "West Mid 0",
             Order = 2,
-            PercentHeight = 33,
-            TotalRemaining = 38,
+            PercentHeight = 25,
+            TotalRemaining = 52,
             Top =
             [
                 new ClearListSection
                 {
-                    CourierNumber = "LA001",
-                    JobCount = 10,
+                    CourierNumber = "3",
+                    JobCount = 14,
                     CourierData = new CourierData
                     {
-                        Courier = "LA001",
-                        Location = "Downtown LA",
-                        Pu = "14",
-                        Del = "9",
-                        Lrm = "6",
-                        Eta2Lrm = "20m",
-                        CourierId = 2001,
-                        CourierName = "Michael Johnson",
-                        CourierMobile = "(213) 555-0201"
+                        Courier = "3",
+                        Location = "East",
+                        Pu = "4",
+                        Del = "3",
+                        Lrm = "2",
+                        Eta2Lrm = "10m",
+                        CourierId = 3,
+                        CourierName = "David Chen",
+                        CourierMobile = "(021) 555-0003"
                     },
-                    Destinations =
-                    [
-                        new Destination { Id = 7, Label = "Staples Center" },
-                        new Destination { Id = 8, Label = "LA Live" },
-                        new Destination { Id = 9, Label = "Grand Central Market" }
-                    ]
+                    Destinations = [new Destination { Id = 9, Label = "E1" }]
+                },
+                new ClearListSection
+                {
+                    CourierNumber = "52",
+                    JobCount = 9,
+                    CourierData = new CourierData
+                    {
+                        Courier = "52",
+                        Location = "Mid Region",
+                        Pu = "20",
+                        Del = "15",
+                        Lrm = "10",
+                        Eta2Lrm = "28m",
+                        CourierId = 52,
+                        CourierName = "Lisa Wang",
+                        CourierMobile = "(021) 555-0052"
+                    },
+                    Destinations = [new Destination { Id = 10, Label = "M2" }]
                 }
             ],
             Middle =
             [
                 new ClearListSection
                 {
-                    CourierNumber = "LA002",
-                    JobCount = 15,
+                    CourierNumber = "120",
+                    JobCount = 20,
                     CourierData = new CourierData
                     {
-                        Courier = "LA002",
-                        Location = "Santa Monica",
-                        Pu = "18",
-                        Del = "12",
-                        Lrm = "10",
-                        Eta2Lrm = "25m",
-                        CourierId = 2002,
-                        CourierName = "Sarah Williams",
-                        CourierMobile = "(310) 555-0202"
+                        Courier = "120",
+                        Location = "South",
+                        Pu = "35",
+                        Del = "25",
+                        Lrm = "15",
+                        Eta2Lrm = "40m",
+                        CourierId = 120,
+                        CourierName = "Robert Taylor",
+                        CourierMobile = "(021) 555-0120"
                     },
-                    Destinations =
-                    [
-                        new Destination { Id = 10, Label = "Santa Monica Pier" },
-                        new Destination { Id = 11, Label = "Third Street Promenade" }
-                    ]
+                    Destinations = [new Destination { Id = 11, Label = "S1" }]
+                },
+                new ClearListSection
+                {
+                    CourierNumber = "121",
+                    JobCount = 16,
+                    CourierData = new CourierData
+                    {
+                        Courier = "121",
+                        Location = "Central",
+                        Pu = "40",
+                        Del = "30",
+                        Lrm = "18",
+                        Eta2Lrm = "42m",
+                        CourierId = 121,
+                        CourierName = "Maria Garcia",
+                        CourierMobile = "(021) 555-0121"
+                    },
+                    Destinations = [new Destination { Id = 12, Label = "C1" }]
                 }
             ],
-            Bottom =
+            Bottom = 
             [
                 new ClearListSection
                 {
-                    CourierNumber = "LA003",
-                    JobCount = 7,
+                    CourierNumber = "99",
+                    JobCount = 5,
                     CourierData = new CourierData
                     {
-                        Courier = "LA003",
-                        Location = "Hollywood",
-                        Pu = "10",
-                        Del = "6",
-                        Lrm = "4",
-                        Eta2Lrm = "12m",
-                        CourierId = 2003,
-                        CourierName = "Carlos Martinez",
-                        CourierMobile = "(323) 555-0203"
+                        Courier = "99",
+                        Location = "Shallow West",
+                        Pu = "28",
+                        Del = "20",
+                        Lrm = "14",
+                        Eta2Lrm = "35m",
+                        CourierId = 99,
+                        CourierName = "Tom Harris",
+                        CourierMobile = "(021) 555-0099"
                     },
-                    Destinations = [new Destination { Id = 12, Label = "Hollywood & Highland" }]
+                    Destinations = [new Destination { Id = 13, Label = "M1" }]
                 }
             ]
         };
     }
 
-    private static AreaClearList GetChicago()
+    private static AreaClearList GetEastMid10()
     {
         return new AreaClearList
         {
             Id = 3,
-            Name = "Chicago",
+            Name = "East Mid 10",
             Order = 3,
-            PercentHeight = 33,
-            TotalRemaining = 32,
+            PercentHeight = 25,
+            TotalRemaining = 35,
             Top =
             [
                 new ClearListSection
                 {
-                    CourierNumber = "CHI001",
-                    JobCount = 9,
+                    CourierNumber = "35",
+                    JobCount = 35,
                     CourierData = new CourierData
                     {
-                        Courier = "CHI001",
-                        Location = "Loop",
-                        Pu = "11",
-                        Del = "7",
-                        Lrm = "5",
-                        Eta2Lrm = "14m",
-                        CourierId = 3001,
-                        CourierName = "James Anderson",
-                        CourierMobile = "(312) 555-0301"
+                        Courier = "35",
+                        Location = "District 1",
+                        Pu = "14",
+                        Del = "10",
+                        Lrm = "7",
+                        Eta2Lrm = "22m",
+                        CourierId = 35,
+                        CourierName = "Kevin Lee",
+                        CourierMobile = "(021) 555-0035"
                     },
-                    Destinations =
-                    [
-                        new Destination { Id = 13, Label = "Willis Tower" },
-                        new Destination { Id = 14, Label = "Millennium Park" }
-                    ]
+                    Destinations = [new Destination { Id = 14, Label = "D1" }]
+                },
+                new ClearListSection
+                {
+                    CourierNumber = "53",
+                    JobCount = 53,
+                    CourierData = new CourierData
+                    {
+                        Courier = "53",
+                        Location = "Area 3",
+                        Pu = "22",
+                        Del = "16",
+                        Lrm = "11",
+                        Eta2Lrm = "32m",
+                        CourierId = 53,
+                        CourierName = "Amy Thompson",
+                        CourierMobile = "(021) 555-0053"
+                    },
+                    Destinations = [new Destination { Id = 15, Label = "A3" }]
                 }
             ],
             Middle =
             [
                 new ClearListSection
                 {
-                    CourierNumber = "CHI002",
-                    JobCount = 11,
+                    CourierNumber = "113",
+                    JobCount = 113,
                     CourierData = new CourierData
                     {
-                        Courier = "CHI002",
-                        Location = "River North",
-                        Pu = "13",
-                        Del = "9",
-                        Lrm = "7",
-                        Eta2Lrm = "19m",
-                        CourierId = 3002,
-                        CourierName = "Patricia Lee",
-                        CourierMobile = "(773) 555-0302"
+                        Courier = "113",
+                        Location = "Central 3",
+                        Pu = "45",
+                        Del = "32",
+                        Lrm = "20",
+                        Eta2Lrm = "48m",
+                        CourierId = 113,
+                        CourierName = "Peter Zhang",
+                        CourierMobile = "(021) 555-0113"
                     },
-                    Destinations =
-                    [
-                        new Destination { Id = 15, Label = "Navy Pier" },
-                        new Destination { Id = 16, Label = "Magnificent Mile" }
-                    ]
+                    Destinations = [new Destination { Id = 16, Label = "C3" }]
+                },
+                new ClearListSection
+                {
+                    CourierNumber = "31",
+                    JobCount = 31,
+                    CourierData = new CourierData
+                    {
+                        Courier = "31",
+                        Location = "Central 1",
+                        Pu = "12",
+                        Del = "9",
+                        Lrm = "6",
+                        Eta2Lrm = "18m",
+                        CourierId = 31,
+                        CourierName = "Sophie Martin",
+                        CourierMobile = "(021) 555-0031"
+                    },
+                    Destinations = [new Destination { Id = 17, Label = "C1" }]
                 }
             ],
-            Bottom =
+            Bottom = 
             [
                 new ClearListSection
                 {
-                    CourierNumber = "CHI003",
-                    JobCount = 5,
+                    CourierNumber = "161",
+                    JobCount = 161,
                     CourierData = new CourierData
                     {
-                        Courier = "CHI003",
-                        Location = "Wicker Park",
-                        Pu = "7",
-                        Del = "4",
-                        Lrm = "2",
-                        Eta2Lrm = "10m",
-                        CourierId = 3003,
-                        CourierName = "Robert Taylor",
-                        CourierMobile = "(872) 555-0303"
+                        Courier = "161",
+                        Location = "East 1",
+                        Pu = "48",
+                        Del = "35",
+                        Lrm = "22",
+                        Eta2Lrm = "50m",
+                        CourierId = 161,
+                        CourierName = "Mark Robinson",
+                        CourierMobile = "(021) 555-0161"
                     },
-                    Destinations = [new Destination { Id = 17, Label = "Division Street" }]
+                    Destinations = [new Destination { Id = 18, Label = "E1" }]
+                },
+                new ClearListSection
+                {
+                    CourierNumber = "21",
+                    JobCount = 21,
+                    CourierData = new CourierData
+                    {
+                        Courier = "21",
+                        Location = "East 2",
+                        Pu = "10",
+                        Del = "7",
+                        Lrm = "5",
+                        Eta2Lrm = "15m",
+                        CourierId = 21,
+                        CourierName = "Rachel Green",
+                        CourierMobile = "(021) 555-0021"
+                    },
+                    Destinations = [new Destination { Id = 19, Label = "E2" }]
+                },
+                new ClearListSection
+                {
+                    CourierNumber = "2",
+                    JobCount = 2,
+                    CourierData = new CourierData
+                    {
+                        Courier = "2",
+                        Location = "District 2",
+                        Pu = "3",
+                        Del = "2",
+                        Lrm = "1",
+                        Eta2Lrm = "8m",
+                        CourierId = 2,
+                        CourierName = "Chris White",
+                        CourierMobile = "(021) 555-0002"
+                    },
+                    Destinations = [new Destination { Id = 20, Label = "D2" }]
                 }
             ]
         };
     }
 
-    private static AreaClearList GetHouston()
+    private static AreaClearList GetMangere3()
     {
         return new AreaClearList
         {
             Id = 4,
-            Name = "Houston",
+            Name = "Mangere 3",
             Order = 4,
-            PercentHeight = 33,
-            TotalRemaining = 28,
+            PercentHeight = 25,
+            TotalRemaining = 69,
             Top =
             [
                 new ClearListSection
                 {
-                    CourierNumber = "HOU001",
-                    JobCount = 8,
+                    CourierNumber = "69",
+                    JobCount = 69,
                     CourierData = new CourierData
                     {
-                        Courier = "HOU001",
-                        Location = "Downtown Houston",
-                        Pu = "10",
+                        Courier = "69",
+                        Location = "Airport Area",
+                        Pu = "28",
+                        Del = "20",
+                        Lrm = "14",
+                        Eta2Lrm = "38m",
+                        CourierId = 69,
+                        CourierName = "Jason Kim",
+                        CourierMobile = "(021) 555-0069"
+                    },
+                    Destinations = [new Destination { Id = 21, Label = "A1" }]
+                },
+                new ClearListSection
+                {
+                    CourierNumber = "51",
+                    JobCount = 51,
+                    CourierData = new CourierData
+                    {
+                        Courier = "51",
+                        Location = "West 2",
+                        Pu = "20",
+                        Del = "15",
+                        Lrm = "10",
+                        Eta2Lrm = "30m",
+                        CourierId = 51,
+                        CourierName = "Michelle Park",
+                        CourierMobile = "(021) 555-0051"
+                    },
+                    Destinations = [new Destination { Id = 22, Label = "W2" }]
+                }
+            ],
+            Middle =
+            [
+                new ClearListSection
+                {
+                    CourierNumber = "181",
+                    JobCount = 181,
+                    CourierData = new CourierData
+                    {
+                        Courier = "181",
+                        Location = "East 1",
+                        Pu = "60",
+                        Del = "42",
+                        Lrm = "25",
+                        Eta2Lrm = "55m",
+                        CourierId = 181,
+                        CourierName = "Daniel Moore",
+                        CourierMobile = "(021) 555-0181"
+                    },
+                    Destinations = [new Destination { Id = 23, Label = "E1" }]
+                },
+                new ClearListSection
+                {
+                    CourierNumber = "17",
+                    JobCount = 17,
+                    CourierData = new CourierData
+                    {
+                        Courier = "17",
+                        Location = "Mid 1",
+                        Pu = "8",
                         Del = "6",
                         Lrm = "4",
-                        Eta2Lrm = "16m",
-                        CourierId = 4001,
-                        CourierName = "Jennifer Garcia",
-                        CourierMobile = "(713) 555-0401"
+                        Eta2Lrm = "12m",
+                        CourierId = 17,
+                        CourierName = "Jessica Adams",
+                        CourierMobile = "(021) 555-0017"
                     },
-                    Destinations =
-                    [
-                        new Destination { Id = 18, Label = "Minute Maid Park" },
-                        new Destination { Id = 19, Label = "Discovery Green" }
-                    ]
+                    Destinations = [new Destination { Id = 24, Label = "M1" }]
+                },
+                new ClearListSection
+                {
+                    CourierNumber = "32",
+                    JobCount = 32,
+                    CourierData = new CourierData
+                    {
+                        Courier = "32",
+                        Location = "Central 1",
+                        Pu = "14",
+                        Del = "10",
+                        Lrm = "7",
+                        Eta2Lrm = "20m",
+                        CourierId = 32,
+                        CourierName = "Andrew Nelson",
+                        CourierMobile = "(021) 555-0032"
+                    },
+                    Destinations = [new Destination { Id = 25, Label = "C1" }]
+                },
+                new ClearListSection
+                {
+                    CourierNumber = "86",
+                    JobCount = 86,
+                    CourierData = new CourierData
+                    {
+                        Courier = "86",
+                        Location = "Airport 1",
+                        Pu = "30",
+                        Del = "22",
+                        Lrm = "15",
+                        Eta2Lrm = "40m",
+                        CourierId = 86,
+                        CourierName = "Linda Scott",
+                        CourierMobile = "(021) 555-0086"
+                    },
+                    Destinations = [new Destination { Id = 26, Label = "A1" }]
+                },
+                new ClearListSection
+                {
+                    CourierNumber = "88",
+                    JobCount = 88,
+                    CourierData = new CourierData
+                    {
+                        Courier = "88",
+                        Location = "Airport 2",
+                        Pu = "32",
+                        Del = "24",
+                        Lrm = "16",
+                        Eta2Lrm = "42m",
+                        CourierId = 88,
+                        CourierName = "Steve Turner",
+                        CourierMobile = "(021) 555-0088"
+                    },
+                    Destinations = [new Destination { Id = 27, Label = "A2" }]
                 }
             ],
-            Middle =
+            Bottom = 
             [
                 new ClearListSection
                 {
-                    CourierNumber = "HOU002",
-                    JobCount = 13,
+                    CourierNumber = "106",
+                    JobCount = 106,
                     CourierData = new CourierData
                     {
-                        Courier = "HOU002",
-                        Location = "Galleria",
-                        Pu = "16",
-                        Del = "11",
-                        Lrm = "8",
-                        Eta2Lrm = "23m",
-                        CourierId = 4002,
-                        CourierName = "Thomas Nguyen",
-                        CourierMobile = "(281) 555-0402"
+                        Courier = "106",
+                        Location = "Deep South 4",
+                        Pu = "38",
+                        Del = "28",
+                        Lrm = "18",
+                        Eta2Lrm = "45m",
+                        CourierId = 106,
+                        CourierName = "George Hall",
+                        CourierMobile = "(021) 555-0106"
                     },
-                    Destinations =
-                    [
-                        new Destination { Id = 20, Label = "Galleria Mall" },
-                        new Destination { Id = 21, Label = "Highland Village" }
-                    ]
-                }
-            ],
-            Bottom =
-            [
+                    Destinations = [new Destination { Id = 28, Label = "C2" }]
+                },
                 new ClearListSection
                 {
-                    CourierNumber = "HOU003",
-                    JobCount = 4,
+                    CourierNumber = "5173",
+                    JobCount = 5173,
                     CourierData = new CourierData
                     {
-                        Courier = "HOU003",
-                        Location = "Midtown",
+                        Courier = "5173",
+                        Location = "Deep East",
+                        Pu = "150",
+                        Del = "110",
+                        Lrm = "60",
+                        Eta2Lrm = "90m",
+                        CourierId = 5173,
+                        CourierName = "Team East",
+                        CourierMobile = "(021) 555-5173"
+                    },
+                    Destinations = [new Destination { Id = 29, Label = "SD" }]
+                },
+                new ClearListSection
+                {
+                    CourierNumber = "11",
+                    JobCount = 11,
+                    CourierData = new CourierData
+                    {
+                        Courier = "11",
+                        Location = "East 3",
                         Pu = "6",
-                        Del = "3",
-                        Lrm = "2",
-                        Eta2Lrm = "11m",
-                        CourierId = 4003,
-                        CourierName = "Lisa Thompson",
-                        CourierMobile = "(832) 555-0403"
-                    },
-                    Destinations = [new Destination { Id = 22, Label = "Museum District" }]
-                }
-            ]
-        };
-    }
-
-    private static AreaClearList GetPhoenix()
-    {
-        return new AreaClearList
-        {
-            Id = 5,
-            Name = "Phoenix",
-            Order = 5,
-            PercentHeight = 33,
-            TotalRemaining = 25,
-            Top =
-            [
-                new ClearListSection
-                {
-                    CourierNumber = "PHX001",
-                    JobCount = 7,
-                    CourierData = new CourierData
-                    {
-                        Courier = "PHX001",
-                        Location = "Downtown Phoenix",
-                        Pu = "9",
-                        Del = "5",
+                        Del = "4",
                         Lrm = "3",
-                        Eta2Lrm = "13m",
-                        CourierId = 5001,
-                        CourierName = "Christopher White",
-                        CourierMobile = "(602) 555-0501"
+                        Eta2Lrm = "10m",
+                        CourierId = 11,
+                        CourierName = "Nancy Walker",
+                        CourierMobile = "(021) 555-0011"
                     },
-                    Destinations =
-                    [
-                        new Destination { Id = 23, Label = "Chase Field" },
-                        new Destination { Id = 24, Label = "Roosevelt Row" }
-                    ]
-                }
-            ],
-            Middle =
-            [
+                    Destinations = [new Destination { Id = 30, Label = "E3" }]
+                },
                 new ClearListSection
                 {
-                    CourierNumber = "PHX002",
-                    JobCount = 10,
+                    CourierNumber = "28",
+                    JobCount = 28,
                     CourierData = new CourierData
                     {
-                        Courier = "PHX002",
-                        Location = "Scottsdale",
-                        Pu = "12",
+                        Courier = "28",
+                        Location = "Central 1",
+                        Pu = "11",
                         Del = "8",
                         Lrm = "6",
-                        Eta2Lrm = "21m",
-                        CourierId = 5002,
-                        CourierName = "Amanda Harris",
-                        CourierMobile = "(480) 555-0502"
+                        Eta2Lrm = "18m",
+                        CourierId = 28,
+                        CourierName = "Paul Wright",
+                        CourierMobile = "(021) 555-0028"
                     },
-                    Destinations =
-                    [
-                        new Destination { Id = 25, Label = "Old Town Scottsdale" },
-                        new Destination { Id = 26, Label = "Fashion Square" }
-                    ]
-                }
-            ],
-            Bottom =
-            [
+                    Destinations = [new Destination { Id = 31, Label = "C1" }]
+                },
                 new ClearListSection
                 {
-                    CourierNumber = "PHX003",
-                    JobCount = 6,
+                    CourierNumber = "73",
+                    JobCount = 73,
                     CourierData = new CourierData
                     {
-                        Courier = "PHX003",
-                        Location = "Tempe",
-                        Pu = "8",
-                        Del = "5",
-                        Lrm = "3",
-                        Eta2Lrm = "15m",
-                        CourierId = 5003,
-                        CourierName = "Daniel Martinez",
-                        CourierMobile = "(623) 555-0503"
+                        Courier = "73",
+                        Location = "District West 2",
+                        Pu = "26",
+                        Del = "19",
+                        Lrm = "13",
+                        Eta2Lrm = "35m",
+                        CourierId = 73,
+                        CourierName = "Helen Lee",
+                        CourierMobile = "(021) 555-0073"
                     },
-                    Destinations = [new Destination { Id = 27, Label = "Mill Avenue" }]
+                    Destinations = [new Destination { Id = 32, Label = "DW" }]
                 }
             ]
         };

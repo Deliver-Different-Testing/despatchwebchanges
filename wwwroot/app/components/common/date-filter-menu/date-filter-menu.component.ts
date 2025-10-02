@@ -2,16 +2,26 @@
 import dayjs from "dayjs";
 import IDateFilterData from "./IDateFilterData";
 import setDateFilterDefaults from "../../../functions/setDateFilterDefaults";
+import ToastrService from "../../../services/toastr.service";
 
 class DateFilterMenuComponent implements angular.IController {
-    onRefreshData?: (data: {dateFilterData: IDateFilterData }) => Promise<void>;
-    browserTimeZone: string;
-    dateFilterData?: IDateFilterData;
+    static $inject = [
+        'toastrService',
+    ]
+    onRefreshData?: (locals: { dateFilterData: IDateFilterData }) => void;
+    timeZone: string = TimeZone;
+    private dateFilterData?: IDateFilterData;
     dateSearchRange: number = 1;
+    startDate: Date;
+    endDate: Date;
 
-    constructor() {
+    constructor(private toasterService: ToastrService) {
         console.log("Component: DateFilterMenuComponent");
-        this.browserTimeZone = dayjs.tz.guess();
+        console.log("Browser Time Zone:", this.timeZone);
+        
+        // Set dates
+        this.startDate = this.dateFilterData?.startDate.toDate() || new Date();
+        this.endDate = this.dateFilterData?.endDate.toDate() || new Date();
     }
 
     $onInit() {
@@ -59,8 +69,10 @@ class DateFilterMenuComponent implements angular.IController {
             console.log('Calling refresh from DateFilterMenuComponent');
             const dateFilter = this.dateFilterData;
             if(!dateFilter) return;
-            
-            await this.onRefreshData({ dateFilterData: dateFilter });
+
+            this.onRefreshData({
+                dateFilterData: dateFilter
+            });
         }
     }
 
@@ -92,6 +104,26 @@ class DateFilterMenuComponent implements angular.IController {
         console.log("Clearing date filter");
        
         this.dateFilterData = setDateFilterDefaults();
+        await this.refreshData();
+    }
+
+    async onDateChange(): Promise<void> {
+        // Validate that the start date is not after the end date
+        const start = dayjs(this.startDate);
+        const end = dayjs(this.endDate);
+
+        if (start.isAfter(end)) {
+            this.toasterService.showWarningToast("Start date cannot be after end date");
+            return;
+        }
+        
+        console.log("Date filter changed:", { start, end });
+        this.dateFilterData = {
+            startDate: start,
+            endDate: end,
+        }
+
+        console.log("Date filter data:", this.dateFilterData);
         await this.refreshData();
     }
 }

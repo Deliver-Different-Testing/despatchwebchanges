@@ -1,5 +1,6 @@
 import {IPrebookListModel} from "./recurringJobs.interface";
-import dayjs from "dayjs";
+import dayjs, {Dayjs} from "dayjs";
+import {formatDateForApiWithTzs} from "../../functions/formatDates";
 
 class RecurringJobsService {
     static $inject = [
@@ -11,12 +12,12 @@ class RecurringJobsService {
     ) {
     }
 
-    async getPreBookJobs(active: boolean, startDate: Date, endDate: Date): Promise<IPrebookListModel[]> {
+    async getPreBookJobs(active: boolean, startDate: Dayjs, endDate: Dayjs): Promise<IPrebookListModel[]> {
         const response = await this.$http.get<IPrebookListModel[]>(`job/PreBookJobs`, {
             params: {
                 active,
-                startDate: dayjs(startDate).format(),
-                endDate: dayjs(endDate).format()
+                startDate: formatDateForApiWithTzs(startDate),
+                endDate: formatDateForApiWithTzs(endDate),
             }
         });
         return response.data;
@@ -31,14 +32,12 @@ class RecurringJobsService {
             });
     }
 
-    async voidPrebookJob(jobId: number, despatcherName: string, staffId: number): Promise<void> {
+    async voidPrebookJob(jobId: number): Promise<void> {
         await this.$http.post(
             `job/VoidPrebookJob`,
             null, {
                 params: {
                     jobId,
-                    despatcherName,
-                    staffId,
                 }
             }
         );

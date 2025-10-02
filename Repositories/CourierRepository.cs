@@ -364,7 +364,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
 
     public async Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds)
     {
-        if (Debugger.IsAttached) return ClearListTestData.GetTopFiveUsCities();
+        if (Debugger.IsAttached) return ClearListTestData.GenerateClearListViewModel();
         
         if (despatchViewIds.Count == 0) return new ClearListViewModel();
 
