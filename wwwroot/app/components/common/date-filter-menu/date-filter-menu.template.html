@@ -15,7 +15,7 @@
                     <md-icon class="header-icon" md-font-set="material-symbols-outlined">date_range</md-icon>
                     <h3 class="md-title">Date Range Filter</h3>
                     <span flex></span>
-                    <span class="timezone-label">{{::ctrl.browserTimeZone | timezoneShort}}</span>
+                    <span class="timezone-label">{{::ctrl.timeZone | timezoneShort}}</span>
                 </div>
             </md-toolbar>
 
@@ -54,10 +54,10 @@
                                    placeholder="Select start date"
                                    minutes="true"
                                    edit-input="true"
-                                   max-date="ctrl.dateFilterData.endDate"
+                                   max-date="ctrl.endDate"
                                    show-icon="false"
-                                   ng-model="ctrl.dateFilterData.startDate"
-                                   ng-change="ctrl.refreshData()"
+                                   ng-model="ctrl.startDate"
+                                   ng-blur="ctrl.onDateChange()"
                                    ng-model-options="{ debounce: 500 }"
                                    class="dtp-no-msclear dtp-input md-input"
                                    aria-label="Start date"
@@ -78,10 +78,10 @@
                                    placeholder="Select end date"
                                    minutes="true"
                                    edit-input="true"
-                                   min-date="ctrl.dateFilterData.startDate"
+                                   min-date="ctrl.startDate"
                                    show-icon="false"
-                                   ng-model="ctrl.dateFilterData.endDate"
-                                   ng-change="ctrl.refreshData()"
+                                   ng-model="ctrl.endDate"
+                                   ng-blur="ctrl.onDateChange()"
                                    ng-model-options="{ debounce: 500 }"
                                    class="dtp-no-msclear dtp-input md-input"
                                    aria-label="End date"

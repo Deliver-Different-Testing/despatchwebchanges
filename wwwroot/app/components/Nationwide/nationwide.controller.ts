@@ -1429,16 +1429,16 @@ class NationwideControl extends BaseController {
         if(!this.dateFilterData?.startDate || !this.dateFilterData?.endDate) return;
         
         if (dataTypes.includes(JobDataType.NEW)) {
-            this.jobFilters.startDate = this.dateFilterData.startDate.toDate();
-            this.jobFilters.endDate = this.dateFilterData.endDate.toDate();
+            this.jobFilters.startDate = this.dateFilterData.startDate;
+            this.jobFilters.endDate = this.dateFilterData.endDate;
         }
         if (dataTypes.includes(JobDataType.POD)) {
-            this.jobPodFilters.startDate = this.dateFilterData.startDate.toDate();
-            this.jobPodFilters.endDate = this.dateFilterData.endDate.toDate();
+            this.jobPodFilters.startDate = this.dateFilterData.startDate;
+            this.jobPodFilters.endDate = this.dateFilterData.endDate;
         }
         if (dataTypes.includes(JobDataType.REPRICE)) {
-            this.jobRepriceFilters.startDate = this.dateFilterData.startDate.toDate();
-            this.jobRepriceFilters.endDate = this.dateFilterData.endDate.toDate();
+            this.jobRepriceFilters.startDate = this.dateFilterData.startDate;
+            this.jobRepriceFilters.endDate = this.dateFilterData.endDate;
         }
     }
 

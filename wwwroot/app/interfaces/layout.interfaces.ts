@@ -7,6 +7,7 @@ export interface IBox {
     showSearch?: number;
     showRefresh?: number;
     showDetailButtons?: number;
+    showFilter?: number;
 }
 
 export interface IColumn {

@@ -1,8 +1,8 @@
-﻿import dayjs from "dayjs";
+﻿import {Dayjs} from "dayjs";
 
 interface IDateFilterData {
-    startDate: dayjs.Dayjs;
-    endDate: dayjs.Dayjs;
+    startDate: Dayjs;
+    endDate: Dayjs;
 }
 
 export default IDateFilterData;

@@ -49,6 +49,10 @@ import IContextMenuOption from "../../interfaces/context-menu-option.interface";
 import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
 import IDateFilterData from "../common/date-filter-menu/IDateFilterData";
 import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 class HomeController extends BaseController {
     static $inject = [
@@ -1645,8 +1649,8 @@ class HomeController extends BaseController {
             const params: IJobQueryParams = {
                 order: orderBy,
                 orderDirection: orderDirection,
-                startDate: this.queryParams.startDate,
-                endDate: this.queryParams.endDate,
+                startDate: this.dateFilterData.startDate,
+                endDate: this.dateFilterData.endDate,
             };
 
             const result = await this.dispatchJobService.getJobListWithCourierData(
@@ -2373,6 +2377,9 @@ class HomeController extends BaseController {
     async selectAndActivateArea(selectedArea: IAreaClearList): Promise<void> {
         if (!selectedArea || !this.driverLocations) return;
 
+        // Update map
+        this.clearListId = selectedArea.id;
+        
         // First, set the active state
         this.driverLocations.areas.forEach((area: IAreaClearList) => {
             area.isActive = area === selectedArea;

@@ -1,11 +1,9 @@
-<!-- Loading State -->
 <md-progress-linear
         md-mode="indeterminate"
         ng-show="ctrl.driverLocationsLoading"
-        class="md-primary driver-locations-loader">
+        class="md-primary">
 </md-progress-linear>
 
-<!-- Empty State -->
 <no-data
         ng-if="ctrl.showDriverLocationsNoData"
         title="No Driver Locations"
@@ -14,106 +12,66 @@
         show-action="false">
 </no-data>
 
-<!-- Main Content -->
-<div class="driver-locations-wrapper" ng-if="ctrl.showDriverLocationsData">
-    <div id="driverLocations">
-        <div class="driver-locations-container">
-            <div class="driver-locations-grid-wrapper">
-                <div class="driver-locations-grid">
-                    <div class="location-column"
-                         ng-repeat="area in ctrl.driverLocations.areas track by area.id">
-
-                        <!-- Area Header -->
-                        <md-button class="area-button md-raised"
-                                   ng-class="{'md-accent': area.isActive}"
-                                   ng-click="ctrl.selectAndActivateArea(area)">
-                            <md-icon md-font-set="material-symbols-outlined">location_on</md-icon>
-                            <span class="area-name">
-                                {{area.name}}
-                            <md-tooltip md-direction="bottom">{{area.name}}</md-tooltip>
-                            </span>
-                            <span class="area-count">{{area.totalRemaining}}</span>
-                        </md-button>
-
-                        <!-- Courier List - Horizontal Scroll -->
-                        <div class="courier-list-wrapper">
-                            <div class="courier-list-container">
-
-                                <!-- Top Section -->
-                                <div class="courier-section section-top">
-                                    <div class="section-label">New</div>
-                                    <div class="courier-items-horizontal">
-                                        <div class="courier-item draggable-row droppable-row"
-                                             data-courier="{{section.courierNumber}}"
-                                             ng-class="{'is-active': section.isActive}"
-                                             ng-if="((section.courierNumber.indexOf('T') >= 0 && (ctrl.truckMode=='On' || ctrl.truckMode=='Only')) || (section.courierNumber.indexOf('T') < 0 && ctrl.truckMode !== 'Only'))"
-                                             ng-repeat="section in area.top"
-                                             ng-click="ctrl.selectCourier(section.courierData)">
-
-                                            <div class="courier-number">
-                                                {{section.courierNumber}}
-                                                <span class="job-count"
-                                                      ng-if="section.jobCount">({{section.jobCount}})</span>
-                                            </div>
-                                            <div class="destination-tags">
-                                                <span class="destination-tag"
-                                                      ng-repeat="destination in section.destinations">
-                                                    {{destination.label}}
-                                                </span>
-                                            </div>
+<div class="basic-box-scroll">
+    <div id="driverLocations" ng-if="ctrl.showDriverLocationsData">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-xs-3" ng-repeat="area in ctrl.driverLocations.areas">
+                    <div class="driverLocations-list" ng-style="{ 'height': area.percentHeight + '%' }">
+                        <div class="driverLocations-list-title"
+                             ng-class="{'listActive': area.isActive}"
+                             ng-click="ctrl.selectAndActivateArea(area);">
+                            {{area.name}} {{area.totalRemaining}}
+                        </div>
+                        <div class="driverLocations-list-items">
+                            <table>
+                                <tr class="driverLocations-list-items-item driverLocations-list-items-top droppable-row draggable-row"
+                                    data-courier="{{section.courierNumber}}"
+                                    ng-class="{'active': section.isActive}"
+                                    ng-click="ctrl.selectCourier(section.courierData)"
+                                    ng-if="((section.courierNumber.indexOf('T') >= 0 && (ctrl.truckMode=='On' || ctrl.truckMode=='Only')) || (section.courierNumber.indexOf('T') < 0 && ctrl.truckMode !== 'Only'))"
+                                    ng-repeat="section in area.top">
+                                    <td class="driverLocations-list-items-item-number"
+                                        ng-class="{'active': section.isActive}">
+                                        {{section.courierNumber}} ({{section.jobCount}})
+                                    </td>
+                                    <td>
+                                        <div class="driverLocations-list-items-item-dest"
+                                             ng-repeat="destination in section.destinations">{{destination.label}}
                                         </div>
-                                    </div>
-                                </div>
-
-                                <!-- Middle Section -->
-                                <div class="courier-section section-middle">
-                                    <div class="section-label">In Progress</div>
-                                    <div class="courier-items-horizontal">
-                                        <div class="courier-item draggable-row droppable-row"
-                                             data-courier="{{section.courierNumber}}"
-                                             ng-class="{'is-active': section.isActive}"
-                                             ng-if="((section.courierNumber.indexOf('T') >= 0 && (ctrl.truckMode=='On' || ctrl.truckMode=='Only')) || (section.courierNumber.indexOf('T') < 0 && ctrl.truckMode !== 'Only'))"
-                                             ng-repeat="section in area.middle"
-                                             ng-click="ctrl.selectCourier(section.courierData)">
-
-                                            <div class="courier-number">
-                                                {{section.courierNumber}}
-                                            </div>
-                                            <div class="destination-tags">
-                                                <span class="destination-tag"
-                                                      ng-repeat="destination in section.destinations">
-                                                    {{destination.label}}
-                                                </span>
-                                            </div>
+                                    </td>
+                                </tr>
+                                <tr class="driverLocations-list-items-item driverLocations-list-items-middle droppable-row draggable-row"
+                                    data-courier="{{section.courierNumber}}"
+                                    ng-class="{'active': section.isActive}"
+                                    ng-click="ctrl.selectCourier(section.courierData)"
+                                    ng-if="((section.courierNumber.indexOf('T') >= 0 && (ctrl.truckMode=='On' || ctrl.truckMode=='Only')) || (section.courierNumber.indexOf('T') < 0 && ctrl.truckMode !== 'Only'))"
+                                    ng-repeat="section in area.middle">
+                                    <td class="driverLocations-list-items-item-number"
+                                        ng-class="{'active': section.isActive}">{{section.courierNumber}}
+                                    </td>
+                                    <td>
+                                        <div class="driverLocations-list-items-item-dest"
+                                             ng-repeat="destination in section.destinations">{{destination.label}}
                                         </div>
-                                    </div>
-                                </div>
-
-                                <!-- Bottom Section -->
-                                <div class="courier-section section-bottom">
-                                    <div class="section-label">Dispatched</div>
-                                    <div class="courier-items-horizontal">
-                                        <div class="courier-item draggable-row droppable-row"
-                                             data-courier="{{section.courierNumber}}"
-                                             ng-class="{'is-active': section.isActive}"
-                                             ng-if="((section.courierNumber.indexOf('T') >= 0 && (ctrl.truckMode=='On' || ctrl.truckMode=='Only')) || (section.courierNumber.indexOf('T') < 0 && ctrl.truckMode !== 'Only'))"
-                                             ng-repeat="section in area.bottom"
-                                             ng-click="ctrl.selectCourier(section.courierData)">
-
-                                            <div class="courier-number">
-                                                {{section.courierNumber}}
-                                            </div>
-                                            <div class="destination-tags">
-                                                <span class="destination-tag"
-                                                      ng-repeat="destination in section.destinations">
-                                                    {{destination.label}}
-                                                </span>
-                                            </div>
+                                    </td>
+                                </tr>
+                                <tr class="driverLocations-list-items-item driverLocations-list-items-bottom droppable-row draggable-row"
+                                    data-courier="{{section.courierNumber}}"
+                                    ng-class="{'active': section.isActive}"
+                                    ng-click="ctrl.selectCourier(section.courierData)"
+                                    ng-if="((section.courierNumber.indexOf('T') >= 0 && (ctrl.truckMode=='On' || ctrl.truckMode=='Only')) || (section.courierNumber.indexOf('T') < 0 && ctrl.truckMode !== 'Only'))"
+                                    ng-repeat="section in area.bottom">
+                                    <td class="driverLocations-list-items-item-number"
+                                        ng-class="{'active': section.isActive}">{{section.courierNumber}}
+                                    </td>
+                                    <td>
+                                        <div class="driverLocations-list-items-item-dest"
+                                             ng-repeat="destination in section.destinations">{{destination.label}}
                                         </div>
-                                    </div>
-                                </div>
-
-                            </div>
+                                    </td>
+                                </tr>
+                            </table>
                         </div>
                     </div>
                 </div>
