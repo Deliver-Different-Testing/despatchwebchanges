@@ -1,6 +1,7 @@
 ﻿import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import {findIana} from "windows-iana";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -15,9 +16,30 @@ export function formatDateForApi(date: Date | dayjs.Dayjs | string): string {
 export function formatDateForApiWithTzs(date: Date | dayjs.Dayjs | string, timeZone?: string): string {
     if(!timeZone) timeZone = TimeZone;
 
+    // Convert Windows timezone to IANA format if needed
+    let ianaTimeZone = timeZone;
+    try {
+        // Check if it's a Windows timezone by trying to convert it
+        const ianaZones = findIana(timeZone);
+        if (ianaZones && ianaZones.length > 0) {
+            // Use the first IANA zone returned
+            ianaTimeZone = ianaZones[0];
+            console.log('[formatDateForApiWithTzs] Converted Windows timezone', {
+                original: timeZone,
+                iana: ianaTimeZone
+            });
+        }
+    } catch (error) {
+        // If conversion fails, assume it's already in IANA format
+        console.log('[formatDateForApiWithTzs] Using timezone as-is', {
+            timeZone: timeZone,
+            error: error
+        });
+    }
+
     console.log('[formatDateForApiWithTzs] Starting conversion', {
         inputDate: date,
-        timeZone: timeZone,
+        timeZone: ianaTimeZone,
     });
 
     let dayjsDate;
@@ -36,23 +58,23 @@ export function formatDateForApiWithTzs(date: Date | dayjs.Dayjs | string, timeZ
         const dateString = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 
         // Parse this string as being in the target timezone
-        dayjsDate = dayjs.tz(dateString, 'YYYY-MM-DD HH:mm:ss', timeZone);
+        dayjsDate = dayjs.tz(dateString, 'YYYY-MM-DD HH:mm:ss', ianaTimeZone);
     } else if (typeof date === 'string') {
         // If the string already has timezone info, strip it first
         // Otherwise parse as-is in the target timezone
         const dateWithoutTz = date.replace(/[+-]\d{2}:\d{2}$/, '').replace(/Z$/, '');
-        dayjsDate = dayjs.tz(dateWithoutTz, timeZone);
+        dayjsDate = dayjs.tz(dateWithoutTz, ianaTimeZone);
     } else {
         // It's already a dayjs object - format without timezone then reparse
         const dateString = date.format('YYYY-MM-DD HH:mm:ss');
-        dayjsDate = dayjs.tz(dateString, 'YYYY-MM-DD HH:mm:ss', timeZone);
+        dayjsDate = dayjs.tz(dateString, 'YYYY-MM-DD HH:mm:ss', ianaTimeZone);
     }
 
     const result = dayjsDate.format();
 
     console.log('[formatDateForApiWithTzs] Conversion complete', {
         input: date,
-        timeZone: timeZone,
+        timeZone: ianaTimeZone,
         output: result,
         outputTimezone: dayjsDate.format('Z'),
     });
