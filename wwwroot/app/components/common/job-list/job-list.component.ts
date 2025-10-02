@@ -1,9 +1,5 @@
 ﻿import "./job-list.styles.less";
-import {
-    IAddressViewModel,
-    IAssignedFlight, IDispatchJob,
-    ISuggestion
-} from "../../../interfaces/job.interface";
+import {IAddressViewModel, IAssignedFlight, IDispatchJob, ISuggestion} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
 import JobCategory from "./enums/jobCategory";
@@ -76,7 +72,8 @@ class JobsListController extends BaseController {
     private defaultColumnWidths = {
         priority: 80,
         time: 120,
-        speed: 80, 
+        speed: 80,
+        isArchived: 80,
         vehicle: 100,
         jobNo: 100,
         pickup: 250,
@@ -908,8 +905,12 @@ class JobsListController extends BaseController {
     getGridTemplateColumnsWithSelect(): string {
         return this.getGridTemplateColumns();
     }
-    
+
     getGridTemplateColumns(): string {
+        if (this.isJobSearchPage()) {
+            return `${this.columnWidths.priority}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.isArchived}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
+        }
+        
         return `${this.columnWidths.priority}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
     }
 
@@ -1302,6 +1303,10 @@ class JobsListController extends BaseController {
         if (this.onJobSelect) {
             await this.onJobSelect({job: endJob});
         }
+    }
+    
+    isJobSearchPage(): boolean {
+        return this.jobListType === JobListType.JobSearchBulkList || this.jobListType === JobListType.JobSearchMainList;
     }
 }
 

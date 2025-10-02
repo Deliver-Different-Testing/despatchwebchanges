@@ -1351,11 +1351,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     .SetProperty(j => j.UcjbStatus, (int)JobStatus.Void)
                     .SetProperty(j => j.UcjbVoid, true));
 
-            // Reset courier clear list for all affected couriers
-            var resetTasks = courierMapping.Values
-                .Select(courierId => Context.Procedures.UTL_stpCourier_ResetClearListAreaOrderAsync(courierId));
-
-            await Task.WhenAll(resetTasks);
+            foreach (var courierId in courierMapping.Values.Distinct()) await Context.Procedures.UTL_stpCourier_ResetClearListAreaOrderAsync(courierId);
 
             // Close tasks based on the voiding scope
             await CloseTasksByJobIdAsync(jobId, voidSingleJobOnly);
@@ -1396,11 +1392,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     .SetProperty(j => j.JobStatus, (int)JobStatus.Void)
                     .SetProperty(j => j.Void, true));
 
-            // Reset courier clear list for all affected couriers
-            var resetTasks = courierMapping.Values
-                .Select(courierId => Context.Procedures.UTL_stpCourier_ResetClearListAreaOrderAsync(courierId));
-
-            await Task.WhenAll(resetTasks);
+            foreach (var courierId in courierMapping.Values.Distinct()) await Context.Procedures.UTL_stpCourier_ResetClearListAreaOrderAsync(courierId);
 
             // Close tasks based on the voiding scope
             await CloseTasksByJobIdAsync(bulkJobId, voidSingleJobOnly);
