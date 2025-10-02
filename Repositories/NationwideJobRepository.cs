@@ -74,8 +74,8 @@ public class NationwideJobRepository(
                 UcnwJobNumber = job.UcjbNumber,
                 UcnwClientId = job.UcjbClientId ?? 0,
                 UcnwFlightNo = primaryFlight.CarrierFsCode + primaryFlight.FlightNumber,
-                UcnwEtd = primaryFlight.DepartureTime,
-                UcnwEta = primaryFlight.ArrivalTime,
+                UcnwEtd = primaryFlight.DepartureTime.DateTime,
+                UcnwEta = primaryFlight.ArrivalTime.DateTime,
                 WebhookAlertId = webhookIds.First(),
                 GateNumber = primaryFlight.DepartureTerminal,
                 UcnwLegNumber = 1,
@@ -123,7 +123,7 @@ public class NationwideJobRepository(
                 if (pickUpJob != null)
                 {
                     var airportProcessingTime = await GetAirportProcessingTimeAsync(departureAirportId.Value);
-                    pickUpJob.DeliverByTime = primaryFlight.DepartureTime.AddMinutes(-airportProcessingTime);
+                    pickUpJob.DeliverByTime = primaryFlight.DepartureTime.DateTime.AddMinutes(-airportProcessingTime);
                     pickUpJob.DeliverByTimeZoneId = job.PickupTimeZoneId;
 
                     // Update delivery address with airport
@@ -133,7 +133,7 @@ public class NationwideJobRepository(
             }
 
             // Second part
-            job.DeliverByTime = lastFlight.ArrivalTime;
+            job.DeliverByTime = lastFlight.ArrivalTime.DateTime;
             await UpdateJobAddressWithAirportInfoAsync(job, departureAirportId.Value,
                 primaryFlight.DepartureAirportTimeZone, false);
             await UpdateJobAddressWithAirportInfoAsync(job, arrivalAirportId.Value,
@@ -197,8 +197,8 @@ public class NationwideJobRepository(
                         UcnwJobNumber = job.UcjbNumber,
                         UcnwClientId = job.UcjbClientId ?? 0,
                         UcnwFlightNo = leg.CarrierFsCode + leg.FlightNumber,
-                        UcnwEtd = leg.DepartureTime,
-                        UcnwEta = leg.ArrivalTime,
+                        UcnwEtd = leg.DepartureTime.DateTime,
+                        UcnwEta = leg.ArrivalTime.DateTime,
                         WebhookAlertId = webhookIds[i],
                         UcnwLegNumber = i + 1,
                         UcnwAirlineName = leg.AirlineName,
@@ -262,7 +262,7 @@ public class NationwideJobRepository(
             .FirstOrDefaultAsync();
     }
 
-    public async Task<List<Suggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true)
+    public async Task<List<AirportSuggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true)
     {
         const double maxDistanceMiles = 500;
 
@@ -281,7 +281,8 @@ public class NationwideJobRepository(
                     airport.AirportId,
                     airport.Name,
                     AirportLatitude = airport.Latitude.Value,
-                    AirportLongitude = airport.Longitude.Value
+                    AirportLongitude = airport.Longitude.Value,
+                    TimeZone = airport.Timezone
                 })
             .AsNoTracking()
             .ToListAsync();
@@ -303,14 +304,16 @@ public class NationwideJobRepository(
                     jobLatitude,
                     jobLongitude,
                     item.AirportLatitude,
-                    item.AirportLongitude)
+                    item.AirportLongitude),
+                Timezone = item.TimeZone
             })
             .Where(result => result.Distance <= maxDistanceMiles)
             .OrderBy(result => result.Distance)
-            .Select(result => new Suggestion
+            .Select(result => new AirportSuggestion
             {
                 Id = result.AirportId,
-                Text = $"{result.Name} ({result.Distance} mi)"
+                Text = $"{result.Name} ({result.Distance} mi)",
+                Timezone = result.Timezone
             })
             .ToList();
     }

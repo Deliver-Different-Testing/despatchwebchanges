@@ -5,7 +5,14 @@ import DispatchCoreService from "../../services/dispatch-core.service";
 import {AppPages} from "../../enums/app-pages.enum";
 import {IAppConfig} from "../../interfaces/app-config.interface";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
-import {IAgent, IDispatchJob, IJob, IJobQueryParams, ISuggestion} from "../../interfaces/job.interface";
+import {
+    IAgent,
+    IAirportSuggestion,
+    IDispatchJob,
+    IJob,
+    IJobQueryParams,
+    ISuggestion
+} from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
 import {AssignFlightToJobRequest, IFlightViewModel, StatusChangeEvent} from "./nationwide.interfaces";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
@@ -16,7 +23,7 @@ import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interfa
 import AddEventDialogService from "../dialogs/add-event-dialog/add-event-dialog.service";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 import JobContextMenuService from "../../services/job-context-menu.service";
-import {ExtendedTask, TaskViewModel} from "../task-dashboard/task-dashboard.interfaces";
+import {ExtendedTask, ITask} from "../task-dashboard/task-dashboard.interfaces";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
 import {JobProperty} from "../../enums/job-property.enum";
 import FlightDetailsDialogService from "../dialogs/flight-details-dialog/flight-details-dialog.service";
@@ -160,10 +167,10 @@ class NationwideControl extends BaseController {
     activeAirlineOptions?: ISuggestion[];
     timeZone: string;
     lastDepartureTime?: Date;
-    outboundAirportOptions?: ISuggestion[];
-    inboundAirportOptions?: ISuggestion[];
-    selectedOutboundAirport?: ISuggestion;
-    selectedInboundAirport?: ISuggestion;
+    outboundAirportOptions?: IAirportSuggestion[];
+    inboundAirportOptions?: IAirportSuggestion[];
+    selectedOutboundAirport?: IAirportSuggestion;
+    selectedInboundAirport?: IAirportSuggestion;
     isDeliveryJobType: boolean = false;
 
 // Flight section visibility flags
@@ -180,7 +187,6 @@ class NationwideControl extends BaseController {
     showNoAgentsAvailableMessage: boolean = false;
     showAgentList: boolean = false;
 
-    browserTimeZone: string;
     dateFilterData: IDateFilterData;
     
     unReadMessageCount: number = 0;
@@ -239,7 +245,6 @@ class NationwideControl extends BaseController {
         this.greeting = greetUser(FirstName);
         this.isUsCustomer = this.appConfig.US_Customer;
         this.timeZone = TimeZone;
-        this.browserTimeZone = dayjs.tz.guess()
 
         // Date filter
         this.dateFilterData = setDateFilterDefaults();
@@ -838,7 +843,7 @@ class NationwideControl extends BaseController {
         this.applyScope();
     }
 
-    static saveViewsToStorage(views: any): void {
+    private static saveViewsToStorage(views: any): void {
         if (Modernizr.localstorage) {
             localStorage.setItem(`selectedViews-NW-${ContactID}`, JSON.stringify(views));
         }
@@ -1261,7 +1266,6 @@ class NationwideControl extends BaseController {
             this.flightListPromise = this.nationwideService.getFlightOptions(
                 this.currentJob.id,
                 departureDate,
-                this.currentJob.pickUpTimeZone?.text ??  this.browserTimeZone,
                 airlineId,
                 departureAirportId,
                 arrivalAirportId,
@@ -1659,7 +1663,7 @@ class NationwideControl extends BaseController {
         await this.loadTasks(filterType);
     }
 
-    async selectTaskJobDetail(task: TaskViewModel): Promise<void> {
+    async selectTaskJobDetail(task: ITask): Promise<void> {
         this.logTaskInfo(task);
         this.currentSupport = task;
 
@@ -1698,7 +1702,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    private logTaskInfo(task: TaskViewModel): void {
+    private logTaskInfo(task: ITask): void {
         console.info('[selectTaskJobDetail] Starting with task:', {
             jobId: task.jobId,
             jobNumber: task.jobNumber,
@@ -1706,7 +1710,7 @@ class NationwideControl extends BaseController {
         });
     }
 
-    private validateJobId(task: TaskViewModel): boolean {
+    private validateJobId(task: ITask): boolean {
         return this.tasksService.validateTaskJobId(task, (message) => {
             this.toastrService.showWarningToast(message);
         });
@@ -1809,7 +1813,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    static formatAirportCodeForDropdown(text: string): string {
+    formatAirportCodeForDropdown(text: string): string {
         if (!text) return '';
 
         const spaceIndex = text.indexOf(' ');

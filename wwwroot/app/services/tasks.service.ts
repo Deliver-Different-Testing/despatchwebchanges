@@ -1,7 +1,7 @@
 import {
     ExtendedTask,
     TaskTableFiltersRequest,
-    TaskViewModel
+    ITask
 } from "../components/task-dashboard/task-dashboard.interfaces";
 import {ISuggestion} from "../interfaces/job.interface";
 import {StatusFilter} from "../components/task-dashboard/enums/status-filter";
@@ -409,7 +409,7 @@ class TasksService implements angular.IServiceProvider {
         return undefined;
     }
     
-    validateTaskJobId(task: TaskViewModel, onWarning: (message: string) => void): boolean {
+    validateTaskJobId(task: ITask, onWarning: (message: string) => void): boolean {
         const hasJobId = !!task.jobId;
         if (!hasJobId) {
             const message = "This task has no job attached";

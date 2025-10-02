@@ -8,6 +8,7 @@ import {EventType} from "../../../enums/event-type";
 import {JobEventData} from "./add-event-dialog.interfaces";
 import dayjs from "dayjs";
 import VoidJobConfirmationDialogService from "../void-job-confirmation-dialog/void-job-confirmation-dialog.service";
+import {formatDateForApiWithTzs} from "../../../functions/formatDates";
 
 class AddEventDialogController extends BaseController {
     static $inject = [
@@ -118,7 +119,8 @@ class AddEventDialogController extends BaseController {
                     jobNumber: this.job.jobNo,
                     isImportant: false,
                     noteTypeId: JobNoteType.InternalNote,
-                    noteText: newNote
+                    noteText: newNote,
+                    createdDate: dayjs().toDate()
                 };
 
                 await this.noteService.createNote(jobNote);
@@ -130,7 +132,7 @@ class AddEventDialogController extends BaseController {
                 despatcherName: this.dispatcherName,
                 notes: event.notes ?? '',
                 eventTypeId: eventId,
-                eventDueDate: dayjs(event.eventDate).utc().format()
+                eventDueDate: formatDateForApiWithTzs(event.eventDate)
             }
 
             await this.DispatchData.addEvent(eventData);

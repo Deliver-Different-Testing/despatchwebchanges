@@ -232,6 +232,11 @@ public class Suggestion
     public string Text { get; set; }
 }
 
+public class AirportSuggestion : Suggestion
+{
+    public string Timezone { get; set; }
+}
+
 public class TimeZoneSuggestion : Suggestion
 {
     public string TimeZoneIana {get;set;}

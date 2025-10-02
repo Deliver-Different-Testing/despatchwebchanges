@@ -1,4 +1,11 @@
-import {IAgent, IAgentInfoDialog, IDispatchJob, IJobQueryParams, ISuggestion} from "../../interfaces/job.interface";
+import {
+    IAgent,
+    IAgentInfoDialog,
+    IAirportSuggestion,
+    IDispatchJob,
+    IJobQueryParams,
+    ISuggestion
+} from "../../interfaces/job.interface";
 import {AssignFlightToJobRequest, IFlightViewModel} from "./nationwide.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {
@@ -65,7 +72,6 @@ class NationwideService implements angular.IServiceProvider {
     async getFlightOptions(
         jobId: number,
         departureDate: dayjs.Dayjs,
-        timezone: string,
         airlineId?: number,
         departureAirportId?: number,
         arrivalAirportId?: number,
@@ -75,7 +81,7 @@ class NationwideService implements angular.IServiceProvider {
         message: string | null;
         lastDepartureTime: dayjs.Dayjs | null;
     }> {
-        const formattedDate = formatDateForApiWithTzs(departureDate, timezone);
+        const formattedDate = departureDate.format();
 
         console.debug(`Fetching flight data for job ${jobId} with departure ${formattedDate}`);
 
@@ -145,8 +151,8 @@ class NationwideService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getNearbyAirports(jobId: number, usePickup: boolean = true): Promise<ISuggestion[]> {
-        const response = await this.$http.get<ISuggestion[]>("nationwideJob/GetNearbyAirports", {
+    async getNearbyAirports(jobId: number, usePickup: boolean = true): Promise<IAirportSuggestion[]> {
+        const response = await this.$http.get<IAirportSuggestion[]>("nationwideJob/GetNearbyAirports", {
             params: {
                 jobId,
                 usePickup

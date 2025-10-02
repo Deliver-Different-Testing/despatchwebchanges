@@ -477,9 +477,9 @@ public class JobController(
         return Json(result);
     }
 
-    public async Task<IActionResult> PreBookJobs(bool active, DateTime startDate, DateTime endDate)
+    public async Task<IActionResult> PreBookJobs(bool active, DateTimeOffset startDate, DateTimeOffset endDate)
     {
-        var result = await recurringJobRepository.PreBookJobListAsync(active, startDate, endDate);
+        var result = await recurringJobRepository.PreBookJobListAsync(active, startDate.DateTime, endDate.DateTime);
         return Json(result);
     }
 
@@ -721,8 +721,8 @@ public class JobController(
         int? clientId,
         string wild,
         string job,
-        DateTime fromDate,
-        DateTime toDate,
+        DateTimeOffset fromDate,
+        DateTimeOffset toDate,
         int pageIndex,
         int pageSize
     )
@@ -731,8 +731,8 @@ public class JobController(
             courierId,
             wild ?? string.Empty,
             job ?? string.Empty,
-            fromDate.ResetTimeToStartOfDay(),
-            toDate.ResetTimeToEndOfDay(),
+            fromDate.DateTime.ResetTimeToStartOfDay(),
+            toDate.DateTime.ResetTimeToEndOfDay(),
             clientId,
             pageIndex,
             pageSize
@@ -868,7 +868,7 @@ public class JobController(
         int jobId,
         int eventType,
         int lateTime,
-        DateTime etaTime)
+        DateTimeOffset etaTime)
     {
         await taskRepository.AddEventAsync(
             jobId,
@@ -876,7 +876,7 @@ public class JobController(
             eventType,
             null,
             lateTime,
-            etaTime
+            etaTime.DateTime
         );
     }
 
@@ -1871,12 +1871,11 @@ public class JobController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> ScanJobDetail(string runDate, string scan)
+    public async Task<IActionResult> ScanJobDetail(DateTimeOffset runDate, string scan)
     {
         try
         {
-            var formattedDate = DateTime.Parse(runDate);
-            var scanList = await jobRepository.ScanList(formattedDate, scan);
+            var scanList = await jobRepository.ScanList(runDate.DateTime, scan);
             return Json(scanList);
         }
         catch (Exception e)
