@@ -29,7 +29,7 @@ public interface INationwideJobRepository
     Task<List<string>> GetActiveAirlineCodesAsync();
     Task<string> GetAirlineCodeByIdAsync(int airlineId);
     Task SendAgentRequestMessageAsync(int agentId, int jobId);
-    Task<List<Suggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true);
+    Task<List<AirportSuggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true);
     Task RestoreNationwideJobAsync(int jobId);
     Task<List<Suggestion>> GetAllAgentOptionsBySearchAsync(string searchTerm);
     Task<List<string>> GetFlightWebhookIdByJobIdAsync(int jobId);

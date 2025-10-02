@@ -276,7 +276,7 @@ public class FlightStatsService(
                             FlightNumber = segment.FlightNumber,
                             DepartureTime = segment.DepartureTime,
                             ArrivalTime =
-                                AdjustArrivalTimeForOvernightFlight(segment.DepartureTime, segment.ArrivalTime),
+                                AdjustArrivalTimeForOvernightFlight(segment.DepartureTime.DateTime, segment.ArrivalTime.DateTime),
                             DepartureAirportId = departureAirport.AirportId,
                             DepartureAirportFsCode = segment.DepartureAirportFsCode,
                             DepartureTerminal = segment.DepartureTerminal,
@@ -314,9 +314,9 @@ public class FlightStatsService(
                         ?.Name,
                     AirlineCode = firstFlight.CarrierFsCode,
                     FlightNumber = firstFlight.CarrierFsCode + firstFlight.FlightNumber,
-                    DepartureTime = firstFlight.DepartureTime,
+                    DepartureTime = firstFlight.DepartureTime.DateTime,
                     ArrivalTime =
-                        AdjustArrivalTimeForOvernightFlight(firstFlight.DepartureTime, lastFlight.ArrivalTime),
+                        AdjustArrivalTimeForOvernightFlight(firstFlight.DepartureTime.DateTime, lastFlight.ArrivalTime.DateTime),
                     DepartureAirport = firstFlight.DepartureAirportFsCode,
                     ArrivalAirport = lastFlight.ArrivalAirportFsCode,
                     Duration = lastFlight.ArrivalTime - firstFlight.DepartureTime,
@@ -441,7 +441,7 @@ public class FlightStatsService(
                     CarrierFsCode = segment.CarrierFsCode,
                     FlightNumber = segment.FlightNumber,
                     DepartureTime = segment.DepartureTime,
-                    ArrivalTime = AdjustArrivalTimeForOvernightFlight(segment.DepartureTime, segment.ArrivalTime),
+                    ArrivalTime = AdjustArrivalTimeForOvernightFlight(segment.DepartureTime.DateTime, segment.ArrivalTime.DateTime),
                     DepartureAirportFsCode = segment.DepartureAirportFsCode,
                     DepartureTerminal = segment.DepartureTerminal,
                     ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
@@ -474,7 +474,7 @@ public class FlightStatsService(
         {
             AirlineName = flightResponse.Appendix?.Airlines?.FirstOrDefault(a => a.Fs == firstFlight.CarrierFsCode)
                 ?.Name,
-            ArrivalTime = AdjustArrivalTimeForOvernightFlight(firstFlight.DepartureTime, lastFlight.ArrivalTime),
+            ArrivalTime = AdjustArrivalTimeForOvernightFlight(firstFlight.DepartureTime.DateTime, lastFlight.ArrivalTime.DateTime),
             CarrierFsCode = firstFlight.CarrierFsCode,
             DepartureTime = firstFlight.DepartureTime,
             FlightNumber = firstFlight.FlightNumber,

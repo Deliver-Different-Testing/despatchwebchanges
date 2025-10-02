@@ -25,7 +25,7 @@ public class TaskRepository(
 
         if (filters != null) query = ApplyFilters(query, filters);
 
-        query = ApplyOrdering(query, filters, today);
+        query = ApplyOrdering(query, filters, today.DateTime);
 
         var tasks = await query
             .Select(TaskMapping)

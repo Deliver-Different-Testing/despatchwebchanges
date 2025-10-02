@@ -21,7 +21,7 @@ import {
 } from "../interfaces/courier.interface";
 import {IEventGroupViewModel} from "../interfaces/event-group-view-model.interface";
 import {ClearListEnvelopeViewModel, DfrntPageViewModel,} from "../interfaces/dfrnt-page-view-model.interface";
-import {TaskTableFiltersRequest, TaskViewModel,} from "../components/task-dashboard/task-dashboard.interfaces";
+import {TaskTableFiltersRequest, ITask,} from "../components/task-dashboard/task-dashboard.interfaces";
 import {JobProperty} from "../enums/job-property.enum";
 import {UpdatePodDetailsRequest} from "../interfaces/requests.interfaces";
 import {JobEventData} from "../components/dialogs/add-event-dialog/add-event-dialog.interfaces";
@@ -936,7 +936,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getAllTasks(filters?: TaskTableFiltersRequest): Promise<TaskViewModel[]> {
+    async getAllTasks(filters?: TaskTableFiltersRequest): Promise<ITask[]> {
         try {
             let params: any = {};
 
@@ -958,7 +958,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 }
             }
 
-            const response = await this.$http.get<TaskViewModel[]>('/Task/GetAllTasks', {
+            const response = await this.$http.get<ITask[]>('/Task/GetAllTasks', {
                 params: params
             });
 

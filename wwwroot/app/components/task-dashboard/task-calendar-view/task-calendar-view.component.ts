@@ -4,7 +4,7 @@ import isoWeek from "dayjs/plugin/isoWeek";
 import weekday from "dayjs/plugin/weekday";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import {ExtendedTask, TaskViewModel} from "../task-dashboard.interfaces";
+import {ExtendedTask, ITask} from "../task-dashboard.interfaces";
 import {ITaskListItemConfig} from "../../common/task-item-component/task-item.interfaces";
 import {CalendarDay, CalendarWeek} from "./task-calendar-view.interfaces";
 import BaseController from "../../base-controller";
@@ -316,12 +316,12 @@ class TaskCalendarViewController extends BaseController {
         return date.isBefore(dayjs(), 'day');
     }
 
-    getTaskPriorityClass(task: TaskViewModel): string {
+    getTaskPriorityClass(task: ITask): string {
         if (this.isTaskOverdue(task)) return 'high';
         return 'medium';
     }
 
-    isTaskOverdue(task: TaskViewModel): boolean {
+    isTaskOverdue(task: ITask): boolean {
         if (task.closed) return false;
         return dayjs(task.dueDate).isBefore(dayjs());
     }

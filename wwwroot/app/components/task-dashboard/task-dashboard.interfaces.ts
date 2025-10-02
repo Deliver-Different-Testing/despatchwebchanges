@@ -1,6 +1,6 @@
 import {ISuggestion} from "../../interfaces/job.interface";
 
-export interface TaskViewModel {
+export interface ITask {
     id: number;
     title: string;
     description: string;
@@ -12,7 +12,7 @@ export interface TaskViewModel {
     jobNumber: string;
 }
 
-export interface ExtendedTask extends TaskViewModel {
+export interface ExtendedTask extends ITask {
     dueTimeStr?: string;
 }
 

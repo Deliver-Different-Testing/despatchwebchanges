@@ -66,9 +66,9 @@
                         class="md-button airline-chip"
                         ng-click="$mdMenu.open($event)">
                     <md-icon md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
-                    <span class="airline-label">{{::ctrl.formatAirportCodeForDropdown(ctrl.selectedOutboundAirport.text)}}</span>
+                    <span class="airline-label">{{ctrl.formatAirportCodeForDropdown(ctrl.selectedOutboundAirport.text)}}</span>
                     <md-tooltip md-direction="bottom">
-                        {{::ctrl.selectedOutboundAirport ? 'Flights departing ' + ctrl.formatAirportCodeForDropdown(ctrl.selectedOutboundAirport.text) : 'Nearby Outbound Airports'}}
+                        {{ctrl.selectedOutboundAirport ? 'Flights departing ' + ctrl.formatAirportCodeForDropdown(ctrl.selectedOutboundAirport.text) : 'Nearby Outbound Airports'}}
                     </md-tooltip>
                 </md-button>
 
@@ -115,9 +115,9 @@
                         class="md-button airline-chip"
                         ng-click="$mdMenu.open($event)">
                     <md-icon md-font-set="material-symbols-outlined">flight_land</md-icon>
-                    <span class="airline-label">{{::ctrl.formatAirportCodeForDropdown(ctrl.selectedInboundAirport.text)}}</span>
+                    <span class="airline-label">{{ctrl.formatAirportCodeForDropdown(ctrl.selectedInboundAirport.text)}}</span>
                     <md-tooltip md-direction="bottom">
-                        {{::ctrl.selectedInboundAirport ? 'Flights arriving ' + ctrl.formatAirportCodeForDropdown(ctrl.selectedInboundAirport.text) : 'Nearby Inbound Airports'}}
+                        {{ctrl.selectedInboundAirport ? 'Flights arriving ' + ctrl.formatAirportCodeForDropdown(ctrl.selectedInboundAirport.text) : 'Nearby Inbound Airports'}}
                     </md-tooltip>
                 </md-button>
                 <md-menu-content class="md-dense" width="4">

@@ -1,5 +1,5 @@
 import BaseController from "../../base-controller";
-import {ExtendedTask, TaskViewModel} from "../../task-dashboard/task-dashboard.interfaces";
+import {ExtendedTask, ITask} from "../../task-dashboard/task-dashboard.interfaces";
 import {SelectDialogService} from "../../dialogs/select-dialog/select-dialog.service";
 import {EditDateTimeDialogService} from "../../dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
 import DispatchCoreService from "../../../services/dispatch-core.service";
@@ -61,7 +61,7 @@ class TaskListItemController extends BaseController {
         };
     }
 
-    async openDateDialog($event: MouseEvent, task: TaskViewModel) {
+    async openDateDialog($event: MouseEvent, task: ITask) {
         $event.preventDefault();
         $event.stopPropagation();
 
@@ -84,7 +84,7 @@ class TaskListItemController extends BaseController {
         }
     }
 
-    async openTimeDialog($event: MouseEvent, task: TaskViewModel) {
+    async openTimeDialog($event: MouseEvent, task: ITask) {
         $event.preventDefault();
         $event.stopPropagation();
 
@@ -107,7 +107,7 @@ class TaskListItemController extends BaseController {
         }
     }
 
-    async reassignTask($event: MouseEvent, task: TaskViewModel) {
+    async reassignTask($event: MouseEvent, task: ITask) {
         try {
             const users = await this.DispatchService.getActiveStaff();
             const result: ISelectDialogResult = await this.selectDialogService.showSelectDialog(
@@ -132,7 +132,7 @@ class TaskListItemController extends BaseController {
         }
     }
 
-    async handleTaskCompletion(task: TaskViewModel) {
+    async handleTaskCompletion(task: ITask) {
         try {
             await this.tasksService.markTaskAsClosed(task.id, task.closed);
 
@@ -151,7 +151,7 @@ class TaskListItemController extends BaseController {
         }
     }
 
-    isTaskOverdue(task: TaskViewModel): boolean {
+    isTaskOverdue(task: ITask): boolean {
         if (task.closed) return false;
         return dayjs(task.dueDate).isBefore(dayjs());
     }

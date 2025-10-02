@@ -293,9 +293,9 @@ public class ScheduledFlight
 
     [JsonPropertyName("arrivalAirportFsCode")] public string ArrivalAirportFsCode { get; set; }
 
-    [JsonPropertyName("departureTime")] public DateTime DepartureTime { get; set; }
+    [JsonPropertyName("departureTime")] public DateTimeOffset DepartureTime { get; set; }
 
-    [JsonPropertyName("arrivalTime")] public DateTime ArrivalTime { get; set; }
+    [JsonPropertyName("arrivalTime")] public DateTimeOffset ArrivalTime { get; set; }
 
     [JsonPropertyName("stops")] public int Stops { get; set; }
 

@@ -1,5 +1,5 @@
 import "./task-dashboard.styles.less";
-import {ExtendedTask, TaskTableFiltersRequest, TaskViewModel} from "./task-dashboard.interfaces";
+import {ExtendedTask, TaskTableFiltersRequest, ITask} from "./task-dashboard.interfaces";
 import {IDispatchJob, ISuggestion} from "../../interfaces/job.interface";
 import {ViewMode} from "./enums/view-mode";
 import BaseController from "../base-controller";
@@ -15,6 +15,8 @@ import {IDeliveryHistoryConfig} from "../common/task-history/task-history.interf
 import DensityMode from "../../enums/densityMode";
 import {AppPages} from "../../enums/app-pages.enum";
 import IDateFilterData from "../common/date-filter-menu/IDateFilterData";
+import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
+import {formatDateForApiWithTzs} from "../../functions/formatDates";
 
 class TaskDashboardController extends BaseController {
     static $inject = [
@@ -72,7 +74,7 @@ class TaskDashboardController extends BaseController {
 
     timeZone: string;
     browserTimeZone: string;
-    
+
     // Task history
     selectedTask?: ExtendedTask;
     taskHistoryConfig: IDeliveryHistoryConfig = {
@@ -95,10 +97,10 @@ class TaskDashboardController extends BaseController {
 
         // Date filter
         this.today = dayjs();
-        this.dateFilterData = TaskDashboardController.resetDateFilterToDefault();
+        this.dateFilterData = setDateFilterDefaults();
         this.loadDateFilterFromStorage();
 
-        
+
         this.showFullCalendar = false;
         this.loadViewPreference();
 
@@ -111,7 +113,7 @@ class TaskDashboardController extends BaseController {
         this.loadLists()
             .then(() => this.getTasks())
             .catch(error => {
-               console.error('Initialization error:', error);
+                console.error('Initialization error:', error);
             });
 
         this.watchEvent('jobChanged', (_, newJob: IDispatchJob) => {
@@ -129,7 +131,7 @@ class TaskDashboardController extends BaseController {
             this.staffList = staffList;
             this.eventTypesList = eventTypesList;
         } catch (error) {
-           console.error('Error loading lists:', error);
+            console.error('Error loading lists:', error);
             throw error;
         }
     }
@@ -143,7 +145,7 @@ class TaskDashboardController extends BaseController {
                 try {
                     this.$mdSidenav("right").toggle();
                 } catch (retryError) {
-                   console.error('Sidenav still not available:', retryError);
+                    console.error('Sidenav still not available:', retryError);
                 }
             }, 100);
         }
@@ -177,7 +179,7 @@ class TaskDashboardController extends BaseController {
                 this.isFirstLoad = false;
             });
         } catch (error) {
-           console.error('Error loading tasks:', error);
+            console.error('Error loading tasks:', error);
 
             this.registerTimeout(() => {
                 this.tasksLoading = false;
@@ -204,9 +206,9 @@ class TaskDashboardController extends BaseController {
         if (this.searchQuery) {
             filters.searchText = this.searchQuery;
         }
-        
-            filters.startDate = dayjs(this.dateFilterData.startDate).format();
-            filters.endDate = dayjs(this.dateFilterData.endDate).format();
+
+        filters.startDate = formatDateForApiWithTzs(this.dateFilterData.startDate);
+        filters.endDate = formatDateForApiWithTzs(this.dateFilterData.endDate);
 
         return filters;
     }
@@ -230,7 +232,7 @@ class TaskDashboardController extends BaseController {
                 task.dueTimeStr = `${formattedHours}:${roundedMinutes === 0 ? '00' : roundedMinutes}`;
                 task.dueDate = dueDate.format();
             } catch (error) {
-               console.error(`Error processing dueDate for task:`, task, error);
+                console.error(`Error processing dueDate for task:`, task, error);
                 task.dueTimeStr = "00:00";
             }
         });
@@ -240,7 +242,7 @@ class TaskDashboardController extends BaseController {
         await this.getTasks();
     }
 
-   async setStatusFilter(status: string): Promise<void> {
+    async setStatusFilter(status: string): Promise<void> {
         this.statusFilter = status;
 
         if (status === StatusFilter.Done) {
@@ -296,7 +298,7 @@ class TaskDashboardController extends BaseController {
         return this.getTasks();
     }
 
-    isTaskOverdue(task: TaskViewModel): boolean {
+    isTaskOverdue(task: ITask): boolean {
         if (task.closed) return false;
         return dayjs(task.dueDate).isBefore(dayjs(this.today));
     }
@@ -318,14 +320,14 @@ class TaskDashboardController extends BaseController {
             }
         });
     }
-    
+
     async goToToday(): Promise<void> {
-            const today = dayjs().startOf('day');
-            if (today.isBefore(dayjs(this.dateFilterData.startDate)) || today.isAfter(dayjs(this.dateFilterData.endDate))) {
-                // Adjust the range to include today
-                this.dateFilterData.startDate = dayjs().subtract(3, 'days').startOf('day').toDate();
-                this.dateFilterData.endDate = dayjs().add(3, 'days').endOf('day').toDate();
-            }
+        const today = dayjs().startOf('day');
+        if (today.isBefore(dayjs(this.dateFilterData.startDate)) || today.isAfter(dayjs(this.dateFilterData.endDate))) {
+            // Adjust the range to include today
+            this.dateFilterData.startDate = dayjs().subtract(3, 'days').startOf('day');
+            this.dateFilterData.endDate = dayjs().add(3, 'days').endOf('day');
+        }
 
         await this.refreshDashboard();
     }
@@ -337,9 +339,9 @@ class TaskDashboardController extends BaseController {
     selectTaskJobDetail(task: ExtendedTask): void {
         this.selectTaskForHistory(task);
     }
-    
+
     handleCalendarTaskClick(task: ExtendedTask): void {
-       console.info('Calendar task clicked:', task);
+        console.info('Calendar task clicked:', task);
         this.selectTaskJobDetail(task);
     }
 
@@ -348,7 +350,7 @@ class TaskDashboardController extends BaseController {
     }
 
     handleCalendarTaskStatusChange(task: ExtendedTask): void {
-       console.info('Calendar task status changed:', task);
+        console.info('Calendar task status changed:', task);
 
         const taskIndex = this.tasks.findIndex(t => t.id === task.id);
         if (taskIndex !== -1) {
@@ -363,7 +365,7 @@ class TaskDashboardController extends BaseController {
 
         // If switching to the list view, reset to 24 hours
         if (!this.showFullCalendar) {
-            this.dateFilterData = TaskDashboardController.resetDateFilterToDefault();
+            this.dateFilterData = setDateFilterDefaults();
             this.saveDateFilterToStorage();
             await this.refreshDashboard();
         }
@@ -383,8 +385,8 @@ class TaskDashboardController extends BaseController {
     }
 
     async updateDateRangeFromCalendar(startDate: Date, endDate: Date): Promise<void> {
-        this.dateFilterData.startDate = startDate;
-        this.dateFilterData.endDate = endDate;
+        this.dateFilterData.startDate = dayjs(startDate);
+        this.dateFilterData.endDate = dayjs(endDate);
         await this.refreshDashboard();
     }
 
@@ -403,12 +405,12 @@ class TaskDashboardController extends BaseController {
     }
 
     handleHistoryStepClick(step: any): void {
-       console.info('History step clicked:', step);
+        console.info('History step clicked:', step);
         // Add logic to handle step clicks if needed
     }
 
     handleHistoryAutomationClick(automation: any): void {
-       console.info('History automation clicked:', automation);
+        console.info('History automation clicked:', automation);
         // Add logic to handle automation clicks if needed
     }
 
@@ -437,26 +439,16 @@ class TaskDashboardController extends BaseController {
                 if (savedDateFilter) {
                     const parsedDateFilter = JSON.parse(savedDateFilter);
                     this.dateFilterData = {
-                        startDate: dayjs(parsedDateFilter.startDate).toDate(),
-                        endDate: dayjs(parsedDateFilter.endDate).toDate()
+                        startDate: dayjs(parsedDateFilter.startDate),
+                        endDate: dayjs(parsedDateFilter.endDate)
                     };
                 }
             } catch (error) {
                 console.error('Error loading date filter from storage:', error);
                 // Keep default values if parsing fails
-                this.dateFilterData = {
-                    startDate: dayjs().toDate(),
-                    endDate: dayjs().add(24, 'hours').toDate()
-                };
+                this.dateFilterData = setDateFilterDefaults();
             }
         }
-    }
-    
-    private static resetDateFilterToDefault(): IDateFilterData {
-        return {
-           startDate: dayjs().toDate(),
-           endDate: dayjs().add(24, 'hours').toDate()
-       };
     }
 }
 

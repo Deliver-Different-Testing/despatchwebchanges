@@ -18,7 +18,7 @@ import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import {ClearListEnvelopeViewModel, DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {JobStatus} from "../../enums/job-status.enum";
 import BaseController from "../base-controller";
-import {ExtendedTask, TaskViewModel} from "../task-dashboard/task-dashboard.interfaces";
+import {ExtendedTask, ITask} from "../task-dashboard/task-dashboard.interfaces";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 import {EditAddressDialogService} from "../dialogs/edit-address-dialog/edit-address-dialog.service";
 import {AppPages} from "../../enums/app-pages.enum";
@@ -1350,7 +1350,7 @@ class HomeController extends BaseController {
         }
     }
 
-    async selectSupportJobDetail(task: TaskViewModel): Promise<void> {
+    async selectSupportJobDetail(task: ITask): Promise<void> {
         console.log(' Starting with task:', {
             jobId: task.jobId,
             jobNumber: task.jobNumber,

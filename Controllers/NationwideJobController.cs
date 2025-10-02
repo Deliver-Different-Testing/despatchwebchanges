@@ -80,7 +80,7 @@ public class NationwideJobController(
     }
 
     public async Task<IActionResult> GetScheduledFlightOptions(
-        DateTime departureDate,
+        DateTimeOffset  departureDate,
         int jobId,
         int? airlineId,
         int? departureAirportId,
@@ -97,7 +97,7 @@ public class NationwideJobController(
 
             var flights = await flightService.GetFlightsAsync(
                 jobId,
-                departureDate,
+                departureDate.DateTime,
                 airlineId,
                 departureAirportId,
                 arrivalAirportId,
@@ -190,7 +190,7 @@ public class NationwideJobController(
         {
             return await flightService.GetFlightDetailsByFlightNumberAsync(
                 request.FlightNumber,
-                request.DepartureDate,
+                request.DepartureDate.DateTime,
                 request.JobId);
         }
         catch (Exception ex)
@@ -210,7 +210,7 @@ public class NationwideJobController(
             {
                 var webhookId = await flightService.CreateFlightRuleByDepartureAsync(
                     $"{segment.CarrierFsCode}{segment.FlightNumber}",
-                    segment.DepartureTime,
+                    segment.DepartureTime.DateTime,
                     segment.DepartureAirportFsCode) ?? string.Empty;
 
                 if (!string.IsNullOrEmpty(webhookId)) webhookIds.Add(webhookId);
@@ -452,11 +452,11 @@ public class NationwideJobController(
         }
     }
 
-    public async Task<IActionResult> CalculateCargoReadyTime(int jobId, string carrierFsCode, DateTime arrivalTime)
+    public async Task<IActionResult> CalculateCargoReadyTime(int jobId, string carrierFsCode, DateTimeOffset arrivalTime)
     {
         try
         {
-            var cargoReadyTime = await repository.CalculateCargoReadyTimeAsync(jobId, carrierFsCode, arrivalTime);
+            var cargoReadyTime = await repository.CalculateCargoReadyTimeAsync(jobId, carrierFsCode, arrivalTime.DateTime);
             return Json(cargoReadyTime);
         }
         catch (Exception e)

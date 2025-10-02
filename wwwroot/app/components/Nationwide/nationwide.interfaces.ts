@@ -73,9 +73,9 @@ export interface AssignFlightToJobRequest {
     fromAirportId?: number;
     toAirportId?: number;
     flightNumber: string;
-    departureDate: dayjs.Dayjs | string;
+    departureDate: string;
     flightSegments: IFlightSegment[];
-    packageReadyTime?: dayjs.Dayjs | string;
+    packageReadyTime?: string;
     packageDeliverByTime?: Date | string;
     packageDeliveryNotes?: string;
 }

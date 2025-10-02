@@ -252,8 +252,8 @@ export interface ISuggestion {
     selected?: boolean;
 }
 
-export interface ITimeZoneSuggestion extends ISuggestion {
-    timeZoneIana: string;
+export interface IAirportSuggestion extends ISuggestion {
+    timezone: string;
 }
 
 export interface IClearListViewModel {
