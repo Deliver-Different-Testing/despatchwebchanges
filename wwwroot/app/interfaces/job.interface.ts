@@ -421,6 +421,7 @@ export interface IDispatchJob {
     isFlightJob: boolean;
     isAgentJob: boolean;
     isBulkJob: boolean;
+    isArchived: boolean;
 
     // Status and timing information
     speedId?: number;

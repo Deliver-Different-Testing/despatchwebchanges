@@ -163,6 +163,18 @@
                                 ng-mousedown="ctrl.startResize($event, 'time'); $event.stopPropagation()"></button>
                     </div>
 
+
+                    <div class="header-cell" ng-class="ctrl.getSortClass('isArchived')" ng-if="::ctrl.isJobSearchPage()">
+                        <div class="header-content">
+                            <span class="header-text">IS ARCHIVED</span>
+                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">
+                                {{ctrl.getSortIcon('isArchived')}}
+                            </md-icon>
+                        </div>
+                        <button class="resize-handle"
+                                ng-mousedown="ctrl.startResize($event, 'isArchived'); $event.stopPropagation()"></button>
+                    </div>
+                    
                     <div class="header-cell" ng-class="ctrl.getSortClass('speed')" ng-click="ctrl.sortBy('speed')">
                         <div class="header-content">
                             <span class="header-text">SPEED</span>
@@ -298,6 +310,11 @@
                         <div class="time">{{ctrl.formatDeliveryDate(job)}}</div>
                     </div>
 
+                    <!-- IS ARCHIVED Column -->
+                    <div class="job-cell isarchived-cell" ng-if="::ctrl.isJobSearchPage()">
+                        <md-checkbox ng-model="job.isArchived" aria-label="Is Archived" disabled></md-checkbox>
+                    </div>
+                    
                     <!-- Speed Column -->
                     <div class="job-cell speed-cell">
                         <span class="speed-value">{{job.speed || '-'}}</span>
@@ -442,6 +459,10 @@
                         <div class="time">{{ctrl.formatDeliveryTime(childJob)}}</div>
                     </div>
 
+                    <div class="job-cell isarchived-cell" ng-if="::ctrl.isJobSearchPage()">
+                        <md-checkbox ng-model="childJob.isArchived" aria-label="Is Archived" disabled></md-checkbox>
+                    </div>
+                    
                     <!-- Speed Column -->
                     <div class="job-cell speed-cell">
                         <span class="speed-value">{{childJob.speed || '-'}}</span>

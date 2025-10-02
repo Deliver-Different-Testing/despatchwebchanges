@@ -59,8 +59,8 @@ class JobDetailController extends BaseController {
         "voidJobConfirmationDialogService",
     ];
 
-    private static readonly FIELD_VISIBILITY_KEY = `jobDetail_fieldVisibility_${ContactID}`;
-    private static readonly VIEW_DENSITY_KEY = `jobDetail_viewDensity_${ContactID}`;
+    private readonly FIELD_VISIBILITY_KEY = `jobDetail_fieldVisibility_${ContactID}`;
+    private readonly VIEW_DENSITY_KEY = `jobDetail_viewDensity_${ContactID}`;
 
     onJobUpdate?: () => Promise<void>;
 
@@ -2099,7 +2099,7 @@ class JobDetailController extends BaseController {
 
     private loadFieldVisibilityFromStorage(): { [key: string]: boolean } {
         try {
-            const stored = localStorage.getItem(JobDetailController.FIELD_VISIBILITY_KEY);
+            const stored = localStorage.getItem(this.FIELD_VISIBILITY_KEY);
             if (stored) {
                 const parsedVisibility = JSON.parse(stored);
                 // Merge with defaults to ensure all fields are present
@@ -2116,7 +2116,7 @@ class JobDetailController extends BaseController {
     private saveFieldVisibilityToStorage(): void {
         try {
             localStorage.setItem(
-                JobDetailController.FIELD_VISIBILITY_KEY,
+                this.FIELD_VISIBILITY_KEY,
                 JSON.stringify(this.fieldVisibility)
             );
         } catch (error) {
@@ -2145,7 +2145,7 @@ class JobDetailController extends BaseController {
 
     loadViewDensity(): void {
         try {
-            const stored = localStorage.getItem(JobDetailController.VIEW_DENSITY_KEY);
+            const stored = localStorage.getItem(this.VIEW_DENSITY_KEY);
             if (stored && ['normal', 'dense', 'ultradense'].includes(stored)) {
                 this.viewDensity = stored as 'normal' | 'dense' | 'ultradense';
             }
@@ -2156,7 +2156,7 @@ class JobDetailController extends BaseController {
 
     saveViewDensity(): void {
         try {
-            localStorage.setItem(JobDetailController.VIEW_DENSITY_KEY, this.viewDensity);
+            localStorage.setItem(this.VIEW_DENSITY_KEY, this.viewDensity);
         } catch (error) {
             console.warn('Failed to save view density to localStorage:', error);
         }
