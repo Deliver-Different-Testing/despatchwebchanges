@@ -1,4 +1,4 @@
-﻿import dayjs from "dayjs";
+﻿import dayjs, {Dayjs} from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import {findIana} from "windows-iana";
@@ -6,15 +6,15 @@ import {findIana} from "windows-iana";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-export function formatDateForApi(date: Date | dayjs.Dayjs | string): string {
+export function formatDateForApi(date: Date | Dayjs | string): string {
     // Always use ISO 8601 format for backend communication
     // This removes timezone to get around timezone conversion issues.
     // Make sure to store the correct timezone in the db
     return dayjs(date).format('YYYY-MM-DD HH:mm:ss');
 }
 
-export function formatDateForApiWithTzs(date: Date | dayjs.Dayjs | string, timeZone?: string): string {
-    if(!timeZone) timeZone = TimeZone;
+export function formatDateForApiWithTzs(date: Date | Dayjs | string, timeZone?: string): string {
+    if (!timeZone) timeZone = TimeZone;
 
     // Convert Windows timezone to IANA format if needed
     let ianaTimeZone = timeZone;
@@ -65,7 +65,7 @@ export function formatDateForApiWithTzs(date: Date | dayjs.Dayjs | string, timeZ
         const dateWithoutTz = date.replace(/[+-]\d{2}:\d{2}$/, '').replace(/Z$/, '');
         dayjsDate = dayjs.tz(dateWithoutTz, ianaTimeZone);
     } else {
-        // It's already a dayjs object - format without timezone then reparse
+        // It's already a dayjs object - format without a timezone then reparse
         const dateString = date.format('YYYY-MM-DD HH:mm:ss');
         dayjsDate = dayjs.tz(dateString, 'YYYY-MM-DD HH:mm:ss', ianaTimeZone);
     }
@@ -82,18 +82,18 @@ export function formatDateForApiWithTzs(date: Date | dayjs.Dayjs | string, timeZ
     return result;
 }
 
-export function displayLongDate(date: Date | string, isUsCustomer: boolean = true): string {
+export function displayLongDate(date: Date | Dayjs | string, isUsCustomer: boolean = true): string {
     return isUsCustomer
         ? dayjs(date).format('MM/DD/YYYY h:mm A')  // 09/22/2025 9:24 AM
         : dayjs(date).format('DD/MM/YYYY HH:mm');   // 22/09/2025 09:24
 }
 
-export function formatShortDateTime(date: Date | string, isUsCustomer: boolean = true): string {
+export function formatShortDateTime(date: Date | Dayjs | string, isUsCustomer: boolean = true): string {
     return isUsCustomer
         ? dayjs(date).format("MM/DD HH:mm")
         : dayjs(date).format("DD/MM HH:mm");
 }
 
-export function formatMins(date: Date | string): string {
+export function formatMins(date: Date | Dayjs | string): string {
     return dayjs(date).format('HH:mm');
 }

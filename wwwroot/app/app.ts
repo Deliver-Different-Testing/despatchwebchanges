@@ -3,7 +3,6 @@ import {AppPages} from "./enums/app-pages.enum";
 import {PodPhotoViewerComponent} from "./components/common/pod-photo-viewer/pod-photo-viewer.component";
 import {MaterialSidenavComponent} from "./components/common/side-nav/side-nav.component";
 import {AutoCompleteDialogController} from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.controller";
-import {CreateJobDialogController} from "./components/dialogs/create-job-dialog/create-job-dialog.controller";
 import {
     EditParcelDimensionsDialogController
 } from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.controller";
@@ -64,6 +63,7 @@ import VoidJobConfirmationDialogController
 import VoidJobConfirmationDialogService
     from "./components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
 import DateFilterMenuComponent from "./components/common/date-filter-menu/date-filter-menu.component";
+import DayJsDatePickerComponent from "./components/common/dayjs-date-picker/dayjs-date-picker.component";
 
 const app = (window as any).uDispatchApp;
 
@@ -180,6 +180,7 @@ app.component("podPhotoViewer", PodPhotoViewerComponent);
 app.component("noData", NoDataComponent);
 app.component("stickyNote", StickyNoteComponent);
 app.component("dateFilterMenu", DateFilterMenuComponent);
+app.component("customDatePicker", DayJsDatePickerComponent);
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);

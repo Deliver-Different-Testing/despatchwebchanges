@@ -78,7 +78,7 @@
                             <span>{{ctrl.getStatusText()}}</span>
                         </div>
                         <div class="flight-date">
-                            {{ctrl.currentSegment.departureTime || ctrl.flight.departureTime | date:'EEE, MMM d, yyyy'}}
+                            {{ctrl.currentSegment.departureTime || ctrl.flight.departureTime | momentFormat:'ddd, MMM D, YYYY'}}
                         </div>
                     </div>
                 </div>
@@ -86,7 +86,7 @@
                 <div class="route-overview">
                     <div class="route-endpoint departure">
                         <div class="airport-code">{{ctrl.currentSegment.departureAirportFsCode || ctrl.flight.departureAirport}}</div>
-                        <div class="time">{{ctrl.currentSegment.departureTime || ctrl.flight.departureTime | date:'HH:mm'}}</div>
+                        <div class="time">{{ctrl.currentSegment.departureTime || ctrl.flight.departureTime | momentFormat:'HH:mm'}}</div>
                     </div>
 
                     <div class="route-visualization">
@@ -111,10 +111,10 @@
                         </div>
                         <div class="time">
                             <span ng-if="ctrl.isDisplayingOverview && ctrl.flight.isMultiSegment">
-                                {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalTime || ctrl.flight.arrivalTime | date:'HH:mm'}}
+                                {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalTime || ctrl.flight.arrivalTime | momentFormat:'HH:mm'}}
                             </span>
                             <span ng-if="!ctrl.isDisplayingOverview || !ctrl.flight.isMultiSegment">
-                                {{ctrl.currentSegment.arrivalTime || ctrl.flight.arrivalTime | date:'HH:mm'}}
+                                {{ctrl.currentSegment.arrivalTime || ctrl.flight.arrivalTime | momentFormat:'HH:mm'}}
                             </span>
                         </div>
                     </div>
@@ -143,8 +143,8 @@
                                 </div>
                             </div>
                             <div class="time-info">
-                                <div class="departure-time">{{ctrl.currentSegment.departureTime || ctrl.flight.departureTime | date:'HH:mm'}}</div>
-                                <div class="departure-date">{{ctrl.currentSegment.departureTime || ctrl.flight.departureTime | date:'MMM d, yyyy'}}</div>
+                                <div class="departure-time">{{ctrl.currentSegment.departureTime || ctrl.flight.departureTime | momentFormat:'HH:mm'}}</div>
+                                <div class="departure-date">{{ctrl.currentSegment.departureTime || ctrl.flight.departureTime | momentFormat:'MMM D, YYYY'}}</div>
                             </div>
                             <div class="terminal-info" ng-if="ctrl.currentSegment.departureTerminal">
                                 <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">door_front</md-icon>
@@ -188,18 +188,18 @@
                             <div class="time-info">
                                 <div class="arrival-time">
                                     <span ng-if="ctrl.isDisplayingOverview && ctrl.flight.isMultiSegment">
-                                        {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalTime || ctrl.flight.arrivalTime | date:'HH:mm'}}
+                                        {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalTime || ctrl.flight.arrivalTime | momentFormat:'HH:mm'}}
                                     </span>
                                     <span ng-if="!ctrl.isDisplayingOverview || !ctrl.flight.isMultiSegment">
-                                        {{ctrl.currentSegment.arrivalTime || ctrl.flight.arrivalTime | date:'HH:mm'}}
+                                        {{ctrl.currentSegment.arrivalTime || ctrl.flight.arrivalTime | momentFormat:'HH:mm'}}
                                     </span>
                                 </div>
                                 <div class="arrival-date">
                                     <span ng-if="ctrl.isDisplayingOverview && ctrl.flight.isMultiSegment">
-                                        {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalTime || ctrl.flight.arrivalTime | date:'MMM d, yyyy'}}
+                                        {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalTime || ctrl.flight.arrivalTime | momentFormat:'MMM D, YYYY'}}
                                     </span>
                                     <span ng-if="!ctrl.isDisplayingOverview || !ctrl.flight.isMultiSegment">
-                                        {{ctrl.currentSegment.arrivalTime || ctrl.flight.arrivalTime | date:'MMM d, yyyy'}}
+                                        {{ctrl.currentSegment.arrivalTime || ctrl.flight.arrivalTime | momentFormat:'MMM D, YYYY'}}
                                     </span>
                                 </div>
                             </div>
@@ -246,7 +246,7 @@
 
                             <div class="segment-route">
                                 <div class="route-point">
-                                    <div class="time-large">{{segment.departureTime | date:'HH:mm'}}</div>
+                                    <div class="time-large">{{segment.departureTime | momentFormat:'HH:mm'}}</div>
                                     <div class="airport-code-large">{{segment.departureAirportFsCode}}</div>
                                     <div class="airport-name-small" ng-if="segment.departureAirportName">{{segment.departureAirportName}}</div>
                                     <div class="terminal-small" ng-if="segment.departureTerminal">Terminal {{segment.departureTerminal}}</div>
@@ -264,7 +264,7 @@
                                 </div>
 
                                 <div class="route-point">
-                                    <div class="time-large">{{segment.arrivalTime | date:'HH:mm'}}</div>
+                                    <div class="time-large">{{segment.arrivalTime | momentFormat:'HH:mm'}}</div>
                                     <div class="airport-code-large">{{segment.arrivalAirportFsCode}}</div>
                                     <div class="airport-name-small" ng-if="segment.arrivalAirportName">{{segment.arrivalAirportName}}</div>
                                     <div class="terminal-small" ng-if="segment.arrivalTerminal">Terminal {{segment.arrivalTerminal}}</div>

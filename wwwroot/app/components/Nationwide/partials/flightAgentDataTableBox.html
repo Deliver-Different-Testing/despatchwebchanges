@@ -204,16 +204,16 @@
                         </div>
                     </td>
                     <td md-cell>
-                        {{::flight.departureTime | date: 'MM/dd/yyyy HH:mm'}} ({{::flight.departureAirportTimeZone | timezoneShort}})
+                        {{::flight.departureTime | momentFormat: 'MM/DD/YYYY HH:mm'}} ({{flight.departureAirportTimeZone}})
                         <div class="airport-code">{{::flight.departureAirport}}</div>
                     </td>
                     <td md-cell>
-                        {{::flight.arrivalTime | date: 'MM/dd/yyyy HH:mm'}} ({{::flight.arrivalAirportTimeZone | timezoneShort}})
+                        {{::flight.arrivalTime | momentFormat: 'MM/DD/YYYY HH:mm'}} ({{flight.arrivalAirportTimeZone }})
                         <div class="airport-code">{{::flight.arrivalAirport}}</div>
                     </td>
                     <td md-cell>
                         <span ng-if="flight.elapsedTime">{{::flight.elapsedTime | minutesToTime}}</span>
-                        <span ng-if="!flight.elapsedTime">{{::flight.duration | date: 'H:mm'}}</span>
+                        <span ng-if="!flight.elapsedTime">{{::flight.duration }}</span>
                     </td>
                     <td md-cell>
                         <span ng-if="flight.stops === 0" class="direct-flight">Nonstop</span>
@@ -246,7 +246,7 @@
                                     <div class="segment-info">
                                         <div class="segment-time">
                                             <div class="departure">
-                                                <div class="time">{{segment.departureTime | date: 'MM/dd/yyyy HH:mm'}}
+                                                <div class="time">{{segment.departureTime | momentFormat: 'MM/DD/YYYY HH:mm'}}
                                                 </div>
                                                 <div class="airport">{{segment.departureAirportFsCode}}</div>
                                                 <div class="terminal" ng-if="segment.departureTerminal">Terminal
@@ -265,7 +265,7 @@
                                                 </div>
                                             </div>
                                             <div class="arrival">
-                                                <div class="time">{{segment.arrivalTime | date: 'MM/dd/yyyy HH:mm'}}
+                                                <div class="time">{{segment.arrivalTime | momentFormat: 'MM/DD/YYYY HH:mm'}}
                                                 </div>
                                                 <div class="airport">{{segment.arrivalAirportFsCode}}</div>
                                                 <div class="terminal" ng-if="segment.arrivalTerminal">Terminal

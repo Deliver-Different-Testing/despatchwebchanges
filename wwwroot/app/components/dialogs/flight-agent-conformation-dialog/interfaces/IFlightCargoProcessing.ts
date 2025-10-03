@@ -1,9 +1,19 @@
-﻿interface IFlightCargoProcessing {
-    arrivalTime: Date;
+﻿import {Dayjs} from "dayjs";
+
+export interface IFlightCargoProcessingDto {
+    arrivalTime: string;
     processingTimeMins: number;
-    cargoOpeningTime: Date;
-    cargoClosingTime: Date;
-    deliverByTime?: Date;
+    cargoOpeningTime: string;
+    cargoClosingTime: string;
+    deliverByTime?: string;
+}
+
+export interface IFlightCargoProcessing {
+    arrivalTime: Dayjs;
+    processingTimeMins: number;
+    cargoOpeningTime: Dayjs;
+    cargoClosingTime: Dayjs;
+    deliverByTime?: Dayjs;
 }
 
 export default IFlightCargoProcessing;

@@ -1,4 +1,5 @@
 import {JobProperty} from "../enums/job-property.enum";
+import {Dayjs} from "dayjs";
 
 
 interface IDialogResult {
@@ -19,7 +20,7 @@ export interface FlightAgentConfirmationDialogResult {
     awb?: string;
     shouldAssignToStopJobs?: boolean;
     overrideDeliverByTime?: boolean;
-    packageReadyTime?: Date;
-    packageDeliverByTime?: Date;
+    packageReadyTime?: Dayjs;
+    packageDeliverByTime?: Dayjs;
     packageDeliveryNotes?: string;
 }

@@ -1,0 +1,74 @@
+﻿<div class="input-section" ng-if="ctrl.showDate && ctrl.showTime">
+    <div class="input-group">
+        <md-input-container class="md-block date-input">
+            <label for="dateInput">Date</label>
+            <input mdc-datetime-picker
+                   date="true"
+                   time="false"
+                   type="text"
+                   id="dateInput"
+                   ng-model="ctrl.selectedDate"
+                   ng-change="ctrl.updateDateTime()"
+                   edit-input="true"
+                   show-icon="true"
+                   format="YYYY-MM-DD"
+                   class="md-input"
+                   ng-disabled="ctrl.isDisabled">
+        </md-input-container>
+        <md-input-container class="md-block time-input">
+            <label for="timeInput">Time (24-hour)</label>
+            <input mdc-datetime-picker
+                   date="false"
+                   time="true"
+                   type="text"
+                   id="timeInput"
+                   ng-model="ctrl.selectedTime"
+                   ng-change="ctrl.updateDateTime()"
+                   edit-input="true"
+                   show-icon="true"
+                   format="HH:mm"
+                   minute-steps="1"
+                   class="md-input"
+                   ng-disabled="ctrl.isDisabled">
+        </md-input-container>
+    </div>
+</div>
+
+<!-- Date Only Picker -->
+<div class="input-section" ng-if="ctrl.showDate && !ctrl.showTime">
+    <md-input-container class="md-block">
+        <label for="dateOnlyInput">Date</label>
+        <input mdc-datetime-picker
+               date="true"
+               time="false"
+               type="text"
+               id="dateOnlyInput"
+               ng-model="ctrl.selectedDate"
+               ng-change="ctrl.updateDateTime()"
+               edit-input="true"
+               show-icon="true"
+               format="YYYY-MM-DD"
+               class="md-input"
+               ng-disabled="ctrl.isDisabled">
+    </md-input-container>
+</div>
+
+<!-- Time-Only Picker -->
+<div class="input-section" ng-if="ctrl.showTime && !ctrl.showDate">
+    <md-input-container class="md-block">
+        <label for="timeOnlyInput">Time (24-hour)</label>
+        <input mdc-datetime-picker
+               date="false"
+               time="true"
+               type="text"
+               id="timeOnlyInput"
+               ng-model="ctrl.selectedTime"
+               ng-change="ctrl.updateDateTime()"
+               edit-input="true"
+               show-icon="true"
+               format="HH:mm"
+               minute-steps="1"
+               class="md-input"
+               ng-disabled="ctrl.isDisabled">
+    </md-input-container>
+</div>

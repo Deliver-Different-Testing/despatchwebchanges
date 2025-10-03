@@ -221,17 +221,6 @@ public class Operator
 
 public class Request
 {
-    [JsonPropertyName("endpoint")] public string Endpoint { get; set; }
-
-    [JsonPropertyName("departure")] public Departure Departure { get; set; }
-
-    [JsonPropertyName("arrival")] public Arrival Arrival { get; set; }
-
-    [JsonPropertyName("allowNearbyDepartures")]
-    public AllowNearbyDepartures AllowNearbyDepartures { get; set; }
-
-    [JsonPropertyName("allowNearbyArrivals")]
-    public AllowNearbyArrivals AllowNearbyArrivals { get; set; }
 
     [JsonPropertyName("includeAirports")] public IncludeAirports IncludeAirports { get; set; }
 
@@ -308,40 +297,8 @@ public class ScheduledFlight
 
     [JsonPropertyName("isCodeshare")] public bool IsCodeShare { get; set; }
 
-    [JsonPropertyName("isWetlease")] public bool IsWetLease { get; set; }
-
-    [JsonPropertyName("serviceType")] public string ServiceType { get; set; }
-
     [JsonPropertyName("serviceClasses")] public List<string> ServiceClasses { get; set; }
 
-    [JsonPropertyName("trafficRestrictions")] public List<string> TrafficRestrictions { get; set; }
     [JsonPropertyName("elapsedTime")] public int ElapsedTime { get; set; }
-    [JsonPropertyName("codeshares")] public List<CodeShare> CodeShares { get; set; }
 
-    [JsonPropertyName("referenceCode")] public string ReferenceCode { get; set; }
-
-    [JsonPropertyName("operator")] public Operator Operator { get; set; }
-}
-
-public class Carrier
-{
-    [JsonPropertyName("requestedCode")] public string RequestedCode { get; set; }
-
-    [JsonPropertyName("fsCode")] public string FsCode { get; set; }
-}
-
-public class FlightNumber
-{
-    [JsonPropertyName("requested")] public string Requested { get; set; }
-
-    [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
-}
-
-public class FlightSchedulesResponse
-{
-    [JsonPropertyName("request")] public Request Request { get; set; }
-
-    [JsonPropertyName("scheduledFlights")] public List<ScheduledFlight> ScheduledFlights { get; set; }
-
-    [JsonPropertyName("appendix")] public Appendix Appendix { get; set; }
 }

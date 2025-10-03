@@ -25,6 +25,8 @@ public class FlightViewModel
     public int Score { get; set; }
     public string ConnectionId { get; set; }
     public List<FlightSegmentViewModel> FlightSegments { get; set; } = [];
+    public string DepartureTimeZone { get; set; }
+    public string ArrivalTimeZone { get; set; }
 }
 
 public class FlightSegmentViewModel: ScheduledFlight

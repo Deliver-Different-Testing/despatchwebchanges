@@ -52,7 +52,7 @@ class FlightDetailsDialogController extends BaseController {
 
         // Always update the current segment for details display
         if (this.flight.flightSegments && this.flight.flightSegments.length > 0) {
-            // For tab 0, use first segment
+            // For tab 0, use the first segment
             const segmentIndex = index === 0 ? 0 : index - 1;
 
             if (segmentIndex < this.flight.flightSegments.length) {
@@ -101,8 +101,8 @@ class FlightDetailsDialogController extends BaseController {
         if (!firstSegment || !secondSegment) return '';
 
         // Calculate time difference in minutes
-        const firstArrival = dayjs(firstSegment.arrivalTime);
-        const secondDeparture = dayjs(secondSegment.departureTime);
+        const firstArrival = firstSegment.arrivalTime;
+        const secondDeparture = secondSegment.departureTime;
         const diffMinutes = secondDeparture.diff(firstArrival, 'minutes');
 
         // Format as hours and minutes

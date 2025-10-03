@@ -265,6 +265,8 @@
     <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\feature-in-development-dialog\flight-agent-conformation-dialog\flight-agent-conformation-dialog.controller.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\feature-in-development-dialog\flight-agent-conformation-dialog\flight-agent-conformation-dialog.interfaces.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\types\html.d.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\directives\dayjs-datepicker.directive.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\directives\dayjs-timepicker.directive.ts" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
@@ -311,6 +313,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\base-controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\date-filter-menu\date-filter-menu.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\date-filter-menu\IDateFilterData.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\dayjs-date-picker\dayjs-date-picker.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\enums\jobCategory.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\job-highlight.service.ts" />
@@ -450,6 +453,7 @@
     <TypeScriptCompile Include="wwwroot\app\enums\podPhotoType.ts" />
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\countSubJobs.ts" />
+    <TypeScriptCompile Include="wwwroot\app\functions\dtoMappings.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\formatDates.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\getDangerousGoodsClassName.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\getJobTableRowClass.ts" />
