@@ -1,4 +1,4 @@
-import dayjs from 'dayjs';
+import dayjs, {Dayjs} from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import {findIana} from "windows-iana";
@@ -29,7 +29,7 @@ export function replaceFilter(input: string, search: string, replacement: string
 /**
  * Formats a date using day.js
  */
-export function momentFormatFilter(dateString: string | Date, format: string): string {
+export function momentFormatFilter(dateString: string | Date | Dayjs, format: string): string {
     if (!dateString) return '';
     return dayjs(dateString).format(format);
 }

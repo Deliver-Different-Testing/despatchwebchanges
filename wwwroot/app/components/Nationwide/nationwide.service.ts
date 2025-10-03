@@ -6,7 +6,7 @@ import {
     IJobQueryParams,
     ISuggestion
 } from "../../interfaces/job.interface";
-import {AssignFlightToJobRequest, IFlightViewModel} from "./nationwide.interfaces";
+import {AssignFlightToJobRequest, IFlightViewModel, IFlightViewModelDto} from "./nationwide.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {
     AddAgentRecoveryRequest,
@@ -14,9 +14,12 @@ import {
     RemoveAgentRecoveryRequest,
     UpdateAgentRecoveryRequest
 } from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.interfaces";
-import IFlightCargoProcessing from "../dialogs/flight-agent-conformation-dialog/interfaces/IFlightCargoProcessing";
-import {formatDateForApi, formatDateForApiWithTzs} from "../../functions/formatDates";
-import dayjs from "dayjs";
+import IFlightCargoProcessing, {
+    IFlightCargoProcessingDto
+} from "../dialogs/flight-agent-conformation-dialog/interfaces/IFlightCargoProcessing";
+import {formatDateForApiWithTzs} from "../../functions/formatDates";
+import dayjs, {Dayjs} from "dayjs";
+import {transformCargoHoursDTO, transformFlightDTO} from "../../functions/dtoMappings";
 
 class NationwideService implements angular.IServiceProvider {
     static $inject = [
@@ -79,42 +82,28 @@ class NationwideService implements angular.IServiceProvider {
     ): Promise<{
         flights: IFlightViewModel[];
         message: string | null;
-        lastDepartureTime: dayjs.Dayjs | null;
+        lastDepartureTime: Dayjs | null;
     }> {
         const formattedDate = departureDate.format();
 
-        console.debug(`Fetching flight data for job ${jobId} with departure ${formattedDate}`);
-
-        try {
-            const response = await this.$http.get<IFlightViewModel[]>("nationwideJob/GetScheduledFlightOptions", {
-                params: {
-                    departureDate: formattedDate,
-                    jobId,
-                    airlineId,
-                    departureAirportId,
-                    arrivalAirportId,
-                    minimumLayoverMinutes
-                }
-            });
-
-            const flights = response.data;
-
-            let lastDepartureTime: dayjs.Dayjs | null = null;
-            if (flights && flights.length > 0) {
-                const lastFlight = flights[flights.length - 1];
-                lastDepartureTime = lastFlight.departureTime;
+        const response = await this.$http.get<IFlightViewModelDto[]>("nationwideJob/GetScheduledFlightOptions", {
+            params: {
+                departureDate: formattedDate,
+                jobId,
+                airlineId,
+                departureAirportId,
+                arrivalAirportId,
+                minimumLayoverMinutes
             }
+        });
 
-            return {
-                flights,
-                message: response.data.length === 0
-                    ? "Sorry, we couldn't find any flights between these airports on the selected date. Please try different dates or airports."
-                    : null,
-                lastDepartureTime
-            };
-        } catch (error) {
-            throw error;
-        }
+        const flights = response.data.map(transformFlightDTO);
+
+        return {
+            flights,
+            message: flights.length === 0 ? "Sorry, we couldn't find..." : null,
+            lastDepartureTime: flights.length > 0 ? flights[flights.length - 1].departureTime : null
+        };
     }
 
     async assignFlightToJob(requestData: AssignFlightToJobRequest) {
@@ -225,17 +214,18 @@ class NationwideService implements angular.IServiceProvider {
         await this.$http.post(`nationwideJob/RemoveAgentRecoveryJob`, data);
     }
 
-    async calculateCargoReadyTime(jobId: number, carrierFsCode: string, arrivalTime: dayjs.Dayjs, timezone?: string): Promise<IFlightCargoProcessing> {
+    async calculateCargoReadyTime(jobId: number, carrierFsCode: string, arrivalTime: Dayjs, timezone?: string): Promise<IFlightCargoProcessing> {
         const formattedArrivalTime = formatDateForApiWithTzs(arrivalTime, timezone);
         console.debug('formattedArrivalTime', formattedArrivalTime);
-        const response = await this.$http.get<IFlightCargoProcessing>("nationwideJob/CalculateCargoReadyTime", {
+        const response = await this.$http.get<IFlightCargoProcessingDto>("nationwideJob/CalculateCargoReadyTime", {
             params: {
                 jobId,
                 carrierFsCode,
                 arrivalTime: formattedArrivalTime
             }
         });
-        return response.data;
+
+        return transformCargoHoursDTO(response.data);
     }
 }
 

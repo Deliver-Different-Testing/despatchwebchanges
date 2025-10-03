@@ -60,4 +60,5 @@ public interface INationwideJobRepository
 
     Task<JobTypeFlightRatingDto> GetJobTypeFlightRatingDtoAsync(int speedId);
     Task<decimal?> GetExtraItemMultiplierByExtraChargeIdAsync(int extraChargeId);
+    Task<List<GetAirportsDto>> GetAllActiveAirportsAsync();
 }

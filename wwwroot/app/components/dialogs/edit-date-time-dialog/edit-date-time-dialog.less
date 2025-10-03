@@ -27,51 +27,6 @@
             flex: 1;
           }
         }
-
-        md-input-container {
-          background: white;
-          border-radius: 8px;
-          padding: 8px 16px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-          border: 1px solid #e0e0e0;
-          transition: all 0.2s ease;
-
-          &.md-input-focused {
-            border-color: #1976d2;
-            box-shadow: 0 2px 8px rgba(25, 118, 210, 0.15);
-            transform: translateY(-1px);
-          }
-
-          label {
-            font-weight: 500;
-            color: #424242;
-            font-size: 14px;
-          }
-
-          input {
-            font-size: 16px;
-            color: #212121;
-            border: none;
-            background: transparent;
-
-            &:focus {
-              outline: none;
-            }
-
-            // Custom styling for date/time inputs
-            &[type="date"],
-            &[type="time"] {
-              padding: 8px 0;
-              cursor: pointer;
-
-              &::-webkit-calendar-picker-indicator {
-                color: #1976d2;
-                cursor: pointer;
-                filter: brightness(0) saturate(100%) invert(27%) sepia(96%) saturate(1028%) hue-rotate(201deg) brightness(95%) contrast(87%);
-              }
-            }
-          }
-        }
       }
 
       .timezone-info {

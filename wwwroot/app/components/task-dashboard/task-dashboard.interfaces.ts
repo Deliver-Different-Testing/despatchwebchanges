@@ -14,7 +14,7 @@ export interface ITask {
 
 export interface ExtendedTask extends ITask {
     dueTimeStr?: string;
-}
+}                   
 
 export interface TaskTableFiltersRequest {
     searchText?: string;

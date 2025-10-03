@@ -172,8 +172,10 @@ public class FlightStatsService(
             jobId, departureDateTime);
 
         // Airports
-        var (departureAirport, arrivalAirport) =
-            await repository.GetArrivalAndDepartureAirports(jobId, departureAirportId, arrivalAirportId);
+        var airports = await repository.GetAllActiveAirportsAsync();
+        var departureAirport = airports.FirstOrDefault(x => x.AirportId == departureAirportId);
+        var arrivalAirport = airports.FirstOrDefault(x => x.AirportId == arrivalAirportId);
+        
         ArgumentNullException.ThrowIfNull(departureAirport);
         ArgumentNullException.ThrowIfNull(arrivalAirport);
         
@@ -274,7 +276,7 @@ public class FlightStatsService(
                             SegmentOrder = index,
                             CarrierFsCode = segment.CarrierFsCode,
                             FlightNumber = segment.FlightNumber,
-                            DepartureTime = segment.DepartureTime,
+                            DepartureTime = segment.DepartureTime.DateTime,
                             ArrivalTime =
                                 AdjustArrivalTimeForOvernightFlight(segment.DepartureTime.DateTime, segment.ArrivalTime.DateTime),
                             DepartureAirportId = departureAirport.AirportId,
@@ -291,12 +293,12 @@ public class FlightStatsService(
                             DepartureAirportName = depAirport?.Name,
                             DepartureAirportCity = depAirport?.City,
                             DepartureAirportCountry = depAirport?.CountryName,
-                            DepartureAirportTimeZone = depAirport?.TimeZoneRegionName,
+                            DepartureAirportTimeZone = airports.FirstOrDefault(a => a.AirportCode == depAirport?.Iata)?.Timezone,
 
                             ArrivalAirportName = arrAirport?.Name,
                             ArrivalAirportCity = arrAirport?.City,
                             ArrivalAirportCountry = arrAirport?.CountryName,
-                            ArrivalAirportTimeZone = arrAirport?.TimeZoneRegionName,
+                            ArrivalAirportTimeZone = airports.FirstOrDefault(a => a.AirportCode == arrAirport?.Iata)?.Timezone,
 
                             AircraftName = equipment?.Name,
                             AircraftType = equipment?.Jet == true ? "Jet" :
@@ -319,7 +321,7 @@ public class FlightStatsService(
                         AdjustArrivalTimeForOvernightFlight(firstFlight.DepartureTime.DateTime, lastFlight.ArrivalTime.DateTime),
                     DepartureAirport = firstFlight.DepartureAirportFsCode,
                     ArrivalAirport = lastFlight.ArrivalAirportFsCode,
-                    Duration = lastFlight.ArrivalTime - firstFlight.DepartureTime,
+                    Duration = lastFlight.ArrivalTime.DateTime - firstFlight.DepartureTime.DateTime,
                     Stops = conn.ScheduledFlight.Count - 1, // Number of connections equals number of flights minus 1
                     Aircraft = flightStatusResponse.Appendix?.Equipments
                         .FirstOrDefault(e => e.Iata == firstFlight.FlightEquipmentIataCode)
@@ -334,6 +336,8 @@ public class FlightStatsService(
                     ElapsedTime = conn.ElapsedTime,
                     Score = conn.Score,
                     ConnectionId = Guid.NewGuid().ToString(),
+                    DepartureTimeZone = airports.FirstOrDefault(a => a.AirportCode == firstFlight.DepartureAirportFsCode)?.Timezone,
+                    ArrivalTimeZone = airports.FirstOrDefault(a => a.AirportCode == lastFlight.ArrivalAirportFsCode)?.Timezone,
 
                     // Add flight segments
                     FlightSegments = segments

@@ -1437,4 +1437,21 @@ public class NationwideJobRepository(
         return flightSpeedJobs.Count == 0
                || flightSpeedJobs.Any(job => job.HasTucJobNationwides);
     }
+
+    public async Task<List<GetAirportsDto>> GetAllActiveAirportsAsync()
+    {
+        var airports = await Context.TblAirports
+            .Where(a => a.Active)
+            .Select(a => new GetAirportsDto
+            {
+                AirportId = a.AirportId,
+                FlightBufferMinutes = a.FlightBufferMinutes,
+                AirportCode = a.AirportCode,
+                Timezone = a.Timezone
+            })
+            .AsNoTracking()
+            .ToListAsync();
+
+        return airports;
+    }
 }

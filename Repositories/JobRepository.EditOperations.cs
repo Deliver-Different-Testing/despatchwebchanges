@@ -52,10 +52,10 @@ public partial class JobRepository
                 job.TucJobNationwides.First().UcnwAirportOnly = airportOnly;
                 break;
             case JobProperty.Time:
-                job.UcjbTime = DateTime.Parse(value);
+                job.UcjbTime = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.Date:
-                job.UcjbDate = DateTime.Parse(value);
+                job.UcjbDate = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.Size:
                 job.UcjbSize = int.Parse(value);
@@ -180,7 +180,7 @@ public partial class JobRepository
 
                 break;
             case JobProperty.CompletedTime:
-                job.UcjbComplTime = DateTime.Parse(value);
+                job.UcjbComplTime = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.DGClass:
                 job.Dgclass = int.Parse(value);
@@ -238,16 +238,16 @@ public partial class JobRepository
                 job.UcjbLocked = bool.Parse(value);
                 break;
             case JobProperty.PuTime:
-                job.PickUpTime = DateTime.Parse(value);
+                job.PickUpTime = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.DeliverBy:
-                job.DeliverByTime = DateTime.Parse(value);
+                job.DeliverByTime = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.BookedTime:
-                job.UcjbDate = DateTime.Parse(value);
+                job.UcjbDate = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.FollowupTime:
-                job.FollowupTime = DateTime.Parse(value);
+                job.FollowupTime = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.DeliverToContact:
             case JobProperty.StopDate:
@@ -319,10 +319,10 @@ public partial class JobRepository
                 archive.Nationwide.UcnwAirportOnly = airportOnly;
                 break;
             case JobProperty.Time:
-                archive.UcjbTime = DateTime.Parse(value);
+                archive.UcjbTime = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.Date:
-                archive.UcjbDate = DateTime.Parse(value);
+                archive.UcjbDate = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.Size:
                 archive.UcjbSize = short.Parse(value);
@@ -466,7 +466,7 @@ public partial class JobRepository
 
                 break;
             case JobProperty.CompletedTime:
-                archive.UcjbComplTime = DateTime.Parse(value);
+                archive.UcjbComplTime = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.DGClass:
                 archive.Dgclass = int.Parse(value);
@@ -523,13 +523,13 @@ public partial class JobRepository
                 archive.UcjbLocked = int.Parse(value);
                 break;
             case JobProperty.PuTime:
-                archive.PickUpTime = DateTime.Parse(value);
+                archive.PickUpTime = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.DeliverBy:
-                archive.DeliverByTime = DateTime.Parse(value);
+                archive.DeliverByTime = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.BookedTime:
-                archive.UcjbDate = DateTime.Parse(value);
+                archive.UcjbDate = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.FollowupTime:
             case JobProperty.DeliverToContact:

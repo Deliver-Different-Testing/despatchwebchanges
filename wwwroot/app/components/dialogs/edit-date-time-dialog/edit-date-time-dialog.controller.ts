@@ -29,8 +29,6 @@ export class EditDateTimeDialogController extends BaseController {
     isLoading: boolean = false;
     browserTimeZone?: string;
     selectedTimeZone: string;
-    selectedDate?: Date;
-    selectedTime?: Date;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -50,63 +48,35 @@ export class EditDateTimeDialogController extends BaseController {
 
         this.browserTimeZone = dayjs.tz.guess();
         this.selectedTimeZone = defaultTimeZone?.text ?? TimeZone;
-
-        this.initializeDateTimeInputs();
-
+        
         if (!this.dateTime) {
             console.log('No dateTime provided, setting to current time');
             this.dateTime = dayjs();
             console.log('Current time:', this.dateTime);
             console.log('Selected time zone:', this.selectedTimeZone);
-            this.initializeDateTimeInputs();
         }
     }
 
-    private initializeDateTimeInputs(): void {
-        if (this.dateTime) {
-            // Convert existing dateTime to dayjs object
-            const dateTimeValue = dayjs(this.dateTime);
-            this.selectedDate = dateTimeValue.toDate();
-            this.selectedTime = dateTimeValue.toDate();
-        } else {
-            // Use the current time
-            const now = dayjs();
-            this.selectedDate = now.toDate();
-            this.selectedTime = now.toDate();
-        }
-    }
-
-    updateDateTime(): void {
+    updateDateTime(dateTime: Dayjs): void {
         try {
+            if(!dateTime.isValid()) {
+                console.error("Returned datetime is invalid!");
+                return;
+            }
+            
             if (this.showDate && this.showTime) {
                 // Both date and time required
-                if (this.selectedDate && this.selectedTime) {
-                    const dateValue = dayjs(this.selectedDate);
-                    const timeValue = dayjs(this.selectedTime);
-
-                    // Combine date and time
-                    this.dateTime = dateValue
-                        .hour(timeValue.hour())
-                        .minute(timeValue.minute())
-                        .second(0)
-                        .millisecond(0);
-                }
+                    this.dateTime = dateTime;
             } else if (this.showDate && !this.showTime) {
                 // Date only - set to midnight (00:00:00)
-                if (this.selectedDate) {
-                    this.dateTime = dayjs(this.selectedDate)
-                        .startOf('day');
-                }
+                    this.dateTime = dateTime.startOf('day');
             } else if (this.showTime && !this.showDate) {
                 // Time only - use minimum date (1900-01-01) with the selected time
-                if (this.selectedTime) {
-                    const timeValue = dayjs(this.selectedTime);
                     this.dateTime = dayjs('1900-01-01')
-                        .hour(timeValue.hour())
-                        .minute(timeValue.minute())
+                        .hour(dateTime.hour())
+                        .minute(dateTime.minute())
                         .second(0)
                         .millisecond(0);
-                }
             }
 
             if (this.dateTime) {
@@ -120,21 +90,8 @@ export class EditDateTimeDialogController extends BaseController {
         }
     }
 
-    isValid(): boolean {
-        // Check if required inputs are provided based on what should be shown
-        if (this.showDate && this.showTime) {
-            return !!(this.selectedDate && this.selectedTime && this.dateTime);
-        } else if (this.showDate && !this.showTime) {
-            return !!(this.selectedDate && this.dateTime);
-        } else if (this.showTime && !this.showDate) {
-            return !!(this.selectedTime && this.dateTime);
-        }
-
-        return !!(this.dateTime);
-    }
-
     async submit(): Promise<void> {
-        if (!this.isValid()) {
+        if(!this.dateTime?.isValid()) {
             this.toastrService.showWarningToast('Please provide valid date/time information');
             return;
         }
