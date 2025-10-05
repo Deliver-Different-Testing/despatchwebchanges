@@ -30,7 +30,7 @@ import JobFileUploadDialogService from "../../dialogs/job-file-upload-dialog/job
 import {FileUploadType} from "../../../enums/file-upload-type.enum";
 import sortRelatedJobs from "../../../functions/sortRelatedJobs";
 import {UpdatePodDetailsRequest} from "../../../interfaces/requests.interfaces";
-import dayjs from "dayjs";
+import dayjs, {Dayjs} from "dayjs";
 import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
 import VoidJobConfirmationDialogService
     from "../../dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
@@ -582,7 +582,7 @@ class JobDetailController extends BaseController {
         job: IJob,
         title: string,
         fieldName: JobProperty,
-        dateTime?: Date,
+        dateTime?: Dayjs,
         timezone?: ISuggestion
     ): Promise<void> {
         try {
@@ -590,7 +590,7 @@ class JobDetailController extends BaseController {
                 $event,
                 title,
                 fieldName,
-                dayjs(dateTime),
+                dateTime,
                 timezone
             );
 
@@ -606,7 +606,7 @@ class JobDetailController extends BaseController {
         job: IJob,
         title: string,
         field: JobProperty,
-        dateTime?: Date,
+        dateTime?: Dayjs,
         timezone?: ISuggestion
     ): Promise<void> {
         try {
@@ -614,7 +614,7 @@ class JobDetailController extends BaseController {
                 $event,
                 title,
                 field,
-                dayjs(dateTime),
+                dateTime,
                 timezone
             );
 
@@ -629,7 +629,7 @@ class JobDetailController extends BaseController {
         job: IJob,
         title: string,
         fieldName: JobProperty,
-        dateTime?: Date,
+        dateTime?: Dayjs,
         timezone?: ISuggestion
     ): Promise<void> {
         try {
@@ -638,7 +638,7 @@ class JobDetailController extends BaseController {
                     $event,
                     title,
                     fieldName,
-                    dayjs(dateTime),
+                    dateTime,
                     timezone
                 );
 
