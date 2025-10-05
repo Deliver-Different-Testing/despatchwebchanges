@@ -11,8 +11,8 @@ export interface IJob {
     id: number;
     rootParentId?: number;
     hasBeenRead: boolean;
-    time?: Date;
-    bookedDate?: Date;
+    time?: Dayjs;
+    bookedDate?: Dayjs;
     direct?: boolean;
     van: boolean;
     jobRelationshipTypeId?: number;
@@ -88,12 +88,12 @@ export interface IJob {
     sigNotRequired: string;
     charge: number;
     date: string;
-    dispatchTime?: Date;
-    booked: Date;
-    puTime?: Date;
+    dispatchTime?: Dayjs;
+    booked: Dayjs;
+    puTime?: Dayjs;
     clientNotes: string;
     internalNotes: string;
-    followupTime?: Date;
+    followupTime?: Dayjs;
     internalStatusId?: number;
     childNotes: string;
     locked?: boolean;
@@ -113,11 +113,11 @@ export interface IJob {
     dgClass?: number;
     displaySplitJobDetail?: boolean;
     truckWeightLimit?: number;
-    truckStartTime?: Date;
+    truckStartTime?: Dayjs;
     truckHours?: number;
     privateRes?: boolean;
     allowSplit?: boolean;
-    completedTime?: Date;
+    completedTime?: Dayjs;
     fromContactName: string;
     fromContactNumber: string;
     ratedManually?: boolean;
@@ -131,7 +131,7 @@ export interface IJob {
     airportOnly?: boolean;
     hasNationwide?: boolean;
     dispatcherName: string;
-    createdDate?: Date;
+    createdDate?: Dayjs;
     pickupAddress: IAddressViewModel;
     deliveryAddress: IAddressViewModel;
     toAirportId?: number;
@@ -145,16 +145,176 @@ export interface IJob {
     isArchived: boolean;
     clientColor?: string;
     searchText?: string;
-    deliverByTime?: Date;
+    deliverByTime?: Dayjs;
     distance: number;
     readTrackerInfo: IReadTrackerInfo;
     inActiveBy?: ISuggestion;
-    inActiveDate?: Date;
-    firstDue?: Date;
-    nextDue?: Date;
-    lastDone?: Date;
-    stopDate?: Date;
-    restartDate?: Date;
+    inActiveDate?: Dayjs;
+    firstDue?: Dayjs;
+    nextDue?: Dayjs;
+    lastDone?: Dayjs;
+    stopDate?: Dayjs;
+    restartDate?: Dayjs;
+    active?: boolean;
+    daysOfWeek?: DaysOfWeek
+    frequency?: Frequency;
+    holidayDeliveryOption: HolidayDeliveryOptions,
+    pickUpWindowMins?: number;
+    deliverByWindowMins?: number;
+    pickUpTimeZone?: ISuggestion;
+    deliveryTimeZone?: ISuggestion;
+    hasDgDocsString?: string;
+    calculateDimsOncePerJob: boolean;
+}
+
+export interface IJobDto {
+    id: number;
+    rootParentId?: number;
+    hasBeenRead: boolean;
+    time?: string;
+    bookedDate?: string;
+    direct?: boolean;
+    van: boolean;
+    jobRelationshipTypeId?: number;
+    vanOk?: boolean;
+    done?: boolean;
+    void?: boolean;
+    truck?: boolean;
+    saturdayDelivery?: boolean;
+    return?: boolean;
+    pedal?: boolean;
+    reprice?: boolean;
+    attention?: boolean;
+    pickupFrom?: number;
+    jobNo: string;
+    speed: string;
+    speedName: string;
+    source: string;
+    notifiedName: string;
+    acceptedName: string;
+    speedId?: number;
+    notify: string;
+    vehicle: ISuggestion;
+    clientId?: number;
+    jobType?: number;
+    jobTypeDescription?: string;
+    client: string;
+    clientName: string;
+    from: string;
+    fromSuburbId?: number;
+    fromSuburbName: string;
+    fromPostCode: string;
+    fromAddress: string;
+    to: string;
+    toSuburbId?: number;
+    toSuburbName: string;
+    toPostCode: string;
+    toAddress: string;
+    toCity: string;
+    courier: string;
+    gstRate?: number;
+    remain?: number;
+    pickupTime?: number;
+    deliveryTime?: number;
+    alertLatePickup?: number;
+    alertLateDelivery?: number;
+    minutes?: number;
+    statusId?: number;
+    status: string;
+    statusName: string;
+    lp?: number;
+    ld?: number;
+    contactName: string;
+    loggedInContactName: string;
+    deliverToContact: string;
+    trackingMethod?: number;
+    trackingMobile: string;
+    trackingEmail: string;
+    udStatus: string;
+    podPhoto: Uint8Array;
+    deliverySignature: Uint8Array;
+    podPhotos: Uint8Array[];
+    podName: string;
+    toContactPhone: string;
+    speedAccepted: string;
+    acceptedJobTypeId?: number;
+    notifiedJobTypeId?: number;
+    size: ISuggestion;
+    weight?: number;
+    items?: number;
+    refA: string;
+    refB: string;
+    ourRef: string;
+    sigNotRequired: string;
+    charge: number;
+    date: string;
+    dispatchTime?: string;
+    booked: string;
+    puTime?: string;
+    clientNotes: string;
+    internalNotes: string;
+    followupTime?: string;
+    internalStatusId?: number;
+    childNotes: string;
+    locked?: boolean;
+    invoiced?: boolean;
+    pickUpLongitude?: number;
+    pickUpLatitude?: number;
+    deliveryLongitude?: number;
+    deliveryLatitude?: number;
+    palletInfo: IPalletInfo[];
+    relatedJobs: ISuggestion[];
+    courierLatitude?: number;
+    courierLongitude?: number;
+    runOrder?: number;
+    courierData: ICourierData;
+    allowDispatch?: boolean;
+    dgDocumentation?: boolean;
+    dgClass?: number;
+    displaySplitJobDetail?: boolean;
+    truckWeightLimit?: number;
+    truckStartTime?: string;
+    truckHours?: number;
+    privateRes?: boolean;
+    allowSplit?: boolean;
+    completedTime?: string;
+    fromContactName: string;
+    fromContactNumber: string;
+    ratedManually?: boolean;
+    sizeId?: number;
+    oneOff?: boolean;
+    preBook: boolean;
+    bulkJob: boolean;
+    runName: string;
+    scheduleName: string;
+    conNote: string;
+    airportOnly?: boolean;
+    hasNationwide?: boolean;
+    dispatcherName: string;
+    createdDate?: string;
+    pickupAddress: IAddressViewModel;
+    deliveryAddress: IAddressViewModel;
+    toAirportId?: number;
+    fromAirportId?: number;
+    assignedFlight: IAssignedFlight;
+    assignedAgent: IAgent;
+    assignedCourier: ISuggestion;
+    parcelDimensions: IParcelDimensions[];
+    deliverToLeaveId?: number;
+    isActive: boolean;
+    isArchived: boolean;
+    clientColor?: string;
+    searchText?: string;
+    deliverByTime?: string;
+    distance: number;
+    readTrackerInfo: IReadTrackerInfo;
+    inActiveBy?: ISuggestion;
+    inActiveDate?: string;
+    firstDue?: string;
+    nextDue?: string;
+    lastDone?: string;
+    stopDate?: string;
+    restartDate?: string;
     active?: boolean;
     daysOfWeek?: DaysOfWeek
     frequency?: Frequency;
@@ -429,8 +589,8 @@ export interface IDispatchJob {
     internalStatusId?: number;
     statusName?: string;
     status?: string;
-    time?: Date;
-    booked: Date;
+    time?: Dayjs;
+    booked: Dayjs;
     remain?: number;
 
     // Courier information
@@ -503,7 +663,7 @@ export interface IDispatchJob {
     assignedAgent?: IAgent;
 
     conNote?: string;
-    followupTime: Date;
+    followupTime: Dayjs;
     fromAirportId?: number;
     toAirportId?: number;
     van?: boolean;
@@ -516,11 +676,108 @@ export interface IDispatchJob {
     _groupChildren?: IDispatchJob[];
 }
 
-export interface IClearListEnvelope {
-    minimumLatitude: number;
-    maximumLatitude: number;
-    minimumLongitude: number;
-    maximumLongitude: number;
+export interface IDispatchJobDto {
+    // Core identifiers
+    selected?: boolean;
+    showCourierSearch: boolean;
+    id: number;
+    jobNo: string;
+    hasBeenRead: boolean;
+    isParentOrSingle?: boolean;
+    parentId: number;
+    isFlightJob: boolean;
+    isAgentJob: boolean;
+    isBulkJob: boolean;
+    isArchived: boolean;
+
+    // Status and timing information
+    speedId?: number;
+    statusId?: JobStatus;
+    internalStatusId?: number;
+    statusName?: string;
+    status?: string;
+    time?: string;
+    booked: string;
+    remain?: number;
+
+    // Courier information
+    courier?: string;
+    courierSearchLoading: boolean;
+    assignedCourier?: ISuggestion;
+    courierData?: ICourierData;
+
+    // Addresses
+    from?: string;
+    toAddress?: string;
+    toSuburbID?: number;
+    pickupAddress?: IAddressViewModel;
+    deliveryAddress?: IAddressViewModel;
+    pickUpLongitude?: number;
+    pickUpLatitude?: number;
+    deliveryLongitude?: number;
+    deliveryLatitude?: number;
+    pickupContact?: string;
+    deliveryContact?: string;
+
+    // Routing data
+    direct?: boolean;
+    speed?: string;
+    notify?: string;
+    vehicle?: ISuggestion;
+
+    // Job properties
+    client?: string;
+    clientId?: number;
+    clientName?: string;
+
+    jobType?: number;
+    minutes?: number;
+    pickupTime?: number;
+    alertLatePickup?: number;
+    deliveryTime?: number;
+    alertLateDelivery?: number;
+
+    // Late call fields
+    lp?: number;
+    ld?: number;
+
+    // Job flags
+    locked?: boolean;
+    invoiced?: boolean;
+    allowSplit?: boolean;
+    isActive?: boolean;
+    done?: boolean;
+    bulkJob?: boolean;
+    preBook?: boolean;
+
+    // Special delivery options
+    size?: ISuggestion;
+    return?: boolean;
+    dgClass?: number;
+    saturdayDelivery?: boolean;
+
+    // Special fields
+    childNotes?: string;
+    pickupFrom?: number;
+    rootParentId?: number;
+    displaySplitJobDetail?: boolean;
+
+    // UI helper fields
+    searchText?: string;
+    relatedJobs?: ISuggestion[];
+
+    assignedFlight?: IAssignedFlight;
+    assignedAgent?: IAgent;
+
+    conNote?: string;
+    followupTime: string;
+    fromAirportId?: number;
+    toAirportId?: number;
+    van?: boolean;
+    truck?: boolean;
+
+    pickUpTimeZone?: ISuggestion;
+    deliveryTimeZone?: ISuggestion;
 }
 
 export interface ILateCallRequest {

@@ -45,16 +45,23 @@ export class EditDateTimeDialogController extends BaseController {
     ) {
         super();
         this.initServices($timeout, $interval);
+        this.bindMethods();
 
         this.browserTimeZone = dayjs.tz.guess();
         this.selectedTimeZone = defaultTimeZone?.text ?? TimeZone;
         
-        if (!this.dateTime) {
+        if (!this.dateTime || !this.dateTime.isValid()) {
             console.log('No dateTime provided, setting to current time');
             this.dateTime = dayjs();
             console.log('Current time:', this.dateTime);
             console.log('Selected time zone:', this.selectedTimeZone);
         }
+    }
+
+    private bindMethods(): void {
+        this.updateDateTime = this.updateDateTime.bind(this);
+        this.submit = this.submit.bind(this);
+        this.cancel = this.cancel.bind(this);
     }
 
     updateDateTime(dateTime: Dayjs): void {

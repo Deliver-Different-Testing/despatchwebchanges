@@ -12,6 +12,7 @@ import {
     PriceBreakdown,
     ISuggestion,
     VoidJobRequest, UpdateJobPackagesRequest, JobCreateViewModel, VoidBulkJobRequest, UpdateBulkJobPackagesRequest,
+    IJobDto, IDispatchJobDto,
 } from "../interfaces/job.interface";
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {
@@ -30,6 +31,7 @@ import {formatDateForApiWithTzs} from "../functions/formatDates";
 import IInterCourierData from "../components/dialogs/inter-courier-charge-dialog/interfaces/IInterCourierData";
 import {Is3PhotoInfo} from "../interfaces/aws.interfaces";
 import dayjs from "dayjs";
+import {transformDispatchJobDTO, transformJobDTO} from "../functions/dtoMappings";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = [
@@ -282,33 +284,36 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getJobDetail(jobId: number): Promise<any> {
-        const response = await this.$http.get<IJob>(`job/Detail`, {
+    async getJobDetail(jobId: number): Promise<IJob> {
+        const response = await this.$http.get<IJobDto>(`job/Detail`, {
             params: {
                 jobId,
             },
         });
-        return response.data;
+        
+        return transformJobDTO(response.data);
     }
 
-    async getDispatchJobDetail(jobId: number): Promise<any> {
-        const response = await this.$http.get<IDispatchJob>(`job/DispatchJobDetail`, {
+    async getDispatchJobDetail(jobId: number): Promise<IDispatchJob> {
+        const response = await this.$http.get<IDispatchJobDto>(`job/DispatchJobDetail`, {
             params: {
                 jobId
             }
         });
-        return response.data;
+        
+        return transformDispatchJobDTO(response.data);
     }
 
-    async getRecurringJobDetail(jobId: number): Promise<any> {
-        const response = await this.$http.get<IJob>(
+    async getRecurringJobDetail(jobId: number): Promise<IJob> {
+        const response = await this.$http.get<IJobDto>(
             `job/RecurringJobDetail`, {
                 params: {
                     jobId,
                 },
             }
         );
-        return response.data;
+        
+        return transformJobDTO(response.data);
     }
 
     async getRelatedJobs(parentId: number, clientId: number): Promise<any> {
@@ -323,8 +328,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getJobsCurrent(courierId: number, done: boolean): Promise<any> {
-        const response = await this.$http.get<IDispatchJob[]>(
+    async getJobsCurrent(courierId: number, done: boolean): Promise<IDispatchJob[]> {
+        const response = await this.$http.get<IDispatchJobDto[]>(
             `job/current`, {
                 params: {
                     courierId,
@@ -332,7 +337,8 @@ class DispatchCoreService implements angular.IServiceProvider {
                 },
             }
         );
-        return response.data;
+        
+        return response.data.map(transformDispatchJobDTO);
     }
 
     async getDriverLocations(selectedViews: DfrntPageViewModel[]): Promise<IClearListViewModel> {
@@ -715,8 +721,8 @@ class DispatchCoreService implements angular.IServiceProvider {
             selectedAreas.map(area => area.id)
         );
 
-        const response = await this.$http.get<IDispatchJob[]>("job", { params });
-        return response.data;
+        const response = await this.$http.get<IDispatchJobDto[]>("job", { params });
+        return response.data.map(transformDispatchJobDTO);
     }
 
     async getClearListJobs(
@@ -734,11 +740,11 @@ class DispatchCoreService implements angular.IServiceProvider {
             { selectedClearListId }
         );
 
-        const response = await this.$http.get<IDispatchJob[]>(
+        const response = await this.$http.get<IDispatchJobDto[]>(
             'job/GetJobsByClearListEnvelope',
             { params }
         );
-        return response.data;
+        return response.data.map(transformDispatchJobDTO);
     }
 
     private buildJobParams(
@@ -1073,12 +1079,13 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getBulkJobDetail(bulkJobId: number): Promise<IJob> {
-        const response = await this.$http.get<IJob>(`/Job/BulkDetail`, {
+        const response = await this.$http.get<IJobDto>(`/Job/BulkDetail`, {
             params: {
                 bulkJobId
             }
         });
-        return response.data;
+        
+        return transformJobDTO(response.data);
     }
 
     async canAssignAgentToJob(agentJobId: number): Promise<boolean> {
