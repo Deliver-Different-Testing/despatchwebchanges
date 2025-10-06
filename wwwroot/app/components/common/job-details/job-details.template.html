@@ -177,9 +177,7 @@
                 <div class="metric-label">PU Time</div>
                 <div class="metric-value">
                 <span ng-if="ctrl.job.puTime">
-                      {{ ctrl.job.puTime | momentFormat:'MM/DD HH:mm'
-                    }} ({{:: (ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort
-                    }})
+                      {{ ctrl.job.puTime | momentFormat:'MM/DD HH:mm'}} ({{ (ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort}})
                     </span>
                     <span ng-if="!ctrl.job.puTime">-</span>
                 </div>
@@ -187,7 +185,7 @@
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editDeliverBy($event, ctrl.job)">
                 <div class="metric-label">Deliver By</div>
                 <div class="metric-value" ng-if="ctrl.job.deliverByTime">
-                    {{ctrl.job.deliverByTime | momentFormat:'MMM DD HH:mm' }} ({{:: (ctrl.job.deliveryTimeZone ? ctrl.job.deliveryTimeZone.text : ctrl.timeZone) | timezoneShort}})
+                    {{ctrl.job.deliverByTime | momentFormat:'MMM DD HH:mm' }} ({{ (ctrl.job.deliveryTimeZone ? ctrl.job.deliveryTimeZone.text : ctrl.timeZone) | timezoneShort}})
                 </div>
                 <div class="metric-value" ng-if="!ctrl.job.deliverByTime">
                     -
@@ -216,8 +214,7 @@
                 <div class="metric-label">POD Time</div>
                 <div class="metric-value">
                     <span ng-if="ctrl.job.completedTime">
-                      {{ ctrl.job.completedTime | momentFormat:'MM/DD HH:mm'
-                        }} ({{:: ctrl.job.deliveryTimeZone.text | timezoneShort }})
+                      {{ ctrl.job.completedTime | momentFormat:'MM/DD HH:mm'}} ({{ ctrl.job.deliveryTimeZone.text | timezoneShort }})
                     </span>
                     <span ng-if="!ctrl.job.completedTime">-</span>
                 </div>
