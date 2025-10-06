@@ -695,8 +695,6 @@ class DriverManagementController extends BaseController {
                 startTime: startTime,
                 endTime: endTime,
                 duration: '4 hours',
-                formattedStartDate: formatDateForApiWithTzs(startTime, this.timeZone),
-                formattedEndDate: formatDateForApiWithTzs(endTime, this.timeZone),
             };
 
             const result = await this.openEditAfterHoursDialog($event, newSchedule);

@@ -24,14 +24,20 @@
             <!-- Timezone Information -->
             <div class="timezone-info">
                 <div class="timezone-item">
-                    <md-icon class="md-primary timezone-icon" md-font-set="material-symbols-outlined">public</md-icon>
+                    <md-icon class="md-primary timezone-icon" md-font-set="material-symbols-outlined">
+                        public
+                        <md-tooltip md-direction="bottom">Your local timezone (for reference only)</md-tooltip>
+                    </md-icon>
                     <div class="timezone-details">
                         <span class="timezone-label">Your timezone</span>
                         <span class="timezone-value">{{ ::ctrl.browserTimeZone | timezoneLongFilter }}</span>
                     </div>
                 </div>
                 <div class="timezone-item">
-                    <md-icon class="md-primary timezone-icon" md-font-set="material-symbols-outlined">work</md-icon>
+                    <md-icon class="md-primary timezone-icon" md-font-set="material-symbols-outlined">
+                        work
+                        <md-tooltip md-direction="bottom">The date you enter will be saved in this timezone</md-tooltip>
+                    </md-icon>
                     <div class="timezone-details">
                         <span class="timezone-label">Job timezone</span>
                         <span class="timezone-value">{{ ctrl.selectedTimeZone | timezoneLongFilter }}</span>

@@ -12,7 +12,7 @@ import {
     PriceBreakdown,
     ISuggestion,
     VoidJobRequest, UpdateJobPackagesRequest, JobCreateViewModel, VoidBulkJobRequest, UpdateBulkJobPackagesRequest,
-    IJobDto, IDispatchJobDto,
+    IJobDto, IDispatchJobDto, ITimeZoneSuggestion,
 } from "../interfaces/job.interface";
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {
@@ -744,6 +744,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             'job/GetJobsByClearListEnvelope',
             { params }
         );
+        
         return response.data.map(transformDispatchJobDTO);
     }
 
@@ -1164,6 +1165,11 @@ class DispatchCoreService implements angular.IServiceProvider {
             console.error("Download failed:", error);
             throw error;
         }
+    }
+    
+    async getTimeZoneOptions(): Promise<ITimeZoneSuggestion[]> {
+        const response = await this.$http.get<ITimeZoneSuggestion[]>('job/GetTimeZoneOptions');
+        return response.data;   
     }
 }
 

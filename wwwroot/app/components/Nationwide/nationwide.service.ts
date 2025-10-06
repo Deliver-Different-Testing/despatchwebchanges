@@ -18,7 +18,7 @@ import IFlightCargoProcessing, {
     IFlightCargoProcessingDto
 } from "../dialogs/flight-agent-conformation-dialog/interfaces/IFlightCargoProcessing";
 import {formatDateForApiWithTzs} from "../../functions/formatDates";
-import dayjs, {Dayjs} from "dayjs";
+import {Dayjs} from "dayjs";
 import {transformCargoHoursDTO, transformFlightDTO} from "../../functions/dtoMappings";
 
 class NationwideService implements angular.IServiceProvider {
@@ -74,7 +74,8 @@ class NationwideService implements angular.IServiceProvider {
 
     async getFlightOptions(
         jobId: number,
-        departureDate: dayjs.Dayjs,
+        departureDate: Dayjs,
+        timezone: string,
         airlineId?: number,
         departureAirportId?: number,
         arrivalAirportId?: number,
@@ -84,8 +85,7 @@ class NationwideService implements angular.IServiceProvider {
         message: string | null;
         lastDepartureTime: Dayjs | null;
     }> {
-        const formattedDate = departureDate.format();
-
+        const formattedDate = formatDateForApiWithTzs(departureDate, timezone);
         const response = await this.$http.get<IFlightViewModelDto[]>("nationwideJob/GetScheduledFlightOptions", {
             params: {
                 departureDate: formattedDate,

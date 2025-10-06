@@ -4,16 +4,17 @@ import IFlightCargoProcessing, {
     IFlightCargoProcessingDto
 } from "../components/dialogs/flight-agent-conformation-dialog/interfaces/IFlightCargoProcessing";
 import {IDispatchJobDto, IJob, IJobDto} from "../interfaces/job.interface";
+import {formatDateFromApi} from "./formatDates";
 
 export function transformFlightDTO(dto: IFlightViewModelDto): IFlightViewModel {
     return {
         ...dto,
-        departureTime: dayjs(dto.departureTime),
-        arrivalTime: dayjs(dto.arrivalTime),
+        departureTime: formatDateFromApi(dto.departureTime),
+        arrivalTime: formatDateFromApi(dto.arrivalTime),
         flightSegments: dto.flightSegments?.map(segment => ({
             ...segment,
-            departureTime: dayjs(segment.departureTime),
-            arrivalTime: dayjs(segment.arrivalTime),
+            departureTime: formatDateFromApi(segment.departureTime),
+            arrivalTime: formatDateFromApi(segment.arrivalTime),
         })) ?? []
     };
 }

@@ -85,7 +85,7 @@ class NationwideControl extends BaseController {
         'tasksService',
         'recoveryAgentManagementService',
     ];
-    
+
     private readonly NationwideLayoutKey: string = `layoutsNW-${ContactID}`;
     private readonly NationwideLastActiveLayoutKey: string = `lastActiveLayoutNW-${ContactID}`;
     private readonly refreshDurationIntervalKey: string = `refreshInterval-${AppPages.Domestic}-${ContactID}`;
@@ -188,7 +188,7 @@ class NationwideControl extends BaseController {
     showAgentList: boolean = false;
 
     dateFilterData: IDateFilterData;
-    
+
     unReadMessageCount: number = 0;
 
     refreshIntervalOptions?: ISuggestion[];
@@ -249,7 +249,7 @@ class NationwideControl extends BaseController {
         // Date filter
         this.dateFilterData = setDateFilterDefaults();
         this.loadDateFilterFromStorage();
-        
+
         this.watchEvent("angular-resizable.resizeEnd", (_, args: {
             id?: string,
             width: number,
@@ -674,7 +674,7 @@ class NationwideControl extends BaseController {
         NationwideControl.saveViewsToStorage(this.selectedViews);
         await this.getData();
     }
-    
+
     async clearAllViews() {
         this.views.forEach((view: DfrntPageViewModel) => {
             view.selected = false;
@@ -684,7 +684,7 @@ class NationwideControl extends BaseController {
         NationwideControl.saveViewsToStorage(this.selectedViews);
         await this.getData();
     }
-    
+
     async toggleView(view: DfrntPageViewModel): Promise<void> {
         if (view.selected) {
             if (!this.selectedViews.some((v: DfrntPageViewModel) => v.id === view.id)) {
@@ -960,7 +960,7 @@ class NationwideControl extends BaseController {
             console.error("Error in loadRelatedJobDetail:", error);
         }
     }
-    
+
     async sendQuoteRequest($event: MouseEvent, agent: IAgent, job: IDispatchJob): Promise<void> {
         try {
             // Show confirmation dialog
@@ -1238,7 +1238,6 @@ class NationwideControl extends BaseController {
         this.updateUIState(this.currentJob);
 
         try {
-            const now = dayjs();
             let departureDate;
 
             if (this.lastDepartureTime) {
@@ -1246,7 +1245,7 @@ class NationwideControl extends BaseController {
             } else if (this.currentJob.booked) {
                 departureDate = dayjs(this.currentJob.booked);
             } else {
-                departureDate = now;
+                departureDate = dayjs.tz(this.currentJob.pickUpTimeZone.text);
             }
 
             const airlineId = this.selected?.airline?.id;
@@ -1266,6 +1265,7 @@ class NationwideControl extends BaseController {
             this.flightListPromise = this.nationwideService.getFlightOptions(
                 this.currentJob.id,
                 departureDate,
+                this.currentJob.pickUpTimeZone?.text ?? this.timeZone,
                 airlineId,
                 departureAirportId,
                 arrivalAirportId,
@@ -1299,15 +1299,15 @@ class NationwideControl extends BaseController {
         }
 
         if (this.lastDepartureTime) {
-            const nextDay = new Date(this.lastDepartureTime);
-            nextDay.setHours(0, 0, 0, 0);
-            nextDay.setDate(nextDay.getDate() + 1);
-            this.lastDepartureTime = nextDay;
+            this.lastDepartureTime = dayjs(this.lastDepartureTime)
+                .add(1, 'day')
+                .startOf('day')
+                .toDate();
         } else {
-            const tomorrow = new Date(this.currentJob.booked);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(0, 0, 0, 0);
-            this.lastDepartureTime = tomorrow;
+            this.lastDepartureTime = this.currentJob.booked
+                .add(1, 'day')
+                .startOf('day')
+                .toDate();
         }
 
         return this.loadFlights();
@@ -1344,7 +1344,7 @@ class NationwideControl extends BaseController {
                 packageDeliverByTime: result.packageDeliverByTime ? formatDateForApiWithTzs(result.packageDeliverByTime, flight.arrivalTimeZone) : undefined,
                 packageDeliveryNotes: result.packageDeliveryNotes
             };
-            
+
             console.info('Assigning flight to job:', requestData);
 
             // Pass the full flight data including segments to the service
@@ -1412,11 +1412,11 @@ class NationwideControl extends BaseController {
             if (result.awb) {
                 await this.DispatchData.updateJobDetail(job.id, JobProperty.ConNote, result.awb, false);
             }
-            
+
             this.showJobHasAssignedAgentMessage = true;
             await this.getJobList([JobDataType.NEW, JobDataType.POD]);
             this.currentJob = this.findJobInLocalLists(job.id);
-            
+
             this.isDataLoading = false;
 
             const successMessage = (`Successfully assigned agent ${agent.text} to job ${job.jobNo}`)
@@ -1430,8 +1430,8 @@ class NationwideControl extends BaseController {
     }
 
     private updateDateFilters(dataTypes: JobDataType | JobDataType[] = JobDataType.ALL): void {
-        if(!this.dateFilterData?.startDate || !this.dateFilterData?.endDate) return;
-        
+        if (!this.dateFilterData?.startDate || !this.dateFilterData?.endDate) return;
+
         if (dataTypes.includes(JobDataType.NEW)) {
             this.jobFilters.startDate = this.dateFilterData.startDate;
             this.jobFilters.endDate = this.dateFilterData.endDate;
@@ -1934,7 +1934,7 @@ class NationwideControl extends BaseController {
                 await this.getJobList(JobDataType.POD);
                 break;
             case NationwideBoxes.JobDetail:
-                if(!this.currentJobId) return;
+                if (!this.currentJobId) return;
 
                 // Clear job
                 const jobIdToRefresh = this.currentJobId;
@@ -1949,7 +1949,7 @@ class NationwideControl extends BaseController {
                 break;
         }
     }
-    
+
     async addStopToJob($event: MouseEvent, job: IDispatchJob): Promise<void> {
         const setLoadingState = (isLoading: boolean) => {
             this.isDataLoading = isLoading;
@@ -1960,12 +1960,12 @@ class NationwideControl extends BaseController {
             setLoadingState(true);
 
             const newStopJobId = await this.jobAddStopService.addNewStop(job, $event);
-            if(!newStopJobId) {
+            if (!newStopJobId) {
                 setLoadingState(false);
                 this.toastrService.showWarningToast("Failed to add stop to job");
                 return;
             }
-            
+
             const newStopJob = await this.DispatchData.getDispatchJobDetail(newStopJobId);
             await this.selectJob(newStopJob);
         } catch (error: any) {
@@ -2191,11 +2191,11 @@ class NationwideControl extends BaseController {
             flight.aircraft?.toLowerCase().includes(searchTerm)
         );
     }
-    
+
     async refreshDataTimeSpan(dateFilterData: IDateFilterData) {
         console.log('refreshDataTimeSpan called with data ', dateFilterData);
         this.dateFilterData = dateFilterData;
-        
+
         this.saveDateFilterToStorage();
         await this.getJobList();
     }

@@ -77,8 +77,6 @@
                     <md-input-container class="md-block">
                         <label>Day of Week</label>
                         <md-select ng-model="ctrl.editableAfterHoursSchedule.day"
-                                   ng-change="ctrl.onDayChange()"
-                                   md-on-close="ctrl.onDayChange()"
                                    required>
                             <md-option ng-repeat="day in ctrl.daysOfWeek" ng-value="day">
                                 {{day}}
@@ -89,48 +87,34 @@
                         </div>
                     </md-input-container>
 
-                    <!-- Time Selection -->
-                    <div class="time-row">
-                        <md-input-container class="time-field">
-                            <label>Start Time</label>
-                            <input mdc-datetime-picker
-                                   date="false"
-                                   time="true"
-                                   type="text"
-                                   ng-model="ctrl.startTime"
-                                   ng-model-options="{getterSetter: true}"
-                                   ng-change="ctrl.onTimeChange()"
-                                   format="HH:mm"
-                                   edit-input="true"
-                                   placeholder="HH:MM"
-                                   required>
-                            <div ng-messages="afterhoursForm.startTime.$error" ng-if="ctrl.validationErrors.startTime">
-                                <div ng-message="required">{{ctrl.validationErrors.startTime}}</div>
-                            </div>
-                        </md-input-container>
+                    <!-- Custom timepicker Component-->
+                    <custom-date-picker
+                            date-time="ctrl.editableAfterHoursSchedule.startTime"
+                            show-date="false"
+                            show-time="true"
+                            on-change="ctrl.updateStartTime(dateTime)">
+                    </custom-date-picker> 
+                    
+                    <custom-date-picker
+                            date-time="ctrl.editableAfterHoursSchedule.endTime"
+                            show-date="false"
+                            show-time="true"
+                            on-change="ctrl.updateEndTime(dateTime)">
+                    </custom-date-picker>
 
-                        <div class="time-separator">
-                            <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">arrow_forward</md-icon>
+                    <!-- TimeZone Selection -->
+                    <md-input-container class="md-block">
+                        <label>Timezone</label>
+                        <md-select ng-model="ctrl.selectedTimeZone" required>
+                            <md-option ng-repeat="timezone in ctrl.timeZoneOptions track by timezone.id"
+                                       ng-value="timezone">
+                                {{timezone.text}}
+                            </md-option>
+                        </md-select>
+                        <div ng-messages="afterhoursForm.timeZone.$error" ng-if="ctrl.validationErrors.timeZone">
+                            <div ng-message="required">{{ctrl.validationErrors.timeZone}}</div>
                         </div>
-
-                        <md-input-container class="time-field">
-                            <label>End Time</label>
-                            <input mdc-datetime-picker
-                                   date="false"
-                                   time="true"
-                                   type="text"
-                                   ng-model="ctrl.endTime"
-                                   ng-model-options="{getterSetter: true}"
-                                   ng-change="ctrl.onTimeChange()"
-                                   format="HH:mm"
-                                   edit-input="true"
-                                   placeholder="HH:MM"
-                                   required>
-                            <div ng-messages="afterhoursForm.endTime.$error" ng-if="ctrl.validationErrors.endTime">
-                                <div ng-message="required">{{ctrl.validationErrors.endTime}}</div>
-                            </div>
-                        </md-input-container>
-                    </div>
+                    </md-input-container>
 
                     <!-- Duration Display -->
                     <div class="duration-display" ng-if="ctrl.editableAfterHoursSchedule.duration">

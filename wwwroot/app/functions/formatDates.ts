@@ -97,3 +97,8 @@ export function formatShortDateTime(date: Date | Dayjs | string, isUsCustomer: b
 export function formatMins(date: Date | Dayjs | string): string {
     return dayjs(date).format('HH:mm');
 }
+
+export function formatDateFromApi(dateString: string): Dayjs {
+    const originalTimezone = dateString.slice(-6);
+    return dayjs(dateString).utcOffset(originalTimezone);
+}

@@ -11,7 +11,6 @@ class FlightDetailsDialogController extends BaseController {
 
     flight: IFlightViewModel;
     isLoading: boolean = false;
-    error: string = '';
     timeZone: string = TimeZone;
     selectedTabIndex: number = 0;
     currentSegment: IFlightSegment;
