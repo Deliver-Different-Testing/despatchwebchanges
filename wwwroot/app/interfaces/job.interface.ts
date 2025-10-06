@@ -136,8 +136,8 @@ export interface IJob {
     deliveryAddress: IAddressViewModel;
     toAirportId?: number;
     fromAirportId?: number;
-    assignedFlight: IAssignedFlight;
-    assignedAgent: IAgent;
+    assignedFlight?: IAssignedFlight;
+    assignedAgent?: IAgent;
     assignedCourier: ISuggestion;
     parcelDimensions: IParcelDimensions[];
     deliverToLeaveId?: number;
@@ -296,8 +296,8 @@ export interface IJobDto {
     deliveryAddress: IAddressViewModel;
     toAirportId?: number;
     fromAirportId?: number;
-    assignedFlight: IAssignedFlightDto;
-    assignedAgent: IAgent;
+    assignedFlight?: IAssignedFlightDto;
+    assignedAgent?: IAgent;
     assignedCourier: ISuggestion;
     parcelDimensions: IParcelDimensions[];
     deliverToLeaveId?: number;
