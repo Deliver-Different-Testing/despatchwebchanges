@@ -461,6 +461,7 @@
     <TypeScriptCompile Include="wwwroot\app\functions\handleAddressFieldsFromLookup.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\setDateFilterDefaults.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\sortRelatedJobs.ts" />
+    <TypeScriptCompile Include="wwwroot\app\functions\toDtoMappings.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\usStates.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\app-config.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\apiConfig.interface.ts" />
