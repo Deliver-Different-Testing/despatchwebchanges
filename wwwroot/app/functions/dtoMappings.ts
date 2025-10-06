@@ -50,12 +50,12 @@ export function transformJobDTO(dto: IJobDto): IJob {
         restartDate: dto.restartDate ? dayjs(dto.restartDate) : undefined,
         assignedFlight: dto.assignedFlight ? {
             ...dto.assignedFlight,
-            expectedArrival: dayjs(dto.assignedFlight.expectedArrival),
-            expectedDeparture: dayjs(dto.assignedFlight.expectedDeparture),
+            expectedArrival: dto.assignedFlight.expectedArrival ? formatDateFromApi(dto.assignedFlight.expectedArrival) : undefined,
+            expectedDeparture: dto.assignedFlight.expectedDeparture ? formatDateFromApi(dto.assignedFlight.expectedDeparture) : undefined,
             flightSegments: dto.assignedFlight.flightSegments?.map(segment => ({
                 ...segment,
-                departureTime: dayjs(segment.departureTime),
-                arrivalTime: dayjs(segment.arrivalTime),
+                departureTime: formatDateFromApi(segment.departureTime),
+                arrivalTime: formatDateFromApi(segment.arrivalTime),
             })) ?? []
         } : undefined,
     };

@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
-using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
@@ -150,15 +148,11 @@ public class NationwideJobController(
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            // Get flight details
-            var flight = await GetFlightDetails(request);
-            ArgumentNullException.ThrowIfNull(flight);
-
             // Create webhooks for flight segments
-            var webhookIds = await CreateWebhooks(flight);
+            var webhookIds = await CreateWebhooks(request.FlightSegments);
 
             // Save job assignment
-            await repository.AddJobNationwideAsync(request, flight, webhookIds);
+            await repository.AddJobNationwideAsync(request, webhookIds);
 
             return Ok();
         }
@@ -170,48 +164,13 @@ public class NationwideJobController(
         }
     }
 
-    private async Task<AddFlightToJobDto> GetFlightDetails(AssignFlightToJobRequest request)
-    {
-        // Use provided flight segments if available
-        if (request.FlightSegments?.Count > 0)
-        {
-            var firstSegment = request.FlightSegments.OrderBy(f => f.SegmentOrder).First();
-            var lastSegment = request.FlightSegments.OrderBy(f => f.SegmentOrder).Last();
-
-            return new AddFlightToJobDto
-            {
-                AirlineName = firstSegment.AirlineName ??
-                              (firstSegment.CarrierFsCode != null ? $"{firstSegment.CarrierFsCode} Airlines" : null),
-                ArrivalTime = lastSegment.ArrivalTime,
-                CarrierFsCode = firstSegment.CarrierFsCode,
-                DepartureTime = firstSegment.DepartureTime,
-                FlightNumber = firstSegment.FlightNumber,
-                FlightSegments = request.FlightSegments
-            };
-        }
-
-        // Otherwise get flight details from service
-        try
-        {
-            return await flightService.GetFlightDetailsByFlightNumberAsync(
-                request.FlightNumber,
-                request.DepartureDate.DateTime,
-                request.JobId);
-        }
-        catch (Exception ex)
-        {
-            ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NationwideJobController), nameof(GetFlightDetails));
-            throw;
-        }
-    }
-
-    private async Task<List<string>> CreateWebhooks(AddFlightToJobDto flight)
+    private async Task<List<string>> CreateWebhooks(List<FlightSegmentViewModel> flightSegments)
     {
         var webhookIds = new List<string>();
 
         try
         {
-            foreach (var segment in flight.FlightSegments)
+            foreach (var segment in flightSegments)
             {
                 var webhookId = await flightService.CreateFlightRuleByDepartureAsync(
                     $"{segment.CarrierFsCode}{segment.FlightNumber}",

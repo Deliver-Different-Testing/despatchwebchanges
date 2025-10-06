@@ -257,9 +257,9 @@ public static class JobMappings
                     .Select(nj => new AssignedFlight
                     {
                         ExpectedArrival = nj.UcnwEta,
-                        ArrivalTimeZone = nj.UcnwJob.ToAirport.Timezone,
+                        ArrivalTimeZone = nj.ArrivalAirportTimeZoneNavigation.DisplayName,
                         ExpectedDeparture = nj.UcnwEtd,
-                        DepartureTimeZone = nj.UcnwJob.FromAirport.Timezone,
+                        DepartureTimeZone = nj.DepartureAirportTimeZoneNavigation.DisplayName,
                         FlightNumber = nj.UcnwFlightNo,
                         Notes = nj.UcnwNotes,
                         // First, check if there are any flight segments
@@ -286,13 +286,13 @@ public static class JobMappings
                                             && segment.UcnwFlightNo.Length > 2
                                                 ? segment.UcnwFlightNo.Substring(2)
                                                 : "????",
-                                        DepartureTime = segment.UcnwEtd ?? new DateTime(1753, 1, 1),
-                                        ArrivalTime = segment.UcnwEta ?? new DateTime(1753, 1, 1),
+                                        DepartureTime = segment.UcnwEtd ?? SqlMinDateTime,
+                                        ArrivalTime = segment.UcnwEta ?? SqlMinDateTime,
                                         DepartureAirportFsCode = segment.DepartureAirportFsCode,
                                         DepartureAirportName = segment.DepartureAirportName,
                                         DepartureAirportCity = segment.DepartureAirportCity,
                                         DepartureAirportCountry = segment.DepartureAirportCountry,
-                                        DepartureAirportTimeZone = segment.DepartureAirportTimeZone,
+                                        DepartureAirportTimeZone = segment.DepartureAirportTimeZoneNavigation.DisplayName,
                                         DepartureAirportTimeZoneId =
                                             segment.DepartureAirportTimeZoneId ?? 0,
                                         DepartureTerminal = segment.DepartureTerminal,
@@ -300,7 +300,7 @@ public static class JobMappings
                                         ArrivalAirportName = segment.ArrivalAirportName,
                                         ArrivalAirportCity = segment.ArrivalAirportCity,
                                         ArrivalAirportCountry = segment.ArrivalAirportCountry,
-                                        ArrivalAirportTimeZone = segment.ArrivalAirportTimeZone,
+                                        ArrivalAirportTimeZone = segment.ArrivalAirportTimeZoneNavigation.DisplayName,
                                         ArrivalAirportTimeZoneId =
                                             segment.ArrivalAirportTimeZoneId ?? 0,
                                         ArrivalTerminal = segment.ArrivalTerminal,
@@ -321,9 +321,9 @@ public static class JobMappings
                         .TucJobNationwides.Select(nj => new AssignedFlight
                         {
                             ExpectedArrival = nj.UcnwEta,
-                            ArrivalTimeZone = nj.UcnwJob.ToAirport.Timezone,
+                            ArrivalTimeZone = nj.ArrivalAirportTimeZoneNavigation.DisplayName,
                             ExpectedDeparture = nj.UcnwEtd,
-                            DepartureTimeZone = nj.UcnwJob.FromAirport.Timezone,
+                            DepartureTimeZone = nj.DepartureAirportTimeZoneNavigation.DisplayName,
                             FlightNumber = nj.UcnwFlightNo,
                             Notes = nj.UcnwNotes,
                             // Check if there are any flight segments
@@ -350,7 +350,7 @@ public static class JobMappings
                                             DepartureAirportName = segment.DepartureAirportName,
                                             DepartureAirportCity = segment.DepartureAirportCity,
                                             DepartureAirportCountry = segment.DepartureAirportCountry,
-                                            DepartureAirportTimeZone = segment.DepartureAirportTimeZone,
+                                            DepartureAirportTimeZone = segment.DepartureAirportTimeZoneNavigation.DisplayName,
                                             DepartureAirportTimeZoneId =
                                                 segment.DepartureAirportTimeZoneId ?? 0,
                                             DepartureTerminal = segment.DepartureTerminal,
@@ -358,7 +358,7 @@ public static class JobMappings
                                             ArrivalAirportName = segment.ArrivalAirportName,
                                             ArrivalAirportCity = segment.ArrivalAirportCity,
                                             ArrivalAirportCountry = segment.ArrivalAirportCountry,
-                                            ArrivalAirportTimeZone = segment.ArrivalAirportTimeZone,
+                                            ArrivalAirportTimeZone = segment.ArrivalAirportTimeZoneNavigation.DisplayName,
                                             ArrivalAirportTimeZoneId =
                                                 segment.ArrivalAirportTimeZoneId ?? 0,
                                             ArrivalTerminal = segment.ArrivalTerminal,
