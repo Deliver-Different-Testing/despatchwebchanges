@@ -1,17 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace DespatchWeb.Models.FlightStats;
-
-public class FlightConnectionsResponse
-{
-    [JsonPropertyName("request")] public Request Request { get; set; }
-
-    [JsonPropertyName("connections")] public List<Connection> Connections { get; set; }
-
-    [JsonPropertyName("appendix")] public Appendix Appendix { get; set; }
-}
 
 public class Airline
 {
@@ -23,7 +13,9 @@ public class Airline
 
     [JsonPropertyName("name")] public string Name { get; set; }
 
-    [JsonPropertyName("active")] public bool Active { get; set; }
+    [JsonPropertyName("active")] public bool? Active { get; set; }
+
+    [JsonPropertyName("category")] public string Category { get; set; }
 }
 
 public class Airport
@@ -54,35 +46,121 @@ public class Airport
 
     [JsonPropertyName("regionName")] public string RegionName { get; set; }
 
-    [JsonPropertyName("timeZoneRegionName")] public string TimeZoneRegionName { get; set; }
+    [JsonPropertyName("regionIata")] public string RegionIata { get; set; }
+
+    [JsonPropertyName("timeZoneRegionName")]
+    public string TimeZoneRegionName { get; set; }
 
     [JsonPropertyName("weatherZone")] public string WeatherZone { get; set; }
 
-    [JsonPropertyName("localTime")] public DateTime LocalTime { get; set; }
+    [JsonPropertyName("localTime")] public string LocalTime { get; set; }
 
-    [JsonPropertyName("utcOffsetHours")] public double UtcOffsetHours { get; set; }
+    [JsonPropertyName("utcOffsetHours")] public double? UtcOffsetHours { get; set; }
 
-    [JsonPropertyName("latitude")] public double Latitude { get; set; }
+    [JsonPropertyName("latitude")] public double? Latitude { get; set; }
 
-    [JsonPropertyName("longitude")] public double Longitude { get; set; }
+    [JsonPropertyName("longitude")] public double? Longitude { get; set; }
 
-    [JsonPropertyName("elevationFeet")] public int ElevationFeet { get; set; }
+    [JsonPropertyName("elevationFeet")] public int? ElevationFeet { get; set; }
 
-    [JsonPropertyName("classification")] public int Classification { get; set; }
+    [JsonPropertyName("classification")] public int? Classification { get; set; }
 
-    [JsonPropertyName("active")] public bool Active { get; set; }
+    [JsonPropertyName("active")] public bool? Active { get; set; }
 
     [JsonPropertyName("street2")] public string Street2 { get; set; }
 }
 
 public class AllowNearbyArrivals
 {
-    [JsonPropertyName("interpreted")] public bool Interpreted { get; set; }
+    [JsonPropertyName("interpreted")] public bool? Interpreted { get; set; }
 }
 
 public class AllowNearbyDepartures
 {
-    [JsonPropertyName("interpreted")] public bool Interpreted { get; set; }
+    [JsonPropertyName("interpreted")] public bool? Interpreted { get; set; }
+}
+
+public class Appendix
+{
+    [JsonPropertyName("airlines")] public List<Airline> Airlines { get; set; }
+
+    [JsonPropertyName("airports")] public List<Airport> Airports { get; set; }
+
+    [JsonPropertyName("equipments")] public List<Equipment> Equipments { get; set; }
+}
+
+public class Arrival
+{
+    [JsonPropertyName("requested")] public string Requested { get; set; }
+
+    [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
+}
+
+public class FlightStatsCodeshare
+{
+    [JsonPropertyName("carrierFsCode")] public string CarrierFsCode { get; set; }
+
+    [JsonPropertyName("flightNumber")] public string FlightNumber { get; set; }
+
+    [JsonPropertyName("serviceType")] public string ServiceType { get; set; }
+
+    [JsonPropertyName("serviceClasses")] public List<string> ServiceClasses { get; set; }
+
+    [JsonPropertyName("trafficRestrictions")]
+    public List<object> TrafficRestrictions { get; set; }
+}
+
+public class Connection
+{
+    [JsonPropertyName("elapsedTime")] public int? ElapsedTime { get; set; }
+
+    [JsonPropertyName("score")] public int? Score { get; set; }
+
+    [JsonPropertyName("scheduledFlight")] public List<ScheduledFlight> ScheduledFlight { get; set; }
+}
+
+public class FlightStatsRequestDate
+{
+    [JsonPropertyName("requested")] public string Requested { get; set; }
+
+    [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
+}
+
+public class FlightStatusRequestDateTime
+{
+    [JsonPropertyName("year")] public string Year { get; set; }
+
+    [JsonPropertyName("month")] public string Month { get; set; }
+
+    [JsonPropertyName("day")] public string Day { get; set; }
+
+    [JsonPropertyName("hour")] public string Hour { get; set; }
+
+    [JsonPropertyName("minute")] public string Minute { get; set; }
+
+    [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
+}
+
+public class Departure
+{
+    [JsonPropertyName("requested")] public string Requested { get; set; }
+
+    [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
+}
+
+public class Equipment
+{
+    [JsonPropertyName("iata")] public string Iata { get; set; }
+
+    [JsonPropertyName("name")] public string Name { get; set; }
+
+    [JsonPropertyName("turboProp")] public bool? TurboProp { get; set; }
+
+    [JsonPropertyName("jet")] public bool? Jet { get; set; }
+
+    [JsonPropertyName("widebody")] public bool? Widebody { get; set; }
+
+    [JsonPropertyName("regional")] public bool? Regional { get; set; }
 }
 
 public class ExcludeAirlines
@@ -95,9 +173,18 @@ public class ExcludeAirports
     [JsonPropertyName("interpreted")] public List<object> Interpreted { get; set; }
 }
 
+public class ExtendedOptions
+{
+    [JsonPropertyName("requested")] public string Requested { get; set; }
+
+    [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
+}
+
 public class IncludeAirlines
 {
-    [JsonPropertyName("interpreted")] public List<object> Interpreted { get; set; }
+    [JsonPropertyName("requested")] public string Requested { get; set; }
+
+    [JsonPropertyName("interpreted")] public List<string> Interpreted { get; set; }
 }
 
 public class IncludeAirports
@@ -107,120 +194,69 @@ public class IncludeAirports
 
 public class IncludeCodeshares
 {
-    [JsonPropertyName("interpreted")] public bool Interpreted { get; set; }
+    [JsonPropertyName("requested")] public string Requested { get; set; }
+
+    [JsonPropertyName("interpreted")] public bool? Interpreted { get; set; }
 }
 
 public class IncludeMultipleCarriers
 {
-    [JsonPropertyName("interpreted")] public bool Interpreted { get; set; }
+    [JsonPropertyName("interpreted")] public bool? Interpreted { get; set; }
 }
 
 public class IncludeSurface
 {
-    [JsonPropertyName("interpreted")] public bool Interpreted { get; set; }
+    [JsonPropertyName("interpreted")] public bool? Interpreted { get; set; }
 }
 
 public class MaxConnections
 {
     [JsonPropertyName("requested")] public string Requested { get; set; }
 
-    [JsonPropertyName("interpreted")] public int Interpreted { get; set; }
+    [JsonPropertyName("interpreted")] public int? Interpreted { get; set; }
 }
 
 public class MaxResults
 {
-    [JsonPropertyName("interpreted")] public int Interpreted { get; set; }
+    [JsonPropertyName("requested")] public string Requested { get; set; }
+
+    [JsonPropertyName("interpreted")] public int? Interpreted { get; set; }
+}
+
+public class MinimumConnectTime
+{
+    [JsonPropertyName("requested")] public string Requested { get; set; }
+
+    [JsonPropertyName("interpreted")] public int? Interpreted { get; set; }
 }
 
 public class NumHours
 {
-    [JsonPropertyName("interpreted")] public int Interpreted { get; set; }
+    [JsonPropertyName("requested")] public string Requested { get; set; }
+
+    [JsonPropertyName("interpreted")] public int? Interpreted { get; set; }
 }
 
 public class PayloadType
 {
-    [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
-}
-
-public class Appendix
-{
-    [JsonPropertyName("airlines")] public List<Airline> Airlines { get; set; }
-
-    [JsonPropertyName("airports")] public List<Airport> Airports { get; set; }
-
-    [JsonPropertyName("equipments")] public List<Equipment> Equipments { get; set; }
-}
-
-public class ArrivalAirport
-{
-    [JsonPropertyName("requestedCode")] public string RequestedCode { get; set; }
-
-    [JsonPropertyName("fsCode")] public string FsCode { get; set; }
-}
-
-public class CodeShare
-{
-    [JsonPropertyName("carrierFsCode")] public string CarrierFsCode { get; set; }
-
-    [JsonPropertyName("flightNumber")] public string FlightNumber { get; set; }
-
-    [JsonPropertyName("serviceType")] public string ServiceType { get; set; }
-
-    [JsonPropertyName("serviceClasses")] public List<string> ServiceClasses { get; set; }
-
-    [JsonPropertyName("trafficRestrictions")] public List<string> TrafficRestrictions { get; set; }
-
-    [JsonPropertyName("referenceCode")] public int ReferenceCode { get; set; }
-}
-
-public class Date
-{
-    [JsonPropertyName("year")] public string Year { get; set; }
-
-    [JsonPropertyName("month")] public string Month { get; set; }
-
-    [JsonPropertyName("day")] public string Day { get; set; }
+    [JsonPropertyName("requested")] public string Requested { get; set; }
 
     [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
-}
-
-public class DepartureAirport
-{
-    [JsonPropertyName("requestedCode")] public string RequestedCode { get; set; }
-
-    [JsonPropertyName("fsCode")] public string FsCode { get; set; }
-}
-
-public class Equipment
-{
-    [JsonPropertyName("iata")] public string Iata { get; set; }
-
-    [JsonPropertyName("name")] public string Name { get; set; }
-
-    [JsonPropertyName("turboProp")] public bool TurboProp { get; set; }
-
-    [JsonPropertyName("jet")] public bool Jet { get; set; }
-
-    [JsonPropertyName("widebody")] public bool Widebody { get; set; }
-
-    [JsonPropertyName("regional")] public bool Regional { get; set; }
-}
-
-public class Operator
-{
-    [JsonPropertyName("carrierFsCode")] public string CarrierFsCode { get; set; }
-
-    [JsonPropertyName("flightNumber")] public string FlightNumber { get; set; }
-
-    [JsonPropertyName("serviceType")] public string ServiceType { get; set; }
-
-    [JsonPropertyName("serviceClasses")] public List<string> ServiceClasses { get; set; }
-
-    [JsonPropertyName("trafficRestrictions")] public List<object> TrafficRestrictions { get; set; }
 }
 
 public class Request
 {
+    [JsonPropertyName("endpoint")] public string Endpoint { get; set; }
+
+    [JsonPropertyName("departure")] public Departure Departure { get; set; }
+
+    [JsonPropertyName("arrival")] public Arrival Arrival { get; set; }
+
+    [JsonPropertyName("allowNearbyDepartures")]
+    public AllowNearbyDepartures AllowNearbyDepartures { get; set; }
+
+    [JsonPropertyName("allowNearbyArrivals")]
+    public AllowNearbyArrivals AllowNearbyArrivals { get; set; }
 
     [JsonPropertyName("includeAirports")] public IncludeAirports IncludeAirports { get; set; }
 
@@ -245,31 +281,27 @@ public class Request
     public IncludeMultipleCarriers IncludeMultipleCarriers { get; set; }
 
     [JsonPropertyName("maxResults")] public MaxResults MaxResults { get; set; }
+
+    [JsonPropertyName("date")] public FlightStatsRequestDate Date { get; set; }
+
+    [JsonPropertyName("minimumConnectTime")]
+    public MinimumConnectTime MinimumConnectTime { get; set; }
+
+    [JsonPropertyName("url")] public string Url { get; set; }
+
+    [JsonPropertyName("extendedOptions")] public ExtendedOptions ExtendedOptions { get; set; }
+
+    [JsonPropertyName("dateTime")] public FlightStatusRequestDateTime DateTime { get; set; }
 }
 
-public class Connection
+public class FlightConnectionsRoot
 {
-    [JsonPropertyName("elapsedTime")] public int ElapsedTime { get; set; }
+    [JsonPropertyName("request")] public Request Request { get; set; }
 
-    [JsonPropertyName("score")] public int Score { get; set; }
+    [JsonPropertyName("connections")] public List<Connection> Connections { get; set; }
 
-    [JsonPropertyName("scheduledFlight")] public List<ScheduledFlight> ScheduledFlight { get; set; }
+    [JsonPropertyName("appendix")] public Appendix Appendix { get; set; }
 }
-
-public class Departure
-{
-    [JsonPropertyName("requested")] public string Requested { get; set; }
-
-    [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
-}
-
-public class Arrival
-{
-    [JsonPropertyName("requested")] public string Requested { get; set; }
-
-    [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
-}
-
 
 public class ScheduledFlight
 {
@@ -280,25 +312,38 @@ public class ScheduledFlight
     [JsonPropertyName("departureAirportFsCode")]
     public string DepartureAirportFsCode { get; set; }
 
-    [JsonPropertyName("arrivalAirportFsCode")] public string ArrivalAirportFsCode { get; set; }
+    [JsonPropertyName("arrivalAirportFsCode")]
+    public string ArrivalAirportFsCode { get; set; }
 
-    [JsonPropertyName("departureTime")] public DateTimeOffset DepartureTime { get; set; }
+    [JsonPropertyName("departureTime")] public string DepartureTime { get; set; }
 
-    [JsonPropertyName("arrivalTime")] public DateTimeOffset ArrivalTime { get; set; }
+    [JsonPropertyName("arrivalTime")] public string ArrivalTime { get; set; }
 
-    [JsonPropertyName("stops")] public int Stops { get; set; }
+    [JsonPropertyName("stops")] public int? Stops { get; set; }
 
-    [JsonPropertyName("departureTerminal")] public string DepartureTerminal { get; set; }
+    [JsonPropertyName("departureTerminal")]
+    public string DepartureTerminal { get; set; }
 
     [JsonPropertyName("arrivalTerminal")] public string ArrivalTerminal { get; set; }
 
     [JsonPropertyName("flightEquipmentIataCode")]
     public string FlightEquipmentIataCode { get; set; }
 
-    [JsonPropertyName("isCodeshare")] public bool IsCodeShare { get; set; }
+    [JsonPropertyName("isCodeshare")] public bool? IsCodeshare { get; set; }
+
+    [JsonPropertyName("isWetlease")] public bool? IsWetlease { get; set; }
+
+    [JsonPropertyName("serviceType")] public string ServiceType { get; set; }
 
     [JsonPropertyName("serviceClasses")] public List<string> ServiceClasses { get; set; }
 
-    [JsonPropertyName("elapsedTime")] public int ElapsedTime { get; set; }
+    [JsonPropertyName("trafficRestrictions")]
+    public List<object> TrafficRestrictions { get; set; }
 
+    [JsonPropertyName("elapsedTime")] public int? ElapsedTime { get; set; }
+
+    [JsonPropertyName("codeshares")] public List<Codeshare> Codeshares { get; set; }
+
+    [JsonPropertyName("wetleaseOperatorFsCode")]
+    public string WetleaseOperatorFsCode { get; set; }
 }

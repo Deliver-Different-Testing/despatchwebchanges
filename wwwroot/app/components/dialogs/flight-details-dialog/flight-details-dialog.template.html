@@ -39,25 +39,10 @@
 
     <!-- Content -->
     <div class="dialog-content">
-        <!-- Loading state -->
-        <div class="state-container loading-state" ng-if="ctrl.isLoading">
-            <md-progress-circular md-mode="indeterminate" md-diameter="48"></md-progress-circular>
-            <h3>Loading flight details...</h3>
-            <p>Please wait while we fetch the latest information</p>
-        </div>
-
-        <!-- Error state -->
-        <div class="state-container error-state" ng-if="!ctrl.isLoading && ctrl.error">
-            <md-icon md-font-set="material-symbols-outlined" class="error-icon">error</md-icon>
-            <h3>Unable to load flight details</h3>
-            <p class="error-message">{{ctrl.error}}</p>
-            <md-button class="md-raised md-primary" ng-click="ctrl.retry()">Try Again</md-button>
-        </div>
-
         <!-- Flight data -->
-        <div class="flight-content" ng-if="!ctrl.isLoading && !ctrl.error && ctrl.flight">
+        <div class="flight-content" ng-if="ctrl.flight">
             <!-- Flight summary card -->
-            <div class="flight-summary-card">
+            <div class="flight-summary-card md-whiteframe-1dp">
                 <div class="summary-header">
                     <div class="airline-section">
                         <div class="airline-logo">
@@ -122,7 +107,7 @@
             </div>
 
             <!-- Flight details card -->
-            <div class="flight-details-card">
+            <div class="flight-details-card md-whiteframe-1dp">
                 <h3 class="card-title">
                     <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">info</md-icon>
                     Flight Information
@@ -230,7 +215,7 @@
             </div>
 
             <!-- Multi-segment timeline -->
-            <div class="segments-timeline-card" ng-if="ctrl.flight.isMultiSegment && ctrl.isDisplayingOverview">
+            <div class="segments-timeline-card md-whiteframe-1dp" ng-if="ctrl.flight.isMultiSegment && ctrl.isDisplayingOverview">
                 <h3 class="card-title">
                     <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">route</md-icon>
                     Flight Itinerary

@@ -161,8 +161,8 @@ export interface IJob {
     holidayDeliveryOption: HolidayDeliveryOptions,
     pickUpWindowMins?: number;
     deliverByWindowMins?: number;
-    pickUpTimeZone?: ISuggestion;
-    deliveryTimeZone?: ISuggestion;
+    pickUpTimeZone: ISuggestion;
+    deliveryTimeZone: ISuggestion;
     hasDgDocsString?: string;
     calculateDimsOncePerJob: boolean;
 }
@@ -321,8 +321,8 @@ export interface IJobDto {
     holidayDeliveryOption: HolidayDeliveryOptions,
     pickUpWindowMins?: number;
     deliverByWindowMins?: number;
-    pickUpTimeZone?: ISuggestion;
-    deliveryTimeZone?: ISuggestion;
+    pickUpTimeZone: ISuggestion;
+    deliveryTimeZone: ISuggestion;
     hasDgDocsString?: string;
     calculateDimsOncePerJob: boolean;
 }
@@ -414,6 +414,10 @@ export interface ISuggestion {
 
 export interface IAirportSuggestion extends ISuggestion {
     timezone: string;
+}
+
+export interface ITimeZoneSuggestion extends ISuggestion {
+    timeZoneIana: string;
 }
 
 export interface IClearListViewModel {
@@ -669,8 +673,8 @@ export interface IDispatchJob {
     van?: boolean;
     truck?: boolean;
 
-    pickUpTimeZone?: ISuggestion;
-    deliveryTimeZone?: ISuggestion;
+    pickUpTimeZone: ISuggestion;
+    deliveryTimeZone: ISuggestion;
 
     _isExpanded?: boolean;
     _groupChildren?: IDispatchJob[];
@@ -776,8 +780,8 @@ export interface IDispatchJobDto {
     van?: boolean;
     truck?: boolean;
 
-    pickUpTimeZone?: ISuggestion;
-    deliveryTimeZone?: ISuggestion;
+    pickUpTimeZone: ISuggestion;
+    deliveryTimeZone: ISuggestion;
 }
 
 export interface ILateCallRequest {

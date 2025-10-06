@@ -1,4 +1,3 @@
-import NationwideService from "../../Nationwide/nationwide.service";
 import { IFlightViewModel } from "../../Nationwide/nationwide.interfaces";
 import FlightDetailsDialogController from "./flight-details-dialog.component";
 
@@ -6,13 +5,11 @@ class FlightDetailsDialogService implements angular.IServiceProvider {
     static $inject = [
         '$mdDialog',
         '$document',
-        'NWData',
     ];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private $document: angular.IDocumentService,
-        private nationwideService: NationwideService,
     ) {
         console.log('FlightDetailsDialogService: Service instantiated');
     }
@@ -24,15 +21,17 @@ class FlightDetailsDialogService implements angular.IServiceProvider {
     async openFlightDetailsDialog($event: MouseEvent, flightData: IFlightViewModel) {
         // Don't need to make an additional API call since we already have the flight data
         await this.$mdDialog.show({
+            template: require('./flight-details-dialog.template.html'),
             controller: FlightDetailsDialogController,
             controllerAs: 'ctrl',
-            template: require('./flight-details-dialog.template.html'),
             parent: this.$document.parent(),
             targetEvent: $event,
-            clickOutsideToClose: false,
+            clickOutsideToClose: true,
+            escapeToClose: true,
             locals: {
-                flightData: flightData
-            }
+                flightData
+            },
+            bindToController: true,
         });
     }
 }

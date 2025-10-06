@@ -36,7 +36,8 @@ public class NationwideJobController(
         }
         catch (Exception e)
         {
-            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(NationwideJobListNew));
+            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
+                nameof(NationwideJobListNew));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -55,7 +56,8 @@ public class NationwideJobController(
         }
         catch (Exception e)
         {
-            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(NationwideJobListPod));
+            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
+                nameof(NationwideJobListPod));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -74,13 +76,14 @@ public class NationwideJobController(
         }
         catch (Exception e)
         {
-            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(NationwideJobListReprice));
+            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
+                nameof(NationwideJobListReprice));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
     public async Task<IActionResult> GetScheduledFlightOptions(
-        DateTimeOffset  departureDate,
+        DateTimeOffset departureDate,
         int jobId,
         int? airlineId,
         int? departureAirportId,
@@ -119,7 +122,7 @@ public class NationwideJobController(
                     jobId,
                     flight.AirlineCode,
                     flight.FlightSegments.Count != 0,
-                    flight.DepartureTime);
+                    flight.DepartureTime.Date);
 
                 flight.Amount = amount;
             }
@@ -134,7 +137,8 @@ public class NationwideJobController(
         catch (Exception e)
         {
             stopwatch.Stop();
-            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(GetScheduledFlightOptions));
+            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
+                nameof(GetScheduledFlightOptions));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -160,7 +164,8 @@ public class NationwideJobController(
         }
         catch (Exception ex)
         {
-            ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NationwideJobController), nameof(AssignFlightToJob));
+            ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NationwideJobController),
+                nameof(AssignFlightToJob));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
@@ -339,7 +344,8 @@ public class NationwideJobController(
         }
         catch (Exception e)
         {
-            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(GetAllAgentsSearch));
+            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
+                nameof(GetAllAgentsSearch));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -368,7 +374,8 @@ public class NationwideJobController(
         }
         catch (Exception e)
         {
-            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(AddAgentRecoveryJob));
+            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
+                nameof(AddAgentRecoveryJob));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -382,7 +389,8 @@ public class NationwideJobController(
         }
         catch (Exception e)
         {
-            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(GetAgentRecoveryJobs));
+            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
+                nameof(GetAgentRecoveryJobs));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -396,7 +404,8 @@ public class NationwideJobController(
         }
         catch (Exception e)
         {
-            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(GetAgentOptionsByAirport));
+            ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
+                nameof(GetAgentOptionsByAirport));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -410,8 +419,9 @@ public class NationwideJobController(
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(GetAllActiveAirports)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
+                    nameof(GetAllActiveAirports)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -427,8 +437,9 @@ public class NationwideJobController(
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(UpdateAgentRecoveryJob)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
+                    nameof(UpdateAgentRecoveryJob)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -446,23 +457,27 @@ public class NationwideJobController(
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(RemoveAgentRecoveryJob)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
+                    nameof(RemoveAgentRecoveryJob)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
-    public async Task<IActionResult> CalculateCargoReadyTime(int jobId, string carrierFsCode, DateTimeOffset arrivalTime)
+    public async Task<IActionResult> CalculateCargoReadyTime(int jobId, string carrierFsCode,
+        DateTimeOffset arrivalTime)
     {
         try
         {
-            var cargoReadyTime = await repository.CalculateCargoReadyTimeAsync(jobId, carrierFsCode, arrivalTime.DateTime);
+            var cargoReadyTime =
+                await repository.CalculateCargoReadyTimeAsync(jobId, carrierFsCode, arrivalTime.DateTime);
             return Json(cargoReadyTime);
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(CalculateCargoReadyTime)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
+                    nameof(CalculateCargoReadyTime)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -476,8 +491,9 @@ public class NationwideJobController(
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), nameof(CanAssignAgentToJob)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
+                    nameof(CanAssignAgentToJob)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }

@@ -175,12 +175,12 @@ public class FlightStatsService(
         var airports = await repository.GetAllActiveAirportsAsync();
         var departureAirport = airports.FirstOrDefault(x => x.AirportId == departureAirportId);
         var arrivalAirport = airports.FirstOrDefault(x => x.AirportId == arrivalAirportId);
-        
+
         ArgumentNullException.ThrowIfNull(departureAirport);
         ArgumentNullException.ThrowIfNull(arrivalAirport);
-        
+
         var activeAirlineCodes = await repository.GetActiveAirlineCodesAsync();
-        
+
         var flightsFrom = CalculateFlightSearchStartTime(departureDateTime, departureAirport.FlightBufferMinutes);
         var (year, month, day, hour, minute) = SplitDate(flightsFrom);
 
@@ -238,7 +238,7 @@ public class FlightStatsService(
             stopwatch.ElapsedMilliseconds, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
-        var flightStatusResponse = JsonSerializer.Deserialize<FlightConnectionsResponse>(content);
+        var flightStatusResponse = JsonSerializer.Deserialize<FlightConnectionsRoot>(content);
         ArgumentNullException.ThrowIfNull(flightStatusResponse);
 
         // Pre-filter connections to avoid processing unnecessary data
@@ -269,16 +269,16 @@ public class FlightStatsService(
                             ?.FirstOrDefault(e => e.Iata == segment.FlightEquipmentIataCode);
 
                         var airline = flightStatusResponse.Appendix?.Airlines
-                            ?.FirstOrDefault(a => a.Fs == segment.CarrierFsCode && activeAirlineCodes.Contains(segment.CarrierFsCode));
+                            ?.FirstOrDefault(a =>
+                                a.Fs == segment.CarrierFsCode && activeAirlineCodes.Contains(segment.CarrierFsCode));
 
                         return new FlightSegmentViewModel
                         {
                             SegmentOrder = index,
                             CarrierFsCode = segment.CarrierFsCode,
                             FlightNumber = segment.FlightNumber,
-                            DepartureTime = segment.DepartureTime.DateTime,
-                            ArrivalTime =
-                                AdjustArrivalTimeForOvernightFlight(segment.DepartureTime.DateTime, segment.ArrivalTime.DateTime),
+                            DepartureTime = CalculateCorrectDateTimeOffset(segment.DepartureTime, depAirport),
+                            ArrivalTime = CalculateCorrectDateTimeOffset(segment.ArrivalTime, arrAirport),
                             DepartureAirportId = departureAirport.AirportId,
                             DepartureAirportFsCode = segment.DepartureAirportFsCode,
                             DepartureTerminal = segment.DepartureTerminal,
@@ -287,18 +287,18 @@ public class FlightStatsService(
                             ArrivalTerminal = segment.ArrivalTerminal,
                             FlightEquipmentIataCode = segment.FlightEquipmentIataCode,
                             ElapsedTime = segment.ElapsedTime,
-                            StopsInSegment = segment.Stops,
+                            StopsInSegment = segment.Stops ?? 0,
 
                             // Additional details from the appendix
                             DepartureAirportName = depAirport?.Name,
                             DepartureAirportCity = depAirport?.City,
                             DepartureAirportCountry = depAirport?.CountryName,
-                            DepartureAirportTimeZone = airports.FirstOrDefault(a => a.AirportCode == depAirport?.Iata)?.Timezone,
+                            DepartureAirportTimeZone = depAirport?.TimeZoneRegionName,
 
                             ArrivalAirportName = arrAirport?.Name,
                             ArrivalAirportCity = arrAirport?.City,
                             ArrivalAirportCountry = arrAirport?.CountryName,
-                            ArrivalAirportTimeZone = airports.FirstOrDefault(a => a.AirportCode == arrAirport?.Iata)?.Timezone,
+                            ArrivalAirportTimeZone = arrAirport?.TimeZoneRegionName,
 
                             AircraftName = equipment?.Name,
                             AircraftType = equipment?.Jet == true ? "Jet" :
@@ -309,6 +309,11 @@ public class FlightStatsService(
                     })
                     .ToList();
 
+                var flightFlightDepartureAirport = flightStatusResponse.Appendix?.Airports
+                    ?.FirstOrDefault(a => a.Fs == firstFlight.DepartureAirportFsCode);
+                var lastFlightArrivalAirport = flightStatusResponse.Appendix?.Airports
+                    ?.FirstOrDefault(a => a.Fs == lastFlight.ArrivalAirportFsCode);
+
                 return new FlightViewModel
                 {
                     Airline = flightStatusResponse.Appendix?.Airlines
@@ -316,28 +321,34 @@ public class FlightStatsService(
                         ?.Name,
                     AirlineCode = firstFlight.CarrierFsCode,
                     FlightNumber = firstFlight.CarrierFsCode + firstFlight.FlightNumber,
-                    DepartureTime = firstFlight.DepartureTime.DateTime,
+                    DepartureTime =
+                        CalculateCorrectDateTimeOffset(firstFlight.DepartureTime, flightFlightDepartureAirport),
                     ArrivalTime =
-                        AdjustArrivalTimeForOvernightFlight(firstFlight.DepartureTime.DateTime, lastFlight.ArrivalTime.DateTime),
+                        AdjustArrivalTimeForOvernightFlight(
+                            CalculateCorrectDateTimeOffset(firstFlight.DepartureTime, flightFlightDepartureAirport),
+                            CalculateCorrectDateTimeOffset(lastFlight.ArrivalTime, lastFlightArrivalAirport)),
                     DepartureAirport = firstFlight.DepartureAirportFsCode,
                     ArrivalAirport = lastFlight.ArrivalAirportFsCode,
-                    Duration = lastFlight.ArrivalTime.DateTime - firstFlight.DepartureTime.DateTime,
+                    Duration =
+                        CalculateCorrectDateTimeOffset(lastFlight.ArrivalTime, lastFlightArrivalAirport).UtcDateTime -
+                        CalculateCorrectDateTimeOffset(firstFlight.DepartureTime, flightFlightDepartureAirport)
+                            .UtcDateTime,
                     Stops = conn.ScheduledFlight.Count - 1, // Number of connections equals number of flights minus 1
                     Aircraft = flightStatusResponse.Appendix?.Equipments
                         .FirstOrDefault(e => e.Iata == firstFlight.FlightEquipmentIataCode)
                         ?.Name,
                     ServiceClasses = firstFlight.ServiceClasses,
-                    IsCodeShare = firstFlight.IsCodeShare,
+                    IsCodeShare = firstFlight.IsCodeshare ?? false,
                     Amount = 0, // Will fill this in on the next step
-                    CodeShareAirline = firstFlight.IsCodeShare ? firstFlight.CarrierFsCode : null,
+                    CodeShareAirline = firstFlight.IsCodeshare ?? false ? firstFlight.CarrierFsCode : null,
 
                     // Add new properties for multi-segment support
                     IsMultiSegment = conn.ScheduledFlight.Count > 1,
-                    ElapsedTime = conn.ElapsedTime,
-                    Score = conn.Score,
+                    ElapsedTime = conn.ElapsedTime ?? 0,
+                    Score = conn.Score ?? 0,
                     ConnectionId = Guid.NewGuid().ToString(),
-                    DepartureTimeZone = airports.FirstOrDefault(a => a.AirportCode == firstFlight.DepartureAirportFsCode)?.Timezone,
-                    ArrivalTimeZone = airports.FirstOrDefault(a => a.AirportCode == lastFlight.ArrivalAirportFsCode)?.Timezone,
+                    DepartureTimeZone = flightFlightDepartureAirport?.TimeZoneRegionName,
+                    ArrivalTimeZone = lastFlightArrivalAirport?.TimeZoneRegionName,
 
                     // Add flight segments
                     FlightSegments = segments
@@ -346,7 +357,7 @@ public class FlightStatsService(
 
         return flightOptions.OrderBy(flight => flight.DepartureTime).ToList();
     }
-
+    
     private DateTime CalculateFlightSearchStartTime(DateTime? departureDateTime, int flightBuffer)
     {
         var currentTenantTime = infoService.GetCurrentTenantTime();
@@ -399,7 +410,7 @@ public class FlightStatsService(
             throw new Exception($"Failed to retrieve flight information: {response.ReasonPhrase}");
 
         var content = await response.Content.ReadAsStringAsync();
-        var flightResponse = JsonSerializer.Deserialize<FlightConnectionsResponse>(content);
+        var flightResponse = JsonSerializer.Deserialize<FlightConnectionsRoot>(content);
 
         if (flightResponse?.Connections == null)
             return null;
@@ -444,15 +455,16 @@ public class FlightStatsService(
                     SegmentOrder = index,
                     CarrierFsCode = segment.CarrierFsCode,
                     FlightNumber = segment.FlightNumber,
-                    DepartureTime = segment.DepartureTime,
-                    ArrivalTime = AdjustArrivalTimeForOvernightFlight(segment.DepartureTime.DateTime, segment.ArrivalTime.DateTime),
+                    DepartureTime = CalculateCorrectDateTimeOffset(segment.DepartureTime, depAirport),
+                    ArrivalTime = AdjustArrivalTimeForOvernightFlight(CalculateCorrectDateTimeOffset(segment.DepartureTime, depAirport),
+                        CalculateCorrectDateTimeOffset(segment.ArrivalTime, arrAirport)),
                     DepartureAirportFsCode = segment.DepartureAirportFsCode,
                     DepartureTerminal = segment.DepartureTerminal,
                     ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
                     ArrivalTerminal = segment.ArrivalTerminal,
                     FlightEquipmentIataCode = segment.FlightEquipmentIataCode,
                     ElapsedTime = segment.ElapsedTime,
-                    StopsInSegment = segment.Stops,
+                    StopsInSegment = segment.Stops ?? 0,
 
                     // Additional details from the appendix
                     DepartureAirportName = depAirport?.Name,
@@ -474,13 +486,22 @@ public class FlightStatsService(
             })
             .ToList();
 
+        var flightFlightDepartureAirport = flightResponse.Appendix?.Airports
+            ?.FirstOrDefault(a => a.Fs == firstFlight.DepartureAirportFsCode);
+        var lastFlightArrivalAirport = flightResponse.Appendix?.Airports
+            ?.FirstOrDefault(a => a.Fs == lastFlight.ArrivalAirportFsCode);
+        
         return new AddFlightToJobDto
         {
             AirlineName = flightResponse.Appendix?.Airlines?.FirstOrDefault(a => a.Fs == firstFlight.CarrierFsCode)
                 ?.Name,
-            ArrivalTime = AdjustArrivalTimeForOvernightFlight(firstFlight.DepartureTime.DateTime, lastFlight.ArrivalTime.DateTime),
+            DepartureTime =
+                CalculateCorrectDateTimeOffset(firstFlight.DepartureTime, flightFlightDepartureAirport),
+            ArrivalTime =
+                AdjustArrivalTimeForOvernightFlight(
+                    CalculateCorrectDateTimeOffset(firstFlight.DepartureTime, flightFlightDepartureAirport),
+                    CalculateCorrectDateTimeOffset(lastFlight.ArrivalTime, lastFlightArrivalAirport)),
             CarrierFsCode = firstFlight.CarrierFsCode,
-            DepartureTime = firstFlight.DepartureTime,
             FlightNumber = firstFlight.FlightNumber,
             FlightSegments = segments
         };
@@ -493,7 +514,8 @@ public class FlightStatsService(
     private static (string carrierCode, string flightNumber) SplitFlightCode(string completeFlightNumber) =>
         (completeFlightNumber?[..2], completeFlightNumber?[2..]);
 
-    private static DateTime AdjustArrivalTimeForOvernightFlight(DateTime departureTime, DateTime arrivalTime)
+    private static DateTimeOffset AdjustArrivalTimeForOvernightFlight(DateTimeOffset departureTime,
+        DateTimeOffset arrivalTime)
     {
         // If arrival time is earlier than departure time, it means the flight goes overnight
         if (arrivalTime.TimeOfDay < departureTime.TimeOfDay)
@@ -504,4 +526,30 @@ public class FlightStatsService(
         var daysDifference = (departureTime.Date - arrivalTime.Date).Days;
         return arrivalTime.AddDays(daysDifference);
     }
+    
+    private static DateTimeOffset CalculateCorrectDateTimeOffset(string flightDateTime, Airport airport)
+    {
+        // Parse the datetime string
+        if (!DateTime.TryParse(flightDateTime, out var localDateTime))
+            throw new ArgumentException($"Invalid datetime format: {flightDateTime}");
+
+        // Get the timezone for the airport
+        TimeZoneInfo airportTimeZone;
+
+        try
+        {
+            airportTimeZone = TimeZoneInfo.FindSystemTimeZoneById(airport.TimeZoneRegionName);
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            throw new ArgumentException($"Invalid timezone: {airport.TimeZoneRegionName} for airport {airport.Iata}");
+        }
+
+        // Create DateTimeOffset with the airport's timezone offset
+        var unspecifiedDateTime = DateTime.SpecifyKind(localDateTime, DateTimeKind.Unspecified);
+        var offset = airportTimeZone.GetUtcOffset(unspecifiedDateTime);
+
+        return new DateTimeOffset(unspecifiedDateTime, offset);
+    }
+
 }
