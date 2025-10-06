@@ -557,6 +557,11 @@
                         <div class="status">{{ctrl.getStatusAbbreviation(childJob)}}</div>
                     </div>
                 </div>
+
+                <div class="loading-more-indicator" ng-if="ctrl.isLoadingMoreJobs()">
+                    <md-progress-circular md-mode="indeterminate" md-diameter="30"></md-progress-circular>
+                    <span>Loading more jobs...</span>
+                </div>
             </div>
         </div>
     </div>

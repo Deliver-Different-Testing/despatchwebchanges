@@ -17,8 +17,7 @@ public interface IJobRepository
     Task<JobViewModel> GetBulkJobDetailAsync(int bulkJobId);
     Task<DispatchJobViewModel> GetBulkDispatchJobDetailAsync(int bulkJobId);
 
-    Task<List<DispatchJobViewModel>> BulkSearchAsync(PodSearchRequest data);
-
+    Task<BulkJobSearchResult> BulkSearchAsync(PodSearchRequest data);
     Task<List<DispatchJobViewModel>> PodSearchAsync(PodSearchRequest data);
 
     Task UpdateManualPriceAsync(List<JobManualPriceModel> data);

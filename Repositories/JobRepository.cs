@@ -158,14 +158,14 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         return bulkJob;
     }
 
-    public async Task<List<DispatchJobViewModel>> BulkSearchAsync(PodSearchRequest data)
-    {
-        var isUsCustomer = _infoService.IsUsTenant();
-        var jobSearch = (data.Job ?? string.Empty).ToLower();
-        var wildSearch = (data.Wild ?? string.Empty).ToLower();
+   public async Task<BulkJobSearchResult> BulkSearchAsync(PodSearchRequest data)
+{
+    var isUsCustomer = _infoService.IsUsTenant();
+    var jobSearch = (data.Job ?? string.Empty).ToLower();
+    var wildSearch = (data.Wild ?? string.Empty).ToLower();
 
-        var bulkJobs = await (
-                from j in Context.TblBulkJobs
+    // Build the base query
+    var query = from j in Context.TblBulkJobs
                 join c in Context.TblCouriers on j.CourierId equals c.CourierId into courierJoin
                 from courier in courierJoin.DefaultIfEmpty()
                 join t in Context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
@@ -286,13 +286,30 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                         j.BookTime.Second
                     ),
                     IsBulkJob = true
-                })
-            .Distinct()
-            .AsNoTracking()
-            .ToListAsync();
+                };
 
-        return bulkJobs;
-    }
+    // Get a total count before pagination
+    var totalCount = await query.Distinct().CountAsync();
+
+    // Apply pagination
+    var page = data.Page ?? 0;
+    var pageSize = data.PageSize ?? 50;
+    
+    var bulkJobs = await query
+        .Distinct()
+        .OrderBy(j => j.Booked)
+        .Skip(page * pageSize)
+        .Take(pageSize)
+        .AsNoTracking()
+        .ToListAsync();
+
+    return new BulkJobSearchResult
+    {
+        Jobs = bulkJobs,
+        TotalCount = totalCount,
+        HasMore = (page + 1) * pageSize < totalCount
+    };
+}
 
     public async Task<List<DispatchJobViewModel>> PodSearchAsync(PodSearchRequest data)
     {
