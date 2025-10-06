@@ -212,6 +212,7 @@ public partial class JobRepository(
                         wildSearch
                     )
                 )
+                orderby j.BookDate, j.BookTime, j.JobId, j.BulkJobId
             select new DispatchJobViewModel
             {
                 Id = j.BulkJobId,
@@ -292,14 +293,13 @@ public partial class JobRepository(
             };
 
         // Get a total count before pagination
-        var totalCount = await query.Distinct().CountAsync();
+        var totalCount = await query.CountAsync();
 
         // Apply pagination
         var page = data.Page ?? 0;
         var pageSize = data.PageSize ?? 50;
 
         var bulkJobs = await query
-            .OrderBy(j => j.Booked)
             .Skip(page * pageSize)
             .Take(pageSize)
             .AsNoTracking()
