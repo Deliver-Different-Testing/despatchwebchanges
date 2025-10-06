@@ -701,11 +701,11 @@ public class JobController(
         return Ok();
     }
 
-    public async Task<IActionResult> BulkSearch(PodSearchRequest data)
+    public async Task<IActionResult> BulkSearch([FromQuery] PodSearchRequest request)
     {
         try
         {
-            var result = await jobRepository.BulkSearchAsync(data);
+            var result = await jobRepository.BulkSearchAsync(request);
             return Json(result);
         }
         catch (Exception e)

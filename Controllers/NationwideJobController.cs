@@ -98,7 +98,7 @@ public class NationwideJobController(
 
             var flights = await flightService.GetFlightsAsync(
                 jobId,
-                departureDate.DateTime,
+                departureDate,
                 airlineId,
                 departureAirportId,
                 arrivalAirportId,
@@ -174,7 +174,7 @@ public class NationwideJobController(
             {
                 var webhookId = await flightService.CreateFlightRuleByDepartureAsync(
                     $"{segment.CarrierFsCode}{segment.FlightNumber}",
-                    segment.DepartureTime.DateTime,
+                    segment.DepartureTime,
                     segment.DepartureAirportFsCode) ?? string.Empty;
 
                 if (!string.IsNullOrEmpty(webhookId)) webhookIds.Add(webhookId);
