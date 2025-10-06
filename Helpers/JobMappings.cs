@@ -251,9 +251,8 @@ public static class JobMappings
         FromAirportId = j.FromAirportId,
 
         AssignedFlight =
-            j.Parent != null
-                ? j
-                    .Parent.InverseParent.SelectMany(childJob => childJob.TucJobNationwides)
+            j.Parent != null && j.Parent.InverseParent.Any() == true
+                ? j.Parent.InverseParent.SelectMany(childJob => childJob.TucJobNationwides)
                     .Select(nj => new AssignedFlight
                     {
                         ExpectedArrival = nj.UcnwEta,
@@ -321,7 +320,7 @@ public static class JobMappings
                         .TucJobNationwides.Select(nj => new AssignedFlight
                         {
                             ExpectedArrival = nj.UcnwEta,
-                            ArrivalTimeZone = nj.ArrivalAirportTimeZoneNavigation.DisplayName,
+                            ArrivalTimeZone = nj.ArrivalAirportTimeZoneNavigation.DisplayName ?? nj.UcnwJob.ToAirport.Timezone,
                             ExpectedDeparture = nj.UcnwEtd,
                             DepartureTimeZone = nj.DepartureAirportTimeZoneNavigation.DisplayName,
                             FlightNumber = nj.UcnwFlightNo,
