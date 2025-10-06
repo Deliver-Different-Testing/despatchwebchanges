@@ -4,7 +4,7 @@ import DispatchExecutorService from "../../services/dispatch-executor.service";
 import ToastrService from "../../services/toastr.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import {IAppConfig} from "../../interfaces/app-config.interface";
-import {IDispatchJob, ISuggestion} from "../../interfaces/job.interface";
+import {IBulkJobSearchResult, IDispatchJob, ISuggestion} from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
 import BaseController from "../base-controller";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
@@ -53,6 +53,9 @@ class JobSearchController extends BaseController {
     
     private readonly ContactIdKey: string = `layoutsCS-${ContactID}`
     private readonly LastActiveContactIdKey: string = `lastActiveLayoutCS-${ContactID}`
+
+    private bulkJobCurrentPage: number = 0;
+    private bulkJobTotalCount: number = 0;
 
     readonly isUsCustomer: boolean;
     readonly isAdmin: boolean;
@@ -774,14 +777,11 @@ class JobSearchController extends BaseController {
     async refreshBulkData() {
         try {
             this.isBulkJobListLoading = true;
-            this.bulkJobList = await this.jobSearchService.searchBulkJobs(
-                this.searchCriteria.from_date,
-                this.searchCriteria.to_date,
-                this.searchCriteria.courier,
-                this.searchCriteria.client,
-                this.searchCriteria.job,
-                this.searchCriteria.wild,
-            );
+            this.bulkJobCurrentPage = 0;
+
+            const response = await this.handleLoadMoreBulkJobs(0, 50);
+            this.bulkJobList = response.jobs;
+            this.bulkJobTotalCount = response.totalCount;
         } catch (error) {
             console.error('Error in refreshBulkData:', error);
         } finally {
@@ -1052,6 +1052,24 @@ class JobSearchController extends BaseController {
             return true;
         } catch (error: any) {
             console.error("Error in dispatch:", error);
+            throw error;
+        }
+    }
+
+    async handleLoadMoreBulkJobs(page: number, pageSize: number): Promise<IBulkJobSearchResult> {
+        try {
+            return await this.jobSearchService.searchBulkJobs(
+                this.searchCriteria.from_date,
+                this.searchCriteria.to_date,
+                page,
+                pageSize,
+                this.searchCriteria.courier,
+                this.searchCriteria.client,
+                this.searchCriteria.job,
+                this.searchCriteria.wild,
+            );
+        } catch (error) {
+            console.error('Error loading bulk jobs:', error);
             throw error;
         }
     }

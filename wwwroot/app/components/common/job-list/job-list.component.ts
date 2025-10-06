@@ -43,6 +43,7 @@ class JobsListController extends BaseController {
     onJobAction?: (data: { action: string, job: IDispatchJob, params?: any }) => Promise<void>;
     getContextMenuOptions?: (data: { job: IDispatchJob }) => any[];
     onRefresh?: () => Promise<void>;
+    onLoadMoreJobs?: (data: { page: number, pageSize: number }) => Promise<{ jobs: IDispatchJob[], totalCount: number, hasMore: boolean }>;
     queryParams?: any;
     isUsCustomer?: boolean;
     timeZone: string = TimeZone;
@@ -100,6 +101,14 @@ class JobsListController extends BaseController {
     // Select all
     selectedJobs: IDispatchJob[] = [];
     selectAllState: boolean = false;
+    
+    // Scroll
+    private readonly DEFAULT_PAGE_SIZE = 50;
+    enableVirtualScrolling: boolean = false;
+    private currentPage: number = 0;
+    private totalJobsCount: number = 0;
+    private isLoadingMore: boolean = false;
+    private allJobsLoaded: boolean = false;
 
     constructor(
         private DispatchData: DispatchCoreService,
@@ -137,10 +146,21 @@ class JobsListController extends BaseController {
         // Initialize with current highlights
         this.highlightedRelatedJobIds = this.jobHighlightService.getHighlightedRelatedJobIds();
         this.ensureHeaderSticky();
+
+        if (this.enableVirtualScrolling) {
+            this.setupScrollListener();
+        }
     }
 
     $onDestroy() {
         super.$onDestroy();
+
+        if (this.enableVirtualScrolling) {
+            const scrollContainer = angular.element('.jobs-scroll-container');
+            if (scrollContainer.length) {
+                scrollContainer.off('scroll');
+            }
+        }
 
         if (this.unsubscribeFromHighlights) {
             this.unsubscribeFromHighlights();
@@ -182,6 +202,11 @@ class JobsListController extends BaseController {
 
     $onChanges(changes: angular.IOnChangesObject) {
         if (changes['jobs'] && changes['jobs'].currentValue) {
+            if (this.enableVirtualScrolling && changes['jobs'].previousValue !== changes['jobs'].currentValue) {
+                this.currentPage = 0;
+                this.allJobsLoaded = false;
+            }
+            
             // Group jobs by parent if not nationwide
             if (this.shouldGroupJobs()) this.groupJobs();
 
@@ -792,10 +817,19 @@ class JobsListController extends BaseController {
     }
 
     getDisplayedJobsText(): string {
-        const filtered = this.filteredJobs?.length || 0;
-
+        const displayed = this.filteredJobs?.length || 0;
         const multiPart = this.filteredJobs?.filter(j => this.isMultiPartJob(j)).length || 0;
-        return `Showing ${filtered} jobs (${multiPart} child jobs)`;
+
+        if (this.enableVirtualScrolling) {
+            if (this.isLoadingMore) {
+                return `Loading more jobs...`;
+            }
+            if (!this.allJobsLoaded) {
+                return `Showing ${displayed} of ${this.totalJobsCount} jobs (${multiPart} child jobs) - Scroll for more`;
+            }
+        }
+
+        return `Showing ${displayed} jobs (${multiPart} child jobs)`;
     }
 
     getLastUpdatedText(): string {
@@ -1308,6 +1342,72 @@ class JobsListController extends BaseController {
     isJobSearchPage(): boolean {
         return this.jobListType === JobListType.JobSearchBulkList || this.jobListType === JobListType.JobSearchMainList;
     }
+
+    private setupScrollListener(): void {
+        this.registerTimeout(() => {
+            const scrollContainer = angular.element('.jobs-scroll-container');
+            if (scrollContainer.length) {
+                scrollContainer.on('scroll', async () => {
+                   await this.handleScroll(scrollContainer[0]);
+                });
+            }
+        });
+    }
+
+    private async handleScroll(element: HTMLElement) {Promise<void>
+        if (!this.enableVirtualScrolling || this.isLoadingMore || this.allJobsLoaded) return;
+
+        const scrollTop = element.scrollTop;
+        const scrollHeight = element.scrollHeight;
+        const clientHeight = element.clientHeight;
+
+        if (scrollTop + clientHeight >= scrollHeight - 200) {
+            await this.loadMoreJobsFromBackend();
+        }
+    }
+
+    private async loadMoreJobsFromBackend(): Promise<void> {
+        if (!this.onLoadMoreJobs || this.isLoadingMore || this.allJobsLoaded) {
+            return;
+        }
+
+        this.isLoadingMore = true;
+        this.currentPage++;
+
+        try {
+            const result = await this.onLoadMoreJobs({
+                page: this.currentPage,
+                pageSize: this.DEFAULT_PAGE_SIZE
+            });
+
+            if (result && result.jobs && result.jobs.length > 0) {
+                // Append new jobs to existing jobs array
+                this.jobs = [...(this.jobs || []), ...result.jobs];
+
+                if (this.shouldGroupJobs()) {
+                    this.groupJobs();
+                }
+
+                this.totalJobsCount = result.totalCount;
+                this.allJobsLoaded = !result.hasMore;
+
+                this.calculateStats();
+                this.applyFilters();
+            } else {
+                this.allJobsLoaded = true;
+            }
+        } catch (error) {
+            console.error('Error loading more jobs:', error);
+            this.toastrService?.showErrorToast('Failed to load more jobs');
+        } finally {
+            this.isLoadingMore = false;
+            this.applyScope();
+        }
+    }
+
+    isLoadingMoreJobs(): boolean {
+        return this.isLoadingMore;
+    }
 }
 
 const JobsListComponent: angular.IComponentOptions = {
@@ -1322,9 +1422,11 @@ const JobsListComponent: angular.IComponentOptions = {
         onJobAction: '&',
         getContextMenuOptions: '&',
         onRefresh: '&',
+        onLoadMoreJobs: '&',
         queryParams: '<',
         refreshInterval: '<?',
         jobListType: '<?',
+        enableVirtualScrolling: '<?',
     }
 };
 

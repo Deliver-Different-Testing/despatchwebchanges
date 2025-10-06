@@ -112,16 +112,15 @@
             <!-- Spacer -->
             <div flex></div>
 
-            <!-- Status Chip -->
-            <md-chip
-                    class="status {{ctrl.job.statusName | lowercase | replace:' ':'-'}}"
-                    md-ink-ripple
+            <!-- Status Button -->
+            <md-button
+                    class="status-button {{ctrl.job.statusName | lowercase | replace:' ':'-'}}"
                     ng-click="ctrl.statusClick($event, ctrl.job)">
                 <md-icon class="status-icon" md-font-set="material-symbols-outlined">
                     package_2
                 </md-icon>
                 {{ctrl.job.statusName}}
-            </md-chip>
+            </md-button>
         </div>
 
         <div
