@@ -3357,7 +3357,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     .AsNoTracking()
                     .FirstOrDefaultAsync();
                 
-                if(liveJob.AssignedFlight.FlightSegments.Count == 0) return liveJob;
+                if(liveJob.AssignedFlight == null || liveJob.AssignedFlight.FlightSegments.Count == 0) return liveJob;
 
                 liveJob.AssignedFlight.ExpectedArrival =  liveJob.AssignedFlight.ExpectedArrival.HasValue ? TimeZoneHelper.SetDateTimeWithTimeZone(liveJob.AssignedFlight.ExpectedArrival.Value, liveJob.AssignedFlight.ArrivalTimeZone) : null;
                 liveJob.AssignedFlight.ExpectedDeparture =  liveJob.AssignedFlight.ExpectedDeparture.HasValue ? TimeZoneHelper.SetDateTimeWithTimeZone(liveJob.AssignedFlight.ExpectedDeparture.Value, liveJob.AssignedFlight.DepartureTimeZone) : null;
