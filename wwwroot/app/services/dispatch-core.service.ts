@@ -140,13 +140,11 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async allocateJobs(
         courierId: number,
-        dispatcherId: number,
         jobIds: number[]
     ): Promise<void> {
         await this.$http.post("job/Allocate", null, {
             params: {
                 courierId,
-                dispId: dispatcherId,
                 jobIds,
             },
         });
@@ -154,13 +152,11 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async reAllocateJobs(
         courierId: number,
-        dispatcherId: number,
         jobIds: number[]
     ): Promise<void> {
         await this.$http.post("job/ReAllocate", null, {
             params: {
                 courierId,
-                dispId: dispatcherId,
                 jobIds,
             },
         });
@@ -316,7 +312,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         return transformJobDTO(response.data);
     }
 
-    async getRelatedJobs(parentId: number, clientId: number): Promise<any> {
+    async getRelatedJobs(parentId: number, clientId: number): Promise<ISuggestion[]> {
         const response = await this.$http.get<ISuggestion[]>(
             `job/Related`, {
                 params: {

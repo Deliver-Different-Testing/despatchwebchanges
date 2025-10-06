@@ -161,7 +161,7 @@ public partial class JobRepository(
         return bulkJob;
     }
 
-    public async Task<BulkJobSearchResult> BulkSearchAsync(PodSearchRequest data)
+    public async Task<JobSearchResult> BulkSearchAsync(PodSearchRequest data)
     {
         var isUsCustomer = _infoService.IsUsTenant();
         var jobSearch = (data.Job ?? string.Empty).ToLower();
@@ -305,7 +305,7 @@ public partial class JobRepository(
             .AsNoTracking()
             .ToListAsync();
 
-        return new BulkJobSearchResult
+        return new JobSearchResult
         {
             Jobs = bulkJobs,
             TotalCount = totalCount,
@@ -313,7 +313,7 @@ public partial class JobRepository(
         };
     }
 
-    public async Task<List<DispatchJobViewModel>> PodSearchAsync(PodSearchRequest data)
+    public async Task<JobSearchResult> PodSearchAsync(PodSearchRequest data)
     {
         try
         {
@@ -321,159 +321,175 @@ public partial class JobRepository(
             var jobSearch = $"%{data.Job}%";
             var wildSearch = $"%{data.Wild}%";
 
-            var jobSearchResults = await (
-                    from j in Context.TblJobs
-                    join c in Context.TucCouriers on j.CourierId equals c.UccrId into courierJoin
-                    from co in courierJoin.DefaultIfEmpty()
-                    join y in Context.TucSuburbs on j.FromSuburbId equals y.UcsuId into fromJoin
-                    from fs in fromJoin.DefaultIfEmpty()
-                    join z in Context.TucSuburbs on j.ToSuburbId equals z.UcsuId into toJoin
-                    from ts in toJoin.DefaultIfEmpty()
-                    join t in Context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
-                    from speed in speedJoin.DefaultIfEmpty()
-                    join s in Context.TucJobStatuses on j.Status equals s.UcjsId into statusJoin
-                    from status in statusJoin.DefaultIfEmpty()
-                    join nw in Context.TucJobNationwides on j.JobId equals nw.UcnwJobId into nationwideJoin
-                    from nationwide in nationwideJoin.DefaultIfEmpty()
-                    join rt in Context.TucJobReadTrackers on j.JobId equals rt.JobId into rtJoin
-                    from readTracker in rtJoin.DefaultIfEmpty()
-                    join vs in Context.VehicleSizes on j.Size equals vs.VehicleSizeId into vsJoin
-                    from vehicleSize in vsJoin.DefaultIfEmpty()
-                    join cl in Context.TucClients on j.ClientId equals cl.UcclId into clientJoin
-                    from client in clientJoin.DefaultIfEmpty()
-                    where
-                        j.Date >= data.FromDate
-                        && j.Date <= data.ToDate
-                        && (!data.ClientSet || j.ClientId == data.ClientId)
-                        && (!data.CourierSet || j.CourierId == data.CourierId)
-                        && (!data.JobSet || EF.Functions.Like(j.Number.ToLower(), jobSearch))
-                        && (
-                            !data.WildSet
-                            || Context.TucJobNationwides
-                                .Where(nw => nw.UcnwJobId == j.JobId)
-                                .Any(nw => EF.Functions.Like(
-                                    (nw.UcnwFlightNo ?? string.Empty)
-                                    + " "
-                                    + (nw.AircraftName ?? string.Empty)
-                                    + " "
-                                    + (nw.CarrierFsCode ?? string.Empty)
-                                    + " "
-                                    + (nw.DepartureAirportName ?? string.Empty)
-                                    + " "
-                                    + (nw.ArrivalAirportName ?? string.Empty),
-                                    wildSearch))
-                            || EF.Functions.Like(
-                                (j.FromAddress ?? string.Empty)
+            var query =
+                from j in Context.TblJobs
+                join c in Context.TucCouriers on j.CourierId equals c.UccrId into courierJoin
+                from co in courierJoin.DefaultIfEmpty()
+                join y in Context.TucSuburbs on j.FromSuburbId equals y.UcsuId into fromJoin
+                from fs in fromJoin.DefaultIfEmpty()
+                join z in Context.TucSuburbs on j.ToSuburbId equals z.UcsuId into toJoin
+                from ts in toJoin.DefaultIfEmpty()
+                join t in Context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
+                from speed in speedJoin.DefaultIfEmpty()
+                join s in Context.TucJobStatuses on j.Status equals s.UcjsId into statusJoin
+                from status in statusJoin.DefaultIfEmpty()
+                join nw in Context.TucJobNationwides on j.JobId equals nw.UcnwJobId into nationwideJoin
+                from nationwide in nationwideJoin.DefaultIfEmpty()
+                join rt in Context.TucJobReadTrackers on j.JobId equals rt.JobId into rtJoin
+                from readTracker in rtJoin.DefaultIfEmpty()
+                join vs in Context.VehicleSizes on j.Size equals vs.VehicleSizeId into vsJoin
+                from vehicleSize in vsJoin.DefaultIfEmpty()
+                join cl in Context.TucClients on j.ClientId equals cl.UcclId into clientJoin
+                from client in clientJoin.DefaultIfEmpty()
+                where
+                    j.Date >= data.FromDate.Date
+                    && j.Date <= data.ToDate.Date
+                    && (!data.ClientSet || j.ClientId == data.ClientId)
+                    && (!data.CourierSet || j.CourierId == data.CourierId)
+                    && (!data.JobSet || EF.Functions.Like(j.Number.ToLower(), jobSearch))
+                    && (
+                        !data.WildSet
+                        || Context.TucJobNationwides
+                            .Where(nw => nw.UcnwJobId == j.JobId)
+                            .Any(nw => EF.Functions.Like(
+                                (nw.UcnwFlightNo ?? string.Empty)
                                 + " "
-                                + (j.PickupFromContact ?? string.Empty)
+                                + (nw.AircraftName ?? string.Empty)
                                 + " "
-                                + (fs.UcsuName ?? string.Empty)
+                                + (nw.CarrierFsCode ?? string.Empty)
                                 + " "
-                                + (j.ToAddress ?? string.Empty)
+                                + (nw.DepartureAirportName ?? string.Empty)
                                 + " "
-                                + (j.DeliverToContact ?? string.Empty)
-                                + " "
-                                + (ts.UcsuName ?? string.Empty)
-                                + " "
-                                + (j.ClientReferenceA ?? string.Empty)
-                                + " "
-                                + (j.ClientReferenceB ?? string.Empty)
-                                + " "
-                                + (j.OurRef ?? string.Empty)
-                                + " "
-                                + j.Number.ToLower(),
-                                wildSearch
-                            )
+                                + (nw.ArrivalAirportName ?? string.Empty),
+                                wildSearch))
+                        || EF.Functions.Like(
+                            (j.FromAddress ?? string.Empty)
+                            + " "
+                            + (j.PickupFromContact ?? string.Empty)
+                            + " "
+                            + (fs.UcsuName ?? string.Empty)
+                            + " "
+                            + (j.ToAddress ?? string.Empty)
+                            + " "
+                            + (j.DeliverToContact ?? string.Empty)
+                            + " "
+                            + (ts.UcsuName ?? string.Empty)
+                            + " "
+                            + (j.ClientReferenceA ?? string.Empty)
+                            + " "
+                            + (j.ClientReferenceB ?? string.Empty)
+                            + " "
+                            + (j.OurRef ?? string.Empty)
+                            + " "
+                            + j.Number.ToLower(),
+                            wildSearch
                         )
-                    select new DispatchJobViewModel
+                    )
+                orderby j.Date, j.Time, j.JobId
+                select new DispatchJobViewModel
+                {
+                    Id = j.JobId,
+                    HasBeenRead = readTracker != null && readTracker.HasBeenRead,
+                    IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.JobId,
+                    ParentId = j.ParentId,
+
+                    DeliverByTime = j.DeliverByTime,
+                    IsFlightJob = speed != null
+                                  && speed.GroupingId == (isUsCustomer
+                                      ? (int)SpeedGrouping.Flight
+                                      : (int)UrgentSpeedGrouping.Flight),
+                    IsAgentJob = speed != null
+                                 && speed.GroupingId == (isUsCustomer
+                                     ? (int)SpeedGrouping.Agent
+                                     : (int)UrgentSpeedGrouping.NationwideAgent),
+
+                    Vehicle = vehicleSize != null
+                        ? new Suggestion
+                        {
+                            Id = vehicleSize.VehicleSizeId,
+                            Text = vehicleSize.VehicleName
+                        }
+                        : null,
+                    Time = j.Time,
+                    ClientId = j.ClientId,
+                    Client = j.ClientCode,
+                    ClientName = client != null ? client.UcclName : string.Empty,
+
+                    From = fs != null ? fs.UcsuName : null,
+                    ToSuburbId = j.ToSuburbId,
+                    JobNo = j.Number,
+                    ToAddress = j.ToAddress,
+                    PickupAddress = new AddressViewModel
                     {
-                        Id = j.JobId,
-                        HasBeenRead = readTracker != null && readTracker.HasBeenRead,
-                        IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.JobId,
-                        ParentId = j.ParentId,
+                        AddressLine1 = j.PickupAddressLine1,
+                        AddressLine2 = j.PickupAddressLine2,
+                        AddressLine3 = j.PickupAddressLine3,
+                        AddressLine4 = j.PickupAddressLine4,
+                        AddressLine5 = j.PickupAddressLine5,
+                        AddressLine6 = j.PickupAddressLine6,
+                        AddressLine7 = j.PickupAddressLine7,
+                        AddressLine8 = j.PickupAddressLine8,
+                        Latitude = j.PickUpLatitude,
+                        Longitude = j.PickUpLongitude
+                    },
+                    DeliveryAddress = new AddressViewModel
+                    {
+                        AddressLine1 = j.DeliveryAddressLine1,
+                        AddressLine2 = j.DeliveryAddressLine2,
+                        AddressLine3 = j.DeliveryAddressLine3,
+                        AddressLine4 = j.DeliveryAddressLine4,
+                        AddressLine5 = j.DeliveryAddressLine5,
+                        AddressLine6 = j.DeliveryAddressLine6,
+                        AddressLine7 = j.DeliveryAddressLine7,
+                        AddressLine8 = j.DeliveryAddressLine8,
+                        Latitude = j.DeliveryLatitude,
+                        Longitude = j.DeliveryLongitude
+                    },
+                    Courier = co != null ? co.Code : null,
+                    StatusId = j.Status,
+                    Status = status != null ? status.UcjsCode : null,
+                    Speed = speed != null ? speed.ShortName : null,
+                    SpeedId = j.Speed,
+                    PreBook = false,
+                    PickUpLatitude = j.PickUpLatitude,
+                    PickUpLongitude = j.PickUpLongitude,
+                    DeliveryLatitude = j.DeliveryLatitude,
+                    DeliveryLongitude = j.DeliveryLongitude,
+                    Booked = j.Date.HasValue
+                        ? new DateTime(
+                            j.Date.Value.Year,
+                            j.Date.Value.Month,
+                            j.Date.Value.Day,
+                            j.Time.HasValue ? j.Time.Value.Hour : 0,
+                            j.Time.HasValue ? j.Time.Value.Minute : 0,
+                            j.Time.HasValue ? j.Time.Value.Second : 0
+                        )
+                        : DateTime.MinValue,
+                    IsArchived = j.Archived ?? false,
+                    Locked = j.Locked.HasValue ? j.Locked != 0 : null,
+                    ToAirportId = j.ToAirportId,
+                    FromAirportId = j.FromAirportId
+                };
+            
+            var totalCount = await query.CountAsync();
 
-                        DeliverByTime = j.DeliverByTime,
-                        IsFlightJob = speed != null
-                                      && speed.GroupingId == (isUsCustomer
-                                          ? (int)SpeedGrouping.Flight
-                                          : (int)UrgentSpeedGrouping.Flight),
-                        IsAgentJob = speed != null
-                                     && speed.GroupingId == (isUsCustomer
-                                         ? (int)SpeedGrouping.Agent
-                                         : (int)UrgentSpeedGrouping.NationwideAgent),
-
-                        Vehicle = vehicleSize != null
-                            ? new Suggestion
-                            {
-                                Id = vehicleSize.VehicleSizeId,
-                                Text = vehicleSize.VehicleName
-                            }
-                            : null,
-                        Time = j.Time,
-                        ClientId = j.ClientId,
-                        Client = j.ClientCode,
-                        ClientName = client != null ? client.UcclName : string.Empty,
-
-                        From = fs != null ? fs.UcsuName : null,
-                        ToSuburbId = j.ToSuburbId,
-                        JobNo = j.Number,
-                        ToAddress = j.ToAddress,
-                        PickupAddress = new AddressViewModel
-                        {
-                            AddressLine1 = j.PickupAddressLine1,
-                            AddressLine2 = j.PickupAddressLine2,
-                            AddressLine3 = j.PickupAddressLine3,
-                            AddressLine4 = j.PickupAddressLine4,
-                            AddressLine5 = j.PickupAddressLine5,
-                            AddressLine6 = j.PickupAddressLine6,
-                            AddressLine7 = j.PickupAddressLine7,
-                            AddressLine8 = j.PickupAddressLine8,
-                            Latitude = j.PickUpLatitude,
-                            Longitude = j.PickUpLongitude
-                        },
-                        DeliveryAddress = new AddressViewModel
-                        {
-                            AddressLine1 = j.DeliveryAddressLine1,
-                            AddressLine2 = j.DeliveryAddressLine2,
-                            AddressLine3 = j.DeliveryAddressLine3,
-                            AddressLine4 = j.DeliveryAddressLine4,
-                            AddressLine5 = j.DeliveryAddressLine5,
-                            AddressLine6 = j.DeliveryAddressLine6,
-                            AddressLine7 = j.DeliveryAddressLine7,
-                            AddressLine8 = j.DeliveryAddressLine8,
-                            Latitude = j.DeliveryLatitude,
-                            Longitude = j.DeliveryLongitude
-                        },
-                        Courier = co != null ? co.Code : null,
-                        StatusId = j.Status,
-                        Status = status != null ? status.UcjsCode : null,
-                        Speed = speed != null ? speed.ShortName : null,
-                        SpeedId = j.Speed,
-                        PreBook = false,
-                        PickUpLatitude = j.PickUpLatitude,
-                        PickUpLongitude = j.PickUpLongitude,
-                        DeliveryLatitude = j.DeliveryLatitude,
-                        DeliveryLongitude = j.DeliveryLongitude,
-                        Booked = j.Date.HasValue
-                            ? new DateTime(
-                                j.Date.Value.Year,
-                                j.Date.Value.Month,
-                                j.Date.Value.Day,
-                                j.Time.HasValue ? j.Time.Value.Hour : 0,
-                                j.Time.HasValue ? j.Time.Value.Minute : 0,
-                                j.Time.HasValue ? j.Time.Value.Second : 0
-                            )
-                            : DateTime.MinValue,
-                        IsArchived = j.Archived ?? false,
-                        Locked = j.Locked.HasValue ? j.Locked != 0 : null,
-                        ToAirportId = j.ToAirportId,
-                        FromAirportId = j.FromAirportId
-                    })
-                .Distinct()
+            // Apply pagination
+            var page = data.Page ?? 0;
+            var pageSize = data.PageSize ?? 50;
+            
+            var jobSearchResults = await query
+                .Skip(page * pageSize)
+                .Take(pageSize)
                 .AsNoTracking()
                 .ToListAsync();
 
-            return jobSearchResults;
+            return new JobSearchResult
+            {
+                Jobs = jobSearchResults,
+                TotalCount = totalCount,
+                HasMore = (page + 1) * pageSize < totalCount
+            };
+            
         }
         catch (Exception e)
         {
@@ -1010,10 +1026,11 @@ public partial class JobRepository(
         );
     }
 
-    public async Task DispatchSelectedJobsAsync(int courierId, int dispId, List<int> jobIds)
+    public async Task DispatchSelectedJobsAsync(int courierId, List<int> jobIds)
     {
+        var staffId = _infoService.GetStaffId();
         var jobIdsString = string.Join(",", jobIds);
-        await Context.Procedures.DESWEB_stpJob_AutoDespatchSelectedJobsAsync(jobIdsString, courierId, dispId);
+        await Context.Procedures.DESWEB_stpJob_AutoDespatchSelectedJobsAsync(jobIdsString, courierId, staffId);
 
         foreach (var jobId in jobIds) await Context.Procedures.DES_stpJob_AutoDespatchChildJobsAsync(jobId);
     }
@@ -1021,10 +1038,10 @@ public partial class JobRepository(
     public async Task SwapPodAsync(string job1, string job2) =>
         await Context.Procedures.DESWEB_qdfSwapPODAsync(job1, job2);
 
-    public async Task ReDispatchSelectedJobsAsync(int courierId, int dispId, List<int> jobIds)
+    public async Task ReDispatchSelectedJobsAsync(int courierId, List<int> jobIds)
     {
         foreach (var jobId in jobIds) await Context.Procedures.uspRestoreJobAsync(jobId);
-        await DispatchSelectedJobsAsync(courierId, dispId, jobIds);
+        await DispatchSelectedJobsAsync(courierId, jobIds);
     }
 
     public async Task ReSendSelectedJobsAsync(string jobIds)
@@ -1344,19 +1361,19 @@ public partial class JobRepository(
         foreach (var jobId in jobIds) await Context.Procedures.uspRestoreJobAsync(jobId);
     }
 
-    public async Task VoidJobAsync(int jobId, string voidReason, bool voidSingleJobOnly = false)
+    public async Task VoidJobAsync(VoidJobRequest data)
     {
         try
         {
             List<int> jobsToVoid;
 
-            if (voidSingleJobOnly)
-                jobsToVoid = [jobId];
+            if (data.VoidSingleJobOnly)
+                jobsToVoid = [data.JobId];
             else
-                jobsToVoid = await GetAllRelatedJobIdsIncludingParentAsync(jobId);
+                jobsToVoid = await GetAllRelatedJobIdsIncludingParentAsync(data.JobId);
 
             // Add Notes
-            foreach (var id in jobsToVoid) await SaveNoteAsync(id, voidReason);
+            foreach (var id in jobsToVoid) await SaveNoteAsync(id, data.VoidReason);
 
             var courierMapping = await Context.TblJobs
                 .Where(jt => jobsToVoid.Contains(jt.JobId))
@@ -1375,30 +1392,30 @@ public partial class JobRepository(
                 await Context.Procedures.UTL_stpCourier_ResetClearListAreaOrderAsync(courierId);
 
             // Close tasks based on the voiding scope
-            await CloseTasksByJobIdAsync(jobId, voidSingleJobOnly);
+            await CloseTasksByJobIdAsync(data.JobId, data.VoidSingleJobOnly);
 
             await Context.SaveChangesAsync();
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error voiding job {JobId} (SingleOnly: {VoidSingleJobOnly})", jobId, voidSingleJobOnly);
+            Log.Error(e, "Error voiding job {JobId} (SingleOnly: {VoidSingleJobOnly})", data.JobId, data.VoidSingleJobOnly);
             throw;
         }
     }
 
-    public async Task VoidBulkJobAsync(int bulkJobId, string voidReason, bool voidSingleJobOnly = false)
+    public async Task VoidBulkJobAsync(VoidBulkJobRequest data)
     {
         try
         {
             List<int> jobsToVoid;
 
-            if (voidSingleJobOnly)
-                jobsToVoid = [bulkJobId];
+            if (data.VoidSingleJobOnly)
+                jobsToVoid = [data.BulkJobId];
             else
-                jobsToVoid = await GetAllRelatedBulkJobIdsIncludingParentAsync(bulkJobId);
+                jobsToVoid = await GetAllRelatedBulkJobIdsIncludingParentAsync(data.BulkJobId);
 
             // Add Notes
-            foreach (var bulkId in jobsToVoid) await SaveBulkNoteAsync(bulkId, voidReason);
+            foreach (var bulkId in jobsToVoid) await SaveBulkNoteAsync(bulkId, data.VoidReason);
 
             var courierMapping = await Context.TblBulkJobs
                 .Where(jt => jobsToVoid.Contains(jt.BulkJobId))
@@ -1417,13 +1434,13 @@ public partial class JobRepository(
                 await Context.Procedures.UTL_stpCourier_ResetClearListAreaOrderAsync(courierId);
 
             // Close tasks based on the voiding scope
-            await CloseTasksByJobIdAsync(bulkJobId, voidSingleJobOnly);
+            await CloseTasksByJobIdAsync(data.BulkJobId, data.VoidSingleJobOnly);
 
             await Context.SaveChangesAsync();
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error voiding job {JobId} (SingleOnly: {VoidSingleJobOnly})", bulkJobId, voidSingleJobOnly);
+            Log.Error(e, "Error voiding job {JobId} (SingleOnly: {VoidSingleJobOnly})", data.BulkJobId, data.VoidSingleJobOnly);
             throw;
         }
     }
@@ -3611,5 +3628,18 @@ public partial class JobRepository(
 
             _ => $"{courier?.Code} {courier?.UccrName}"
         };
+    }
+
+    public async Task<bool> ValidatePodSwapAsync(string jobNumber)
+    {
+        var today = _infoService.GetCurrentTenantTime();
+
+        var isValid = await Context.TblJobs
+            .Where(j => j.Number == jobNumber)
+            .Where(j => j.Date.HasValue && j.Date.Value.Date == today.Date)
+            .AsNoTracking()
+            .AnyAsync();
+
+        return isValid;
     }
 }

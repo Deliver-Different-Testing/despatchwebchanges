@@ -23,6 +23,12 @@ class VoidJobConfirmationDialogController extends BaseController {
     ) {
         super();
     }
+    
+    $onInit() {
+        if(this.job.isBulkJob) {
+            console.log("Job is bulk")
+        }
+    }
 
     async confirm() {
         try {

@@ -679,20 +679,16 @@ public class JobController(
 
     public async Task<IActionResult> ValidateSwapPod(string job)
     {
-        var fromDate = infoService.GetCurrentTenantTime();
-
-        var searchRequest = new PodSearchRequest
+        try
         {
-            CourierId = null,
-            ClientId = null,
-            Wild = string.Empty,
-            Job = job,
-            FromDate = fromDate.ResetTimeToStartOfDay(),
-            ToDate = fromDate.ResetTimeToEndOfDay()
-        };
-
-        var result = await jobRepository.PodSearchAsync(searchRequest);
-        return result.Count == 0 ? Json(false) : Json(true);
+            var isSwapValid = await jobRepository.ValidatePodSwapAsync(job);
+            return Json(isSwapValid);
+        }
+        catch (Exception e)
+        {
+          Log.Error(e, "{Message}", ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(ValidateSwapPod)));
+          return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
     }
 
     public async Task<IActionResult> SwapPod(string job1, string job2)
@@ -881,11 +877,11 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> Allocate(int courierId, int dispId, List<int> jobIds)
+    public async Task<IActionResult> Allocate(int courierId, List<int> jobIds)
     {
         try
         {
-            await jobRepository.DispatchSelectedJobsAsync(courierId, dispId, jobIds);
+            await jobRepository.DispatchSelectedJobsAsync(courierId, jobIds);
             return Ok();
         }
         catch (Exception ex)
@@ -896,11 +892,11 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> ReAllocate(int courierId, int dispId, List<int> jobIds)
+    public async Task<IActionResult> ReAllocate(int courierId, List<int> jobIds)
     {
         try
         {
-            await jobRepository.ReDispatchSelectedJobsAsync(courierId, dispId, jobIds);
+            await jobRepository.ReDispatchSelectedJobsAsync(courierId, jobIds);
             return Ok();
         }
         catch (Exception ex)
@@ -932,13 +928,11 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> Void([FromBody] VoidJobRequest requestData)
+    public async Task<IActionResult> Void([FromBody] VoidJobRequest request)
     {
         try
         {
-            await jobRepository.VoidJobAsync(requestData.JobId,
-                requestData.VoidReason,
-                requestData.VoidSingleJobOnly);
+            await jobRepository.VoidJobAsync(request);
             return Ok();
         }
         catch (Exception ex)
@@ -946,8 +940,8 @@ public class JobController(
             Log.Error(
                 ex,
                 "Error voiding {SingleJobString} Job(s) with ID {JobId}. Error: {ErrorMessage}",
-                requestData.JobId,
-                requestData.VoidSingleJobOnly ? "Single" : "All",
+                request.JobId,
+                request.VoidSingleJobOnly ? "Single" : "All",
                 ex.Message
             );
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
@@ -955,13 +949,11 @@ public class JobController(
     }  
     
     [HttpPost]
-    public async Task<IActionResult> VoidBulkJob([FromBody] VoidBulkJobRequest requestData)
+    public async Task<IActionResult> VoidBulkJob([FromBody] VoidBulkJobRequest request)
     {
         try
         {
-            await jobRepository.VoidJobAsync(requestData.BulkJobId,
-                requestData.VoidReason,
-                requestData.VoidSingleJobOnly);
+            await jobRepository.VoidBulkJobAsync(request);
             return Ok();
         }
         catch (Exception ex)
@@ -969,8 +961,8 @@ public class JobController(
             Log.Error(
                 ex,
                 "Error voiding {SingleJobString} Job(s) with ID {JobId}. Error: {ErrorMessage}",
-                requestData.BulkJobId,
-                requestData.VoidSingleJobOnly ? "Single" : "All",
+                request.BulkJobId,
+                request.VoidSingleJobOnly ? "Single" : "All",
                 ex.Message
             );
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));

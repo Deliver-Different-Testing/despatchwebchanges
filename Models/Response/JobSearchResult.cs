@@ -2,7 +2,7 @@
 
 namespace DespatchWeb.Models.Response;
 
-public class BulkJobSearchResult
+public class JobSearchResult
 {
     public List<DispatchJobViewModel> Jobs { get; set; }
     public int TotalCount { get; set; }

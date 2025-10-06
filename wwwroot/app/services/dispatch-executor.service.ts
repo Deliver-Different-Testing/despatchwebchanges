@@ -223,7 +223,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         const foundCourier = await this.DispatchData.getCourierById(job.courierData?.courierId);
 
         if (callData.jobs.length > 0) {
-            await this.DispatchData.reAllocateJobs(foundCourier.courierId, ContactID, callData.jobs);
+            await this.DispatchData.reAllocateJobs(foundCourier.courierId, callData.jobs);
             this.toastrService.showSuccessToast("Jobs reallocated successfully");
         }
 
@@ -407,7 +407,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
     private async allocateJobsToCourier(courier: ActiveCourierViewModel, jobs: IDispatchJob[]): Promise<void> {
         const jobIds = jobs.map(job => job.id);
         console.debug("Allocating jobs:", jobIds.length);
-        await this.DispatchData.allocateJobs(courier.courierId, ContactID, jobIds);
+        await this.DispatchData.allocateJobs(courier.courierId, jobIds);
     }
 
     private async handleDispatchError(error: Error): Promise<never> {
