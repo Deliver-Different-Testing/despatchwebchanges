@@ -185,7 +185,8 @@
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editDeliverBy($event, ctrl.job)">
                 <div class="metric-label">Deliver By</div>
                 <div class="metric-value" ng-if="ctrl.job.deliverByTime">
-                    {{ctrl.job.deliverByTime | momentFormat:'MMM DD HH:mm' }} ({{ (ctrl.job.deliveryTimeZone ? ctrl.job.deliveryTimeZone.text : ctrl.timeZone) | timezoneShort}})
+                    {{ctrl.job.deliverByTime | momentFormat:'MMM DD HH:mm' }}
+                    ({{ (ctrl.job.deliveryTimeZone ? ctrl.job.deliveryTimeZone.text : ctrl.timeZone) | timezoneShort}})
                 </div>
                 <div class="metric-value" ng-if="!ctrl.job.deliverByTime">
                     -
@@ -214,7 +215,8 @@
                 <div class="metric-label">POD Time</div>
                 <div class="metric-value">
                     <span ng-if="ctrl.job.completedTime">
-                      {{ ctrl.job.completedTime | momentFormat:'MM/DD HH:mm'}} ({{ ctrl.job.deliveryTimeZone.text | timezoneShort }})
+                      {{ ctrl.job.completedTime | momentFormat:'MM/DD HH:mm'}} ({{ ctrl.job.deliveryTimeZone.text | timezoneShort
+                        }})
                     </span>
                     <span ng-if="!ctrl.job.completedTime">-</span>
                 </div>
@@ -454,7 +456,7 @@
                                 ng-if="ctrl.job.assignedFlight.flightSegments && ctrl.job.assignedFlight.flightSegments.length > 0">
                             <div class="segment-header md-caption">
                 <span>SEGMENTS:
-                  {{::ctrl.job.assignedFlight.flightSegments.length}}</span>
+                  {{ctrl.job.assignedFlight.flightSegments.length}}</span>
                             </div>
 
                             <div
@@ -463,35 +465,34 @@
                                 <div class="segment-content">
                                     <div class="segment-number">
                                         Segment {{$index + 1}} of
-                                        {{::ctrl.job.assignedFlight.flightSegments.length}} -
-                                        {{::segment.carrierFsCode}}{{::segment.flightNumber}}
+                                        {{ctrl.job.assignedFlight.flightSegments.length}} -
+                                        {{segment.carrierFsCode}}{{::segment.flightNumber}}
                                     </div>
 
                                     <div
                                             class="segment-info"
                                             layout="row"
-                                            layout-align="space-between center"
-                                    >
+                                            layout-align="space-between center">
                                         <!-- Departure -->
                                         <div class="segment-departure" flex="30">
                                             <div class="time">
-                                                {{::segment.departureTime | date: 'MM/dd/yyyy HH:mm'}}
+                                                {{segment.departureTime | momentFormat: 'MM/DD/YYYY HH:mm'}}
                                                 <span ng-if="segment.departureAirportTimeZone">
-                          ({{::segment.departureAirportTimeZone | timezoneShort}})
-                        </span>
+                                                    ({{segment.departureAirportTimeZone | timezoneShort}})
+                                                </span>
                                             </div>
                                             <div class="airport-code">
-                                                {{::segment.departureAirportFsCode}}
+                                                {{segment.departureAirportFsCode}}
                                             </div>
                                             <div class="terminal" ng-if="segment.departureTerminal">
-                                                Terminal {{::segment.departureTerminal}}
+                                                Terminal {{segment.departureTerminal}}
                                             </div>
                                         </div>
 
                                         <!-- Flight line -->
                                         <div class="flight-line" flex="40">
                                             <div class="elapsed-time">
-                                                {{::segment.elapsedTime | minutesToTime}}
+                                                {{segment.elapsedTime | minutesToTime}}
                                             </div>
                                             <div class="line">
                                                 <md-icon
@@ -501,23 +502,23 @@
                                                 </md-icon>
                                             </div>
                                             <div class="aircraft-info">
-                                                {{::segment.aircraftName || segment.flightEquipmentIataCode || 'Unknown'}}
+                                                {{segment.aircraftName || segment.flightEquipmentIataCode || 'Unknown'}}
                                             </div>
                                         </div>
 
                                         <!-- Arrival -->
                                         <div class="segment-arrival" flex="30">
                                             <div class="time">
-                                                {{::segment.arrivalTime | date: 'MM/dd/yyyy HH:mm'}}
+                                                {{segment.arrivalTime | momentFormat: 'MM/DD/YYYY HH:mm'}}
                                                 <span ng-if="segment.arrivalAirportTimeZone">
-                          ({{::segment.arrivalAirportTimeZone | timezoneShort}})
+                          ({{segment.arrivalAirportTimeZone | timezoneShort}})
                         </span>
                                             </div>
                                             <div class="airport-code">
-                                                {{::segment.arrivalAirportFsCode}}
+                                                {{segment.arrivalAirportFsCode}}
                                             </div>
                                             <div class="terminal" ng-if="segment.arrivalTerminal">
-                                                Terminal {{::segment.arrivalTerminal}}
+                                                Terminal {{segment.arrivalTerminal}}
                                             </div>
                                         </div>
                                     </div>
@@ -530,7 +531,7 @@
                                             md-font-set="material-symbols-outlined">schedule
                                     </md-icon>
                                     <span class="layover-text">
-                    {{::ctrl.getConnectionTime(segment, ctrl.job.assignedFlight.flightSegments[$index + 1])}}
+                    {{ctrl.getConnectionTime(segment, ctrl.job.assignedFlight.flightSegments[$index + 1])}}
                     layover
                   </span>
                                 </div>
@@ -639,7 +640,7 @@
                 <div class="sticky-note-container ">
                     <sticky-note
                             is-recurring-job="ctrl.job.preBook"
-                            bulk-job-id="ctrl.isbulkjob && ctrl.job.id"
+                            bulk-job-id="ctrl.isBulkJob && ctrl.job.id"
                             job-id="ctrl.job.id">
                     </sticky-note>
                 </div>

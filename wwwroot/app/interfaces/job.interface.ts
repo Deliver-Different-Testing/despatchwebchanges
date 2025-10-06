@@ -3,7 +3,7 @@ import {LateEventType} from "../enums/late-event-type.enum";
 import {DaysOfWeek} from "../enums/days-of-week.enum";
 import {Frequency} from "../enums/frequency.enum";
 import {HolidayDeliveryOptions} from "../enums/holiday-delivery-options.enum";
-import {IFlightSegment} from "../components/Nationwide/nationwide.interfaces";
+import {IFlightSegment, IFlightSegmentDto} from "../components/Nationwide/nationwide.interfaces";
 import {AirportViewModel} from "../components/dialogs/flight-details-dialog/flight-details-dialog.interfaces";
 import {Dayjs} from "dayjs";
 
@@ -296,7 +296,7 @@ export interface IJobDto {
     deliveryAddress: IAddressViewModel;
     toAirportId?: number;
     fromAirportId?: number;
-    assignedFlight: IAssignedFlight;
+    assignedFlight: IAssignedFlightDto;
     assignedAgent: IAgent;
     assignedCourier: ISuggestion;
     parcelDimensions: IParcelDimensions[];
@@ -350,12 +350,22 @@ export interface IParcelDimensions {
 
 export interface IAssignedFlight {
     flightNumber: string;
-    expectedDeparture?: Date;
+    expectedDeparture?: Dayjs;
     departureTimeZone: string;
-    expectedArrival?: Date;
+    expectedArrival?: Dayjs;
     arrivalTimeZone: string;
     notes: string;
     flightSegments?: IFlightSegment[];
+}
+
+export interface IAssignedFlightDto {
+    flightNumber: string;
+    expectedDeparture?: string;
+    departureTimeZone: string;
+    expectedArrival?: string;
+    arrivalTimeZone: string;
+    notes: string;
+    flightSegments?: IFlightSegmentDto[];
 }
 
 export interface IPalletInfo {

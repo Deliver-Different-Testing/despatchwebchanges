@@ -398,9 +398,7 @@ class JobDetailController extends BaseController {
         if (!firstSegment || !secondSegment) return "";
 
         // Calculate time difference in minutes
-        const firstArrival = dayjs(firstSegment.arrivalTime);
-        const secondDeparture = dayjs(secondSegment.departureTime);
-        const diffMinutes = secondDeparture.diff(firstArrival, "minutes");
+        const diffMinutes = secondSegment.departureTime.diff(firstSegment.arrivalTime, "minutes");
 
         // Format as hours and minutes
         const hours = Math.floor(diffMinutes / 60);
