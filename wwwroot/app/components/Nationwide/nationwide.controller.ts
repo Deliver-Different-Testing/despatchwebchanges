@@ -52,6 +52,7 @@ import IContextMenuOption from "../../interfaces/context-menu-option.interface";
 import IDateFilterData from "../common/date-filter-menu/IDateFilterData";
 import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
 import timezone from "dayjs/plugin/timezone";
+import {transformFlightToDTO} from "../../functions/toDtoMappings";
 
 dayjs.extend(timezone);
 
@@ -1339,10 +1340,10 @@ class NationwideControl extends BaseController {
                 toAirportId: this.selectedInboundAirport?.id,
                 flightNumber: flight.flightNumber,
                 departureDate: formatDateForApiWithTzs(flight.departureTime, flight.departureTimeZone),
-                flightSegments: flight.flightSegments,
                 packageReadyTime: result.packageReadyTime ? formatDateForApiWithTzs(result.packageReadyTime, flight.arrivalTimeZone) : undefined,
                 packageDeliverByTime: result.packageDeliverByTime ? formatDateForApiWithTzs(result.packageDeliverByTime, flight.arrivalTimeZone) : undefined,
-                packageDeliveryNotes: result.packageDeliveryNotes
+                packageDeliveryNotes: result.packageDeliveryNotes,
+                flightSegments: flight.flightSegments.map(transformFlightToDTO)
             };
 
             console.info('Assigning flight to job:', requestData);

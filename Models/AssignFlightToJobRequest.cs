@@ -11,7 +11,7 @@ public class AssignFlightToJobRequest
     public string FlightNumber { get; set; }
     public DateTimeOffset DepartureDate { get; set; }
     public List<FlightSegmentViewModel> FlightSegments { get; set; } = [];
-    public string PackageReadyTime { get; set; }
-    public string PackageDeliverByTime { get; set; }
+    public DateTimeOffset? PackageReadyTime { get; set; }
+    public DateTimeOffset? PackageDeliverByTime { get; set; }
     public string PackageDeliveryNotes { get; set; }
 }

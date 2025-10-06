@@ -67,7 +67,7 @@ export interface AssignFlightToJobRequest {
     toAirportId?: number;
     flightNumber: string;
     departureDate: string;
-    flightSegments: IFlightSegment[];
+    flightSegments: IFlightSegmentDto[];
     packageReadyTime?: string;
     packageDeliverByTime?: string;
     packageDeliveryNotes?: string;

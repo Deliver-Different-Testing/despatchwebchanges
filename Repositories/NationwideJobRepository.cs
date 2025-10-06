@@ -41,16 +41,6 @@ public class NationwideJobRepository(
 
             var isUsCustomer = _infoService.IsUsTenant();
 
-            // Parse dates
-            var parsedPackageReadyTime = !string.IsNullOrEmpty(requestData.PackageReadyTime)
-                ? DateTime.TryParse(requestData.PackageReadyTime, out var readyTime) ? readyTime : (DateTime?)null
-                : null;
-            var parsedPackageDeliverByTime = !string.IsNullOrEmpty(requestData.PackageDeliverByTime)
-                ? DateTime.TryParse(requestData.PackageDeliverByTime, out var deliverByTime)
-                    ? deliverByTime
-                    : (DateTime?)null
-                : null;
-
             // Get the primary flight (first leg)
             var primaryFlight = flights.FlightSegments.OrderBy(f => f.SegmentOrder).First();
             var lastFlight = flights.FlightSegments.OrderBy(f => f.SegmentOrder).Last();
@@ -156,14 +146,14 @@ public class NationwideJobRepository(
                 {
                     var airportProcessingTime = await GetAirportProcessingTimeAsync(arrivalAirportId.Value);
 
-                    var packageReadyTime = parsedPackageReadyTime ??
+                    var packageReadyTime = requestData.PackageReadyTime ??
                                            lastFlight.ArrivalTime.AddMinutes(airportProcessingTime);
                     deliveryJob.UcjbDate = packageReadyTime.Date;
                     deliveryJob.UcjbTime = DateTime.Today.Add(packageReadyTime.TimeOfDay);
-                    deliveryJob.DeliverByTime = parsedPackageDeliverByTime;
+                    deliveryJob.DeliverByTime = requestData.PackageDeliverByTime?.DateTime;
 
                     // Set parent deliver by time too
-                    job.Parent.DeliverByTime = parsedPackageDeliverByTime;
+                    job.Parent.DeliverByTime = requestData.PackageDeliverByTime?.DateTime;
 
                     // Update Pickup Address With Airport
                     await UpdateJobAddressWithAirportInfoAsync(deliveryJob, arrivalAirportId.Value,
