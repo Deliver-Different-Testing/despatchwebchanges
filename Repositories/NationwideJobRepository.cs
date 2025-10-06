@@ -28,28 +28,30 @@ public class NationwideJobRepository(
 {
     private readonly ITenantInfoService _infoService = infoService;
 
-  public async Task AddJobNationwideAsync(AssignFlightToJobRequest requestData, AddFlightToJobDto flights,
+  public async Task AddJobNationwideAsync(AssignFlightToJobRequest requestData,
         List<string> webhookIds)
     {
         try
         {
             ArgumentNullException.ThrowIfNull(requestData.JobId);
-            ArgumentNullException.ThrowIfNull(flights);
             ArgumentNullException.ThrowIfNull(webhookIds);
 
-            if (flights.FlightSegments.Count == 0)
-                throw new ArgumentException("Flight list cannot be empty", nameof(flights));
+            if (requestData.FlightSegments.Count == 0)
+            {
+                Log.Error("No flight segments found for JobId: {JobId}", requestData.JobId);
+                return;
+            }
 
             var isUsCustomer = _infoService.IsUsTenant();
             
             // Get the primary flight (first leg)
-            var primaryFlight = flights.FlightSegments.OrderBy(f => f.SegmentOrder).First();
+            var primaryFlight = requestData.FlightSegments.OrderBy(f => f.SegmentOrder).First();
             var primaryFlightNumber = primaryFlight.FlightNumber;
             
             Log.Information("Starting AddJobNationwideAsync for JobId: {JobId}, PrimaryFlight: {PrimaryFlightNumber}, TotalSegments: {SegmentCount}",
-                requestData.JobId, primaryFlightNumber, flights.FlightSegments.Count);
+                requestData.JobId, primaryFlightNumber, requestData.FlightSegments.Count);
             
-            var lastFlight = flights.FlightSegments.OrderBy(f => f.SegmentOrder).Last();
+            var lastFlight = requestData.FlightSegments.OrderBy(f => f.SegmentOrder).Last();
             ArgumentException.ThrowIfNullOrWhiteSpace(primaryFlight.CarrierFsCode);
             ArgumentException.ThrowIfNullOrWhiteSpace(primaryFlight.FlightNumber);
 
@@ -226,14 +228,14 @@ public class NationwideJobRepository(
             await Context.AddAsync(jobNationwide);
 
             // Add additional flight legs if there is multiple
-            if (flights.FlightSegments.Count > 1)
+            if (requestData.FlightSegments.Count > 1)
             {
                 Log.Information("Processing {ConnectionCount} connection flights for PrimaryFlight: {PrimaryFlightNumber}",
-                    flights.FlightSegments.Count - 1, primaryFlightNumber);
+                    requestData.FlightSegments.Count - 1, primaryFlightNumber);
                 
-                for (var i = 1; i < flights.FlightSegments.Count; i++)
+                for (var i = 1; i < requestData.FlightSegments.Count; i++)
                 {
-                    var leg = flights.FlightSegments[i];
+                    var leg = requestData.FlightSegments[i];
                     
                     Log.Debug("Adding connection leg {LegNumber} for PrimaryFlight: {PrimaryFlightNumber}, Flight: {ConnectionFlight}",
                         i + 1, primaryFlightNumber, leg.FlightNumber);
@@ -272,7 +274,7 @@ public class NationwideJobRepository(
             }
 
             await SaveNoteAsync(requestData.JobId,
-                $"Flight {flights.FlightSegments[0]?.FlightNumber} added to job {requestData.JobId}",
+                $"Flight {requestData.FlightSegments[0]?.FlightNumber} added to job {requestData.JobId}",
                 false,
                 false,
                 NoteType.FlightUpdate);
@@ -301,7 +303,7 @@ public class NationwideJobRepository(
         catch (Exception e)
         {
             Log.Error(e, "An error occured adding PrimaryFlight: {PrimaryFlightNumber} to job {JobId}",
-                flights.FlightSegments[0]?.FlightNumber,
+                requestData.FlightSegments[0]?.FlightNumber,
                 requestData.JobId);
             throw;
         }
