@@ -30,7 +30,8 @@ public class FlightStatsService(
     private readonly string _appKey = Environment.GetEnvironmentVariable("FlightStatusApiAppKey");
     private readonly string _webhookUrl = Environment.GetEnvironmentVariable("FlightWebhook");
 
-    public async Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,
+    public async Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber,
+        DateTimeOffset departureTime,
         string departureAirportCode)
     {
         ArgumentException.ThrowIfNullOrEmpty(completeFlightNumber);
@@ -158,7 +159,7 @@ public class FlightStatsService(
 
     public async Task<List<FlightViewModel>> GetFlightsAsync(
         int jobId,
-        DateTime? departureDateTime = null,
+        DateTimeOffset? departureDateTime = null,
         int? airlineId = null,
         int? departureAirportId = null,
         int? arrivalAirportId = null,
@@ -357,8 +358,8 @@ public class FlightStatsService(
 
         return flightOptions.OrderBy(flight => flight.DepartureTime).ToList();
     }
-    
-    private DateTime CalculateFlightSearchStartTime(DateTime? departureDateTime, int flightBuffer)
+
+    private DateTime CalculateFlightSearchStartTime(DateTimeOffset? departureDateTime, int flightBuffer)
     {
         var currentTenantTime = infoService.GetCurrentTenantTime();
         var effectiveStartTime = (departureDateTime < currentTenantTime ? currentTenantTime : departureDateTime) ??
@@ -366,148 +367,10 @@ public class FlightStatsService(
         var flightsFrom = effectiveStartTime.AddMinutes(flightBuffer);
 
         ArgumentNullException.ThrowIfNull(flightsFrom);
-        return flightsFrom;
+        return flightsFrom.DateTime;
     }
 
-    public async Task<AddFlightToJobDto> GetFlightDetailsByFlightNumberAsync(
-        string completeFlightNumber,
-        DateTime departureTime,
-        int jobId)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(completeFlightNumber);
-
-        // Get the route information from the job
-        var (destinationAirportCode, departureAirportCode) = await repository.GetAirportCodesByJobIdAsync(jobId);
-
-        ArgumentException.ThrowIfNullOrEmpty(departureAirportCode);
-        ArgumentException.ThrowIfNullOrEmpty(destinationAirportCode);
-
-        var (year, month, day, hour, minute) = SplitDate(departureTime);
-
-        var relativeUrl =
-            $"json/firstflightout/{departureAirportCode}/to/{destinationAirportCode}/leaving_after/{year}/{month}/{day}/{hour}/{minute}";
-
-        var query = HttpUtility.ParseQueryString(string.Empty);
-        query["appId"] = _appId;
-        query["appKey"] = _appKey;
-        query["payloadType"] = "cargo";
-        query["maxResults"] = "100"; // Increase to ensure we find the specific flight
-        query["includeCodeshares"] = "false";
-        query["maxConnections"] = "1";
-        query["numHours"] = "24";
-
-        var fullUrl = $"{ConnectionsBaseUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
-        var uriBuilder = new UriBuilder(fullUrl)
-        {
-            Query = query.ToString() ?? string.Empty
-        };
-
-        var uri = uriBuilder.Uri;
-        Log.Debug("FlightRequest for details: {Uri}", uri);
-
-        var response = await httpClient.GetAsync(uri);
-        if (!response.IsSuccessStatusCode)
-            throw new Exception($"Failed to retrieve flight information: {response.ReasonPhrase}");
-
-        var content = await response.Content.ReadAsStringAsync();
-        var flightResponse = JsonSerializer.Deserialize<FlightConnectionsRoot>(content);
-
-        if (flightResponse?.Connections == null)
-            return null;
-
-        // Find the specific flight by matching the flight number in any segment
-        var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
-
-        var matchingConnection = flightResponse.Connections
-            .FirstOrDefault(conn =>
-                conn.ScheduledFlight.Any(sf =>
-                    sf.CarrierFsCode == carrierCode &&
-                    sf.FlightNumber == flightNumber));
-
-        if (matchingConnection == null)
-        {
-            Log.Warning("Flight {FlightNumber} not found in connections for route {Departure} -> {Arrival} on {Date}",
-                completeFlightNumber, departureAirportCode, destinationAirportCode, departureTime);
-            return null;
-        }
-
-        var firstFlight = matchingConnection.ScheduledFlight.First();
-        var lastFlight = matchingConnection.ScheduledFlight.Last();
-
-        // Extract all flight segments (same logic as GetFlightsAsync)
-        var segments = matchingConnection.ScheduledFlight
-            .Select((segment, index) =>
-            {
-                var depAirport = flightResponse.Appendix?.Airports
-                    ?.FirstOrDefault(a => a.Fs == segment.DepartureAirportFsCode);
-
-                var arrAirport = flightResponse.Appendix?.Airports
-                    ?.FirstOrDefault(a => a.Fs == segment.ArrivalAirportFsCode);
-
-                var equipment = flightResponse.Appendix?.Equipments
-                    ?.FirstOrDefault(e => e.Iata == segment.FlightEquipmentIataCode);
-
-                var airline = flightResponse.Appendix?.Airlines
-                    ?.FirstOrDefault(a => a.Fs == segment.CarrierFsCode);
-
-                return new FlightSegmentViewModel
-                {
-                    SegmentOrder = index,
-                    CarrierFsCode = segment.CarrierFsCode,
-                    FlightNumber = segment.FlightNumber,
-                    DepartureTime = CalculateCorrectDateTimeOffset(segment.DepartureTime, depAirport),
-                    ArrivalTime = AdjustArrivalTimeForOvernightFlight(CalculateCorrectDateTimeOffset(segment.DepartureTime, depAirport),
-                        CalculateCorrectDateTimeOffset(segment.ArrivalTime, arrAirport)),
-                    DepartureAirportFsCode = segment.DepartureAirportFsCode,
-                    DepartureTerminal = segment.DepartureTerminal,
-                    ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
-                    ArrivalTerminal = segment.ArrivalTerminal,
-                    FlightEquipmentIataCode = segment.FlightEquipmentIataCode,
-                    ElapsedTime = segment.ElapsedTime,
-                    StopsInSegment = segment.Stops ?? 0,
-
-                    // Additional details from the appendix
-                    DepartureAirportName = depAirport?.Name,
-                    DepartureAirportCity = depAirport?.City,
-                    DepartureAirportCountry = depAirport?.CountryName,
-                    DepartureAirportTimeZone = depAirport?.TimeZoneRegionName,
-
-                    ArrivalAirportName = arrAirport?.Name,
-                    ArrivalAirportCity = arrAirport?.City,
-                    ArrivalAirportCountry = arrAirport?.CountryName,
-                    ArrivalAirportTimeZone = arrAirport?.TimeZoneRegionName,
-
-                    AircraftName = equipment?.Name,
-                    AircraftType = equipment?.Jet == true ? "Jet" :
-                        equipment?.TurboProp == true ? "TurboProp" : "Unknown",
-
-                    AirlineName = airline?.Name
-                };
-            })
-            .ToList();
-
-        var flightFlightDepartureAirport = flightResponse.Appendix?.Airports
-            ?.FirstOrDefault(a => a.Fs == firstFlight.DepartureAirportFsCode);
-        var lastFlightArrivalAirport = flightResponse.Appendix?.Airports
-            ?.FirstOrDefault(a => a.Fs == lastFlight.ArrivalAirportFsCode);
-        
-        return new AddFlightToJobDto
-        {
-            AirlineName = flightResponse.Appendix?.Airlines?.FirstOrDefault(a => a.Fs == firstFlight.CarrierFsCode)
-                ?.Name,
-            DepartureTime =
-                CalculateCorrectDateTimeOffset(firstFlight.DepartureTime, flightFlightDepartureAirport),
-            ArrivalTime =
-                AdjustArrivalTimeForOvernightFlight(
-                    CalculateCorrectDateTimeOffset(firstFlight.DepartureTime, flightFlightDepartureAirport),
-                    CalculateCorrectDateTimeOffset(lastFlight.ArrivalTime, lastFlightArrivalAirport)),
-            CarrierFsCode = firstFlight.CarrierFsCode,
-            FlightNumber = firstFlight.FlightNumber,
-            FlightSegments = segments
-        };
-    }
-
-    private static (int year, int month, int day, int hour, int min) SplitDate(DateTime effectiveDateTime) =>
+    private static (int year, int month, int day, int hour, int min) SplitDate(DateTimeOffset effectiveDateTime) =>
         (effectiveDateTime.Year, effectiveDateTime.Month, effectiveDateTime.Day, effectiveDateTime.Hour,
             effectiveDateTime.Minute);
 
@@ -526,7 +389,7 @@ public class FlightStatsService(
         var daysDifference = (departureTime.Date - arrivalTime.Date).Days;
         return arrivalTime.AddDays(daysDifference);
     }
-    
+
     private static DateTimeOffset CalculateCorrectDateTimeOffset(string flightDateTime, Airport airport)
     {
         // Parse the datetime string
@@ -551,5 +414,4 @@ public class FlightStatsService(
 
         return new DateTimeOffset(unspecifiedDateTime, offset);
     }
-
 }
