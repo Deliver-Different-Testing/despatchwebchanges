@@ -17,8 +17,8 @@ public interface IJobRepository
     Task<JobViewModel> GetBulkJobDetailAsync(int bulkJobId);
     Task<DispatchJobViewModel> GetBulkDispatchJobDetailAsync(int bulkJobId);
 
-    Task<BulkJobSearchResult> BulkSearchAsync(PodSearchRequest data);
-    Task<List<DispatchJobViewModel>> PodSearchAsync(PodSearchRequest data);
+    Task<JobSearchResult> BulkSearchAsync(PodSearchRequest data);
+    Task<JobSearchResult> PodSearchAsync(PodSearchRequest data);
 
     Task UpdateManualPriceAsync(List<JobManualPriceModel> data);
 
@@ -41,9 +41,9 @@ public interface IJobRepository
         List<int> selectedViewIds,
         int? selectedClearListId = null);
 
-    Task DispatchSelectedJobsAsync(int courierId, int dispId, List<int> jobIds);
+    Task DispatchSelectedJobsAsync(int courierId, List<int> jobIds);
     Task SwapPodAsync(string job1, string job2);
-    Task ReDispatchSelectedJobsAsync(int courierId, int dispId, List<int> jobIds);
+    Task ReDispatchSelectedJobsAsync(int courierId, List<int> jobIds);
     Task ReSendSelectedJobsAsync(string jobIds);
     Task ReAssignSelectedJobsAsync(string jobIds);
     Task SetFirstJobAsync(int jobId, int courierId);
@@ -75,8 +75,8 @@ public interface IJobRepository
 
     Task RestoreSplitJobsAsync(List<int> jobIds);
     Task RestoreJobsAsync(List<int> jobIds);
-    Task VoidJobAsync(int jobId, string voidReason, bool voidSingleJobOnly = false);
-    Task VoidBulkJobAsync(int bulkJobId, string voidReason, bool voidSingleJobOnly = false);
+    Task VoidJobAsync(VoidJobRequest data);
+    Task VoidBulkJobAsync(VoidBulkJobRequest data);
     Task SplitJobAsync(int jobId, string user);
     Task<string> UnSplitJobAsync(int jobId);
 
@@ -211,4 +211,5 @@ public interface IJobRepository
     Task BulkUpdateReadStatusAsync(BulkReadUpdateRequestModel data);
    Task AddPackagesToJobAsync(int effectiveJobId, List<TucJobItem> items);
    Task<List<ScanDetailResult>> ScanList(DateTime? runDate, string scan);
+   Task<bool> ValidatePodSwapAsync(string jobNumber);
 }
