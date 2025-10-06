@@ -497,7 +497,7 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> PodSearch(PodSearchRequest data)
+    public async Task<IActionResult> PodSearch([FromQuery] PodSearchRequest data)
     {
         try
         {
