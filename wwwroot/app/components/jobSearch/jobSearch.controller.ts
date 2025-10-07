@@ -19,7 +19,7 @@ import JobSearchBoxes from "./enums/jobSearchBoxes";
 import {IDeliveryHistoryConfig} from "../common/task-history/task-history.interfaces";
 import DensityMode from "../../enums/densityMode";
 import ISearchCriteria from "./interfaces/ISearchCriteria";
-import dayjs from "dayjs";
+import dayjs, {Dayjs} from "dayjs";
 import JobListType from "../common/job-list/enums/jobListType";
 import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
@@ -28,6 +28,11 @@ import IScanDetailResult from "./interfaces/IScanDetailResult";
 import InterCourierChargeDialogService
     from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
 import JobSearchDateRange from "./enums/JobSearchDateRange";
+import timezone from "dayjs/plugin/timezone";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 class JobSearchController extends BaseController {
     static $inject = [
@@ -70,7 +75,7 @@ class JobSearchController extends BaseController {
     
     scanPromise?: Promise<IScanDetailResult[]>;
     scanList: IScanDetailResult[];
-    boxes?: Record<string, IBox>;
+    boxes?: Record<JobSearchBoxes, IBox>;
 
     jobListType = JobListType.JobSearchMainList;
     bulkJobListType = JobListType.JobSearchBulkList;
@@ -943,9 +948,9 @@ class JobSearchController extends BaseController {
 
     onSearchRangeChange(dateRangeOption: JobSearchDateRange) {
         try {
-            const now = dayjs().startOf('day');
+            const now = dayjs().tz(this.timeZone);
             const firstDayOfMonth = now.startOf('month');
-            const lastDayOfMonth = now.endOf('month').startOf('day');
+            const lastDayOfMonth = now.endOf('month');
             const oneWeekAgo = now.subtract(7, 'day');
             const oneWeekAhead = now.add(7, 'day');
 

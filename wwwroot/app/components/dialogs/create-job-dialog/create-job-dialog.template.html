@@ -1,4 +1,4 @@
-<md-dialog aria-label="Create Job" style="width: 55%;">
+<md-dialog aria-label="Create Job" class="create-job-dialog">
     <md-toolbar class="md-hue-1">
         <div class="md-toolbar-tools">
             <md-icon class="popup-icon" md-font-set="material-symbols-outlined">add_business</md-icon>
@@ -13,294 +13,334 @@
         </div>
     </md-toolbar>
 
-    <md-dialog-content ng-cloak>
+    <md-dialog-content class="create-job-dialog__content" ng-cloak>
         <form name="ctrl.jobForm" ng-cloak novalidate>
-            <div class="md-dialog-content">
+            <div class="create-job-dialog__form">
 
-                <div layout-gt-sm="row">
-                    <md-autocomplete
-                            flex-gt-sm
-                            md-autofocus
-                            md-autoselect
-                            md-escape-options="clear"
-                            md-floating-label="Client"
-                            md-item-text="item.text"
-                            md-items="item in ctrl.clientSearch(ctrl.searchClientText)"
-                            md-min-length="3"
-                            md-search-text="ctrl.searchClientText"
-                            md-selected-item="ctrl.selectedClient"
-                            placeholder="Start typing to search clients"
-                            name="clientField"
-                            required>
-                        <md-item-template>
-                            <span md-highlight-flags="^i"
-                                  md-highlight-text="ctrl.searchClientText">{{item.text}}</span>
-                        </md-item-template>
-                        <md-not-found>
-                            No clients matching "{{ctrl.searchClientText}}" were found.
-                        </md-not-found>
-                        <div ng-messages="ctrl.jobForm.clientField.$error" ng-if="ctrl.jobForm.clientField.$touched">
-                            <div ng-message="required">Client is required.</div>
-                        </div>
-                    </md-autocomplete>
+                <!-- Client and Job Details Section -->
+                <div class="create-job-dialog__section">
+                    <h3 class="create-job-dialog__section-title">Job Details</h3>
 
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="charge-amount">Charge Amount</label>
-                        <input id="charge-amount"
-                               name="chargeAmount"
-                               ng-model="ctrl.job.charge"
-                               required
-                               step="0.01"
-                               min="0.01"
-                               type="number">
-                        <div ng-messages="ctrl.jobForm.chargeAmount.$error" ng-if="ctrl.jobForm.chargeAmount.$touched">
-                            <div ng-message="required">Charge amount is required.</div>
-                            <div ng-message="min">Charge amount must be greater than 0.</div>
-                        </div>
-                    </md-input-container>
+                    <div class="create-job-dialog__row">
+                        <md-autocomplete
+                                class="create-job-dialog__field"
+                                flex
+                                md-autofocus
+                                md-autoselect
+                                md-escape-options="clear"
+                                md-floating-label="Client"
+                                md-item-text="item.text"
+                                md-items="item in ctrl.clientSearch(ctrl.searchClientText)"
+                                md-min-length="3"
+                                md-search-text="ctrl.searchClientText"
+                                md-selected-item="ctrl.selectedClient"
+                                placeholder="Start typing to search clients"
+                                name="clientField"
+                                required>
+                            <md-item-template>
+                                <span md-highlight-flags="^i" md-highlight-text="ctrl.searchClientText">{{item.text}}</span>
+                            </md-item-template>
+                            <md-not-found>
+                                No clients matching "{{ctrl.searchClientText}}" were found.
+                            </md-not-found>
+                            <div ng-messages="ctrl.jobForm.clientField.$error" ng-if="ctrl.jobForm.clientField.$touched">
+                                <div ng-message="required">Client is required.</div>
+                            </div>
+                        </md-autocomplete>
 
-                    <md-autocomplete
-                            flex-gt-sm
-                            md-escape-options="clear"
-                            md-floating-label="Courier"
-                            md-item-text="item.text"
-                            md-items="item in ctrl.courierSearch(ctrl.courierSearchText)"
-                            md-min-length="1"
-                            md-search-text="ctrl.courierSearchText"
-                            md-selected-item="ctrl.selectedCourier"
-                            md-autoselect
-                            name="courierField"
-                            placeholder="Start typing to search couriers">
-                        <md-item-template>
-                            <span md-highlight-flags="^i"
-                                  md-highlight-text="ctrl.courierSearchText">{{item.text}}</span>
-                        </md-item-template>
-                        <md-not-found>
-                            No couriers matching "{{ctrl.courierSearchText}}" were found.
-                        </md-not-found>
-                    </md-autocomplete>
+                        <md-input-container class="md-block create-job-dialog__field" flex>
+                            <label for="charge-amount">Charge Amount</label>
+                            <input id="charge-amount"
+                                   name="chargeAmount"
+                                   ng-model="ctrl.job.charge"
+                                   required
+                                   step="0.01"
+                                   min="0.01"
+                                   type="number">
+                            <div ng-messages="ctrl.jobForm.chargeAmount.$error" ng-if="ctrl.jobForm.chargeAmount.$touched">
+                                <div ng-message="required">Charge amount is required.</div>
+                                <div ng-message="min">Charge amount must be greater than 0.</div>
+                            </div>
+                        </md-input-container>
+                    </div>
 
-                    <div flex-gt-sm>
-                        <custom-date-picker
-                                date-time="ctrl.jobDate"
-                                show-date="true"
-                                show-time="false"
-                                on-change="ctrl.updateDateTime(dateTime)">
-                        </custom-date-picker>
-                        <div ng-messages="ctrl.jobForm.jobDate.$error" ng-if="ctrl.jobForm.jobDate.$touched">
-                            <div ng-message="required">Job date is required.</div>
-                        </div>
+                    <div class="create-job-dialog__row">
+                        <md-autocomplete
+                                class="create-job-dialog__field"
+                                flex
+                                md-escape-options="clear"
+                                md-floating-label="Courier"
+                                md-item-text="item.text"
+                                md-items="item in ctrl.courierSearch(ctrl.courierSearchText)"
+                                md-min-length="1"
+                                md-search-text="ctrl.courierSearchText"
+                                md-selected-item="ctrl.selectedCourier"
+                                md-autoselect
+                                name="courierField"
+                                placeholder="Start typing to search couriers">
+                            <md-item-template>
+                                <span md-highlight-flags="^i" md-highlight-text="ctrl.courierSearchText">{{item.text}}</span>
+                            </md-item-template>
+                            <md-not-found>
+                                No couriers matching "{{ctrl.courierSearchText}}" were found.
+                            </md-not-found>
+                        </md-autocomplete>
+
+                        <md-input-container class="md-block create-job-dialog__field" flex>
+                            <label>Job Date</label>
+                            <md-datepicker
+                                    aria-label="Enter job date"
+                                    name="jobDate"
+                                    ng-model="ctrl.jobDate"
+                                    required>
+                            </md-datepicker>
+                            <div ng-messages="ctrl.jobForm.jobDate.$error" ng-if="ctrl.jobForm.jobDate.$touched">
+                                <div ng-message="required">Job date is required.</div>
+                            </div>
+                        </md-input-container>
                     </div>
                 </div>
 
-                <div layout-gt-sm="row">
-                    <md-autocomplete
-                            flex-gt-sm
-                            md-escape-options="clear"
-                            md-floating-label="From Address"
-                            md-item-text="item.address.label"
-                            md-items="item in ctrl.addressSearchAutocomplete(ctrl.fromAddressSearchText)"
-                            md-min-length="3"
-                            md-search-text="ctrl.fromAddressSearchText"
-                            md-selected-item="ctrl.selectedPickupAddress"
-                            placeholder="Start typing to search addresses"
-                            md-autoselect
-                            name="fromAddress"
-                            required>
-                        <md-item-template>
-                            <span md-highlight-flags="^i"
-                                  md-highlight-text="ctrl.fromAddressSearchText">
-                                  {{item.address.label}}
-                            </span>
-                        </md-item-template>
-                        <md-not-found>
-                            No address matching "{{ctrl.fromAddressSearchText}}" was found.
-                        </md-not-found>
-                        <div ng-messages="ctrl.jobForm.fromAddress.$error" ng-if="ctrl.jobForm.fromAddress.$touched">
-                            <div ng-message="required">Pickup address is required.</div>
-                        </div>
-                    </md-autocomplete>
+                <!-- Addresses Section -->
+                <div class="create-job-dialog__section">
+                    <h3 class="create-job-dialog__section-title">Addresses</h3>
 
-                    <md-autocomplete
-                            flex-gt-sm
-                            md-escape-options="clear"
-                            md-floating-label="To Address"
-                            md-item-text="item.address.label"
-                            md-items="item in ctrl.addressSearchAutocomplete(ctrl.toAddressSearchText)"
-                            md-min-length="3"
-                            md-search-text="ctrl.toAddressSearchText"
-                            md-selected-item="ctrl.selectedDeliveryAddress"
-                            md-autoselect
-                            name="toAddress"
-                            placeholder="Start typing to search addresses"
-                            required>
-                        <md-item-template>
-                            <span md-highlight-flags="^i"
-                                  md-highlight-text="ctrl.toAddressSearchText">
-                                 {{item.address.label}}
-                            </span>
-                        </md-item-template>
-                        <md-not-found>
-                            No address matching "{{ctrl.toAddressSearchText}}" was found.
-                        </md-not-found>
-                        <div ng-messages="ctrl.jobForm.toAddress.$error" ng-if="ctrl.jobForm.toAddress.$touched">
-                            <div ng-message="required">Delivery address is required.</div>
-                        </div>
-                    </md-autocomplete>
+                    <div class="create-job-dialog__row">
+                        <md-autocomplete
+                                class="create-job-dialog__field"
+                                flex
+                                md-escape-options="clear"
+                                md-floating-label="From Address"
+                                md-item-text="item.address.label"
+                                md-items="item in ctrl.addressSearchAutocomplete(ctrl.fromAddressSearchText)"
+                                md-min-length="3"
+                                md-search-text="ctrl.fromAddressSearchText"
+                                md-selected-item="ctrl.selectedPickupAddress"
+                                placeholder="Start typing to search addresses"
+                                md-autoselect
+                                name="fromAddress"
+                                required>
+                            <md-item-template>
+                                <span md-highlight-flags="^i" md-highlight-text="ctrl.fromAddressSearchText">
+                                    {{item.address.label}}
+                                </span>
+                            </md-item-template>
+                            <md-not-found>
+                                No address matching "{{ctrl.fromAddressSearchText}}" was found.
+                            </md-not-found>
+                            <div ng-messages="ctrl.jobForm.fromAddress.$error" ng-if="ctrl.jobForm.fromAddress.$touched">
+                                <div ng-message="required">Pickup address is required.</div>
+                            </div>
+                        </md-autocomplete>
+
+                        <md-autocomplete
+                                class="create-job-dialog__field"
+                                flex
+                                md-escape-options="clear"
+                                md-floating-label="To Address"
+                                md-item-text="item.address.label"
+                                md-items="item in ctrl.addressSearchAutocomplete(ctrl.toAddressSearchText)"
+                                md-min-length="3"
+                                md-search-text="ctrl.toAddressSearchText"
+                                md-selected-item="ctrl.selectedDeliveryAddress"
+                                md-autoselect
+                                name="toAddress"
+                                placeholder="Start typing to search addresses"
+                                required>
+                            <md-item-template>
+                                <span md-highlight-flags="^i" md-highlight-text="ctrl.toAddressSearchText">
+                                    {{item.address.label}}
+                                </span>
+                            </md-item-template>
+                            <md-not-found>
+                                No address matching "{{ctrl.toAddressSearchText}}" was found.
+                            </md-not-found>
+                            <div ng-messages="ctrl.jobForm.toAddress.$error" ng-if="ctrl.jobForm.toAddress.$touched">
+                                <div ng-message="required">Delivery address is required.</div>
+                            </div>
+                        </md-autocomplete>
+                    </div>
                 </div>
 
-                <div layout-gt-sm="row">
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="pickup-contact">Pickup Contact</label>
-                        <input id="pickup-contact"
-                               name="pickupContact"
-                               ng-model="ctrl.job.fromContactName"
-                               required>
-                        <div ng-messages="ctrl.jobForm.pickupContact.$error"
-                             ng-if="ctrl.jobForm.pickupContact.$touched">
-                            <div ng-message="required">Pickup contact is required.</div>
-                        </div>
-                    </md-input-container>
+                <!-- Contacts Section -->
+                <div class="create-job-dialog__section">
+                    <h3 class="create-job-dialog__section-title">Contacts</h3>
 
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="delivery-contact">Delivery Contact</label>
-                        <input id="delivery-contact"
-                               name="deliveryContact"
-                               ng-model="ctrl.job.deliverToContact"
-                               required>
-                        <div ng-messages="ctrl.jobForm.deliveryContact.$error"
-                             ng-if="ctrl.jobForm.deliveryContact.$touched">
-                            <div ng-message="required">Delivery contact is required.</div>
-                        </div>
-                    </md-input-container>
+                    <div class="create-job-dialog__row">
+                        <md-input-container class="md-block create-job-dialog__field" flex>
+                            <label for="pickup-contact">Pickup Contact</label>
+                            <input id="pickup-contact"
+                                   name="pickupContact"
+                                   ng-model="ctrl.job.fromContactName"
+                                   required>
+                            <div ng-messages="ctrl.jobForm.pickupContact.$error" ng-if="ctrl.jobForm.pickupContact.$touched">
+                                <div ng-message="required">Pickup contact is required.</div>
+                            </div>
+                        </md-input-container>
 
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="pod-name">POD Name</label>
-                        <input id="pod-name"
-                               name="podName"
-                               ng-model="ctrl.job.podName"
-                               required>
-                        <div ng-messages="ctrl.jobForm.podName.$error" ng-if="ctrl.jobForm.podName.$touched">
-                            <div ng-message="required">POD name is required.</div>
-                        </div>
-                    </md-input-container>
+                        <md-input-container class="md-block create-job-dialog__field" flex>
+                            <label for="delivery-contact">Delivery Contact</label>
+                            <input id="delivery-contact"
+                                   name="deliveryContact"
+                                   ng-model="ctrl.job.deliverToContact"
+                                   required>
+                            <div ng-messages="ctrl.jobForm.deliveryContact.$error" ng-if="ctrl.jobForm.deliveryContact.$touched">
+                                <div ng-message="required">Delivery contact is required.</div>
+                            </div>
+                        </md-input-container>
+
+                        <md-input-container class="md-block create-job-dialog__field" flex>
+                            <label for="pod-name">POD Name</label>
+                            <input id="pod-name"
+                                   name="podName"
+                                   ng-model="ctrl.job.podName"
+                                   required>
+                            <div ng-messages="ctrl.jobForm.podName.$error" ng-if="ctrl.jobForm.podName.$touched">
+                                <div ng-message="required">POD name is required.</div>
+                            </div>
+                        </md-input-container>
+                    </div>
                 </div>
 
-                <div layout-gt-sm="row">
-                    <md-autocomplete
-                            flex-gt-sm
-                            md-autoselect
-                            md-escape-options="clear"
-                            md-floating-label="Vehicle"
-                            md-item-text="item.text"
-                            md-items="item in ctrl.vehicleSearch(ctrl.vehicleSearchText)"
-                            md-min-length="0"
-                            md-search-text="ctrl.vehicleSearchText"
-                            md-selected-item="ctrl.selectedVehicle"
-                            name="vehicle"
-                            required>
-                        <md-item-template>
-                            <span md-highlight-text="ctrl.vehicleSearchText">{{item.text}}</span>
-                        </md-item-template>
-                        <md-not-found>
-                            No vehicles matching "{{ctrl.vehicleSearchText}}" were found.
-                        </md-not-found>
-                        <div ng-messages="ctrl.jobForm.vehicle.$error" ng-if="ctrl.jobForm.vehicle.$touched">
-                            <div ng-message="required">Vehicle is required.</div>
-                        </div>
-                    </md-autocomplete>
+                <!-- Vehicle & Speed Section -->
+                <div class="create-job-dialog__section">
+                    <h3 class="create-job-dialog__section-title">Vehicle & Speed</h3>
 
-                    <md-autocomplete
-                            flex-gt-sm
-                            md-autoselect
-                            md-escape-options="clear"
-                            md-floating-label="Speed"
-                            md-item-text="item.text"
-                            md-items="item in ctrl.speedSearch(ctrl.speedSearchText)"
-                            md-min-length="0"
-                            md-search-text="ctrl.speedSearchText"
-                            md-selected-item="ctrl.selectedSpeed"
-                            name="speed"
-                            required>
-                        <md-item-template>
-                            <span md-highlight-text="ctrl.speedSearchText">{{item.text}}</span>
-                        </md-item-template>
-                        <md-not-found>
-                            No speeds matching "{{ctrl.speedSearchText}}" were found.
-                        </md-not-found>
-                        <div ng-messages="ctrl.jobForm.speed.$error" ng-if="ctrl.jobForm.speed.$touched">
-                            <div ng-message="required">Speed is required.</div>
-                        </div>
-                    </md-autocomplete>
+                    <div class="create-job-dialog__row">
+                        <md-autocomplete
+                                class="create-job-dialog__field"
+                                flex
+                                md-autoselect
+                                md-escape-options="clear"
+                                md-floating-label="Vehicle"
+                                md-item-text="item.text"
+                                md-items="item in ctrl.vehicleSearch(ctrl.vehicleSearchText)"
+                                md-min-length="0"
+                                md-search-text="ctrl.vehicleSearchText"
+                                md-selected-item="ctrl.selectedVehicle"
+                                name="vehicle"
+                                required>
+                            <md-item-template>
+                                <span md-highlight-text="ctrl.vehicleSearchText">{{item.text}}</span>
+                            </md-item-template>
+                            <md-not-found>
+                                No vehicles matching "{{ctrl.vehicleSearchText}}" were found.
+                            </md-not-found>
+                            <div ng-messages="ctrl.jobForm.vehicle.$error" ng-if="ctrl.jobForm.vehicle.$touched">
+                                <div ng-message="required">Vehicle is required.</div>
+                            </div>
+                        </md-autocomplete>
+
+                        <md-autocomplete
+                                class="create-job-dialog__field"
+                                flex
+                                md-autoselect
+                                md-escape-options="clear"
+                                md-floating-label="Speed"
+                                md-item-text="item.text"
+                                md-items="item in ctrl.speedSearch(ctrl.speedSearchText)"
+                                md-min-length="0"
+                                md-search-text="ctrl.speedSearchText"
+                                md-selected-item="ctrl.selectedSpeed"
+                                name="speed"
+                                required>
+                            <md-item-template>
+                                <span md-highlight-text="ctrl.speedSearchText">{{item.text}}</span>
+                            </md-item-template>
+                            <md-not-found>
+                                No speeds matching "{{ctrl.speedSearchText}}" were found.
+                            </md-not-found>
+                            <div ng-messages="ctrl.jobForm.speed.$error" ng-if="ctrl.jobForm.speed.$touched">
+                                <div ng-message="required">Speed is required.</div>
+                            </div>
+                        </md-autocomplete>
+                    </div>
                 </div>
 
-                <div layout-gt-sm="row">
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="referenceA">Reference A</label>
-                        <input id="referenceA"
-                               name="referenceA"
-                               md-maxlength="20"
-                               ng-model="ctrl.job.refA">
-                    </md-input-container>
+                <!-- References Section -->
+                <div class="create-job-dialog__section">
+                    <h3 class="create-job-dialog__section-title">References</h3>
 
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="referenceB">Reference B</label>
-                        <input id="referenceB"
-                               name="referenceB"
-                               md-maxlength="20"
-                               ng-model="ctrl.job.refB">
-                    </md-input-container>
+                    <div class="create-job-dialog__row">
+                        <md-input-container class="md-block create-job-dialog__field" flex>
+                            <label for="referenceA">Reference A</label>
+                            <input id="referenceA"
+                                   name="referenceA"
+                                   md-maxlength="20"
+                                   ng-model="ctrl.job.refA">
+                        </md-input-container>
+
+                        <md-input-container class="md-block create-job-dialog__field" flex>
+                            <label for="referenceB">Reference B</label>
+                            <input id="referenceB"
+                                   name="referenceB"
+                                   md-maxlength="20"
+                                   ng-model="ctrl.job.refB">
+                        </md-input-container>
+                    </div>
                 </div>
 
-                <div layout-gt-sm="row">
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="jobNotes">Job Notes</label>
-                        <textarea id="jobNotes"
-                                  name="jobNotes"
-                                  md-maxlength="150"
-                                  md-select-on-focus
-                                  ng-model="ctrl.job.jobNotes"
-                                  rows="5"></textarea>
-                    </md-input-container>
+                <!-- Notes Section -->
+                <div class="create-job-dialog__section create-job-dialog__section--last">
+                    <h3 class="create-job-dialog__section-title">Notes</h3>
 
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="pickupNotes">Pickup Notes</label>
-                        <textarea id="pickupNotes"
-                                  name="pickupNotes"
-                                  md-maxlength="150"
-                                  md-select-on-focus
-                                  ng-model="ctrl.job.pickupNotes"
-                                  rows="5"></textarea>
-                    </md-input-container>
+                    <div class="create-job-dialog__row">
+                        <md-input-container class="md-block create-job-dialog__field" flex>
+                            <label for="jobNotes">Job Notes</label>
+                            <textarea id="jobNotes"
+                                      name="jobNotes"
+                                      md-maxlength="150"
+                                      md-select-on-focus
+                                      ng-model="ctrl.job.jobNotes"
+                                      rows="4"></textarea>
+                        </md-input-container>
 
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="deliveryNotes">Delivery Notes</label>
-                        <textarea id="deliveryNotes"
-                                  name="deliveryNotes"
-                                  md-maxlength="150"
-                                  md-select-on-focus
-                                  ng-model="ctrl.job.deliveryNotes"
-                                  rows="5"></textarea>
-                    </md-input-container>
+                        <md-input-container class="md-block create-job-dialog__field" flex>
+                            <label for="pickupNotes">Pickup Notes</label>
+                            <textarea id="pickupNotes"
+                                      name="pickupNotes"
+                                      md-maxlength="150"
+                                      md-select-on-focus
+                                      ng-model="ctrl.job.pickupNotes"
+                                      rows="4"></textarea>
+                        </md-input-container>
+
+                        <md-input-container class="md-block create-job-dialog__field" flex>
+                            <label for="deliveryNotes">Delivery Notes</label>
+                            <textarea id="deliveryNotes"
+                                      name="deliveryNotes"
+                                      md-maxlength="150"
+                                      md-select-on-focus
+                                      ng-model="ctrl.job.deliveryNotes"
+                                      rows="4"></textarea>
+                        </md-input-container>
+                    </div>
                 </div>
 
             </div>
         </form>
     </md-dialog-content>
 
-    <md-dialog-actions>
+    <md-dialog-actions class="create-job-dialog__actions">
         <md-progress-circular
                 class="md-primary"
-                md-diameter="40"
+                md-diameter="32"
                 md-mode="indeterminate"
                 ng-show="ctrl.isLoading">
         </md-progress-circular>
+
+        <md-button class="md-raised"
+                   ng-click="ctrl.cancel()"
+                   ng-disabled="ctrl.isLoading"
+                   ng-show="!ctrl.isLoading">
+            Cancel
+        </md-button>
 
         <md-button class="md-raised md-primary"
                    ng-click="ctrl.submit(ctrl.job)"
                    ng-disabled="ctrl.jobForm.$invalid || ctrl.isLoading"
                    ng-show="!ctrl.isLoading">
-            Create
+            Create Job
         </md-button>
     </md-dialog-actions>
 </md-dialog>

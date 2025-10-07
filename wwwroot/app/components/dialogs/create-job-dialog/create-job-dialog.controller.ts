@@ -1,3 +1,4 @@
+import "./create-job-dialog.styles.less";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 import DispatchExecutorService from "../../../services/dispatch-executor.service";
@@ -15,6 +16,11 @@ import IStateInfo from "../../../interfaces/state-info.interface";
 import dayjs, {Dayjs} from "dayjs";
 import handleAddressFieldsFromLookup from "../../../functions/handleAddressFieldsFromLookup";
 import {formatDateForApiWithTzs} from "../../../functions/formatDates";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 export class CreateJobDialogController extends BaseController {
     static $inject = [
@@ -78,8 +84,11 @@ export class CreateJobDialogController extends BaseController {
         this.courierSearchText = "";
         this.isLoading = false;
         this.speedOptions = [];
-        this.jobDate = dayjs.tz(TimeZone);
-
+        
+        const tenantTimezone = TimeZone;
+        console.log('Timezone:', tenantTimezone);
+        this.jobDate = dayjs().tz(tenantTimezone);
+        
         this.job = {
             clientId: 0,
             deliverToContact: "",
@@ -330,12 +339,6 @@ export class CreateJobDialogController extends BaseController {
 
     async dispatchJobIfCourierSelected(courierId: number, jobId: number): Promise<void> {
         return this.dispatchJobService.dispatchJobByJobId(courierId, jobId);
-    }
-
-    updateDateTime(dateTime: Dayjs): void {
-        if(dateTime.isValid()) {
-            this.jobDate = dateTime;
-        }
     }
 
     cancel(): void {
