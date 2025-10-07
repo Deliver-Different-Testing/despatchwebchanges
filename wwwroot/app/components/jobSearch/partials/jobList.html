@@ -10,6 +10,8 @@
         selected-job="ctrl.currentJob"
         on-job-select="ctrl.onJobSelect(job)"
         on-job-dispatch="ctrl.handleJobDispatch(job, courierId)"
+        on-load-more-jobs="ctrl.handleLoadMoreJobs(page, pageSize)"
+        enable-virtual-scrolling="true"
         get-context-menu-options="ctrl.getContextMenuOptions(job)"
         on-refresh="ctrl.refreshData()"
         job-list-type="ctrl.jobListType">

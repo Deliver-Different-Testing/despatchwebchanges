@@ -3,9 +3,7 @@ import {AppPages} from "./enums/app-pages.enum";
 import {PodPhotoViewerComponent} from "./components/common/pod-photo-viewer/pod-photo-viewer.component";
 import {MaterialSidenavComponent} from "./components/common/side-nav/side-nav.component";
 import {AutoCompleteDialogController} from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.controller";
-import {
-    EditParcelDimensionsDialogController
-} from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.controller";
+import EditParcelDimensionsDialogController from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.controller";
 import {
     FeatureInDevelopmentDialogController
 } from "./components/dialogs/feature-in-development-dialog/feature-in-development-dialog.controller";
