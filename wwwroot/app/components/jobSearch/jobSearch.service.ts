@@ -1,4 +1,4 @@
-import {IBulkJobSearchResult, IDispatchJob} from "../../interfaces/job.interface";
+import {IJobSearchResult, IDispatchJob} from "../../interfaces/job.interface";
 import dayjs, {Dayjs} from "dayjs";
 import {formatDateForApi, formatDateForApiWithTzs} from "../../functions/formatDates";
 import IScanDetailResult from "./interfaces/IScanDetailResult";
@@ -19,18 +19,22 @@ class JobSearchService implements angular.IServiceProvider {
     async getPodJobs(
         fromDate: Dayjs,
         toDate: Dayjs,
+        page: number,
+        pageSize: number,
         courierId?: number,
         clientId?: number,
         wild?: string,
         job?: string,
-    ): Promise<IDispatchJob[]> {
-        const response = await this.$http.get<IDispatchJob[]>(
+    ): Promise<IJobSearchResult> {
+        const response = await this.$http.get<IJobSearchResult>(
             `/Job/PODSearch`, {
                 params: {
-                    courierId: courierId,
-                    clientId: clientId,
-                    wild: wild,
-                    job: job,
+                    courierId,
+                    clientId,
+                    wild,
+                    job,
+                    page,
+                    pageSize,
                     fromDate: formatDateForApiWithTzs(fromDate),
                     toDate: formatDateForApiWithTzs(toDate)
                 }
@@ -82,8 +86,8 @@ class JobSearchService implements angular.IServiceProvider {
         clientId?: number,
         job?: string,
         wild?: string,
-    ): Promise<IBulkJobSearchResult> {
-        const response = await this.$http.get<IBulkJobSearchResult>(`/Job/BulkSearch`, {
+    ): Promise<IJobSearchResult> {
+        const response = await this.$http.get<IJobSearchResult>(`/Job/BulkSearch`, {
                 params: {
                     courierId,
                     clientId,

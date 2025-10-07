@@ -4,7 +4,7 @@ import DispatchCoreService from "../../../services/dispatch-core.service";
 import {IParcelDimensions} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 
-export class EditParcelDimensionsDialogController extends BaseController {
+class EditParcelDimensionsDialogController extends BaseController {
     static $inject = [
         "$mdDialog",
         "toastrService",
@@ -43,11 +43,11 @@ export class EditParcelDimensionsDialogController extends BaseController {
         }
 
         if(this.jobId) {
-            this.DispatchData.isJobParent(this.jobId).then(isParentJob => {
+            this.DispatchData.isJobParent(this.jobId).then((isParentJob: boolean) => {
                 this.isParentJob = isParentJob;
             });
         } else if(this.bulkJobId) {
-            this.DispatchData.isBulkJobParent(this.bulkJobId).then(isParentJob => {
+            this.DispatchData.isBulkJobParent(this.bulkJobId).then((isParentJob: boolean) => {
                 this.isParentJob = isParentJob;
             });
         } else {
@@ -243,3 +243,5 @@ export class EditParcelDimensionsDialogController extends BaseController {
         return length * depth * height;
     }
 }
+
+export default EditParcelDimensionsDialogController

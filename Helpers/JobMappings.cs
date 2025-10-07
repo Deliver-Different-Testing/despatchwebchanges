@@ -692,7 +692,7 @@ public static class JobMappings
 
         ParcelDimensions = GetPackagesForBulkJob(j, j.Parent,
             j.TblBulkJobItems, j.Parent.TblBulkJobItems,
-            j.TblBulkJobItems),
+            j.TblBulkJobItems)
     };
 
     public static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping = j => new JobViewModel
