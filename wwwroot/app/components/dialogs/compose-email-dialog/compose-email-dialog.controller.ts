@@ -9,7 +9,6 @@ class ComposeEmailDialogController extends BaseController {
         "$scope",
         "$timeout",
         "$interval",
-        "$log",
         "$mdDialog",
         "toastrService",
         "emailData",
@@ -21,10 +20,8 @@ class ComposeEmailDialogController extends BaseController {
     isLoading: boolean = false;
 
     constructor(
-        $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
-        private $log: angular.ILogService,
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
         public emailData: IGroupEmailData,
@@ -33,7 +30,7 @@ class ComposeEmailDialogController extends BaseController {
         public selectedCouriers: IDriverEmail[]
     ) {
         super();
-        this.initServices($timeout, $interval, $scope);
+        this.initServices($timeout, $interval);
 
         // Initialize email data if not provided
         if (!this.emailData) {
@@ -44,7 +41,7 @@ class ComposeEmailDialogController extends BaseController {
             };
         }
 
-        this.$log.debug('ComposeEmailDialogController initialized with:', {
+        console.debug('ComposeEmailDialogController initialized with:', {
             emailData: this.emailData,
             courierList: this.selectedCouriers
         });
@@ -133,7 +130,6 @@ If you have any questions or concerns, please don't hesitate to reach out.
 Best regards`;
                 break;
         }
-        this.applyScope();
     }
 
     private validateEmailData(): boolean {
@@ -152,7 +148,7 @@ Best regards`;
     }
 
     async submit(): Promise<void> {
-        this.$log.debug("Starting email submission with data:", this.emailData);
+        console.debug("Starting email submission with data:", this.emailData);
         this.isLoading = true;
 
         try {
@@ -170,16 +166,14 @@ Best regards`;
 
             // Return the email data
             this.$mdDialog.hide(this.emailData);
-            this.$log.debug("Email dialog submission complete");
+            console.debug("Email dialog submission complete");
         } catch (error) {
             this.isLoading = false;
-            this.$log.error("Error in email submit function:", error);
+            console.error("Error in email submit function:", error);
             this.toastrService.showErrorToast(
                 "Error preparing email. Please try again or contact support"
             );
             throw error;
-        } finally {
-            this.applyScope();
         }
     }
 
@@ -190,7 +184,6 @@ Best regards`;
     clearForm(): void {
         this.emailData.subject = '';
         this.emailData.body = '';
-        this.applyScope();
     }
 }
 

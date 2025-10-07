@@ -29,7 +29,7 @@ class AddEventDialogService implements angular.IServiceProvider {
                 fullscreen: true,
                 targetEvent: $event,
                 locals: {
-                    job: job, dispatcherName: FirstName, contactId: ContactID,
+                    job
                 },
                 bindToController: true,
             });

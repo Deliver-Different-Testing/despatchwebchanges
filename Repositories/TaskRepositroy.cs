@@ -286,9 +286,9 @@ public class TaskRepository(
         int jobId,
         string notes,
         int eventType,
-        DateTime? dueDate = null,
+        DateTimeOffset? dueDate = null,
         int? lateTime = null,
-        DateTime? etaTime = null,
+        DateTimeOffset? etaTime = null,
         bool close = false
     )
     {
@@ -348,14 +348,14 @@ public class TaskRepository(
         string jobNo,
         int clientId,
         string contact,
-        DateTime date,
-        DateTime time,
+        DateTimeOffset date,
+        DateTimeOffset time,
         int type,
         int? lateTime,
-        DateTime? etaTime,
+        DateTimeOffset? etaTime,
         int? staffIdIn,
         int? staffIdOut,
-        DateTime? responseTime,
+        DateTimeOffset? responseTime,
         string notes,
         bool pageCourier,
         bool closed,
@@ -365,7 +365,7 @@ public class TaskRepository(
         int jobId,
         string despatcher,
         int? jobType,
-        DateTime? dueTime)
+        DateTimeOffset? dueTime)
     {
         var currentDate = infoService.GetCurrentTenantTime();
 
@@ -410,14 +410,14 @@ public class TaskRepository(
             UcevJobNumber = jobNo,
             UcevClientId = clientId,
             UcevContact = contact,
-            UcevDate = date,
-            UcevTime = time,
+            UcevDate = date.DateTime,
+            UcevTime = time.DateTime,
             UcevType = type,
             UcevLateTime = lateTime,
-            UcevEtatime = etaTime,
+            UcevEtatime = etaTime?.DateTime,
             UcevStaffIdin = staffIdIn,
             UcevStaffIdout = staffIdOut,
-            UcevResponseTime = responseTime,
+            UcevResponseTime = responseTime?.DateTime,
             UcevNotes = notes,
             UcevPageCourier = pageCourier,
             UcevClosed = closed,
@@ -427,7 +427,7 @@ public class TaskRepository(
             UcevJobId = jobId,
             UcevDespatcher = despatcher,
             UcevJobType = jobType,
-            UcevDueTime = dueTime ?? currentDate
+            UcevDueTime = dueTime?.DateTime ?? currentDate
         };
 
         await Context.AddAsync(newEvent);

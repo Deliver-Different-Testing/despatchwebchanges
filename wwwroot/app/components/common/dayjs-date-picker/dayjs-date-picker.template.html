@@ -1,5 +1,5 @@
-﻿<div class="input-section" ng-if="ctrl.showDate && ctrl.showTime">
-    <div class="input-group">
+﻿<div class="input-section full-width" ng-if="ctrl.showDate && ctrl.showTime">
+    <div class="input-group full-width">
         <md-input-container class="md-block date-input">
             <label for="dateInput">Date</label>
             <input mdc-datetime-picker
@@ -35,7 +35,7 @@
 </div>
 
 <!-- Date Only Picker -->
-<div class="input-section" ng-if="ctrl.showDate && !ctrl.showTime">
+<div class="input-section full-width" ng-if="ctrl.showDate && !ctrl.showTime">
     <md-input-container class="md-block">
         <label for="dateOnlyInput">Date</label>
         <input mdc-datetime-picker
@@ -54,7 +54,7 @@
 </div>
 
 <!-- Time-Only Picker -->
-<div class="input-section" ng-if="ctrl.showTime && !ctrl.showDate">
+<div class="input-section full-width" ng-if="ctrl.showTime && !ctrl.showDate">
     <md-input-container class="md-block">
         <label for="timeOnlyInput">Time (24-hour)</label>
         <input mdc-datetime-picker

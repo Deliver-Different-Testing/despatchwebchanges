@@ -1,5 +1,29 @@
 ﻿.custom-date-picker {
+  width: 100%; // Add this to ensure the component itself fills available space
+
+  .input-section {
+    &.full-width {
+      width: 100%;
+    }
+  }
+
+  .input-group {
+    &.full-width {
+      width: 100%;
+      display: flex;
+      gap: 8px;
+
+      .date-input,
+      .time-input {
+        flex: 1;
+        margin: 0;
+        min-width: 0; // Add this to prevent flex items from overflowing
+      }
+    }
+  }
+
   md-input-container {
+    width: 100%; // Add this to ensure inputs fill their containers
     background: white;
     border-radius: 8px;
     padding: 8px 16px;
@@ -44,4 +68,3 @@
     }
   }
 }
-

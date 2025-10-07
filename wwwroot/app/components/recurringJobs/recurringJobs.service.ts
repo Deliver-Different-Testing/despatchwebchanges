@@ -12,12 +12,10 @@ class RecurringJobsService {
     ) {
     }
 
-    async getPreBookJobs(active: boolean, startDate: Dayjs, endDate: Dayjs): Promise<IPrebookListModel[]> {
+    async getPreBookJobs(active: boolean): Promise<IPrebookListModel[]> {
         const response = await this.$http.get<IPrebookListModel[]>(`job/PreBookJobs`, {
             params: {
-                active,
-                startDate: formatDateForApiWithTzs(startDate),
-                endDate: formatDateForApiWithTzs(endDate),
+                active
             }
         });
         return response.data;

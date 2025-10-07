@@ -43,21 +43,15 @@
                         </div>
                     </md-input-container>
 
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="taskDate">Task Date ({{::ctrl.browserTimeZone | timezoneShort}})</label>
-                        <input class=" dtp-no-msclear dtp-input md-input"
-                               date="true" edit-input="true" id="taskDate"
-                               mdc-datetime-picker
-                               minutes="true"
-                               name="taskDate"
-                               ng-model="ctrl.event.eventDate"
-                               required
-                               short-time="false"
-                               show-icon="true"
-                               show-todays-date
-                               time="true"
-                               type="text">
-                    </md-input-container>
+                    <div flex-gt-sm style="display: flex; justify-content: center;">
+                        <custom-date-picker
+                                style="width: 100% !important;"
+                                date-time="ctrl.event.eventDate"
+                                show-date="true"
+                                show-time="true"
+                                on-change="ctrl.updateEventDate(dateTime)">
+                        </custom-date-picker>
+                    </div>
                 </div>
 
                 <div layout-gt-sm="row">
