@@ -55,5 +55,13 @@ public partial class TucInvoiceNo
 
     public string PpdItemCode { get; set; }
 
+    public decimal? DirectCost { get; set; }
+
+    public decimal? GrossProfit { get; set; }
+
+    public decimal? FuelSurcharge { get; set; }
+
+    public decimal? CourierFuel { get; set; }
+
     public virtual TucClient UcinClient { get; set; }
 }

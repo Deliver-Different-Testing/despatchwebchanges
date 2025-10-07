@@ -87,6 +87,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tblBulkEvent]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tblBulkJob]",
          "ObjectType": 0
       },

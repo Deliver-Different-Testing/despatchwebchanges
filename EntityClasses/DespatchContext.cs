@@ -55,6 +55,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TblAirport> TblAirports { get; set; }
 
+    public virtual DbSet<TblBulkEvent> TblBulkEvents { get; set; }
+
     public virtual DbSet<TblBulkJob> TblBulkJobs { get; set; }
 
     public virtual DbSet<TblBulkJobItem> TblBulkJobItems { get; set; }
@@ -1175,6 +1177,33 @@ public partial class DespatchContext : DbContext
                 .HasConstraintName("FK__tblAirpor__Agent__7A280247");
         });
 
+        modelBuilder.Entity<TblBulkEvent>(entity =>
+        {
+            entity.HasKey(e => e.BulkEventId);
+
+            entity.ToTable("tblBulkEvent");
+
+            entity.Property(e => e.BulkEventId).HasColumnName("BulkEventID");
+            entity.Property(e => e.BulkJobId).HasColumnName("BulkJobID");
+            entity.Property(e => e.ClosedByName).HasMaxLength(50);
+            entity.Property(e => e.ClosedDate).HasColumnType("datetime");
+            entity.Property(e => e.CourierId).HasColumnName("CourierID");
+            entity.Property(e => e.Created).HasColumnType("datetime");
+            entity.Property(e => e.CreatedByName)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.EventDate).HasColumnType("date");
+            entity.Property(e => e.Notes).IsRequired();
+
+            entity.HasOne(d => d.BulkJob).WithMany(p => p.TblBulkEvents)
+                .HasForeignKey(d => d.BulkJobId)
+                .HasConstraintName("FK_tblBulkEvent_tblBulkJob");
+
+            entity.HasOne(d => d.Courier).WithMany(p => p.TblBulkEvents)
+                .HasForeignKey(d => d.CourierId)
+                .HasConstraintName("FK_tblBulkEvent_tucCourier");
+        });
+
         modelBuilder.Entity<TblBulkJob>(entity =>
         {
             entity.HasKey(e => e.BulkJobId).HasName("PK__tblBulkJ__1B2363F0324172E1");
@@ -1572,6 +1601,9 @@ public partial class DespatchContext : DbContext
 
             entity.Property(e => e.AccountProfileId).HasColumnName("AccountProfileID");
             entity.Property(e => e.AccountStatusId).HasColumnName("AccountStatusID");
+            entity.Property(e => e.AccountsContact).HasMaxLength(100);
+            entity.Property(e => e.AccountsEmail).HasMaxLength(500);
+            entity.Property(e => e.AccountsPhone).HasMaxLength(100);
             entity.Property(e => e.AddonPercentage).HasColumnType("numeric(5, 4)");
             entity.Property(e => e.Address).HasMaxLength(150);
             entity.Property(e => e.AddressExtras).HasMaxLength(200);
@@ -3406,6 +3438,9 @@ public partial class DespatchContext : DbContext
 
             entity.Property(e => e.UcclId).HasColumnName("ucclID");
             entity.Property(e => e.AccountProfileId).HasColumnName("AccountProfileID");
+            entity.Property(e => e.AccountsContact).HasMaxLength(100);
+            entity.Property(e => e.AccountsEmail).HasMaxLength(500);
+            entity.Property(e => e.AccountsPhone).HasMaxLength(100);
             entity.Property(e => e.AddonPercentage).HasColumnType("numeric(5, 4)");
             entity.Property(e => e.AddressExtras).HasMaxLength(200);
             entity.Property(e => e.AddressLine1).HasMaxLength(255);
@@ -4452,10 +4487,14 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.UcinDate, "ucinDate");
 
             entity.Property(e => e.UcinId).HasColumnName("ucinID");
+            entity.Property(e => e.CourierFuel).HasColumnType("numeric(18, 2)");
             entity.Property(e => e.Created).HasColumnType("datetime");
+            entity.Property(e => e.DirectCost).HasColumnType("numeric(18, 2)");
             entity.Property(e => e.DiscountTotal).HasColumnType("numeric(18, 2)");
             entity.Property(e => e.DueDate).HasPrecision(3);
             entity.Property(e => e.ExternalJournalHeaderId).HasColumnName("ExternalJournalHeaderID");
+            entity.Property(e => e.FuelSurcharge).HasColumnType("numeric(18, 2)");
+            entity.Property(e => e.GrossProfit).HasColumnType("numeric(18, 2)");
             entity.Property(e => e.PostedOa)
                 .HasColumnType("datetime")
                 .HasColumnName("PostedOA");

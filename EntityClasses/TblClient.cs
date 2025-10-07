@@ -571,6 +571,12 @@ public partial class TblClient
 
     public int? InvoiceScheduleId { get; set; }
 
+    public string AccountsContact { get; set; }
+
+    public string AccountsPhone { get; set; }
+
+    public string AccountsEmail { get; set; }
+
     public int ClientId { get; set; }
 
     public string Name { get; set; }

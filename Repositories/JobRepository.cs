@@ -1376,11 +1376,10 @@ public partial class JobRepository(
             foreach (var id in jobsToVoid) await SaveNoteAsync(id, data.VoidReason);
 
             var courierMapping = await Context.TblJobs
-                .Where(jt => jobsToVoid.Contains(jt.JobId))
-                .Where(jt => jt.CourierId.HasValue)
-                .Select(jt => new { jt.JobId, jt.CourierId })
+                .Where(jt => jobsToVoid.Contains(jt.JobId) && jt.CourierId.HasValue)
+                .Select(jt =>  jt.CourierId )
                 .Distinct()
-                .ToDictionaryAsync(jt => jt.JobId, jt => jt.CourierId ?? 0);
+                .ToListAsync();
 
             await Context.TucJobs
                 .Where(j => jobsToVoid.Contains(j.UcjbId))
@@ -1388,7 +1387,7 @@ public partial class JobRepository(
                     .SetProperty(j => j.UcjbStatus, (int)JobStatus.Void)
                     .SetProperty(j => j.UcjbVoid, true));
 
-            foreach (var courierId in courierMapping.Values.Distinct())
+            foreach (var courierId in courierMapping)
                 await Context.Procedures.UTL_stpCourier_ResetClearListAreaOrderAsync(courierId);
 
             // Close tasks based on the voiding scope
@@ -1418,11 +1417,10 @@ public partial class JobRepository(
             foreach (var bulkId in jobsToVoid) await SaveBulkNoteAsync(bulkId, data.VoidReason);
 
             var courierMapping = await Context.TblBulkJobs
-                .Where(jt => jobsToVoid.Contains(jt.BulkJobId))
-                .Where(jt => jt.CourierId.HasValue)
-                .Select(jt => new { jt.JobId, jt.CourierId })
+                .Where(jt => jobsToVoid.Contains(jt.BulkJobId) && jt.CourierId.HasValue)
+                .Select(jt => jt.CourierId )
                 .Distinct()
-                .ToDictionaryAsync(jt => jt.JobId, jt => jt.CourierId ?? 0);
+                .ToListAsync();
 
             await Context.TblBulkJobs
                 .Where(j => jobsToVoid.Contains(j.BulkJobId))
@@ -1430,11 +1428,11 @@ public partial class JobRepository(
                     .SetProperty(j => j.JobStatus, (int)JobStatus.Void)
                     .SetProperty(j => j.Void, true));
 
-            foreach (var courierId in courierMapping.Values.Distinct())
+            foreach (var courierId in courierMapping)
                 await Context.Procedures.UTL_stpCourier_ResetClearListAreaOrderAsync(courierId);
 
             // Close tasks based on the voiding scope
-            await CloseTasksByJobIdAsync(data.BulkJobId, data.VoidSingleJobOnly);
+            await CloseBulkTasksByBulkJobIdAsync(data.BulkJobId, data.VoidSingleJobOnly);
 
             await Context.SaveChangesAsync();
         }
@@ -2064,7 +2062,7 @@ public partial class JobRepository(
                 PickUpLongitude = request.PickUpAddress?.Longitude,
                 DeliveryLatitude = request.DeliveryAddress?.Latitude,
                 DeliveryLongitude = request.DeliveryAddress?.Longitude,
-                Pickup = request.Date,
+                Pickup = request.Date.DateTime,
 
                 // Set other properties as needed
                 Hold = false
@@ -2904,7 +2902,27 @@ public partial class JobRepository(
 
         await Context.TucEvents
             .Where(t => jobIds.Contains(t.UcevJobId.Value) && !t.UcevClosed)
-            .ExecuteUpdateAsync(t => t.SetProperty(e => e.UcevClosed, true));
+            .ExecuteUpdateAsync(setters => setters.SetProperty(e => e.UcevClosed, true));
+    }
+    
+    private async Task CloseBulkTasksByBulkJobIdAsync(int bulkJobId, bool closeSingleJobTasksOnly = false)
+    {
+        var now = _infoService.GetCurrentTenantTime();
+        var staffId = _infoService.GetStaffId();
+        var staffName = await GetStaffNameAsync(staffId);
+        
+        List<int> jobIds;
+
+        if (closeSingleJobTasksOnly)
+            jobIds = [bulkJobId];
+        else
+            jobIds = await GetAllRelatedBulkJobIdsIncludingParentAsync(bulkJobId);
+
+        await Context.TblBulkEvents
+            .Where(t => jobIds.Contains(t.BulkJobId.Value) && !t.ClosedDate.HasValue)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(e => e.ClosedDate, now)
+                .SetProperty(e => e.ClosedByName, staffName));
     }
 
     public async Task BulkUpdateReadStatusAsync(BulkReadUpdateRequestModel data)

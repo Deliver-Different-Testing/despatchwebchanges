@@ -571,6 +571,12 @@ public partial class TucClient
 
     public int? InvoiceScheduleId { get; set; }
 
+    public string AccountsContact { get; set; }
+
+    public string AccountsPhone { get; set; }
+
+    public string AccountsEmail { get; set; }
+
     public virtual ICollection<TblAfterHour> TblAfterHours { get; set; } = new List<TblAfterHour>();
 
     public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; } = new List<TblBulkJob>();

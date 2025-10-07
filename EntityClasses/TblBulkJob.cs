@@ -247,6 +247,8 @@ public partial class TblBulkJob
 
     public virtual TucJobType SpeedNavigation { get; set; }
 
+    public virtual ICollection<TblBulkEvent> TblBulkEvents { get; set; } = new List<TblBulkEvent>();
+
     public virtual ICollection<TblBulkJobItem> TblBulkJobItems { get; set; } = new List<TblBulkJobItem>();
 
     public virtual ICollection<TblBulkJobNote> TblBulkJobNotes { get; set; } = new List<TblBulkJobNote>();

@@ -529,13 +529,13 @@ export interface INoteType extends ISuggestion {
     description?: string;
 }
 
-export interface JobCreateViewModel {
+export interface JobCreateViewModelDto {
     clientId: number;
     deliverToContact: string;
     podName: string;
     pickUpAddress: IAddressViewModel;
     deliveryAddress: IAddressViewModel;
-    date: Date;
+    date: string;
     fromContactName: string;
     refA: string;
     refB: string;
