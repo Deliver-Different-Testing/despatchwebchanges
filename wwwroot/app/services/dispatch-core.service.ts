@@ -11,8 +11,8 @@ import {
     IParcelDimensions,
     PriceBreakdown,
     ISuggestion,
-    VoidJobRequest, UpdateJobPackagesRequest, JobCreateViewModel, VoidBulkJobRequest, UpdateBulkJobPackagesRequest,
-    IJobDto, IDispatchJobDto, ITimeZoneSuggestion,
+    VoidJobRequest, UpdateJobPackagesRequest, VoidBulkJobRequest, UpdateBulkJobPackagesRequest,
+    IJobDto, IDispatchJobDto, ITimeZoneSuggestion, JobCreateViewModelDto,
 } from "../interfaces/job.interface";
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {
@@ -1049,15 +1049,14 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async exsalerateActivity(eventName: string, notes: string, clientId: number, jobNumber: string, despatcherName: string): Promise<void> {
+    async exsalerateActivity(eventName: string, notes: string, clientId: number, jobNumber: string): Promise<void> {
         await this.$http.post(`job/ExsalerateActivity`,
             null, {
                 params: {
                     eventName,
                     notes,
                     clientId,
-                    jobNumber,
-                    despatcherName,
+                    jobNumber
                 }
             });
     }
@@ -1095,7 +1094,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async quickCreateJob(job: JobCreateViewModel): Promise<number> {
+    async quickCreateJob(job: JobCreateViewModelDto): Promise<number> {
         const response = await this.$http.post<number>('/job/QuickCreateJob', job);
         return response.data;
     }

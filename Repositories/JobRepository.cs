@@ -2010,18 +2010,17 @@ public partial class JobRepository(
         int bulkJobId,
         string field,
         string value,
-        decimal? rate,
-        string despatcher,
-        int staffId
-    )
+        decimal? rate)
     {
+       var staffInfo = await _infoService.GetStaffInfoAsync();
+        
         await Context.Procedures.DESWEB_stpUpdateBulkJobAsync(
             bulkJobId,
             field,
             value,
             rate,
-            despatcher,
-            staffId
+            staffInfo.Text,
+            staffInfo.Id
         );
     }
 
@@ -2029,20 +2028,19 @@ public partial class JobRepository(
     {
         try
         {
-            var staffId = _infoService.GetStaffId();
             var now = _infoService.GetCurrentTenantTime();
-
+            var staffInfo = await _infoService.GetStaffInfoAsync();
+            
             // Generate request number
-            var jobNumber = await GenerateJobNumberAsync(staffId, request.SpeedId);
-            var staffName = await GetStaffNameAsync(staffId);
-            var speed = await GetAllServiceTucJobType();
+            var jobNumber = await GenerateJobNumberAsync(staffInfo.Id, request.SpeedId);
+            var speed = await GetSpeedSuggestionBySpeedIdAsync(request.SpeedId);
 
             var jobInput = new CreateMinimalTucJobInputModel
             {
                 JobNumber = jobNumber,
                 FromAddress = request.PickUpAddress,
                 ToAddress = request.DeliveryAddress,
-                BookedBy = staffName,
+                BookedBy = staffInfo.Text,
                 ClientId = request.ClientId,
                 AgentCourierId = null,
                 Speed = speed.Text,
@@ -2052,7 +2050,7 @@ public partial class JobRepository(
                 ReferenceB = request.RefB,
                 Notes = request.JobNotes,
                 TenantCurrentTime = now,
-                LoggedInContactId = staffId,
+                LoggedInContactId = staffInfo.Id,
 
                 // Additional properties specific to QuickAdd
                 FromContactName = request.FromContactName,
@@ -2218,14 +2216,28 @@ public partial class JobRepository(
         }
     }
 
-    private async Task<string> GetStaffNameAsync(int staffId) => await Context.TucStaffs
+    public async Task<string> GetStaffNameAsync(int staffId) => await Context.TucStaffs
         .Where(s => s.UcstId == staffId)
         .Select(s => s.UcstFirstName + " " + s.UcstLastName)
         .AsNoTracking()
         .FirstOrDefaultAsync();
 
-    private async Task<Suggestion> GetAllServiceTucJobType() => await Context.TucJobTypes
-        .Where(t => t.UcjtId == (int)JobType.AllServices)
+    private async Task<Suggestion> GetSpeedSuggestionBySpeedIdAsync(int speedId)
+    {
+        var speed = await Context.TucJobTypes
+            .Where(s => s.UcjtId == speedId)
+            .Select(s => new Suggestion
+            {
+                Id = s.UcjtId,
+                Text = s.UcjtName
+            })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        return speed;
+    }
+
+    private async Task<Suggestion> GetDefaultSpeedType() => await Context.TucJobTypes
         .Select(t => new Suggestion
         {
             Id = t.UcjtId,
@@ -2250,7 +2262,7 @@ public partial class JobRepository(
                 string.Empty, string.Empty, string.Empty, string.Empty);
 
             var staffName = await GetStaffNameAsync(staffId);
-            var speed = await GetAllServiceTucJobType();
+            var speed = await GetDefaultSpeedType();
 
             var fromJobResult = await CreateMinimalTucJobAsync(
                 new CreateMinimalTucJobInputModel

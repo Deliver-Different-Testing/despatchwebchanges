@@ -2,19 +2,18 @@ import {IAppConfig} from "../../interfaces/app-config.interface";
 import {IJob, ISuggestion} from "../../interfaces/job.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
-import {ClientInternal, ContactID} from "../../contants";
+import {ClientInternal, ContactID, TimeZone} from "../../contants";
 import RecurringJobsService from "./recurringJobs.service";
 import {IPrebookListModel, IRecurringJobQuery} from "./recurringJobs.interface";
 import ToastrService from "../../services/toastr.service";
 import greetUser from "../../functions/greetUser";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import IContextMenuOption from "../../interfaces/context-menu-option.interface";
-import IDateFilterData from "../common/date-filter-menu/IDateFilterData";
 import dayjs from "dayjs";
 import {AppPages} from "../../enums/app-pages.enum";
-import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import {getIanaTimezone} from "../../functions/formatDates";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -36,7 +35,6 @@ class RecurringJobsController extends BaseController {
     
     private readonly RecurringJobsLayoutKey: string = `layouts-${AppPages.Recurring}-${ContactID}`;
     private readonly RecurringJobsLastActiveLayoutKey: string = `lastActiveLayout-${AppPages.Recurring}-${ContactID}`
-    private readonly DateFilterKey: string = `dateFilter-${AppPages.Recurring}-${ContactID}`;
 
     readonly boxes: Record<string, IBox> = {
         jobList: {
@@ -58,8 +56,6 @@ class RecurringJobsController extends BaseController {
 
     readonly isUsCustomer: boolean;
 
-    browserTimeZone: string;
-    dateFilterData: IDateFilterData;
     currentJobId?: number;
     jobs: IJob[] = [];
     isAdmin: boolean = false;
@@ -83,7 +79,7 @@ class RecurringJobsController extends BaseController {
     layout?: { columns: IColumn[] };
     sort: Record<string, string> = {};
     currentLayoutName?: string;
-    timeZone: string = TimeZone;
+    timeZone: string;
     activeFilter: boolean = true;
 
     constructor(
@@ -104,12 +100,8 @@ class RecurringJobsController extends BaseController {
 
         this.isUsCustomer = appConfig.US_Customer;
         this.isAdmin = ClientInternal;
-        this.browserTimeZone = dayjs.tz.guess();
-
-        // Date filter
-        this.dateFilterData = setDateFilterDefaults();
-        this.loadDateFilterFromStorage();
-
+        this.timeZone = getIanaTimezone(TimeZone);
+        
         this.initializeLayout();
     }
 
@@ -348,8 +340,7 @@ class RecurringJobsController extends BaseController {
         try {
             this.currentJobId = undefined;
             this.activeFilter = active;
-            this.promise = this.recurringJobsService.getPreBookJobs(active, 
-                this.dateFilterData.startDate, this.dateFilterData.endDate);
+            this.promise = this.recurringJobsService.getPreBookJobs(active);
 
             this.jobList = await this.promise;
             this.updateTable();
@@ -588,43 +579,6 @@ class RecurringJobsController extends BaseController {
         };
 
         return this.jobContextMenuService.getRecurringJobMenuOptions(job, callbacks);
-    }
-
-    async refreshDataTimeSpan(dateFilterData: IDateFilterData): Promise<void> {
-        console.log('refreshDataTimeSpan called with data ', dateFilterData);
-        this.dateFilterData = dateFilterData;
-
-        this.saveDateFilterToStorage();
-        await this.refreshData();
-    }
-
-    private saveDateFilterToStorage(): void {
-        if (Modernizr.localstorage && this.dateFilterData) {
-            try {
-                localStorage.setItem(this.DateFilterKey, JSON.stringify(this.dateFilterData));
-            } catch (error) {
-                console.error('Error saving date filter to storage:', error);
-            }
-        }
-    }
-
-    private loadDateFilterFromStorage(): void {
-        if (Modernizr.localstorage) {
-            try {
-                const savedDateFilter = localStorage.getItem(this.DateFilterKey);
-                if (savedDateFilter) {
-                    const parsedDateFilter = JSON.parse(savedDateFilter);
-                    this.dateFilterData = {
-                        startDate: dayjs(parsedDateFilter.startDate),
-                        endDate: dayjs(parsedDateFilter.endDate)
-                    };
-                }
-            } catch (error) {
-                console.error('Error loading date filter from storage:', error);
-                // Keep default values if parsing fails
-                this.dateFilterData = setDateFilterDefaults();
-            }
-        }
     }
 }
 

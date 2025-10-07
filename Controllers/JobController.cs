@@ -477,9 +477,9 @@ public class JobController(
         return Json(result);
     }
 
-    public async Task<IActionResult> PreBookJobs(bool active, DateTimeOffset startDate, DateTimeOffset endDate)
+    public async Task<IActionResult> PreBookJobs(bool active)
     {
-        var result = await recurringJobRepository.PreBookJobListAsync(active, startDate.DateTime, endDate.DateTime);
+        var result = await recurringJobRepository.PreBookJobListAsync(active);
         return Json(result);
     }
 
@@ -710,31 +710,6 @@ public class JobController(
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(BulkSearch)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
-    }
-
-    public async Task<IActionResult> PreBookSearch(
-        int? courierId,
-        int? clientId,
-        string wild,
-        string job,
-        DateTimeOffset fromDate,
-        DateTimeOffset toDate,
-        int pageIndex,
-        int pageSize
-    )
-    {
-        var result = await recurringJobRepository.PreBookSearchAsync(
-            courierId,
-            wild ?? string.Empty,
-            job ?? string.Empty,
-            fromDate.DateTime.ResetTimeToStartOfDay(),
-            toDate.DateTime.ResetTimeToEndOfDay(),
-            clientId,
-            pageIndex,
-            pageSize
-        );
-
-        return Json(result);
     }
 
     [HttpPost]
@@ -1146,8 +1121,7 @@ public class JobController(
         string eventName,
         string notes,
         int clientId,
-        string jobNumber,
-        string despatcherName
+        string jobNumber
     )
     {
         var baseUrl = Environment.GetEnvironmentVariable("ExsalerateAPI");
@@ -1162,11 +1136,14 @@ public class JobController(
                 Convert.ToBase64String(Encoding.ASCII.GetBytes($"{un}:{pw}"))
             );
 
+        var staffId = infoService.GetStaffId();
+        var staffName = await jobRepository.GetStaffNameAsync(staffId);
+
         var body = new ExsalerateActivity
         {
             SiteOwnerID = 11,
             CustomerRefCode = clientId.ToString(),
-            Subject = $"Dispatch:{despatcherName} {eventName}",
+            Subject = $"Dispatch:{staffName} {eventName}",
             ActivityType = eventName,
             Description = $"Job Number: {jobNumber} - {notes}"
         };
@@ -1361,14 +1338,11 @@ public class JobController(
         decimal? rate
     )
     {
-        var staffInfo = await infoService.GetStaffInfoAsync();
         await jobRepository.UpdateBulkJobAsync(
             bulkJobId,
             field,
             value,
-            rate,
-            staffInfo.Text,
-            staffInfo.Id
+            rate
         );
         return Ok();
     }

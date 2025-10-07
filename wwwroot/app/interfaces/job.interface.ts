@@ -507,8 +507,8 @@ export interface DfrntEvent {
     id: number;
     jobNumber: string;
     clientCode: string;
-    eventDate: Date;
-    closedDate?: Date;
+    eventDate: Dayjs;
+    closedDate?: Dayjs;
     eventType?: string;
     notes?: string;
 }

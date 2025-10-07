@@ -127,9 +127,7 @@ public interface IJobRepository
         int bulkJobId,
         string field,
         string value,
-        decimal? rate,
-        string despatcher,
-        int staffId
+        decimal? rate
     );
 
     Task<int> QuickAddJobAsync(JobCreateViewModel request);
@@ -172,13 +170,7 @@ public interface IJobRepository
     Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(List<int> selectedViewIds);
 
     Task<int> SaveNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default);
-
-    Task SaveNoteAsync(int jobId, string noteText, bool isImportant = false,
-        bool isRecurringJob = false, NoteType noteType = NoteType.InternalNote);
-
     Task SaveBulkNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default);
-    Task SaveBulkNoteAsync(int bulkJobId, string noteText, bool isImportant = false,
-        NoteType noteType = NoteType.InternalNote);
 
     Task<TucNoteViewModel> GetNoteByIdAsync(int noteId);
     Task DeleteNoteAsync(int noteId, CancellationToken cancellationToken = default);
@@ -212,4 +204,5 @@ public interface IJobRepository
    Task AddPackagesToJobAsync(int effectiveJobId, List<TucJobItem> items);
    Task<List<ScanDetailResult>> ScanList(DateTime? runDate, string scan);
    Task<bool> ValidatePodSwapAsync(string jobNumber);
+   Task<string> GetStaffNameAsync(int staffId);
 }

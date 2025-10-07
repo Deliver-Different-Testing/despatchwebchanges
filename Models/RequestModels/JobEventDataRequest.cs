@@ -7,5 +7,5 @@ public class JobEventDataRequest
     public int JobId { get; set; }
     public string Notes { get; set; }
     public int EventTypeId { get; set; }
-    public DateTime EventDueDate { get; set; }
+    public DateTimeOffset EventDueDate { get; set; }
 }

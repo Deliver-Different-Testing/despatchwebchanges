@@ -39,132 +39,9 @@ public class RecurringJobRepository(
         return jobRecurringViewModel;
     }
 
-    public async Task<Tuple<int, List<JobViewModel>>> PreBookSearchAsync(
-        int? courierId,
-        string wild,
-        string job,
-        DateTime fromDate,
-        DateTime toDate,
-        int? clientId,
-        int pageIndex,
-        int pageSize
-    )
-    {
-        var clientSet = clientId.HasValue;
-        var courierSet = courierId.HasValue;
-        var jobParam = $"%{job}%";
-        var wildParam = $"%{wild}%";
-        var jobsQuery =
-            from x in Context.TucJobBookings
-            join c in Context.TblCouriers on x.CourierId equals c.CourierId into courierJoin
-            from co in courierJoin.DefaultIfEmpty()
-            join y in Context.TucSuburbs on x.UcbkFrom equals y.UcsuId into fromJoin
-            from yo in fromJoin.DefaultIfEmpty()
-            join z in Context.TucSuburbs on x.UcbkTo equals z.UcsuId into toJoin
-            from zo in toJoin.DefaultIfEmpty()
-            join t in Context.TucJobTypes on (int)x.UcbkSpeed equals t.UcjtId into speedJoin
-            from to in speedJoin.DefaultIfEmpty()
-            where
-                x.UcbkNextDue >= fromDate
-                && x.UcbkNextDue <= toDate
-                && (!clientSet || x.UcbkClientId == clientId)
-                && (!courierSet || x.CourierId == courierId)
-                && (job == string.Empty || EF.Functions.Like(x.UcbkJobNumber.ToLower(), jobParam))
-                && (
-                    wild == string.Empty
-                    || EF.Functions.Like(
-                        x.UcbkFromAddr
-                        + " "
-                        + x.PickupFromContact
-                        + " "
-                        + yo.UcsuName
-                        + " "
-                        + x.UcbkToAddr
-                        + " "
-                        + x.DeliverToContact
-                        + " "
-                        + zo.UcsuName
-                        + " "
-                        + (x.UcbkClientRefa ?? string.Empty)
-                        + " "
-                        + (x.UcbkClientRefa ?? string.Empty)
-                        + " "
-                        + (x.UcbkOurRef ?? string.Empty)
-                        + " "
-                        + x.UcbkJobNumber.ToLower(),
-                        wildParam
-                    )
-                )
-            select new JobViewModel
-            {
-                Id = x.UcbkId,
-                Time = x.UcbkTime,
-                ClientId = x.UcbkClientId,
-                Client = x.UcbkClientCode,
-                From = yo.UcsuName,
-                To = zo.UcsuName,
-                JobNo = x.UcbkJobNumber,
-                FromAddress = x.UcbkFromAddr,
-                ToAddress = x.UcbkToAddr,
-                Courier = co.Code,
-                Speed = to.ShortName,
-                PickUpLatitude = x.PickUpLatitude,
-                PickUpLongitude = x.PickUpLongitude,
-                DeliveryLatitude = x.DeliveryLatitude,
-                DeliveryLongitude = x.DeliveryLongitude,
-                BookedDate = x.UcbkNextDue,
-                FollowupTime = x.UcbkTime,
-                PreBook = true
-            };
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
-        var total = await jobsQuery.CountAsync();
-        stopwatch.Stop();
-        Console.WriteLine(stopwatch.ElapsedMilliseconds);
-        stopwatch.Reset();
-        stopwatch.Start();
-        var jobs = await jobsQuery
-            .OrderBy(a => a.BookedDate)
-            .ThenBy(v => v.Time)
-            .Skip((pageIndex - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-        stopwatch.Stop();
-        Console.WriteLine(stopwatch.ElapsedMilliseconds);
-        stopwatch.Reset();
-        stopwatch.Start();
-        var jobList = jobs.Select(j => new JobViewModel
-            {
-                Id = j.Id,
-                Booked = j.BookedDate.HasValue && j.Time.HasValue
-                    ? new DateTime(
-                        j.BookedDate.Value.Year,
-                        j.BookedDate.Value.Month,
-                        j.BookedDate.Value.Day,
-                        j.Time.Value.Hour,
-                        j.Time.Value.Minute,
-                        j.Time.Value.Second
-                    )
-                    : null,
-                Client = j.Client,
-                FromAddress = j.FromAddress,
-                ToAddress = j.ToAddress,
-                JobNo = j.JobNo,
-                ClientId = j.ClientId,
-                Courier = j.Courier,
-                Speed = j.Speed
-            })
-            .ToList();
-        stopwatch.Stop();
-        Console.WriteLine(stopwatch.ElapsedMilliseconds);
-        return Tuple.Create(total, jobList);
-    }
-
-    public async Task<List<PrebookListViewModel>> PreBookJobListAsync(bool active, DateTime startDate, DateTime endDate)
+    public async Task<List<PrebookListViewModel>> PreBookJobListAsync(bool active)
     {
         var prebooks = await Context.TucJobBookings
-            .Where(j => j.UcbkNextDue.HasValue && j.UcbkNextDue.Value.Date >= startDate.Date
-                                               && j.UcbkNextDue.HasValue && j.UcbkNextDue.Value.Date <= endDate.Date)
             .Where(j => j.UcbkOneOff == false && (j.ParentId == null || j.ParentId == j.UcbkId) &&
                         j.UcbkActive == active)
             .OrderBy(j => j.UcbkNextDue)
@@ -173,10 +50,13 @@ public class RecurringJobRepository(
             .Select(j => new PrebookListViewModel
             {
                 Id = j.UcbkId,
-                Booked = DateTime.Parse(
-                    j.UcbkNextDue.Value.ToString("yyyy-MM-dd")
-                    + " "
-                    + j.UcbkTime.Value.ToString("HH:mm:ss")
+                Booked = new DateTime(
+                    j.UcbkNextDue.Value.Year,
+                    j.UcbkNextDue.Value.Month,
+                    j.UcbkNextDue.Value.Day,
+                    j.UcbkTime.Value.Hour,
+                    j.UcbkTime.Value.Minute,
+                    j.UcbkTime.Value.Second
                 ),
                 Client = j.UcbkClientCode,
                 FromAddress = j.UcbkFromAddr,
@@ -226,10 +106,13 @@ public class RecurringJobRepository(
             .Select(j => new PrebookListViewModel
             {
                 Id = j.UcbkId,
-                Booked = DateTime.Parse(
-                    j.UcbkNextDue.Value.ToString("yyyy-MM-dd")
-                    + " "
-                    + j.UcbkTime.Value.ToString("HH:mm:ss")
+                Booked = new DateTime(
+                    j.UcbkNextDue.Value.Year,
+                    j.UcbkNextDue.Value.Month,
+                    j.UcbkNextDue.Value.Day,
+                    j.UcbkTime.Value.Hour,
+                    j.UcbkTime.Value.Minute,
+                    j.UcbkTime.Value.Second
                 ),
                 Client = j.UcbkClientCode,
                 FromAddress = j.UcbkFromAddr,

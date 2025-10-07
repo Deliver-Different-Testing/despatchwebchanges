@@ -23,9 +23,9 @@ public interface ITaskRepository
         int jobId,
         string notes,
         int eventType,
-        DateTime? dueDate = null,
+        DateTimeOffset? dueDate = null,
         int? lateTime = null,
-        DateTime? etaTime = null,
+        DateTimeOffset? etaTime = null,
         bool close = false
     ); 
 }

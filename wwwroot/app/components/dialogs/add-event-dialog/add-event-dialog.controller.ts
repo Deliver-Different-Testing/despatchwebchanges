@@ -6,21 +6,23 @@ import NoteService from "../../../services/notes.service";
 import {JobNoteType} from "../../../enums/job-note-type.enum";
 import {EventType} from "../../../enums/event-type";
 import {JobEventData} from "./add-event-dialog.interfaces";
-import dayjs from "dayjs";
+import dayjs, {Dayjs} from "dayjs";
 import VoidJobConfirmationDialogService from "../void-job-confirmation-dialog/void-job-confirmation-dialog.service";
-import {formatDateForApiWithTzs} from "../../../functions/formatDates";
+import {formatDateForApiWithTzs, getIanaTimezone} from "../../../functions/formatDates";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 class AddEventDialogController extends BaseController {
     static $inject = [
         "$mdDialog",
-        "$log",
         "DispatchData",
         "toastrService",
         "noteService",
         "voidJobConfirmationDialogService",
-        "job",
-        "dispatcherName",
-        "contactId",
+        "job"
     ];
 
     isLoading: boolean;
@@ -28,33 +30,26 @@ class AddEventDialogController extends BaseController {
     selectedEventType?: ISuggestion;
     eventForm?: any;
     event?: DfrntEvent;
-    browserTimeZone: string;
+    timezone: string;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private $log: angular.ILogService,
         private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
         private noteService: NoteService,
         private voidJobConfirmationDialogService: VoidJobConfirmationDialogService,
-        private job: IJob,
-        private dispatcherName: string,
-        private contactId: number
+        private job: IJob
     ) {
         super();
 
         this.isLoading = false;
-        this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-        let time = new Date();
-        time.setSeconds(0);
-        time.setMilliseconds(0);
-
+        this.timezone = getIanaTimezone(TimeZone);
+        
         this.event = {
             id: job.id,
             jobNumber: job.jobNo,
             clientCode: job.client,
-            eventDate: new Date()
+            eventDate: dayjs().tz(this.timezone)
         };
     }
 
@@ -71,6 +66,17 @@ class AddEventDialogController extends BaseController {
                 this.selectedEventType = otherEvent;
             }
         });
+    }
+
+    updateEventDate(dateTime: Dayjs): void {
+        if(!dateTime.isValid()) {
+            console.error("Returned datetime is invalid!");
+            return;
+        }
+        
+        if (this.event) {
+            this.event.eventDate = dateTime;
+        }
     }
 
     async submit($event: MouseEvent, event: DfrntEvent): Promise<void> {
@@ -99,8 +105,7 @@ class AddEventDialogController extends BaseController {
                     eventName,
                     event.notes ?? '',
                     this.job.clientId ?? 0,
-                    event.jobNumber,
-                    this.dispatcherName
+                    event.jobNumber
                 );
             }
 
@@ -120,16 +125,13 @@ class AddEventDialogController extends BaseController {
                     isImportant: false,
                     noteTypeId: JobNoteType.InternalNote,
                     noteText: newNote,
-                    createdDate: dayjs().toDate()
                 };
 
                 await this.noteService.createNote(jobNote);
             }
 
             const eventData: JobEventData = {
-                staffId: this.contactId,
                 jobId: this.job.id,
-                despatcherName: this.dispatcherName,
                 notes: event.notes ?? '',
                 eventTypeId: eventId,
                 eventDueDate: formatDateForApiWithTzs(event.eventDate)
@@ -144,7 +146,7 @@ class AddEventDialogController extends BaseController {
 
             this.$mdDialog.hide();
         } catch (error: any) {
-            this.$log.debug(error);
+            console.debug(error);
             this.toastrService.showErrorToast(error.message);
             this.isLoading = false;
         }
