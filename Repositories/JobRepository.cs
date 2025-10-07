@@ -212,7 +212,7 @@ public partial class JobRepository(
                         wildSearch
                     )
                 )
-                orderby j.BookDate, j.BookTime, j.JobId, j.BulkJobId
+            orderby j.BookDate, j.BookTime, j.JobId, j.BulkJobId
             select new DispatchJobViewModel
             {
                 Id = j.BulkJobId,
@@ -342,49 +342,49 @@ public partial class JobRepository(
                 join cl in Context.TucClients on j.ClientId equals cl.UcclId into clientJoin
                 from client in clientJoin.DefaultIfEmpty()
                 where
-                    j.Date >= data.FromDate.Date
-                    && j.Date <= data.ToDate.Date
-                    && (!data.ClientSet || j.ClientId == data.ClientId)
-                    && (!data.CourierSet || j.CourierId == data.CourierId)
-                    && (!data.JobSet || EF.Functions.Like(j.Number.ToLower(), jobSearch))
-                    && (
-                        !data.WildSet
-                        || Context.TucJobNationwides
-                            .Where(nw => nw.UcnwJobId == j.JobId)
-                            .Any(nw => EF.Functions.Like(
-                                (nw.UcnwFlightNo ?? string.Empty)
-                                + " "
-                                + (nw.AircraftName ?? string.Empty)
-                                + " "
-                                + (nw.CarrierFsCode ?? string.Empty)
-                                + " "
-                                + (nw.DepartureAirportName ?? string.Empty)
-                                + " "
-                                + (nw.ArrivalAirportName ?? string.Empty),
-                                wildSearch))
-                        || EF.Functions.Like(
-                            (j.FromAddress ?? string.Empty)
-                            + " "
-                            + (j.PickupFromContact ?? string.Empty)
-                            + " "
-                            + (fs.UcsuName ?? string.Empty)
-                            + " "
-                            + (j.ToAddress ?? string.Empty)
-                            + " "
-                            + (j.DeliverToContact ?? string.Empty)
-                            + " "
-                            + (ts.UcsuName ?? string.Empty)
-                            + " "
-                            + (j.ClientReferenceA ?? string.Empty)
-                            + " "
-                            + (j.ClientReferenceB ?? string.Empty)
-                            + " "
-                            + (j.OurRef ?? string.Empty)
-                            + " "
-                            + j.Number.ToLower(),
-                            wildSearch
-                        )
-                    )
+                    j.Date.HasValue && j.Date.Value.Date >= data.FromDate.Date
+                                    && j.Date.HasValue && j.Date.Value.Date <= data.ToDate.Date
+                                    && (!data.ClientSet || j.ClientId == data.ClientId)
+                                    && (!data.CourierSet || j.CourierId == data.CourierId)
+                                    && (!data.JobSet || EF.Functions.Like(j.Number.ToLower(), jobSearch))
+                                    && (
+                                        !data.WildSet
+                                        || Context.TucJobNationwides
+                                            .Where(nw => nw.UcnwJobId == j.JobId)
+                                            .Any(nw => EF.Functions.Like(
+                                                (nw.UcnwFlightNo ?? string.Empty)
+                                                + " "
+                                                + (nw.AircraftName ?? string.Empty)
+                                                + " "
+                                                + (nw.CarrierFsCode ?? string.Empty)
+                                                + " "
+                                                + (nw.DepartureAirportName ?? string.Empty)
+                                                + " "
+                                                + (nw.ArrivalAirportName ?? string.Empty),
+                                                wildSearch))
+                                        || EF.Functions.Like(
+                                            (j.FromAddress ?? string.Empty)
+                                            + " "
+                                            + (j.PickupFromContact ?? string.Empty)
+                                            + " "
+                                            + (fs.UcsuName ?? string.Empty)
+                                            + " "
+                                            + (j.ToAddress ?? string.Empty)
+                                            + " "
+                                            + (j.DeliverToContact ?? string.Empty)
+                                            + " "
+                                            + (ts.UcsuName ?? string.Empty)
+                                            + " "
+                                            + (j.ClientReferenceA ?? string.Empty)
+                                            + " "
+                                            + (j.ClientReferenceB ?? string.Empty)
+                                            + " "
+                                            + (j.OurRef ?? string.Empty)
+                                            + " "
+                                            + j.Number.ToLower(),
+                                            wildSearch
+                                        )
+                                    )
                 orderby j.Date, j.Time, j.JobId
                 select new DispatchJobViewModel
                 {
@@ -470,13 +470,13 @@ public partial class JobRepository(
                     ToAirportId = j.ToAirportId,
                     FromAirportId = j.FromAirportId
                 };
-            
+
             var totalCount = await query.CountAsync();
 
             // Apply pagination
             var page = data.Page ?? 0;
             var pageSize = data.PageSize ?? 50;
-            
+
             var jobSearchResults = await query
                 .Skip(page * pageSize)
                 .Take(pageSize)
@@ -489,7 +489,6 @@ public partial class JobRepository(
                 TotalCount = totalCount,
                 HasMore = (page + 1) * pageSize < totalCount
             };
-            
         }
         catch (Exception e)
         {
@@ -1377,7 +1376,7 @@ public partial class JobRepository(
 
             var courierMapping = await Context.TblJobs
                 .Where(jt => jobsToVoid.Contains(jt.JobId) && jt.CourierId.HasValue)
-                .Select(jt =>  jt.CourierId )
+                .Select(jt => jt.CourierId)
                 .Distinct()
                 .ToListAsync();
 
@@ -1397,7 +1396,8 @@ public partial class JobRepository(
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error voiding job {JobId} (SingleOnly: {VoidSingleJobOnly})", data.JobId, data.VoidSingleJobOnly);
+            Log.Error(e, "Error voiding job {JobId} (SingleOnly: {VoidSingleJobOnly})", data.JobId,
+                data.VoidSingleJobOnly);
             throw;
         }
     }
@@ -1418,7 +1418,7 @@ public partial class JobRepository(
 
             var courierMapping = await Context.TblBulkJobs
                 .Where(jt => jobsToVoid.Contains(jt.BulkJobId) && jt.CourierId.HasValue)
-                .Select(jt => jt.CourierId )
+                .Select(jt => jt.CourierId)
                 .Distinct()
                 .ToListAsync();
 
@@ -1438,7 +1438,8 @@ public partial class JobRepository(
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error voiding job {JobId} (SingleOnly: {VoidSingleJobOnly})", data.BulkJobId, data.VoidSingleJobOnly);
+            Log.Error(e, "Error voiding job {JobId} (SingleOnly: {VoidSingleJobOnly})", data.BulkJobId,
+                data.VoidSingleJobOnly);
             throw;
         }
     }
@@ -2904,13 +2905,13 @@ public partial class JobRepository(
             .Where(t => jobIds.Contains(t.UcevJobId.Value) && !t.UcevClosed)
             .ExecuteUpdateAsync(setters => setters.SetProperty(e => e.UcevClosed, true));
     }
-    
+
     private async Task CloseBulkTasksByBulkJobIdAsync(int bulkJobId, bool closeSingleJobTasksOnly = false)
     {
         var now = _infoService.GetCurrentTenantTime();
         var staffId = _infoService.GetStaffId();
         var staffName = await GetStaffNameAsync(staffId);
-        
+
         List<int> jobIds;
 
         if (closeSingleJobTasksOnly)

@@ -1,0 +1,302 @@
+﻿@import "../../../../css/variables.less";
+
+// Create Job Dialog Styles
+.create-job-dialog {
+  width: 90%;
+  max-width: 1100px;
+  border-radius: @dialog-border-radius;
+  overflow: hidden;
+
+  // Remove default Material Design dialog styles
+  md-dialog-content {
+    padding: 0;
+  }
+  
+  &__icon {
+    color: @text-light;
+    font-size: 28px;
+    margin-right: @spacing;
+    opacity: 0.95;
+  }
+
+  &__title {
+    font-size: @font-xl;
+    font-weight: @weight-semibold;
+    color: @text-light;
+    margin: 0;
+    letter-spacing: 0.3px;
+  }
+
+  &__close {
+    color: @text-light;
+    opacity: 0.9;
+    transition: opacity 0.2s ease;
+
+    &:hover {
+      opacity: 1;
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    md-icon {
+      color: @text-light;
+    }
+  }
+
+  // Content Area
+  &__content {
+    background-color: @main-background-color;
+    padding: 0 !important;
+    max-height: calc(90vh - 140px);
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: @scroll-bar-color;
+      border-radius: 4px;
+
+      &:hover {
+        background: darken(@scroll-bar-color, 10%);
+      }
+    }
+  }
+
+  &__form {
+    padding: @spacing * 2;
+  }
+
+  // Section Styling
+  &__section {
+    background-color: white;
+    border-radius: 8px;
+    padding: @spacing * 2;
+    margin-bottom: @spacing * 1.5;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    transition: box-shadow 0.2s ease;
+
+    &:hover {
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    }
+
+    &--last {
+      margin-bottom: 0;
+    }
+  }
+
+  &__section-title {
+    font-size: @font-base;
+    font-weight: @weight-semibold;
+    color: @text-dark;
+    margin: 0 0 @spacing * 1.5 0;
+    padding-bottom: @spacing;
+    border-bottom: 2px solid @primary-blue;
+    display: inline-block;
+    letter-spacing: 0.3px;
+  }
+
+  // Row Layout
+  &__row {
+    display: flex;
+    gap: @spacing * 1.5;
+    margin-bottom: @spacing;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    @media (max-width: 959px) {
+      flex-direction: column;
+      gap: 0;
+    }
+  }
+
+  // Field Styling
+  &__field {
+    flex: 1;
+    min-width: 0;
+
+    // Input containers
+    &.md-input-container,
+    md-input-container {
+      margin-bottom: @spacing;
+
+      label {
+        font-size: @font-sm;
+        font-weight: @weight-medium;
+        color: @text-muted;
+      }
+
+      input,
+      textarea {
+        font-size: @font-sm;
+        color: @text-dark;
+        border-color: #e0e0e0;
+        transition: border-color 0.2s ease;
+
+        &:focus {
+          border-color: @primary-blue;
+        }
+      }
+
+      textarea {
+        resize: vertical;
+        line-height: @line-normal;
+      }
+
+      // Error messages
+      .md-errors-spacer {
+        min-height: 0;
+      }
+
+      [ng-message] {
+        font-size: @font-xs;
+        color: @error-red;
+        margin-top: 4px;
+      }
+    }
+
+    // Autocomplete specific
+    md-autocomplete {
+      md-autocomplete-wrap {
+        box-shadow: none;
+        border-bottom: 1px solid #e0e0e0;
+        transition: border-color 0.2s ease;
+
+        &.md-focused {
+          border-bottom-color: @primary-blue;
+        }
+      }
+
+      input {
+        font-size: @font-sm;
+        color: @text-dark;
+      }
+
+      .md-not-found {
+        font-size: @font-sm;
+        color: @text-muted;
+        padding: @spacing;
+      }
+    }
+
+    // Datepicker
+    md-datepicker {
+      .md-datepicker-input-container {
+        border-bottom: 1px solid #e0e0e0;
+
+        &.md-datepicker-focused {
+          border-bottom-color: @primary-blue;
+        }
+      }
+
+      .md-datepicker-input {
+        font-size: @font-sm;
+        color: @text-dark;
+      }
+
+      .md-datepicker-button {
+        color: @primary-blue;
+      }
+    }
+  }
+
+  // Autocomplete dropdown styling
+  md-autocomplete {
+    .md-autocomplete-suggestions-container {
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+      li {
+        font-size: @font-sm;
+        padding: @spacing;
+        transition: background-color 0.15s ease;
+
+        &:hover,
+        &.selected {
+          background-color: @hover-color;
+        }
+
+        .md-autocomplete-suggestion-item {
+          line-height: @line-normal;
+        }
+      }
+    }
+  }
+
+  // Actions
+  &__actions {
+    background-color: white;
+    border-top: 1px solid #e0e0e0;
+    padding: @spacing * 1.5 @spacing * 2;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: @spacing;
+    min-height: 72px;
+  }
+
+  // Responsive adjustments
+  @media (max-width: 1280px) {
+    width: 95%;
+    max-width: none;
+  }
+
+  @media (max-width: 959px) {
+    width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+
+    &__toolbar .md-toolbar-tools {
+      min-height: 56px;
+    }
+
+    &__title {
+      font-size: @font-lg;
+    }
+
+    &__form {
+      padding: @spacing;
+    }
+
+    &__section {
+      padding: @spacing * 1.5;
+      margin-bottom: @spacing;
+    }
+
+    &__actions {
+      padding: @spacing;
+    }
+  }
+
+  @media (max-width: 599px) {
+    &__row {
+      gap: 0;
+    }
+
+    &__field {
+      &.md-input-container,
+      md-input-container {
+        margin-bottom: @spacing * 0.5;
+      }
+    }
+
+    &__section-title {
+      font-size: @font-sm;
+    }
+
+    &__actions {
+      flex-wrap: wrap;
+
+      .md-button {
+        flex: 1;
+        min-width: 120px;
+      }
+    }
+  }
+}

@@ -1,11 +1,11 @@
-﻿import dayjs from "dayjs";
+﻿import {Dayjs} from "dayjs";
 
 interface ISearchCriteria {
     client?: number;
     courier?: number;
-    date: dayjs.Dayjs;
-    from_date: dayjs.Dayjs;
-    to_date: dayjs.Dayjs;
+    date: Dayjs;
+    from_date: Dayjs;
+    to_date: Dayjs;
     followupClient: string;
     includeClosed: boolean;
     wild?: string;

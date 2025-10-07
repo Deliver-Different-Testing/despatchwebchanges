@@ -356,7 +356,7 @@ public class FlightStatsService(
                 };
             });
 
-        return flightOptions.OrderBy(flight => flight.DepartureTime).ToList();
+        return flightOptions.OrderBy(flight => flight.ArrivalTime).ToList();
     }
 
     private DateTime CalculateFlightSearchStartTime(DateTimeOffset? departureDateTime, int flightBuffer)
