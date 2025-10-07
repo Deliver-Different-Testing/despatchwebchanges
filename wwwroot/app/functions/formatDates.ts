@@ -102,3 +102,20 @@ export function formatDateFromApi(dateString: string): Dayjs {
     const originalTimezone = dateString.slice(-6);
     return dayjs(dateString).utcOffset(originalTimezone);
 }
+
+export function getIanaTimezone(timezone: string): string {
+    if (!timezone) {
+        throw new Error('Timezone is required');
+    }
+
+    // Try to find IANA equivalent using windows-iana
+    const ianaTimezones = findIana(timezone);
+
+    // If findIana returns results, use the first one
+    if (ianaTimezones && ianaTimezones.length > 0) {
+        return ianaTimezones[0];
+    }
+
+    // If no results, assume it's already in IANA format
+    return timezone;
+}

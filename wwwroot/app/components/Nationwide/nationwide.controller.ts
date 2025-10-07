@@ -47,7 +47,7 @@ import TasksService from "../../services/tasks.service";
 import JobListType from "../common/job-list/enums/jobListType";
 import RecoveryAgentManagementService
     from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.service";
-import {formatDateForApiWithTzs} from "../../functions/formatDates";
+import {formatDateForApiWithTzs, getIanaTimezone} from "../../functions/formatDates";
 import IContextMenuOption from "../../interfaces/context-menu-option.interface";
 import IDateFilterData from "../common/date-filter-menu/IDateFilterData";
 import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
@@ -245,7 +245,7 @@ class NationwideControl extends BaseController {
 
         this.greeting = greetUser(FirstName);
         this.isUsCustomer = this.appConfig.US_Customer;
-        this.timeZone = TimeZone;
+        this.timeZone =  getIanaTimezone(TimeZone);
 
         // Date filter
         this.dateFilterData = setDateFilterDefaults();
@@ -1245,8 +1245,10 @@ class NationwideControl extends BaseController {
                 departureDate = dayjs(this.lastDepartureTime);
             } else if (this.currentJob.booked) {
                 departureDate = dayjs(this.currentJob.booked);
-            } else {
+            } else if(this.currentJob.pickUpTimeZone) {
                 departureDate = dayjs.tz(this.currentJob.pickUpTimeZone.text);
+            } else {
+                departureDate = dayjs.tz(this.timeZone);
             }
 
             const airlineId = this.selected?.airline?.id;

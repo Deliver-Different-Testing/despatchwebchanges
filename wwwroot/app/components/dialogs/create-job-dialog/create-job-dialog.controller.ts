@@ -15,16 +15,16 @@ import AddressLookupService from "../../../services/address-lookup.service";
 import IStateInfo from "../../../interfaces/state-info.interface";
 import dayjs, {Dayjs} from "dayjs";
 import handleAddressFieldsFromLookup from "../../../functions/handleAddressFieldsFromLookup";
-import {formatDateForApiWithTzs} from "../../../functions/formatDates";
+import {formatDateForApiWithTzs, getIanaTimezone} from "../../../functions/formatDates";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import {TimeZone} from "../../../contants";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
 export class CreateJobDialogController extends BaseController {
     static $inject = [
-        "$log",
         "$mdDialog",
         "DispatchData",
         "addressLookupService",
@@ -56,7 +56,6 @@ export class CreateJobDialogController extends BaseController {
     jobForm?: angular.IFormController;
 
     constructor(
-        private $log: angular.ILogService,
         private $mdDialog: angular.material.IDialogService,
         private DispatchData: DispatchCoreService,
         private addressLookupService: AddressLookupService,
@@ -74,7 +73,7 @@ export class CreateJobDialogController extends BaseController {
             this.speedOptions = speedOptions;
             this.vehicleSizes = vehicleSizes;
         }).catch(error => {
-            this.$log.error("Error loading initial data:", error);
+            console.error("Error loading initial data:", error);
             this.toastrService.showErrorToast("Failed to load form data. Please refresh and try again.");
         });
 
@@ -85,7 +84,7 @@ export class CreateJobDialogController extends BaseController {
         this.isLoading = false;
         this.speedOptions = [];
         
-        const tenantTimezone = TimeZone;
+        const tenantTimezone = getIanaTimezone(TimeZone);
         console.log('Timezone:', tenantTimezone);
         this.jobDate = dayjs().tz(tenantTimezone);
         
@@ -154,7 +153,7 @@ export class CreateJobDialogController extends BaseController {
         try {
             return this.DispatchData.autocompleteSearch(searchTerm, url);
         } catch (error: any) {
-            this.$log.error(`Search failed: ${error.message}`);
+            console.error(`Search failed: ${error.message}`);
             return Promise.resolve([]);
         }
     }
@@ -190,7 +189,7 @@ export class CreateJobDialogController extends BaseController {
             const formattedPickUpAddress = await this.processSelectedAddress(this.selectedPickupAddress!, false);
             if (!formattedPickUpAddress) {
                 this.toastrService.showErrorToast("An error occurred processing the pickup address. Please try again.");
-                this.$log.error("Error: formattedPickUpAddress is undefined");
+                console.error("Error: formattedPickUpAddress is undefined");
                 return;
             }
             job.pickUpAddress = formattedPickUpAddress;
@@ -198,7 +197,7 @@ export class CreateJobDialogController extends BaseController {
             const formattedDeliveryAddress = await this.processSelectedAddress(this.selectedDeliveryAddress!, true);
             if (!formattedDeliveryAddress) {
                 this.toastrService.showErrorToast("An error occurred processing the delivery address. Please try again.");
-                this.$log.error("Error: formattedDeliveryAddress is undefined");
+                console.error("Error: formattedDeliveryAddress is undefined");
                 return;
             }
             job.deliveryAddress = formattedDeliveryAddress;
@@ -213,7 +212,7 @@ export class CreateJobDialogController extends BaseController {
             this.toastrService.showSuccessToast("Job created successfully");
             this.$mdDialog.hide(newJobId);
         } catch (error: any) {
-            this.$log.error("Job creation failed:", error);
+            console.error("Job creation failed:", error);
             this.toastrService.showErrorToast("Failed to create job. Please try again.");
         } finally {
             this.isLoading = false;
@@ -222,16 +221,16 @@ export class CreateJobDialogController extends BaseController {
 
     private async processSelectedAddress(item: IHereMapsLocationResult, isToAddress: boolean): Promise<IAddressViewModel | undefined> {
         try {
-            this.$log.debug("Selected address item:", item);
+            console.debug("Selected address item:", item);
 
             if (!item || !item.id) {
-                this.$log.warn("No valid address item selected");
+                console.warn("No valid address item selected");
                 return;
             }
 
             const detailedLocation = await this.addressLookupService.getLocationDetailsById(item.id);
             if (!detailedLocation) {
-                this.$log.warn("No valid address item selected");
+                console.warn("No valid address item selected");
                 this.toastrService.showErrorToast("An error occurred while searching for addresses. Please try again.");
                 return;
             }
@@ -239,8 +238,8 @@ export class CreateJobDialogController extends BaseController {
             let addressDetails = isToAddress ? this.job.deliveryAddress : this.job.pickUpAddress;
             addressDetails = handleAddressFieldsFromLookup(detailedLocation, addressDetails, this.isUsCustomer);
 
-            this.$log.debug(`Suburb/City = ${detailedLocation.address.district}`);
-            this.$log.debug(`PostCode/ZIP = ${detailedLocation.address.postalCode}`);
+            console.debug(`Suburb/City = ${detailedLocation.address.district}`);
+            console.debug(`PostCode/ZIP = ${detailedLocation.address.postalCode}`);
 
             if (this.isUsCustomer && detailedLocation.address.stateCode) {
                 const stateObj = getStateByAbbreviation(detailedLocation.address.stateCode);
@@ -252,7 +251,7 @@ export class CreateJobDialogController extends BaseController {
 
             return addressDetails;
         } catch (error: any) {
-            this.$log.error("Error processing address:", error);
+            console.error("Error processing address:", error);
             return undefined;
         }
     }

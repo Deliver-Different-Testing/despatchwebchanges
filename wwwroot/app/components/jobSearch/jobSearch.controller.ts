@@ -8,7 +8,7 @@ import {IJobSearchResult, IDispatchJob, ISuggestion} from "../../interfaces/job.
 import {Coordinates} from "../overview/overview.interfaces";
 import BaseController from "../base-controller";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
-import {ContactID} from "../../contants";
+import {ContactID, TimeZone} from "../../contants";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {JobProperty} from "../../enums/job-property.enum";
 import NavigationService from "../../services/navigation.service";
@@ -30,6 +30,7 @@ import InterCourierChargeDialogService
 import JobSearchDateRange from "./enums/JobSearchDateRange";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
+import {getIanaTimezone} from "../../functions/formatDates";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -948,7 +949,9 @@ class JobSearchController extends BaseController {
 
     onSearchRangeChange(dateRangeOption: JobSearchDateRange) {
         try {
-            const now = dayjs().tz(this.timeZone);
+            const tenantTimezone = getIanaTimezone(this.timeZone);
+            
+            const now = dayjs().tz(tenantTimezone);
             const firstDayOfMonth = now.startOf('month');
             const lastDayOfMonth = now.endOf('month');
             const oneWeekAgo = now.subtract(7, 'day');
