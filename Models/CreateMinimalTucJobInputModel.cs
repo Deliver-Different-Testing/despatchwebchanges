@@ -24,9 +24,6 @@ public class CreateMinimalTucJobInputModel
 
     public int? AgentCourierId { get; set; }
     
-    [Required]
-    public int StaffId { get; set; }
-
     [Required] public int SpeedId { get; set; }
 
     [Required] public decimal Amount { get; set; }
@@ -41,7 +38,6 @@ public class CreateMinimalTucJobInputModel
 
     [Required] public int LoggedInContactId { get; set; }
 
-    // Additional optional parameters from the stored procedure
     public string Speed { get; set; }
 
     public string ToAddressType { get; set; }
@@ -61,12 +57,6 @@ public class CreateMinimalTucJobInputModel
     public string ToPhoneNumber { get; set; }
 
     public string Type { get; set; }
-
-    public DateTime? PickUpFrom { get; set; }
-
-    public int? Quantity { get; set; }
-
-    public bool? LeaveNotHome { get; set; }
 
     public string JobNotificationType { get; set; }
 
@@ -95,9 +85,7 @@ public class CreateMinimalTucJobInputModel
     public decimal? DeliveryLongitude { get; set; }
 
     public DateTime? Pickup { get; set; }
-
-    public DateTime? Dropoff { get; set; }
-
+    
     public bool? PrivateRes { get; set; }
 
     public DateTime? TruckStartTime { get; set; }
@@ -109,12 +97,9 @@ public class CreateMinimalTucJobInputModel
     public decimal? DryIceWeight { get; set; }
 
     public decimal? Cubic { get; set; }
-
-
+    
     public int? DgClass { get; set; }
-
-    public string DgDocs { get; set; }
-
+    
     public string AdditionalServiceIds { get; set; }
 
     public DateTime? DeliverByDateTime { get; set; }
@@ -126,12 +111,8 @@ public class CreateMinimalTucJobInputModel
     public string RecurringDays { get; set; }
 
     public string RecurringFrequency { get; set; }
-
-    public bool? RecurringHoliday { get; set; }
-
+    
     public int? RecurringInitialDays { get; set; }
-
-    public string DimensionsType { get; set; }
 
     public string CubicList { get; set; }
 

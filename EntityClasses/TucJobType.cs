@@ -79,6 +79,8 @@ public partial class TucJobType
 
     public int GroupingId { get; set; }
 
+    public int? LabelId { get; set; }
+
     public virtual ICollection<AirFreightRate> AirFreightRates { get; set; } = new List<AirFreightRate>();
 
     public virtual TucJobTypeGrouping Grouping { get; set; }
