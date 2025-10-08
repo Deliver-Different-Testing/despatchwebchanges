@@ -55,14 +55,14 @@ public class BaseJobRepository(
                     // Filters
                     query = query.Where(j => j.UcjbStatus != (int)JobStatus.AwaitingPod);
                     if (queryParams.DateCutoff.HasValue)
-                        query = query.Where(j => j.UcjbDate <= queryParams.DateCutoff.Value.Date);
+                        query = query.Where(j => j.UcjbDate.Date <= queryParams.DateCutoff.Value.Date);
 
                     // Add support for start date and end date filters
                     if (queryParams.StartDate.HasValue)
-                        query = query.Where(j => j.UcjbDate >= queryParams.StartDate.Value.Date);
+                        query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
 
                     if (queryParams.EndDate.HasValue)
-                        query = query.Where(j => j.UcjbDate <= queryParams.EndDate.Value.Date);
+                        query = query.Where(j => j.UcjbDate.Date <= queryParams.EndDate.Value.Date);
                     break;
                 case AppPage.Domestic:
                     query = ApplyNationwideSpecificFilters(
@@ -172,8 +172,8 @@ public class BaseJobRepository(
         query = query.Where(j => j.ParentId != j.UcjbId && !j.InverseParent.Any());
 
         // Filter dates
-        if (queryParams.StartDate != null) query = query.Where(j => j.UcjbDate >= queryParams.StartDate);
-        if (queryParams.DateCutoff != null) query = query.Where(j => j.UcjbDate <= queryParams.DateCutoff);
+        if (queryParams.StartDate != null) query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
+        if (queryParams.DateCutoff != null) query = query.Where(j => j.UcjbDate.Date<= queryParams.DateCutoff.Value.Date);
 
         // Apply window pane viewFilters
         query = windowPane switch

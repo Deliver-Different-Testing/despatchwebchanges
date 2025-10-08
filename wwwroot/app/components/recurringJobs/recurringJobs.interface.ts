@@ -27,6 +27,9 @@ export interface IPrebookListModelDto {
 
 export interface IRecurringJobQuery {
     order: string;
+    orderDirection: string;
     limit: number;
     page: number;
+    searchText?: string;
+    active: boolean;
 }

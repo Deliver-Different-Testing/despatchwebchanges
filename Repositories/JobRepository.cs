@@ -2012,8 +2012,8 @@ public partial class JobRepository(
         string value,
         decimal? rate)
     {
-       var staffInfo = await _infoService.GetStaffInfoAsync();
-        
+        var staffInfo = await _infoService.GetStaffInfoAsync();
+
         await Context.Procedures.DESWEB_stpUpdateBulkJobAsync(
             bulkJobId,
             field,
@@ -2030,7 +2030,7 @@ public partial class JobRepository(
         {
             var now = _infoService.GetCurrentTenantTime();
             var staffInfo = await _infoService.GetStaffInfoAsync();
-            
+
             // Generate request number
             var jobNumber = await GenerateJobNumberAsync(staffInfo.Id, request.SpeedId);
             var speed = await GetSpeedSuggestionBySpeedIdAsync(request.SpeedId);
@@ -2353,19 +2353,13 @@ public partial class JobRepository(
                 ? string.Empty
                 : string.Join(",", clientItemIds);
 
-        var job = new TucJob
-        {
-            UcjbId = jobId,
-            ClientItemIds = clientItemsString,
-            UcjbAmount = totalCost
-        };
-
-        Context.TucJobs.Attach(job);
-        Context.Entry(job).Property(x => x.ClientItemIds).IsModified = true;
-        Context.Entry(job).Property(x => x.UcjbAmount).IsModified = true;
-        await Context.SaveChangesAsync();
+        await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(j => j.ClientItemIds, clientItemsString)
+                .SetProperty(j => j.UcjbAmount, totalCost));
     }
-
+    
     public async Task<IList<OpenJobResponse>> GetOpenJobsAsync(OpenJobsRequest parameters)
     {
         try
@@ -3582,7 +3576,7 @@ public partial class JobRepository(
         }
     }
 
-    public async Task<List<ScanDetailResult>> ScanList(DateTime? runDate, string scan)
+    public async Task<List<ScanDetailResult>> ScanList(DateTimeOffset? runDate, string scan)
     {
         runDate ??= _infoService.GetCurrentTenantTime();
         var cutoffDate = runDate.Value.AddDays(-3);
@@ -3592,16 +3586,13 @@ public partial class JobRepository(
             select new
             {
                 bs.BulkScanId,
+                Courier = Context.TucCouriers.FirstOrDefault(c => c.UccrId == bs.CourierId),
                 bs.ScanDateTime,
                 bs.ScanType,
                 bs.CourierId,
                 bs.ToCourierId,
                 bs.RunName,
-                bs.Courier,
-                TransferTo = Context.TucCouriers
-                    .FirstOrDefault(c => bs.CourierId != 999
-                                         && c.Code == bs.ToCourierId.ToString()
-                                         && c.Active),
+                TransferTo = bs.ToCourier,
                 RunViewerTransferTo = Context.TucCouriers
                     .FirstOrDefault(c => bs.CourierId == 999
                                          && c.UccrId == bs.ToCourierId
@@ -3610,14 +3601,13 @@ public partial class JobRepository(
 
         var results = await query
             .AsNoTracking()
-            .OrderBy(x => x.ScanDateTime)
-            .Select(x => new ScanDetailResult
+            .OrderBy(s => s.ScanDateTime)
+            .Select(s => new ScanDetailResult
             {
-                BulkScanId = x.BulkScanId,
-                ScanDateTime = x.ScanDateTime,
-                ScanDetail = GetScanDetail(x.ScanType),
-                Courier = GetCourierDescription(x.ScanType,
-                    x.Courier, x.TransferTo, x.RunViewerTransferTo, x.RunName)
+                BulkScanId = s.BulkScanId,
+                ScanDateTime = s.ScanDateTime,
+                ScanDetail = GetScanDetail(s.ScanType),
+                Courier = GetCourierDescription(s.ScanType, s.Courier, s.TransferTo, s.RunViewerTransferTo, s.RunName)
             })
             .ToListAsync();
 

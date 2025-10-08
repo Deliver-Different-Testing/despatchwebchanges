@@ -114,6 +114,7 @@
 
             <!-- Status Button -->
             <md-button
+                    ng-if="::!ctrl.job.preBook"
                     class="status-button {{ctrl.job.statusName | lowercase | replace:' ':'-'}}"
                     ng-click="ctrl.statusClick($event, ctrl.job)">
                 <md-icon class="status-icon" md-font-set="material-symbols-outlined">
@@ -1958,7 +1959,7 @@
 
 <!-- Pickup Photos Section -->
 <div class="pod-photo-section pickup-photos-section"
-     ng-if="ctrl.job && ctrl.formattedPickupPhotos.length > 0">
+     ng-if="ctrl.job && ctrl.formattedPickupPhotos.length > 0 && !ctrl.job.preBook">
     <div class="section-header">
         <div class="md-dense"
              style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px;">
@@ -2018,7 +2019,7 @@
 
 <!-- No pickup photos message -->
 <div class="pod-photo-section pickup-photos-section"
-     ng-if="ctrl.job && ctrl.formattedPickupPhotos.length === 0">
+     ng-if="ctrl.job && ctrl.formattedPickupPhotos.length === 0 && !ctrl.job.preBook">
     <div class="section-header">
         <div class="md-dense"
              style="display: flex; align-items: center; padding: 8px 16px">

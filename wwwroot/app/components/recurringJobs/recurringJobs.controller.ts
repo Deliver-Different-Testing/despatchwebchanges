@@ -14,6 +14,7 @@ import {AppPages} from "../../enums/app-pages.enum";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import {getIanaTimezone} from "../../functions/formatDates";
+import {IPaginatedResponse} from "../../interfaces/paginated-response.interface";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -21,18 +22,15 @@ dayjs.extend(timezone);
 class RecurringJobsController extends BaseController {
     static $inject = [
         '$mdDialog',
-        '$state',
-        '$filter',
         '$mdSidenav',
         'uPBData',
         'toastrService',
         'jobContextMenuService',
-        '$scope',
         '$timeout',
         '$interval',
         'APP_CONFIG',
     ];
-    
+
     private readonly RecurringJobsLayoutKey: string = `layouts-${AppPages.Recurring}-${ContactID}`;
     private readonly RecurringJobsLastActiveLayoutKey: string = `lastActiveLayout-${AppPages.Recurring}-${ContactID}`
 
@@ -49,76 +47,54 @@ class RecurringJobsController extends BaseController {
             title: "Detail",
             icon: "assignment",
             templateUrl: "app/components/recurringJobs/partials/jobDetail.html",
-            showSearch: 0,
-            showDetailButtons: 1
+            showSearch: 0
         },
     };
 
     readonly isUsCustomer: boolean;
 
     currentJobId?: number;
-    jobs: IJob[] = [];
     isAdmin: boolean = false;
     jobQuery: IRecurringJobQuery = {
         order: "booked",
+        orderDirection: "asc",
         limit: 50,
-        page: 1
+        page: 1,
+        active: true,
     };
-    searchBox: string = "";
-    totalCount: number = 0;
+    totalJobCount: number = 0;
     jobList: IPrebookListModel[] = [];
-    filteredData: IPrebookListModel[] = [];
-    pagedData: IPrebookListModel[] = [];
-    searchText: string = "";
-    promise?: Promise<IPrebookListModel[]>
+    prebookJobsPromise?: Promise<IPaginatedResponse<IPrebookListModel>>
     showInput: Record<string, boolean> = {};
-    jobRecordSearchText: string = "";
     cancelledSelected?: boolean;
     layouts: ILayout[] = [];
     defaultLayout?: ILayout;
     layout?: { columns: IColumn[] };
-    sort: Record<string, string> = {};
     currentLayoutName?: string;
     timeZone: string;
-    activeFilter: boolean = true;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private $state: angular.ui.IStateService,
-        private $filter: angular.IFilterService,
         private $mdSidenav: angular.material.ISidenavService,
         private recurringJobsService: RecurringJobsService,
         private toastrService: ToastrService,
         private jobContextMenuService: JobContextMenuService,
-        $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
         appConfig: IAppConfig,
     ) {
         super();
-        this.initServices($timeout, $interval, $scope);
+        this.initServices($timeout, $interval);
 
         this.isUsCustomer = appConfig.US_Customer;
         this.isAdmin = ClientInternal;
         this.timeZone = getIanaTimezone(TimeZone);
-        
+
         this.initializeLayout();
     }
 
     $onInit(): void {
-        // Setup watchers
-        this.watchScope("searchText", () => {
-            this.jobQuery.page = 1; // Reset to the first page
-            this.updateTable();
-        });
-
-        this.watchScope("jobQuery.order", () => {
-            this.jobQuery.page = 1; // Reset to the first page
-            this.updateTable();
-        });
-
-        // Initial data load
-        this.refreshData().then(() => console.info("Data Refreshed"));
+        this.refreshData().then(r => console.log("Recurring Jobs Loaded!"));
     }
 
     saveLayout() {
@@ -243,50 +219,15 @@ class RecurringJobsController extends BaseController {
         }
     }
 
-    updateTable(): void {
-        // Apply search filter
-        let orderedData = this.$filter("filter")(this.jobList, this.searchText) as IPrebookListModel[];
-
-        // Apply sorting
-        orderedData = this.$filter("orderBy")(orderedData, this.jobQuery.order) as IPrebookListModel[];
-
-        this.filteredData = orderedData;
-
-        // Apply pagination
-        const start = (this.jobQuery.page - 1) * this.jobQuery.limit;
-        this.pagedData = orderedData.slice(start, start + this.jobQuery.limit);
-    }
-
-    onPaginate(page: number, limit: number): void {
-        this.jobQuery.page = page;
-        this.jobQuery.limit = limit;
-        this.updateTable();
-    }
 
     openSearch(boxName: string, index: number): void {
         const boxID = boxName + "-" + index;
         this.showInput[boxID] = !this.showInput[boxID];
 
         if (!this.showInput[boxID]) {
-            this.jobRecordSearchText = "";
+            this.jobQuery.searchText = "";
         }
     }
-
-    jobRecordSearch(searchText: string): ISuggestion[] {
-        if (!searchText) {
-            return [];
-        }
-
-        searchText = searchText.toLowerCase();
-
-        return this.jobList
-            .filter(job => job.jobNo.toLowerCase().includes(searchText))
-            .map(job => ({
-                text: job.jobNo,
-                id: job.id
-            }));
-    }
-
 
     loadLayout(index: number): void {
         const layout: ILayout = this.layouts[index] || this.layouts[0];
@@ -321,44 +262,36 @@ class RecurringJobsController extends BaseController {
         });
     }
 
-    goToRunViewer(): void {
-        console.info("goToRunViewer.");
-        this.$state.go("home");
-    }
-
-    orderList(list: string, prop: string): void {
-        if (this.sort[list] !== prop) {
-            this.sort[list] = prop;
-            (this as any)[list] = this.$filter("orderBy")((this as any)[list], prop);
-        } else {
-            this.sort[list] = `d-${prop}`;
-            (this as any)[list] = this.$filter("orderBy")((this as any)[list], `-${prop}`);
-        }
-    }
-
-    async refreshData(active = this.activeFilter): Promise<IPrebookListModel[]> {
+    async refreshData(active?: boolean): Promise<void> {
+        console.log("Refreshing data!")
+        
         try {
+            if (active) this.jobQuery.active = active;
+
+            // Parse sort order
+            let orderBy = this.jobQuery.order || "jobName";
+            let orderDirection = "asc";
+
+            if (orderBy.startsWith("-")) {
+                orderBy = orderBy.substring(1);
+                orderDirection = "desc";
+            }
+            
+            this.jobQuery.order = orderBy;
+            this.jobQuery.orderDirection = orderDirection;
+            
             this.currentJobId = undefined;
-            this.activeFilter = active;
-            this.promise = this.recurringJobsService.getPreBookJobs(active);
+            this.prebookJobsPromise = this.recurringJobsService.getPreBookJobs(this.jobQuery);
 
-            this.jobList = await this.promise;
-            this.updateTable();
+            const response = await this.prebookJobsPromise;
+            this.jobList = response.items;
+            this.totalJobCount = response.total;
 
-            return this.jobList;
+            console.log("Updated prebook jobs!")
         } catch (error) {
             console.error("Error loading prebook jobs:", error);
             this.jobList = [];
-            this.updateTable();
-
-            return [];
         }
-    }
-
-    onOrderChange(order: string): Promise<IPrebookListModel[]> {
-        this.jobQuery.order = order;
-        this.updateTable();
-        return this.refreshData();
     }
 
     showItems(job: IJob): boolean {
@@ -377,17 +310,6 @@ class RecurringJobsController extends BaseController {
         console.info('Selected job run: ', jobId);
         if (!jobId) return;
         this.currentJobId = jobId;
-    }
-
-    pageChanged(page: number): void {
-        this.jobQuery.page = page;
-        this.updateTable();
-    }
-
-    changePageSize(size: number): void {
-        this.jobQuery.page = 1;
-        this.jobQuery.limit = size;
-        this.updateTable();
     }
 
     async voidAllSelectPrebookJobs(jobIds: number[]): Promise<void> {
@@ -579,6 +501,20 @@ class RecurringJobsController extends BaseController {
         };
 
         return this.jobContextMenuService.getRecurringJobMenuOptions(job, callbacks);
+    }
+
+    async onReorder() {
+        this.jobQuery.page = 1;
+        await this.refreshData();
+    }
+    
+    async searchJobs(searchText: string): Promise<void> {
+        if(searchText.length < 2) return;
+        
+        this.jobQuery.searchText = searchText;
+        this.jobQuery.page = 1;
+        
+        await this.refreshData();
     }
 }
 

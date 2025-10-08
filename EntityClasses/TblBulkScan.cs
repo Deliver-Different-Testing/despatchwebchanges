@@ -21,7 +21,5 @@ public partial class TblBulkScan
 
     public string RunName { get; set; }
 
-    public virtual TucCourier Courier { get; set; }
-
     public virtual TucCourier ToCourier { get; set; }
 }

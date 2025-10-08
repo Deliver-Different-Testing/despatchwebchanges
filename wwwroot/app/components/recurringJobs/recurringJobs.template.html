@@ -7,7 +7,7 @@
                 <h2 class="md-title">Recurring Jobs Dashboard</h2>
 
                 <span flex></span>
-                
+
                 <md-menu>
                     <md-button aria-label="Open layout options menu" class="md-icon-button"
                                ng-click="$mdMenu.open($event)">
@@ -67,10 +67,13 @@
                                     <!--Icon-->
                                     <span class="material-symbols-outlined">{{::ctrl.boxes[box.name].icon}}</span>
 
-                                    <span class="md-card-title" flex>
-                                    {{::ctrl.boxes[box.name].title}}
-                                </span>
+                                    <span class="md-card-title">{{::ctrl.boxes[box.name].title}}</span>
+                                    <span class="md-card-subtitle" ng-if="::box.name == 'jobList'">
+                                        ({{ ctrl.jobQuery.active ? 'Active Jobs' : 'Inactive Jobs' }})
+                                    </span>
 
+                                    <div flex></div>
+                                    
                                     <!--Send all-->
                                     <md-button class="md-icon-button"
                                                ng-click="ctrl.sendAllSelectPrebookJobs(ctrl.selectedPrebooks)"
@@ -92,6 +95,7 @@
                                                ng-click="ctrl.refreshData()"
                                                ng-if="::ctrl.boxes[box.name].showRefresh">
                                         <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+                                        <md-tooltip md-direction="bottom">Refresh</md-tooltip>
                                     </md-button>
 
                                     <!--Inactive Filter-->
@@ -99,6 +103,7 @@
                                         <md-button class="md-icon-button"
                                                    ng-click="$mdMenu.open($event)">
                                             <md-icon md-font-set="material-symbols-outlined">filter_list</md-icon>
+                                            <md-tooltip md-direction="bottom">Active/Inactive Filter</md-tooltip>
                                         </md-button>
                                         <md-menu-content width="2">
                                             <md-menu-item>
@@ -116,38 +121,6 @@
                                             </md-menu-item>
                                         </md-menu-content>
                                     </md-menu>
-
-                                    <div ng-if="::box.name == 'eventList'">
-                                        <input ng-model="ctrl.searchBox" placeholder="Search Events..." type="text"/>
-                                        <div class="results" ng-if="ctrl.searchBox">
-                                            <ul>
-                                                <li class="result"
-                                                    ng-mousedown="ctrl.selectEvent(event)"
-                                                    ng-repeat="event in filteredEvents = (ctrl.allEvents | filter: ctrl.searchBox) | limitTo:10">
-                                                    {{event.jobNumber}}<br/>
-                                                    <small class="address">{{event.courierName}}
-                                                        {{event.courierCode}}</small>
-                                                </li>
-                                            </ul>
-                                            <small ng-hide="filteredEvents.length">No results</small>
-                                        </div>
-                                    </div>
-
-                                    <div ng-if="::box.name == 'eventList'">
-                                        <md-checkbox aria-label="Include Closed"
-                                                     ng-change="ctrl.refreshData(true)"
-                                                     ng-model="ctrl.includeClosed">
-                                            Include Closed?
-                                        </md-checkbox>
-                                        <div layout="row" ng-if="::ctrl.isAdmin">
-                                            <md-radio-group ng-change="ctrl.refreshData(true)"
-                                                            ng-model="ctrl.followupClient.name">
-                                                <md-radio-button value="All">All</md-radio-button>
-                                                <md-radio-button value="UCL">UCL</md-radio-button>
-                                                <md-radio-button value="Client">Client</md-radio-button>
-                                            </md-radio-group>
-                                        </div>
-                                    </div>
 
                                     <div ng-if="::box.name == 'jobDetail'">
                                         <md-button aria-label="reply" class="md-icon-button"
@@ -181,10 +154,12 @@
                                             <md-icon md-font-set="material-symbols-outlined"
                                                      ng-if="!ctrl.showInput[box.name + '-' + $index]">
                                                 search
+                                                <md-tooltip md-direction="bottom">Search</md-tooltip>
                                             </md-icon>
                                             <md-icon md-font-set="material-symbols-outlined"
                                                      ng-if="ctrl.showInput[box.name + '-' + $index]">
                                                 close
+                                                <md-tooltip md-direction="bottom">Close Search</md-tooltip>
                                             </md-icon>
                                         </md-button>
 
@@ -192,8 +167,8 @@
                                                             ng-if="ctrl.showInput[box.name + '-' + $index]">
                                             <md-icon md-font-set="material-symbols-outlined">search</md-icon>
                                             <input class="search-input"
-                                                   ng-change="ctrl.updateTable()"
-                                                   ng-model="ctrl.searchText"
+                                                   ng-change="ctrl.searchJobs(ctrl.jobQuery.searchText)"
+                                                   ng-model="ctrl.jobQuery.searchText"
                                                    placeholder="Search jobs..."
                                                    type="text">
                                         </md-input-container>

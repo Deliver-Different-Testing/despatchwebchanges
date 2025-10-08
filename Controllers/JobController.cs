@@ -477,10 +477,20 @@ public class JobController(
         return Json(result);
     }
 
-    public async Task<IActionResult> PreBookJobs(bool active)
+    [HttpPost]
+    public async Task<IActionResult> PreBookJobs([FromBody] RecurringJobQueryRequest request)
     {
-        var result = await recurringJobRepository.PreBookJobListAsync(active);
-        return Json(result);
+        try
+        { 
+            var result = await recurringJobRepository.PreBookJobListAsync(request);
+            return Json(result);
+        }
+        catch (Exception e)
+        {
+           Log.Error(e, "{Message}", ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(PreBookJobs)));
+           return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+      
     }
 
     public async Task<IActionResult> GetRecurringJobDetail(int jobBookingId)
@@ -492,7 +502,7 @@ public class JobController(
         }
         catch (Exception e)
         {
-            Log.Error(e, "An error occured getting JobBooking: {JobBookingId}", jobBookingId);
+            Log.Error(e, "{Message}", ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(GetRecurringJobDetail)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -1841,7 +1851,7 @@ public class JobController(
     {
         try
         {
-            var scanList = await jobRepository.ScanList(runDate.DateTime, scan);
+            var scanList = await jobRepository.ScanList(runDate, scan);
             return Json(scanList);
         }
         catch (Exception e)
