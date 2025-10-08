@@ -12,7 +12,7 @@ import "./overview.styles.less";
 import BaseController from "../base-controller";
 import {ISuggestion} from "../../interfaces/job.interface";
 import greetUser from "../../functions/greetUser";
-import dayjs, {Dayjs} from "dayjs";
+import {Dayjs} from "dayjs";
 import {DateRangeDialogController} from "../dialogs/date-range-dialog/date-range-dialog.controller";
 import MapDialogService from "../dialogs/map-dialog/map-dialog.service";
 import {IPaginatedResponse} from "../../interfaces/paginated-response.interface";

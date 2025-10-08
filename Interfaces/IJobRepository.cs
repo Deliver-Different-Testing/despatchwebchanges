@@ -202,7 +202,7 @@ public interface IJobRepository
     Task<List<DeliveryJourneyViewModel>> GetDeliveryJourneyForJobAsync(int jobId);
     Task BulkUpdateReadStatusAsync(BulkReadUpdateRequestModel data);
    Task AddPackagesToJobAsync(int effectiveJobId, List<TucJobItem> items);
-   Task<List<ScanDetailResult>> ScanList(DateTime? runDate, string scan);
+   Task<List<ScanDetailResult>> ScanList(DateTimeOffset? runDate, string scan);
    Task<bool> ValidatePodSwapAsync(string jobNumber);
    Task<string> GetStaffNameAsync(int staffId);
 }

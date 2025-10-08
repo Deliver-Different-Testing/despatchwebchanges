@@ -1,5 +1,6 @@
-import {IPrebookListModel, IPrebookListModelDto} from "./recurringJobs.interface";
+import {IPrebookListModel, IPrebookListModelDto, IRecurringJobQuery} from "./recurringJobs.interface";
 import {transformPrebookListDTO} from "../../functions/dtoMappings";
+import {IPaginatedResponse} from "../../interfaces/paginated-response.interface";
 
 class RecurringJobsService {
     static $inject = [
@@ -9,15 +10,16 @@ class RecurringJobsService {
     constructor(
         private $http: angular.IHttpService
     ) {
+        console.log('RecurringJobsService: Service instantiated');
     }
 
-    async getPreBookJobs(active: boolean): Promise<IPrebookListModel[]> {
-        const response = await this.$http.get<IPrebookListModelDto[]>(`job/PreBookJobs`, {
-            params: {
-                active
-            }
-        });
-        return response.data.map(transformPrebookListDTO);
+    async getPreBookJobs(jobQuery: IRecurringJobQuery): Promise<IPaginatedResponse<IPrebookListModel>> {
+        const response = await this.$http.post<IPaginatedResponse<IPrebookListModelDto>>(`job/PreBookJobs`, jobQuery);
+
+        return {
+            ...response.data,
+            items: response.data.items.map(transformPrebookListDTO),
+        };
     }
 
     async sendPrebookJob(jobId: number): Promise<void> {

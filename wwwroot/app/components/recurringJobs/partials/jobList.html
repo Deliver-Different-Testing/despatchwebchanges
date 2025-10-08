@@ -1,13 +1,13 @@
 <md-table-container class="table-scroll-with-pagination">
-    <table md-progress="ctrl.promise" md-row-select md-table ng-model="ctrl.selectedPrebooks">
-        <thead fix-head md-head md-order="ctrl.jobQuery.order">
+    <table md-progress="ctrl.prebookJobsPromise" md-row-select md-table>
+        <thead fix-head md-head md-on-reorder="ctrl.onReorder" md-order="ctrl.jobQuery.order">
         <tr md-row>
             <th md-column md-order-by="booked">Booked</th>
             <th md-column md-order-by="speed">Speed</th>
             <th md-column md-order-by="client">Client</th>
             <th md-column md-order-by="from">From</th>
             <th md-column md-order-by="to">To</th>
-            <th md-column md-order-by="code">Code</th>
+            <th md-column md-order-by="courier">Courier</th>
             <th md-column>Actions</th>
         </tr>
         </thead>
@@ -16,31 +16,40 @@
         <tr
                 md-row
                 md-truncate
-                ng-click="ctrl.selectJobDetail(job.id);"
+                ng-click="ctrl.selectJobDetail(job.id)"
                 context-menu="ctrl.getContextMenuOptions(job)"
                 context-menu-on="contextmenu"
                 context-menu-class="job-context-menu"
-                ng-repeat="job in ctrl.pagedData | filter: ctrl.searchText">
+                ng-repeat="job in ctrl.jobList">
             <td md-cell>{{job.booked | momentFormat:"HH:mm"}} ({{::ctrl.timeZone | timezoneShort}})</td>
             <td md-cell>{{job.speed}}</td>
             <td md-cell>{{job.client}}</td>
             <td md-cell md-truncate>
-                <span> {{ctrl.isUsCustomer ? job.pickupAddress.fullAddress : job.fromAddress}}</span>
-                <md-icon md-font-set="material-symbols-outlined" ng-if="::!job.pickUpLongitude">warning</md-icon>
+                {{job.pickupAddress.fullAddress}}
+                <md-icon md-font-set="material-symbols-outlined" ng-if="::!job.pickUpLongitude || !job.pickUpLatitude">
+                    warning
+                    <md-tooltip md-direction="bottom">No Latitude or Longitude Provided</md-tooltip>
+                </md-icon>
             </td>
-            <td md-cell>
-                <span md-truncate>{{ctrl.isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}</span>
-                <md-icon md-font-set="material-symbols-outlined" ng-if="::!job.deliveryLongitude">warning</md-icon>
+            <td md-cell md-truncate>
+                {{job.deliveryAddress.fullAddress}}
+                <md-icon md-font-set="material-symbols-outlined"
+                         ng-if="::!job.deliveryLongitude || !job.deliveryLatitude">
+                    warning
+                    <md-tooltip md-direction="bottom">No Latitude or Longitude Provided</md-tooltip>
+                </md-icon>
             </td>
             <td md-cell>{{job.courier}}</td>
             <td md-cell>
                 <md-button class="md-icon-button" ng-click="ctrl.sendPrebookJob(job.id); $event.stopPropagation()"
                            title="Send">
                     <md-icon md-font-set="material-symbols-outlined">send</md-icon>
+                    <md-tooltip md-direction="bottom">Send to Live</md-tooltip>
                 </md-button>
                 <md-button class="md-icon-button" ng-click="ctrl.voidPrebookJob(job.id); $event.stopPropagation()"
                            title="Void">
                     <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
+                    <md-tooltip md-direction="bottom">Delete Recurring Job</md-tooltip>
                 </md-button>
             </td>
         </tr>
@@ -53,8 +62,8 @@
         md-limit="ctrl.jobQuery.limit"
         md-limit-options="[25, 50, 100, 250]"
         md-page="ctrl.jobQuery.page"
-        md-total="{{ctrl.filteredData.length}}"
-        md-on-paginate="ctrl.onPaginate"
+        md-total="{{ctrl.totalJobCount}}"
+        md-on-paginate="ctrl.refreshData"
         md-page-select>
 </md-table-pagination>
 

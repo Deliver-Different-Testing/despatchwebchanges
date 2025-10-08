@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
@@ -8,6 +7,8 @@ using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.RequestModels;
+using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Repositories;
@@ -39,113 +40,85 @@ public class RecurringJobRepository(
         return jobRecurringViewModel;
     }
 
-    public async Task<List<PrebookListViewModel>> PreBookJobListAsync(bool active)
+    public async Task<PaginatedResponse<PrebookListViewModel>> PreBookJobListAsync(RecurringJobQueryRequest request)
     {
-        var prebooks = await Context.TucJobBookings
-            .Where(j => j.UcbkOneOff == false && (j.ParentId == null || j.ParentId == j.UcbkId) &&
-                        j.UcbkActive == active)
-            .OrderBy(j => j.UcbkNextDue)
-            .ThenBy(j => j.UcbkTime)
-            .ThenBy(j => j.UcbkJobNumber)
-            .Select(j => new PrebookListViewModel
-            {
-                Id = j.UcbkId,
-                Booked = new DateTime(
-                    j.UcbkNextDue.Value.Year,
-                    j.UcbkNextDue.Value.Month,
-                    j.UcbkNextDue.Value.Day,
-                    j.UcbkTime.Value.Hour,
-                    j.UcbkTime.Value.Minute,
-                    j.UcbkTime.Value.Second
-                ),
-                Client = j.UcbkClientCode,
-                JobNo = j.UcbkJobNumber,
-                ClientId = j.UcbkClientId,
-                Courier = j.Courier.Code,
-                Speed = j.UcbkSpeedNavigation != null ? j.UcbkSpeedNavigation.UcjtName : null,
-                PickupAddress = new AddressViewModel
-                {
-                    AddressLine1 = j.PickupAddressLine1,
-                    AddressLine2 = j.PickupAddressLine2,
-                    AddressLine3 = j.PickupAddressLine3,
-                    AddressLine4 = j.PickupAddressLine4,
-                    AddressLine5 = j.PickupAddressLine5,
-                    AddressLine6 = j.PickupAddressLine6,
-                    AddressLine7 = j.PickupAddressLine7,
-                    AddressLine8 = j.PickupAddressLine8,
-                    Latitude = j.PickUpLatitude,
-                    Longitude = j.PickUpLongitude
-                },
-                DeliveryAddress = new AddressViewModel
-                {
-                    AddressLine1 = j.DeliveryAddressLine1,
-                    AddressLine2 = j.DeliveryAddressLine2,
-                    AddressLine3 = j.DeliveryAddressLine3,
-                    AddressLine4 = j.DeliveryAddressLine4,
-                    AddressLine5 = j.DeliveryAddressLine5,
-                    AddressLine6 = j.DeliveryAddressLine6,
-                    AddressLine7 = j.DeliveryAddressLine7,
-                    AddressLine8 = j.DeliveryAddressLine8,
-                    Latitude = j.DeliveryLatitude,
-                    Longitude = j.DeliveryLongitude
-                },
-                CustomJobName = j.CustomJobName
-            })
+        var query = Context.TucJobBookings
+            .Where(j => j.UcbkActive == request.Active);
+
+        if (!string.IsNullOrWhiteSpace(request.SearchText))
+        {
+            var searchPattern = $"%{request.SearchText}%";
+            query = query.Where(j => 
+                EF.Functions.Like(j.UcbkJobNumber, searchPattern) ||
+                EF.Functions.Like(j.CustomJobName, searchPattern) ||
+                EF.Functions.Like(j.DeliveryAddressLine1, searchPattern) ||
+                EF.Functions.Like(j.DeliveryAddressLine2, searchPattern) ||
+                EF.Functions.Like(j.DeliveryAddressLine3, searchPattern) ||
+                EF.Functions.Like(j.DeliveryAddressLine4, searchPattern) ||
+                EF.Functions.Like(j.DeliveryAddressLine5, searchPattern) ||
+                EF.Functions.Like(j.DeliveryAddressLine6, searchPattern) ||
+                EF.Functions.Like(j.DeliveryAddressLine7, searchPattern) ||
+                EF.Functions.Like(j.DeliveryAddressLine8, searchPattern) ||
+                EF.Functions.Like(j.PickupAddressLine1, searchPattern) ||
+                EF.Functions.Like(j.PickupAddressLine2, searchPattern) ||
+                EF.Functions.Like(j.PickupAddressLine3, searchPattern) ||
+                EF.Functions.Like(j.PickupAddressLine4, searchPattern) ||
+                EF.Functions.Like(j.PickupAddressLine5, searchPattern) ||
+                EF.Functions.Like(j.PickupAddressLine6, searchPattern) ||
+                EF.Functions.Like(j.PickupAddressLine7, searchPattern) ||
+                EF.Functions.Like(j.PickupAddressLine8, searchPattern)
+            );
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var isDescending = request.OrderDirection == "desc";
+        switch (request.Order)
+        {
+            case "booked":
+                query = isDescending ? query.OrderByDescending(j => j.UcbkDate)
+                    .ThenByDescending(j => j.UcbkTime) 
+                    : query.OrderBy(j => j.UcbkDate)
+                        .ThenBy(j => j.UcbkTime);
+                break;
+            case "speed":
+                query = isDescending ? query.OrderByDescending(j => j.UcbkSpeed) : query.OrderBy(j => j.UcbkSpeed);
+                break;
+            case "client":
+                query = isDescending ? query.OrderByDescending(j => j.UcbkClientId) : query.OrderBy(j => j.UcbkClientId);
+                break;
+            case "from":
+                query = isDescending ? query.OrderByDescending(j => j.PickupAddressLine6) : query.OrderBy(j => j.PickupAddressLine6);
+                break;
+            case "to":
+                query = isDescending ? query.OrderByDescending(j => j.DeliveryAddressLine6) : query.OrderBy(j => j.DeliveryAddressLine6);
+                break;
+            case "courier":
+                query = isDescending ? query.OrderByDescending(j => j.CourierId) : query.OrderBy(j => j.CourierId);
+                break;
+        }
+
+        var items = await query
+            .Skip((request.Page - 1) * request.Limit)
+            .Take(request.Limit)
+            .Select(JobMappings.ToPrebookListViewModel)
             .AsNoTracking()
             .ToListAsync();
 
-        return prebooks;
+        return new PaginatedResponse<PrebookListViewModel>
+        {
+            Items = items,
+            Total = totalCount,
+            Page = request.Page,
+            Pages = request.Limit
+        };
     }
 
     public async Task<PrebookListViewModel> GetPrebookJobByIdAsync(int jobBookingId)
     {
-        var prebook = await Context
-            .TucJobBookings
+        var prebook = await Context.TucJobBookings
             .Where(j => j.UcbkId == jobBookingId)
-            .Select(j => new PrebookListViewModel
-            {
-                Id = j.UcbkId,
-                Booked = new DateTime(
-                    j.UcbkNextDue.Value.Year,
-                    j.UcbkNextDue.Value.Month,
-                    j.UcbkNextDue.Value.Day,
-                    j.UcbkTime.Value.Hour,
-                    j.UcbkTime.Value.Minute,
-                    j.UcbkTime.Value.Second
-                ),
-                Client = j.UcbkClientCode,
-                JobNo = j.UcbkJobNumber,
-                ClientId = j.UcbkClientId,
-                Courier = j.Courier.Code,
-                Speed = j.UcbkSpeedNavigation.UcjtName,
-                PickupAddress = new AddressViewModel
-                {
-                    AddressLine1 = j.PickupAddressLine1,
-                    AddressLine2 = j.PickupAddressLine2,
-                    AddressLine3 = j.PickupAddressLine3,
-                    AddressLine4 = j.PickupAddressLine4,
-                    AddressLine5 = j.PickupAddressLine5,
-                    AddressLine6 = j.PickupAddressLine6,
-                    AddressLine7 = j.PickupAddressLine7,
-                    AddressLine8 = j.PickupAddressLine8,
-                    Latitude = j.PickUpLatitude,
-                    Longitude = j.PickUpLongitude
-                },
-                DeliveryAddress = new AddressViewModel
-                {
-                    AddressLine1 = j.DeliveryAddressLine1,
-                    AddressLine2 = j.DeliveryAddressLine2,
-                    AddressLine3 = j.DeliveryAddressLine3,
-                    AddressLine4 = j.DeliveryAddressLine4,
-                    AddressLine5 = j.DeliveryAddressLine5,
-                    AddressLine6 = j.DeliveryAddressLine6,
-                    AddressLine7 = j.DeliveryAddressLine7,
-                    AddressLine8 = j.DeliveryAddressLine8,
-                    Latitude = j.DeliveryLatitude,
-                    Longitude = j.DeliveryLongitude
-                },
-                CustomJobName = j.CustomJobName
-            })
+            .Select(JobMappings.ToPrebookListViewModel)
             .AsNoTracking()
             .FirstOrDefaultAsync();
 

@@ -1507,11 +1507,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ScanDateTime).HasColumnType("datetime");
             entity.Property(e => e.ToCourierId).HasColumnName("ToCourierID");
 
-            entity.HasOne(d => d.Courier).WithMany(p => p.TblBulkScanCouriers)
-                .HasForeignKey(d => d.CourierId)
-                .HasConstraintName("FK_tblBulkScan_CourierId_tucCourier");
-
-            entity.HasOne(d => d.ToCourier).WithMany(p => p.TblBulkScanToCouriers)
+            entity.HasOne(d => d.ToCourier).WithMany(p => p.TblBulkScans)
                 .HasForeignKey(d => d.ToCourierId)
                 .HasConstraintName("FK_tblBulkScan_ToCourierId_tucCourier");
         });
