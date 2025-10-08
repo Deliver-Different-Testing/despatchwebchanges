@@ -1,16 +1,22 @@
 import {IAddressViewModel} from "../../interfaces/job.interface";
+import {Dayjs} from "dayjs";
 
 export interface IPrebookListModel {
     id: number;
-    booked: Date;
+    booked: Dayjs;
     client: string;
+    jobNo: string;
+    clientId: number | null;
+    courier: string;
+    speed: string;
+    pickupAddress: IAddressViewModel;
+    deliveryAddress: IAddressViewModel;
+}
 
-    /** @deprecated Use pickup/delivery address properties instead */
-    fromAddress: string;
-
-    /** @deprecated Use pickup/delivery address properties instead */
-    toAddress: string;
-
+export interface IPrebookListModelDto {
+    id: number;
+    booked: string;
+    client: string;
     jobNo: string;
     clientId: number | null;
     courier: string;

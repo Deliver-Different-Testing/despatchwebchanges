@@ -49,4 +49,5 @@ export enum JobProperty {
     CourierID = 'CourierID',
     Active = 'Active',
     DueDate = 'DueDate',
+    CustomJobName = 'CustomJobName'
 }

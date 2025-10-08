@@ -6,6 +6,7 @@ import IFlightCargoProcessing, {
 import {IDispatchJob, IDispatchJobDto, IJob, IJobDto} from "../interfaces/job.interface";
 import {formatDateFromApi} from "./formatDates";
 import {ITask, ITaskDto} from "../components/task-dashboard/task-dashboard.interfaces";
+import {IPrebookListModel, IPrebookListModelDto} from "../components/recurringJobs/recurringJobs.interface";
 
 export function transformFlightDTO(dto: IFlightViewModelDto): IFlightViewModel {
     return {
@@ -75,5 +76,12 @@ export function transformTaskDTO(dto: ITaskDto): ITask {
     return {
         ...dto,
         dueDate: dayjs(dto.dueDate)
+    }
+}
+
+export function transformPrebookListDTO(dto: IPrebookListModelDto): IPrebookListModel {
+    return {
+        ...dto,
+        booked: dayjs(dto.booked)
     }
 }

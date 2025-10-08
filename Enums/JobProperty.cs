@@ -59,5 +59,6 @@ public enum JobProperty
     DaysOfWeek,
     Frequency,
     HolidayDelivery,
-    Active
+    Active,
+    CustomJobName
 }

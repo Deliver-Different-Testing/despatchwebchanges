@@ -1,6 +1,5 @@
-import {IPrebookListModel} from "./recurringJobs.interface";
-import dayjs, {Dayjs} from "dayjs";
-import {formatDateForApiWithTzs} from "../../functions/formatDates";
+import {IPrebookListModel, IPrebookListModelDto} from "./recurringJobs.interface";
+import {transformPrebookListDTO} from "../../functions/dtoMappings";
 
 class RecurringJobsService {
     static $inject = [
@@ -13,12 +12,12 @@ class RecurringJobsService {
     }
 
     async getPreBookJobs(active: boolean): Promise<IPrebookListModel[]> {
-        const response = await this.$http.get<IPrebookListModel[]>(`job/PreBookJobs`, {
+        const response = await this.$http.get<IPrebookListModelDto[]>(`job/PreBookJobs`, {
             params: {
                 active
             }
         });
-        return response.data;
+        return response.data.map(transformPrebookListDTO);
     }
 
     async sendPrebookJob(jobId: number): Promise<void> {

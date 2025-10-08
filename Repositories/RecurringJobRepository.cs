@@ -59,12 +59,10 @@ public class RecurringJobRepository(
                     j.UcbkTime.Value.Second
                 ),
                 Client = j.UcbkClientCode,
-                FromAddress = j.UcbkFromAddr,
-                ToAddress = j.UcbkToAddr,
                 JobNo = j.UcbkJobNumber,
                 ClientId = j.UcbkClientId,
                 Courier = j.Courier.Code,
-                Speed = j.UcbkSpeedNavigation.UcjtName,
+                Speed = j.UcbkSpeedNavigation != null ? j.UcbkSpeedNavigation.UcjtName : null,
                 PickupAddress = new AddressViewModel
                 {
                     AddressLine1 = j.PickupAddressLine1,
@@ -90,7 +88,8 @@ public class RecurringJobRepository(
                     AddressLine8 = j.DeliveryAddressLine8,
                     Latitude = j.DeliveryLatitude,
                     Longitude = j.DeliveryLongitude
-                }
+                },
+                CustomJobName = j.CustomJobName
             })
             .AsNoTracking()
             .ToListAsync();
@@ -115,8 +114,6 @@ public class RecurringJobRepository(
                     j.UcbkTime.Value.Second
                 ),
                 Client = j.UcbkClientCode,
-                FromAddress = j.UcbkFromAddr,
-                ToAddress = j.UcbkToAddr,
                 JobNo = j.UcbkJobNumber,
                 ClientId = j.UcbkClientId,
                 Courier = j.Courier.Code,
@@ -146,7 +143,8 @@ public class RecurringJobRepository(
                     AddressLine8 = j.DeliveryAddressLine8,
                     Latitude = j.DeliveryLatitude,
                     Longitude = j.DeliveryLongitude
-                }
+                },
+                CustomJobName = j.CustomJobName
             })
             .AsNoTracking()
             .FirstOrDefaultAsync();
@@ -156,8 +154,8 @@ public class RecurringJobRepository(
 
     public async Task UpdateTucJobRecurringAsync(int jobId, JobProperty property, string value)
     {
-        var job = await Context
-            .TucJobBookings.Where(j => j.UcbkId == jobId)
+        var job = await Context.TucJobBookings
+            .Where(j => j.UcbkId == jobId)
             .Include(j => j.TucJobNationwides)
             .Include(j => j.UcbkClient)
             .Include(j => j.BookingParent)
@@ -181,10 +179,10 @@ public class RecurringJobRepository(
                 updateNote = $"Changed AirportOnly to {(airportOnly ? "Yes" : "No")}";
                 break;
             case JobProperty.Time:
-                job.UcbkTime = DateTime.Parse(value);
+                job.UcbkTime = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.Date:
-                job.UcbkDate = DateTime.Parse(value);
+                job.UcbkDate = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.Size:
                 job.UcbkSize = int.Parse(value);
@@ -248,7 +246,7 @@ public class RecurringJobRepository(
                 break;
             case JobProperty.Van:
                 job.UcbkVan = bool.Parse(value);
-                job.Truck = false; // Set truck to false when van is selected
+                job.Truck = false; // Set truck to false when a van is selected
                 break;
             case JobProperty.VanOK:
                 job.VanOk = bool.Parse(value);
@@ -303,10 +301,10 @@ public class RecurringJobRepository(
                 job.AcceptedJobTypeId = short.Parse(value);
                 break;
             case JobProperty.DeliverBy:
-                job.DeliverByTime = DateTime.Parse(value);
+                job.DeliverByTime = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.BookedTime:
-                job.UcbkDate = DateTime.Parse(value);
+                job.UcbkDate = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.DaysOfWeek:
                 job.UcbkDaysInt = int.Parse(value);
@@ -337,6 +335,9 @@ public class RecurringJobRepository(
                 }
 
                 updateNote = $"Changed Active to {(isActive ? "Yes" : "No")}";
+                break;
+            case JobProperty.CustomJobName:
+                job.CustomJobName = value[..Math.Min(value.Length, 100)];
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
