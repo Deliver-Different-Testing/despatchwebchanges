@@ -94,7 +94,7 @@ class RecurringJobsController extends BaseController {
     }
 
     $onInit(): void {
-        this.refreshData().then(r => console.log("Recurring Jobs Loaded!"));
+        this.refreshData().then(() => console.log("Recurring Jobs Loaded!"));
     }
 
     saveLayout() {
@@ -515,6 +515,13 @@ class RecurringJobsController extends BaseController {
         this.jobQuery.page = 1;
         
         await this.refreshData();
+    }
+    
+    async switchActiveFilter(isActive: boolean): Promise<void> {
+        this.jobQuery.active = isActive;
+        this.jobQuery.page = 1;
+        
+        await this.refreshData(isActive);
     }
 }
 

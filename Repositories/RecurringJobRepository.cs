@@ -43,7 +43,9 @@ public class RecurringJobRepository(
     public async Task<PaginatedResponse<PrebookListViewModel>> PreBookJobListAsync(RecurringJobQueryRequest request)
     {
         var query = Context.TucJobBookings
-            .Where(j => j.UcbkActive == request.Active);
+            .Where(j => j.UcbkActive == request.Active
+                        && j.UcbkOneOff == false 
+                        && (j.ParentId == null || j.ParentId == j.UcbkId));
 
         if (!string.IsNullOrWhiteSpace(request.SearchText))
         {
