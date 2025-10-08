@@ -216,21 +216,18 @@ class TaskDashboardController extends BaseController {
     private initializeTaskTimeStrings(): void {
         this.tasks.forEach(task => {
             try {
-                const dueDate = dayjs(task.dueDate);
-
-                if (!dueDate.isValid()) {
+                if (!task.dueDate.isValid()) {
                     console.warn(`Invalid date for task "${task.title}":`, task.dueDate);
                     task.dueTimeStr = "00:00";
                     return;
                 }
 
-                const hours = dueDate.hour();
-                const minutes = dueDate.minute();
+                const hours = task.dueDate.hour();
+                const minutes = task.dueDate.minute();
                 const roundedMinutes = minutes < 30 ? 0 : 30;
                 const formattedHours = hours < 10 ? `0${hours}` : `${hours}`;
 
                 task.dueTimeStr = `${formattedHours}:${roundedMinutes === 0 ? '00' : roundedMinutes}`;
-                task.dueDate = dueDate.format();
             } catch (error) {
                 console.error(`Error processing dueDate for task:`, task, error);
                 task.dueTimeStr = "00:00";
