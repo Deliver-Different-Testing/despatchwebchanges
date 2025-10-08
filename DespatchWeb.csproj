@@ -267,6 +267,7 @@
     <_ContentIncludedByDefault Remove="wwwroot\types\html.d.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\app\directives\dayjs-datepicker.directive.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\app\directives\dayjs-timepicker.directive.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\create-job-dialog\interfaces\ICreateJobDialogControllerScope.ts" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
@@ -334,7 +335,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\compose-email-dialog\compose-email-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\compose-email-dialog\compose-email-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\create-job-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\interfaces\ICreateJobDialogControllerScope.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-afterhours-dialog\edit-afterhours-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-afterhours-dialog\edit-afterhours-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.service.ts" />

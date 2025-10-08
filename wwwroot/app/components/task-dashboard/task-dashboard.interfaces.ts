@@ -1,6 +1,19 @@
 import {ISuggestion} from "../../interfaces/job.interface";
+import {Dayjs} from "dayjs";
 
 export interface ITask {
+    id: number;
+    title: string;
+    description: string;
+    dueDate: Dayjs;
+    closed: boolean;
+    assignee: ISuggestion;
+    jobId: number;
+    eventType: string;
+    jobNumber: string;
+}
+
+export interface ITaskDto {
     id: number;
     title: string;
     description: string;

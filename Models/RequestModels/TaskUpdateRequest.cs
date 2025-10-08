@@ -1,4 +1,6 @@
-﻿namespace DespatchWeb.Models.RequestModels;
+﻿using System;
+
+namespace DespatchWeb.Models.RequestModels;
 
 public class TaskUpdateBaseRequest
 {
@@ -12,12 +14,12 @@ public class TaskCloseRequest : TaskUpdateBaseRequest
 
 public class TaskDateRequest : TaskUpdateBaseRequest
 {
-    public string Date { get; set; }
+    public DateTimeOffset Date { get; set; }
 }
 
 public class TaskTimeRequest : TaskUpdateBaseRequest
 {
-    public string Time { get; set; }
+    public DateTimeOffset Time { get; set; }
 }
 
 public class TaskAssignStaffRequest : TaskUpdateBaseRequest

@@ -14,6 +14,8 @@ import {
     ITaskDateRequest,
     ITaskTimeRequest
 } from "../interfaces/task-request.interfaces";
+import {Dayjs} from "dayjs";
+import {formatDateForApiWithTzs} from "../functions/formatDates";
 
 interface PageFilterNames {
     staff: string;
@@ -98,19 +100,19 @@ class TasksService implements angular.IServiceProvider {
         await this.$http.post("task/MarkTaskAsClosed", data);
     }
 
-    async updateTaskDate(eventId: number, date: string): Promise<void> {
+    async updateTaskDate(eventId: number, date: Dayjs): Promise<void> {
         const data: ITaskDateRequest = {
             eventId,
-            date
+            date: formatDateForApiWithTzs(date)
         };
         
         await this.$http.post("task/UpdateTaskDate", data);
     }
 
-    async updateTaskTime(eventId: number, time: string): Promise<void> {
+    async updateTaskTime(eventId: number, time: Dayjs): Promise<void> {
         const data: ITaskTimeRequest = {
             eventId,
-            time
+            time: formatDateForApiWithTzs(time)
         };
         
         await this.$http.post("task/UpdateTaskTime", data);

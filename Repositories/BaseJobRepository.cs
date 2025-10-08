@@ -85,7 +85,12 @@ public class BaseJobRepository(
                 .ToListAsync();
 
             // Calculate remain times
-            foreach (var job in jobs) job.Remain = CalculateRemainTime(job);
+            var economySpeedId = await Context.TucJobTypes
+                .Where(s => s.UcjtName == "Economy")            
+                .Select(s => s.UcjtId)
+                .FirstOrDefaultAsync();
+            ArgumentNullException.ThrowIfNull(economySpeedId);
+            foreach (var job in jobs) job.Remain = await CalculateRemainTime(job, economySpeedId);
 
             return jobs;
         }
@@ -641,9 +646,7 @@ public class BaseJobRepository(
         };
     }
 
-    private static readonly int[] CriticalSpeedIds = [41, 42, 43, 51, 52];
-
-    private double? CalculateRemainTime(DispatchJobViewModel job)
+    private async Task<double?> CalculateRemainTime(DispatchJobViewModel job, int? economySpeedId)
     {
         try
         {
@@ -652,43 +655,30 @@ public class BaseJobRepository(
 
             var now = infoService.GetCurrentTenantTime();
             var jobDateTime = job.Booked.Value;
-
-            if (job.SpeedId == 36)
+           
+            if (job.SpeedId == economySpeedId)
             {
-                if (!job.DeliverByTime.HasValue) return null;
-
-                var deliverBy = job.DeliverByTime.Value;
-                var economyDeliveryDateTime = new DateTime(
+                var ecoDeliveryTime = await Context.TblEcoSettings
+                    .Select(x => x.EconomyDeliveryTime)
+                    .FirstOrDefaultAsync();
+                ArgumentNullException.ThrowIfNull(job.Booked);
+                ArgumentNullException.ThrowIfNull(ecoDeliveryTime);
+                
+                var targetDateTime = new DateTime(
                     job.Booked.Value.Year,
                     job.Booked.Value.Month,
                     job.Booked.Value.Day,
-                    deliverBy.Hour,
-                    deliverBy.Minute,
-                    deliverBy.Second
+                    ecoDeliveryTime.Value.Hour,
+                    ecoDeliveryTime.Value.Minute,
+                    ecoDeliveryTime.Value.Second
                 );
-                return Math.Round((economyDeliveryDateTime - now).TotalMinutes);
-            }
-
-            var speedValue = job.SpeedId ?? 0;
-            if (job.SpeedId.HasValue
-                && CriticalSpeedIds.Contains(speedValue)
-                && job.RequiredDeliveryTime.HasValue)
-            {
-                var requiredDelivery = job.RequiredDeliveryTime.Value;
-                var requiredDeliveryDateTime = new DateTime(
-                    job.Booked.Value.Year,
-                    job.Booked.Value.Month,
-                    job.Booked.Value.Day,
-                    requiredDelivery.Hour,
-                    requiredDelivery.Minute,
-                    requiredDelivery.Second
-                );
-                return (requiredDeliveryDateTime - now).TotalMinutes;
+    
+                return Math.Round((targetDateTime - now).TotalMinutes);
             }
 
             if (!job.JobTypeMins.HasValue) return null;
-            var minutesToAdd = job.JobTypeMins ?? 0;
-
+        
+            var minutesToAdd = job.JobTypeMins.Value;
             var standardDeliveryDateTime = jobDateTime.AddMinutes(minutesToAdd);
             return Math.Round((standardDeliveryDateTime - now).TotalMinutes);
         }

@@ -10,6 +10,7 @@ import "./task-item.styles.less";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
 import dayjs from "dayjs";
 import TasksService from "../../../services/tasks.service";
+import {JobProperty} from "../../../enums/job-property.enum";
 
 class TaskListItemController extends BaseController {
     static $inject = [
@@ -67,7 +68,7 @@ class TaskListItemController extends BaseController {
 
         try {
             const result: IDialogDateTimeResult = await this.editDateTimeDialogService.showEditDateDialog(
-                $event, "Due Date", "dueDate", dayjs(task.dueDate).toDate());
+                $event, "Due Date", JobProperty.DueDate, task.dueDate);
 
             await this.tasksService.updateTaskDate(task.id, result.value);
 
@@ -90,7 +91,7 @@ class TaskListItemController extends BaseController {
 
         try {
             const result: IDialogDateTimeResult = await this.editDateTimeDialogService.showEditTimeDialog(
-                $event, "Due Time", "dueDate", dayjs(task.dueDate).toDate());
+                $event, "Due Time", JobProperty.DueDate, task.dueDate);
 
             await this.tasksService.updateTaskTime(task.id, result.value);
 

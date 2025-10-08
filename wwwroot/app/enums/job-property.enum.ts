@@ -43,11 +43,10 @@ export enum JobProperty {
     RestartDate = 'RestartDate',
     InActiveDate = 'InActiveDate',
     FirstDue = 'FirstDue',
-    LastDone = 'LastDone',
-    NextDue = 'NextDue',
     DaysOfWeek = 'DaysOfWeek',
     Frequency = 'Frequency',
     HolidayDelivery = 'HolidayDelivery',
     CourierID = 'CourierID',
     Active = 'Active',
+    DueDate = 'DueDate',
 }
