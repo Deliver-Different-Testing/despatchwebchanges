@@ -1284,6 +1284,22 @@
 
                         <md-list class="md-dense" flex>
                             <md-list-item
+                                    ng-if="::ctrl.job.preBook"
+                                    class="md-2-line md-long-text"
+                                    ng-click="!ctrl.job.locked && ctrl.editCustomJobName($event, ctrl.job)">
+                                <md-icon
+                                        class="md-avatar"
+                                        aria-label="badge"
+                                        md-font-set="material-symbols-outlined">
+                                    badge
+                                </md-icon>
+                                <div class="md-list-item-text">
+                                    <h3>Job Name</h3>
+                                    <p>{{ctrl.job.customJobName || '-'}}</p>
+                                </div>
+                            </md-list-item>
+                            
+                            <md-list-item
                                     ng-if="ctrl.isFieldVisible('speedName') || ctrl.isEditMode"
                                     class="md-2-line md-long-text"
                                     ng-click="!ctrl.job.locked && ctrl.speedClick($event, ctrl.job)">

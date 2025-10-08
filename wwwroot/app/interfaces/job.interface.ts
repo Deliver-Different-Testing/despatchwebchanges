@@ -165,6 +165,7 @@ export interface IJob {
     deliveryTimeZone: ISuggestion;
     hasDgDocsString?: string;
     calculateDimsOncePerJob: boolean;
+    customJobName?: string;
 }
 
 export interface IJobDto {
@@ -325,6 +326,7 @@ export interface IJobDto {
     deliveryTimeZone: ISuggestion;
     hasDgDocsString?: string;
     calculateDimsOncePerJob: boolean;
+    customJobName?: string;
 }
 
 export interface UpdateBulkJobPackagesRequest extends  UpdateJobPackagesBase {

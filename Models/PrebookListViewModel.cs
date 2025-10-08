@@ -7,13 +7,7 @@ public class PrebookListViewModel
     public int Id { get; set; }
     public DateTime Booked { get; set; }
     public string Client { get; set; }
-
-    [Obsolete("Use pickup/delivery address properties instead")]
-    public string FromAddress { get; set; }
-
-    [Obsolete("Use pickup/delivery address properties instead")]
-    public string ToAddress { get; set; }
-
+    public string CustomJobName { get; set; }
     public string JobNo { get; set; }
     public int? ClientId { get; set; }
     public string Courier { get; set; }

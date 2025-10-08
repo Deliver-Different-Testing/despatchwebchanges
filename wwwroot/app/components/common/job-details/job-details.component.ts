@@ -2231,6 +2231,22 @@ class JobDetailController extends BaseController {
 
         return false;
     }
+
+    async editCustomJobName($event: MouseEvent, job: IJob): Promise<void> {
+        try {
+            await this.showEditDialog(
+                $event,
+                job,
+                "Edit Job Name",
+                "Job Name...",
+                "job name",
+                job.customJobName,
+                JobProperty.CustomJobName
+            );
+        } catch (error) {
+            this.handleError(error);
+        }
+    }
 }
 
 const JobDetailComponent: angular.IComponentOptions = {

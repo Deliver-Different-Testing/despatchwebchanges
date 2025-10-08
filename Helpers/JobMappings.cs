@@ -892,6 +892,7 @@ public static class JobMappings
             ClientId = j.UcbkClientId,
             Id = j.UcbkId,
             JobNo = j.UcbkJobNumber,
+            CustomJobName = j.CustomJobName,
             Time = j.UcbkTime,
             RootParentId = j.RootParentId,
             RelatedJobs = j.BookingParent != null && j.BookingParent.InverseBookingParent.Any()
