@@ -155,6 +155,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tblEcoSetting]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tblHoliday]",
          "ObjectType": 0
       },

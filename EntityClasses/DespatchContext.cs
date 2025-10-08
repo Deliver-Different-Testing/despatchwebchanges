@@ -95,6 +95,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TblDespatchView> TblDespatchViews { get; set; }
 
+    public virtual DbSet<TblEcoSetting> TblEcoSettings { get; set; }
+
     public virtual DbSet<TblHoliday> TblHolidays { get; set; }
 
     public virtual DbSet<TblInternetPermission> TblInternetPermissions { get; set; }
@@ -2613,6 +2615,25 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.ZoneGroup).WithMany(p => p.TblDespatchViews)
                 .HasForeignKey(d => d.ZoneGroupId)
                 .HasConstraintName("FK__tblDespat__ZoneG__12B48446");
+        });
+
+        modelBuilder.Entity<TblEcoSetting>(entity =>
+        {
+            entity.HasKey(e => e.SettingId);
+
+            entity.ToTable("tblEcoSetting");
+
+            entity.Property(e => e.SettingId).HasColumnName("SettingID");
+            entity.Property(e => e.BaggageCutOff).HasColumnType("datetime");
+            entity.Property(e => e.BaggageRebook).HasColumnType("datetime");
+            entity.Property(e => e.EconomyCutOff).HasColumnType("datetime");
+            entity.Property(e => e.EconomyDeliveryTime).HasColumnType("datetime");
+            entity.Property(e => e.EconomyRebook).HasColumnType("datetime");
+            entity.Property(e => e.EconomyRun1).HasColumnType("datetime");
+            entity.Property(e => e.EconomyRun2).HasColumnType("datetime");
+            entity.Property(e => e.EconomyRun3).HasColumnType("datetime");
+            entity.Property(e => e.EconomyRun4).HasColumnType("datetime");
+            entity.Property(e => e.EconomyRun5).HasColumnType("datetime");
         });
 
         modelBuilder.Entity<TblHoliday>(entity =>

@@ -22,7 +22,7 @@ import {
 } from "../interfaces/courier.interface";
 import {IEventGroupViewModel} from "../interfaces/event-group-view-model.interface";
 import {ClearListEnvelopeViewModel, DfrntPageViewModel,} from "../interfaces/dfrnt-page-view-model.interface";
-import {TaskTableFiltersRequest, ITask,} from "../components/task-dashboard/task-dashboard.interfaces";
+import {TaskTableFiltersRequest, ITask, ITaskDto,} from "../components/task-dashboard/task-dashboard.interfaces";
 import {JobProperty} from "../enums/job-property.enum";
 import {UpdatePodDetailsRequest} from "../interfaces/requests.interfaces";
 import {JobEventData} from "../components/dialogs/add-event-dialog/add-event-dialog.interfaces";
@@ -31,7 +31,7 @@ import {formatDateForApiWithTzs} from "../functions/formatDates";
 import IInterCourierData from "../components/dialogs/inter-courier-charge-dialog/interfaces/IInterCourierData";
 import {Is3PhotoInfo} from "../interfaces/aws.interfaces";
 import dayjs from "dayjs";
-import {transformDispatchJobDTO, transformJobDTO} from "../functions/dtoMappings";
+import {transformDispatchJobDTO, transformJobDTO, transformTaskDTO} from "../functions/dtoMappings";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = [
@@ -961,11 +961,11 @@ class DispatchCoreService implements angular.IServiceProvider {
                 }
             }
 
-            const response = await this.$http.get<ITask[]>('/Task/GetAllTasks', {
+            const response = await this.$http.get<ITaskDto[]>('/Task/GetAllTasks', {
                 params: params
             });
 
-            return response.data;
+            return response.data.map(transformTaskDTO);
         } catch (error) {
             console.error("Error fetching tasks:", error);
             return [];

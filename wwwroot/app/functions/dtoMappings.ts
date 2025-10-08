@@ -3,8 +3,9 @@ import dayjs from "dayjs";
 import IFlightCargoProcessing, {
     IFlightCargoProcessingDto
 } from "../components/dialogs/flight-agent-conformation-dialog/interfaces/IFlightCargoProcessing";
-import {IDispatchJobDto, IJob, IJobDto} from "../interfaces/job.interface";
+import {IDispatchJob, IDispatchJobDto, IJob, IJobDto} from "../interfaces/job.interface";
 import {formatDateFromApi} from "./formatDates";
+import {ITask, ITaskDto} from "../components/task-dashboard/task-dashboard.interfaces";
 
 export function transformFlightDTO(dto: IFlightViewModelDto): IFlightViewModel {
     return {
@@ -61,11 +62,18 @@ export function transformJobDTO(dto: IJobDto): IJob {
     };
 }
 
-export function transformDispatchJobDTO(dto: IDispatchJobDto) {
+export function transformDispatchJobDTO(dto: IDispatchJobDto): IDispatchJob {
     return {
         ...dto,
         time: dto.time ? dayjs(dto.time) : undefined,
         booked: dayjs(dto.booked),
         followupTime: dayjs(dto.followupTime),
     };
+}
+
+export function transformTaskDTO(dto: ITaskDto): ITask {
+    return {
+        ...dto,
+        dueDate: dayjs(dto.dueDate)
+    }
 }

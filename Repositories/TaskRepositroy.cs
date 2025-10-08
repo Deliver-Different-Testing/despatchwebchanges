@@ -61,9 +61,9 @@ public class TaskRepository(
         DateTime today)
     {
         return isDescending
-            ? query.OrderByDescending(e => e.UcevDueTime < today)
+            ? query.OrderByDescending(e => e.UcevDueTime.Date < today.Date)
                 .ThenByDescending(e => e.UcevDueTime)
-            : query.OrderByDescending(e => e.UcevDueTime < today)
+            : query.OrderByDescending(e => e.UcevDueTime.Date < today)
                 .ThenBy(e => e.UcevDueTime);
     }
 
@@ -77,30 +77,26 @@ public class TaskRepository(
         if (rowsAffected == 0) throw new ArgumentException($"Event with ID {eventId} not found.");
     }
 
-    public async Task UpdateEventDateAsync(int eventId, string date)
+    public async Task UpdateEventDateAsync(int eventId, DateTimeOffset date)
     {
-        var newDate = DateTime.Parse(date).Date;
-
         var existingEvent = await Context.TucEvents
             .Where(e => e.UcevId == eventId)
             .Select(e => new { e.UcevDueTime })
             .FirstOrDefaultAsync();
         ArgumentNullException.ThrowIfNull(existingEvent);
-
-        var existingTime = existingEvent.UcevDueTime.TimeOfDay;
-
+        
         await Context.TucEvents
             .Where(e => e.UcevId == eventId)
             .ExecuteUpdateAsync(setters => setters
-                .SetProperty(e => e.UcevDueTime, newDate.Add(existingTime)));
+                .SetProperty(e => e.UcevDueTime, date.DateTime));
     }
 
-    public async Task UpdateEventTimeAsync(int eventId, string time)
+    public async Task UpdateEventTimeAsync(int eventId, DateTimeOffset time)
     {
         var rowsAffected = await Context.TucEvents
             .Where(e => e.UcevId == eventId)
             .ExecuteUpdateAsync(setters => setters
-                .SetProperty(e => e.UcevDueTime, DateTime.Parse(time)));
+                .SetProperty(e => e.UcevDueTime, time.DateTime));
 
         if (rowsAffected == 0)
             throw new ArgumentException($"Event with ID {eventId} not found.");

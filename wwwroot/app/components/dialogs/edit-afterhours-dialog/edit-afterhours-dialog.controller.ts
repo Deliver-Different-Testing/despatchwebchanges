@@ -8,6 +8,7 @@ import duration from "dayjs/plugin/duration";
 import {IAfterHoursCourierSchedule} from "../../driver-management-dashboard/interfaces/IAfterHoursCourierSchedule";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import {TimeZone} from "../../../contants";
+import {getIanaTimezone} from "../../../functions/formatDates";
 
 dayjs.extend(duration);
 dayjs.extend(isSameOrAfter);
@@ -55,7 +56,8 @@ class EditAfterhoursDialogController extends BaseController {
             this.timeZoneOptions = options;
 
             if (!this.editableAfterHoursSchedule.timezone) {
-                this.selectedTimeZone = options.find(t => t.timeZoneIana == TimeZone);
+                const tenantTimeZone = getIanaTimezone(TimeZone);
+                this.selectedTimeZone = options.find(t => t.timeZoneIana == tenantTimeZone);
             } else {
                 this.selectedTimeZone = options.find(t => t.timeZoneIana == this.editableAfterHoursSchedule.timezone);
             }
