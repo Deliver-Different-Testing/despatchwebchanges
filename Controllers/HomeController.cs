@@ -106,13 +106,6 @@ public partial class HomeController(
         return Json(result);
     }
 
-    public async Task<IActionResult> ClientContacts(int contactId)
-    {
-        var result = await clientRepository.ClientContactsAsync(contactId);
-        return Json(result);
-    }
-
-
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error() => View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
 

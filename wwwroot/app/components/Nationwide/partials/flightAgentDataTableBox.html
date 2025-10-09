@@ -51,7 +51,7 @@
             <!-- Individual Airline Filter Chips -->
             <md-button ng-repeat="airline in ctrl.activeAirlineOptions"
                        class="md-button airline-chip {{::airline.text | lowercase}}"
-                       ng-click="ctrl.filterFlightsByAirline(airline.id)"
+                       ng-click="ctrl.filterFlightsByAirline(airline)"
                        aria-label="Filter by {{::airline.text}}">
                 <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
                 <span class="airline-label">{{::airline.text}}</span>
