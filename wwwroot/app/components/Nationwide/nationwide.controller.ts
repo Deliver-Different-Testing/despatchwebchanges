@@ -53,7 +53,9 @@ import IDateFilterData from "../common/date-filter-menu/IDateFilterData";
 import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
 import timezone from "dayjs/plugin/timezone";
 import {transformFlightToDTO} from "../../functions/toDtoMappings";
+import utc from "dayjs/plugin/utc";
 
+dayjs.extend(utc);
 dayjs.extend(timezone);
 
 class NationwideControl extends BaseController {
@@ -568,6 +570,7 @@ class NationwideControl extends BaseController {
             this.tasksService.loadLists().then(({staffList, eventTypesList}) => {
                 this.staffList = staffList;
                 this.eventTypesList = eventTypesList;
+                this.applyScope();
             });
 
             const filters = this.tasksService.initializePageFilters(this.nationwidePageId);
@@ -790,6 +793,7 @@ class NationwideControl extends BaseController {
                 localStorage.setItem(this.NationwideLastActiveLayoutKey, layoutName);
             }
 
+            this.applyScope();
             return currentLayout;
         } catch (error) {
             if (!error) {
@@ -797,6 +801,7 @@ class NationwideControl extends BaseController {
             } else {
                 console.error("Unable to save layout:", error);
             }
+            this.applyScope();
             return null;
         }
     }
@@ -827,6 +832,8 @@ class NationwideControl extends BaseController {
             this.toastrService.showSuccessToast("Layout deleted successfully");
         } catch (error) {
             this.handleError(error);
+        } finally {
+            this.applyScope();
         }
     }
 
@@ -903,6 +910,7 @@ class NationwideControl extends BaseController {
                 console.info('Job reselected successfully');
             }
 
+            this.applyScope();
         } catch (error) {
             console.error("Error in handleStatusChange:", {
                 error,
@@ -1041,6 +1049,7 @@ class NationwideControl extends BaseController {
             console.error("Error in selectJob:", error);
         } finally {
             this.isSelectingJob = false;
+            this.applyScope();
         }
     }
 
@@ -1074,6 +1083,8 @@ class NationwideControl extends BaseController {
                     this.tasks = tasks;
                     this.filteredTasks = tasks;
                 }
+
+                this.applyScope();
             }
         }, this.nationwidePageId, effectiveJobId);
     }
@@ -1144,6 +1155,8 @@ class NationwideControl extends BaseController {
         } catch (error) {
             console.error('Error in displayJobOnMap:', error);
             this.toastrService.showErrorToast('An unexpected error occurred displaying this job on the map');
+        } finally {
+            this.applyScope();
         }
     }
 
@@ -1246,6 +1259,7 @@ class NationwideControl extends BaseController {
         } finally {
             this.agentsLoading = false;
             this.updateUIState(job);
+            this.applyScope();
         }
     }
 
@@ -1317,6 +1331,7 @@ class NationwideControl extends BaseController {
         } finally {
             this.flightsLoading = false;
             this.updateUIState(this.currentJob);
+            this.applyScope();
         }
     }
 
@@ -1351,6 +1366,7 @@ class NationwideControl extends BaseController {
             if (!result.shouldAssign) return;
 
             this.isDataLoading = true;
+            this.applyScope();
             console.info('Assigning to job');
 
             const previousInternalStatusId = job.internalStatusId ?? InternalJobStatus.NewJobs;
@@ -1395,6 +1411,7 @@ class NationwideControl extends BaseController {
             this.handleError(error);
         } finally {
             this.isDataLoading = false;
+            this.applyScope();
         }
     }
 
@@ -1429,6 +1446,7 @@ class NationwideControl extends BaseController {
             if (!result.shouldAssign) return;
 
             this.isDataLoading = true;
+            this.applyScope();
 
             console.info('Assigning to job');
 
@@ -1450,6 +1468,7 @@ class NationwideControl extends BaseController {
             this.handleError(error);
             this.isDataLoading = false;
         } finally {
+            this.applyScope();
         }
     }
 
@@ -1567,9 +1586,10 @@ class NationwideControl extends BaseController {
             if (requestedTypes.includes(JobDataType.NEW)) this.jobListLoading = false;
             if (requestedTypes.includes(JobDataType.POD)) this.podListLoading = false;
             if (requestedTypes.includes(JobDataType.REPRICE)) this.repriceListLoading = false;
-
+        } finally {
+            this.applyScope();
         }
-    }
+    } 
 
     async openFileAttachmentDialog($event: MouseEvent, job: IDispatchJob) {
         await this.jobFileUploadDialogService.openJobFileUploadDialog($event, job);
@@ -1675,6 +1695,8 @@ class NationwideControl extends BaseController {
             console.error("Error loading tasks:", error);
             this.toastrService.showErrorToast("Error loading tasks");
             this.tasksLoading = false;
+        } finally {
+            this.applyScope();
         }
     }
 
@@ -1786,6 +1808,8 @@ class NationwideControl extends BaseController {
             await this.loadFlights();
         } catch (error) {
             console.error('Error loading flights after airport change:', error);
+        } finally {
+            this.applyScope();
         }
     }
 
@@ -1827,6 +1851,8 @@ class NationwideControl extends BaseController {
             console.info("[NationwideRefresh] - Job lists refresh complete");
         } catch (error) {
             console.error("[NationwideRefresh] - Error refreshing job lists:", error);
+        } finally {
+            this.applyScope();
         }
     }
 
@@ -1970,6 +1996,7 @@ class NationwideControl extends BaseController {
     async addStopToJob($event: MouseEvent, job: IDispatchJob): Promise<void> {
         const setLoadingState = (isLoading: boolean) => {
             this.isDataLoading = isLoading;
+            this.applyScope();
         };
 
         try {

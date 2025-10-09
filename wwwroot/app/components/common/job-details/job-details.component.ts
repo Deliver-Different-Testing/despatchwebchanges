@@ -53,6 +53,7 @@ class JobDetailController extends BaseController {
         "$rootScope",
         "$timeout",
         "$interval",
+        "$scope",
         "autoCompleteDialogService",
         "jobFileUploadDialogService",
         "voidJobConfirmationDialogService",
@@ -108,12 +109,13 @@ class JobDetailController extends BaseController {
         private $rootScope: angular.IRootScopeService,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
+        $scope: angular.IScope,
         private autoCompleteDialogService: AutoCompleteDialogService,
         private jobFileUploadDialogService: JobFileUploadDialogService,
         private voidJobConfirmationDialogService: VoidJobConfirmationDialogService
     ) {
         super();
-        this.initServices($timeout, $interval);
+        this.initServices($timeout, $interval, $scope);
 
         this.isUsCustomer = appConfig.US_Customer;
         this.timeZone = TimeZone;
@@ -163,6 +165,8 @@ class JobDetailController extends BaseController {
         // Apply UI tweaks
         this.loadViewDensity();
         this.initializeFieldVisibility();
+
+        this.applyScope();
     }
 
     private initializeFieldVisibility(): void {
@@ -316,6 +320,7 @@ class JobDetailController extends BaseController {
             }
         } finally {
             this.processingTabChange = false;
+            this.applyScope();
         }
     }
     
@@ -350,7 +355,9 @@ class JobDetailController extends BaseController {
                 this.selectedTabIndex = 0;
                 this.jobGroups = [];
             }
-            
+
+            this.applyScope();
+
             if (this.job.completedTime && !this.isRecurringJob) {
                 await this.loadPodPhotos();
             }
@@ -938,6 +945,8 @@ class JobDetailController extends BaseController {
             }
 
             console.error("Error updating GPS:", error);
+        } finally {
+            this.applyScope();
         }
     }
 
@@ -1979,6 +1988,7 @@ class JobDetailController extends BaseController {
         this.selectedSubJobIndex = subJobIndex;
 
         await this.loadSubJobDetails(subJobIndex);
+        this.applyScope();
     }
 
     private async loadSubJobDetails(subJobIndex: number): Promise<void> {
@@ -2043,6 +2053,7 @@ class JobDetailController extends BaseController {
             this.toastrService.showErrorToast("Failed to load subjob details");
         } finally {
             this.isLoading = false;
+            this.applyScope();
         }
     }
 

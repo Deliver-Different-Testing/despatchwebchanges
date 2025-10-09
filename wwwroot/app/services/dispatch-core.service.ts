@@ -42,7 +42,6 @@ class DispatchCoreService implements angular.IServiceProvider {
     ];
 
     private readonly isUsCustomer: boolean;
-    browserTimeZone: string;
 
     constructor(
         private $http: angular.IHttpService,
@@ -51,7 +50,6 @@ class DispatchCoreService implements angular.IServiceProvider {
         private appConfig: IAppConfig
     ) {
         this.isUsCustomer = this.appConfig.US_Customer;
-        this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     }
 
     $get() {
