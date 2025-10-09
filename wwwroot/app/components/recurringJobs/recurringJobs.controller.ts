@@ -28,6 +28,7 @@ class RecurringJobsController extends BaseController {
         'jobContextMenuService',
         '$timeout',
         '$interval',
+        '$scope',
         'APP_CONFIG',
     ];
 
@@ -81,10 +82,11 @@ class RecurringJobsController extends BaseController {
         private jobContextMenuService: JobContextMenuService,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
+        $scope: angular.IScope,
         appConfig: IAppConfig,
     ) {
         super();
-        this.initServices($timeout, $interval);
+        this.initServices($timeout, $interval, $scope);
         
         this.bindFunctions();
 
@@ -122,11 +124,6 @@ class RecurringJobsController extends BaseController {
         this.saveLayout = this.saveLayout.bind(this);
         this.deleteLayout = this.deleteLayout.bind(this);
         this.loadLayout = this.loadLayout.bind(this);
-
-        // Bind utility functions
-        this.greetUser = this.greetUser.bind(this);
-        this.toggleSidenav = this.toggleSidenav.bind(this);
-        this.showItems = this.showItems.bind(this);
     }
     
     saveLayout() {
@@ -321,6 +318,8 @@ class RecurringJobsController extends BaseController {
         } catch (error) {
             console.error("Error loading prebook jobs:", error);
             this.jobList = [];
+        } finally {
+            this.applyScope();
         }
     }
 
@@ -388,6 +387,8 @@ class RecurringJobsController extends BaseController {
                         .ok("OK")
                 );
             }
+        } finally {
+            this.applyScope();
         }
     }
 
@@ -431,6 +432,8 @@ class RecurringJobsController extends BaseController {
                         .ok("OK")
                 );
             }
+        } finally {
+            this.applyScope();
         }
     }
 
@@ -477,6 +480,8 @@ class RecurringJobsController extends BaseController {
                         .ok("OK")
                 );
             }
+        } finally {
+            this.applyScope();
         }
     }
 
@@ -520,6 +525,8 @@ class RecurringJobsController extends BaseController {
                         .ok("OK")
                 );
             }
+        } finally {
+            this.applyScope();
         }
     }
 
