@@ -68,7 +68,7 @@ export function transformDispatchJobDTO(dto: IDispatchJobDto): IDispatchJob {
         ...dto,
         time: dto.time ? dayjs(dto.time) : undefined,
         booked: dayjs(dto.booked),
-        followupTime: dayjs(dto.followupTime),
+        followupTime: dto.followupTime ? dayjs(dto.followupTime) : undefined,
     };
 }
 
