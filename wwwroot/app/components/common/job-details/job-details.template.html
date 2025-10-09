@@ -31,7 +31,7 @@
 
     <md-card class="job-detail-widget md-padding">
         <!-- Header with tabs (shown only when there are related jobs) -->
-        <div class="header-bar" ng-if="ctrl.jobGroups && ctrl.jobGroups.length > 0">
+        <div class="header-bar" ng-if="::ctrl.jobGroups && ctrl.jobGroups.length > 0">
             <div class="job-ids-container">
                 <md-tabs
                         md-border-bottom
@@ -40,11 +40,11 @@
                         md-selected="ctrl.selectedTabIndex">
                     <md-tab
                             ng-disabled="ctrl.processingTabChange"
-                            ng-repeat="relatedJob in ctrl.jobGroups track by relatedJob.job.id">
+                            ng-repeat="relatedJob in ::ctrl.jobGroups track by relatedJob.job.id">
                         <md-tab-label>
                             <div ng-click="ctrl.switchToRelatedJob($index)">
-                                <span ng-if="ctrl.isRecurringJob">Job #{{$index + 1}}</span>
-                                <span ng-if="!ctrl.isRecurringJob">Job #{{relatedJob.job.text}}</span>
+                                <span ng-if="::ctrl.isRecurringJob">Job #{{$index + 1}}</span>
+                                <span ng-if="::!ctrl.isRecurringJob">Job #{{relatedJob.job.text}}</span>
                                 <md-icon
                                         md-font-set="material-symbols-outlined"
                                         ng-if="relatedJob.subJobs.length > 0">
@@ -59,26 +59,6 @@
 
         <!-- Main header with controls (position depends on whether tabs exist) -->
         <div class="header-bar">
-            <!-- Status Menu -->
-            <md-menu id="status-menu1" md-position-mode="target-right target" ng-if="ctrl.showStageDropdown">
-                <md-button aria-label="internal stage" ng-click="$mdMenu.open($event)">
-                    <md-tooltip md-direction="bottom">Modify Status</md-tooltip>
-                    <md-icon
-                            md-font-set="material-symbols-outlined"
-                            style="margin-right: 5px">swap_horiz
-                    </md-icon>
-                    {{ctrl.selectedStatusText}}
-                </md-button>
-                <md-menu-content class="md-dense">
-                    <md-menu-item ng-repeat="internalStatus in ctrl.internalStatusList">
-                        <md-button
-                                ng-click="ctrl.setInternalStatus(internalStatus.id, ctrl.job)">
-                            {{internalStatus.text}}
-                        </md-button>
-                    </md-menu-item>
-                </md-menu-content>
-            </md-menu>
-
             <!-- View Density Toggle -->
             <md-button class="md-raised"
                        aria-label="Toggle density view"
@@ -163,20 +143,20 @@
                 <div class="metric-label">Booked</div>
                 <div class="metric-value">
                     {{ctrl.job.createdDate ? (ctrl.job.createdDate | momentFormat:'MMM DD') : '—'}}
-                    ({{ (ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort}})
+                    ({{:: (ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort}})
                 </div>
             </div>
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editStartTime($event, ctrl.job)">
                 <div class="metric-label">Start Time</div>
                 <div class="metric-value">
-                    {{ctrl.job.time ? (ctrl.job.time | momentFormat:'HH:mm') : '—'}} ({{ (ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort}})
+                    {{ctrl.job.time ? (ctrl.job.time | momentFormat:'HH:mm') : '—'}} ({{:: (ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort}})
                 </div>
             </div>
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editPuDate($event, ctrl.job)">
                 <div class="metric-label">PU Time</div>
                 <div class="metric-value">
                 <span ng-if="ctrl.job.puTime">
-                      {{ ctrl.job.puTime | momentFormat:'MM/DD HH:mm'}} ({{ (ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort}})
+                      {{ ctrl.job.puTime | momentFormat:'MM/DD HH:mm'}} ({{:: (ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort}})
                     </span>
                     <span ng-if="!ctrl.job.puTime">-</span>
                 </div>
@@ -185,7 +165,7 @@
                 <div class="metric-label">Deliver By</div>
                 <div class="metric-value" ng-if="ctrl.job.deliverByTime">
                     {{ctrl.job.deliverByTime | momentFormat:'MMM DD HH:mm' }}
-                    ({{ (ctrl.job.deliveryTimeZone ? ctrl.job.deliveryTimeZone.text : ctrl.timeZone) | timezoneShort}})
+                    ({{:: (ctrl.job.deliveryTimeZone ? ctrl.job.deliveryTimeZone.text : ctrl.timeZone) | timezoneShort}})
                 </div>
                 <div class="metric-value" ng-if="!ctrl.job.deliverByTime">
                     -
@@ -214,7 +194,7 @@
                 <div class="metric-label">POD Time</div>
                 <div class="metric-value">
                     <span ng-if="ctrl.job.completedTime">
-                      {{ ctrl.job.completedTime | momentFormat:'MM/DD HH:mm'}} ({{ ctrl.job.deliveryTimeZone.text | timezoneShort}})
+                      {{ ctrl.job.completedTime | momentFormat:'MM/DD HH:mm'}} ({{:: ctrl.job.deliveryTimeZone.text | timezoneShort}})
                     </span>
                     <span ng-if="!ctrl.job.completedTime">-</span>
                 </div>
@@ -440,7 +420,7 @@
                     <!-- Flight Information -->
                     <section
                             class="info-section client-section"
-                            ng-if="ctrl.job.assignedFlight">
+                            ng-if="::ctrl.job.assignedFlight">
                         <md-toolbar class="job-detail-toolbar">
                             <div class="md-toolbar-tools">
                                 <span class="material-symbols-outlined">flight</span>
@@ -454,7 +434,7 @@
                                 ng-if="ctrl.job.assignedFlight.flightSegments && ctrl.job.assignedFlight.flightSegments.length > 0">
                             <div class="segment-header md-caption">
                 <span>SEGMENTS:
-                  {{ctrl.job.assignedFlight.flightSegments.length}}</span>
+                  {{::ctrl.job.assignedFlight.flightSegments.length}}</span>
                             </div>
 
                             <div
@@ -463,8 +443,8 @@
                                 <div class="segment-content">
                                     <div class="segment-number">
                                         Segment {{$index + 1}} of
-                                        {{ctrl.job.assignedFlight.flightSegments.length}} -
-                                        {{segment.carrierFsCode}}{{::segment.flightNumber}}
+                                        {{::ctrl.job.assignedFlight.flightSegments.length}} -
+                                        {{::segment.carrierFsCode}}{{::segment.flightNumber}}
                                     </div>
 
                                     <div
@@ -474,16 +454,16 @@
                                         <!-- Departure -->
                                         <div class="segment-departure" flex="30">
                                             <div class="time">
-                                                {{segment.departureTime | momentFormat: 'MM/DD/YYYY HH:mm'}}
+                                                {{::segment.departureTime | momentFormat: 'MM/DD/YYYY HH:mm'}}
                                                 <span ng-if="segment.departureAirportTimeZone">
-                                                    ({{segment.departureAirportTimeZone | timezoneShort}})
+                                                    ({{::segment.departureAirportTimeZone | timezoneShort}})
                                                 </span>
                                             </div>
                                             <div class="airport-code">
-                                                {{segment.departureAirportFsCode}}
+                                                {{::segment.departureAirportFsCode}}
                                             </div>
                                             <div class="terminal" ng-if="segment.departureTerminal">
-                                                Terminal {{segment.departureTerminal}}
+                                                Terminal {{::segment.departureTerminal}}
                                             </div>
                                         </div>
 
@@ -500,7 +480,7 @@
                                                 </md-icon>
                                             </div>
                                             <div class="aircraft-info">
-                                                {{segment.aircraftName || segment.flightEquipmentIataCode || 'Unknown'}}
+                                                {{::segment.aircraftName || segment.flightEquipmentIataCode || 'Unknown'}}
                                             </div>
                                         </div>
 
@@ -509,14 +489,14 @@
                                             <div class="time">
                                                 {{segment.arrivalTime | momentFormat: 'MM/DD/YYYY HH:mm'}}
                                                 <span ng-if="segment.arrivalAirportTimeZone">
-                          ({{segment.arrivalAirportTimeZone | timezoneShort}})
+                          ({{::segment.arrivalAirportTimeZone | timezoneShort}})
                         </span>
                                             </div>
                                             <div class="airport-code">
-                                                {{segment.arrivalAirportFsCode}}
+                                                {{::segment.arrivalAirportFsCode}}
                                             </div>
                                             <div class="terminal" ng-if="segment.arrivalTerminal">
-                                                Terminal {{segment.arrivalTerminal}}
+                                                Terminal {{::segment.arrivalTerminal}}
                                             </div>
                                         </div>
                                     </div>
@@ -529,7 +509,7 @@
                                             md-font-set="material-symbols-outlined">schedule
                                     </md-icon>
                                     <span class="layover-text">
-                    {{ctrl.getConnectionTime(segment, ctrl.job.assignedFlight.flightSegments[$index + 1])}}
+                    {{::ctrl.getConnectionTime(segment, ctrl.job.assignedFlight.flightSegments[$index + 1])}}
                     layover
                   </span>
                                 </div>
@@ -542,7 +522,7 @@
                     <!-- Agent information -->
                     <section
                             class="info-section booker-section"
-                            ng-if="ctrl.job.assignedAgent">
+                            ng-if="::ctrl.job.assignedAgent">
                         <md-toolbar class="job-detail-toolbar">
                             <div class="md-toolbar-tools">
                                 <span class="material-symbols-outlined">badge</span>
@@ -1823,10 +1803,7 @@
             class="pod-main-photo"
             ng-if="ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex] && ctrl.isImageFile(ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex])"
             ng-click="ctrl.openPodViewer(ctrl.selectedPhotoIndex)">
-        <img
-                alt="POD Photo {{ctrl.selectedPhotoIndex + 1}}"
-                ng-src="{{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].url ? 'data:image/png;base64,' + ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].url : ''}}"
-        />
+        <img ng-src="{{::ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].url}}"/>
 
         <div class="pod-photo-info">
             <p class="timestamp">
@@ -1890,21 +1867,21 @@
             <md-grid-tile
                     ng-class="{'active-thumbnail': $index === ctrl.selectedPhotoIndex && ctrl.isImageFile(photo)}"
                     ng-click="ctrl.isImageFile(photo) ? ctrl.setSelectedPhoto($index) : ctrl.downloadFile(photo)"
-                    ng-repeat="photo in ctrl.formattedPodPhotos track by $index">
+                    ng-repeat="photo in ::ctrl.formattedPodPhotos track by $index">
                 <!-- Show image thumbnail -->
                 <img
-                        ng-if="ctrl.isImageFile(photo) && photo.url"
+                        ng-if="::ctrl.isImageFile(photo) && photo.url"
                         alt="Photo {{$index + 1}}"
-                        ng-src="{{'data:image/png;base64,' + photo.url}}"/>
+                        ng-src="{{::photo.url}}"/>
 
                 <!-- Show file icon for non-image files -->
                 <div ng-if="!ctrl.isImageFile(photo) || !photo.url"
                      style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f5f5f5; cursor: pointer;">
                     <md-icon md-font-set="material-symbols-outlined"
                              style="font-size: 48px; color: #666; margin-bottom: 8px;">
-                        {{ ctrl.isPdfFile(photo) ? 'picture_as_pdf' : 'insert_drive_file' }}
+                        {{ ::ctrl.isPdfFile(photo) ? 'picture_as_pdf' : 'insert_drive_file' }}
                     </md-icon>
-                    <span style="font-size: 10px; text-align: center; color: #666; margin-top: 20px;">{{photo.fileName}}</span>
+                    <span style="font-size: 10px; text-align: center; color: #666; margin-top: 20px;">{{::photo.fileName}}</span>
                 </div>
 
                 <md-grid-tile-footer>
@@ -1989,24 +1966,24 @@
                     ng-repeat="photo in ctrl.formattedPickupPhotos track by $index">
                 <!-- Show image thumbnail -->
                 <img
-                        ng-if="ctrl.isImageFile(photo) && photo.url"
+                        ng-if="::ctrl.isImageFile(photo) && photo.url"
                         alt="Pickup Photo {{$index + 1}}"
-                        ng-src="{{'data:image/png;base64,' + photo.url}}"/>
+                        ng-src="{{::photo.url}}"/>
 
                 <!-- Show file icon for non-image files -->
-                <div ng-if="!ctrl.isImageFile(photo) || !photo.url"
+                <div ng-if="::!ctrl.isImageFile(photo) || !photo.url"
                      style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f5f5f5; cursor: pointer;">
                     <md-icon md-font-set="material-symbols-outlined"
                              style="font-size: 48px; color: #666; margin-bottom: 8px;">
-                        {{ ctrl.isPdfFile(photo) ? 'picture_as_pdf' : 'insert_drive_file' }}
+                        {{ ::ctrl.isPdfFile(photo) ? 'picture_as_pdf' : 'insert_drive_file' }}
                     </md-icon>
-                    <span style="font-size: 10px; text-align: center; color: #666; margin-top: 20px;">{{photo.fileName}}</span>
+                    <span style="font-size: 10px; text-align: center; color: #666; margin-top: 20px;">{{::photo.fileName}}</span>
                 </div>
 
                 <md-grid-tile-footer>
                     <h3>
                         Pickup {{$index + 1}}
-                        <md-icon ng-if="!ctrl.isImageFile(photo)" md-font-set="material-symbols-outlined"
+                        <md-icon ng-if="::!ctrl.isImageFile(photo)" md-font-set="material-symbols-outlined"
                                  style="font-size: 16px; margin-left: 4px;">
                             download
                         </md-icon>
@@ -2050,8 +2027,8 @@
 <pod-photo-viewer
         initial-photo-index="ctrl.selectedPhotoIndex"
         is-open="ctrl.isPodViewerOpen"
-        ng-if="ctrl.formattedPodPhotos.filter(ctrl.isImageFile).length > 0"
+        ng-if="ctrl.imageOnlyPodPhotos.length > 0"
         on-close="ctrl.closePodViewer()"
-        photos="ctrl.formattedPodPhotos.filter(ctrl.isImageFile)"
+        photos="ctrl.imageOnlyPodPhotos"
         time-zone="ctrl.job.deliveryTimeZone.text">
 </pod-photo-viewer>

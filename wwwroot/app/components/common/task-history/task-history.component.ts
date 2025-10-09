@@ -8,6 +8,8 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import DensityMode from "../../../enums/densityMode";
 
+dayjs.extend(relativeTime);
+
 class TaskHistoryController extends BaseController {
     static $inject = [
         'toastrService',
@@ -38,7 +40,7 @@ class TaskHistoryController extends BaseController {
 
     historyLoading?: boolean;
     densityMode: DensityMode = DensityMode.Normal;
-
+    
     constructor(
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
@@ -49,7 +51,6 @@ class TaskHistoryController extends BaseController {
         super();
 
         this.initServices($timeout, $interval);
-        dayjs.extend(relativeTime);
 
         this.isUsCustomer = appConfig.US_Customer;
         this.timeZone = TimeZone;

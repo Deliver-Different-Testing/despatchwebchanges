@@ -41,7 +41,6 @@ import PodPhotoType from "../../../enums/podPhotoType";
 
 class JobDetailController extends BaseController {
     static $inject = [
-        "$scope",
         "$mdDialog",
         "toastrService",
         "DispatchData",
@@ -73,7 +72,6 @@ class JobDetailController extends BaseController {
     allTabs: TabItem[];
     options: JobOptions;
     isPodViewerOpen: boolean = false;
-    formattedPodPhotos: PodPhoto[] = [];
     selectedPhotoIndex: number = 0;
     internalStatusList: InternalStatus[];
     isLoading: boolean = false;
@@ -86,14 +84,18 @@ class JobDetailController extends BaseController {
     selectedSubJobIndex: number = 0;
     jobAddressIcon: string = "pin_drop";
     viewDensity: 'normal' | 'dense' | 'ultradense' = 'normal';
+
+    // Photos
+    formattedPodPhotos: PodPhoto[] = [];
     formattedPickupPhotos: PodPhoto[] = [];
+    imageOnlyPodPhotos: PodPhoto[] = [];
+    imageOnlyPickupPhotos: PodPhoto[] = [];
 
     isEditMode: boolean = false;
     fieldVisibility: { [key: string]: boolean } = {};
     defaultFieldVisibility: { [key: string]: boolean } = {};
 
     constructor(
-        $scope: angular.IScope,
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
@@ -111,7 +113,7 @@ class JobDetailController extends BaseController {
         private voidJobConfirmationDialogService: VoidJobConfirmationDialogService
     ) {
         super();
-        this.initServices($timeout, $interval, $scope);
+        this.initServices($timeout, $interval);
 
         this.isUsCustomer = appConfig.US_Customer;
         this.timeZone = TimeZone;
@@ -161,8 +163,6 @@ class JobDetailController extends BaseController {
         // Apply UI tweaks
         this.loadViewDensity();
         this.initializeFieldVisibility();
-
-        this.applyScope();
     }
 
     private initializeFieldVisibility(): void {
@@ -273,8 +273,9 @@ class JobDetailController extends BaseController {
         }
 
         this.processingTabChange = true;
+        const previousJobId = this.jobId;
         console.log(`Switching to tab ${index}`);
-
+        
         try {
             if (!this.job || !this.jobGroups || this.jobGroups.length <= index) {
                 console.warn(`Invalid related job data for index ${index}`);
@@ -306,13 +307,15 @@ class JobDetailController extends BaseController {
 
                 this.selectedRelatedJob = targetJobGroup;
                 this.selectedSubJobIndex = -1;
+
+                if (previousJobId !== this.jobId) {
+                    this.$rootScope.$broadcast("jobChanged", this.job);
+                }
             } else {
                 console.log(`Already on the selected job or invalid job data`);
             }
         } finally {
             this.processingTabChange = false;
-            this.$rootScope.$broadcast("jobChanged", this.job);
-            this.applyScope();
         }
     }
     
@@ -347,9 +350,7 @@ class JobDetailController extends BaseController {
                 this.selectedTabIndex = 0;
                 this.jobGroups = [];
             }
-
-            this.applyScope();
-
+            
             if (this.job.completedTime && !this.isRecurringJob) {
                 await this.loadPodPhotos();
             }
@@ -450,9 +451,11 @@ class JobDetailController extends BaseController {
 
             // Process delivery photos
             this.formattedPodPhotos = this.processPhotoData(deliveryPhotosData, JobPhotoType.Delivery);
+            this.imageOnlyPodPhotos = this.formattedPodPhotos.filter(photo => this.isImageFile(photo));
 
             // Process pickup photos
             this.formattedPickupPhotos = this.processPhotoData(pickupPhotosData, JobPhotoType.Pickup);
+            this.imageOnlyPickupPhotos = this.formattedPickupPhotos.filter(photo => this.isImageFile(photo));
 
             console.log(
                 `Successfully processed ${this.formattedPodPhotos.length} delivery photos and ${this.formattedPickupPhotos.length} pickup photos`
@@ -478,7 +481,7 @@ class JobDetailController extends BaseController {
             try {
                 // New format with S3 metadata
                 const podPhoto: PodPhoto = {
-                    url: photoData.data || '', // Will be empty for non-images
+                    url: photoData.data ? `data:image/png;base64,${photoData.data}` : '',
                     timestamp: this.job?.completedTime
                         ? displayLongDate(this.job.completedTime)
                         : undefined,
@@ -935,8 +938,6 @@ class JobDetailController extends BaseController {
             }
 
             console.error("Error updating GPS:", error);
-        } finally {
-            this.applyScope();
         }
     }
 
@@ -1978,7 +1979,6 @@ class JobDetailController extends BaseController {
         this.selectedSubJobIndex = subJobIndex;
 
         await this.loadSubJobDetails(subJobIndex);
-        this.applyScope();
     }
 
     private async loadSubJobDetails(subJobIndex: number): Promise<void> {
@@ -2043,7 +2043,6 @@ class JobDetailController extends BaseController {
             this.toastrService.showErrorToast("Failed to load subjob details");
         } finally {
             this.isLoading = false;
-            this.applyScope();
         }
     }
 

@@ -97,6 +97,10 @@ class NationwideControl extends BaseController {
     readonly nationwideRepriceJobList: JobListType = JobListType.NationwideRepriceJobList;
     readonly nationwidePageId: number = AppPages.Domestic;
 
+    private lastMapJobId?: number;
+    private cachedMapConfig?: any;
+    private isSelectingJob: boolean = false;
+    private lastSelectedJobId?: number;
 
     readonly isUsCustomer: boolean = false;
     private tasksLoadingInBackground: boolean = false;
@@ -210,6 +214,7 @@ class NationwideControl extends BaseController {
     // Flight Search
     flightSearchText: string = '';
     filteredFlightOptions?: IFlightViewModel[] = [];
+    private isHandlingJobChange: boolean = false;
 
     constructor(
         $scope: angular.IScope,
@@ -245,7 +250,7 @@ class NationwideControl extends BaseController {
 
         this.greeting = greetUser(FirstName);
         this.isUsCustomer = this.appConfig.US_Customer;
-        this.timeZone =  getIanaTimezone(TimeZone);
+        this.timeZone = getIanaTimezone(TimeZone);
 
         // Date filter
         this.dateFilterData = setDateFilterDefaults();
@@ -272,15 +277,26 @@ class NationwideControl extends BaseController {
         });
 
         this.watchEvent('jobChanged', async (_, newJob: IJob) => {
+            if (this.isHandlingJobChange) {
+                console.log('Already handling job change, skipping');
+                return;
+            }
+
             if (this.currentJobId === newJob.id) {
                 console.info(`Job ${newJob.jobNo} is already the current job, skipping reload`);
                 return;
             }
 
-            console.info(`Handling job changed event for job ${newJob.jobNo}`);
+            this.isHandlingJobChange = true;
 
-            const job = await this.DispatchData.getDispatchJobDetail(newJob.id);
-            await this.selectJob(job)
+            try {
+                console.info(`Handling job changed event for job ${newJob.jobNo}`);
+
+                const job = await this.DispatchData.getDispatchJobDetail(newJob.id);
+                await this.selectJob(job);
+            } finally {
+                this.isHandlingJobChange = false;
+            }
         });
 
         this.watchScope(() => this.layout, () => {
@@ -552,7 +568,6 @@ class NationwideControl extends BaseController {
             this.tasksService.loadLists().then(({staffList, eventTypesList}) => {
                 this.staffList = staffList;
                 this.eventTypesList = eventTypesList;
-                this.applyScope();
             });
 
             const filters = this.tasksService.initializePageFilters(this.nationwidePageId);
@@ -775,7 +790,6 @@ class NationwideControl extends BaseController {
                 localStorage.setItem(this.NationwideLastActiveLayoutKey, layoutName);
             }
 
-            this.applyScope();
             return currentLayout;
         } catch (error) {
             if (!error) {
@@ -783,7 +797,6 @@ class NationwideControl extends BaseController {
             } else {
                 console.error("Unable to save layout:", error);
             }
-            this.applyScope();
             return null;
         }
     }
@@ -811,11 +824,9 @@ class NationwideControl extends BaseController {
                 this.loadLayout(0);
             }
 
-            this.applyScope();
             this.toastrService.showSuccessToast("Layout deleted successfully");
         } catch (error) {
             this.handleError(error);
-            this.applyScope();
         }
     }
 
@@ -892,7 +903,6 @@ class NationwideControl extends BaseController {
                 console.info('Job reselected successfully');
             }
 
-            this.applyScope();
         } catch (error) {
             console.error("Error in handleStatusChange:", {
                 error,
@@ -989,6 +999,21 @@ class NationwideControl extends BaseController {
         try {
             if (!job) return;
 
+            // ✅ Prevent re-entry
+            if (this.isSelectingJob) {
+                console.log('Already selecting a job, skipping');
+                return;
+            }
+
+            // ✅ Prevent selecting same job twice
+            if (this.lastSelectedJobId === job.id) {
+                console.log(`Job ${job.id} already selected, skipping`);
+                return;
+            }
+
+            this.isSelectingJob = true;
+            this.lastSelectedJobId = job.id;
+
             console.info(`Selecting job ${job.jobNo}`);
 
             // Cancel any existing task loading for a previous job
@@ -1001,7 +1026,6 @@ class NationwideControl extends BaseController {
             this.currentJob = job;
             this.currentJobId = job.id;
 
-            // Set isDeliveryJobType flag
             this.isDeliveryJobType = this.isDeliveryJob(job);
 
             // Update UI first
@@ -1015,9 +1039,10 @@ class NationwideControl extends BaseController {
             this.updateUIState(job);
             this.displayJobOnMap(job);
 
-            this.applyScope();
         } catch (error) {
             console.error("Error in selectJob:", error);
+        } finally {
+            this.isSelectingJob = false;
         }
     }
 
@@ -1051,8 +1076,6 @@ class NationwideControl extends BaseController {
                     this.tasks = tasks;
                     this.filteredTasks = tasks;
                 }
-
-                this.applyScope();
             }
         }, this.nationwidePageId, effectiveJobId);
     }
@@ -1109,10 +1132,17 @@ class NationwideControl extends BaseController {
                 return;
             }
 
+            if (this.lastMapJobId === job.id && this.cachedMapConfig) {
+                console.log('Using cached map config for job', job.id);
+                return;
+            }
+
             console.info(`Displaying job ${job.jobNo} on map`);
 
-            this.mapConfig = this.calculateMapBounds(job);
-            this.applyScope();
+            this.cachedMapConfig = this.calculateMapBounds(job);
+            this.mapConfig = this.cachedMapConfig;
+            this.lastMapJobId = job.id;
+
         } catch (error) {
             console.error('Error in displayJobOnMap:', error);
             this.toastrService.showErrorToast('An unexpected error occurred displaying this job on the map');
@@ -1178,7 +1208,6 @@ class NationwideControl extends BaseController {
                 delivery: deliveryCoords,
                 childJobs: {},
                 flight: job.speedId === 415,
-                timestamp: Date.now()
             },
             selectedJobIndex: 0
         };
@@ -1219,7 +1248,6 @@ class NationwideControl extends BaseController {
         } finally {
             this.agentsLoading = false;
             this.updateUIState(job);
-            this.applyScope();
         }
     }
 
@@ -1245,7 +1273,7 @@ class NationwideControl extends BaseController {
                 departureDate = dayjs(this.lastDepartureTime);
             } else if (this.currentJob.booked) {
                 departureDate = dayjs(this.currentJob.booked);
-            } else if(this.currentJob.pickUpTimeZone) {
+            } else if (this.currentJob.pickUpTimeZone) {
                 departureDate = dayjs.tz(this.currentJob.pickUpTimeZone.text);
             } else {
                 departureDate = dayjs.tz(this.timeZone);
@@ -1291,7 +1319,6 @@ class NationwideControl extends BaseController {
         } finally {
             this.flightsLoading = false;
             this.updateUIState(this.currentJob);
-            this.applyScope();
         }
     }
 
@@ -1326,7 +1353,6 @@ class NationwideControl extends BaseController {
             if (!result.shouldAssign) return;
 
             this.isDataLoading = true;
-            this.applyScope();
             console.info('Assigning to job');
 
             const previousInternalStatusId = job.internalStatusId ?? InternalJobStatus.NewJobs;
@@ -1371,7 +1397,6 @@ class NationwideControl extends BaseController {
             this.handleError(error);
         } finally {
             this.isDataLoading = false;
-            this.applyScope();
         }
     }
 
@@ -1406,7 +1431,6 @@ class NationwideControl extends BaseController {
             if (!result.shouldAssign) return;
 
             this.isDataLoading = true;
-            this.applyScope();
 
             console.info('Assigning to job');
 
@@ -1428,7 +1452,6 @@ class NationwideControl extends BaseController {
             this.handleError(error);
             this.isDataLoading = false;
         } finally {
-            this.applyScope();
         }
     }
 
@@ -1539,7 +1562,6 @@ class NationwideControl extends BaseController {
             });
 
             await tasksPromise;
-            this.applyScope();
         } catch (error) {
             console.error("Error fetching job data:", error);
 
@@ -1548,7 +1570,6 @@ class NationwideControl extends BaseController {
             if (requestedTypes.includes(JobDataType.POD)) this.podListLoading = false;
             if (requestedTypes.includes(JobDataType.REPRICE)) this.repriceListLoading = false;
 
-            this.applyScope();
         }
     }
 
@@ -1652,12 +1673,10 @@ class NationwideControl extends BaseController {
             }
 
             this.tasksLoading = false;
-            this.applyScope();
         } catch (error) {
             console.error("Error loading tasks:", error);
             this.toastrService.showErrorToast("Error loading tasks");
             this.tasksLoading = false;
-            this.applyScope();
         }
     }
 
@@ -1767,7 +1786,6 @@ class NationwideControl extends BaseController {
 
             // Reload flights with the new airport selection
             await this.loadFlights();
-            this.applyScope();
         } catch (error) {
             console.error('Error loading flights after airport change:', error);
         }
@@ -1809,10 +1827,8 @@ class NationwideControl extends BaseController {
             }
 
             console.info("[NationwideRefresh] - Job lists refresh complete");
-            this.applyScope();
         } catch (error) {
             console.error("[NationwideRefresh] - Error refreshing job lists:", error);
-            this.applyScope();
         }
     }
 
@@ -1956,7 +1972,6 @@ class NationwideControl extends BaseController {
     async addStopToJob($event: MouseEvent, job: IDispatchJob): Promise<void> {
         const setLoadingState = (isLoading: boolean) => {
             this.isDataLoading = isLoading;
-            this.applyScope();
         };
 
         try {

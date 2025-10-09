@@ -154,7 +154,7 @@ class TaskListItemController extends BaseController {
 
     isTaskOverdue(task: ITask): boolean {
         if (task.closed) return false;
-        return dayjs(task.dueDate).isBefore(dayjs());
+        return task.dueDate.isBefore(dayjs());
     }
 
     private handleError(error: any) {
