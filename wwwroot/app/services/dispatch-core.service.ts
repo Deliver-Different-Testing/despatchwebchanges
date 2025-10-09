@@ -56,11 +56,10 @@ class DispatchCoreService implements angular.IServiceProvider {
         return this;
     }
 
-    async getSelectedViews(userId: number, pageId: number): Promise<DfrntPageViewModel[]> {
+    async getSelectedViews(pageId: number): Promise<DfrntPageViewModel[]> {
         const response = await this.$http.get<DfrntPageViewModel[]>(
             `home/GetPageViews`, {
                 params: {
-                    userId,
                     pageId,
                 }
             }

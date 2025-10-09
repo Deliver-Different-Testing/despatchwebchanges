@@ -93,6 +93,7 @@ class NationwideControl extends BaseController {
     private readonly NationwideLastActiveLayoutKey: string = `lastActiveLayoutNW-${ContactID}`;
     private readonly refreshDurationIntervalKey: string = `refreshInterval-${AppPages.Domestic}-${ContactID}`;
     private readonly DateFilterKey: string = `dateFilter-${AppPages.Domestic}-${ContactID}`;
+    private readonly SelectedViewsKey: string = `selectedViews-NW-${ContactID}`;
 
     readonly nationwideJobList: JobListType = JobListType.NationwideJobList;
     readonly nationwidePodJobList: JobListType = JobListType.NationwidePodJobList;
@@ -651,7 +652,7 @@ class NationwideControl extends BaseController {
 
     async loadPageViews(): Promise<void> {
         try {
-            this.views = await this.DispatchData.getSelectedViews(ContactID, AppPages.Domestic);
+            this.views = await this.DispatchData.getSelectedViews(AppPages.Domestic);
             this.initializeViews();
 
             if (!ClientInternal) {
@@ -677,7 +678,7 @@ class NationwideControl extends BaseController {
             if (this.selectedViews.length === 0) {
                 this.views[0].selected = true;
                 this.selectedViews.push(this.views[0]);
-                NationwideControl.saveViewsToStorage(this.selectedViews);
+                this.saveViewsToStorage(this.selectedViews);
             }
 
             this.viewsInitialized = true;
@@ -690,7 +691,7 @@ class NationwideControl extends BaseController {
         });
 
         this.selectedViews = this.views;
-        NationwideControl.saveViewsToStorage(this.selectedViews);
+        this.saveViewsToStorage(this.selectedViews);
         await this.getData();
     }
 
@@ -700,7 +701,7 @@ class NationwideControl extends BaseController {
         });
 
         this.selectedViews = [];
-        NationwideControl.saveViewsToStorage(this.selectedViews);
+        this.saveViewsToStorage(this.selectedViews);
         await this.getData();
     }
 
@@ -716,7 +717,7 @@ class NationwideControl extends BaseController {
             }
         }
 
-        NationwideControl.saveViewsToStorage(this.selectedViews);
+        this.saveViewsToStorage(this.selectedViews);
         await this.getData();
     }
 
@@ -862,16 +863,16 @@ class NationwideControl extends BaseController {
         this.applyScope();
     }
 
-    private static saveViewsToStorage(views: any): void {
+    private saveViewsToStorage(views: any): void {
         if (Modernizr.localstorage) {
-            localStorage.setItem(`selectedViews-NW-${ContactID}`, JSON.stringify(views));
+            localStorage.setItem(this.SelectedViewsKey, JSON.stringify(views));
         }
     }
 
     loadViewsFromStorage(): any {
         if (Modernizr.localstorage) {
             try {
-                const savedViews = JSON.parse(localStorage.getItem(`selectedViews-NW-${ContactID}`) || '[]');
+                const savedViews = JSON.parse(localStorage.getItem(this.SelectedViewsKey) || '[]');
                 return savedViews || [];
             } catch (error) {
                 console.error('Error loading views from storage:', error);
@@ -1102,8 +1103,8 @@ class NationwideControl extends BaseController {
         // Refresh tasks
         await this.loadTasks();
 
-        // Show flight table
-        if (job.isFlightJob) {
+        // Skip flight loading if flight is already assigned
+        if (job.isFlightJob && !job.assignedFlight) {
             console.info('[NationwideController] Getting nearby airports');
             this.outboundAirportOptions = await this.nationwideService.getNearbyAirports(job.id, true);
             this.inboundAirportOptions = await this.nationwideService.getNearbyAirports(job.id, false);
@@ -1124,11 +1125,17 @@ class NationwideControl extends BaseController {
             // Reset search parameters
             this.lastDepartureTime = undefined;
             await this.loadFlights();
+        } else if (job.isFlightJob && job.assignedFlight) {
+            console.info('[NationwideController] Flight already assigned, skipping flight loading');
+            this.flightMessage = "Flight already assigned to this job";
         }
 
-        // Show agent table
-        if (this.isDeliveryJob(job)) {
+        // Skip agent loading if the agent is already assigned
+        if (this.isDeliveryJob(job) && !job.assignedAgent) {
             await this.processAgents(job);
+        } else if (this.isDeliveryJob(job) && job.assignedAgent) {
+            console.info('[NationwideController] Agent already assigned, skipping agent loading');
+            this.agentMessage = "Agent already assigned to this job";
         }
 
         this.updateUIState(job);
@@ -1267,6 +1274,11 @@ class NationwideControl extends BaseController {
         if (!this.currentJob) {
             this.flightOptions = [];
             this.flightMessage = "Please select a job to view flight options";
+            return;
+        }
+
+        if (this.currentJob.assignedFlight) {
+            console.info("Flight already assigned, skipping flight loading");
             return;
         }
 
