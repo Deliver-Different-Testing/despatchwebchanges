@@ -85,6 +85,8 @@ class RecurringJobsController extends BaseController {
     ) {
         super();
         this.initServices($timeout, $interval);
+        
+        this.bindFunctions();
 
         this.isUsCustomer = appConfig.US_Customer;
         this.isAdmin = ClientInternal;
@@ -97,6 +99,36 @@ class RecurringJobsController extends BaseController {
         this.refreshData().then(() => console.log("Recurring Jobs Loaded!"));
     }
 
+    private bindFunctions(): void {
+        // Bind pagination and sorting functions
+        this.onPaginate = this.onPaginate.bind(this);
+        this.onReorder = this.onReorder.bind(this);
+        this.searchJobs = this.searchJobs.bind(this);
+
+        // Bind job action functions
+        this.selectJobDetail = this.selectJobDetail.bind(this);
+        this.sendPrebookJob = this.sendPrebookJob.bind(this);
+        this.voidPrebookJob = this.voidPrebookJob.bind(this);
+        this.sendAllSelectPrebookJobs = this.sendAllSelectPrebookJobs.bind(this);
+        this.voidAllSelectPrebookJobs = this.voidAllSelectPrebookJobs.bind(this);
+
+        // Bind UI functions
+        this.refreshData = this.refreshData.bind(this);
+        this.switchActiveFilter = this.switchActiveFilter.bind(this);
+        this.getContextMenuOptions = this.getContextMenuOptions.bind(this);
+        this.openSearch = this.openSearch.bind(this);
+
+        // Bind layout functions
+        this.saveLayout = this.saveLayout.bind(this);
+        this.deleteLayout = this.deleteLayout.bind(this);
+        this.loadLayout = this.loadLayout.bind(this);
+
+        // Bind utility functions
+        this.greetUser = this.greetUser.bind(this);
+        this.toggleSidenav = this.toggleSidenav.bind(this);
+        this.showItems = this.showItems.bind(this);
+    }
+    
     saveLayout() {
         this.$mdDialog
             .show(this.$mdDialog
@@ -262,14 +294,12 @@ class RecurringJobsController extends BaseController {
         });
     }
 
-    async refreshData(active?: boolean): Promise<void> {
+    async refreshData(): Promise<void> {
         console.log("Refreshing data!")
         
         try {
-            if (active) this.jobQuery.active = active;
-
             // Parse sort order
-            let orderBy = this.jobQuery.order || "jobName";
+            let orderBy = this.jobQuery.order || "booked";
             let orderDirection = "asc";
 
             if (orderBy.startsWith("-")) {
@@ -521,7 +551,12 @@ class RecurringJobsController extends BaseController {
         this.jobQuery.active = isActive;
         this.jobQuery.page = 1;
         
-        await this.refreshData(isActive);
+        await this.refreshData();
+    }
+    
+    async onPaginate() {
+        console.log("Paginating!")
+        await this.refreshData();
     }
 }
 

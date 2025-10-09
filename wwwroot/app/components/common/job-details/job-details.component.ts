@@ -310,7 +310,10 @@ class JobDetailController extends BaseController {
     }
 
     private async loadJobData(jobId: number): Promise<void> {
-        if (!jobId) return;
+        if (!jobId) {
+            console.log("No job ID provided");
+            return;
+        }
 
         this.isLoading = true;
 
@@ -803,11 +806,11 @@ class JobDetailController extends BaseController {
         );
 
         // Begin a job-done process
-        if(!this.job) {
+        if (!this.job) {
             this.toastrService.showWarningToast("Unable to mark job as done");
             return;
         }
-        
+
         await this.markJobAsDone($event, this.job);
     }
 
@@ -950,7 +953,7 @@ class JobDetailController extends BaseController {
             this.handleError(error);
         }
     }
-    
+
     private async updateJobRateAndAddress(
         job: IJob,
         addressResult: IEditAddressDialogViewModel,
@@ -1078,7 +1081,7 @@ class JobDetailController extends BaseController {
                 JobProperty.PodName
             );
 
-            // Begin job done process
+            // Begin job-done process
             const refreshedJob = this.job;
             if (!refreshedJob) return;
             await this.markJobAsDone($event, refreshedJob);

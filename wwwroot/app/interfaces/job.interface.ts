@@ -679,7 +679,7 @@ export interface IDispatchJob {
     assignedAgent?: IAgent;
 
     conNote?: string;
-    followupTime: Dayjs;
+    followupTime?: Dayjs;
     fromAirportId?: number;
     toAirportId?: number;
     van?: boolean;
