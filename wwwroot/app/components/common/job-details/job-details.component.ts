@@ -277,9 +277,7 @@ class JobDetailController extends BaseController {
 
         try {
             if (!this.job || !this.jobGroups || this.jobGroups.length <= index) {
-                console.warn(
-                    `Invalid related job data for index ${index}`
-                );
+                console.warn(`Invalid related job data for index ${index}`);
                 return;
             }
 
@@ -287,28 +285,37 @@ class JobDetailController extends BaseController {
             const targetJob = targetJobGroup.job;
 
             if (targetJob && targetJob.id && targetJob.id !== this.jobId) {
-                console.log(
-                    `Loading related job: ${targetJob.id} (${targetJob.text})`
-                );
+                console.log(`Loading related job: ${targetJob.id} (${targetJob.text})`);
+
+                // Preserve the original related jobs data
+                const originalRelatedJobs = this.job.relatedJobs;
+                const originalJobGroups = this.jobGroups;
+                const originalSelectedTabIndex = this.selectedTabIndex;
 
                 this.selectedTabIndex = index;
                 this.jobId = targetJob.id;
 
                 await this.loadJobData(targetJob.id);
 
+                // Restore the preserved data
+                if (originalRelatedJobs && this.job) {
+                    this.job.relatedJobs = originalRelatedJobs;
+                    this.jobGroups = originalJobGroups;
+                    this.selectedTabIndex = originalSelectedTabIndex;
+                }
+
                 this.selectedRelatedJob = targetJobGroup;
                 this.selectedSubJobIndex = -1;
             } else {
-                console.log(
-                    `Already on the selected job or invalid job data`
-                );
+                console.log(`Already on the selected job or invalid job data`);
             }
         } finally {
             this.processingTabChange = false;
             this.$rootScope.$broadcast("jobChanged", this.job);
+            this.applyScope();
         }
     }
-
+    
     private async loadJobData(jobId: number): Promise<void> {
         if (!jobId) {
             console.log("No job ID provided");
