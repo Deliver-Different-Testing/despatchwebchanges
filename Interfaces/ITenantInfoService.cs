@@ -11,6 +11,7 @@ public interface ITenantInfoService
     DateTime GetCurrentTimeFromTimeZone(TimeZone timeZone);
     string FormatDateForTenant(DateTime? dateTime);
     int GetStaffId();
+    int GetContactId();
     bool IsUsTenant();
     Task<Suggestion> GetStaffInfoAsync();
 }

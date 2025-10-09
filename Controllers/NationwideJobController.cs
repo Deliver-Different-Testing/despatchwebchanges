@@ -17,6 +17,7 @@ public class NationwideJobController(
     IClientAccessValidatorService clientAccessValidator,
     ITenantInfoService infoService,
     IFlightRateService flightRateService,
+    IClientRepository clientRepository,
     IAddAgentRecoveryJobService recoveryJobService)
     : Controller
 {
@@ -24,10 +25,12 @@ public class NationwideJobController(
     {
         try
         {
-            if (!data.IsInternal) await clientAccessValidator.ValidateClientAccessAsync(data.Cid, data.ClientIds);
+            var clientIds = await RetrieveAndFormatClientIds();
+           
+            if (!data.IsInternal) await clientAccessValidator.ValidateClientAccessAsync(data.Cid, clientIds);
             var isUsTenant = infoService.IsUsTenant();
 
-            var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, data.ClientIds,
+            var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, clientIds,
                 NationwideWidget.JobList, data.DespatchViewIds);
 
             return Json(result);
@@ -44,10 +47,12 @@ public class NationwideJobController(
     {
         try
         {
-            if (!data.IsInternal) await clientAccessValidator.ValidateClientAccessAsync(data.Cid, data.ClientIds);
+            var clientIds = await RetrieveAndFormatClientIds();
+
+            if (!data.IsInternal) await clientAccessValidator.ValidateClientAccessAsync(data.Cid, clientIds);
             var isUsTenant = infoService.IsUsTenant();
 
-            var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, data.ClientIds,
+            var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, clientIds,
                 NationwideWidget.Pod, data.DespatchViewIds);
 
             return Json(result);
@@ -64,10 +69,12 @@ public class NationwideJobController(
     {
         try
         {
-            if (!data.IsInternal) await clientAccessValidator.ValidateClientAccessAsync(data.Cid, data.ClientIds);
+            var clientIds = await RetrieveAndFormatClientIds();
+
+            if (!data.IsInternal) await clientAccessValidator.ValidateClientAccessAsync(data.Cid, clientIds);
             var isUsTenant = infoService.IsUsTenant();
 
-            var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, data.ClientIds,
+            var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, clientIds,
                 NationwideWidget.Reprice, data.DespatchViewIds);
 
             return Json(result);
@@ -455,5 +462,12 @@ public class NationwideJobController(
                     nameof(CanAssignAgentToJob)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
+    }
+    
+    private async Task<string> RetrieveAndFormatClientIds()
+    {
+        var contactId = infoService.GetContactId();
+        var clientIds = await clientRepository.ClientContactsAsync(contactId);
+        return string.Join(",", clientIds);
     }
 }

@@ -14,7 +14,12 @@ import {
     ISuggestion
 } from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
-import {AssignFlightToJobRequest, IFlightViewModel, StatusChangeEvent} from "./nationwide.interfaces";
+import {
+    AssignFlightToJobRequest, IFlightSegment,
+    IFlightViewModel, IGetAgentOptionsResponse,
+    IGetFlightOptionsResponse,
+    StatusChangeEvent
+} from "./nationwide.interfaces";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
@@ -38,7 +43,7 @@ import greetUser from '../../functions/greetUser';
 import FlightAgentConfirmationDialogService
     from "../dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.service";
 import AgentInfoDialogService from "../dialogs/agent-info-dialog/agent-info-dialog.service";
-import dayjs from "dayjs";
+import dayjs, {Dayjs} from "dayjs";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import MessagingService from "../../services/messaging.service";
 import {ContactID, TimeZone} from "../../contants";
@@ -54,6 +59,7 @@ import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
 import timezone from "dayjs/plugin/timezone";
 import {transformFlightToDTO} from "../../functions/toDtoMappings";
 import utc from "dayjs/plugin/utc";
+import {HereMapConfig} from "../../interfaces/hereMapCredentials.interfaces";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -109,7 +115,7 @@ class NationwideControl extends BaseController {
     private tasksLoadingInBackground: boolean = false;
     greeting: string;
     isDataLoading: boolean = false;
-    layouts: any[] = [];
+    layouts: ILayout[] = [];
     defaultLayout?: ILayout;
     currentLayoutIndex: number = 0;
     currentLayoutName: string = "Default";
@@ -139,7 +145,7 @@ class NationwideControl extends BaseController {
     jobListLoading: boolean = false;
     podListLoading: boolean = false;
     repriceListLoading: boolean = false;
-    selected: any;
+    selectedAirline?: ISuggestion;
     jobFilters: IJobQueryParams = {
         order: 'time',
         orderDirection: 'asc',
@@ -153,15 +159,13 @@ class NationwideControl extends BaseController {
         orderDirection: 'asc',
     };
     boxes?: Record<string, IBox>;
-    pickService: any;
-    pickClients: any;
     boxSortableOptions: angular.ui.SortableOptions<any>;
     hereCredentials?: ApiConfig;
-    mapConfig?: any;
+    mapConfig?: HereMapConfig;
     currentSelection?: string;
     agentsLoading: boolean = false;
-    agentListPromise?: Promise<{ agents: IAgent[], message: string | null }>;
-    flightListPromise?: any;
+    agentListPromise?: Promise<IGetAgentOptionsResponse>;
+    flightListPromise?: Promise<IGetFlightOptionsResponse>;
     jobListPromise?: Promise<IDispatchJob[]>;
     podListPromise?: Promise<IDispatchJob[]>;
     repriceListPromise?: Promise<IDispatchJob[]>;
@@ -171,10 +175,10 @@ class NationwideControl extends BaseController {
         showDelete: true,
         onTaskClick: true
     };
-    currentSupport: any;
+    currentSupport?: ITask;
     activeAirlineOptions?: ISuggestion[];
     timeZone: string;
-    lastDepartureTime?: Date;
+    lastDepartureTime?: Dayjs;
     outboundAirportOptions?: IAirportSuggestion[];
     inboundAirportOptions?: IAirportSuggestion[];
     selectedOutboundAirport?: IAirportSuggestion;
@@ -196,7 +200,6 @@ class NationwideControl extends BaseController {
     showAgentList: boolean = false;
 
     dateFilterData: IDateFilterData;
-
     unReadMessageCount: number = 0;
 
     refreshIntervalOptions?: ISuggestion[];
@@ -408,9 +411,7 @@ class NationwideControl extends BaseController {
             : this.appConfig.NZ_Coordinates_Center
         this.showInput = {};
         this.inputWidth = {};
-
-        this.selected = [];
-
+        
         this.boxes = {
             [NationwideBoxes.NewJobs]: {
                 "title": "New Jobs",
@@ -450,17 +451,6 @@ class NationwideControl extends BaseController {
                 "showRefresh": 1
             }
         };
-
-        this.pickService = {
-            "clients": [], "settings": {
-                "enableSearch": true,
-                "selectedToTop": true,
-                "closeOnBlur": true,
-                "closeOnSelect": true,
-                "buttonClasses": "topBarActive btn-sm btn-clients"
-            }
-        };
-        this.pickClients = [];
 
         this.boxSortableOptions = {
             handle: '.box-handle',
@@ -654,10 +644,6 @@ class NationwideControl extends BaseController {
         try {
             this.views = await this.DispatchData.getSelectedViews(AppPages.Domestic);
             this.initializeViews();
-
-            if (!ClientInternal) {
-                await this.getClientContacts();
-            }
 
             await this.getData();
         } catch (error) {
@@ -1096,7 +1082,7 @@ class NationwideControl extends BaseController {
         this.agentOptions = [];
         this.flightMessage = undefined;
         this.agentMessage = undefined;
-        this.selected = null;
+        this.selectedAirline = undefined;
         this.selectedOutboundAirport = undefined;
         this.selectedInboundAirport = undefined;
 
@@ -1303,7 +1289,7 @@ class NationwideControl extends BaseController {
                 departureDate = dayjs.tz(this.timeZone);
             }
 
-            const airlineId = this.selected?.airline?.id;
+            const airlineId = this.selectedAirline?.id;
             const departureAirportId = this.selectedOutboundAirport?.id;
             const arrivalAirportId = this.selectedInboundAirport?.id;
             const minimumLayoverMinutes = 60;
@@ -1354,15 +1340,13 @@ class NationwideControl extends BaseController {
         }
 
         if (this.lastDepartureTime) {
-            this.lastDepartureTime = dayjs(this.lastDepartureTime)
+            this.lastDepartureTime = this.lastDepartureTime
                 .add(1, 'day')
                 .startOf('day')
-                .toDate();
         } else {
             this.lastDepartureTime = this.currentJob.booked
                 .add(1, 'day')
                 .startOf('day')
-                .toDate();
         }
 
         return this.loadFlights();
@@ -1512,7 +1496,6 @@ class NationwideControl extends BaseController {
             }
         }
 
-        const selectedClients = this.pickService.clients.map((a: { id: number }) => a.id);
         const types = Array.isArray(dataTypes) ? dataTypes : [dataTypes];
 
         const requestedTypes = types.includes(JobDataType.ALL)
@@ -1530,7 +1513,6 @@ class NationwideControl extends BaseController {
             if (requestedTypes.includes(JobDataType.NEW)) {
                 this.jobListPromise = this.nationwideService.getNationwideJobsNew(
                     this.jobFilters || {},
-                    selectedClients,
                     ClientInternal,
                     this.selectedViews
                 );
@@ -1539,7 +1521,6 @@ class NationwideControl extends BaseController {
             if (requestedTypes.includes(JobDataType.POD)) {
                 this.podListPromise = this.nationwideService.getNationwideJobsPOD(
                     this.jobPodFilters || {},
-                    selectedClients,
                     ClientInternal,
                     this.selectedViews
                 );
@@ -1548,7 +1529,6 @@ class NationwideControl extends BaseController {
             if (requestedTypes.includes(JobDataType.REPRICE)) {
                 this.repriceListPromise = this.nationwideService.getNationwideJobsReprice(
                     this.jobRepriceFilters || {},
-                    selectedClients,
                     ClientInternal,
                     this.selectedViews
                 );
@@ -1609,14 +1589,6 @@ class NationwideControl extends BaseController {
 
     async showAdditionalServicesMenu($event: MouseEvent, job: IDispatchJob) {
         await this.additionalServicesDialogService.showAdditionalServicesDialog($event, job);
-    }
-
-    async getClientContacts() {
-        try {
-            this.pickClients = await this.DispatchData.getClientContacts(ContactID);
-        } catch (error) {
-            console.error("Error fetching client contacts:", error);
-        }
     }
 
     async getData(): Promise<void> {
@@ -1780,11 +1752,11 @@ class NationwideControl extends BaseController {
         this.currentSelection = ` for Job ${jobNo}`;
     }
 
-    async filterFlightsByAirline(airlineId?: number): Promise<void> {
+    async filterFlightsByAirline(selectedAirline?: ISuggestion): Promise<void> {
         if (!this.currentJob) return;
 
-        // Store the airline selection
-        this.selected = {airline: {id: airlineId}};
+        // Store the airline selection\
+        this.selectedAirline = selectedAirline;
 
         // Reset search
         this.lastDepartureTime = undefined;
@@ -1876,7 +1848,7 @@ class NationwideControl extends BaseController {
         return text.substring(0, spaceIndex + 1);
     }
 
-    getConnectionTime(firstSegment: any, secondSegment: any): string {
+    getConnectionTime(firstSegment: IFlightSegment, secondSegment: IFlightSegment): string {
         if (!firstSegment || !secondSegment) return '';
 
         // Calculate time difference in minutes
@@ -1898,15 +1870,7 @@ class NationwideControl extends BaseController {
     async openHubUrl(): Promise<void> {
         await this.navigationService.openHubUrl();
     }
-
-    restoreJobAvaliable(job: IDispatchJob): boolean {
-        if (!job) return false;
-        if (job.assignedCourier) return true;
-        if (job.assignedFlight) return true;
-
-        return !!job.assignedAgent;
-    }
-
+    
     async openAgentSearchDialog($event: MouseEvent, job: IDispatchJob): Promise<void> {
         try {
             const url = "nationwideJob/GetAllAgentsSearch";

@@ -24,6 +24,7 @@ public class TenantInfoService(
     private string _cachedTimeZone;
     private string _cachedCountryCode;
     private int? _cachedStaffId;
+    private int? _cachedContactId;
     private TimeZoneInfo _cachedTimeZoneInfo;
     private CultureInfo _cachedCultureInfo;
 
@@ -96,6 +97,15 @@ public class TenantInfoService(
             .FirstOrDefault(x => x.Type == "StaffID")?.Value;
         _cachedStaffId = int.Parse(staffIdString ?? "0");
         return _cachedStaffId.Value;
+    }
+
+    public int GetContactId()
+    {
+        if (_cachedContactId.HasValue) return _cachedContactId.Value;
+        var contactId = contextAccessor.HttpContext?.User.Claims
+            .FirstOrDefault(x => x.Type == "ContactID")?.Value;
+        _cachedContactId = int.Parse(contactId ?? "0");
+        return _cachedContactId.Value;
     }
 
     public bool IsUsTenant()

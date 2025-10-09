@@ -7,6 +7,6 @@ namespace DespatchWeb.Interfaces;
 public interface IClientRepository
 {
     Task<ClientViewModel> ValidateClientAsync(int contactId);
-    Task<List<ClientContactViewModel>> ClientContactsAsync(int contactId);
-    Task<List<ClientActiveViewModel>> ActiveClientsAsync(string searchTerm);
+    Task<List<Suggestion>> ClientContactsAsync(int contactId);
+    Task<List<Suggestion>> ActiveClientsAsync(string searchTerm);
 }

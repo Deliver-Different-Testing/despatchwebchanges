@@ -1,4 +1,5 @@
 import {Dayjs} from "dayjs";
+import {IAgent} from "../../interfaces/job.interface";
 
 export interface IFlightViewModel {
     airline: string;
@@ -123,4 +124,15 @@ export interface IFlightSegmentDto {
     aircraftName?: string;
     aircraftType?: string;
     airlineName?: string;
+}
+
+export interface IGetFlightOptionsResponse {
+    flights: IFlightViewModel[];
+    message?: string;
+    lastDepartureTime?: Dayjs;
+}
+
+export interface IGetAgentOptionsResponse {
+    agents: IAgent[];
+    message?: string;
 }

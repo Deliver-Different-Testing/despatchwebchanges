@@ -34,7 +34,7 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
             .FirstOrDefaultAsync();
     }
 
-    public async Task<List<ClientContactViewModel>> ClientContactsAsync(int contactId)
+    public async Task<List<Suggestion>> ClientContactsAsync(int contactId)
     {
         return await Context
             .TblClientContacts.Where(c => c.ContactId == contactId)
@@ -52,16 +52,16 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
             )
             .Where(joined => joined.ip.SystemName == "DespatchWeb")
             .OrderByDescending(joined => joined.c.IsDefaultAccount)
-            .Select(joined => new ClientContactViewModel
+            .Select(joined => new Suggestion
             {
-                ID = joined.c.ClientId,
+                Id = joined.c.ClientId,
                 Text = joined.c.Client.UcclName
             })
             .Distinct()
             .ToListAsync();
     }
 
-    public async Task<List<ClientActiveViewModel>> ActiveClientsAsync(string searchTerm)
+    public async Task<List<Suggestion>> ActiveClientsAsync(string searchTerm)
     {
         var likePattern = $"%{searchTerm}%";
 
@@ -69,9 +69,9 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
             .Where(c => c.UcclActive == true &&
                         EF.Functions.Like(c.UcclCode + " " + c.UcclName, likePattern))
             .OrderBy(c => c.UcclCode)
-            .Select(c => new ClientActiveViewModel
+            .Select(c => new Suggestion
             {
-                ID = c.UcclId,
+                Id = c.UcclId,
                 Text = c.UcclCode + " " + c.UcclName
             })
             .ToListAsync();

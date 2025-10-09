@@ -6,7 +6,12 @@ import {
     IJobQueryParams,
     ISuggestion
 } from "../../interfaces/job.interface";
-import {AssignFlightToJobRequest, IFlightViewModel, IFlightViewModelDto} from "./nationwide.interfaces";
+import {
+    AssignFlightToJobRequest,
+    IFlightViewModel,
+    IFlightViewModelDto, IGetAgentOptionsResponse,
+    IGetFlightOptionsResponse
+} from "./nationwide.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {
     AddAgentRecoveryRequest,
@@ -39,7 +44,6 @@ class NationwideService implements angular.IServiceProvider {
     async getNationwideJobs(
         endpoint: string,
         queryParams: IJobQueryParams,
-        selectedClients: string[],
         isInternal: boolean,
         selectedAreas: DfrntPageViewModel[]
     ): Promise<IDispatchJob[]> {
@@ -53,23 +57,22 @@ class NationwideService implements angular.IServiceProvider {
                 startDate: queryParams.startDate ? formatDateForApiWithTzs(queryParams.startDate) : null,
                 dateCutoff: queryParams.endDate ? formatDateForApiWithTzs(queryParams.endDate) : null,
                 isInternal: isInternal,
-                clientIds: selectedClients,
                 despatchViewIds
             }
         });
         return response.data;
     }
 
-    async getNationwideJobsNew(queryParams: IJobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[]) {
-        return await this.getNationwideJobs("nationwideJobListNew", queryParams, selectedClients, internal, selectedAreas);
+    async getNationwideJobsNew(queryParams: IJobQueryParams, internal: boolean, selectedAreas: DfrntPageViewModel[]) {
+        return await this.getNationwideJobs("nationwideJobListNew", queryParams, internal, selectedAreas);
     }
 
-    async getNationwideJobsPOD(queryParams: IJobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[]) {
-        return await this.getNationwideJobs("NationwideJobListPod", queryParams, selectedClients, internal, selectedAreas);
+    async getNationwideJobsPOD(queryParams: IJobQueryParams, internal: boolean, selectedAreas: DfrntPageViewModel[]) {
+        return await this.getNationwideJobs("NationwideJobListPod", queryParams, internal, selectedAreas);
     }
 
-    async getNationwideJobsReprice(queryParams: IJobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[]) {
-        return await this.getNationwideJobs("nationwideJobListReprice", queryParams, selectedClients, internal, selectedAreas);
+    async getNationwideJobsReprice(queryParams: IJobQueryParams, internal: boolean, selectedAreas: DfrntPageViewModel[]) {
+        return await this.getNationwideJobs("nationwideJobListReprice", queryParams, internal, selectedAreas);
     }
 
     async getFlightOptions(
@@ -80,11 +83,7 @@ class NationwideService implements angular.IServiceProvider {
         departureAirportId?: number,
         arrivalAirportId?: number,
         minimumLayoverMinutes: number = 0,
-    ): Promise<{
-        flights: IFlightViewModel[];
-        message: string | null;
-        lastDepartureTime: Dayjs | null;
-    }> {
+    ): Promise<IGetFlightOptionsResponse> {
         const formattedDate = formatDateForApiWithTzs(departureDate, timezone);
         const response = await this.$http.get<IFlightViewModelDto[]>("nationwideJob/GetScheduledFlightOptions", {
             params: {
@@ -101,8 +100,8 @@ class NationwideService implements angular.IServiceProvider {
 
         return {
             flights,
-            message: flights.length === 0 ? "Sorry, we couldn't find..." : null,
-            lastDepartureTime: flights.length > 0 ? flights[flights.length - 1].departureTime : null
+            message: flights.length === 0 ? "Sorry, we couldn't find..." : undefined,
+            lastDepartureTime: flights.length > 0 ? flights[flights.length - 1].departureTime : undefined
         };
     }
 
@@ -111,19 +110,18 @@ class NationwideService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getAgentOptions(jobId: number): Promise<{
-        agents: IAgent[];
-        message: "Sorry, we couldn't find any agents that applied to this specific job. Please check the job information is correct and try again." | null
-    }> {
+    async getAgentOptions(jobId: number): Promise<IGetAgentOptionsResponse> {
         const response = await this.$http.get<IAgent[]>("nationwideJob/GetAgentsForJob", {
             params: {
-                jobId,
+                jobId
             }
         });
 
         return {
             agents: response.data,
-            message: response.data.length === 0 ? "Sorry, we couldn't find any agents that applied to this specific job. Please check the job information is correct and try again." : null
+            message: response.data.length === 0 
+                ? "Sorry, we couldn't find any agents that applied to this specific job. Please check the job information is correct and try again." 
+                : undefined
         };
     }
 

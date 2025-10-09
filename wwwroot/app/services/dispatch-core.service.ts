@@ -376,18 +376,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         );
         return response.data;
     }
-
-    async getClientContacts(contactId: number): Promise<any> {
-        const response = await this.$http.get(
-            `home/ClientContacts`, {
-                params: {
-                    contactId,
-                },
-            }
-        );
-        return response.data;
-    }
-
+    
     async getPotentialCouriers(jobId: number): Promise<any> {
         const response = await this.$http.get(
             `courier/PotentialCouriers`, {
@@ -399,7 +388,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getCourierById(courierId: number): Promise<any> {
+    async getCourierById(courierId: number): Promise<ActiveCourierViewModel> {
         const response = await this.$http.get<ActiveCourierViewModel>(
             `courier/GetCourier`, {
                 params: {

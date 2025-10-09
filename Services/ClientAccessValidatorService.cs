@@ -15,7 +15,7 @@ public class ClientAccessValidatorService(IClientRepository clientRepo) : IClien
         var requestedClientIds = clientIds.Split(',').Select(int.Parse).ToHashSet();
 
         var hasAccess = clientContacts?
-            .Select(c => c.ID)
+            .Select(c => c.Id)
             .Any(x => requestedClientIds.Contains(x)) ?? false;
 
         if (!hasAccess) throw new UnauthorizedAccessException();
