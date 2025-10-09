@@ -995,18 +995,16 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async selectJob(job: IDispatchJob): Promise<void> {
+    async selectJob(job: IDispatchJob, isRefresh = false): Promise<void> {
         try {
             if (!job) return;
 
-            // ✅ Prevent re-entry
             if (this.isSelectingJob) {
                 console.log('Already selecting a job, skipping');
                 return;
             }
 
-            // ✅ Prevent selecting same job twice
-            if (this.lastSelectedJobId === job.id) {
+            if (this.lastSelectedJobId === job.id && !isRefresh) {
                 console.log(`Job ${job.id} already selected, skipping`);
                 return;
             }
@@ -1962,7 +1960,7 @@ class NationwideControl extends BaseController {
 
                 // Reselect to trigger refresh
                 const job = await this.DispatchData.getDispatchJobDetail(jobIdToRefresh);
-                await this.selectJob(job);
+                await this.selectJob(job, true);
                 break;
             default:
                 break;
