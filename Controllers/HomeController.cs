@@ -15,6 +15,7 @@ namespace DespatchWeb.Controllers;
 public partial class HomeController(
     IClientRepository clientRepository,
     IDfrntViewsRepository viewsRepository,
+    ITenantInfoService infoService,
     IConnectionStringManager connectionStringManager) : Controller
 {
     public async Task<IActionResult> Index()
@@ -80,10 +81,11 @@ public partial class HomeController(
         }
     }
 
-    public async Task<IActionResult> GetPageViews(int userId, int pageId)
+    public async Task<IActionResult> GetPageViews(int pageId)
     {
         var page = (AppPage)pageId;
-        var viewOptions = await viewsRepository.GetViewsByUserAndPageAsync(userId, page);
+        var staffId = infoService.GetStaffId();
+        var viewOptions = await viewsRepository.GetViewsByUserAndPageAsync(staffId, page);
         return Json(viewOptions);
     }
 

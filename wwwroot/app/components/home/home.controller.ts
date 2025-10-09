@@ -704,7 +704,7 @@ class HomeController extends BaseController {
 
     async loadPageViews(): Promise<void> {
         try {
-            this.views = await this.DispatchData.getSelectedViews(ContactID, AppPages.Dispatch);
+            this.views = await this.DispatchData.getSelectedViews(AppPages.Dispatch);
             await this.initializeViews();
 
             await this.fetchDriverLocations();

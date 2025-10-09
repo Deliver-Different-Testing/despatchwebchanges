@@ -85,7 +85,19 @@ class JobDetailController extends BaseController {
     selectedSubJobIndex: number = 0;
     jobAddressIcon: string = "pin_drop";
     viewDensity: 'normal' | 'dense' | 'ultradense' = 'normal';
-
+    
+    // Days of the week (recurring)
+    daysOfWeekArray: number[] = [];
+    private readonly dayFlags = [
+        DaysOfWeek.Monday,
+        DaysOfWeek.Tuesday,
+        DaysOfWeek.Wednesday,
+        DaysOfWeek.Thursday,
+        DaysOfWeek.Friday,
+        DaysOfWeek.Saturday,
+        DaysOfWeek.Sunday
+    ];
+    
     // Photos
     formattedPodPhotos: PodPhoto[] = [];
     formattedPickupPhotos: PodPhoto[] = [];
@@ -145,6 +157,7 @@ class JobDetailController extends BaseController {
         };
 
         this.internalStatusList = [];
+        this.initializeDaysOfWeekArray();
     }
 
     $onInit(): void {
@@ -1887,15 +1900,7 @@ class JobDetailController extends BaseController {
     async updateDaysOfWeek(job: IJob): Promise<void> {
         console.log("Updating days of week from array:", job.daysOfWeek);
 
-        let daysValue = 0;
-        if (Array.isArray(job.daysOfWeek)) {
-            job.daysOfWeek.forEach((day: number) => {
-                daysValue |= day;
-            });
-        } else if (typeof job.daysOfWeek === "number") {
-            daysValue = job.daysOfWeek;
-        }
-
+        let daysValue = this.arrayToBitwise(this.daysOfWeekArray);
         console.log("Days bitmask value calculated:", daysValue);
 
         try {
@@ -2266,6 +2271,18 @@ class JobDetailController extends BaseController {
         } catch (error) {
             this.handleError(error);
         }
+    }
+
+    private initializeDaysOfWeekArray(): void {
+        this.daysOfWeekArray = this.bitwiseToArray(this.job?.daysOfWeek || DaysOfWeek.None);
+    }
+
+    private bitwiseToArray(days: DaysOfWeek): number[] {
+        return this.dayFlags.filter(flag => (days & flag) === flag);
+    }
+
+    private arrayToBitwise(array: number[]): DaysOfWeek {
+        return array.reduce((acc, val) => acc | val, DaysOfWeek.None);
     }
 }
 
