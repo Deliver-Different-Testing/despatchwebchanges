@@ -82,6 +82,7 @@ export function transformTaskDTO(dto: ITaskDto): ITask {
 export function transformPrebookListDTO(dto: IPrebookListModelDto): IPrebookListModel {
     return {
         ...dto,
-        booked: dayjs(dto.booked)
+        booked: formatDateFromApi(dto.booked),
+        nextDueTime: dto.nextDueTime ? formatDateFromApi(dto.nextDueTime) : undefined,
     }
 }

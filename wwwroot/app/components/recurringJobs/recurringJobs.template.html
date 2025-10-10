@@ -74,22 +74,6 @@
 
                                     <div flex></div>
                                     
-                                    <!--Send all-->
-                                    <md-button class="md-icon-button"
-                                               ng-click="ctrl.sendAllSelectPrebookJobs(ctrl.selectedPrebooks)"
-                                               ng-if="ctrl.selectedPrebooks && ctrl.selectedPrebooks.length > 0">
-                                        <md-tooltip md-direction="bottom">Send All Selected</md-tooltip>
-                                        <md-icon md-font-set="material-symbols-outlined">send</md-icon>
-                                    </md-button>
-
-                                    <!--Void all-->
-                                    <md-button class="md-icon-button"
-                                               ng-click="ctrl.voidAllSelectPrebookJobs(ctrl.selectedPrebooks)"
-                                               ng-if="ctrl.selectedPrebooks && ctrl.selectedPrebooks.length > 0">
-                                        <md-tooltip md-direction="bottom">Void All Selected</md-tooltip>
-                                        <md-icon md-font-set="material-symbols-outlined">block</md-icon>
-                                    </md-button>
-
                                     <!--Refresh-->
                                     <md-button class="md-icon-button"
                                                ng-click="ctrl.refreshData()"
@@ -170,7 +154,8 @@
                                                    ng-change="ctrl.searchJobs(ctrl.jobQuery.searchText)"
                                                    ng-model="ctrl.jobQuery.searchText"
                                                    placeholder="Search jobs..."
-                                                   type="text">
+                                                   type="text"
+                                                   style="color: black;">
                                         </md-input-container>
                                     </div>
                                 </div>

@@ -5,7 +5,8 @@ namespace DespatchWeb.Models;
 public class PrebookListViewModel
 {
     public int Id { get; set; }
-    public DateTime Booked { get; set; }
+    public DateTimeOffset Booked { get; set; }
+    public DateTimeOffset? NextDueTime { get; set; }
     public string Client { get; set; }
     public string CustomJobName { get; set; }
     public string JobNo { get; set; }

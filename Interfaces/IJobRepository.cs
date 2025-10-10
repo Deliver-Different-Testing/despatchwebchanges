@@ -108,7 +108,6 @@ public interface IJobRepository
     Task AddPalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
     Task EditPalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
     Task DeletePalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
-    Task SendPrebookJobAsync(int jobId);
     Task VoidPrebookJobAsync(int jobId);
     
     /* Address Updates */
