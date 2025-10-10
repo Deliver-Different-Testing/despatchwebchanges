@@ -1226,16 +1226,17 @@ public static class JobMappings
         new PrebookListViewModel
         {
             Id = j.UcbkId,
-            Booked = j.UcbkNextDue.HasValue && j.UcbkTime.HasValue
+            Booked = j.UcbkDate.HasValue && j.UcbkTime.HasValue
                 ? new DateTime(
-                    j.UcbkNextDue.Value.Year,
-                    j.UcbkNextDue.Value.Month,
-                    j.UcbkNextDue.Value.Day,
+                    j.UcbkDate.Value.Year,
+                    j.UcbkDate.Value.Month,
+                    j.UcbkDate.Value.Day,
                     j.UcbkTime.Value.Hour,
                     j.UcbkTime.Value.Minute,
                     j.UcbkTime.Value.Second
                 )
                 : DateTime.MinValue,
+            NextDueTime = j.UcbkNextDue,
             Client = j.UcbkClientCode,
             JobNo = j.UcbkJobNumber,
             ClientId = j.UcbkClientId,

@@ -443,10 +443,6 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[DES_stpJobBooking_InsertJobAndChildren]",
-         "ObjectType": 1
-      },
-      {
          "Name": "[dbo].[DESWEB_qdfSwapPOD]",
          "ObjectType": 1
       },

@@ -4,6 +4,7 @@ import {Dayjs} from "dayjs";
 export interface IPrebookListModel {
     id: number;
     booked: Dayjs;
+    nextDueTime?: Dayjs;
     client: string;
     jobNo: string;
     clientId: number | null;
@@ -16,6 +17,7 @@ export interface IPrebookListModel {
 export interface IPrebookListModelDto {
     id: number;
     booked: string;
+    nextDueTime?: string;
     client: string;
     jobNo: string;
     clientId: number | null;

@@ -1,5 +1,6 @@
+import "./recurringJobs.styles.less";
 import {IAppConfig} from "../../interfaces/app-config.interface";
-import {IJob, ISuggestion} from "../../interfaces/job.interface";
+import {IJob} from "../../interfaces/job.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import {ClientInternal, ContactID, TimeZone} from "../../contants";
@@ -109,9 +110,7 @@ class RecurringJobsController extends BaseController {
 
         // Bind job action functions
         this.selectJobDetail = this.selectJobDetail.bind(this);
-        this.sendPrebookJob = this.sendPrebookJob.bind(this);
         this.voidPrebookJob = this.voidPrebookJob.bind(this);
-        this.sendAllSelectPrebookJobs = this.sendAllSelectPrebookJobs.bind(this);
         this.voidAllSelectPrebookJobs = this.voidAllSelectPrebookJobs.bind(this);
 
         // Bind UI functions
@@ -436,100 +435,7 @@ class RecurringJobsController extends BaseController {
             this.applyScope();
         }
     }
-
-    async sendAllSelectPrebookJobs(jobIds: number[]): Promise<void> {
-        const selectedPrebookCount = jobIds.length;
-
-        const confirmMessage =
-            `This will send all ${selectedPrebookCount} selected prebooks to the live dispatch screen now. ` +
-            `Please confirm that you wish to do this?`;
-
-        const confirm = this.$mdDialog.confirm()
-            .title("Accelerate Prebooks")
-            .textContent(confirmMessage)
-            .ok("Yes")
-            .cancel("No");
-
-        try {
-            await this.$mdDialog.show(confirm);
-
-            // User clicked 'Yes'
-            const sendJobs = jobIds.map(jobId => this.recurringJobsService.sendPrebookJob(jobId));
-            await Promise.all(sendJobs);
-
-            await this.refreshData();
-
-            // Show a success message
-            await this.$mdDialog.show(
-                this.$mdDialog.alert()
-                    .title("Success")
-                    .textContent(`Successfully sent ${selectedPrebookCount} prebook(s) to the live dispatch screen.`)
-                    .ok("OK")
-            );
-        } catch (error) {
-            if (!error) {
-                console.info("User Canceled");
-            } else {
-                console.info("Error sending prebook jobs:", error);
-
-                // Show an error dialog to the user
-                await this.$mdDialog.show(
-                    this.$mdDialog.alert()
-                        .title("Error")
-                        .textContent("An error occurred while sending the prebook jobs. Please try again.")
-                        .ok("OK")
-                );
-            }
-        } finally {
-            this.applyScope();
-        }
-    }
-
-    async sendPrebookJob(jobId: number): Promise<void> {
-        const confirmMessage =
-            "This will send this prebook to the live dispatch screen now. " +
-            "Please confirm that you wish to do this?";
-
-        const confirm = this.$mdDialog.confirm()
-            .title("Accelerate Prebook")
-            .textContent(confirmMessage)
-            .ok("Yes")
-            .cancel("No");
-
-        try {
-            await this.$mdDialog.show(confirm);
-
-            // User clicked 'Yes'
-            await this.recurringJobsService.sendPrebookJob(jobId);
-
-            await this.refreshData();
-
-            // Show a success message
-            await this.$mdDialog.show(
-                this.$mdDialog.alert()
-                    .title("Success")
-                    .textContent("The prebook job has been successfully sent to the live dispatch screen.")
-                    .ok("OK")
-            );
-        } catch (error) {
-            if (!error) {
-                console.info("User Canceled");
-            } else {
-                console.info("Error sending prebook job:", error);
-
-                // Show an error dialog to the user
-                await this.$mdDialog.show(
-                    this.$mdDialog.alert()
-                        .title("Error")
-                        .textContent("An error occurred while sending the prebook job. Please try again.")
-                        .ok("OK")
-                );
-            }
-        } finally {
-            this.applyScope();
-        }
-    }
-
+    
     getContextMenuOptions(job: IPrebookListModel): any[] | IContextMenuOption[] {
         if (!job) return [];
 

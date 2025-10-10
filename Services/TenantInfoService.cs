@@ -139,4 +139,6 @@ public class TenantInfoService(
             return staff;
         });
     }
+    
+    public string GetTenantTimeZone() => GetTimeZone() ?? "UTC";
 }

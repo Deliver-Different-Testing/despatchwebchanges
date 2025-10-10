@@ -4,9 +4,11 @@
         <tr md-row>
             <th md-column md-order-by="booked">Booked</th>
             <th md-column md-order-by="speed">Speed</th>
+            <th md-column md-order-by="customJobName">Job Name</th>
             <th md-column md-order-by="client">Client</th>
             <th md-column md-order-by="from">From</th>
             <th md-column md-order-by="to">To</th>
+            <th md-column md-order-by="nextDueTime">Next Due</th>
             <th md-column md-order-by="courier">Courier</th>
             <th md-column>Actions</th>
         </tr>
@@ -23,29 +25,77 @@
                 ng-repeat="job in ctrl.jobList">
             <td md-cell>{{job.booked | momentFormat:"HH:mm"}} ({{::ctrl.timeZone | timezoneShort}})</td>
             <td md-cell>{{job.speed}}</td>
+            <td md-cell>{{job.customJobName}}</td>
             <td md-cell>{{job.client}}</td>
+            
             <td md-cell md-truncate>
-                {{job.pickupAddress.fullAddress}}
-                <md-icon md-font-set="material-symbols-outlined" ng-if="::!job.pickUpLongitude || !job.pickUpLatitude">
+                <div class="address-compact" ng-class="{'us-format': ctrl.isUsCustomer}">
+                    <!-- Display the first non-empty address line -->
+                    <div class="address-primary" ng-if="job.pickupAddress.addressLine1">
+                        {{job.pickupAddress.addressLine1}}
+                    </div>
+                    <!-- Display the second line (usually contains suburb/city for NZ, city/state for US) -->
+                    <div class="address-secondary" ng-if="!ctrl.isUsCustomer && (job.pickupAddress.addressLine2 || job.pickupAddress.addressLine3)">
+                        {{job.pickupAddress.addressLine2 || job.pickupAddress.addressLine3}}
+                    </div>
+                    <div class="address-secondary" ng-if="ctrl.isUsCustomer && (job.pickupAddress.addressLine5 || job.pickupAddress.addressLine6)">
+                        {{job.pickupAddress.addressLine5}}{{job.pickupAddress.addressLine6 ? ', ' + job.pickupAddress.addressLine6 : ''}}
+                    </div>
+                    <!-- Fallback to fullAddress if no address lines -->
+                    <div ng-if="!job.pickupAddress.addressLine1 && job.pickupAddress.fullAddress">
+                        <div class="address-primary">{{job.pickupAddress.fullAddress | limitTo: 30}}</div>
+                    </div>
+                    <md-tooltip md-direction="bottom">
+                        <div class="address-tooltip">
+                            <div ng-repeat="line in [job.pickupAddress.addressLine1, job.pickupAddress.addressLine2, job.pickupAddress.addressLine3, job.pickupAddress.addressLine4, job.pickupAddress.addressLine5, job.pickupAddress.addressLine6, job.pickupAddress.addressLine7, job.pickupAddress.addressLine8] track by $index" ng-if="line">
+                                {{line}}
+                            </div>
+                            <div ng-if="!job.pickupAddress.addressLine1">{{job.pickupAddress.fullAddress}}</div>
+                        </div>
+                    </md-tooltip>
+                </div>
+                <md-icon md-font-set="material-symbols-outlined" ng-if="::!job.pickUpLongitude || !job.pickUpLatitude" class="address-warning">
                     warning
                     <md-tooltip md-direction="bottom">No Latitude or Longitude Provided</md-tooltip>
                 </md-icon>
             </td>
             <td md-cell md-truncate>
-                {{job.deliveryAddress.fullAddress}}
-                <md-icon md-font-set="material-symbols-outlined"
-                         ng-if="::!job.deliveryLongitude || !job.deliveryLatitude">
+                <div class="address-compact" ng-class="{'us-format': ctrl.isUsCustomer}">
+                    <!-- Display the first non-empty address line -->
+                    <div class="address-primary" ng-if="job.deliveryAddress.addressLine1">
+                        {{job.deliveryAddress.addressLine1}}
+                    </div>
+                    <!-- Display the second line (usually contains suburb/city for NZ, city/state for US) -->
+                    <div class="address-secondary" ng-if="!ctrl.isUsCustomer && (job.deliveryAddress.addressLine2 || job.deliveryAddress.addressLine3)">
+                        {{job.deliveryAddress.addressLine2 || job.deliveryAddress.addressLine3}}
+                    </div>
+                    <div class="address-secondary" ng-if="ctrl.isUsCustomer && (job.deliveryAddress.addressLine5 || job.deliveryAddress.addressLine6)">
+                        {{job.deliveryAddress.addressLine5}}{{job.deliveryAddress.addressLine6 ? ', ' + job.deliveryAddress.addressLine6 : ''}}
+                    </div>
+                    <!-- Fallback to fullAddress if no address lines -->
+                    <div ng-if="!job.deliveryAddress.addressLine1 && job.deliveryAddress.fullAddress">
+                        <div class="address-primary">{{job.deliveryAddress.fullAddress | limitTo: 30}}</div>
+                    </div>
+                    <md-tooltip md-direction="bottom">
+                        <div class="address-tooltip">
+                            <div ng-repeat="line in [job.deliveryAddress.addressLine1, job.deliveryAddress.addressLine2, job.deliveryAddress.addressLine3, job.deliveryAddress.addressLine4, job.deliveryAddress.addressLine5, job.deliveryAddress.addressLine6, job.deliveryAddress.addressLine7, job.deliveryAddress.addressLine8] track by $index" ng-if="line">
+                                {{line}}
+                            </div>
+                            <div ng-if="!job.deliveryAddress.addressLine1">{{job.deliveryAddress.fullAddress}}</div>
+                        </div>
+                    </md-tooltip>
+                </div>
+                <md-icon md-font-set="material-symbols-outlined" ng-if="::!job.deliveryLongitude || !job.deliveryLatitude" class="address-warning">
                     warning
                     <md-tooltip md-direction="bottom">No Latitude or Longitude Provided</md-tooltip>
                 </md-icon>
+            </td>
+            
+            <td md-cell>
+                {{job.nextDueTime | momentFormat:(ctrl.isUsCustomer ? "MM/DD/YYYY hh:mm A" : "DD/MM/YYYY HH:mm")}} ({{::ctrl.timeZone | timezoneShort}})
             </td>
             <td md-cell>{{job.courier}}</td>
             <td md-cell>
-                <md-button class="md-icon-button" ng-click="ctrl.sendPrebookJob(job.id); $event.stopPropagation()"
-                           title="Send">
-                    <md-icon md-font-set="material-symbols-outlined">send</md-icon>
-                    <md-tooltip md-direction="bottom">Send to Live</md-tooltip>
-                </md-button>
                 <md-button class="md-icon-button" ng-click="ctrl.voidPrebookJob(job.id); $event.stopPropagation()"
                            title="Void">
                     <md-icon md-font-set="material-symbols-outlined">delete</md-icon>

@@ -21,16 +21,7 @@ class RecurringJobsService {
             items: response.data.items.map(transformPrebookListDTO),
         };
     }
-
-    async sendPrebookJob(jobId: number): Promise<void> {
-        await this.$http.post(`job/SendPrebookJob`,
-            null, {
-                params: {
-                    jobId,
-                }
-            });
-    }
-
+    
     async voidPrebookJob(jobId: number): Promise<void> {
         await this.$http.post(
             `job/VoidPrebookJob`,

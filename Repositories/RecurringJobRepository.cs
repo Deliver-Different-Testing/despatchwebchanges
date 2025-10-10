@@ -44,13 +44,13 @@ public class RecurringJobRepository(
     {
         var query = Context.TucJobBookings
             .Where(j => j.UcbkActive == request.Active
-                        && j.UcbkOneOff == false 
+                        && j.UcbkOneOff == false
                         && (j.ParentId == null || j.ParentId == j.UcbkId));
 
         if (!string.IsNullOrWhiteSpace(request.SearchText))
         {
             var searchPattern = $"%{request.SearchText}%";
-            query = query.Where(j => 
+            query = query.Where(j =>
                 EF.Functions.Like(j.UcbkJobNumber, searchPattern) ||
                 EF.Functions.Like(j.CustomJobName, searchPattern) ||
                 EF.Functions.Like(j.DeliveryAddressLine1, searchPattern) ||
@@ -75,30 +75,36 @@ public class RecurringJobRepository(
         var totalCount = await query.CountAsync();
 
         var isDescending = request.OrderDirection == "desc";
-        switch (request.Order)
+        query = request.Order switch
         {
-            case "booked":
-                query = isDescending ? query.OrderByDescending(j => j.UcbkDate)
-                    .ThenByDescending(j => j.UcbkTime) 
-                    : query.OrderBy(j => j.UcbkDate)
-                        .ThenBy(j => j.UcbkTime);
-                break;
-            case "speed":
-                query = isDescending ? query.OrderByDescending(j => j.UcbkSpeed) : query.OrderBy(j => j.UcbkSpeed);
-                break;
-            case "client":
-                query = isDescending ? query.OrderByDescending(j => j.UcbkClientId) : query.OrderBy(j => j.UcbkClientId);
-                break;
-            case "from":
-                query = isDescending ? query.OrderByDescending(j => j.PickupAddressLine6) : query.OrderBy(j => j.PickupAddressLine6);
-                break;
-            case "to":
-                query = isDescending ? query.OrderByDescending(j => j.DeliveryAddressLine6) : query.OrderBy(j => j.DeliveryAddressLine6);
-                break;
-            case "courier":
-                query = isDescending ? query.OrderByDescending(j => j.CourierId) : query.OrderBy(j => j.CourierId);
-                break;
-        }
+            "booked" => isDescending
+                ? query.OrderByDescending(j => j.UcbkDate)
+                    .ThenByDescending(j => j.UcbkTime)
+                : query.OrderBy(j => j.UcbkDate)
+                    .ThenBy(j => j.UcbkTime),
+            "speed" => isDescending
+                ? query.OrderByDescending(j => j.UcbkSpeed)
+                : query.OrderBy(j => j.UcbkSpeed),
+            "client" => isDescending
+                ? query.OrderByDescending(j => j.UcbkClientId)
+                : query.OrderBy(j => j.UcbkClientId),
+            "from" => isDescending
+                ? query.OrderByDescending(j => j.PickupAddressLine6)
+                : query.OrderBy(j => j.PickupAddressLine6),
+            "to" => isDescending
+                ? query.OrderByDescending(j => j.DeliveryAddressLine6)
+                : query.OrderBy(j => j.DeliveryAddressLine6),
+            "courier" => isDescending
+                ? query.OrderByDescending(j => j.CourierId)
+                : query.OrderBy(j => j.CourierId),
+            "customJobName" => isDescending
+                ? query.OrderByDescending(j => j.CustomJobName)
+                : query.OrderBy(j => j.CustomJobName),
+            "nextDueTime" => isDescending
+                ? query.OrderByDescending(j => j.UcbkNextDue)
+                : query.OrderBy(j => j.UcbkNextDue),
+            _ => query
+        };
 
         var items = await query
             .Skip((request.Page - 1) * request.Limit)
@@ -106,6 +112,15 @@ public class RecurringJobRepository(
             .Select(JobMappings.ToPrebookListViewModel)
             .AsNoTracking()
             .ToListAsync();
+
+        var tenantTimeZone = _infoService.GetTenantTimeZone();
+        foreach (var item in items)
+        {
+            item.Booked = TimeZoneHelper.SetDateTimeWithTimeZone(item.Booked, tenantTimeZone);
+            item.NextDueTime = item.NextDueTime.HasValue
+                ? TimeZoneHelper.SetDateTimeWithTimeZone(item.NextDueTime.Value, tenantTimeZone)
+                : null;
+        }
 
         return new PaginatedResponse<PrebookListViewModel>
         {

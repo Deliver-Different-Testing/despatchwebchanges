@@ -1847,9 +1847,6 @@ public partial class JobRepository(
         );
     }
 
-    public async Task SendPrebookJobAsync(int jobId) =>
-        await Context.Procedures.DES_stpJobBooking_InsertJobAndChildrenAsync(jobId);
-
     public async Task VoidPrebookJobAsync(int jobId)
     {
         var staffInfo = await _infoService.GetStaffInfoAsync();

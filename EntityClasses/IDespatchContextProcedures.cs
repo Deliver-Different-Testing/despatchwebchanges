@@ -24,7 +24,6 @@ namespace DespatchWeb.EntityClasses
         Task<List<DES_stpJob_SplitJob_ReRateResult>> DES_stpJob_SplitJob_ReRateAsync(int? parentJobID, bool? preBookJob, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_stpJob_SplitJobRestoreResult>> DES_stpJob_SplitJobRestoreAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_stpJob_UnSplitResult>> DES_stpJob_UnSplitAsync(int? jobID, OutputParameter<string> message, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<List<DES_stpJobBooking_InsertJobAndChildrenResult>> DES_stpJobBooking_InsertJobAndChildrenAsync(int? jobBookingID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DESWEB_qdfSwapPODResult>> DESWEB_qdfSwapPODAsync(string ucjbNumber1, string ucjbNumber2, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DESWEB_qryPotentialCouriersResult>> DESWEB_qryPotentialCouriersAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> DESWEB_stpJob_AutoDespatchSelectedJobsAsync(string jobIDs, int? courierID, int? dispID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);

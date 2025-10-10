@@ -14,4 +14,5 @@ public interface ITenantInfoService
     int GetContactId();
     bool IsUsTenant();
     Task<Suggestion> GetStaffInfoAsync();
+    string GetTenantTimeZone();
 }

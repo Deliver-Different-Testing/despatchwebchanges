@@ -283,12 +283,6 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> SendPrebookJob(int jobId)
-    {
-        await jobRepository.SendPrebookJobAsync(jobId);
-        return Ok();
-    }
-
     public async Task<IActionResult> VoidPrebookJob(int jobId)
     {
         await jobRepository.VoidPrebookJobAsync(jobId);
