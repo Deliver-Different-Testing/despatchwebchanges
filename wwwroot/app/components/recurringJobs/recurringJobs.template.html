@@ -106,34 +106,8 @@
                                         </md-menu-content>
                                     </md-menu>
 
-                                    <div ng-if="::box.name == 'jobDetail'">
-                                        <md-button aria-label="reply" class="md-icon-button"
-                                                   ng-click="ctrl.reply(ctrl.currentEvent)"
-                                                   ng-if="ctrl.currentEvent && !ctrl.currentEvent.closedDate">
-                                            <md-tooltip md-direction="bottom">Reply</md-tooltip>
-                                            <md-icon md-font-icon="reply"
-                                                     md-font-set="material-symbols-outlined"></md-icon>
-                                        </md-button>
-
-                                        <md-button aria-label="copy link" class="md-icon-button"
-                                                   ng-click="ctrl.generateDirectLink(ctrl.currentEvent)"
-                                                   ng-if="ctrl.currentEvent && ((ctrl.isAdmin && !ctrl.currentEvent.internal) || (!ctrl.isAdmin && !ctrl.currentEvent.internal))">
-                                            <md-tooltip md-direction="bottom">Copy Link</md-tooltip>
-                                            <md-icon md-font-icon="link"
-                                                     md-font-set="material-symbols-outlined"></md-icon>
-                                        </md-button>
-
-                                        <md-button aria-label="email photo proof of delivery" class="md-icon-button"
-                                                   ng-click="ctrl.sendPOD()"
-                                                   ng-if="ctrl.currentJob">
-                                            <md-tooltip md-direction="bottom">Email Photo POD</md-tooltip>
-                                            <md-icon md-font-icon="send"
-                                                     md-font-set="material-symbols-outlined"></md-icon>
-                                        </md-button>
-                                    </div>
-
                                     <div class="row-overflow" id="box-{{box.name}}-{{$index}}" layout="row"
-                                         ng-if="ctrl.boxes[box.name].showSearch">
+                                         ng-if="::ctrl.boxes[box.name].showSearch">
                                         <md-button class="md-icon-button" ng-click="ctrl.openSearch(box.name, $index)">
                                             <md-icon md-font-set="material-symbols-outlined"
                                                      ng-if="!ctrl.showInput[box.name + '-' + $index]">
