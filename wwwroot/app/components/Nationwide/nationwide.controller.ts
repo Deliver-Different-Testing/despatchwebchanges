@@ -1362,6 +1362,12 @@ class NationwideControl extends BaseController {
             if (!result.shouldAssign) return;
 
             this.isDataLoading = true;
+
+            this.flightOptions = [];
+            this.showJobHasAssignedFlightMessage = true;
+            this.showFlightList = false;
+            this.updateUIState(job);
+            
             this.applyScope();
             console.info('Assigning to job');
 
@@ -1442,6 +1448,12 @@ class NationwideControl extends BaseController {
             if (!result.shouldAssign) return;
 
             this.isDataLoading = true;
+
+            this.agentOptions = [];
+            this.showJobHasAssignedAgentMessage = true;
+            this.showAgentList = false;
+            this.updateUIState(job);
+            
             this.applyScope();
 
             console.info('Assigning to job');
@@ -1452,7 +1464,6 @@ class NationwideControl extends BaseController {
                 await this.DispatchData.updateJobDetail(job.id, JobProperty.ConNote, result.awb, false);
             }
 
-            this.showJobHasAssignedAgentMessage = true;
             await this.getJobList([JobDataType.NEW, JobDataType.POD]);
             this.currentJob = this.findJobInLocalLists(job.id);
 
