@@ -1,16 +1,7 @@
 import {JobProperty} from "../../../enums/job-property.enum";
+import {ISuggestion} from "../../../interfaces/job.interface";
 
-export interface JobOptions {
-    detail: {
-        size: Array<{ id: number; label: string }>;
-        tracking: Array<{ id: number; label: string }>;
-        DGClass: Array<{ id: number; label: string }>;
-    }
-}
-
-export interface TabItem {
-    id: number;
-    text: string;
+export interface TabItem extends ISuggestion {
     isMainJob: boolean;
 }
 

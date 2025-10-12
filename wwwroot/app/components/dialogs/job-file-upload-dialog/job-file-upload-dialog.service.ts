@@ -6,15 +6,13 @@ class JobFileUploadDialogService implements angular.IServiceProvider {
     static $inject = [
         '$mdDialog',
         '$document',
-        '$log',
     ];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private $document: angular.IDocumentService,
-        private $log: angular.ILogService,
     ) {
-        this.$log.debug('JobFileUploadDialogService: Service instantiated');
+        console.debug('JobFileUploadDialogService: Service instantiated');
     }
 
     $get() {
@@ -38,12 +36,12 @@ class JobFileUploadDialogService implements angular.IServiceProvider {
                 bindToController: true,
             });
 
-            this.$log.debug("Job File Upload Dialog Closed");
+            console.debug("Job File Upload Dialog Closed");
         } catch (error) {
             if (!error) {
-                this.$log.debug("User closed dialog");
+                console.debug("User closed dialog");
             } else {
-                this.$log.error("Error in openJobFileUploadDialog", error);
+                console.error("Error in openJobFileUploadDialog", error);
                 throw error;
             }
         }

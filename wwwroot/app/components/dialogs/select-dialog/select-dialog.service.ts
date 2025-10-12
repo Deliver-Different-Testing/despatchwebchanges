@@ -15,9 +15,9 @@ export class SelectDialogService implements angular.IServiceProvider {
         console.log('SelectDialogService: Service instantiated');
     }
 
-        $get(): any {
-            return this;
-        }
+    $get(): any {
+        return this;
+    }
 
     async showSelectDialog($event: MouseEvent, data: ISuggestion[],
                            fieldName: string, title: string, initialValue: string | null | number = null,

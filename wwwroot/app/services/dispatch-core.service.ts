@@ -552,18 +552,16 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     private async updateAddress(
         jobId: number,
-        despatcherName: string,
         prebook: boolean,
         addressData: IAddressViewModel,
         addressType: 'pickup' | 'delivery'
     ): Promise<void> {
         try {
-            const endpoint = this.getAddressEndpoint(prebook, addressType);
+            const endpoint = DispatchCoreService.getAddressEndpoint(prebook, addressType);
             console.debug(`Using endpoint: ${endpoint}`);
 
             const requestBody = {
                 jobId,
-                despatcherName,
                 address: addressData
             };
 
@@ -575,7 +573,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
     }
 
-    private getAddressEndpoint(prebook: boolean, addressType: 'pickup' | 'delivery'): string {
+    private static getAddressEndpoint(prebook: boolean, addressType: 'pickup' | 'delivery'): string {
         const prefix = prebook ? 'Booking' : '';
         const suffix = addressType === 'pickup' ? 'PickupAddress' : 'DeliveryAddress';
         return `job/Update${prefix}${suffix}`;
@@ -583,20 +581,18 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async updateDeliveryAddress(
         jobId: number,
-        despatcherName: string,
         prebook: boolean,
         addressData: IAddressViewModel
     ): Promise<void> {
-        return this.updateAddress(jobId, despatcherName, prebook, addressData, 'delivery');
+        return this.updateAddress(jobId, prebook, addressData, 'delivery');
     }
 
     async updatePickupAddress(
         jobId: number,
-        despatcherName: string,
         prebook: boolean,
         addressData: IAddressViewModel
     ): Promise<void> {
-        return this.updateAddress(jobId, despatcherName, prebook, addressData, 'pickup');
+        return this.updateAddress(jobId, prebook, addressData, 'pickup');
     }
 
     async updateSplitJobAddress(
@@ -747,12 +743,12 @@ class DispatchCoreService implements angular.IServiceProvider {
         };
 
         // Add date filter parameters
-        this.applyDateFilters(params, queryParams);
+        DispatchCoreService.applyDateFilters(params, queryParams);
 
         return params;
     }
 
-    private applyDateFilters(
+    private static applyDateFilters(
         params: Record<string, any>,
         queryParams: IJobQueryParams
     ): void {

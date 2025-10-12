@@ -8,7 +8,6 @@ import {HereMapCredentials} from "../../../interfaces/hereMapCredentials.interfa
 export class MapDialogController implements angular.IController {
     static $inject = [
         "$mdDialog",
-        "$log",
         "overviewService",
         "configService",
         "APP_CONFIG",
@@ -23,7 +22,6 @@ export class MapDialogController implements angular.IController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private $log: angular.ILogService,
         private overviewService: OverviewService,
         private configService: ConfigService,
         private appConfig: IAppConfig,
@@ -53,7 +51,7 @@ export class MapDialogController implements angular.IController {
                 this.mapConfig = mapConfig;
             })
             .catch((error) => {
-                this.$log.error("Error initializing map:", error);
+                console.error("Error initializing map:", error);
             });
 
         this.loading = false;
@@ -61,18 +59,18 @@ export class MapDialogController implements angular.IController {
 
     async getJob(jobId: number) {
         try {
-            this.$log.debug(`Getting job map for jobId: ${jobId}`);
+            console.debug(`Getting job map for jobId: ${jobId}`);
             return await this.overviewService.getParentJobMap(jobId);
         } catch (error) {
-            this.$log.error("Error getting job map:", error);
+            console.error("Error getting job map:", error);
         }
     }
 
     switchMapJob(index: number): void {
-        this.$log.debug(`Setting job on map to ${index === 0 ? "parent" : index}`);
+        console.debug(`Setting job on map to ${index === 0 ? "parent" : index}`);
         this.selectedJobIndex = index;
         this.mapConfig.selectedJobIndex = index;
-        this.$log.debug(this.mapConfig);
+        console.debug(this.mapConfig);
     }
 
     cancel(): void {

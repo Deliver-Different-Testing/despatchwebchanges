@@ -9,7 +9,6 @@ import {formatDateForApiWithTzs} from "../../../functions/formatDates";
 class JobFileUploadController extends BaseController {
     static $inject = [
         "$http",
-        "$log",
         "$mdDialog",
         "DispatchData",
         "toastrService",
@@ -35,7 +34,6 @@ class JobFileUploadController extends BaseController {
 
     constructor(
         private $http: angular.IHttpService,
-        private $log: angular.ILogService,
         private $mdDialog: angular.material.IDialogService,
         private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
@@ -72,15 +70,15 @@ class JobFileUploadController extends BaseController {
 
             if (this.showNormalTab) {
                 this.files = allFiles.filter((file: IJobFile) => !file.isPOD);
-                this.$log.debug("Regular Files:", this.files);
+                console.debug("Regular Files:", this.files);
             }
 
             if (this.showPodTab) {
                 this.podFiles = allFiles.filter((file: IJobFile) => file.isPOD);
-                this.$log.debug("POD Files:", this.podFiles);
+                console.debug("POD Files:", this.podFiles);
             }
         }).catch((error: any) => {
-            this.$log.error("Error loading files:", error);
+            console.error("Error loading files:", error);
             this.toastrService.showErrorToast("Failed to load files. Please try again.");
         });
 
@@ -124,10 +122,10 @@ class JobFileUploadController extends BaseController {
                     const newPodFiles = podPhotos.filter((p: { s3Key: string; }) => !existingKeys.includes(p.s3Key));
 
                     this.podFiles = [...this.podFiles, ...newPodFiles];
-                    this.$log.debug("All POD Files:", this.podFiles);
+                    console.debug("All POD Files:", this.podFiles);
                 }
             }).catch((error: any) => {
-                this.$log.error("Error loading POD files:", error);
+                console.error("Error loading POD files:", error);
                 this.toastrService.showErrorToast("Failed to load POD photos. Please try again.");
             });
         }
@@ -210,7 +208,7 @@ class JobFileUploadController extends BaseController {
                     progress: (event: Event) => {
                         const progressEvent = event as ProgressEvent;
                         const progressPercentage = Math.round((100 * progressEvent.loaded) / progressEvent.total);
-                        this.$log.debug(`progress: ${progressPercentage}% ${file.name}`);
+                        console.debug(`progress: ${progressPercentage}% ${file.name}`);
                         this.updateFileProgress(file, progressPercentage);
                     }
                 }
@@ -223,7 +221,7 @@ class JobFileUploadController extends BaseController {
             const fileType = this.isPODUpload() ? 'POD photo' : 'file';
             const message = `Success ${file.name} uploaded as ${fileType}`;
             this.toastrService.showSuccessToast(message);
-            this.$log.debug(message + ". Response: " + JSON.stringify(response.data));
+            console.debug(message + ". Response: " + JSON.stringify(response.data));
 
             // Only reload files after all uploads are complete
             if (this.completedFiles === this.totalFiles - 1) {
@@ -234,8 +232,8 @@ class JobFileUploadController extends BaseController {
             const fileKey = `${file.name}_${file.size}`;
             this.fileProgressMap.set(fileKey, 0);
 
-            this.$log.error(`Error status: ${error.status}`);
-            this.$log.error(`Error data: ${JSON.stringify(error.data)}`);
+            console.error(`Error status: ${error.status}`);
+            console.error(`Error data: ${JSON.stringify(error.data)}`);
             this.toastrService.showErrorToast(`Failed to upload ${this.isPODUpload() ? 'POD photo' : 'file'}: ${file.name}. Please try again.`);
         }
     }
@@ -245,7 +243,7 @@ class JobFileUploadController extends BaseController {
             await this.DispatchData.downloadFile(file.s3Key, file.fileName);
             this.toastrService.showSuccessToast("File downloaded successfully");
         } catch (error) {
-            this.$log.error("Download failed:", error);
+            console.error("Download failed:", error);
             this.toastrService.showErrorToast("Failed to download file. Please try again.");
         }
     }
@@ -265,12 +263,12 @@ class JobFileUploadController extends BaseController {
                 }
             }).then(
                 (response: angular.IHttpResponse<any>) => {
-                    this.$log.debug("Delete Success:", response.data);
+                    console.debug("Delete Success:", response.data);
                     this.loadFiles();
                     this.toastrService.showSuccessToast("POD photo deleted successfully");
                 },
                 (error: any) => {
-                    this.$log.error("Delete Error:", error);
+                    console.error("Delete Error:", error);
                     this.toastrService.showErrorToast("Failed to delete POD photo. Please try again.");
                 }
             );
@@ -283,12 +281,12 @@ class JobFileUploadController extends BaseController {
                 }
             }).then(
                 (response: angular.IHttpResponse<any>) => {
-                    this.$log.debug("Delete Success:", response.data);
+                    console.debug("Delete Success:", response.data);
                     this.loadFiles();
                     this.toastrService.showSuccessToast("File deleted successfully");
                 },
                 (error: any) => {
-                    this.$log.error("Delete Error:", error);
+                    console.error("Delete Error:", error);
                     this.toastrService.showErrorToast("Failed to delete file. Please try again.");
                 }
             );

@@ -5,16 +5,14 @@ import {IDocumentService, IServiceProvider, material} from "angular";
 export class EditAddressDialogService implements IServiceProvider {
     static $inject = [
         '$mdDialog',
-        '$log',
         "$document",
     ];
 
     constructor(
         private $mdDialog: material.IDialogService,
-        private $log: angular.ILogService,
         private $document: IDocumentService,
     ) {
-        this.$log.debug('EditAddressDialogService: Service instantiated');
+        console.debug('EditAddressDialogService: Service instantiated');
     }
 
     $get() {
@@ -41,16 +39,16 @@ export class EditAddressDialogService implements IServiceProvider {
                 }
             });
 
-            this.$log.debug('EditAddressDialogService: newAddress', newAddress);
+            console.debug('EditAddressDialogService: newAddress', newAddress);
             return newAddress;
         } catch (error) {
             if (error === undefined) {
-                this.$log.debug('User closed dialog');
+                console.debug('User closed dialog');
                 return;
             }
 
             // Error occurred
-            this.$log.error('EditAddressDialogService: Error in openEditAddressDialog', error);
+            console.error('EditAddressDialogService: Error in openEditAddressDialog', error);
             throw error;
         }
     }

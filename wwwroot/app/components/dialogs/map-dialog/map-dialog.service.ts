@@ -5,15 +5,13 @@ class MapDialogService implements  angular.IServiceProvider {
     static $inject = [
         '$mdDialog',
         '$document',
-        '$log',
     ];
     
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private $document: angular.IDocumentService,
-        private $log: angular.ILogService,
     ) {
-        this.$log.debug('MapDialogService: Service instantiated');
+        console.debug('MapDialogService: Service instantiated');
     }
     
     $get() {

@@ -3,16 +3,14 @@
 class CreateJobDialogService implements angular.IServiceProvider {
     static $inject = [
         '$mdDialog',
-        '$log',
         '$document'
     ];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private $log: angular.ILogService,
         private $document: angular.IDocumentService,
     ) {
-        this.$log.debug('CreateJobDialogService: Service instantiated');
+        console.debug('CreateJobDialogService: Service instantiated');
     }
 
     $get() {

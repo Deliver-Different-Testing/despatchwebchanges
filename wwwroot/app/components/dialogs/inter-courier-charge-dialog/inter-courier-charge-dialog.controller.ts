@@ -12,7 +12,6 @@ import IInterCourierData from "./interfaces/IInterCourierData";
 class InterCourierChargeDialogController extends BaseController {
     static $inject = [
         "$mdDialog",
-        "$log",
         "DispatchData",
         "toastrService"
     ];
@@ -31,7 +30,6 @@ class InterCourierChargeDialogController extends BaseController {
 
     constructor(
         private $mdDialog: material.IDialogService,
-        private $log: angular.ILogService,
         private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
     ) {
@@ -49,7 +47,7 @@ class InterCourierChargeDialogController extends BaseController {
             return await this.DispatchData.autocompleteSearch(searchTerm, url);
         } catch (error) {
             this.toastrService.showErrorToast("An error occurred while searching. Please try again later.");
-            this.$log.error(error);
+            console.error(error);
             return [];
         }
     }
@@ -64,7 +62,7 @@ class InterCourierChargeDialogController extends BaseController {
             return await this.DispatchData.autocompleteSearch(searchTerm, url);
         } catch (error) {
             this.toastrService.showErrorToast("An error occurred while searching. Please try again later.");
-            this.$log.error(error);
+            console.error(error);
             return [];
         }
     }
@@ -106,7 +104,7 @@ class InterCourierChargeDialogController extends BaseController {
             this.$mdDialog.hide();
         } catch (error) {
             this.toastrService.showErrorToast();
-            this.$log.error(error);
+            console.error(error);
         } finally {
             this.isLoading = false;
         }
