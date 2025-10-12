@@ -6,7 +6,7 @@ import BaseController from "../base-controller";
 import {ITaskListItemConfig} from "../common/task-item-component/task-item.interfaces";
 import {StatusFilter} from "./enums/status-filter";
 import greetUser from "../../functions/greetUser";
-import dayjs from "dayjs";
+import dayjs, {Dayjs} from "dayjs";
 import {ContactID} from "../../contants";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
@@ -36,7 +36,7 @@ class TaskDashboardController extends BaseController {
     tasksLoading: boolean = true;
     isFirstLoad: boolean = true;
     dateFilterData: IDateFilterData;
-    today: dayjs.Dayjs;
+    today: Dayjs;
 
     // View state
     showFullCalendar: boolean;
@@ -297,7 +297,7 @@ class TaskDashboardController extends BaseController {
 
     isTaskOverdue(task: ITask): boolean {
         if (task.closed) return false;
-        return dayjs(task.dueDate).isBefore(dayjs(this.today));
+        return task.dueDate.isBefore(dayjs(this.today));
     }
 
     formatDate(date: Date | string): string {

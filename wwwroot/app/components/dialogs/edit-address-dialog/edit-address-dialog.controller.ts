@@ -18,7 +18,6 @@ class EditAddressDialogController extends BaseController {
         "$scope",
         "$timeout",
         "$interval",
-        "$log",
         "$mdDialog",
         "toastrService",
         "APP_CONFIG",
@@ -52,7 +51,6 @@ class EditAddressDialogController extends BaseController {
         $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
-        private $log: angular.ILogService,
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
         private appConfig: IAppConfig,
@@ -126,13 +124,13 @@ class EditAddressDialogController extends BaseController {
                 }
             })
             .catch(error => {
-                this.$log.error('Error initializing HERE Maps:', error);
+                console.error('Error initializing HERE Maps:', error);
                 this.toastrService.showErrorToast('Error loading map. Please try again.');
             });
     }
     
     onMapReady(map: any, platform: any): void {
-        this.$log.debug('HERE Map ready:', map);
+        console.debug('HERE Map ready:', map);
         this.mapInstance = map;
         this.platform = platform;
 
@@ -155,7 +153,7 @@ class EditAddressDialogController extends BaseController {
     }
 
     private async onMapClick(lat: number, lng: number): Promise<void> {
-        this.$log.debug('Map clicked at:', lat, lng);
+        console.debug('Map clicked at:', lat, lng);
 
         // Update address coordinates
         this.addressDetails.latitude = lat;
@@ -197,7 +195,7 @@ class EditAddressDialogController extends BaseController {
             this.toastrService.showErrorToast(
                 error.message || "Error searching for addresses"
             );
-            this.$log.error("Error in autocompleteAddressSearch:", error);
+            console.error("Error in autocompleteAddressSearch:", error);
             return [];
         }
     }
@@ -206,10 +204,10 @@ class EditAddressDialogController extends BaseController {
         selectedItem: IHereMapsLocationResult
     ): Promise<void> {
         try {
-            this.$log.debug("Selected address item:", selectedItem);
+            console.debug("Selected address item:", selectedItem);
 
             if (!selectedItem || !selectedItem.id) {
-                this.$log.warn("No valid address item selected");
+                console.warn("No valid address item selected");
                 return;
             }
 
@@ -243,7 +241,7 @@ class EditAddressDialogController extends BaseController {
 
             this.isAddressLoading = false;
         } catch (error) {
-            this.$log.error("Error processing selected address:", error);
+            console.error("Error processing selected address:", error);
             this.isAddressLoading = false;
             this.toastrService.showErrorToast(
                 "An error occurred while processing the selected address. Please try again."
@@ -294,7 +292,7 @@ class EditAddressDialogController extends BaseController {
             this.isAddressLoading = false;
 
         } catch (error) {
-            this.$log.error("Error fetching reverse geocode:", error);
+            console.error("Error fetching reverse geocode:", error);
             this.isAddressLoading = false;
             this.toastrService.showErrorToast(
                 "An error occurred while retrieving address information. Please try again."
@@ -455,15 +453,15 @@ class EditAddressDialogController extends BaseController {
     }
 
     async submit(addressDetails: IEditAddressDialogViewModel): Promise<void> {
-        this.$log.debug("Starting submit with address details:", addressDetails);
+        console.debug("Starting submit with address details:", addressDetails);
         this.isLoading = true;
 
         try {
-            this.$log.debug("Using US Format:", this.useUsFormat);
+            console.debug("Using US Format:", this.useUsFormat);
 
             // Validate the address
             if (!this.validateAddress(addressDetails)) {
-                this.$log.error("Address validation failed");
+                console.error("Address validation failed");
                 this.isLoading = false;
                 return;
             }
@@ -477,7 +475,7 @@ class EditAddressDialogController extends BaseController {
 
             // Ensure the fullAddress is up to date
             addressDetails.fullAddress = this.constructFullAddress(addressDetails);
-            this.$log.debug("Constructed full address:", addressDetails.fullAddress);
+            console.debug("Constructed full address:", addressDetails.fullAddress);
 
             this.isLoading = false;
 
@@ -486,11 +484,11 @@ class EditAddressDialogController extends BaseController {
 
             // Return the updated address
             this.$mdDialog.hide(addressDetails);
-            this.$log.debug("Dialog submission complete");
+            console.debug("Dialog submission complete");
         } catch (error) {
             this.isLoading = false;
-            this.$log.error("Error in submit function:", error);
-            this.$log.error("Error occurred with address details:", addressDetails);
+            console.error("Error in submit function:", error);
+            console.error("Error occurred with address details:", addressDetails);
             this.toastrService.showErrorToast(
                 "Error updating address. Please try again or contact support"
             );

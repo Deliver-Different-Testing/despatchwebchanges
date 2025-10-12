@@ -6,7 +6,6 @@ import ToastrService from "../../../services/toastr.service";
 class NoteManagementDialogController {
     static $inject = [
         '$mdDialog',
-        '$log',
         'noteService',
         'toastrService',
         'model'
@@ -34,7 +33,6 @@ class NoteManagementDialogController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService, 
-        private $log: angular.ILogService,
         private noteService: NoteService,
         private toastrService: ToastrService,
         model: IJobNote,
@@ -63,7 +61,7 @@ class NoteManagementDialogController {
                 this.model.noteTypeId = this.noteTypes[0].id;
             }
         } catch (error) {
-            this.$log.error('Error loading note types:', error);
+            console.error('Error loading note types:', error);
             this.toastrService.showErrorToast('Failed to load note types');
         }
     }
@@ -96,7 +94,7 @@ class NoteManagementDialogController {
                 this.$mdDialog.hide();
             }
         } catch (error) {
-            this.$log.error('Error saving note:', error);
+            console.error('Error saving note:', error);
             this.toastrService.showErrorToast('Failed to save note');
         } finally {
             this.isSubmitting = false;
@@ -167,7 +165,7 @@ class NoteManagementDialogController {
             // Close the note type creator
             this.showNoteTypeCreator = false;
         } catch (error) {
-            this.$log.error('Error creating note type:', error);
+            console.error('Error creating note type:', error);
             this.toastrService.showErrorToast('Failed to create note type');
         } finally {
             this.isCreatingNoteType = false;

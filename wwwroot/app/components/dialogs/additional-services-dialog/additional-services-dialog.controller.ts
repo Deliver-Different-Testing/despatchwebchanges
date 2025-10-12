@@ -47,13 +47,7 @@ class AdditionalServicesDialogController extends BaseController {
     }
 
     $onInit() {
-        this.setTotalCost(this.job.charge);
         this.addJobSpeedToSelected();
-    }
-
-    setTotalCost(charge: string) {
-        const cleanedCharge = charge.replace(/\$/g, "");
-        this.totalCost = parseFloat(cleanedCharge) || 0.0;
     }
 
     addJobSpeedToSelected() {
@@ -114,9 +108,7 @@ class AdditionalServicesDialogController extends BaseController {
 
             await this.DispatchData.addServicesToJob(this.jobId, serviceIds, this.totalCost || 0);
             this.toastrService.showSuccessToast(`${serviceIds.length} total services have been added to job for $${this.totalCost}`);
-
-            this.job.charge = this.totalCost.toString();
-
+            
             this.$mdDialog.hide();
         } catch (error: any) {
             this.toastrService.showErrorToast(error.message);

@@ -5,16 +5,14 @@ import IDriverEmail from "../../driver-management-dashboard/interfaces/IDriverEm
 export class ComposeEmailDialogService implements angular.IServiceProvider {
     static $inject = [
         '$mdDialog',
-        '$log',
         "$document",
     ];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private $log: angular.ILogService,
         private $document: angular.IDocumentService,
     ) {
-        this.$log.debug('ComposeEmailDialogService: Service instantiated');
+        console.debug('ComposeEmailDialogService: Service instantiated');
     }
 
     $get() {
@@ -48,20 +46,20 @@ export class ComposeEmailDialogService implements angular.IServiceProvider {
                     emailData: initialEmailData,
                     title,
                     submitLabel,
-                     selectedCouriers
+                    selectedCouriers
                 }
             });
 
-            this.$log.debug('ComposeEmailDialogService: Email data result', result);
+            console.debug('ComposeEmailDialogService: Email data result', result);
             return result;
         } catch (error) {
             if (error === undefined) {
-                this.$log.debug('User cancelled email dialog');
+                console.debug('User cancelled email dialog');
                 return;
             }
 
             // Error occurred
-            this.$log.error('ComposeEmailDialogService: Error in openComposeEmailDialog', error);
+            console.error('ComposeEmailDialogService: Error in openComposeEmailDialog', error);
             throw error;
         }
     }

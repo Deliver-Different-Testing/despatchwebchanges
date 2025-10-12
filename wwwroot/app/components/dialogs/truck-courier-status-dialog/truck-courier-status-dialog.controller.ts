@@ -8,7 +8,6 @@ class TruckCourierStatusDialogController extends BaseController {
         "$mdDialog",
         "DispatchData",
         "toastrService",
-        "$log",
         "$scope",
         "$interval",
         "$timeout",
@@ -19,7 +18,6 @@ class TruckCourierStatusDialogController extends BaseController {
         private $mdDialog: angular.material.IDialogService,
         private dispatchData: DispatchCoreService,
         private toastrService: ToastrService,
-        private $log: angular.ILogService,
         $scope: angular.IScope,
         $interval: angular.IIntervalService,
         $timeout: angular.ITimeoutService,
@@ -28,17 +26,17 @@ class TruckCourierStatusDialogController extends BaseController {
         super();
         this.initServices($timeout, $interval, $scope);
         
-        this.$log.debug("TruckCourierStatusDialogController instantiated");
+        console.debug("TruckCourierStatusDialogController instantiated");
     }
 
     async refresh(courierId: number) {
         try {
             this.truckCourierStatus = await this.dispatchData.truckCourierStatus(courierId);
         } catch (error) {
-            this.$log.error("Error refreshing truck courier status:", error);
+            console.error("Error refreshing truck courier status:", error);
             this.toastrService.showErrorToast("An error occurred while refreshing the data. Please try again later.");
         } finally {
-            this.$log.debug("Truck courier status refreshed successfully");
+            console.debug("Truck courier status refreshed successfully");
             this.applyScope();
         }
     }

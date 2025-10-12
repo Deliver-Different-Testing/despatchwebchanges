@@ -13,7 +13,6 @@ import {
 class RecoveryAgentManagementController extends BaseController {
     static $inject = [
         '$mdDialog',
-        '$log',
         'NWData',
         'toastrService',
         '$window',
@@ -34,15 +33,14 @@ class RecoveryAgentManagementController extends BaseController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private $log: angular.ILogService,
         private nationwideService: NationwideService,
         private toastrService: ToastrService,
         private $window: angular.IWindowService,
         public job: RecoveryAgentJobViewModel,
     ) {
         super();
-        this.$log.debug('RecoveryAgentManagementController: Controller instantiated');
-        this.$log.debug('RecoveryAgentManagementController: Job data:', job);
+        console.debug('RecoveryAgentManagementController: Controller instantiated');
+        console.debug('RecoveryAgentManagementController: Job data:', job);
         this.initAirports();
     }
 
@@ -126,7 +124,7 @@ class RecoveryAgentManagementController extends BaseController {
             const agentTypeText = this.isPrimaryRecoveryAgent ? 'primary recovery agent' : 'recovery agent';
             this.toastrService.showSuccessToast(`${agentText} has been assigned as ${agentTypeText} to search at ${airportText}`);
         } catch (error) {
-            this.$log.error('Error assigning agent:', error);
+            console.error('Error assigning agent:', error);
             this.toastrService.showErrorToast('Failed to assign agent. Please try again.');
         }
     }
@@ -153,7 +151,7 @@ class RecoveryAgentManagementController extends BaseController {
             const statusText = this.editIsPrimaryRecoveryAgent ? 'set as primary recovery agent' : 'updated';
             this.toastrService.showSuccessToast(`${this.editingAgent.agentName} has been ${statusText}`);
         } catch (error) {
-            this.$log.error('Error updating agent:', error);
+            console.error('Error updating agent:', error);
             this.toastrService.showErrorToast('Failed to update agent. Please try again.');
         }
     }
@@ -178,7 +176,7 @@ class RecoveryAgentManagementController extends BaseController {
         } catch (error) {
             if (!error === undefined) return;
             
-            this.$log.error('Error removing agent:', error);
+            console.error('Error removing agent:', error);
             this.toastrService.showErrorToast('Failed to remove agent. Please try again.');
         }
     }

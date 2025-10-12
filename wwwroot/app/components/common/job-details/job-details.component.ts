@@ -8,7 +8,7 @@ import {
     JobGroup,
 } from "../../../interfaces/job.interface";
 import {ContactID, FirstName} from "../../../contants";
-import {CallData, JobOptions, TabItem} from "./job-details.interfaces";
+import {CallData, TabItem} from "./job-details.interfaces";
 import {PodPhoto} from "../pod-photo-viewer/pod-photo-viewer.interfaces";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import "./job-details.styles.less";
@@ -71,20 +71,19 @@ class JobDetailController extends BaseController {
     job?: IJob;
     selectedTab: number;
     allTabs: TabItem[];
-    options: JobOptions;
     isPodViewerOpen: boolean = false;
     selectedPhotoIndex: number = 0;
     internalStatusList: InternalStatus[];
     isLoading: boolean = false;
     distance?: number;
     selectedTabIndex: number = 0;
-    processingTabChange: boolean = false;
     timeZone: string;
     jobGroups: JobGroup[] = [];
     selectedRelatedJob?: JobGroup;
     selectedSubJobIndex: number = 0;
     jobAddressIcon: string = "pin_drop";
     viewDensity: 'normal' | 'dense' | 'ultradense' = 'normal';
+    trackingOptions: ISuggestion[];
     
     // Days of the week (recurring)
     daysOfWeekArray: number[] = [];
@@ -135,26 +134,11 @@ class JobDetailController extends BaseController {
         this.selectedTab = 0;
         this.allTabs = [];
 
-        this.options = {
-            detail: {
-                size: [
-                    {id: 1, label: "Bike"},
-                    {id: 2, label: "Car"},
-                    {id: 3, label: "Van"},
-                    {id: 4, label: "Truck"},
-                    {id: 5, label: "Scooter"},
-                ],
-                tracking: [
-                    {id: 1, label: "Email"},
-                    {id: 2, label: "Mobile"},
-                    {id: 3, label: "Email & Mobile"},
-                ],
-                DGClass: Array.from({length: 10}, (_, i) => ({
-                    id: i,
-                    label: i.toString(),
-                })),
-            },
-        };
+        this.trackingOptions = [
+            {id: 1, text: "Email"},
+            {id: 2, text: "Mobile"},
+            {id: 3, text: "Email & Mobile"},
+        ];
 
         this.internalStatusList = [];
         this.initializeDaysOfWeekArray();
@@ -285,14 +269,9 @@ class JobDetailController extends BaseController {
     }
 
     async switchToRelatedJob(index: number): Promise<void> {
-        if (this.processingTabChange) {
-            return;
-        }
-
-        this.processingTabChange = true;
         const previousJobId = this.jobId;
         console.log(`Switching to tab ${index}`);
-        
+
         try {
             if (!this.job || !this.jobGroups || this.jobGroups.length <= index) {
                 console.warn(`Invalid related job data for index ${index}`);
@@ -308,7 +287,6 @@ class JobDetailController extends BaseController {
                 // Preserve the original related jobs data
                 const originalRelatedJobs = this.job.relatedJobs;
                 const originalJobGroups = this.jobGroups;
-                const originalSelectedTabIndex = this.selectedTabIndex;
 
                 this.selectedTabIndex = index;
                 this.jobId = targetJob.id;
@@ -319,7 +297,6 @@ class JobDetailController extends BaseController {
                 if (originalRelatedJobs && this.job) {
                     this.job.relatedJobs = originalRelatedJobs;
                     this.jobGroups = originalJobGroups;
-                    this.selectedTabIndex = originalSelectedTabIndex;
                 }
 
                 this.selectedRelatedJob = targetJobGroup;
@@ -332,7 +309,6 @@ class JobDetailController extends BaseController {
                 console.log(`Already on the selected job or invalid job data`);
             }
         } finally {
-            this.processingTabChange = false;
             this.applyScope();
         }
     }
@@ -403,7 +379,7 @@ class JobDetailController extends BaseController {
             this.selectedSubJobIndex = -1;
         }
     }
-
+    
     private findJobInGroups(jobId: number): { tabIndex: number, subJobIndex: number } {
         const currentJobIndex = this.jobGroups.findIndex(
             (relatedJob) => relatedJob.job.id === jobId
@@ -710,7 +686,7 @@ class JobDetailController extends BaseController {
     async showSelectDialog(
         $event: MouseEvent,
         job: IJob,
-        data: Array<any>,
+        data: ISuggestion[],
         fieldName: JobProperty,
         title: string,
         initialValue: string | null | number = null,
@@ -993,14 +969,12 @@ class JobDetailController extends BaseController {
             if (isDeliveryAddress) {
                 await this.DispatchData.updateDeliveryAddress(
                     job.id,
-                    FirstName,
                     job.preBook,
                     addressResult
                 );
             } else {
                 await this.DispatchData.updatePickupAddress(
                     job.id,
-                    FirstName,
                     job.preBook,
                     addressResult
                 );
@@ -1392,20 +1366,12 @@ class JobDetailController extends BaseController {
     }
 
     async trackingMethodClick($event: MouseEvent, job: IJob): Promise<void> {
-        const trackingArray: ISuggestion[] = this.options.detail.tracking.map(
-            (item) => {
-                return {
-                    id: item.id,
-                    text: item.label,
-                };
-            }
-        );
         const trackingMethod = JobDetailController.getTrackingMethod(job.trackingMethod);
 
         await this.showSelectDialog(
             $event,
             job,
-            trackingArray,
+            this.trackingOptions,
             JobProperty.TrackingMethod,
             "Tracking Method",
             trackingMethod
