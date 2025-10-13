@@ -7,6 +7,10 @@ import {IDispatchJob, IDispatchJobDto, IJob, IJobDto} from "../interfaces/job.in
 import {formatDateFromApi} from "./formatDates";
 import {ITask, ITaskDto} from "../components/task-dashboard/task-dashboard.interfaces";
 import {IPrebookListModel, IPrebookListModelDto} from "../components/recurringJobs/recurringJobs.interface";
+import {
+    IDeliveryJourney,
+    IDeliveryJourneyDto
+} from "../components/common/task-history/task-history.interfaces";
 
 export function transformFlightDTO(dto: IFlightViewModelDto): IFlightViewModel {
     return {
@@ -89,5 +93,12 @@ export function transformPrebookListDTO(dto: IPrebookListModelDto): IPrebookList
         ...dto,
         booked: formatDateFromApi(dto.booked),
         nextDueTime: dto.nextDueTime ? formatDateFromApi(dto.nextDueTime) : undefined,
+    }
+}
+
+export function transformDeliveryJourneyDTO(dto: IDeliveryJourneyDto): IDeliveryJourney {
+    return {
+        ...dto,
+        date: dayjs(dto.date),
     }
 }

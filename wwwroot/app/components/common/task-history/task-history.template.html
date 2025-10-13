@@ -38,29 +38,29 @@
                      ng-click="ctrl.handleDeliveryEventClick($event, item.data)">
 
                     <!-- Step Icon -->
-                    <div class="step-icon {{ctrl.getIconColorClass($index)}}">
+                    <div class="step-icon {{::ctrl.getIconColorClass($index)}}">
                         <md-icon md-font-set="material-symbols-outlined">
-                            {{ item.data.icon || 'inventory_2' }}
+                            {{::item.data.icon || 'inventory_2' }}
                         </md-icon>
                     </div>
 
                     <!-- Step Content -->
                     <div class="step-content">
                         <div class="step-header">
-                            <div class="step-title">{{item.data.title}}</div>
+                            <div class="step-title">{{::item.data.title}}</div>
                             <div class="step-time" ng-if="ctrl.densityMode !== ctrl.DensityMode.UltraDense">
-                                {{ctrl.formatDateTime(item.data.date)}}
+                                {{::ctrl.formatDateTime(item.data.date)}}
                                 <span ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">({{::ctrl.timeZone | timezoneShort}})</span>
                             </div>
                         </div>
 
                         <div class="step-description"
                              ng-if="item.data.description && ctrl.densityMode === ctrl.DensityMode.Normal">
-                            {{item.data.description}}
+                            {{::item.data.description}}
                         </div>
 
-                        <div class="step-details" ng-if="item.data.tags && item.data.tags.length > 0">
-                     <span ng-repeat="tag in item.data.tags | limitTo:(ctrl.densityMode === ctrl.DensityMode.UltraDense ? 2 : ctrl.densityMode === ctrl.DensityMode.Dense ? 3 : 10) track by $index"
+                        <div class="step-details" ng-if="::item.data.tags && item.data.tags.length > 0">
+                     <span ng-repeat="tag in ::item.data.tags | limitTo:(ctrl.densityMode === ctrl.DensityMode.UltraDense ? 2 : ctrl.densityMode === ctrl.DensityMode.Dense ? 3 : 10) track by $index"
                            class="step-tag">
                             <md-icon style="font-size: 20px;" md-font-set="material-symbols-outlined"
                                      ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">info</md-icon>
@@ -76,7 +76,7 @@
                         <div class="step-notes"
                              ng-if="item.data.notes && item.data.notes.length > 0 && ctrl.densityMode === ctrl.DensityMode.Normal">
                             <div class="notes-label">Notes</div>
-                            <div class="notes-content">{{item.data.notes}}</div>
+                            <div class="notes-content">{{::item.data.notes}}</div>
                         </div>
                     </div>
                 </div>
@@ -105,16 +105,16 @@
                     <div class="stat-row">
                         <span class="stat-label">Next Action:</span>
                         <span class="stat-value" ng-class="{'urgent': ctrl.hasOverdueActions()}">
-                        {{ctrl.getNextAction()}}
+                        {{::ctrl.getNextAction()}}
                     </span>
                     </div>
                     <div class="stat-row" ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">
                         <span class="stat-label">Completion Rate:</span>
-                        <span class="stat-value">{{ctrl.getEventCompletionRate()}}%</span>
+                        <span class="stat-value">{{::ctrl.getEventCompletionRate()}}%</span>
                     </div>
                     <div class="stat-row" ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">
                         <span class="stat-label">Next Trigger:</span>
-                        <span class="stat-value">{{ctrl.getNextTrigger()}}</span>
+                        <span class="stat-value">{{::ctrl.getNextTrigger()}}</span>
                     </div>
                 </div>
             </div>
@@ -133,7 +133,7 @@
 
     <!-- No Job Selected State -->
     <div class="journey-widget" ng-if="!ctrl.jobId">
-        <md-toolbar class="md-accent" ng-if="ctrl.showFullToolbar">
+        <md-toolbar class="md-accent" ng-if="::ctrl.showFullToolbar">
             <div class="md-toolbar-tools">
                 <md-icon md-font-set="material-symbols-outlined">rocket_launch</md-icon>
                 <span class="md-headline-title" flex style="margin-left: 8px;"> Delivery Journey</span>

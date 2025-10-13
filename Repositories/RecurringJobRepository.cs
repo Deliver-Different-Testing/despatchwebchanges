@@ -10,6 +10,7 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 namespace DespatchWeb.Repositories;
 
@@ -148,15 +149,10 @@ public class RecurringJobRepository(
         var staffId = _infoService.GetStaffId();
         var currentTenantTime = _infoService.GetCurrentTenantTime();
 
-        var updateNote = string.Empty;
+        var noteText = string.Empty;
         // Update the correct field prop
         switch (property)
         {
-            case JobProperty.AirportOnly:
-                var airportOnly = bool.Parse(value);
-                job.TucJobNationwides.First().UcnwAirportOnly = airportOnly;
-                updateNote = $"Changed AirportOnly to {(airportOnly ? "Yes" : "No")}";
-                break;
             case JobProperty.Time:
                 job.UcbkTime = DateTimeOffset.Parse(value).DateTime;
                 break;
@@ -165,15 +161,12 @@ public class RecurringJobRepository(
                 break;
             case JobProperty.Size:
                 job.UcbkSize = int.Parse(value);
-                updateNote = $"Changed Size to {job.UcbkSize}";
+                noteText = $"Changed Size to {job.UcbkSize}";
                 break;
             case JobProperty.Items:
                 job.Quantity = short.Parse(value);
                 break;
             case JobProperty.SpeedID:
-                job.UcbkSpeed = short.Parse(value);
-                updateNote = $"Changed Speed to {job.UcbkSpeedNavigation?.UcjtName}";
-                break;
             case JobProperty.AcceptedJobTypeID when !job.UcbkDone ?? false:
                 job.UcbkSpeed = short.Parse(value);
                 break;
@@ -257,12 +250,12 @@ public class RecurringJobRepository(
             case JobProperty.DGDocumentation:
                 var dgDoc = bool.Parse(value);
                 job.Dgdocument = dgDoc;
-                updateNote = $"Changed DGDocumentation to {(dgDoc ? "Yes" : "No")}";
+                noteText = $"Changed DGDocumentation to {(dgDoc ? "Yes" : "No")}";
                 break;
             case JobProperty.TrackingMethod:
                 var trackingMethodId = int.Parse(value);
                 job.TrackingMethod = trackingMethodId;
-                updateNote = $"Changed Tracking Method to {GetTrackingName(trackingMethodId)}";
+                noteText = $"Changed Tracking Method to {GetTrackingName(trackingMethodId)}";
                 break;
             case JobProperty.Direct:
                 job.Direct = bool.Parse(value);
@@ -288,17 +281,17 @@ public class RecurringJobRepository(
             case JobProperty.DaysOfWeek:
                 job.UcbkDaysInt = int.Parse(value);
                 var daysEnum = (DaysOfWeek)job.UcbkDaysInt;
-                updateNote = $"Days of recurring jobs set to: {daysEnum.ToDisplayString()}";
+                noteText = $"Days of recurring jobs set to: {daysEnum.ToDisplayString()}";
                 break;
             case JobProperty.Frequency:
                 job.UcbkFrequency = int.Parse(value);
                 var frequencyEnum = (Frequency)job.UcbkFrequency;
-                updateNote = $"Frequency of recurring job set to: {frequencyEnum.ToDisplayString()}";
+                noteText = $"Frequency of recurring job set to: {frequencyEnum.ToDisplayString()}";
                 break;
             case JobProperty.HolidayDelivery:
                 job.HolidayDeliveryOption = int.Parse(value);
                 var holidayEnum = (HolidayDeliveryOptions)job.HolidayDeliveryOption;
-                updateNote = $"Holiday Delivery Option set to: {holidayEnum.ToDisplayString()}";
+                noteText = $"Holiday Delivery Option set to: {holidayEnum.ToDisplayString()}";
                 break;
             case JobProperty.Active:
                 var isActive = bool.Parse(value);
@@ -313,7 +306,7 @@ public class RecurringJobRepository(
                         break;
                 }
 
-                updateNote = $"Changed Active to {(isActive ? "Yes" : "No")}";
+                noteText = $"Changed Active to {(isActive ? "Yes" : "No")}";
                 break;
             case JobProperty.CustomJobName:
                 job.CustomJobName = value[..Math.Min(value.Length, 100)];
@@ -324,8 +317,8 @@ public class RecurringJobRepository(
 
         await Context.SaveChangesAsync();
 
-        if (!string.IsNullOrEmpty(updateNote))
-            await SaveNoteAsync(jobId, updateNote, false, true);
+        if (!string.IsNullOrEmpty(noteText))
+            await CreateNewRecurringJobNote(jobId, noteText, false);
     }
 
     private static void SetRecurringJobStatus(TucJobBooking jobBooked, bool isActive, int? staffId = null,
@@ -348,5 +341,25 @@ public class RecurringJobRepository(
             .AsNoTracking()
             .Select(n => new TucNoteViewModel(n))
             .ToListAsync();
+    }
+
+    public async Task<int> SaveRecurringJobNote(TucNoteViewModel note)
+    {
+     ArgumentNullException.ThrowIfNull(note);   
+     ArgumentNullException.ThrowIfNull(note.JobId);   
+     
+     var noteId = note.NoteId;
+        if (note.NoteId == 0)
+        {
+           var newNoteId = await CreateNewRecurringJobNote(note.JobId.Value, note.NoteText, note.IsImportant,
+                (NoteType)note.NoteTypeId);
+           noteId = newNoteId;
+        }
+        else
+        {
+            await UpdateRecurringJobNote(note.NoteId, note.NoteText, note.IsImportant, (NoteType)note.NoteTypeId);
+        }
+        
+        return noteId;
     }
 }

@@ -86,7 +86,7 @@ public class BaseJobRepository(
 
             // Calculate remain times
             var economySpeedId = await Context.TucJobTypes
-                .Where(s => s.UcjtName == "Economy")            
+                .Where(s => s.UcjtName == "Economy")
                 .Select(s => s.UcjtId)
                 .FirstOrDefaultAsync();
             ArgumentNullException.ThrowIfNull(economySpeedId);
@@ -172,8 +172,10 @@ public class BaseJobRepository(
         query = query.Where(j => j.ParentId != j.UcjbId && !j.InverseParent.Any());
 
         // Filter dates
-        if (queryParams.StartDate != null) query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
-        if (queryParams.DateCutoff != null) query = query.Where(j => j.UcjbDate.Date<= queryParams.DateCutoff.Value.Date);
+        if (queryParams.StartDate != null)
+            query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
+        if (queryParams.DateCutoff != null)
+            query = query.Where(j => j.UcjbDate.Date <= queryParams.DateCutoff.Value.Date);
 
         // Apply window pane viewFilters
         query = windowPane switch
@@ -305,7 +307,7 @@ public class BaseJobRepository(
     public async Task<int> SaveNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
-            ArgumentNullException.ThrowIfNull(viewModel.JobId);
+        ArgumentNullException.ThrowIfNull(viewModel.JobId);
 
         var staffId = infoService.GetStaffId();
         var currentTime = infoService.GetCurrentTenantTime();
@@ -359,7 +361,15 @@ public class BaseJobRepository(
         await Context.SaveChangesAsync();
     }
 
-    public async Task SaveNoteAsync(int jobId, string noteText, bool isImportant = false,
+    private async Task<NoteType> ConfirmNoteTypeExists(NoteType noteType)
+    {
+        // If a note type is not found, default to the internal note
+        var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
+        if (!noteTypeExists) noteType = NoteType.InternalNote;
+        return noteType;
+    }
+
+    protected async Task SaveNoteAsync(int jobId, string noteText, bool isImportant = false,
         bool isRecurringJob = false, NoteType noteType = NoteType.InternalNote)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(noteText);
@@ -655,7 +665,7 @@ public class BaseJobRepository(
 
             var now = infoService.GetCurrentTenantTime();
             var jobDateTime = job.Booked.Value;
-           
+
             if (job.SpeedId == economySpeedId)
             {
                 var ecoDeliveryTime = await Context.TblEcoSettings
@@ -663,7 +673,7 @@ public class BaseJobRepository(
                     .FirstOrDefaultAsync();
                 ArgumentNullException.ThrowIfNull(job.Booked);
                 ArgumentNullException.ThrowIfNull(ecoDeliveryTime);
-                
+
                 var targetDateTime = new DateTime(
                     job.Booked.Value.Year,
                     job.Booked.Value.Month,
@@ -672,12 +682,12 @@ public class BaseJobRepository(
                     ecoDeliveryTime.Value.Minute,
                     ecoDeliveryTime.Value.Second
                 );
-    
+
                 return Math.Round((targetDateTime - now).TotalMinutes);
             }
 
             if (!job.JobTypeMins.HasValue) return null;
-        
+
             var minutesToAdd = job.JobTypeMins.Value;
             var standardDeliveryDateTime = jobDateTime.AddMinutes(minutesToAdd);
             return Math.Round((standardDeliveryDateTime - now).TotalMinutes);
@@ -687,6 +697,57 @@ public class BaseJobRepository(
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository),
                     nameof(CalculateRemainTime)));
+            throw;
+        }
+    }
+
+    protected async Task<int> CreateNewRecurringJobNote(int jobId, string noteText, bool isImportant,
+        NoteType noteType = NoteType.InternalNote)
+    {
+        try
+        {
+            noteType = await ConfirmNoteTypeExists(noteType);
+            var newNote = new TucNote
+            {
+                JobBookingId = jobId,
+                NoteText = noteText,
+                IsImportant = isImportant,
+                NoteTypeId = (int)noteType
+            };
+            await Context.AddAsync(newNote);
+            await Context.SaveChangesAsync();
+
+            return newNote.NoteId;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(RecurringJobRepository),
+                    nameof(CreateNewRecurringJobNote)));
+            throw;
+        }
+    }
+
+    protected async Task UpdateRecurringJobNote(int noteId, string noteText, bool isImportant,
+        NoteType noteType = NoteType.InternalNote)
+    {
+        try
+        {
+            var rowsAffected = await Context.TucNotes
+                .Where(c => c.NoteId == noteId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(e => e.NoteText, noteText)
+                    .SetProperty(e => e.NoteTypeId, (int)noteType)
+                    .SetProperty(e => e.IsImportant, isImportant)
+                );
+
+            if (rowsAffected == 0) throw new Exception($"Existing note under {noteId} not found");
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(RecurringJobRepository),
+                    nameof(CreateNewRecurringJobNote)));                    
             throw;
         }
     }
