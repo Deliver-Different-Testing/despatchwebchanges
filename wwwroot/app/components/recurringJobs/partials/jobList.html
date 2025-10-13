@@ -54,10 +54,6 @@
                         </div>
                     </md-tooltip>
                 </div>
-                <md-icon md-font-set="material-symbols-outlined" ng-if="::!job.pickUpLongitude || !job.pickUpLatitude" class="address-warning">
-                    warning
-                    <md-tooltip md-direction="bottom">No Latitude or Longitude Provided</md-tooltip>
-                </md-icon>
             </td>
             <td md-cell md-truncate>
                 <div class="address-compact" ng-class="{'us-format': ctrl.isUsCustomer}">
@@ -85,10 +81,6 @@
                         </div>
                     </md-tooltip>
                 </div>
-                <md-icon md-font-set="material-symbols-outlined" ng-if="::!job.deliveryLongitude || !job.deliveryLatitude" class="address-warning">
-                    warning
-                    <md-tooltip md-direction="bottom">No Latitude or Longitude Provided</md-tooltip>
-                </md-icon>
             </td>
             
             <td md-cell>

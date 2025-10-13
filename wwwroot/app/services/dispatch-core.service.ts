@@ -202,7 +202,6 @@ class DispatchCoreService implements angular.IServiceProvider {
                 },
             }
         );
-
     }
 
     async voidJob(jobId: number, voidSingleJobOnly: boolean, voidReason?: string): Promise<void> {
@@ -283,7 +282,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 jobId,
             },
         });
-        
+
         return transformJobDTO(response.data);
     }
 
@@ -293,7 +292,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 jobId
             }
         });
-        
+
         return transformDispatchJobDTO(response.data);
     }
 
@@ -305,7 +304,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 },
             }
         );
-        
+
         return transformJobDTO(response.data);
     }
 
@@ -330,7 +329,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 },
             }
         );
-        
+
         return response.data.map(transformDispatchJobDTO);
     }
 
@@ -376,7 +375,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         );
         return response.data;
     }
-    
+
     async getPotentialCouriers(jobId: number): Promise<any> {
         const response = await this.$http.get(
             `courier/PotentialCouriers`, {
@@ -699,7 +698,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             selectedAreas.map(area => area.id)
         );
 
-        const response = await this.$http.get<IDispatchJobDto[]>("job", { params });
+        const response = await this.$http.get<IDispatchJobDto[]>("job", {params});
         return response.data.map(transformDispatchJobDTO);
     }
 
@@ -715,14 +714,14 @@ class DispatchCoreService implements angular.IServiceProvider {
             selectedClients,
             internal,
             selectedAreas.map(view => view.id),
-            { selectedClearListId }
+            {selectedClearListId}
         );
 
         const response = await this.$http.get<IDispatchJobDto[]>(
             'job/GetJobsByClearListEnvelope',
-            { params }
+            {params}
         );
-        
+
         return response.data.map(transformDispatchJobDTO);
     }
 
@@ -1062,7 +1061,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 bulkJobId
             }
         });
-        
+
         return transformJobDTO(response.data);
     }
 
@@ -1143,10 +1142,10 @@ class DispatchCoreService implements angular.IServiceProvider {
             throw error;
         }
     }
-    
+
     async getTimeZoneOptions(): Promise<ITimeZoneSuggestion[]> {
         const response = await this.$http.get<ITimeZoneSuggestion[]>('job/GetTimeZoneOptions');
-        return response.data;   
+        return response.data;
     }
 }
 

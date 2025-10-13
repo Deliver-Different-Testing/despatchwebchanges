@@ -131,17 +131,6 @@ public class RecurringJobRepository(
         };
     }
 
-    public async Task<PrebookListViewModel> GetPrebookJobByIdAsync(int jobBookingId)
-    {
-        var prebook = await Context.TucJobBookings
-            .Where(j => j.UcbkId == jobBookingId)
-            .Select(JobMappings.ToPrebookListViewModel)
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
-
-        return prebook;
-    }
-
     public async Task UpdateTucJobRecurringAsync(int jobId, JobProperty property, string value)
     {
         var job = await Context.TucJobBookings

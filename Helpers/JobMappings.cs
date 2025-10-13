@@ -909,17 +909,17 @@ public static class JobMappings
                 : SqlMinDateTime,
             CreatedDate = j.UcbkDate,
             ScheduleName = j.ScheduleName,
-            LoggedInContactName = j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname,
+            LoggedInContactName = j.LoggedInContact != null ? j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname : null,
 
             PickupTime = null,
             DeliveryTime = null,
 
             Courier = null,
-            CourierData = j.CourierId != null
-                ? new CourierData { CourierId = j.CourierId, CourierName = j.Courier.UccrName }
+            CourierData = j.Courier != null
+                ? new CourierData { CourierId = j.Courier.UccrId, CourierName = j.Courier.UccrName }
                 : null,
-            AssignedCourier = j.CourierId.HasValue
-                ? new Suggestion { Id = j.CourierId.Value, Text = j.Courier.UccrName }
+            AssignedCourier = j.Courier != null
+                ? new Suggestion { Id = j.Courier.UccrId, Text = j.Courier.UccrName }
                 : null,
 
             // Address information - directly available in the archive
@@ -1081,9 +1081,9 @@ public static class JobMappings
             Active = j.UcbkActive,
 
             // Added new fields for scheduling
-            DaysOfWeek = (DaysOfWeek)j.UcbkDaysInt,
-            Frequency = (Frequency)(j.UcbkFrequency ?? 0),
-            HolidayDeliveryOption = (HolidayDeliveryOptions)j.HolidayDeliveryOption,
+            DaysOfWeek = j.UcbkDaysInt,
+            Frequency = j.UcbkFrequency ?? 0,
+            HolidayDeliveryOption = j.HolidayDeliveryOption,
 
             PickUpWindowMins = j.PickUpWindowMins,
             DeliverByWindowMins = j.DeliverByWindowMins,

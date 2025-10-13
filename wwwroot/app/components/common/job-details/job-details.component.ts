@@ -24,7 +24,7 @@ import EditParcelDimensionsDialogService
     from "../../dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
 import {IJobReadChanged} from "../../../interfaces/event-interfaces";
 import {JobProperty} from "../../../enums/job-property.enum";
-import {DaysOfWeek} from "../../../enums/days-of-week.enum";
+import {DaysOfWeek, DaysOfWeekHelpers} from "../../../enums/days-of-week.enum";
 import AutoCompleteDialogService from "../../dialogs/auto-complete-dialog/auto-complete-dialog.service";
 import JobFileUploadDialogService from "../../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import {FileUploadType} from "../../../enums/file-upload-type.enum";
@@ -86,16 +86,11 @@ class JobDetailController extends BaseController {
     trackingOptions: ISuggestion[];
     
     // Days of the week (recurring)
-    daysOfWeekArray: number[] = [];
-    private readonly dayFlags = [
-        DaysOfWeek.Monday,
-        DaysOfWeek.Tuesday,
-        DaysOfWeek.Wednesday,
-        DaysOfWeek.Thursday,
-        DaysOfWeek.Friday,
-        DaysOfWeek.Saturday,
-        DaysOfWeek.Sunday
-    ];
+    daysOfWeekArray: DaysOfWeek[] = [];
+    readonly dayOptions = DaysOfWeekHelpers.allDays.map(day => ({
+        value: day,
+        label: DaysOfWeekHelpers.dayLabels[day]
+    }));
     
     // Photos
     formattedPodPhotos: PodPhoto[] = [];
@@ -141,28 +136,34 @@ class JobDetailController extends BaseController {
         ];
 
         this.internalStatusList = [];
-        this.initializeDaysOfWeekArray();
     }
 
     $onInit(): void {
         console.log("$onInit called - jobId:", this.jobId);
 
-        this.DispatchData.getInternalStatusList()
-            .then((statusList: InternalStatus[]) => {
+        // Load data in parallel
+        const statusListPromise = this.DispatchData.getInternalStatusList();
+        const jobDataPromise = this.jobId ? this.loadJobData(this.jobId) : Promise.resolve();
+
+        Promise.all([statusListPromise, jobDataPromise])
+            .then(([statusList]) => {
                 this.internalStatusList = statusList;
+
+                if (this.jobId) {
+                    console.log("Job data loaded successfully");
+                }
             })
             .catch((error) => {
-                console.error("Error loading internal status list:", error);
+                console.error("Error during initialization:", error);
             });
 
-        if (this.jobId) {
-            this.loadJobData(this.jobId).then(_ => console.log("Job data loaded:"));
-        }
-
         // Apply UI tweaks
+        this.setupUI();
+    }
+
+    private setupUI(): void {
         this.loadViewDensity();
         this.initializeFieldVisibility();
-
         this.applyScope();
     }
 
@@ -510,31 +511,11 @@ class JobDetailController extends BaseController {
 
         this.jobAddressIcon = this.job?.assignedFlight ? "flight_takeoff" : "pin_drop";
 
-        if (typeof this.job.daysOfWeek === "number" && this.job.daysOfWeek > 0) {
-            console.log("Original daysOfWeek bitmap value:", this.job.daysOfWeek);
-
-            const daysArray = [];
-            const dayValues = [
-                DaysOfWeek.Monday,
-                DaysOfWeek.Tuesday,
-                DaysOfWeek.Wednesday,
-                DaysOfWeek.Thursday,
-                DaysOfWeek.Friday,
-                DaysOfWeek.Saturday,
-                DaysOfWeek.Sunday,
-            ];
-
-            for (const dayValue of dayValues) {
-                if (this.job.daysOfWeek && dayValue) {
-                    daysArray.push(dayValue);
-                }
-            }
-
-            console.log("Converted daysOfWeek to array:", daysArray);
-
-            this.job.daysOfWeek = daysArray as any;
+        if (typeof this.job.daysOfWeek === "number") {
+            this.daysOfWeekArray = DaysOfWeekHelpers.bitwiseToArray(this.job.daysOfWeek);
+            console.log("Initialized daysOfWeekArray from bitmap:", this.daysOfWeekArray);
         }
-
+        
         if (this.job.holidayDeliveryOption) {
             this.job.holidayDeliveryOption = Number(this.job.holidayDeliveryOption);
             console.log(
@@ -1864,9 +1845,9 @@ class JobDetailController extends BaseController {
     }
 
     async updateDaysOfWeek(job: IJob): Promise<void> {
-        console.log("Updating days of week from array:", job.daysOfWeek);
+        console.log("Updating days of week from array:", this.daysOfWeekArray);
 
-        let daysValue = this.arrayToBitwise(this.daysOfWeekArray);
+        const daysValue = DaysOfWeekHelpers.arrayToBitwise(this.daysOfWeekArray);
         console.log("Days bitmask value calculated:", daysValue);
 
         try {
@@ -1884,7 +1865,7 @@ class JobDetailController extends BaseController {
             this.handleError(error);
         }
     }
-
+    
     async updateFrequency(job: IJob): Promise<void> {
         if (!job.frequency) return;
 
@@ -2237,18 +2218,6 @@ class JobDetailController extends BaseController {
         } catch (error) {
             this.handleError(error);
         }
-    }
-
-    private initializeDaysOfWeekArray(): void {
-        this.daysOfWeekArray = this.bitwiseToArray(this.job?.daysOfWeek || DaysOfWeek.None);
-    }
-
-    private bitwiseToArray(days: DaysOfWeek): number[] {
-        return this.dayFlags.filter(flag => (days & flag) === flag);
-    }
-
-    private arrayToBitwise(array: number[]): DaysOfWeek {
-        return array.reduce((acc, val) => acc | val, DaysOfWeek.None);
     }
 }
 

@@ -484,21 +484,6 @@ public class JobController(
            Log.Error(e, "{Message}", ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(PreBookJobs)));
            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
-      
-    }
-
-    public async Task<IActionResult> GetRecurringJobDetail(int jobBookingId)
-    {
-        try
-        {
-            var job = await recurringJobRepository.GetPrebookJobByIdAsync(jobBookingId);
-            return Json(job);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}", ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(GetRecurringJobDetail)));
-            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
-        }
     }
 
     public async Task<IActionResult> PodSearch([FromQuery] PodSearchRequest data)
