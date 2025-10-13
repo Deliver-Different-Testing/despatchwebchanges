@@ -317,9 +317,9 @@ export interface IJobDto {
     stopDate?: string;
     restartDate?: string;
     active?: boolean;
-    daysOfWeek?: DaysOfWeek
-    frequency?: Frequency;
-    holidayDeliveryOption: HolidayDeliveryOptions,
+    daysOfWeek?: number;
+    frequency?: number;
+    holidayDeliveryOption: number;
     pickUpWindowMins?: number;
     deliverByWindowMins?: number;
     pickUpTimeZone: ISuggestion;

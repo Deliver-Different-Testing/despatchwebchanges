@@ -60,6 +60,11 @@ export function transformJobDTO(dto: IJobDto): IJob {
                 arrivalTime: formatDateFromApi(segment.arrivalTime),
             })) ?? []
         } : undefined,
+        
+        // Prebook-specific options
+        daysOfWeek: dto.daysOfWeek,
+        frequency: dto.frequency,
+        holidayDeliveryOption: dto.holidayDeliveryOption,
     };
 }
 

@@ -925,13 +925,11 @@
                                                     ng-change="ctrl.updateDaysOfWeek(ctrl.job)"
                                                     ng-model="ctrl.daysOfWeekArray"
                                                     ng-model-options="{ debounce: 300 }">
-                                                <md-option ng-value="1">Monday</md-option>
-                                                <md-option ng-value="2">Tuesday</md-option>
-                                                <md-option ng-value="4">Wednesday</md-option>
-                                                <md-option ng-value="8">Thursday</md-option>
-                                                <md-option ng-value="16">Friday</md-option>
-                                                <md-option ng-value="32">Saturday</md-option>
-                                                <md-option ng-value="64">Sunday</md-option>
+                                                <md-option
+                                                        ng-repeat="day in ctrl.dayOptions track by day.value"
+                                                        ng-value="day.value">
+                                                    {{day.label}}
+                                                </md-option>
                                             </md-select>
                                         </p>
                                     </div>
