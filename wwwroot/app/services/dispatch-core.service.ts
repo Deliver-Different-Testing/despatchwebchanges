@@ -26,12 +26,20 @@ import {TaskTableFiltersRequest, ITask, ITaskDto,} from "../components/task-dash
 import {JobProperty} from "../enums/job-property.enum";
 import {UpdatePodDetailsRequest} from "../interfaces/requests.interfaces";
 import {JobEventData} from "../components/dialogs/add-event-dialog/add-event-dialog.interfaces";
-import {DeliveryJourneyViewModel} from "../components/common/task-history/task-history.interfaces";
+import {
+    IDeliveryJourney,
+    IDeliveryJourneyDto
+} from "../components/common/task-history/task-history.interfaces";
 import {formatDateForApiWithTzs} from "../functions/formatDates";
 import IInterCourierData from "../components/dialogs/inter-courier-charge-dialog/interfaces/IInterCourierData";
 import {Is3PhotoInfo} from "../interfaces/aws.interfaces";
 import dayjs from "dayjs";
-import {transformDispatchJobDTO, transformJobDTO, transformTaskDTO} from "../functions/dtoMappings";
+import {
+    transformDeliveryJourneyDTO,
+    transformDispatchJobDTO,
+    transformJobDTO,
+    transformTaskDTO
+} from "../functions/dtoMappings";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = [
@@ -953,14 +961,14 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
     }
 
-    async getDeliveryJourney(jobId: number): Promise<DeliveryJourneyViewModel[]> {
-        const response = await this.$http.get<DeliveryJourneyViewModel[]>('/job/GetDeliveryJourney', {
+    async getDeliveryJourney(jobId: number): Promise<IDeliveryJourney[]> {
+        const response = await this.$http.get<IDeliveryJourneyDto[]>('/job/GetDeliveryJourney', {
             params: {
                 jobId
             }
         });
 
-        return response.data;
+        return response.data.map(transformDeliveryJourneyDTO);
     }
 
     async updateJobReadStatus(jobId: number, hasBeenRead: boolean): Promise<void> {

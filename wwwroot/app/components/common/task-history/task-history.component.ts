@@ -1,9 +1,9 @@
 ﻿import "./task-history.styles.less";
 import BaseController from "../../base-controller";
-import {IDeliveryHistoryConfig, DeliveryJourneyViewModel} from "./task-history.interfaces";
+import {IDeliveryHistoryConfig, IDeliveryJourney} from "./task-history.interfaces";
 import ToastrService from "../../../services/toastr.service";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
-import dayjs from "dayjs";
+import dayjs, {Dayjs} from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import DensityMode from "../../../enums/densityMode";
@@ -24,18 +24,17 @@ class TaskHistoryController extends BaseController {
 
     jobId?: number;
     config?: IDeliveryHistoryConfig;
-    onDeliveryEventClick?: (params: { deliveryEvent: DeliveryJourneyViewModel }) => void;
+    onDeliveryEventClick?: (params: { deliveryEvent: IDeliveryJourney }) => void;
     timeZone: string;
     shouldAnimate: boolean = false;
 
     // Journey data
-    deliveryEvents: DeliveryJourneyViewModel[] = [];
+    deliveryEvents: IDeliveryJourney[] = [];
 
     // Combined timeline items
     timelineItems: Array<{
         type: 'delivery-event';
-        data: DeliveryJourneyViewModel;
-        timestamp: string;
+        data: IDeliveryJourney;
     }> = [];
 
     historyLoading?: boolean;
@@ -148,7 +147,7 @@ class TaskHistoryController extends BaseController {
         this.timelineItems = [];
     }
 
-    private buildTimelineFromDeliveryJourney(deliveryJourney: DeliveryJourneyViewModel[]) {
+    private buildTimelineFromDeliveryJourney(deliveryJourney: IDeliveryJourney[]) {
         // Backend handles all sorting and processing
         this.deliveryEvents = deliveryJourney;
 
@@ -156,30 +155,27 @@ class TaskHistoryController extends BaseController {
         this.timelineItems = deliveryJourney.map((event) => ({
             type: 'delivery-event' as const,
             data: event,
-            timestamp: event.date
         }));
     }
 
-    formatDateTime(dateTime: string): string {
+    formatDateTime(dateTime: Dayjs): string {
         if (!dateTime) return 'No date';
+        if (!dateTime.isValid()) return 'Invalid date';
 
-        const date = dayjs(dateTime);
-        if (!date.isValid()) return 'Invalid date';
-
-        const now = dayjs();
-        const isToday = date.isSame(now, 'day');
-        const isTomorrow = date.isSame(now.add(1, 'day'), 'day');
+        const now = dayjs().tz(this.timeZone);
+        const isToday = dateTime.isSame(now, 'day');
+        const isTomorrow = dateTime.isSame(now.add(1, 'day'), 'day');
 
         if (isToday) {
-            return date.format('HH:mm');
+            return dateTime.format('HH:mm');
         } else if (isTomorrow) {
-            return `Tomorrow ${date.format('HH:mm')}`;
+            return `Tomorrow ${dateTime.format('HH:mm')}`;
         } else {
-            return date.format('MMM DD, HH:mm');
+            return dateTime.format('MMM DD, HH:mm');
         }
     }
 
-    isEventOverdue(event: DeliveryJourneyViewModel): boolean {
+    isEventOverdue(event: IDeliveryJourney): boolean {
         if (!event.date || event.status === 'completed') {
             return false;
         }
@@ -208,7 +204,7 @@ class TaskHistoryController extends BaseController {
         return `step-item ${item.data.status}`;
     }
     
-    handleDeliveryEventClick($event: MouseEvent, deliveryEvent: DeliveryJourneyViewModel) {
+    handleDeliveryEventClick($event: MouseEvent, deliveryEvent: IDeliveryJourney) {
         $event.preventDefault();
         $event.stopPropagation();
 
