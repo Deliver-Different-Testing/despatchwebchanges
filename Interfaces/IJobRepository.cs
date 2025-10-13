@@ -113,8 +113,6 @@ public interface IJobRepository
     /* Address Updates */
     Task UpdateDeliveryAddressAsync(UpdateAddressRequest request);
     Task UpdatePickupAddressAsync(UpdateAddressRequest request);
-    Task UpdateBookingPickupAddressAsync(UpdateAddressRequest request);
-    Task UpdateBookingDeliveryAddressAsync(UpdateAddressRequest request);
 
     Task UpdateJobAsync(
         int jobId,

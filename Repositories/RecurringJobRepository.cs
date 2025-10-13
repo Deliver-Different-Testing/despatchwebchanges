@@ -154,10 +154,27 @@ public class RecurringJobRepository(
         switch (property)
         {
             case JobProperty.Time:
-                job.UcbkTime = DateTimeOffset.Parse(value).DateTime;
+                var timeValue = DateTimeOffset.Parse(value).DateTime;
+                job.UcbkTime = timeValue;
+
+                    // Update child jobs
+                    if (job.InverseBookingParent != null && job.InverseBookingParent.Count != 0)
+                    {
+                        foreach (var childJob in job.InverseBookingParent)
+                            childJob.UcbkTime = timeValue;
+                    }
                 break;
             case JobProperty.Date:
-                job.UcbkDate = DateTimeOffset.Parse(value).DateTime;
+                var dateValue = DateTimeOffset.Parse(value).DateTime;
+                job.UcbkDate = dateValue;
+  
+                    // Update child jobs
+                    if (job.InverseBookingParent != null && job.InverseBookingParent.Count != 0)
+                    {
+                        foreach (var childJob in job.InverseBookingParent)
+                            childJob.UcbkDate = dateValue;
+                    }
+
                 break;
             case JobProperty.Size:
                 job.UcbkSize = int.Parse(value);
@@ -172,23 +189,6 @@ public class RecurringJobRepository(
                 break;
             case JobProperty.Weight:
                 var weight = short.Parse(value);
-
-                // Update a parent job if it exists
-                if (job.ParentId != null)
-                {
-                    job.BookingParent.UcbkWeight = weight;
-
-                    // Update all other child jobs of the parent
-                    if (job.BookingParent.InverseBookingParent.Count != 0)
-                    {
-                        foreach (var siblingJob in job.BookingParent.InverseBookingParent)
-                            siblingJob.UcbkWeight = weight;
-                    }
-                }
-                // If no parent, update this job and its children
-                else
-                {
-                    // Update current job
                     job.UcbkWeight = weight;
 
                     // Update child jobs
@@ -197,8 +197,6 @@ public class RecurringJobRepository(
                         foreach (var childJob in job.InverseBookingParent)
                             childJob.UcbkWeight = weight;
                     }
-                }
-
                 break;
             case JobProperty.ClientCode:
                 job.UcbkClientCode = value[..Math.Min(value.Length, 5)];
@@ -311,6 +309,9 @@ public class RecurringJobRepository(
             case JobProperty.CustomJobName:
                 job.CustomJobName = value[..Math.Min(value.Length, 100)];
                 break;
+            case JobProperty.StopDate:
+                job.StopDate = DateTimeOffset.Parse(value).DateTime;
+                break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
         }
@@ -345,21 +346,133 @@ public class RecurringJobRepository(
 
     public async Task<int> SaveRecurringJobNote(TucNoteViewModel note)
     {
-     ArgumentNullException.ThrowIfNull(note);   
-     ArgumentNullException.ThrowIfNull(note.JobId);   
-     
-     var noteId = note.NoteId;
+        ArgumentNullException.ThrowIfNull(note);
+        ArgumentNullException.ThrowIfNull(note.JobId);
+
+        var noteId = note.NoteId;
         if (note.NoteId == 0)
         {
-           var newNoteId = await CreateNewRecurringJobNote(note.JobId.Value, note.NoteText, note.IsImportant,
+            var newNoteId = await CreateNewRecurringJobNote(note.JobId.Value, note.NoteText, note.IsImportant,
                 (NoteType)note.NoteTypeId);
-           noteId = newNoteId;
+            noteId = newNoteId;
         }
         else
         {
             await UpdateRecurringJobNote(note.NoteId, note.NoteText, note.IsImportant, (NoteType)note.NoteTypeId);
         }
-        
+
         return noteId;
+    }
+
+    public async Task UpdateBookingDeliveryAddressAsync(UpdateAddressRequest request)
+    {
+        try
+        {
+            var address = request.Address;
+
+            var rowsAffected = await Context.TucJobBookings
+                .Where(jb => jb.UcbkId == request.JobId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(jb => jb.DeliveryLatitude, address.Latitude)
+                    .SetProperty(jb => jb.DeliveryLongitude, address.Longitude)
+                    .SetProperty(jb => jb.DeliveryAddressLine1, address.AddressLine1)
+                    .SetProperty(jb => jb.DeliveryAddressLine2, address.AddressLine2)
+                    .SetProperty(jb => jb.DeliveryAddressLine3, address.AddressLine3)
+                    .SetProperty(jb => jb.DeliveryAddressLine4, address.AddressLine4)
+                    .SetProperty(jb => jb.DeliveryAddressLine5, address.AddressLine5)
+                    .SetProperty(jb => jb.DeliveryAddressLine6, address.AddressLine6)
+                    .SetProperty(jb => jb.DeliveryAddressLine7, address.AddressLine7));
+
+            if (rowsAffected == 0)
+                throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
+
+            // Get the child booking IDs from InverseBookingParent
+            var childBookingIds = await Context.TucJobBookings
+                .Where(jb => jb.UcbkId == request.JobId)
+                .SelectMany(jb => jb.InverseBookingParent)
+                .OrderBy(jb => jb.UcbkId)
+                .Select(child => child.UcbkId)
+                .ToListAsync();
+
+            // Update all child bookings if any exist
+            if (childBookingIds.Count != 0)
+            {
+                await Context.TucJobBookings
+                    .Where(jb => childBookingIds.Contains(jb.UcbkId))
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(jb => jb.DeliveryLatitude, address.Latitude)
+                        .SetProperty(jb => jb.DeliveryLongitude, address.Longitude)
+                        .SetProperty(jb => jb.DeliveryAddressLine1, address.AddressLine1)
+                        .SetProperty(jb => jb.DeliveryAddressLine2, address.AddressLine2)
+                        .SetProperty(jb => jb.DeliveryAddressLine3, address.AddressLine3)
+                        .SetProperty(jb => jb.DeliveryAddressLine4, address.AddressLine4)
+                        .SetProperty(jb => jb.DeliveryAddressLine5, address.AddressLine5)
+                        .SetProperty(jb => jb.DeliveryAddressLine6, address.AddressLine6)
+                        .SetProperty(jb => jb.DeliveryAddressLine7, address.AddressLine7));
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository),
+                    nameof(UpdateBookingDeliveryAddressAsync)));
+            throw;
+        }
+    }
+
+    public async Task UpdateBookingPickupAddressAsync(UpdateAddressRequest request)
+    {
+        try
+        {
+            var address = request.Address;
+
+            var rowsAffected = await Context.TucJobBookings
+                .Where(jb => jb.UcbkId == request.JobId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(jb => jb.PickUpLatitude, address.Latitude)
+                    .SetProperty(jb => jb.PickUpLongitude, address.Longitude)
+                    .SetProperty(jb => jb.PickupAddressLine1, address.AddressLine1)
+                    .SetProperty(jb => jb.PickupAddressLine2, address.AddressLine2)
+                    .SetProperty(jb => jb.PickupAddressLine3, address.AddressLine3)
+                    .SetProperty(jb => jb.PickupAddressLine4, address.AddressLine4)
+                    .SetProperty(jb => jb.PickupAddressLine5, address.AddressLine5)
+                    .SetProperty(jb => jb.PickupAddressLine6, address.AddressLine6)
+                    .SetProperty(jb => jb.PickupAddressLine7, address.AddressLine7));
+
+            if (rowsAffected == 0)
+                throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
+
+            // Get the child booking IDs from InverseBookingParent
+            var childBookingIds = await Context.TucJobBookings
+                .Where(jb => jb.UcbkId == request.JobId)
+                .SelectMany(jb => jb.InverseBookingParent)
+                .OrderBy(jb => jb.UcbkId)
+                .Select(child => child.UcbkId)
+                .ToListAsync();
+
+            // Update all child bookings if any exist
+            if (childBookingIds.Count != 0)
+            {
+                await Context.TucJobBookings
+                    .Where(jb => childBookingIds.Contains(jb.UcbkId))
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(jb => jb.PickUpLatitude, address.Latitude)
+                        .SetProperty(jb => jb.PickUpLongitude, address.Longitude)
+                        .SetProperty(jb => jb.PickupAddressLine1, address.AddressLine1)
+                        .SetProperty(jb => jb.PickupAddressLine2, address.AddressLine2)
+                        .SetProperty(jb => jb.PickupAddressLine3, address.AddressLine3)
+                        .SetProperty(jb => jb.PickupAddressLine4, address.AddressLine4)
+                        .SetProperty(jb => jb.PickupAddressLine5, address.AddressLine5)
+                        .SetProperty(jb => jb.PickupAddressLine6, address.AddressLine6)
+                        .SetProperty(jb => jb.PickupAddressLine7, address.AddressLine7));
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository),
+                    nameof(UpdateBookingPickupAddressAsync)));
+            throw;
+        }
     }
 }
