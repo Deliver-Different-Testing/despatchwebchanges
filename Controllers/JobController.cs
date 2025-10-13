@@ -1689,7 +1689,7 @@ public class JobController(
     {
         return await UpdateAddressAsync(
             request,
-            jobRepository.UpdateBookingPickupAddressAsync,
+            recurringJobRepository.UpdateBookingPickupAddressAsync,
             AddressType.Pickup,
             isBooking: true);
     }
@@ -1699,7 +1699,7 @@ public class JobController(
     {
         return await UpdateAddressAsync(
             request,
-            jobRepository.UpdateBookingDeliveryAddressAsync,
+            recurringJobRepository.UpdateBookingDeliveryAddressAsync,
             AddressType.Delivery,
             isBooking: true);
     }

@@ -1915,68 +1915,6 @@ public partial class JobRepository(
         }
     }
 
-    public async Task UpdateBookingPickupAddressAsync(UpdateAddressRequest request)
-    {
-        try
-        {
-            var address = request.Address;
-
-            var rowsAffected = await Context.TucJobBookings
-                .Where(jb => jb.UcbkId == request.JobId)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(jb => jb.PickUpLatitude, address.Latitude)
-                    .SetProperty(jb => jb.PickUpLongitude, address.Longitude)
-                    .SetProperty(jb => jb.PickupAddressLine1, address.AddressLine1)
-                    .SetProperty(jb => jb.PickupAddressLine2, address.AddressLine2)
-                    .SetProperty(jb => jb.PickupAddressLine3, address.AddressLine3)
-                    .SetProperty(jb => jb.PickupAddressLine4, address.AddressLine4)
-                    .SetProperty(jb => jb.PickupAddressLine5, address.AddressLine5)
-                    .SetProperty(jb => jb.PickupAddressLine6, address.AddressLine6)
-                    .SetProperty(jb => jb.PickupAddressLine7, address.AddressLine7));
-
-            if (rowsAffected == 0)
-                throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository),
-                    nameof(UpdateBookingPickupAddressAsync)));
-            throw;
-        }
-    }
-
-    public async Task UpdateBookingDeliveryAddressAsync(UpdateAddressRequest request)
-    {
-        try
-        {
-            var address = request.Address;
-
-            var rowsAffected = await Context.TucJobBookings
-                .Where(jb => jb.UcbkId == request.JobId)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(jb => jb.DeliveryLatitude, address.Latitude)
-                    .SetProperty(jb => jb.DeliveryLongitude, address.Longitude)
-                    .SetProperty(jb => jb.DeliveryAddressLine1, address.AddressLine1)
-                    .SetProperty(jb => jb.DeliveryAddressLine2, address.AddressLine2)
-                    .SetProperty(jb => jb.DeliveryAddressLine3, address.AddressLine3)
-                    .SetProperty(jb => jb.DeliveryAddressLine4, address.AddressLine4)
-                    .SetProperty(jb => jb.DeliveryAddressLine5, address.AddressLine5)
-                    .SetProperty(jb => jb.DeliveryAddressLine6, address.AddressLine6)
-                    .SetProperty(jb => jb.DeliveryAddressLine7, address.AddressLine7));
-
-            if (rowsAffected == 0)
-                throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository),
-                    nameof(UpdateBookingDeliveryAddressAsync)));
-            throw;
-        }
-    }
-
     public async Task UpdateJobAsync(
         int jobId,
         JobProperty field,

@@ -56,7 +56,7 @@
                 </md-tabs>
             </div>
         </div>
-        
+
         <!-- Main header with controls (position depends on whether tabs exist) -->
         <div class="header-bar">
             <!-- View Density Toggle -->
@@ -130,7 +130,7 @@
                 </md-tabs>
             </div>
         </div>
-        
+
         <!-- Timing Section -->
         <div class="metrics-grid">
             <div class="metric-card" md-ink-ripple ng-click="ctrl.showPricingBreakdown($event, ctrl.job)">
@@ -996,23 +996,6 @@
 
                                 <md-list-item
                                         class="md-2-line md-long-text"
-                                        ng-click="ctrl.editFirstDueDate($event, ctrl.job)">
-                                    <md-icon
-                                            class="md-avatar"
-                                            aria-label="Company"
-                                            md-font-set="material-symbols-outlined">
-                                        play_arrow
-                                    </md-icon>
-                                    <div class="md-list-item-text">
-                                        <h3>First Due</h3>
-                                        <p>{{ctrl.job.firstDue ? (ctrl.job.firstDue | date:'MM/dd') : '-'}}</p>
-                                    </div>
-                                </md-list-item>
-
-                                <md-divider></md-divider>
-
-                                <md-list-item
-                                        class="md-2-line md-long-text"
                                         ng-click="ctrl.editStopDate($event, ctrl.job)">
                                     <md-icon
                                             class="md-avatar"
@@ -1439,28 +1422,30 @@
                                 </md-icon>
                             </md-list-item>
 
-                            <md-list-item
-                                    ng-if="ctrl.isFieldVisible('conNote') || ctrl.isEditMode"
-                                    class="md-2-line md-long-text"
-                                    ng-click="ctrl.editConNote($event, ctrl.job)">
-                                <md-icon
-                                        class="md-avatar"
-                                        aria-label="Our reference"
-                                        md-font-set="material-symbols-outlined">
-                                    draw
-                                </md-icon>
-                                <div class="md-list-item-text">
-                                    <h3>AWB</h3>
-                                    <p>{{ctrl.job.conNote}}</p>
-                                </div>
+                            <div ng-if="::ctrl.job.preBook">
+                                <md-list-item
+                                        ng-if="ctrl.isFieldVisible('conNote') || ctrl.isEditMode"
+                                        class="md-2-line md-long-text"
+                                        ng-click="ctrl.editConNote($event, ctrl.job)">
+                                    <md-icon
+                                            class="md-avatar"
+                                            aria-label="Our reference"
+                                            md-font-set="material-symbols-outlined">
+                                        draw
+                                    </md-icon>
+                                    <div class="md-list-item-text">
+                                        <h3>AWB</h3>
+                                        <p>{{ctrl.job.conNote}}</p>
+                                    </div>
 
-                                <md-icon class="md-secondary"
-                                         ng-if="ctrl.isEditMode"
-                                         md-font-set="material-symbols-outlined"
-                                         ng-click="ctrl.toggleFieldVisibility('conNote')">
-                                    {{ ctrl.isFieldVisible('conNote') ? 'visibility' : 'visibility_off' }}
-                                </md-icon>
-                            </md-list-item>
+                                    <md-icon class="md-secondary"
+                                             ng-if="ctrl.isEditMode"
+                                             md-font-set="material-symbols-outlined"
+                                             ng-click="ctrl.toggleFieldVisibility('conNote')">
+                                        {{ ctrl.isFieldVisible('conNote') ? 'visibility' : 'visibility_off' }}
+                                    </md-icon>
+                                </md-list-item>
+                            </div>
                         </md-list>
                     </div>
                 </div>
