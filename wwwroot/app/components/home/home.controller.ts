@@ -96,7 +96,7 @@ class HomeController extends BaseController {
     readonly dispatchListName: JobListType = JobListType.DispatchJobList;
     
     private readonly currentAppPage: AppPages = AppPages.Dispatch;
-    private readonly COURIER_URL: string = "/courier/AllActiveSearch";
+    private static COURIER_URL: string = "/courier/AllActiveSearch";
 
     dateFilterData: IDateFilterData;
     isLoadingData: boolean = false;
@@ -104,13 +104,12 @@ class HomeController extends BaseController {
     showDriverLocationsData: boolean = false;
     greeting: string;
     mapJobList: IDispatchJob[] = []
-    initialViewSet: any;
+    initialViewSet: boolean = false;
     currentJob?: IDispatchJob;
     currentJobId?: number;
     jobList: IDispatchJob[];
     mapZoom?: number;
     truckMode: string;
-    showInput: any;
     queryParams: IJobQueryParams;
     isUsCustomer: boolean;
     selectedCourier?: ISuggestion;
@@ -138,8 +137,7 @@ class HomeController extends BaseController {
     map: any;
     courierSearchText?: string;
     courierSearchOpen: boolean = false;
-    currentCourier: any;
-    courier: any;
+    currentCourier?: ISuggestion;
     jobsCurrentList?: IDispatchJob[];
     potentialCouriers: any;
     currentWorkSelection: any;
@@ -296,7 +294,6 @@ class HomeController extends BaseController {
         };
 
         this.truckMode = "On";
-        this.showInput = {};
 
         this.queryParams = {
             order: "time",
@@ -1102,11 +1099,11 @@ class HomeController extends BaseController {
 
             // If we have a current courier, update their job list
             if (this.currentCourier) {
-                await this.getCurrentJobs(this.currentCourier.courierId);
+                await this.getCurrentJobs(this.currentCourier.id);
             }
 
             // Inform the user
-            this.toastrService.showSuccessToast(jobsToDispatch.length + " job(s) dispatched to " + this.currentCourier.name);
+            this.toastrService.showSuccessToast(jobsToDispatch.length + " job(s) dispatched to " + this.currentCourier?.text);
             await this.getJobList();
         } catch (error) {
             console.error("Error dispatching jobs:", error);
@@ -1120,11 +1117,9 @@ class HomeController extends BaseController {
 
     async reAllocateJobs(job: IDispatchJob): Promise<void> {
         if (!job) return;
-
-        const data = await this.dispatchJobService.reallocateJob(job);
-
+        
+        await this.dispatchJobService.reallocateJob(job);
         await this.getData();
-        this.courier = {gpsCourier: data};
         await this.searchCourier();
     }
 
@@ -1182,7 +1177,7 @@ class HomeController extends BaseController {
 
     async updateCourierData(courierId: number, courierName: string): Promise<void> {
         this.currentWorkSelection = ` for Courier ${courierName}`;
-        this.currentCourier = {courierId: courierId, courier: courierName};
+        this.currentCourier = {id: courierId, text: courierName};
 
         // Get current jobs for the courier
         await this.getCurrentJobs(courierId);
@@ -1197,12 +1192,12 @@ class HomeController extends BaseController {
     async selectedCourierChange(courier: any): Promise<void> {
         if (!courier) {
             // When the courier is cleared, show all jobs
-            this.currentCourier = null;
+            this.currentCourier = undefined;
             this.mapJobList = [...this.jobList];
             return;
         }
 
-        // Handle both the old Suggestion format and new typeahead format
+        // Handle both the old Suggestion format and the new typeahead format
         const courierId = courier.id;
         const courierName = courier.text || courier.label || courier.name;
 
@@ -1213,7 +1208,7 @@ class HomeController extends BaseController {
 
         // Update courier data and get their jobs
         this.currentWorkSelection = ` for Courier ${courierName}`;
-        this.currentCourier = {courierId: courierId, courier: courierName};
+        this.currentCourier = {id: courierId, text: courierName};
 
         // Get current jobs for the courier
         await this.getCurrentJobs(courierId);
@@ -1226,12 +1221,13 @@ class HomeController extends BaseController {
     }
 
     async getCourierOptions(searchTerm: string): Promise<ISuggestion[]> {
-        return await this.DispatchData.autocompleteSearch(searchTerm, this.COURIER_URL);
+        return await this.DispatchData.autocompleteSearch(searchTerm, HomeController.COURIER_URL);
     }
 
     async searchCourier(): Promise<void> {
         try {
-            const foundCourier = await this.DispatchData.getCourierById(this.courier.gpsCourier);
+            if(!this.selectedCourier) return;
+            const foundCourier = await this.DispatchData.getCourierById(this.selectedCourier.id);
             if (!foundCourier) {
                 this.toastrService.showWarningToast("Courier not found");
                 return;
@@ -1253,11 +1249,11 @@ class HomeController extends BaseController {
             const foundCourier = await this.DispatchData.getCourierById(courier.courierId);
             if (foundCourier) {
                 this.currentCourier = {
-                    courierId: foundCourier.courierId,
-                    courier: foundCourier.label || `${foundCourier.label} ${foundCourier.name}`,
+                    id: foundCourier.courierId,
+                    text: foundCourier.label || `${foundCourier.label} ${foundCourier.name}`,
                 };
 
-                this.currentWorkSelection = ` for Courier ${this.currentCourier.courier}`;
+                this.currentWorkSelection = ` for Courier ${this.currentCourier.text}`;
                 await this.getCurrentJobs(foundCourier.courierId);
 
                 // Update the map to show only this courier's jobs
@@ -1319,8 +1315,9 @@ class HomeController extends BaseController {
     }
 
     async updateUIForPotentialCourier(courier: ICourierData): Promise<void> {
+        if(!courier || !courier.courierId || !courier.courierName) return;
         this.currentWorkSelection = ` for Courier ${courier.courier}`;
-        this.currentCourier = courier;
+        this.currentCourier = {id: courier.courierId, text: courier.courierName};
     }
 
     async getCurrentJobs(courierId: number): Promise<void> {
@@ -1446,11 +1443,12 @@ class HomeController extends BaseController {
                 if (job.courierData && job.courierData.courierId) {
                     // Set the current courier context first
                     this.currentCourier = {
-                        courierId: job.courierData.courierId,
-                        courier: job.courierData.courierName || job.courier || job.assignedCourier || 'Unknown Courier'
+                        id: job.courierData.courierId,
+                        text: job.courierData.courierName || job.courier || job.assignedCourier?.text || 'Unknown Courier'
                     };
 
-                    this.currentWorkSelection = ` for Courier ${this.currentCourier.courier}`;
+                    if(!this.currentCourier) return;
+                    this.currentWorkSelection = ` for Courier ${this.currentCourier.id}`;
 
                     // Get all jobs for this courier
                     await this.getCurrentJobs(job.courierData.courierId);
@@ -1545,7 +1543,7 @@ class HomeController extends BaseController {
     async handleUndispatchedJob(job: IDispatchJob): Promise<void> {
         await this.getPotentialCouriers(job.id);
         this.potentialCouriersSelection = ` for Job ${job.jobNo}`;
-        this.currentCourier = null;
+        this.currentCourier = undefined;
         this.currentSelection = ` for Job ${job.jobNo}`;
 
         // Verify we have valid coordinates before displaying
@@ -1694,10 +1692,7 @@ class HomeController extends BaseController {
         try {
             this.currentJob = undefined;
             this.potentialCouriers = null;
-
-            if (!this.courier) {
-                this.currentCourier = null;
-            }
+            this.currentCourier = undefined;
 
             this.loadSupportsInBackground();
             await this.getJobList();
@@ -2409,7 +2404,7 @@ class HomeController extends BaseController {
             await this.getJobList();
 
             if (this.currentCourier) {
-                await this.getCurrentJobs(this.currentCourier.courierId);
+                await this.getCurrentJobs(this.currentCourier.id);
             } else if (!this.currentJob) {
                 this.mapJobList = [...this.jobList];
             }

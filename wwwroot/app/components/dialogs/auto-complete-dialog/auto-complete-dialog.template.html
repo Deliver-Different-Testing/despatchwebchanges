@@ -1,0 +1,68 @@
+<md-dialog class="auto-complete-dialog">
+    <md-toolbar class="md-hue-1">
+        <div class="md-toolbar-tools">
+            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">manage_search</md-icon>
+            <h2>{{ ::ctrl.title }}</h2>
+            <span flex></span>
+            <md-button class="md-icon-button close-dialog-button" ng-click="ctrl.cancel()">
+                <md-tooltip md-direction="bottom">Cancel</md-tooltip>
+                <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
+                    close
+                </md-icon>
+            </md-button>
+        </div>
+    </md-toolbar>
+
+    <md-dialog-content>
+        <div class="dialog-body">
+            <form ng-submit="ctrl.submit(ctrl.selectedItem)" class="search-form">
+                <!-- Autocomplete field -->
+                <div class="autocomplete-wrapper">
+                    <md-autocomplete
+                            md-input-name="autocompleteInput"
+                            md-autofocus
+                            md-autoselect
+                            md-escape-options="clear"
+                            md-item-text="item.text"
+                            md-items="item in ctrl.querySearch(ctrl.searchText)"
+                            md-min-length="1"
+                            md-search-text="ctrl.searchText"
+                            md-selected-item="ctrl.selectedItem"
+                            placeholder="{{::ctrl.options.placeholder}}">
+                        <md-item-template>
+                            <md-icon md-font-set="material-symbols-outlined" style="margin-right: 5px;">{{ctrl.itemIcon}}</md-icon>
+                            <span class="autocomplete-item" md-highlight-flags="^i" md-highlight-text="ctrl.searchText">
+                                {{item.text}}
+                            </span>
+                        </md-item-template>
+                        <md-not-found>
+                            <div class="not-found-message">
+                                <md-icon md-font-set="material-symbols-outlined">search_off</md-icon>
+                                <span>No {{ ctrl.title }} matching "{{ctrl.searchText}}" were found.</span>
+                            </div>
+                        </md-not-found>
+                    </md-autocomplete>
+                </div>
+
+                <!-- Checkbox -->
+                <div class="rerate-option" ng-show="ctrl.showRerateOption">
+                    <md-checkbox ng-model="ctrl.shouldRerateJob" class="rerate-checkbox">
+                        Re-Rate Job
+                    </md-checkbox>
+                </div>
+            </form>
+        </div>
+    </md-dialog-content>
+
+    <md-dialog-actions class="dialog-actions">
+        <md-button ng-click="ctrl.cancel()">
+            Cancel
+        </md-button>
+        <md-button class="md-raised md-primary"
+                   ng-click="ctrl.submit(ctrl.selectedItem)"
+                   ng-disabled="ctrl.selectedItem === null">
+            <md-icon md-font-set="material-symbols-outlined">check</md-icon>
+            <span>Save</span>
+        </md-button>
+    </md-dialog-actions>
+</md-dialog>

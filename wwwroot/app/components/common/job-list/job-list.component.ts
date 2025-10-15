@@ -43,8 +43,11 @@ class JobsListController extends BaseController {
     onJobAction?: (data: { action: string, job: IDispatchJob, params?: any }) => Promise<void>;
     getContextMenuOptions?: (data: { job: IDispatchJob }) => any[];
     onRefresh?: () => Promise<void>;
-    onLoadMoreJobs?: (data: { page: number, pageSize: number }) => Promise<{ jobs: IDispatchJob[], totalCount: number, hasMore: boolean }>;
-    queryParams?: any;
+    onLoadMoreJobs?: (data: { page: number, pageSize: number }) => Promise<{
+        jobs: IDispatchJob[],
+        totalCount: number,
+        hasMore: boolean
+    }>;
     isUsCustomer?: boolean;
     timeZone: string = TimeZone;
     jobListType: JobListType = JobListType.DispatchJobList;
@@ -101,7 +104,7 @@ class JobsListController extends BaseController {
     // Select all
     selectedJobs: IDispatchJob[] = [];
     selectAllState: boolean = false;
-    
+
     // Scroll
     private readonly DEFAULT_PAGE_SIZE = 50;
     enableVirtualScrolling: boolean = false;
@@ -206,7 +209,7 @@ class JobsListController extends BaseController {
                 this.currentPage = 0;
                 this.allJobsLoaded = false;
             }
-            
+
             // Group jobs by parent if not nationwide
             if (this.shouldGroupJobs()) this.groupJobs();
 
@@ -252,7 +255,7 @@ class JobsListController extends BaseController {
                 job._isExpanded = job._isExpanded || false;
                 job._groupChildren = [];
                 grouped.push(job);
-            } else if (job.parentId && job.parentId !== job.id) { 
+            } else if (job.parentId && job.parentId !== job.id) {
                 if (!childJobs[job.parentId]) {
                     childJobs[job.parentId] = [];
                 }
@@ -272,7 +275,7 @@ class JobsListController extends BaseController {
         // Only show parent jobs in the main list when grouped
         this.jobs = grouped;
     }
-    
+
     toggleJobGroup(job: IDispatchJob) {
         if (!this.isMultiPartJob(job)) return;
 
@@ -506,7 +509,7 @@ class JobsListController extends BaseController {
 
     private static matchesSearch(job: IDispatchJob, query: string): boolean {
         if (!query || query.trim() === '') return true;
-        
+
         query = query.toLowerCase().trim();
 
         const safeIncludes = (value: any): boolean => {
@@ -577,11 +580,11 @@ class JobsListController extends BaseController {
             searchFlight(job.assignedFlight)
         );
     }
-    
+
     getCourierName(job: IDispatchJob): string {
         return job.courierData?.courierName || job.assignedCourier?.text || '';
     }
-    
+
     getCourierNumber(job: IDispatchJob): number | string {
         return job.courierData?.courierNumber || job.assignedCourier?.id || ''
     }
@@ -640,7 +643,7 @@ class JobsListController extends BaseController {
         if (this.isUrgent(job)) return 'urgent';
         if (this.isWarning(job)) return 'warning';
         if (this.needsDispatch(job)) return 'needs-dispatch';
-        if (this.hasRelatedJobs(job)) return 'related-job'; 
+        if (this.hasRelatedJobs(job)) return 'related-job';
         if (job.parentId) return 'parent-job';
         if (job.parentId && job.id !== job.parentId) return 'child-job';
         return 'normal';
@@ -847,7 +850,7 @@ class JobsListController extends BaseController {
             return [];
         }
     }
-    
+
     hasRelatedJobs(job: IDispatchJob): boolean {
         return this.jobHighlightService.isJobHighlighted(job.id);
     }
@@ -944,7 +947,7 @@ class JobsListController extends BaseController {
         if (this.isJobSearchPage()) {
             return `${this.columnWidths.priority}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.isArchived}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
         }
-        
+
         return `${this.columnWidths.priority}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
     }
 
@@ -991,7 +994,7 @@ class JobsListController extends BaseController {
     resetColumnWidths(): void {
         this.columnWidths = {...this.defaultColumnWidths};
         this.saveColumnWidths();
-        
+
         const headerElement = angular.element('.jobs-header');
         if (headerElement.length) headerElement.css('grid-template-columns', this.getGridTemplateColumns());
         this.applyScope();
@@ -1053,14 +1056,14 @@ class JobsListController extends BaseController {
                 return this.getDeliveryAddress(job) || '';
             case 'courier':
                 return this.isUsCustomer
-                    ? this.getCourierName(job) 
+                    ? this.getCourierName(job)
                     : this.getCourierNumber;
             case 'remaining':
                 const hasNoCourier = !this.hasAssignedCourier(job);
                 const remainValue = job.remain !== undefined && job.remain !== null
                     ? job.remain
                     : Number.MAX_SAFE_INTEGER;
-                
+
                 if (hasNoCourier) return remainValue - 1000000;
                 return remainValue;
             case 'status':
@@ -1215,7 +1218,9 @@ class JobsListController extends BaseController {
                 "Search couriers...",
                 "Courier",
                 "Bulk Assign Courier",
-                null, false);
+                null,
+                false,
+                "moped_package");
 
             for (const job of this.selectedJobs) {
                 if (this.onJobDispatch) {
@@ -1338,7 +1343,7 @@ class JobsListController extends BaseController {
             await this.onJobSelect({job: endJob});
         }
     }
-    
+
     isJobSearchPage(): boolean {
         return this.jobListType === JobListType.JobSearchBulkList || this.jobListType === JobListType.JobSearchMainList;
     }
@@ -1348,13 +1353,13 @@ class JobsListController extends BaseController {
             const scrollContainer = angular.element('.jobs-scroll-container');
             if (scrollContainer.length) {
                 scrollContainer.on('scroll', async () => {
-                   await this.handleScroll(scrollContainer[0]);
+                    await this.handleScroll(scrollContainer[0]);
                 });
             }
         });
     }
 
-    private async handleScroll(element: HTMLElement) {Promise<void>
+    private async handleScroll(element: HTMLElement): Promise<void> {
         if (!this.enableVirtualScrolling || this.isLoadingMore || this.allJobsLoaded) return;
 
         const scrollTop = element.scrollTop;
@@ -1423,7 +1428,6 @@ const JobsListComponent: angular.IComponentOptions = {
         getContextMenuOptions: '&',
         onRefresh: '&',
         onLoadMoreJobs: '&',
-        queryParams: '<',
         refreshInterval: '<?',
         jobListType: '<?',
         enableVirtualScrolling: '<?',
