@@ -31,7 +31,7 @@ class JobsListController extends BaseController {
     private readonly DENSE_MODE_SAVE_KEY: string = `jobListComponentDenseViewMode_${ContactID}`;
     private readonly COLUMN_WIDTHS_SAVE_KEY: string = `jobListColumnWidths_${ContactID}`;
     private readonly SORT_STATE_SAVE_KEY: string = `jobListSortState_${ContactID}`;
-    private readonly COURIER_URL: string = "/courier/AllActiveSearch";
+    private static COURIER_URL: string = "/courier/AllActiveSearch";
 
     private unsubscribeFromHighlights?: () => void;
 
@@ -177,17 +177,17 @@ class JobsListController extends BaseController {
     }
 
     private setupJobListVariables() {
-        // Default all too dense
-        this.densityMode = DensityMode.Dense;
-
         switch (this.jobListType) {
             case JobListType.DispatchJobList:
             case JobListType.JobSearchMainList:
                 this.allowDispatch = true;
                 this.allowSearch = true;
                 break;
-            case JobListType.CurrentWorkList:
             case JobListType.NationwideJobList:
+                this.allowDispatch = !this.isUsCustomer;
+                this.allowSearch = true;
+                break;
+            case JobListType.CurrentWorkList:
             case JobListType.NationwidePodJobList:
             case JobListType.NationwideRepriceJobList:
             case JobListType.JobSearchBulkList:
@@ -195,6 +195,9 @@ class JobsListController extends BaseController {
                 this.allowSearch = true;
                 break;
         }
+
+        // Default all too dense
+        this.densityMode = DensityMode.Dense;
 
         // Use saved dense mode variable if exists
         if (Modernizr.localstorage) {
@@ -843,7 +846,7 @@ class JobsListController extends BaseController {
         if (!searchText || searchText.length < 2) return [];
 
         try {
-            const url = this.COURIER_URL;
+            const url = JobsListController.COURIER_URL;
             return this.DispatchData.autocompleteSearch(searchText, url);
         } catch (error: any) {
             console.error("Error in courier search:", error.message);
@@ -1214,7 +1217,7 @@ class JobsListController extends BaseController {
             if (!this.canBulkAssign()) return;
 
             const selectedCourier = await this.autoCompleteDialogService.showAutocompleteDialog($event,
-                this.COURIER_URL,
+                JobsListController.COURIER_URL,
                 "Search couriers...",
                 "Courier",
                 "Bulk Assign Courier",
