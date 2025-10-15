@@ -411,7 +411,7 @@ class NationwideControl extends BaseController {
             : this.appConfig.NZ_Coordinates_Center
         this.showInput = {};
         this.inputWidth = {};
-        
+
         this.boxes = {
             [NationwideBoxes.NewJobs]: {
                 "title": "New Jobs",
@@ -1367,7 +1367,7 @@ class NationwideControl extends BaseController {
             this.showJobHasAssignedFlightMessage = true;
             this.showFlightList = false;
             this.updateUIState(job);
-            
+
             this.applyScope();
             console.info('Assigning to job');
 
@@ -1453,7 +1453,7 @@ class NationwideControl extends BaseController {
             this.showJobHasAssignedAgentMessage = true;
             this.showAgentList = false;
             this.updateUIState(job);
-            
+
             this.applyScope();
 
             console.info('Assigning to job');
@@ -1592,7 +1592,7 @@ class NationwideControl extends BaseController {
         } finally {
             this.applyScope();
         }
-    } 
+    }
 
     async openFileAttachmentDialog($event: MouseEvent, job: IDispatchJob) {
         await this.jobFileUploadDialogService.openJobFileUploadDialog($event, job);
@@ -1881,7 +1881,7 @@ class NationwideControl extends BaseController {
     async openHubUrl(): Promise<void> {
         await this.navigationService.openHubUrl();
     }
-    
+
     async openAgentSearchDialog($event: MouseEvent, job: IDispatchJob): Promise<void> {
         try {
             const url = "nationwideJob/GetAllAgentsSearch";
@@ -2256,6 +2256,25 @@ class NationwideControl extends BaseController {
                 // Keep default values if parsing fails
                 this.dateFilterData = setDateFilterDefaults();
             }
+        }
+    }
+
+    async handleJobDispatch(job: IDispatchJob, courierId: number) {
+        if (this.isUsCustomer) {
+            this.toastrService.showWarningToast("Courier dispatch is not supported for US customers");
+            return false;
+        }
+        
+        try {
+            await this.dispatchJobService.dispatchJobs(courierId, [job]);
+            const courier = await this.DispatchData.getCourierById(courierId);
+
+            // Update the job's assigned courier display
+            job.assignedCourier = {id: courier.courierId, text: courier.name};
+
+            this.toastrService.showSuccessToast(`${job.jobNo} dispatched to ${courier.name}`);
+        } catch (error: any) {
+            console.error("Error in dispatch:", error);
         }
     }
 }

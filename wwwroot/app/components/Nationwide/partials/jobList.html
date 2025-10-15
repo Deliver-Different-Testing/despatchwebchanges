@@ -9,6 +9,7 @@
         jobs="ctrl.jobList"
         selected-job="ctrl.currentJob"
         on-job-select="ctrl.handleJobSelection(job)"
+        on-job-dispatch="ctrl.handleJobDispatch(job, courierId)"
         on-job-action="ctrl.handleJobAction(action, job, params)"
         get-context-menu-options="ctrl.getJobContextMenuOptions()"
         job-list-type="ctrl.nationwideJobList">
