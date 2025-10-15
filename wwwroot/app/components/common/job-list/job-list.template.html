@@ -2,53 +2,6 @@
      ng-if="ctrl.jobs && ctrl.jobs.length > 0"
      ng-class="ctrl.getDensityClass()">
 
-    <!-- Bulk Actions Bar -->
-    <md-toolbar class="md-dense bulk-actions-bar" ng-if="ctrl.selectedJobs.length > 0">
-        <div class="md-toolbar-tools">
-            <span class="selected-count">{{ctrl.selectedJobs.length}} selected</span>
-
-            <md-button class="md-fab md-primary md-mini"
-                       ng-click="ctrl.toggleSelectAll()"
-                       aria-label="select all">
-                <md-icon md-font-set="material-symbols-outlined">select_all</md-icon>
-                <md-tooltip md-direction="bottom">Select All {{ ctrl.filteredJobs.length }} Jobs</md-tooltip>
-            </md-button>
-
-            <md-button class="md-fab md-primary md-mini"
-                       ng-click="ctrl.clearSelection()"
-                       aria-label="clear selection">
-                <md-icon md-font-set="material-symbols-outlined">clear_all</md-icon>
-                <md-tooltip md-direction="bottom">Clear Selection</md-tooltip>
-            </md-button>
-
-            <div flex></div>
-
-            <md-button class="md-fab md-primary md-mini"
-                       ng-if="ctrl.allowDispatch"
-                       ng-click="ctrl.bulkAssignCourier()"
-                       ng-disabled="!ctrl.canBulkAssign()"
-                       aria-label="bulk assign to courier">
-                <md-icon md-font-set="material-symbols-outlined">assignment_ind</md-icon>
-                <md-tooltip md-direction="bottom">Assign Courier</md-tooltip>
-            </md-button>
-
-            <md-button class="md-fab md-primary md-mini"
-                       ng-click="ctrl.bulkRestoreJobs()"
-                       ng-disabled="!ctrl.canBulkRestoreStatus()"
-                       aria-label="bulk restore">
-                <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
-                <md-tooltip md-direction="bottom">Restore</md-tooltip>
-            </md-button>
-
-            <md-button class="md-fab md-primary md-mini"
-                       ng-click="ctrl.bulkMarkAsRead()"
-                       aria-label="bulk mark as read or unread">
-                <md-icon md-font-set="material-symbols-outlined">mark_email_read</md-icon>
-                <md-tooltip md-direction="bottom">Mark as Read/Unread</md-tooltip>
-            </md-button>
-        </div>
-    </md-toolbar>
-
     <!-- Stats Header -->
     <div class="stats-header">
         <div class="stats">
@@ -565,6 +518,53 @@
             </div>
         </div>
     </div>
+
+    <!-- Bulk Actions Bar -->
+    <md-toolbar class="md-dense bulk-actions-bar" ng-if="ctrl.selectedJobs.length > 0">
+        <div class="md-toolbar-tools">
+            <span class="selected-count">{{ctrl.selectedJobs.length}} selected</span>
+
+            <md-button class="md-fab md-primary md-mini"
+                       ng-click="ctrl.toggleSelectAll()"
+                       aria-label="select all">
+                <md-icon md-font-set="material-symbols-outlined">select_all</md-icon>
+                <md-tooltip md-direction="bottom">Select All {{ ctrl.filteredJobs.length }} Jobs</md-tooltip>
+            </md-button>
+
+            <md-button class="md-fab md-primary md-mini"
+                       ng-click="ctrl.clearSelection()"
+                       aria-label="clear selection">
+                <md-icon md-font-set="material-symbols-outlined">clear_all</md-icon>
+                <md-tooltip md-direction="bottom">Clear Selection</md-tooltip>
+            </md-button>
+
+            <div flex></div>
+
+            <md-button class="md-fab md-primary md-mini"
+                       ng-if="ctrl.allowDispatch"
+                       ng-click="ctrl.bulkAssignCourier()"
+                       ng-disabled="!ctrl.canBulkAssign()"
+                       aria-label="bulk assign to courier">
+                <md-icon md-font-set="material-symbols-outlined">assignment_ind</md-icon>
+                <md-tooltip md-direction="bottom">Assign Courier</md-tooltip>
+            </md-button>
+
+            <md-button class="md-fab md-primary md-mini"
+                       ng-click="ctrl.bulkRestoreJobs()"
+                       ng-disabled="!ctrl.canBulkRestoreStatus()"
+                       aria-label="bulk restore">
+                <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
+                <md-tooltip md-direction="bottom">Restore</md-tooltip>
+            </md-button>
+
+            <md-button class="md-fab md-primary md-mini"
+                       ng-click="ctrl.bulkMarkAsRead()"
+                       aria-label="bulk mark as read or unread">
+                <md-icon md-font-set="material-symbols-outlined">mark_email_read</md-icon>
+                <md-tooltip md-direction="bottom">Mark as Read/Unread</md-tooltip>
+            </md-button>
+        </div>
+    </md-toolbar>
 
     <!-- Footer -->
     <div class="footer">

@@ -21,33 +21,6 @@ public class JobViewModel : DispatchJobViewModel
     public string AcceptedName { get; set; }
 
     public string ClientName { get; set; }
-
-    [Obsolete("Use PickupAddress instead. This property will be removed in a future version.")]
-    [JsonPropertyName("fromSuburbID")]
-    public int? FromSuburbId { get; set; }
-
-    [Obsolete("Use PickupAddress instead. This property will be removed in a future version.")]
-    [JsonPropertyName("fromSuburbName")]
-    public string FromSuburbName { get; set; }
-
-    [Obsolete("Use PickupAddress instead. This property will be removed in a future version.")]
-    public string FromPostCode { get; set; }
-
-    [Obsolete("Use PickupAddress instead. This property will be removed in a future version.")]
-    [JsonPropertyName("fromAddress")]
-    public string FromAddress { get; set; }
-
-    [Obsolete("Use DeliveryAddress instead. This property will be removed in a future version.")]
-    public string To { get; set; }
-
-    [Obsolete("Use DeliveryAddress instead. This property will be removed in a future version.")]
-    public string ToSuburbName { get; set; }
-
-    [Obsolete("Use DeliveryAddress instead. This property will be removed in a future version.")]
-    public string ToPostCode { get; set; }
-
-    [Obsolete("Use DeliveryAddress instead. This property will be removed in a future version.")]
-    public string ToCity { get; set; }
     
     public string LoggedInContactName { get; set; }
 

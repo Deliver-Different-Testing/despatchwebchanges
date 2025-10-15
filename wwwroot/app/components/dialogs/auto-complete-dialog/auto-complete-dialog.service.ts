@@ -5,16 +5,14 @@ import IAutoCompleteOptions from "./interfaces/IAutoCompleteOptions";
 class AutoCompleteDialogService implements angular.IServiceProvider {
     static $inject = [
         '$mdDialog',
-        '$log',
         '$document'
     ];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private $log: angular.ILogService,
         private $document: angular.IDocumentService,
     ) {
-        this.$log.debug('AutoCompleteDialogService: Service instantiated');
+        console.debug('AutoCompleteDialogService: Service instantiated');
     }
 
     $get() {
@@ -27,12 +25,13 @@ class AutoCompleteDialogService implements angular.IServiceProvider {
                                  fieldName: string,
                                  title: string,
                                  existingItem: any,
-                                 showRerateOption?: boolean) {
-        this.$log.debug('AutoCompleteDialogService: showAutocompleteDialog called');
+                                 showRerateOption?: boolean,
+                                 itemIcon: string = "topic") {
+        console.debug('AutoCompleteDialogService: showAutocompleteDialog called');
         
         const options: IAutoCompleteOptions = {
             placeholder, 
-            minimumInputLength: 3, 
+            minimumInputLength: 2, 
             searchUrl: url
         };
 
@@ -41,16 +40,23 @@ class AutoCompleteDialogService implements angular.IServiceProvider {
             controllerAs: "ctrl",
             parent: this.$document.parent(),
             targetEvent: $event,
-            template: require("./auto-complete-dialog.html"),
+            template: require("./auto-complete-dialog.template.html"),
             clickOutsideToClose: true,
+            escapeToClose: true,
             fullscreen: false,
             locals: {
-                fieldName, title, options, existingItem, showRerateOption
+                fieldName,
+                title, 
+                options,
+                existingItem,
+                showRerateOption,
+                itemIcon
             },
+            focusOnOpen: true,
             bindToController: true
         });
 
-        this.$log.debug('AutoCompleteDialogService: showAutocompleteDialog returned');
+        console.debug('AutoCompleteDialogService: showAutocompleteDialog returned');
         
         return data;
     }

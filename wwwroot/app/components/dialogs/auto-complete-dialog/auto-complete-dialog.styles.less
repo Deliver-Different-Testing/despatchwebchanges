@@ -1,0 +1,161 @@
+﻿@import '../../../../css/variables.less';
+
+.auto-complete-dialog {
+  min-width: 500px;
+  max-width: 600px;
+  border-radius: @dialog-border-radius;
+  overflow: hidden;
+  
+  // Dialog Content
+  md-dialog-content {
+    padding: 0;
+
+    .dialog-body {
+      padding: (@spacing * 2.3) (@spacing * 1.7);
+      background: @main-background-color;
+
+      .search-form {
+        .autocomplete-wrapper {
+          margin-bottom: @spacing;
+
+          md-autocomplete {
+            md-input-container {
+              margin: 0;
+              padding: 0;
+            }
+
+            input {
+              font-size: @font-lg;
+              padding: 12px 16px;
+              border: 2px solid lighten(@standard-grey, 30%);
+              border-radius: 6px;
+              background: @text-light;
+              transition: all 0.2s ease;
+
+              &:focus {
+                border-color: @primary-blue;
+                box-shadow: 0 0 0 3px fade(@primary-blue, 10%);
+                outline: none;
+              }
+            }
+
+            // Autocomplete dropdown
+            md-autocomplete-wrap {
+              box-shadow: none;
+            }
+
+            ul {
+              border: 1px solid lighten(@standard-grey, 30%);
+              border-radius: 6px;
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+              margin-top: 4px;
+              overflow: hidden;
+            }
+
+            li {
+              padding: 12px 16px;
+              transition: background-color 0.2s ease;
+              border-bottom: 1px solid lighten(@standard-grey, 40%);
+
+              &:last-child {
+                border-bottom: none;
+              }
+
+              &:hover,
+              &.selected {
+                background-color: fade(@primary-blue, 8%);
+              }
+
+              .autocomplete-item {
+                font-size: @font-base;
+                color: @text-dark;
+                line-height: @line-relaxed;
+
+                // Highlighted text
+                .highlight {
+                  font-weight: @weight-semibold;
+                  color: @primary-blue;
+                  background-color: fade(@primary-blue, 10%);
+                }
+              }
+            }
+
+            // Not found message
+            .not-found-message {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              padding: 16px;
+              color: @text-muted;
+              font-size: @font-sm;
+
+              md-icon {
+                font-size: 20px;
+                width: 20px;
+                height: 20px;
+                color: @standard-grey;
+              }
+            }
+          }
+        }
+
+        .rerate-option {
+          margin-top: (@spacing * 1.7);
+          padding: 16px;
+          background: @text-light;
+          border-radius: 6px;
+          border: 1px solid lighten(@standard-grey, 30%);
+
+          .rerate-checkbox {
+            margin: 0;
+
+            .md-label {
+              font-size: @font-base;
+              color: @text-dark;
+              font-weight: @weight-medium;
+            }
+
+            .md-container {
+              .md-icon {
+                border-color: @standard-grey;
+              }
+            }
+
+            &.md-checked {
+              .md-container .md-icon {
+                background-color: @primary-blue;
+                border-color: @primary-blue;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Dialog Actions
+  .dialog-actions {
+    padding: (@spacing * 1.1) (@spacing * 1.7);
+    background: @text-light;
+    border-top: 1px solid lighten(@standard-grey, 30%);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 600px) {
+  .auto-complete-dialog {
+    min-width: 90vw;
+    max-width: 90vw;
+
+    md-dialog-content .dialog-body {
+      padding: (@spacing * 1.7) (@spacing * 1.1);
+    }
+
+    .dialog-actions {
+      padding: (@spacing * 0.9) (@spacing * 1.1);
+    }
+  }
+}

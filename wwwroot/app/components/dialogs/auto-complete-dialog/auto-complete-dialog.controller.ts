@@ -1,3 +1,4 @@
+import "./auto-complete-dialog.styles.less";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 import {ISuggestion} from "../../../interfaces/job.interface";
@@ -19,6 +20,9 @@ export class AutoCompleteDialogController extends BaseController {
     ];
 
     searchText?: string;
+    showRerateOption: boolean;
+    selectedItem?: ISuggestion;
+    itemIcon: string;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -29,22 +33,16 @@ export class AutoCompleteDialogController extends BaseController {
         public fieldName: string,
         public title: string,
         private options: IAutoCompleteOptions,
-        public selectedItem: ISuggestion | undefined,
-        public showRerateOption: boolean
+        selectedItem: ISuggestion | undefined,
+        showRerateOption: boolean,
+        itemIcon: string
     ) {
         super();
         this.initServices($timeout, $interval);
-    }
-    
-    $onInit(): void {
-        this.registerTimeout(() => {
-            const inputField = angular.element('input[name="autocompleteInput"]');
-            if (inputField.length > 0) {
-                const element = inputField[0] as HTMLInputElement;
-                element.focus();
-                element.select();
-            }
-        });
+
+        this.selectedItem = selectedItem;
+        this.showRerateOption = showRerateOption;
+        this.itemIcon = itemIcon;
     }
 
     async querySearch(searchTerm: string): Promise<ISuggestion[] | undefined> {
@@ -57,8 +55,8 @@ export class AutoCompleteDialogController extends BaseController {
     }
 
     async submit(selectedOption: ISuggestion): Promise<void> {
-            this.$mdDialog.hide(selectedOption);
-        }
+        this.$mdDialog.hide(selectedOption);
+    }
 
     cancel(): void {
         this.$mdDialog.cancel();

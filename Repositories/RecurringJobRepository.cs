@@ -157,23 +157,24 @@ public class RecurringJobRepository(
                 var timeValue = DateTimeOffset.Parse(value).DateTime;
                 job.UcbkTime = timeValue;
 
-                    // Update child jobs
-                    if (job.InverseBookingParent != null && job.InverseBookingParent.Count != 0)
-                    {
-                        foreach (var childJob in job.InverseBookingParent)
-                            childJob.UcbkTime = timeValue;
-                    }
+                // Update child jobs
+                if (job.InverseBookingParent != null && job.InverseBookingParent.Count != 0)
+                {
+                    foreach (var childJob in job.InverseBookingParent)
+                        childJob.UcbkTime = timeValue;
+                }
+
                 break;
             case JobProperty.Date:
                 var dateValue = DateTimeOffset.Parse(value).DateTime;
                 job.UcbkDate = dateValue;
-  
-                    // Update child jobs
-                    if (job.InverseBookingParent != null && job.InverseBookingParent.Count != 0)
-                    {
-                        foreach (var childJob in job.InverseBookingParent)
-                            childJob.UcbkDate = dateValue;
-                    }
+
+                // Update child jobs
+                if (job.InverseBookingParent != null && job.InverseBookingParent.Count != 0)
+                {
+                    foreach (var childJob in job.InverseBookingParent)
+                        childJob.UcbkDate = dateValue;
+                }
 
                 break;
             case JobProperty.Size:
@@ -189,14 +190,15 @@ public class RecurringJobRepository(
                 break;
             case JobProperty.Weight:
                 var weight = short.Parse(value);
-                    job.UcbkWeight = weight;
+                job.UcbkWeight = weight;
 
-                    // Update child jobs
-                    if (job.InverseBookingParent != null && job.InverseBookingParent.Count != 0)
-                    {
-                        foreach (var childJob in job.InverseBookingParent)
-                            childJob.UcbkWeight = weight;
-                    }
+                // Update child jobs
+                if (job.InverseBookingParent != null && job.InverseBookingParent.Count != 0)
+                {
+                    foreach (var childJob in job.InverseBookingParent)
+                        childJob.UcbkWeight = weight;
+                }
+
                 break;
             case JobProperty.ClientCode:
                 job.UcbkClientCode = value[..Math.Min(value.Length, 5)];
@@ -386,19 +388,18 @@ public class RecurringJobRepository(
             if (rowsAffected == 0)
                 throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
 
-            // Get the child booking IDs from InverseBookingParent
-            var childBookingIds = await Context.TucJobBookings
+            // Get the last child booking ID from InverseBookingParent
+            var lastChildBookingId = await Context.TucJobBookings
                 .Where(jb => jb.UcbkId == request.JobId)
                 .SelectMany(jb => jb.InverseBookingParent)
                 .OrderBy(jb => jb.UcbkId)
                 .Select(child => child.UcbkId)
-                .ToListAsync();
+                .LastOrDefaultAsync();
 
-            // Update all child bookings if any exist
-            if (childBookingIds.Count != 0)
+            if (lastChildBookingId != 0)
             {
                 await Context.TucJobBookings
-                    .Where(jb => childBookingIds.Contains(jb.UcbkId))
+                    .Where(jb => jb.UcbkId == lastChildBookingId)
                     .ExecuteUpdateAsync(setters => setters
                         .SetProperty(jb => jb.DeliveryLatitude, address.Latitude)
                         .SetProperty(jb => jb.DeliveryLongitude, address.Longitude)
@@ -442,19 +443,18 @@ public class RecurringJobRepository(
             if (rowsAffected == 0)
                 throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
 
-            // Get the child booking IDs from InverseBookingParent
-            var childBookingIds = await Context.TucJobBookings
+            // Get the first child booking ID from InverseBookingParent
+            var firstChildBookingId = await Context.TucJobBookings
                 .Where(jb => jb.UcbkId == request.JobId)
                 .SelectMany(jb => jb.InverseBookingParent)
                 .OrderBy(jb => jb.UcbkId)
                 .Select(child => child.UcbkId)
-                .ToListAsync();
+                .FirstOrDefaultAsync();
 
-            // Update all child bookings if any exist
-            if (childBookingIds.Count != 0)
+            if (firstChildBookingId != 0)
             {
                 await Context.TucJobBookings
-                    .Where(jb => childBookingIds.Contains(jb.UcbkId))
+                    .Where(jb => jb.UcbkId == firstChildBookingId)
                     .ExecuteUpdateAsync(setters => setters
                         .SetProperty(jb => jb.PickUpLatitude, address.Latitude)
                         .SetProperty(jb => jb.PickUpLongitude, address.Longitude)
