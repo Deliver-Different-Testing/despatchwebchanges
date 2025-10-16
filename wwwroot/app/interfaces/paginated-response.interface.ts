@@ -1,4 +1,7 @@
-import ICourierCompliance from "../components/driver-management-dashboard/interfaces/ICourierCompliance";
+import {
+    ICourierCompliance,
+    ICourierComplianceDto
+} from "../components/driver-management-dashboard/interfaces/ICourierCompliance";
 import {
     IAfterHoursCourierSchedule, IAfterHoursCourierScheduleDto
 } from "../components/driver-management-dashboard/interfaces/IAfterHoursCourierSchedule";
@@ -15,6 +18,12 @@ export interface IPaginatedResponse<T> {
 }
 
 export interface ICourierCompliancePaginated extends IPaginatedResponse<ICourierCompliance> {
+    totalExpired: number;
+    totalExpiringSoon: number;
+    totalValid: number;
+}
+
+export interface ICourierCompliancePaginatedDto extends IPaginatedResponse<ICourierComplianceDto> {
     totalExpired: number;
     totalExpiringSoon: number;
     totalValid: number;

@@ -1,10 +1,10 @@
 ﻿import {ICourierDataDashboard} from "./interfaces/ICourierDataDashboard";
-import ICourierCompliance from "./interfaces/ICourierCompliance";
 import IDriverEmail from "./interfaces/IDriverEmail";
 import IGroupEmailData from "./interfaces/IGroupEmailData";
 import {
     ICourierAfterHoursPaginated, ICourierAfterHoursPaginatedDto,
-    ICourierCompliancePaginated, ICourierDailyEarningsPaginated, IPaginatedResponse, ITodayActiveDriverPaginated,
+    ICourierCompliancePaginated,
+    ICourierCompliancePaginatedDto, ICourierDailyEarningsPaginated, IPaginatedResponse, ITodayActiveDriverPaginated,
     ITodayActiveDriverPaginatedDto,
 } from "../../interfaces/paginated-response.interface";
 import {ISuggestion} from "../../interfaces/job.interface";
@@ -16,7 +16,12 @@ import {
 } from "./interfaces/ICourierComplianceFilter";
 import {formatDateForApiWithTzs} from "../../functions/formatDates";
 import {IAfterHoursCourierSchedule} from "./interfaces/IAfterHoursCourierSchedule";
-import {transformerAfterHoursScheduleDto, transformTodayActiveDriversDTO} from "../../functions/dtoMappings";
+import {
+    transformAfterHoursScheduleDto,
+    transformCourierComplianceDto,
+    transformTodayActiveDriversDTO
+} from "../../functions/dtoMappings";
+import {ICourierCompliance} from "./interfaces/ICourierCompliance";
 
 class DriverManagementService implements angular.IServiceProvider {
     static $inject = [
@@ -65,7 +70,7 @@ class DriverManagementService implements angular.IServiceProvider {
     ): Promise<ICourierCompliancePaginated> {
         console.log("Getting courier compliance list with filters:", filters);
 
-        const response = await this.$http.post<ICourierCompliancePaginated>("courier/GetCourierComplianceList", {
+        const response = await this.$http.post<ICourierCompliancePaginatedDto>("courier/GetCourierComplianceList", {
             // Pagination data
             page: requestData.page,
             pageSize: requestData.pageSize,
@@ -79,7 +84,10 @@ class DriverManagementService implements angular.IServiceProvider {
             fleet: filters.fleet
         });
 
-        return response.data;
+        return {
+            ...response.data,
+            items: response.data.items.map(transformCourierComplianceDto)
+        }
     }
 
     async sendComplianceReminder(item: ICourierCompliance): Promise<void> {
@@ -126,7 +134,7 @@ class DriverManagementService implements angular.IServiceProvider {
 
         return {
             ...response.data,
-            items: response.data.items.map(transformerAfterHoursScheduleDto)
+            items: response.data.items.map(transformAfterHoursScheduleDto)
         }
     }
 

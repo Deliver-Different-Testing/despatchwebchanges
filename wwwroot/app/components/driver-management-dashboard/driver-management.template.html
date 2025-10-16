@@ -412,10 +412,10 @@
                                     <span class="fleet-badge">{{driver.fleet}}</span>
                                 </td>
                                 <td md-cell>
-                                    <span class="time-value">{{driver.loginTime | date:'HH:mm:ss'}}</span>
+                                    <span class="time-value">{{driver.loginTime | momentFormat:'HH:mm' }}</span>
                                 </td>
                                 <td md-cell>
-                                    <span class="time-value">{{driver.logoutTime | date:'HH:mm:ss'}}</span>
+                                    <span class="time-value">{{driver.logoutTime | momentFormat:'HH:mm' }}</span>
                                 </td>
                                 <td md-cell>
                                     <span class="duration-badge">{{driver.duration}}</span>
@@ -589,7 +589,7 @@
                                 </td>
                                 <td md-cell>{{item.itemNumber}}</td>
                                 <td md-cell>
-                                    <span class="date-value">{{item.expiryDate | date:'dd/MM/yyyy'}}</span>
+                                    <span class="date-value">{{item.expiryDate | momentFormat:'MMM D, YYYY'}}</span>
                                 </td>
                                 <td md-cell>
                                     <span class="status-badge"
