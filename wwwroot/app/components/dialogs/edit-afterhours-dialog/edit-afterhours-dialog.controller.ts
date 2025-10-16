@@ -9,6 +9,7 @@ import {IAfterHoursCourierSchedule} from "../../driver-management-dashboard/inte
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import {TimeZone} from "../../../contants";
 import {getIanaTimezone} from "../../../functions/formatDates";
+import {IAppConfig} from "../../../interfaces/app-config.interface";
 
 dayjs.extend(duration);
 dayjs.extend(isSameOrAfter);
@@ -16,37 +17,48 @@ dayjs.extend(isSameOrAfter);
 class EditAfterhoursDialogController extends BaseController {
     static $inject = [
         '$mdDialog',
+        '$scope',
         '$timeout',
         '$interval',
+        'APP_CONFIG',
         'DispatchData',
         'toastrService',
         'afterHourScheduleItem',
     ];
+    
+    private static CourierSearchURL: string = '/courier/AllActiveSearch';
 
     isNewSchedule: boolean = false;
     daysOfWeek: string[] = [
         'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
     ];
+    
     isFormValid: boolean = true;
     validationErrors: { [key: string]: string } = {};
     selectedCourier?: ISuggestion;
     courierSearchText?: string;
     timeZoneOptions?: ITimeZoneSuggestion[];
     selectedTimeZone?: ITimeZoneSuggestion;
+    isNextDay: boolean = false;
+    isUsTenant: boolean;
 
     editableAfterHoursSchedule: IAfterHoursCourierSchedule;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
+        $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
+        appConfig: IAppConfig,
         private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
         afterHourScheduleItem: IAfterHoursCourierSchedule
     ) {
         super();
-        this.initServices($timeout, $interval);
+        this.initServices($timeout, $interval, $scope);
         console.log('EditAfterhoursDialogController: Controller instantiated');
+        
+        this.isUsTenant = appConfig.US_Customer;
 
         if (afterHourScheduleItem.afterHoursScheduleId === 0) {
             this.isNewSchedule = true;
@@ -69,7 +81,7 @@ class EditAfterhoursDialogController extends BaseController {
 
     async courierSearch(searchText: string): Promise<ISuggestion[]> {
         try {
-            return await this.DispatchData.autocompleteSearch(searchText, "/courier/AllActiveSearch");
+            return await this.DispatchData.autocompleteSearch(searchText, EditAfterhoursDialogController.CourierSearchURL);
         } catch (error) {
             console.error(error);
             this.toastrService.showErrorToast("An error occurred while searching. Please try again later.");
@@ -97,14 +109,42 @@ class EditAfterhoursDialogController extends BaseController {
             this.validationErrors.timeZone = 'Please select a time zone';
         }
 
+        // Validate times are set
+        if (!this.editableAfterHoursSchedule.startTime) {
+            this.isFormValid = false;
+            this.validationErrors.startTime = 'Please set a start time';
+        }
+
+        if (!this.editableAfterHoursSchedule.endTime) {
+            this.isFormValid = false;
+            this.validationErrors.endTime = 'Please set an end time';
+        }
+
+        // Check if times are equal (both times must be set for this check)
+        if (this.editableAfterHoursSchedule.startTime &&
+            this.editableAfterHoursSchedule.endTime &&
+            this.editableAfterHoursSchedule.startTime.format('HH:mm') ===
+            this.editableAfterHoursSchedule.endTime.format('HH:mm')) {
+            this.isFormValid = false;
+            this.validationErrors.timeLogic = 'Start time and end time cannot be the same';
+        }
+
         return this.isFormValid;
     }
 
+    updateDay() {
+        console.debug('EditAfterhoursDialogController: Day updated:', this.editableAfterHoursSchedule.day);
+        this.validateForm();
+        this.updateDuration();
+        this.applyScope();
+    }
+    
     updateStartTime(startTime: Dayjs): void {
         this.editableAfterHoursSchedule.startTime = startTime;
 
         this.validateForm();
         this.updateDuration();
+        this.applyScope();
     }
 
     updateEndTime(endTime: Dayjs): void {
@@ -112,11 +152,32 @@ class EditAfterhoursDialogController extends BaseController {
 
         this.validateForm();
         this.updateDuration();
+        this.applyScope();
     }
 
     private updateDuration(): void {
         if (this.editableAfterHoursSchedule.startTime && this.editableAfterHoursSchedule.endTime) {
-            const diff = this.editableAfterHoursSchedule.endTime.diff(this.editableAfterHoursSchedule.startTime);
+            // Normalize both times to today's date for comparison
+            const today = dayjs().startOf('day');
+            const startTime = today.hour(this.editableAfterHoursSchedule.startTime.hour())
+                .minute(this.editableAfterHoursSchedule.startTime.minute())
+                .second(0)
+                .millisecond(0);
+
+            let endTime = today.hour(this.editableAfterHoursSchedule.endTime.hour())
+                .minute(this.editableAfterHoursSchedule.endTime.minute())
+                .second(0)
+                .millisecond(0);
+
+            // Check if end time is before start time (crosses midnight)
+            this.isNextDay = endTime.isBefore(startTime) || endTime.isSame(startTime);
+
+            // If end time is before or equal to start time, assume it's the next day
+            if (this.isNextDay) {
+                endTime = endTime.add(1, 'day');
+            }
+
+            const diff = endTime.diff(startTime);
 
             const duration = dayjs.duration(diff);
             const hours = Math.floor(duration.asHours());
@@ -126,7 +187,18 @@ class EditAfterhoursDialogController extends BaseController {
                 `${hours}h ${minutes.toString().padStart(2, '0')}m` : '0h 00m';
         } else {
             this.editableAfterHoursSchedule.duration = '';
+            this.isNextDay = false;
         }
+    }
+
+    getEffectiveEndDay(): string {
+        if (!this.isNextDay || !this.editableAfterHoursSchedule.day) {
+            return '';
+        }
+
+        const currentDayIndex = this.daysOfWeek.indexOf(this.editableAfterHoursSchedule.day);
+        const nextDayIndex = (currentDayIndex + 1) % this.daysOfWeek.length;
+        return this.daysOfWeek[nextDayIndex];
     }
 
     courierSelected(courier: ISuggestion) {

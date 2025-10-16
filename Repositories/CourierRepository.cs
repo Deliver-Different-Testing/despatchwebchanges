@@ -17,7 +17,10 @@ using Serilog;
 
 namespace DespatchWeb.Repositories;
 
-public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory, ITenantInfoService infoService, IClearListEnvelopeService clearListEnvelopeService)
+public class CourierRepository(
+    IDbContextFactory<DespatchContext> contextFactory,
+    ITenantInfoService infoService,
+    IClearListEnvelopeService clearListEnvelopeService)
     : BaseRepository(contextFactory),
         ICourierRepository
 {
@@ -105,9 +108,10 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
 
     public async Task<List<AvailableCourierPosition>> GetAvailableCouriersAsync(CourierLocationRequest data)
     {
-        return !data.IsUsTenant
-            ? await GetNzAvailableCourierPositionsAsync(data)
-            : await GetUsAvailableCourierPositionsAsync(data);
+        var isUsTenant = infoService.IsUsTenant();
+        return isUsTenant
+            ? await GetUsAvailableCourierPositionsAsync(data)
+            : await GetNzAvailableCourierPositionsAsync(data);
     }
 
     private async Task<List<AvailableCourierPosition>> GetUsAvailableCourierPositionsAsync(CourierLocationRequest data)
@@ -365,7 +369,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
     public async Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds)
     {
         if (Debugger.IsAttached) return ClearListTestData.GenerateClearListViewModel();
-        
+
         if (despatchViewIds.Count == 0) return new ClearListViewModel();
 
         try
@@ -475,7 +479,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         ClearListAreaDto clearList,
         int percentHeight
     )
-    {     
+    {
         var clearListData = await GetClearListCouriers(clearList.ClearListAreaId);
         if (clearListData is null)
             return null;
@@ -844,6 +848,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         CourierAfterHoursFilterRequest request)
     {
         var now = infoService.GetCurrentTenantTime();
+        var tenantTimezone = infoService.GetTenantTimeZone();
 
         // Ensure valid page and pageSize
         var page = Math.Max(1, request.Page);
@@ -936,6 +941,12 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             .AsNoTracking()
             .ToListAsync();
 
+        foreach (var schedule in afterHoursSchedule)
+        {
+            schedule.StartTime = schedule.StartTime.HasValue ? TimeZoneHelper.SetDateTimeWithTimeZone(schedule.StartTime.Value, tenantTimezone) : null;
+            schedule.EndTime = schedule.EndTime.HasValue ? TimeZoneHelper.SetDateTimeWithTimeZone(schedule.EndTime.Value, tenantTimezone) : null;
+        }
+
         return new CourierAfterHoursPaginatedResponse
         {
             Items = afterHoursSchedule,
@@ -962,7 +973,8 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
     public async Task<TodayActiveDriversPaginatedResponse> GetTodayActiveDriversAsync(
         TodayActiveDriversFilterRequest request)
     {
-        var now = infoService.GetCurrentTenantTime();
+        var today = infoService.GetCurrentTenantTime();
+        var tenantTimeZone = infoService.GetTenantTimeZone();
 
         // Ensure valid page and pageSize
         var page = Math.Max(1, request.Page);
@@ -970,7 +982,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
 
         var query = Context.TucCouriers
             .Where(c => c.CourierLogInOut != null
-                        && c.CourierLogInOut.LogInTime.Date == now.Date).AsQueryable();
+                        && c.CourierLogInOut.LogInTime.Date == today.Date).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
@@ -1008,16 +1020,16 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             await query.Where(c => c.CourierLogInOut != null && c.CourierLogInOut.LogOutTime == null).CountAsync();
         var totalDriversActiveToday = await query.Where(c =>
             c.CourierLogInOut != null && c.CourierLogInOut.LogOutTime == null &&
-            c.CourierLogInOut.LogInTime.Date == now.Date).CountAsync();
+            c.CourierLogInOut.LogInTime.Date == today.Date).CountAsync();
 
         var sessionData = await query
-            .Where(c => c.CourierLogInOut != null && c.CourierLogInOut.LogInTime.Date == now.Date)
+            .Where(c => c.CourierLogInOut != null && c.CourierLogInOut.LogInTime.Date == today.Date)
             .Select(c => new { c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime })
             .AsNoTracking()
             .ToListAsync();
 
         var averageSessionTime = sessionData.Count != 0
-            ? sessionData.Average(s => ((s.LogOutTime ?? now) - s.LogInTime).TotalMinutes)
+            ? sessionData.Average(s => ((s.LogOutTime ?? today) - s.LogInTime).TotalMinutes)
             : 0.0;
 
         // Calculate total pages
@@ -1034,14 +1046,20 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
                 Fleet = c.CourierFleet != null ? c.CourierFleet.UccfName : "Not Available",
                 LoginTime = c.CourierLogInOut.LogInTime,
                 LogoutTime = c.CourierLogInOut.LogOutTime,
-                Duration = CourierActiveDuration(c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime ?? now),
+                Duration = CourierActiveDuration(c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime ?? today),
                 Deliveries = c.TucJobUcjbCouriers != null
-                    ? c.TucJobUcjbCouriers.Count(j => j.UcjbDate.Date == now.Date)
+                    ? c.TucJobUcjbCouriers.Count(j => j.UcjbDate.Date == today.Date)
                     : 0,
                 Status = c.CourierLogInOut.LogOutTime == null ? "Active" : "Inactive"
             })
             .AsNoTracking()
             .ToListAsync();
+
+        foreach (var courier in couriers)
+        {
+            courier.LoginTime = TimeZoneHelper.SetDateTimeWithTimeZone(courier.LoginTime, tenantTimeZone);
+            courier.LogoutTime = courier.LogoutTime.HasValue ? TimeZoneHelper.SetDateTimeWithTimeZone(courier.LogoutTime.Value, tenantTimeZone) : null;
+        }
 
         return new TodayActiveDriversPaginatedResponse
         {
@@ -1057,9 +1075,21 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
 
     private static string CourierActiveDuration(DateTime loginTime, DateTime? logoutTime)
     {
-        if (!logoutTime.HasValue) return "Not Available";
+        if (!logoutTime.HasValue) return "Currently Active";
+    
         var duration = logoutTime.Value - loginTime;
-        return (int)duration.TotalHours + "h " + duration.Minutes + "m";
+    
+        // If logout time is before login time, assume it's the next day
+        if (duration.TotalMinutes < 0)
+        {
+            logoutTime = logoutTime.Value.AddDays(1);
+            duration = logoutTime.Value - loginTime;
+        }
+    
+        var hours = (int)duration.TotalHours;
+        var minutes = duration.Minutes;
+    
+        return hours + "h " + minutes.ToString().PadLeft(2, '0') + "m";
     }
 
     public async Task<List<Suggestion>> GetAllFleetOptionsAsync()
@@ -1264,14 +1294,14 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
     {
         ArgumentNullException.ThrowIfNull(request.StartTime);
         ArgumentNullException.ThrowIfNull(request.EndTime);
-        
+
         var dayOfWeek = GetDayOfWeekAsInt(request.Day);
-        
+
         var rowsAffected = await Context.TblAfterhoursCouriers
             .Where(c => c.Id == request.AfterHoursScheduleId)
             .ExecuteUpdateAsync(setters => setters
-                .SetProperty(e => e.StartTime, request.StartTime.Value)
-                .SetProperty(e => e.EndTime, request.EndTime.Value)
+                .SetProperty(e => e.StartTime, request.StartTime.Value.DateTime)
+                .SetProperty(e => e.EndTime, request.EndTime.Value.DateTime)
                 .SetProperty(e => e.WeekDay, dayOfWeek)
             );
 
@@ -1286,15 +1316,15 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             ArgumentNullException.ThrowIfNull(request.EndTime);
 
             var dayOfWeek = GetDayOfWeekAsInt(request.Day);
-            
+
             var schedule = new TblAfterhoursCourier
             {
                 CourierId = request.CourierId,
                 WeekDay = dayOfWeek,
-                StartTime = request.StartTime.Value,
-                EndTime = request.EndTime.Value
+                StartTime = request.StartTime.Value.DateTime,
+                EndTime = request.EndTime.Value.DateTime
             };
-            
+
             await Context.TblAfterhoursCouriers.AddAsync(schedule);
             await Context.SaveChangesAsync();
         }
@@ -1306,7 +1336,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             throw;
         }
     }
-    
+
     private static int GetDayOfWeekAsInt(string dayOfWeek)
     {
         return dayOfWeek switch
@@ -1320,5 +1350,22 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             "Sunday" => 7,
             _ => 0
         };
+    }
+
+    public async Task DeleteAfterHoursCourierScheduleAsync(int afterHoursScheduleId)
+    {
+        try
+        {
+            await Context.TblAfterhoursCouriers
+                .Where(s => s.Id == afterHoursScheduleId)
+                .ExecuteDeleteAsync(); 
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierRepository),
+                    nameof(DeleteAfterHoursCourierScheduleAsync)));
+            throw;
+        }
     }
 }

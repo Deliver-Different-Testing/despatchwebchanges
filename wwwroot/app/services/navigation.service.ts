@@ -5,7 +5,6 @@ import CustomUrlService from "./custom-url.service";
 class NavigationService implements angular.IServiceProvider {
     static $inject = [
         "$window",
-        "$log",
         "$state",
         "toastrService",
         "customUrlService"
@@ -13,12 +12,11 @@ class NavigationService implements angular.IServiceProvider {
 
     constructor(
         private $window: angular.IWindowService,
-        private $log: angular.ILogService,
         private $state: angular.ui.IStateService,
         private toastrService: ToastrService,
         private customUrlService: CustomUrlService,
     ) {
-        this.$log.debug("OpenJobDispatchService: Service instantiated");
+        console.debug("OpenJobDispatchService: Service instantiated");
     }
 
     $get() {
@@ -53,7 +51,7 @@ class NavigationService implements angular.IServiceProvider {
         }
 
         this.$window.open(url, '_blank');
-        this.$log.debug(`${urlType} opened successfully:`, url);
+        console.debug(`${urlType} opened successfully:`, url);
     }
 
     openJobDetail(jobId: string | number, options: IOpenJobOptions = {}): boolean {

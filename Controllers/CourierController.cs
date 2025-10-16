@@ -13,6 +13,7 @@ namespace DespatchWeb.Controllers;
 
 public class CourierController(
     ICourierRepository courierRepository,
+    ITenantInfoService infoService,
     ITaskRepository taskRepository
 ) : Controller
 {
@@ -33,11 +34,11 @@ public class CourierController(
         }
     }
 
-    public async Task<IActionResult> ClearListEnvelope(int clearListId, int countryId)
+    public async Task<IActionResult> ClearListEnvelope(int clearListId)
     {
         try
         {
-            var country = (Country)countryId;
+            var country = infoService.IsUsTenant() ? Country.Us : Country.Nz;
             var result = await courierRepository.GetClearListAreaEnvelopeAsync(clearListId, country);
             return Json(result);
         }
@@ -325,7 +326,7 @@ public class CourierController(
         catch (Exception e)
         {
             Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(SendEmailToCouriers),
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController ),
                     nameof(GetAllCourierEmails)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
@@ -344,7 +345,7 @@ public class CourierController(
         catch (Exception e)
         {
             Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(SendEmailToCouriers),
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
                     nameof(UpdateAfterHoursCourierSchedule)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
@@ -363,8 +364,26 @@ public class CourierController(
         catch (Exception e)
         {
             Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(SendEmailToCouriers),
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
                     nameof(UpdateAfterHoursCourierSchedule)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    [HttpDelete]
+    public async Task<IActionResult> DeleteAfterHoursCourierSchedule(int afterHoursScheduleId)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(afterHoursScheduleId);
+            await courierRepository.DeleteAfterHoursCourierScheduleAsync(afterHoursScheduleId);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(DeleteAfterHoursCourierSchedule)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }

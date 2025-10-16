@@ -1,9 +1,11 @@
 import ICourierCompliance from "../components/driver-management-dashboard/interfaces/ICourierCompliance";
-import ITodayActiveDrivers from "../components/driver-management-dashboard/interfaces/ITodayActiveDrivers";
-import IDriverEmail from "../components/driver-management-dashboard/interfaces/IDriverEmail";
 import {
-    IAfterHoursCourierSchedule
+    IAfterHoursCourierSchedule, IAfterHoursCourierScheduleDto
 } from "../components/driver-management-dashboard/interfaces/IAfterHoursCourierSchedule";
+import {
+    ITodayActiveDrivers,
+    ITodayActiveDriversDto
+} from "../components/driver-management-dashboard/interfaces/ITodayActiveDrivers";
 
 export interface IPaginatedResponse<T> {
     items: T[];
@@ -22,7 +24,17 @@ export interface ICourierAfterHoursPaginated extends IPaginatedResponse<IAfterHo
     totalActiveDrivers: number;
 }
 
+export interface ICourierAfterHoursPaginatedDto extends IPaginatedResponse<IAfterHoursCourierScheduleDto> {
+    totalActiveDrivers: number;
+}
+
 export interface ITodayActiveDriverPaginated extends IPaginatedResponse<ITodayActiveDrivers> {
+    totalActiveDrivers: number;
+    totalDriversActiveToday: number;
+    averageSessionTime: number;
+}
+
+export interface ITodayActiveDriverPaginatedDto extends IPaginatedResponse<ITodayActiveDriversDto> {
     totalActiveDrivers: number;
     totalDriversActiveToday: number;
     averageSessionTime: number;

@@ -20,8 +20,9 @@
             <div class="content-container">
 
                 <!-- Courier Selection (New Schedule) -->
+                <!-- Courier Selection (New Schedule) -->
                 <div class="selection-panel" ng-if="ctrl.isNewSchedule">
-                    <h3 class="section-title">
+                    <h3 class="driver-section-title">
                         <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">person</md-icon>
                         Select Driver
                     </h3>
@@ -46,11 +47,15 @@
                             No drivers found matching "{{ctrl.courierSearchText}}"
                         </md-not-found>
                     </md-autocomplete>
+                    <div class="validation-error" ng-if="ctrl.validationErrors.courierSelection">
+                        <md-icon md-font-set="material-symbols-outlined">error</md-icon>
+                        <span>{{ctrl.validationErrors.courierSelection}}</span>
+                    </div>
                 </div>
 
                 <!-- Courier Information (Existing Schedule) -->
                 <div class="info-panel" ng-if="!ctrl.isNewSchedule">
-                    <h3 class="section-title">
+                    <h3 class="driver-section-title">
                         <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">badge</md-icon>
                         Driver Information
                     </h3>
@@ -68,7 +73,7 @@
 
                 <!-- Schedule Configuration -->
                 <div class="schedule-panel">
-                    <h3 class="section-title">
+                    <h3 class="schedule-section-title">
                         <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">schedule</md-icon>
                         Schedule Details
                     </h3>
@@ -77,6 +82,7 @@
                     <md-input-container class="md-block">
                         <label>Day of Week</label>
                         <md-select ng-model="ctrl.editableAfterHoursSchedule.day"
+                                   ng-change="ctrl.updateDay()"
                                    required>
                             <md-option ng-repeat="day in ctrl.daysOfWeek" ng-value="day">
                                 {{day}}
@@ -88,22 +94,34 @@
                     </md-input-container>
 
                     <!-- Custom timepicker Component-->
-                    <custom-date-picker
-                            date-time="ctrl.editableAfterHoursSchedule.startTime"
-                            show-date="false"
-                            show-time="true"
-                            on-change="ctrl.updateStartTime(dateTime)">
-                    </custom-date-picker> 
-                    
-                    <custom-date-picker
-                            date-time="ctrl.editableAfterHoursSchedule.endTime"
-                            show-date="false"
-                            show-time="true"
-                            on-change="ctrl.updateEndTime(dateTime)">
-                    </custom-date-picker>
+                    <div class="time-picker-wrapper">
+                        <custom-date-picker
+                                date-time="ctrl.editableAfterHoursSchedule.startTime"
+                                show-date="false"
+                                show-time="true"
+                                on-change="ctrl.updateStartTime(dateTime)">
+                        </custom-date-picker>
+                        <div class="validation-error" ng-if="ctrl.validationErrors.startTime">
+                            <md-icon md-font-set="material-symbols-outlined">error</md-icon>
+                            <span>{{ctrl.validationErrors.startTime}}</span>
+                        </div>
+                    </div>
+
+                    <div class="time-picker-wrapper">
+                        <custom-date-picker
+                                date-time="ctrl.editableAfterHoursSchedule.endTime"
+                                show-date="false"
+                                show-time="true"
+                                on-change="ctrl.updateEndTime(dateTime)">
+                        </custom-date-picker>
+                        <div class="validation-error" ng-if="ctrl.validationErrors.endTime">
+                            <md-icon md-font-set="material-symbols-outlined">error</md-icon>
+                            <span>{{ctrl.validationErrors.endTime}}</span>
+                        </div>
+                    </div>
 
                     <!-- TimeZone Selection -->
-                    <md-input-container class="md-block">
+                    <md-input-container class="md-block" ng-if="ctrl.isU">
                         <label>Timezone</label>
                         <md-select ng-model="ctrl.selectedTimeZone" required>
                             <md-option ng-repeat="timezone in ctrl.timeZoneOptions track by timezone.id"
@@ -121,6 +139,15 @@
                         <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">timer</md-icon>
                         <span class="duration-label">Total Duration</span>
                         <span class="duration-value">{{ctrl.editableAfterHoursSchedule.duration}}</span>
+                    </div>
+
+                    <!-- Next Day Indicator -->
+                    <div class="info-message next-day-info" ng-if="ctrl.isNextDay">
+                        <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">event</md-icon>
+                        <span>
+                        This shift spans across midnight into 
+                        <strong>{{ctrl.getEffectiveEndDay()}}</strong>
+                    </span>
                     </div>
 
                     <!-- Time Validation Error -->

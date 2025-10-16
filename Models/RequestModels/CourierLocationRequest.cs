@@ -9,6 +9,4 @@ public class CourierLocationRequest
     public decimal MaxLng { get; set; }
 
     public decimal MaxLat { get; set; }
-
-    public bool IsUsTenant { get; set; }
 }

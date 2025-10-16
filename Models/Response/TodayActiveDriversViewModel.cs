@@ -8,8 +8,8 @@ public class TodayActiveDriversViewModel
     public string Code { get; set; }
     public string Name { get; set; }
     public string Fleet { get; set; }
-    public DateTime LoginTime { get; set; }
-    public DateTime? LogoutTime { get; set; }
+    public DateTimeOffset LoginTime { get; set; }
+    public DateTimeOffset? LogoutTime { get; set; }
     public string Duration { get; set; }
     public int Deliveries { get; set; }
     public string Status { get; set; }

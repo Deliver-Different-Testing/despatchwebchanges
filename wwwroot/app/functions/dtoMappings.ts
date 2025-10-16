@@ -11,6 +11,14 @@ import {
     IDeliveryJourney,
     IDeliveryJourneyDto
 } from "../components/common/task-history/task-history.interfaces";
+import {
+    ITodayActiveDrivers,
+    ITodayActiveDriversDto
+} from "../components/driver-management-dashboard/interfaces/ITodayActiveDrivers";
+import {
+    IAfterHoursCourierSchedule,
+    IAfterHoursCourierScheduleDto
+} from "../components/driver-management-dashboard/interfaces/IAfterHoursCourierSchedule";
 
 export function transformFlightDTO(dto: IFlightViewModelDto): IFlightViewModel {
     return {
@@ -100,5 +108,21 @@ export function transformDeliveryJourneyDTO(dto: IDeliveryJourneyDto): IDelivery
     return {
         ...dto,
         date: dayjs(dto.date),
+    }
+}
+
+export function transformTodayActiveDriversDTO(dto: ITodayActiveDriversDto): ITodayActiveDrivers {
+    return {
+        ...dto,
+        loginTime: formatDateFromApi(dto.loginTime),
+        logoutTime: dto.logoutTime ? formatDateFromApi(dto.logoutTime) : undefined,
+    }
+}
+
+export function transformerAfterHoursScheduleDto(dto: IAfterHoursCourierScheduleDto): IAfterHoursCourierSchedule {
+    return {
+        ...dto,
+        startTime: dto.startTime ? formatDateFromApi(dto.startTime) : undefined,
+        endTime: dto.endTime ? formatDateFromApi(dto.endTime) : undefined,
     }
 }
