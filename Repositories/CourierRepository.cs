@@ -694,6 +694,7 @@ public class CourierRepository(
         CourierComplianceFilterRequest request)
     {
         var now = infoService.GetCurrentTenantTime();
+        var tenantTimezone = infoService.GetTenantTimeZone();
 
         // Ensure valid page and pageSize
         var page = Math.Max(1, request.Page);
@@ -817,6 +818,13 @@ public class CourierRepository(
             .AsNoTracking()
             .ToListAsync();
 
+        foreach (var compliance in couriersCompliance)
+        {
+            compliance.ExpiryDate = compliance.ExpiryDate.HasValue
+                ? TimeZoneHelper.SetDateTimeWithTimeZone(compliance.ExpiryDate.Value, tenantTimezone)
+                : null;
+        }
+        
         return new CourierCompliancePaginatedResponse
         {
             Items = couriersCompliance,

@@ -1,9 +1,8 @@
 ﻿import "./driver-management.styles.less";
 import BaseController from "../base-controller";
 import DriverManagementService from "./driver-management.service";
-import dayjs from "dayjs";
+import dayjs, {Dayjs} from "dayjs";
 import ToastrService from "../../services/toastr.service";
-import ICourierCompliance from "./interfaces/ICourierCompliance";
 import {ICourierDataDashboard} from "./interfaces/ICourierDataDashboard";
 import IDriverEmail from "./interfaces/IDriverEmail";
 import {IAppConfig} from "../../interfaces/app-config.interface";
@@ -26,6 +25,7 @@ import EditAfterhoursDialogService from "../dialogs/edit-afterhours-dialog/edit-
 import {IAfterHoursCourierSchedule} from "./interfaces/IAfterHoursCourierSchedule";
 import {AppPages} from "../../enums/app-pages.enum";
 import {ITodayActiveDrivers} from "./interfaces/ITodayActiveDrivers";
+import {ICourierCompliance} from "./interfaces/ICourierCompliance";
 
 class DriverManagementController extends BaseController {
     static $inject = [
@@ -377,14 +377,13 @@ class DriverManagementController extends BaseController {
         }
     }
 
-    getComplianceStatus(expiryDate: Date | undefined): { status: string; class: string; daysUntil: number } {
+    getComplianceStatus(expiryDate?: Dayjs): { status: string; class: string; daysUntil: number } {
         if (!expiryDate) {
             return {status: 'Not Set', class: 'status-invalid', daysUntil: -999};
         }
 
         const today = dayjs();
-        const expiry = dayjs(expiryDate);
-        const daysUntil = expiry.diff(today, 'day');
+        const daysUntil = expiryDate.diff(today, 'day');
 
         if (daysUntil < 0) {
             return {status: 'Expired', class: 'status-expired', daysUntil};

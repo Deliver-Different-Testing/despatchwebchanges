@@ -19,6 +19,10 @@ import {
     IAfterHoursCourierSchedule,
     IAfterHoursCourierScheduleDto
 } from "../components/driver-management-dashboard/interfaces/IAfterHoursCourierSchedule";
+import {
+    ICourierCompliance,
+    ICourierComplianceDto
+} from "../components/driver-management-dashboard/interfaces/ICourierCompliance";
 
 export function transformFlightDTO(dto: IFlightViewModelDto): IFlightViewModel {
     return {
@@ -119,10 +123,17 @@ export function transformTodayActiveDriversDTO(dto: ITodayActiveDriversDto): ITo
     }
 }
 
-export function transformerAfterHoursScheduleDto(dto: IAfterHoursCourierScheduleDto): IAfterHoursCourierSchedule {
+export function transformAfterHoursScheduleDto(dto: IAfterHoursCourierScheduleDto): IAfterHoursCourierSchedule {
     return {
         ...dto,
         startTime: dto.startTime ? formatDateFromApi(dto.startTime) : undefined,
         endTime: dto.endTime ? formatDateFromApi(dto.endTime) : undefined,
+    }
+}
+
+export function transformCourierComplianceDto(dto: ICourierComplianceDto): ICourierCompliance {
+    return {
+        ...dto,
+        expiryDate: dto.expiryDate ? formatDateFromApi(dto.expiryDate) : undefined,
     }
 }
