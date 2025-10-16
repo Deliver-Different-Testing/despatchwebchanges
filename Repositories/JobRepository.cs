@@ -2652,7 +2652,7 @@ public partial class JobRepository(
 
     private async Task<List<DeliveryJourneyViewModel>> GetMessagesForDeliveryJourneyAsync(int jobId)
     {
-        var timezone = infoService.GetTenantTimeZone();
+        var timezone = _infoService.GetTenantTimeZone();
         var messagesTempList = await Context.TucManualMessages
             .Where(m => m.JobId == jobId)
             .AsNoTracking()
@@ -2726,7 +2726,7 @@ public partial class JobRepository(
     private async Task<List<DeliveryJourneyViewModel>> GetStatusUpdatesForDeliveryJourneyAsync(int jobId,
         bool isLiveJob)
     {
-        var timezone = infoService.GetTenantTimeZone();
+        var timezone = _infoService.GetTenantTimeZone();
         List<DeliveryJourneyViewModel> statusUpdates;
 
         if (isLiveJob)

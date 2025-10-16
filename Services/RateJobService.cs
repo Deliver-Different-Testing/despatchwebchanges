@@ -241,7 +241,7 @@ public class RateJobService(
             var tenantId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")
                 ?.Value;
             ArgumentException.ThrowIfNullOrEmpty(tenantId); 
-            var clientId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "ContactID")
+            var clientId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "ClientID")
                 ?.Value;
             ArgumentException.ThrowIfNullOrEmpty(clientId);
             var timeZone = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "TimeZone")?.Value;
@@ -275,7 +275,7 @@ public class RateJobService(
             }
             
             var rerateResponse = await response.Content.ReadFromJsonAsync<RerateApiResponse>();
-            return rerateResponse.ApiRerate ?? throw new ApplicationException("Failed to get rate from DFRNT API");
+            return rerateResponse.Rerate ?? throw new ApplicationException("Failed to get rate from DFRNT API");
         }
         catch (Exception e)
         {

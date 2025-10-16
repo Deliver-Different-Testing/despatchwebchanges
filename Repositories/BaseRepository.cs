@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +7,7 @@ namespace DespatchWeb.Repositories;
 
 public class BaseRepository(IDbContextFactory<DespatchContext> contextFactory) : IDisposable
 {
-    private DespatchContext? _context;
+    private DespatchContext _context;
 
     protected DespatchContext Context => _context ??= contextFactory.CreateDbContext();
 

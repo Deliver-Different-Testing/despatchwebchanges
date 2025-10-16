@@ -1616,7 +1616,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(UpdateJobPackages)));;
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(UpdateJobPackages)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
@@ -1632,7 +1632,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(UpdateBulkJobPackages)));;
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(UpdateBulkJobPackages)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
