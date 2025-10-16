@@ -1232,7 +1232,7 @@ public class CourierRepository(
         var pageSize = Math.Max(1, Math.Min(100, request.PageSize));
 
         var query = Context.TucCouriers
-            .Where(c => c.UccrEmail != null).AsQueryable();
+            .Where(c => c.UccrEmail != null).Distinct().AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
