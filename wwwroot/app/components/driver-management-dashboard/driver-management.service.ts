@@ -3,8 +3,9 @@ import ICourierCompliance from "./interfaces/ICourierCompliance";
 import IDriverEmail from "./interfaces/IDriverEmail";
 import IGroupEmailData from "./interfaces/IGroupEmailData";
 import {
-    ICourierAfterHoursPaginated,
+    ICourierAfterHoursPaginated, ICourierAfterHoursPaginatedDto,
     ICourierCompliancePaginated, ICourierDailyEarningsPaginated, IPaginatedResponse, ITodayActiveDriverPaginated,
+    ITodayActiveDriverPaginatedDto,
 } from "../../interfaces/paginated-response.interface";
 import {ISuggestion} from "../../interfaces/job.interface";
 import {IPaginatedRequest} from "../../interfaces/paginated-request.interfaces";
@@ -13,9 +14,9 @@ import {
     ICourierComplianceFilter,
     ITodayActiveDriverFilter
 } from "./interfaces/ICourierComplianceFilter";
-import {formatDateForApi, formatDateForApiWithTzs} from "../../functions/formatDates";
-import dayjs from "dayjs";
+import {formatDateForApiWithTzs} from "../../functions/formatDates";
 import {IAfterHoursCourierSchedule} from "./interfaces/IAfterHoursCourierSchedule";
+import {transformerAfterHoursScheduleDto, transformTodayActiveDriversDTO} from "../../functions/dtoMappings";
 
 class DriverManagementService implements angular.IServiceProvider {
     static $inject = [
@@ -111,7 +112,7 @@ class DriverManagementService implements angular.IServiceProvider {
         console.log("Getting after hours courier schedule");
         console.log("Search term: ", requestData.searchTerm);
 
-        const response = await this.$http.post<ICourierAfterHoursPaginated>("courier/GetAfterHoursCourierSchedule", {
+        const response = await this.$http.post<ICourierAfterHoursPaginatedDto>("courier/GetAfterHoursCourierSchedule", {
             // Pagination data
             page: requestData.page,
             pageSize: requestData.pageSize,
@@ -123,16 +124,10 @@ class DriverManagementService implements angular.IServiceProvider {
             day: filters.day,
         });
 
-        // Convert date strings to Dayjs objects
-        if (response.data && response.data.items) {
-            response.data.items = response.data.items.map(item => ({
-                ...item,
-                startTime: item.startTime ? dayjs(item.startTime) : undefined,
-                endTime: item.endTime ? dayjs(item.endTime) : undefined
-            }));
+        return {
+            ...response.data,
+            items: response.data.items.map(transformerAfterHoursScheduleDto)
         }
-
-        return response.data;
     }
 
     async getDriverEmails(requestData: IPaginatedRequest): Promise<IPaginatedResponse<IDriverEmail>> {
@@ -149,15 +144,15 @@ class DriverManagementService implements angular.IServiceProvider {
 
     async sendEmailToCouriers(emailData: IGroupEmailData): Promise<void> {
         console.log("Sending group email");
-        
+
         try {
             await this.$http.post("courier/SendEmailToCouriers", emailData);
         } catch (error) {
             console.error("Error sending group email:", error);
             throw error;
         }
-    } 
-    
+    }
+
     async updateAfterHoursCourierSchedule(afterHoursSchedule: IAfterHoursCourierSchedule): Promise<void> {
         console.log("Updating after hours courier schedule");
 
@@ -166,7 +161,7 @@ class DriverManagementService implements angular.IServiceProvider {
             startTime: afterHoursSchedule.startTime ? formatDateForApiWithTzs(afterHoursSchedule.startTime, afterHoursSchedule.timezone) : null,
             endTime: afterHoursSchedule.endTime ? formatDateForApiWithTzs(afterHoursSchedule.endTime, afterHoursSchedule.timezone) : null,
         };
-        
+
         try {
             await this.$http.post("courier/UpdateAfterHoursCourierSchedule", payload);
         } catch (error) {
@@ -183,7 +178,7 @@ class DriverManagementService implements angular.IServiceProvider {
             startTime: afterHoursSchedule.startTime ? formatDateForApiWithTzs(afterHoursSchedule.startTime, afterHoursSchedule.timezone) : null,
             endTime: afterHoursSchedule.endTime ? formatDateForApiWithTzs(afterHoursSchedule.endTime, afterHoursSchedule.timezone) : null,
         };
-        
+
         try {
             await this.$http.post("courier/CreateAfterHoursCourierSchedule", payload);
         } catch (error) {
@@ -192,12 +187,21 @@ class DriverManagementService implements angular.IServiceProvider {
         }
     }
 
+    async deleteAfterHoursCourierSchedule(afterHoursScheduleId: number): Promise<void> {
+        console.log("Deleting after hours courier schedule");
+        await this.$http.delete('courier/DeleteAfterHoursCourierSchedule', {
+            params: {
+                afterHoursScheduleId
+            }
+        });
+    }
+
     async getTodayActiveDriversAsync(requestData: IPaginatedRequest,
                                      filters: ITodayActiveDriverFilter): Promise<ITodayActiveDriverPaginated> {
         console.log("Getting today active drivers");
         console.log("Search term: ", requestData.searchTerm);
 
-        const response = await this.$http.post<ITodayActiveDriverPaginated>("courier/GetTodayActiveDrivers", {
+        const response = await this.$http.post<ITodayActiveDriverPaginatedDto>("courier/GetTodayActiveDrivers", {
             // Pagination data
             page: requestData.page,
             pageSize: requestData.pageSize,
@@ -211,12 +215,15 @@ class DriverManagementService implements angular.IServiceProvider {
             fleet: filters.fleet
         });
 
-        return response.data;
+        return {
+            ...response.data,
+            items: response.data.items.map(transformTodayActiveDriversDTO)
+        };
     }
-    
+
     async getAllFleetOptions(): Promise<ISuggestion[]> {
         console.log("Getting all fleet options");
-        
+
         try {
             const response = await this.$http.get<ISuggestion[]>("courier/GetAllFleetOptions");
             return response.data;

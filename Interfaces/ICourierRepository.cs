@@ -51,4 +51,5 @@ public interface ICourierRepository
     Task SendEmailToCouriersAsync(GroupEmailDataViewModel request);
     Task UpdateAfterHoursCourierScheduleAsync(AfterHoursCourierScheduleViewModel request);
     Task CreateAfterHoursCourierScheduleAsync(AfterHoursCourierScheduleViewModel request);
+    Task DeleteAfterHoursCourierScheduleAsync(int afterHoursScheduleId);
 }

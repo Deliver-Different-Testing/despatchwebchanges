@@ -1,4 +1,3 @@
-import {IAppConfig} from "../interfaces/app-config.interface";
 import {
     IAddressViewModel,
     IClearListViewModel,
@@ -17,7 +16,7 @@ import {
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {
     ActiveCourierViewModel,
-    IAvailableCourierPosition,
+    IAvailableCourierPosition, IPotentialCouriers,
     ITruckCourierStatus,
 } from "../interfaces/courier.interface";
 import {IEventGroupViewModel} from "../interfaces/event-group-view-model.interface";
@@ -46,18 +45,14 @@ class DispatchCoreService implements angular.IServiceProvider {
         "$http",
         "$window",
         "$timeout",
-        "APP_CONFIG"
     ];
-
-    private readonly isUsCustomer: boolean;
 
     constructor(
         private $http: angular.IHttpService,
         private $window: angular.IWindowService,
         private $timeout: angular.ITimeoutService,
-        private appConfig: IAppConfig
     ) {
-        this.isUsCustomer = this.appConfig.US_Customer;
+        console.log("DispatchCoreService initialized");
     }
 
     $get() {
@@ -328,12 +323,12 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getJobsCurrent(courierId: number, done: boolean): Promise<IDispatchJob[]> {
+    async getJobsCurrent(courierId: number): Promise<IDispatchJob[]> {
         const response = await this.$http.get<IDispatchJobDto[]>(
             `job/current`, {
                 params: {
                     courierId,
-                    done,
+                    done: false,
                 },
             }
         );
@@ -349,7 +344,6 @@ class DispatchCoreService implements angular.IServiceProvider {
             `courier`, {
                 params: {
                     despatchViewIds,
-                    isUsTenant: this.isUsCustomer,
                 }
             }
         );
@@ -357,13 +351,10 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getDriverDestinationEnvelope(clearListId: number): Promise<ClearListEnvelopeViewModel> {
-        const countryId = this.isUsCustomer ? 2 : 1;
-
         const response = await this.$http.get<ClearListEnvelopeViewModel>(
             `courier/ClearListEnvelope`, {
                 params: {
                     clearListId,
-                    countryId,
                 }
             }
         );
@@ -384,14 +375,15 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getPotentialCouriers(jobId: number): Promise<any> {
-        const response = await this.$http.get(
+    async getPotentialCouriers(jobId: number): Promise<IPotentialCouriers[]> {
+        const response = await this.$http.get<IPotentialCouriers[]>(
             `courier/PotentialCouriers`, {
                 params: {
                     jobId
                 }
             }
         );
+        
         return response.data;
     }
 
@@ -419,7 +411,6 @@ class DispatchCoreService implements angular.IServiceProvider {
                     minLat,
                     maxLng,
                     maxLat,
-                    isUsTenant: this.isUsCustomer,
                 }
             }
         );

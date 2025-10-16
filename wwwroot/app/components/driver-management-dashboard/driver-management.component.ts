@@ -16,7 +16,6 @@ import {
 } from "./interfaces/ICourierComplianceFilter";
 import {IPaginatedRequest} from "../../interfaces/paginated-request.interfaces";
 import DriverManagementTabs from "./enums/DriverManagementTabs";
-import ITodayActiveDrivers from "./interfaces/ITodayActiveDrivers";
 import {
     ICourierAfterHoursPaginated,
     ICourierCompliancePaginated, ICourierDailyEarningsPaginated, IPaginatedResponse,
@@ -26,8 +25,7 @@ import {ComposeEmailDialogService} from "../dialogs/compose-email-dialog/compose
 import EditAfterhoursDialogService from "../dialogs/edit-afterhours-dialog/edit-afterhours-dialog.service";
 import {IAfterHoursCourierSchedule} from "./interfaces/IAfterHoursCourierSchedule";
 import {AppPages} from "../../enums/app-pages.enum";
-import {formatDateForApi, formatDateForApiWithTzs} from "../../functions/formatDates";
-import {TimeZone} from "../../contants";
+import {ITodayActiveDrivers} from "./interfaces/ITodayActiveDrivers";
 
 class DriverManagementController extends BaseController {
     static $inject = [
@@ -45,7 +43,6 @@ class DriverManagementController extends BaseController {
     ];
 
     private readonly LastActiveTabKey = `lastActiveTab-${AppPages.DriverManagement}-${ContactID}`;
-    private timeZone: string = TimeZone;
     
     isUsCustomer: boolean = false;
 
@@ -708,6 +705,29 @@ class DriverManagementController extends BaseController {
         } catch (error) {
             console.error('Error creating new schedule:', error);
             this.toastrService.showErrorToast('Failed to create schedule');
+        }
+    }
+    
+    async deleteAfterHoursSchedule($event: MouseEvent, afterHoursSchedule: IAfterHoursCourierSchedule) {
+        try {
+            const dialog = this.$mdDialog.confirm()
+                .title('Delete Schedule')
+                .targetEvent($event)
+                .textContent(`Are you sure you want to delete this schedule for ${afterHoursSchedule.courierName}?`)
+                .ok('Delete')
+                .cancel('Cancel');
+            
+            const confirm: boolean = await this.$mdDialog.show(dialog);
+            if(!confirm) return;
+            
+            await this.driverManagementService.deleteAfterHoursCourierSchedule(afterHoursSchedule.afterHoursScheduleId);
+            this.toastrService.showSuccessToast('Schedule deleted successfully');
+
+            await this.loadAfterHoursSchedule();
+        } catch (error) {
+            if(!error) return;
+            console.error('Error deleting schedule:', error);
+            this.toastrService.showErrorToast('Failed to delete schedule');
         }
     }
     

@@ -772,9 +772,18 @@
                                     <span class="duration-badge">{{assignment.duration}}</span>
                                 </td>
                                 <td md-cell>
-                                    <md-button ng-click="ctrl.editAfterHoursSchedule($event, assignment)">
-                                        Edit
-                                    </md-button>
+                                    <div layout="row" layout-align="start center" layout-gap="8px">
+                                        <md-button class="md-fab md-mini md-raised"
+                                                   ng-click="ctrl.editAfterHoursSchedule($event, assignment)">
+                                            <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
+                                            <md-tooltip md-direction="bottom">Edit</md-tooltip>
+                                        </md-button>
+                                        <md-button class="md-fab md-mini md-raised"
+                                                   ng-click="ctrl.deleteAfterHoursSchedule($event, assignment)">
+                                            <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
+                                            <md-tooltip md-direction="bottom">Delete</md-tooltip>
+                                        </md-button>
+                                    </div>
                                 </td>
                             </tr>
                             </tbody>

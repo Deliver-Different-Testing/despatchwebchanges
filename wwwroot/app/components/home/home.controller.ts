@@ -13,9 +13,9 @@ import {
     IJobQueryParams,
     ISuggestion,
 } from "../../interfaces/job.interface";
-import {ActiveCourierViewModel, ITruckCourierStatus} from "../../interfaces/courier.interface";
+import {ActiveCourierViewModel, IPotentialCouriers, ITruckCourierStatus} from "../../interfaces/courier.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
-import {ClearListEnvelopeViewModel, DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
+import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {JobStatus} from "../../enums/job-status.enum";
 import BaseController from "../base-controller";
 import {ExtendedTask, ITask} from "../task-dashboard/task-dashboard.interfaces";
@@ -139,13 +139,11 @@ class HomeController extends BaseController {
     courierSearchOpen: boolean = false;
     currentCourier?: ISuggestion;
     jobsCurrentList?: IDispatchJob[];
-    potentialCouriers: any;
-    currentWorkSelection: any;
-    jobFilters: any;
-    currentSupport: any;
-    potentialCouriersSelection: any;
+    potentialCouriers?: IPotentialCouriers[];
+    currentWorkSelection?: string;
+    currentSupport?: ITask;
+    potentialCouriersSelection?: string;
     currentSelection?: string;
-    selectedJobs: any;
     boxSortableOptions: angular.ui.SortableOptions<any>;
     supportItemConfig = {
         showAssign: true,
@@ -156,8 +154,6 @@ class HomeController extends BaseController {
     timeZone: string;
     browserTimeZone: string;
     clearListId?: number;
-    envelopeData: any;
-    envelopePromiseResolve?: ((value: ClearListEnvelopeViewModel | undefined) => void) | null = null;
     isDataLoading: boolean = false;
     unReadMessageCount: number = 0;
 
@@ -1301,7 +1297,7 @@ class HomeController extends BaseController {
         if (!courier.courierId) {
             throw new Error('Courier ID is required');
         }
-        const data = await this.DispatchData.getJobsCurrent(courier.courierId, this.jobFilters.status === "done");
+        const data = await this.DispatchData.getJobsCurrent(courier.courierId);
 
         if (this.currentJob !== null && this.currentJob?.courier !== code) {
             this.currentJob = undefined;
@@ -1329,7 +1325,7 @@ class HomeController extends BaseController {
         try {
             this.currentListLoading = true;
 
-            this.jobsCurrentList = await this.DispatchData.getJobsCurrent(courierId, false);
+            this.jobsCurrentList = await this.DispatchData.getJobsCurrent(courierId);
 
             if (this.jobsCurrentList && this.jobsCurrentList.length > 0) {
                 console.log(`Setting mapJobList for courier ${courierId} with ${this.jobsCurrentList.length} jobs`);
@@ -1407,8 +1403,7 @@ class HomeController extends BaseController {
         // Load tasks in the background without blocking job selection
         this.loadSupportsInBackground(undefined, job.id);
 
-        this.selectedJobs = [];
-        this.currentSupport = null;
+        this.currentSupport = undefined;
 
         // Create a new reference to trigger change detection
         this.currentJob = angular.copy(job);
@@ -1438,7 +1433,7 @@ class HomeController extends BaseController {
             } else {
                 // Scenario 3: Job has a courier assigned - show this courier's jobs
                 console.log("Selected job has courier assigned - loading courier's jobs");
-                this.potentialCouriers = false;
+                this.potentialCouriers = undefined;
 
                 if (job.courierData && job.courierData.courierId) {
                     // Set the current courier context first
@@ -1691,7 +1686,7 @@ class HomeController extends BaseController {
     async getData(): Promise<void> {
         try {
             this.currentJob = undefined;
-            this.potentialCouriers = null;
+            this.potentialCouriers = undefined;
             this.currentCourier = undefined;
 
             this.loadSupportsInBackground();

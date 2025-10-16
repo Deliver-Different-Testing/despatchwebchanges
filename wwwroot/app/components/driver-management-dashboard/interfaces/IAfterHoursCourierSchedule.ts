@@ -11,3 +11,15 @@ export interface IAfterHoursCourierSchedule {
     timezone?: string;
     duration: string;
 }
+
+export interface IAfterHoursCourierScheduleDto {
+    afterHoursScheduleId: number;
+    courierId: number;
+    courierName: string;
+    courierCode: string;
+    day: string;
+    startTime?: string;
+    endTime?: string;
+    timezone?: string;
+    duration: string;
+}

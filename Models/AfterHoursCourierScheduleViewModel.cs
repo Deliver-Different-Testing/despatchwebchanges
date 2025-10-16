@@ -9,7 +9,7 @@ public class AfterHoursCourierScheduleViewModel
     public string CourierName { get; set; }
     public string CourierCode { get; set; }
     public string Day { get; set; }
-    public DateTime? StartTime { get; set; }
-    public DateTime? EndTime { get; set; }
+    public DateTimeOffset? StartTime { get; set; }
+    public DateTimeOffset? EndTime { get; set; }
     public string Duration { get; set; }
 }

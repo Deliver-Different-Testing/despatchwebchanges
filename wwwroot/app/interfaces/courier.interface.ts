@@ -52,3 +52,11 @@ export interface IAvailableCourierPosition {
     totalJobs: number;
     overDueJobs: number;
 }
+
+export interface IPotentialCouriers {
+    courierId: number;
+    code: string;
+    reason: string;
+    ruleNumber: number;
+    firstName: string;
+}
