@@ -340,7 +340,7 @@ public class BaseJobRepository(
         await Context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task SaveBulkNoteAsync(int bulkJobId, string noteText, bool isImportant = false,
+    protected async Task SaveBulkNoteAsync(int bulkJobId, string noteText, bool isImportant = false,
         NoteType noteType = NoteType.InternalNote)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(noteText);

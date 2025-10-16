@@ -201,8 +201,6 @@ builder.Services.AddAuthentication("Identity.Application")
         options.Cookie.Domain = domain;
     });
 
-
-
 builder.Services.AddSession(options => {
     options.Cookie.Name = "hub_session";
     options.IdleTimeout = TimeSpan.FromMinutes(60 * 24);
@@ -223,7 +221,7 @@ app.MapHealthChecks("/healthz", new HealthCheckOptions
             {
                 Component = e.Key,
                 Status = e.Value.Status.ToString(),
-                Description = e.Value.Description
+                e.Value.Description
             }),
             Duration = report.TotalDuration
         };
