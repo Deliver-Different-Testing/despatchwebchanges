@@ -84,14 +84,14 @@ class JobDetailController extends BaseController {
     jobAddressIcon: string = "pin_drop";
     viewDensity: 'normal' | 'dense' | 'ultradense' = 'normal';
     trackingOptions: ISuggestion[];
-    
+
     // Days of the week (recurring)
     daysOfWeekArray: DaysOfWeek[] = [];
     readonly dayOptions = DaysOfWeekHelpers.allDays.map(day => ({
         value: day,
         label: DaysOfWeekHelpers.dayLabels[day]
     }));
-    
+
     // Photos
     formattedPodPhotos: PodPhoto[] = [];
     formattedPickupPhotos: PodPhoto[] = [];
@@ -224,7 +224,8 @@ class JobDetailController extends BaseController {
             tracking: true,
             mobile: true,
             email: true,
-            checkboxes: true
+            checkboxes: true,
+            truckOptions: true
         };
 
         // Load from localStorage or use defaults
@@ -313,7 +314,7 @@ class JobDetailController extends BaseController {
             this.applyScope();
         }
     }
-    
+
     private async loadJobData(jobId: number): Promise<void> {
         if (!jobId) {
             console.log("No job ID provided");
@@ -380,7 +381,7 @@ class JobDetailController extends BaseController {
             this.selectedSubJobIndex = -1;
         }
     }
-    
+
     private findJobInGroups(jobId: number): { tabIndex: number, subJobIndex: number } {
         const currentJobIndex = this.jobGroups.findIndex(
             (relatedJob) => relatedJob.job.id === jobId
@@ -515,7 +516,7 @@ class JobDetailController extends BaseController {
             this.daysOfWeekArray = DaysOfWeekHelpers.bitwiseToArray(this.job.daysOfWeek);
             console.log("Initialized daysOfWeekArray from bitmap:", this.daysOfWeekArray);
         }
-        
+
         if (this.job.holidayDeliveryOption) {
             this.job.holidayDeliveryOption = Number(this.job.holidayDeliveryOption);
             console.log(
@@ -1865,7 +1866,7 @@ class JobDetailController extends BaseController {
             this.handleError(error);
         }
     }
-    
+
     async updateFrequency(job: IJob): Promise<void> {
         if (!job.frequency) return;
 
@@ -2217,6 +2218,54 @@ class JobDetailController extends BaseController {
             );
         } catch (error) {
             this.handleError(error);
+        }
+    }
+    
+    async onTailLiftPickupClick(job: IJob): Promise<void> {
+        if(this.job?.tailLiftPu == true && this.job.parcelDimensions.length === 0) {
+            this.toastrService.showWarningToast("Please enter the parcels for this job before proceeding.");
+            return;
+        } 
+        
+        try {
+            if(this.job?.bulkJob) {
+                this.toastrService.showWarningToast("Tail Lift Pickup is not currently available for scheduled jobs.");
+            } else {
+                await this.DispatchData.updateJobDetail(job.id, JobProperty.TailLiftPu, !job.tailLiftPu, job.preBook)
+            }
+        } catch (error) {
+            this.handleError(error);
+        }
+    } 
+    
+    async onTailLiftDropOffClick(job: IJob): Promise<void> {
+        if(this.job?.tailLiftPu == true && this.job.parcelDimensions.length === 0) {
+            this.toastrService.showWarningToast("Please enter the parcels for this job before proceeding.");
+            return;
+        } 
+        
+        try {
+            if(this.job?.bulkJob) {
+                this.toastrService.showWarningToast("Tail Lift Drop-off is not currently available for scheduled jobs.");
+            } else {
+                await this.DispatchData.updateJobDetail(job.id, JobProperty.TailLiftDo, !job.tailLiftDo, job.preBook)
+            }
+        } catch (error) {
+            this.handleError(error);
+        }
+    }
+    
+    async onDeliverToPrivateResChanged(job: IJob): Promise<void> {
+        try {
+            job.deliverToPrivateRes = job.deliverToPrivateResString === "residential";
+        
+            if(this.job?.bulkJob) {
+                this.toastrService.showWarningToast("Deliver to Private Residential is not currently available for scheduled jobs.");
+            } else {
+                await this.DispatchData.updateJobDetail(job.id, JobProperty.DeliverToPrivateRes, job.deliverToPrivateRes, job.preBook)
+            }
+        } catch(error) {
+            this.handleError(error);       
         }
     }
 }

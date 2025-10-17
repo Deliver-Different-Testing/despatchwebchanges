@@ -28,7 +28,7 @@ public partial class JobRepository
             .Include(j => j.UcjbSpeedNavigation)
             .Include(j => j.DeliverToLeave)
             .Include(j => j.UcjbStatusNavigation)
-            .Include(j => j.PickupTimeZone)
+            .Include(j => j.PickupTimeZone).Include(tucJob => tucJob.TucJobItemJobs)
             .FirstOrDefaultAsync();
 
         ArgumentNullException.ThrowIfNull(job);
@@ -248,6 +248,18 @@ public partial class JobRepository
                 break;
             case JobProperty.FollowupTime:
                 job.FollowupTime = DateTimeOffset.Parse(value).DateTime;
+                break;
+            case JobProperty.TailLiftPu:
+                if(job.TucJobItemJobs == null) throw new NullReferenceException("TucJobItemJobs is null");
+                foreach (var item in job.TucJobItemJobs) item.Pu = bool.Parse(value);
+                break;
+            case JobProperty.TailLiftDo:
+                if(job.TucJobItemJobs == null) throw new NullReferenceException("TucJobItemJobs is null");
+                foreach (var item in job.TucJobItemJobs) item.Do = bool.Parse(value);
+                break; 
+            case JobProperty.DeliverToPrivateRes:
+                if(job.TucJobItemJobs == null) throw new NullReferenceException("TucJobItemJobs is null");
+                foreach (var item in job.TucJobItemJobs) item.PrivateRes = bool.Parse(value);
                 break;
             case JobProperty.DeliverToContact:
             case JobProperty.StopDate:

@@ -84,30 +84,21 @@ public class JobViewModel : DispatchJobViewModel
     public Suggestion DeliveryTimeZone {get;set;}
     public string HasDgDocsString { get; set; }
     public bool CalculateDimsOncePerJob { get; set; }
+    
+    // Tail Lift
+    public bool TailLiftPu { get; set; }
+    public bool TailLiftDo { get; set; }
+    public bool DeliverToPrivateRes { get; set; }
+    
 }
 
 public class ParcelDimensions
 {
-    private string _dimensions;
     public int? ItemId { get; set; }
     public string ItemName { get; set; }
     public double? Height { get; set; }
     public double? Length { get; set; }
     public double? Depth { get; set; }
-
-    public string Dimensions
-    {
-        get
-        {
-            if (Height.HasValue && Length.HasValue && Depth.HasValue)
-            {
-                return $"{Length.Value:0.#}x{Depth.Value:0.#}x{Height.Value:0.#}";
-            }
-
-            return _dimensions;
-        }
-        set => _dimensions = value;
-    }
 }
 
 public class AssignedFlight

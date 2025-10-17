@@ -896,6 +896,100 @@
 
                     <div
                             class="info-section"
+                            ng-if="ctrl.job.truck && !ctrl.job.prebook"
+                            flex="50"
+                            flex-xs="100">
+                        <div class="info-section"
+                             ng-if="ctrl.isFieldVisible('truckOptions') || ctrl.isEditMode">
+                            <md-toolbar class="job-detail-toolbar">
+                                <div class="md-toolbar-tools">
+                                    <span class="material-symbols-outlined">front_loader</span>
+                                    <span class="md-headline-title" flex
+                                          style="margin-left: 8px">Truck Options</span>
+
+                                    <div flex></div>
+
+                                    <md-button class="md-icon-button"
+                                               ng-if="ctrl.isEditMode"
+                                               ng-click="ctrl.toggleFieldVisibility('truckOptions')">
+                                        <md-icon md-font-set="material-symbols-outlined">
+                                            {{ ctrl.isFieldVisible('truckOptions') ? 'visibility' : 'visibility_off'}}
+                                        </md-icon>
+                                    </md-button>
+                                </div>
+                            </md-toolbar>
+
+                            <md-list class="md-dense" flex>
+                                <md-list-item class="md-2-line md-long-text">
+                                    <md-icon
+                                            class="md-avatar"
+                                            aria-label="tail lift pickup"
+                                            md-font-set="material-symbols-outlined">
+                                        front_loader
+                                    </md-icon>
+                                    <div class="md-list-item-text">
+                                        <h3>{{ ::ctrl.isUsCustomer ? 'Lift Gate Pickup' : 'Tail Lift Pickup'}}</h3>
+                                        <p>
+                                            <md-checkbox class="md-primary"
+                                                         ng-change="ctrl.onTailLiftPickupClick(job)"
+                                                    ng-model="job.tailLiftPu" 
+                                                    aria-label="tail lift pickup">
+                                            </md-checkbox>
+                                        </p>
+                                    </div>
+                                </md-list-item>
+                                
+                                <md-divider></md-divider>
+                                
+                                <md-list-item class="md-2-line md-long-text">
+                                    <md-icon
+                                            class="md-avatar"
+                                            aria-label="tail lift drop-off"
+                                            md-font-set="material-symbols-outlined">
+                                        front_loader
+                                    </md-icon>
+                                    <div class="md-list-item-text">
+                                        <h3>{{ ::ctrl.isUsCustomer ? 'Lift Gate Drop-off' : 'Tail Lift Drop-off'}}</h3>
+                                        <p>
+                                            <md-checkbox class="md-primary"
+                                                    ng-model="job.tailLiftDo"
+                                                         ng-change="ctrl.onTailLiftDropOffClick(job)"
+                                                         aria-label="tail lift drop-off">
+                                            </md-checkbox>
+                                        </p>
+                                    </div>
+                                </md-list-item>
+
+                                <md-divider></md-divider>
+
+                                <md-list-item class="md-2-line md-long-text">
+                                    <md-icon
+                                            class="md-avatar"
+                                            aria-label="deliver to private residence"
+                                            md-font-set="material-symbols-outlined">
+                                        apartment
+                                    </md-icon>
+                                    <div class="md-list-item-text">
+                                        <h3>Deliver To</h3>
+                                        <p>
+                                            <md-select ng-model="job.deliverToPrivateResString"
+                                                       ng-change="ctrl.updateDeliverToResOption(job.deliverToPrivateResString)"
+                                                       ng-model-options="{ debounce: 300 }">
+                                                <md-option value="residential">Residential</md-option>
+                                                <md-option value="business">Business</md-option>
+                                            </md-select>
+                                        </p>
+                                    </div>
+                                </md-list-item>
+                                
+                            </md-list>
+                        </div>
+                    </div>
+
+                    <md-divider hide-xs vertical></md-divider>
+
+                    <div
+                            class="info-section"
                             flex="50"
                             flex-xs="100"
                             ng-if="ctrl.job.preBook">

@@ -166,6 +166,10 @@ export interface IJob {
     hasDgDocsString?: string;
     calculateDimsOncePerJob: boolean;
     customJobName?: string;
+    tailLiftPu: boolean;
+    tailLiftDo: boolean;
+    deliverToPrivateRes: boolean;
+    deliverToPrivateResString: string;
 }
 
 export interface IJobDto {
@@ -327,6 +331,9 @@ export interface IJobDto {
     hasDgDocsString?: string;
     calculateDimsOncePerJob: boolean;
     customJobName?: string;
+    tailLiftPu: boolean;
+    tailLiftDo: boolean;
+    deliverToPrivateRes: boolean;
 }
 
 export interface UpdateBulkJobPackagesRequest extends  UpdateJobPackagesBase {
