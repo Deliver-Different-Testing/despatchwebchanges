@@ -40,54 +40,34 @@
                 <div class="custom-date-section" ng-if="ctrl.dateSearchRange == 2">
                     <md-divider class="section-divider"></md-divider>
 
-                    <div class="date-picker-container" layout="row" layout-xs="column" layout-align="space-between start">
-                        <!-- From Date/Time -->
-                        <md-input-container class="md-auto-horizontal-margin date-time-picker" flex>
-                            <label>
-                                <md-icon class="date-icon" md-font-set="material-symbols-outlined">event</md-icon>
-                                Start Date/Time
+                    <div class="date-picker-container" layout="column" layout-gt-xs="row" layout-align="space-between start">
+                        <!-- From Date -->
+                        <div flex class="date-picker-wrapper">
+                            <label class="date-picker-label">
+                                <md-icon class="date-icon dialog-icon" md-font-set="material-symbols-outlined">event</md-icon>
+                                Start Date
                             </label>
-                            <input mdc-datetime-picker
-                                   date="true"
-                                   time="false"
-                                   type="text"
-                                   placeholder="Select start date"
-                                   minutes="true"
-                                   edit-input="true"
-                                   max-date="ctrl.endDate"
-                                   show-icon="false"
-                                   ng-model="ctrl.startDate"
-                                   ng-blur="ctrl.onDateChange()"
-                                   ng-model-options="{ debounce: 500 }"
-                                   class="dtp-no-msclear dtp-input md-input"
-                                   aria-label="Start date"
-                                   aria-describedby="start-date-help">
-                            <span id="start-date-help" class="sr-only">Select the start date for filtering</span>
-                        </md-input-container>
+                            <custom-date-picker
+                                    date-time="ctrl.startDate"
+                                    show-date="true"
+                                    show-time="false"
+                                    on-change="ctrl.onStartDateChange(dateTime)">
+                            </custom-date-picker>
+                        </div>
 
-                        <!-- To Date/Time -->
-                        <md-input-container class="md-auto-horizontal-margin date-time-picker" flex>
-                            <label>
-                                <md-icon class="date-icon" md-font-set="material-symbols-outlined">event</md-icon>
-                                End Date/Time
+                        <!-- To Date -->
+                        <div flex class="date-picker-wrapper">
+                            <label class="date-picker-label">
+                                <md-icon class="date-icon dialog-icon" md-font-set="material-symbols-outlined">event</md-icon>
+                                End Date
                             </label>
-                            <input mdc-datetime-picker
-                                   date="true"
-                                   time="false"
-                                   type="text"
-                                   placeholder="Select end date"
-                                   minutes="true"
-                                   edit-input="true"
-                                   min-date="ctrl.startDate"
-                                   show-icon="false"
-                                   ng-model="ctrl.endDate"
-                                   ng-blur="ctrl.onDateChange()"
-                                   ng-model-options="{ debounce: 500 }"
-                                   class="dtp-no-msclear dtp-input md-input"
-                                   aria-label="End date"
-                                   aria-describedby="end-date-help">
-                            <span id="end-date-help" class="sr-only">Select the end date for filtering</span>
-                        </md-input-container>
+                            <custom-date-picker
+                                    date-time="ctrl.endDate"
+                                    show-date="true"
+                                    show-time="false"
+                                    on-change="ctrl.onEndDateChange(dateTime)">
+                            </custom-date-picker>
+                        </div>
                     </div>
                 </div>
 
