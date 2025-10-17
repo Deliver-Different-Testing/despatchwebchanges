@@ -14,6 +14,8 @@ public partial class JobRepository
 {
     private async Task UpdateTucJobAsync(int jobId, JobProperty property, string value)
     {
+        var isUsCustomer = _infoService.IsUsTenant();
+        
         var job = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Include(j => j.TucJobNationwides)
@@ -58,7 +60,7 @@ public partial class JobRepository
                 job.UcjbDate = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.Size:
-                job.UcjbSize = int.Parse(value);
+                UpdateJobSize(value, job, isUsCustomer);
                 break;
             case JobProperty.Items:
                 job.UcjbQty = short.Parse(value);
@@ -472,7 +474,7 @@ public partial class JobRepository
                 archive.UcjbJobDone = delivered;
                 if (delivered)
                 {
-                    archive.UcjbStatus = 6;
+                    archive.UcjbStatus = (int)JobStatus.Completed;
                     archive.UcjbComplTime = _infoService.GetCurrentTenantTime();
                 }
 
@@ -617,5 +619,13 @@ public partial class JobRepository
         };
 
         await Context.SaveChangesAsync();
+    }
+
+    private static void UpdateJobSize(string value, TucJob job, bool isUsCustomer)
+    {
+        var sizeId = int.Parse(value);
+        job.UcjbSize = sizeId;
+
+        if (isUsCustomer && sizeId == (int)VehicleType.Truck || sizeId == (int)UrgentVehicleType.Truck) job.Truck = true;
     }
 }
