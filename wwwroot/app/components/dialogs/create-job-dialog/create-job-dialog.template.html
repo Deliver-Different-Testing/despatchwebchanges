@@ -90,18 +90,17 @@
                             </md-not-found>
                         </md-autocomplete>
 
-                        <md-input-container class="md-block create-job-dialog__field" flex>
-                            <label>Job Date</label>
-                            <md-datepicker
-                                    aria-label="Enter job date"
-                                    name="jobDate"
-                                    ng-model="ctrl.jobDate"
-                                    required>
-                            </md-datepicker>
-                            <div ng-messages="ctrl.jobForm.jobDate.$error" ng-if="ctrl.jobForm.jobDate.$touched">
-                                <div ng-message="required">Job date is required.</div>
+                        <div class="create-job-dialog__field date-picker-wrapper" flex>
+                            <custom-date-picker
+                                    date-time="ctrl.jobDate"
+                                    show-date="true"
+                                    show-time="false"
+                                    on-change="ctrl.onJobDateChange(dateTime)">
+                            </custom-date-picker>
+                            <div class="validation-error" ng-if="ctrl.jobForm.$submitted && !ctrl.jobDate">
+                                Job date is required.
                             </div>
-                        </md-input-container>
+                        </div>
                     </div>
                 </div>
 
