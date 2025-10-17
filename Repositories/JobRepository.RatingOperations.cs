@@ -167,9 +167,9 @@ public partial class JobRepository
                         }).ToList()
                         : null,
 
-                    PickupTailLift = null,
-                    DropoffTailLift = null,
-                    PrivateRes = job.DeliverToPrivateBusiness == 1,
+                    PickupTailLift = job.TucJobItemJobs != null && job.TucJobItemJobs.Any(i => i.Pu == true),
+                    DropoffTailLift = job.TucJobItemJobs != null && job.TucJobItemJobs.Any(i => i.Do == true),
+                    PrivateRes = job.TucJobItemJobs != null & job.TucJobItemJobs.Any(i => i.PrivateRes == true),
                     HasDgDocuments = job.Dgdocument,
                     TruckStartTime = job.TruckStartTime.HasValue ? job.TruckStartTime.ToString() : null,
                     TruckHours = job.TruckHours.HasValue ? (int)job.TruckHours : null

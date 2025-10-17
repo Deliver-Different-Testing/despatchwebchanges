@@ -1316,6 +1316,9 @@ public class JobController(
             JobProperty.DGDocumentation => true,
             JobProperty.Direct => true,
             JobProperty.BookedTime => true,
+            JobProperty.TailLiftPu => true, 
+            JobProperty.TailLiftDo => true,
+            JobProperty.DeliverToPrivateRes => true,
             _ => false
         };
     }
