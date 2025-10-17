@@ -60,5 +60,8 @@ public enum JobProperty
     Frequency,
     HolidayDelivery,
     Active,
-    CustomJobName
+    CustomJobName,
+    TailLiftPu,
+    TailLiftDo,
+    DeliverToPrivateRes,
 }

@@ -77,6 +77,8 @@ export function transformJobDTO(dto: IJobDto): IJob {
             })) ?? []
         } : undefined,
         
+        deliverToPrivateResString: dto.deliverToPrivateRes ? 'residential' : 'business',
+        
         // Prebook-specific options
         daysOfWeek: dto.daysOfWeek,
         frequency: dto.frequency,

@@ -217,6 +217,11 @@ public static class JobMappings
                     Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
                 }
                 : null,
+        
+        // Tail Lift
+        TailLiftPu = j.TucJobItemJobs != null && j.TucJobItemJobs.Any(i => i.Pu == true),
+        TailLiftDo = j.TucJobItemJobs != null && j.TucJobItemJobs.Any(i => i.Do == true),
+        DeliverToPrivateRes = j.TucJobItemJobs != null && j.TucJobItemJobs.Any(i => i.PrivateRes == true),
 
         // Address information
         PickupAddress = new AddressViewModel
@@ -594,7 +599,12 @@ public static class JobMappings
                     Text = j.Courier.UccrName + " " + j.Courier.UccrSurname
                 }
                 : null,
-
+        
+        // Tail Lift
+        TailLiftPu = j.TblBulkJobItems != null && j.TblBulkJobItems.Any(i => i.Pu == true),
+        TailLiftDo = j.TblBulkJobItems != null && j.TblBulkJobItems.Any(i => i.Do == true),
+        DeliverToPrivateRes = j.TblBulkJobItems != null && j.TblBulkJobItems.Any(i => i.PrivateRes == true),
+        
         // Address information
         PickupAddress = new AddressViewModel
         {
@@ -725,7 +735,7 @@ public static class JobMappings
         AssignedCourier = j.UcjbCourierId.HasValue
             ? new Suggestion { Id = j.UcjbCourierId.Value }
             : null,
-
+        
         // Address information - directly available in the archive
         PickupAddress = new AddressViewModel
         {
@@ -921,6 +931,11 @@ public static class JobMappings
             AssignedCourier = j.Courier != null
                 ? new Suggestion { Id = j.Courier.UccrId, Text = j.Courier.UccrName }
                 : null,
+            
+            // Tail Lift
+            TailLiftPu = j.TucJobBookingItemBookings != null && j.TucJobBookingItemBookings.Any(i => i.Pu == true),
+            TailLiftDo = j.TucJobBookingItemBookings != null && j.TucJobBookingItemBookings.Any(i => i.Do == true),
+            DeliverToPrivateRes = j.TucJobBookingItemBookings != null && j.TucJobBookingItemBookings.Any(i => i.PrivateRes == true),
 
             // Address information - directly available in the archive
             PickupAddress = new AddressViewModel
@@ -1181,7 +1196,7 @@ public static class JobMappings
             ItemName = item.Notes,
             Height = item.Height,
             Depth = item.Depth,
-            Length = item.Length
+            Length = item.Length,
         };
     }
 

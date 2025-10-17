@@ -29,6 +29,7 @@
                         <label>Select Note Type</label>
                         <md-select ng-model="ctrl.model.noteTypeId" required>
                             <md-option ng-repeat="type in ctrl.noteTypes" ng-value="type.id">
+                                <md-icon md-font-set="material-symbols-outlined" style="margin-right: 5px;">note_alt</md-icon>
                                 {{type.text}}
                             </md-option>
                         </md-select>
@@ -72,13 +73,14 @@
                         </div>
                         <div class="creator-content">
                             <md-input-container class="md-block">
-                                <label>Note Type Name</label>
-                                <input ng-model="ctrl.newNoteType.text" required>
+                                <label for="newNoteTypeText">Note Type Name</label>
+                                <input id="newNoteTypeText" ng-model="ctrl.newNoteType.text" required>
                             </md-input-container>
 
                             <md-input-container class="md-block">
-                                <label>Description (Optional)</label>
+                                <label for="newNoteTypeDescription">Description (Optional)</label>
                                 <textarea
+                                        id="newNoteTypeDescription"
                                         ng-model="ctrl.newNoteType.description"
                                         md-maxlength="500"
                                         rows="3"
@@ -171,7 +173,7 @@
                             </div>
                             <div class="metadata-content">
                                 <span class="metadata-label">Last updated</span>
-                                <span class="metadata-value">{{ctrl.model.updatedByName}} on {{ctrl.model.updatedDate | momentFormat: 'MMM D, YYYY HH:mm:ss'}} ({{::ctrl.timeZone | timezoneShort}})</span>
+                                <span class="metadata-value">{{::ctrl.model.updatedByName}} on {{::ctrl.model.updatedDate | momentFormat: 'MMM D, YYYY HH:mm:ss'}} ({{::ctrl.timeZone | timezoneShort}})</span>
                             </div>
                         </div>
                     </div>
@@ -180,8 +182,8 @@
         </md-dialog-content>
 
         <md-dialog-actions class="dialog-actions">
-            <md-button class="cancel-action" ng-click="ctrl.cancel()">Cancel</md-button>
-            <md-button class="md-primary md-raised save-action" type="submit"
+            <md-button ng-click="ctrl.cancel()">Cancel</md-button>
+            <md-button class="md-primary md-raised" type="submit"
                        ng-disabled="noteForm.$invalid || ctrl.isSubmitting">
                 <md-progress-circular ng-if="ctrl.isSubmitting" md-mode="indeterminate" md-diameter="18"
                                       class="button-spinner"></md-progress-circular>
