@@ -240,7 +240,7 @@ public class RateJobService(
             ArgumentException.ThrowIfNullOrEmpty(connectionString);
             var tenantId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")
                 ?.Value;
-            ArgumentException.ThrowIfNullOrEmpty(tenantId); 
+            ArgumentException.ThrowIfNullOrEmpty(tenantId);
             var clientId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "ClientID")
                 ?.Value;
             ArgumentException.ThrowIfNullOrEmpty(clientId);
@@ -273,7 +273,7 @@ public class RateJobService(
                 Log.Error("Request failed with status code {ResponseStatusCode}", response.StatusCode);
                 Log.Error("Response content: {ReadAsStringAsync}", rawContent);
             }
-            
+
             var rerateResponse = await response.Content.ReadFromJsonAsync<RerateApiResponse>();
             return rerateResponse.Rerate ?? throw new ApplicationException("Failed to get rate from DFRNT API");
         }
@@ -332,7 +332,7 @@ public class RateJobService(
             Truck = CreateTruckObject(dto),
             OurReference = dto.OurRef,
             ClientReferenceA = dto.RefA,
-            ClientReferenceB = dto.RefB
+            ClientReferenceB = dto.RefB,
         };
     }
 
@@ -356,21 +356,14 @@ public class RateJobService(
 
     private static UrgentTruckObject CreateTruckObject(JobRatingDetailsDtoNz dto)
     {
-        if (dto.PickupTailLift.HasValue || dto.DropoffTailLift.HasValue || dto.PrivateRes.HasValue ||
-            dto.HasDgDocuments.HasValue || !string.IsNullOrEmpty(dto.TruckStartTime) ||
-            dto.TruckHours.HasValue || (!dto.IsPedal && !dto.IsVan))
+        return new UrgentTruckObject
         {
-            return new UrgentTruckObject
-            {
-                PickupTailLift = dto.PickupTailLift,
-                DropoffTailLift = dto.DropoffTailLift,
-                PrivateRes = dto.PrivateRes,
-                HasDgDocuments = dto.HasDgDocuments ?? (dto.DangerousGoods ? true : null),
-                TruckStartTime = dto.TruckStartTime,
-                TruckHours = dto.TruckHours ?? (dto.WaitTime > 0 ? dto.WaitTime : null)
-            };
-        }
-
-        return null;
+            PickupTailLift = dto.PickupTailLift,
+            DropoffTailLift = dto.DropoffTailLift,
+            PrivateRes = dto.PrivateRes,
+            HasDgDocuments = dto.HasDgDocuments,
+            TruckStartTime = dto.TruckStartTime,
+            TruckHours = dto.TruckHours ?? (dto.WaitTime > 0 ? dto.WaitTime : null)
+        };
     }
 }
