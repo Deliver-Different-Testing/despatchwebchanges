@@ -206,7 +206,7 @@ export class CreateJobDialogController extends BaseController {
             const newJobId = await this.DispatchData.quickCreateJob(job);
 
             if (this.selectedCourier) {
-                await this.dispatchJobIfCourierSelected(this.selectedCourier.id, newJobId);
+                await this.dispatchJobService.dispatchJobByJobId(this.selectedCourier.id, newJobId);
             }
 
             this.toastrService.showSuccessToast("Job created successfully");
@@ -254,6 +254,11 @@ export class CreateJobDialogController extends BaseController {
             console.error("Error processing address:", error);
             return undefined;
         }
+    }
+
+    onJobDateChange(dateTime: Dayjs): void {
+        console.log("Job date changed:", dateTime);
+        this.jobDate = dateTime;
     }
 
     private isFormValid(): boolean {
@@ -334,10 +339,6 @@ export class CreateJobDialogController extends BaseController {
                 field.$setTouched();
             }
         });
-    }
-
-    async dispatchJobIfCourierSelected(courierId: number, jobId: number): Promise<void> {
-        return this.dispatchJobService.dispatchJobByJobId(courierId, jobId);
     }
 
     cancel(): void {

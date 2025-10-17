@@ -11,7 +11,7 @@
   md-dialog-content {
     padding: 0;
   }
-  
+
   &__icon {
     color: @text-light;
     font-size: 28px;
@@ -185,23 +185,31 @@
       }
     }
 
-    // Datepicker
-    md-datepicker {
-      .md-datepicker-input-container {
-        border-bottom: 1px solid #e0e0e0;
+    // Date picker wrapper to match md-input-container styling
+    &.date-picker-wrapper {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: @spacing;
+      margin-top: -20px;
 
-        &.md-datepicker-focused {
-          border-bottom-color: @primary-blue;
-        }
-      }
-
-      .md-datepicker-input {
+      .date-picker-label {
         font-size: @font-sm;
-        color: @text-dark;
+        font-weight: @weight-medium;
+        color: @text-muted;
+        margin-bottom: 8px;
+        display: block;
       }
 
-      .md-datepicker-button {
-        color: @primary-blue;
+      dayjs-date-picker {
+        width: 100%;
+        margin-top: 0;
+      }
+
+      .validation-error {
+        font-size: @font-xs;
+        color: @error-red;
+        margin-top: 4px;
+        min-height: 18px; // Match md-errors-spacer height
       }
     }
   }
@@ -282,6 +290,10 @@
     &__field {
       &.md-input-container,
       md-input-container {
+        margin-bottom: @spacing * 0.5;
+      }
+
+      &.date-picker-wrapper {
         margin-bottom: @spacing * 0.5;
       }
     }

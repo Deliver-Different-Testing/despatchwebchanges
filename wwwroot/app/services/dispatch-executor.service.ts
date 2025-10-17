@@ -3,7 +3,6 @@ import {ActiveCourierViewModel} from "../interfaces/courier.interface";
 import {JobListResponse} from "../interfaces/job-list-response.interface";
 import DispatchCoreService from "./dispatch-core.service";
 import ToastrService from "./toastr.service";
-import {ContactID} from "../contants";
 import dayjs from "dayjs";
 
 class DispatchExecutorService implements angular.IServiceProvider {
@@ -205,9 +204,11 @@ class DispatchExecutorService implements angular.IServiceProvider {
 
         if (foundCourier) {
             await this.dispatchJobsContinue(foundCourier, [job]);
+        } else {
+            console.warn(`Dispatch cancelled - no courier found for courier number ${courierNumber}`);
         }
     }
-
+    
     async reallocateJob(job: IDispatchJob) {
         const callData = {
             call: "redespatchJobs",
@@ -276,24 +277,21 @@ class DispatchExecutorService implements angular.IServiceProvider {
             return activeCourier;
         }
 
-        const confirmed = await this.showOfflineCourierDialog();
-        if (confirmed) {
-            return findCourierById(this.pickAllCouriers, courierNumber);
-        }
-
-        return null;
-    }
-
-    private showOfflineCourierDialog() {
-        return this.$mdDialog.show(
+        const courierOfflineConfirmation = await this.$mdDialog.show(
             this.$mdDialog.confirm()
                 .title("Courier Offline")
                 .textContent("Dispatch anyway?")
                 .ok("Yes")
                 .cancel("No")
         );
-    }
+        
+        if (courierOfflineConfirmation) {
+            return findCourierById(this.pickAllCouriers, courierNumber);
+        }
 
+        return null;
+    }
+    
     private async dispatchJobsContinue(courier: ActiveCourierViewModel, jobs: IDispatchJob[]): Promise<void> {
         const validationResults = await Promise.all(
             jobs.map(job => this.validateJob(job, courier))
