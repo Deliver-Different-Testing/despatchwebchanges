@@ -83,11 +83,11 @@ export class CreateJobDialogController extends BaseController {
         this.courierSearchText = "";
         this.isLoading = false;
         this.speedOptions = [];
-        
+
         const tenantTimezone = getIanaTimezone(TimeZone);
         console.log('Timezone:', tenantTimezone);
         this.jobDate = dayjs().tz(tenantTimezone);
-        
+
         this.job = {
             clientId: 0,
             deliverToContact: "",
@@ -205,11 +205,20 @@ export class CreateJobDialogController extends BaseController {
             // Create a new job and get the new job id
             const newJobId = await this.DispatchData.quickCreateJob(job);
 
+            // Handle courier dispatch separately with its own error handling
             if (this.selectedCourier) {
-                await this.dispatchJobService.dispatchJobByJobId(this.selectedCourier.id, newJobId);
+                try {
+                    await this.dispatchJobService.dispatchJobByJobId(this.selectedCourier.id, newJobId);
+                    this.toastrService.showSuccessToast("Job created and dispatched successfully");
+                } catch (dispatchError: any) {
+                    console.error("Courier dispatch failed:", dispatchError);
+                    // Job was created successfully, but dispatch failed
+                    this.toastrService.showWarningToast("Job created successfully, but could not be dispatched to the courier. The courier may be offline.");
+                }
+            } else {
+                this.toastrService.showSuccessToast("Job created successfully");
             }
 
-            this.toastrService.showSuccessToast("Job created successfully");
             this.$mdDialog.hide(newJobId);
         } catch (error: any) {
             console.error("Job creation failed:", error);

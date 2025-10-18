@@ -7,7 +7,8 @@ import ToastrService from "../../../services/toastr.service";
 class DateFilterMenuComponent implements angular.IController {
     static $inject = [
         'toastrService',
-    ]
+    ];
+    
     onRefreshData?: (locals: { dateFilterData: IDateFilterData }) => void;
     timeZone: string = TimeZone;
     private dateFilterData?: IDateFilterData;
@@ -38,10 +39,18 @@ class DateFilterMenuComponent implements angular.IController {
             this.dateFilterData = changes.dateFilterData.currentValue;
 
             if(!this.dateFilterData) return;
-            
+
             // Update local date references
             this.startDate = this.dateFilterData.startDate;
             this.endDate = this.dateFilterData.endDate;
+
+            // Ensure the end date is at least 24 hours from now
+            const minEndDate = dayjs().add(24, 'hour');
+
+            if (this.endDate.isBefore(minEndDate)) {
+                this.endDate = minEndDate;
+                this.dateFilterData.endDate = minEndDate;
+            }
 
             // Set the initial search range based on the dates
             if (this.isNext24Hours()) {
@@ -57,10 +66,10 @@ class DateFilterMenuComponent implements angular.IController {
 
         const { startDate, endDate } = this.dateFilterData;
         const defaults = setDateFilterDefaults();
-        const tolerance = 60000; // 1 minute
 
-        return Math.abs(startDate.valueOf() - defaults.startDate.valueOf()) < tolerance &&
-            Math.abs(endDate.valueOf() - defaults.endDate.valueOf()) < tolerance;
+        // Compare only the date parts, ignoring time
+        return startDate.isSame(defaults.startDate, 'day') &&
+            endDate.isSame(defaults.endDate, 'day');
     }
 
     async refreshData() {
