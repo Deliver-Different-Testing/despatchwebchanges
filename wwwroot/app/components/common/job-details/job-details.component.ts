@@ -202,6 +202,7 @@ class JobDetailController extends BaseController {
             loggedInContactName: true,
             fromContactName: true,
             fromContactNumber: true,
+            bookingSource: true,
 
             // Additional fields that might be used
             pricing: true,

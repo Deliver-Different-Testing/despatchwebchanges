@@ -1025,7 +1025,11 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PrebookJobId).HasColumnName("PrebookJobID");
             entity.Property(e => e.Total).HasColumnType("decimal(18, 4)");
 
-            entity.HasOne(d => d.Job).WithMany(p => p.PricingBreakdowns)
+            entity.HasOne(d => d.ChildJob).WithMany(p => p.PricingBreakdownChildJobs)
+                .HasForeignKey(d => d.ChildJobId)
+                .HasConstraintName("FK_PricingBreakdown_tucJob");
+
+            entity.HasOne(d => d.Job).WithMany(p => p.PricingBreakdownJobs)
                 .HasForeignKey(d => d.JobId)
                 .HasConstraintName("FK__PricingBr__JobID__1B69C5D8");
 
@@ -1348,6 +1352,10 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.Region).WithMany(p => p.TblBulkJobs)
                 .HasForeignKey(d => d.RegionId)
                 .HasConstraintName("FK_tblBulkJob_tblBulkRegion");
+
+            entity.HasOne(d => d.Source).WithMany(p => p.TblBulkJobs)
+                .HasForeignKey(d => d.SourceId)
+                .HasConstraintName("FK_tblBulkJob_tucSource");
 
             entity.HasOne(d => d.SpeedNavigation).WithMany(p => p.TblBulkJobs)
                 .HasForeignKey(d => d.Speed)

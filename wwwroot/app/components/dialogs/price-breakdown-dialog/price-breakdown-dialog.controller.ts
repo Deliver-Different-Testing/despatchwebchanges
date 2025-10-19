@@ -11,7 +11,7 @@ export class PriceBreakdownDialogController extends BaseController {
         '$interval',
         'toastrService',
         'DispatchData',
-        'priceBreakdown',
+        'priceBreakdowns',
         'jobId',
         'isPrebook'
     ];
@@ -23,6 +23,7 @@ export class PriceBreakdownDialogController extends BaseController {
     isParentJob: boolean = false;
     isLoading: boolean = false;
     isSaving: boolean = false;
+    priceBreakdown: PriceBreakdown[];
 
     get totalAmount(): number {
         if (!this.priceBreakdown || this.priceBreakdown.length === 0) {
@@ -46,7 +47,7 @@ export class PriceBreakdownDialogController extends BaseController {
         $interval: angular.IIntervalService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
-        public priceBreakdown: PriceBreakdown[],
+        priceBreakdowns: PriceBreakdown[],
         private jobId: number,
         private isPrebook: boolean
     ) {
@@ -58,8 +59,10 @@ export class PriceBreakdownDialogController extends BaseController {
         console.debug('PriceBreakdownDialogController: jobId', jobId);
 
         // Initialize if not provided
-        if (!this.priceBreakdown) {
+        if (!priceBreakdowns || priceBreakdowns.length === 0) {
             this.priceBreakdown = [];
+        } else {
+            this.priceBreakdown = angular.copy(priceBreakdowns);
         }
     }
 
@@ -67,6 +70,10 @@ export class PriceBreakdownDialogController extends BaseController {
         this.DispatchData.isJobParent(this.jobId).then(isParentJob => {
             this.isParentJob = isParentJob;
         })
+    }
+    
+    isJobsItem(item: PriceBreakdown): boolean {
+        return item.childJobId === this.jobId;
     }
 
     editItem(item: PriceBreakdown) {
@@ -113,9 +120,9 @@ export class PriceBreakdownDialogController extends BaseController {
                     chargeId: 0,
                     name: this.selectedPriceBreakdown.name,
                     amount: this.selectedPriceBreakdown.amount,
-                    jobId: this.isPrebook ? undefined : this.jobId,
                     prebookJobId: this.isPrebook ? this.jobId : undefined,
                     costAmount: this.selectedPriceBreakdown.costAmount,
+                    childJobId: this.isPrebook ? undefined : this.jobId,
                 };
 
                 const chargeId = await this.DispatchData.addPriceBreakdown(newBreakdown);

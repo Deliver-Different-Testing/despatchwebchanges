@@ -1266,6 +1266,29 @@
                                          aria-label="logged in contact name">
                                     {{ ctrl.isFieldVisible('loggedInContactName') ? 'visibility' : 'visibility_off' }}
                                 </md-icon>
+                            </md-list-item> 
+                            
+                            <md-list-item
+                                    ng-if="ctrl.isFieldVisible('bookingSource') || ctrl.isEditMode"
+                                    class="md-2-line md-long-text">
+                                <md-icon
+                                        class="md-avatar"
+                                        aria-label="booking source"
+                                        md-font-set="material-symbols-outlined">
+                                    work_update
+                                </md-icon>
+                                <div class="md-list-item-text">
+                                    <h3>Source</h3>
+                                    <p>{{ctrl.job.bookingSource || '-'}}</p>
+                                </div>
+
+                                <md-icon class="md-secondary"
+                                         ng-if="ctrl.isEditMode"
+                                         md-font-set="material-symbols-outlined"
+                                         ng-click="ctrl.toggleFieldVisibility('bookingSource')"
+                                         aria-label="logged in contact name">
+                                    {{ ctrl.isFieldVisible('bookingSource') ? 'visibility' : 'visibility_off' }}
+                                </md-icon>
                             </md-list-item>
 
                             <md-list-item

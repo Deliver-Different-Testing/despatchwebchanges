@@ -92,6 +92,9 @@ public class BaseJobRepository(
             ArgumentNullException.ThrowIfNull(economySpeedId);
             foreach (var job in jobs) job.Remain = await CalculateRemainTime(job, economySpeedId);
 
+            // Apply date fix
+            AddTimeZoneToDispatchJobDates(jobs, infoService.GetTenantTimeZone());
+            
             return jobs;
         }
         catch (Exception e)
@@ -748,6 +751,93 @@ public class BaseJobRepository(
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(RecurringJobRepository),
                     nameof(CreateNewRecurringJobNote)));                    
+            throw;
+        }
+    }
+
+    private static void AddTimeZoneToDispatchJobDates(List<DispatchJobViewModel> jobs, string tenantTimezone)
+    {
+        try
+        {
+            foreach (var job in jobs)
+            {
+                job.Booked = job.Booked.HasValue
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.Booked.Value, tenantTimezone)
+                    : null; 
+                job.Time = job.Time.HasValue
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.Time.Value, tenantTimezone)
+                    : null;  
+                job.FollowupTime = job.FollowupTime.HasValue
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.FollowupTime.Value, job.DeliveryTimeZone.Text)
+                    : null;   
+            }
+            
+            Log.Debug("Applied job date fix");
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository), nameof(AddTimeZoneToJobViewModelDates)));
+            throw;
+        }
+    }    
+    
+    protected static void AddTimeZoneToJobViewModelDates(JobViewModel job, string tenantTimezone)
+    {
+        try
+        {
+                job.Booked = job.Booked.HasValue
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.Booked.Value, tenantTimezone)
+                    : null; 
+                job.Time = job.Time.HasValue
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.Time.Value, tenantTimezone)
+                    : null;  
+                job.FollowupTime = job.FollowupTime.HasValue
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.FollowupTime.Value, job.DeliveryTimeZone.Text)
+                    : null;      
+                job.DeliverByTime = job.DeliverByTime.HasValue
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.DeliverByTime.Value, job.DeliveryTimeZone.Text)
+                    : null;    
+                job.DispatchTime = job.DispatchTime.HasValue
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.DispatchTime.Value, tenantTimezone)
+                    : null;   
+                job.PuTime = job.PuTime.HasValue
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.PuTime.Value, job.PickUpTimeZone.Text)
+                    : null; 
+                job.CompletedTime = job.CompletedTime.HasValue
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.CompletedTime.Value, job.DeliveryTimeZone.Text)
+                    : null;  
+                job.CreatedDate = job.CreatedDate.HasValue
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.CreatedDate.Value, tenantTimezone)
+                    : null;
+
+                if (job.AssignedFlight == null || job.AssignedFlight.FlightSegments.Count == 0) return;
+
+                // Apply to flights 
+                job.AssignedFlight.ExpectedArrival = job.AssignedFlight.ExpectedArrival.HasValue
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.AssignedFlight.ExpectedArrival.Value,
+                        job.AssignedFlight.ArrivalTimeZone)
+                    : null;
+                job.AssignedFlight.ExpectedDeparture = job.AssignedFlight.ExpectedDeparture.HasValue
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.AssignedFlight.ExpectedDeparture.Value,
+                        job.AssignedFlight.DepartureTimeZone)
+                    : null;
+
+                foreach (var segment in job.AssignedFlight.FlightSegments)
+                {
+                    segment.ArrivalTime =
+                        TimeZoneHelper.SetDateTimeWithTimeZone(segment.ArrivalTime, segment.ArrivalAirportTimeZone);
+                    segment.DepartureTime =
+                        TimeZoneHelper.SetDateTimeWithTimeZone(segment.DepartureTime, segment.DepartureAirportTimeZone);
+                }
+                
+            
+                Log.Debug("Applied job date fix");
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository), nameof(AddTimeZoneToJobViewModelDates)));
             throw;
         }
     }

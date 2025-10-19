@@ -11,7 +11,7 @@ import {
     PriceBreakdown,
     ISuggestion,
     VoidJobRequest, UpdateJobPackagesRequest, VoidBulkJobRequest, UpdateBulkJobPackagesRequest,
-    IJobDto, IDispatchJobDto, ITimeZoneSuggestion, JobCreateViewModelDto,
+    IJobDto, IDispatchJobDto, ITimeZoneSuggestion, JobCreateViewModelDto, IDeletePriceComponentRequest,
 } from "../interfaces/job.interface";
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {
@@ -383,7 +383,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 }
             }
         );
-        
+
         return response.data;
     }
 
@@ -834,15 +834,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     async addPriceBreakdown(breakdown: PriceBreakdown): Promise<any> {
         try {
             const response = await this.$http.post<number>(
-                'job/AddPriceComponent',
-                breakdown,
-                {
-                    params: {
-                        staffId: ContactID,
-                        despatcherName: FirstName
-                    }
-                }
-            );
+                'job/AddPriceComponent', breakdown);
 
             return response.data;
         } catch (error) {
@@ -853,16 +845,7 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async updatePriceBreakdown(breakdown: PriceBreakdown): Promise<void> {
         try {
-            await this.$http.post(
-                'job/UpdatePriceComponent',
-                breakdown,
-                {
-                    params: {
-                        staffId: ContactID,
-                        despatcherName: FirstName
-                    }
-                }
-            );
+            await this.$http.post('job/UpdatePriceComponent', breakdown);
         } catch (error) {
             console.error("Error updating price breakdown:", error);
             throw error;
@@ -870,23 +853,12 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async deletePriceBreakdown(chargeId: number, jobId: number): Promise<void> {
-        try {
-            await this.$http.post(
-                'job/DeletePriceComponent',
-                null,
-                {
-                    params: {
-                        chargeId: chargeId,
-                        jobId: jobId,
-                        staffId: ContactID,
-                        despatcherName: FirstName
-                    }
-                }
-            );
-        } catch (error) {
-            console.error("Error deleting price breakdown:", error);
-            throw error;
-        }
+        const data: IDeletePriceComponentRequest = {
+            jobId,
+            chargeId
+        };
+
+        await this.$http.post('job/DeletePriceComponent', data);
     }
 
     async getJobPickupPhotos(jobId: number, year: number, month: number): Promise<Is3PhotoInfo[]> {

@@ -8,5 +8,5 @@ public class ChargeViewModel
     public int? JobId { get;set; }
     public int? PrebookJobId { get; set; }
     public decimal? CostAmount { get; set; }
-    public bool IsParent {get;set;}
+    public int? ChildJobId { get; set; }
 }

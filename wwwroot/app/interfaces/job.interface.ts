@@ -170,6 +170,7 @@ export interface IJob {
     tailLiftDo: boolean;
     deliverToPrivateRes: boolean;
     deliverToPrivateResString: string;
+    bookingSource?: ISuggestion;
 }
 
 export interface IJobDto {
@@ -334,9 +335,10 @@ export interface IJobDto {
     tailLiftPu: boolean;
     tailLiftDo: boolean;
     deliverToPrivateRes: boolean;
+    bookingSource?: ISuggestion;
 }
 
-export interface UpdateBulkJobPackagesRequest extends  UpdateJobPackagesBase {
+export interface UpdateBulkJobPackagesRequest extends UpdateJobPackagesBase {
     bulkJobId: number;
 }
 
@@ -500,7 +502,7 @@ export interface IJobQueryParams {
     order?: string;
     orderDirection?: string;
     startDate?: Dayjs;
-    endDate?:  Dayjs;
+    endDate?: Dayjs;
 }
 
 export interface PriceBreakdown {
@@ -510,6 +512,7 @@ export interface PriceBreakdown {
     jobId?: number;
     prebookJobId?: number;
     costAmount?: number;
+    childJobId?: number;
 }
 
 export interface DfrntEvent {
@@ -846,4 +849,9 @@ export interface IJobSearchResult {
     jobs: IDispatchJob[];
     totalCount: number;
     hasMore: boolean;
+}
+
+export interface IDeletePriceComponentRequest {
+    jobId: number;
+    chargeId: number;
 }
