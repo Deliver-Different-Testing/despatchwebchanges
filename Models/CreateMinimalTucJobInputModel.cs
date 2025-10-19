@@ -119,4 +119,6 @@ public class CreateMinimalTucJobInputModel
     public string WeightList { get; set; }
 
     public string BarcodeList { get; set; }
+    
+    public string RecurringName { get; set; }
 }

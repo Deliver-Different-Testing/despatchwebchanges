@@ -203,7 +203,7 @@ public class JobController(
     {
         try
         {
-            var jobId = breakdown.JobId ?? breakdown.PrebookJobId;
+            var jobId = breakdown.ChildJobId ?? breakdown.PrebookJobId;
             ArgumentNullException.ThrowIfNull(jobId);
 
             Log.Information("Adding price breakdown for job {JobId}", jobId);
@@ -260,16 +260,16 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> DeletePriceComponent(int jobId, int chargeId)
+    public async Task<IActionResult> DeletePriceComponent([FromBody] DeletePriceComponentRequest request)
     {
         try
         {
-            Log.Information("Deleting price breakdown for charge {chargeId}", chargeId);
+            Log.Information("Deleting price breakdown for charge {chargeId}", request.ChargeId);
 
-            await jobRepository.DeleteJobPriceBreakdownAsync(chargeId);
+            await jobRepository.DeleteJobPriceBreakdownAsync(request.ChargeId);
 
             await taskRepository.AddEventAsync(
-                jobId,
+                request.JobId,
                 "Manually rated price",
                 (int)EventType.ChangePrice);
 
@@ -278,7 +278,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error deleting price breakdown for charge {chargeId}",
-                chargeId);
+                request.ChargeId);
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }

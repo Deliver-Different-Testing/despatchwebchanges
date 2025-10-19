@@ -393,7 +393,6 @@ public partial class JobRepository(
                     IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.JobId,
                     ParentId = j.ParentId,
 
-                    DeliverByTime = j.DeliverByTime,
                     IsFlightJob = speed != null
                                   && speed.GroupingId == (isUsCustomer
                                       ? (int)SpeedGrouping.Flight
@@ -1686,7 +1685,7 @@ public partial class JobRepository(
         }
 
         var effectiveJobId = await GetJobRelationshipInfoAsync(jobId);
-        return await Context.PricingBreakdowns
+        var pricingBreakdowns = await Context.PricingBreakdowns
             .Where(p => p.JobId == effectiveJobId)
             .Select(p => new ChargeViewModel
             {
@@ -1695,45 +1694,60 @@ public partial class JobRepository(
                 Name = p.ChargeName,
                 JobId = p.JobId,
                 PrebookJobId = p.PrebookJobId,
-                CostAmount = p.CostAmount
+                CostAmount = p.CostAmount,
+                ChildJobId = p.ChildJobId
             })
             .AsNoTracking()
             .ToListAsync();
+
+        return pricingBreakdowns;
     }
 
     public async Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel)
     {
-        if (viewModel.JobId is null && viewModel.PrebookJobId is null)
-            return 0;
-
-        var effectiveJobId = await GetJobRelationshipInfoAsync(viewModel.JobId ?? 0);
-        var effectiveJobBookingId = await GetJobBookingRelationshipInfoAsync(viewModel.PrebookJobId ?? 0);
-        var isPrebook = viewModel.PrebookJobId.HasValue;
-
-        var item = new PricingBreakdown
+        try
         {
-            ChargeAmount = viewModel.Amount,
-            ChargeName = viewModel.Name,
-            JobId = !isPrebook ? effectiveJobId : null,
-            PrebookJobId = isPrebook ? effectiveJobBookingId : null,
-            CostAmount = viewModel.CostAmount
-        };
+            if (viewModel.ChildJobId is null && viewModel.PrebookJobId is null)
+                return 0;
 
-        var note = $"Added price component: {viewModel.Name} for ${viewModel.Amount:F2}";
-        switch (isPrebook)
-        {
-            case true:
-                await SetPrebookJobAsManuallyPriceAsync(viewModel.PrebookJobId.Value, note);
-                break;
-            default:
-                if (viewModel.JobId != null) await SetJobAsManuallyPriceAsync(viewModel.JobId.Value, note);
-                break;
+            var isPrebook = viewModel.PrebookJobId.HasValue;
+      
+            int effectiveJobId;
+            if (!isPrebook) effectiveJobId = await GetJobRelationshipInfoAsync(viewModel.ChildJobId ?? 0);
+            else effectiveJobId = await GetJobBookingRelationshipInfoAsync(viewModel.PrebookJobId ?? 0);
+
+            var item = new PricingBreakdown
+            {
+                ChargeAmount = viewModel.Amount,
+                ChargeName = viewModel.Name,
+                JobId = !isPrebook ? effectiveJobId : null,
+                PrebookJobId = isPrebook ? effectiveJobId : null,
+                CostAmount = viewModel.CostAmount,
+                ChildJobId = viewModel.ChildJobId
+            };
+
+            var note = $"Added price component: {viewModel.Name} for ${viewModel.Amount:F2}";
+            switch (isPrebook)
+            {
+                case true:
+                    await SetPrebookJobAsManuallyPriceAsync(viewModel.PrebookJobId.Value, note);
+                    break;
+                default:
+                    if (viewModel.ChildJobId != null) await SetJobAsManuallyPriceAsync(viewModel.ChildJobId.Value, note);
+                    break;
+            }
+
+            await Context.PricingBreakdowns.AddAsync(item);
+            await Context.SaveChangesAsync();
+
+            return item.PricingBreakdownId;
         }
-
-        await Context.PricingBreakdowns.AddAsync(item);
-        await Context.SaveChangesAsync();
-
-        return item.PricingBreakdownId;
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(AddJobPriceBreakdownAsync)));
+            throw;
+        }
     }
 
     public async Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel)
@@ -2107,6 +2121,7 @@ public partial class JobRepository(
                 deliverByDateTime: data.DeliverByDateTime,
                 pickupTimeZone: data.PickupTimeZone,
                 deliverByTimeZone: data.DeliverByTimeZone,
+                recurringName: data.RecurringName,
                 recurringDays: data.RecurringDays,
                 recurringFrequency: data.RecurringFrequency,
                 recurringHoliday: null,
@@ -2294,7 +2309,7 @@ public partial class JobRepository(
                 .SetProperty(j => j.ClientItemIds, clientItemsString)
                 .SetProperty(j => j.UcjbAmount, totalCost));
     }
-    
+
     public async Task<IList<OpenJobResponse>> GetOpenJobsAsync(OpenJobsRequest parameters)
     {
         try
@@ -2633,7 +2648,8 @@ public partial class JobRepository(
                 Title = "Note added by System",
                 Icon = "sticky_note_2",
                 Description = n.NoteText,
-                Date = TimeZoneHelper.SetDateTimeWithTimeZone(n.UpdatedDate ?? n.CreatedDate ?? DateTime.MinValue, timezone),
+                Date = TimeZoneHelper.SetDateTimeWithTimeZone(n.UpdatedDate ?? n.CreatedDate ?? DateTime.MinValue,
+                    timezone),
                 Tags = new[]
                 {
                     "Note",
@@ -3360,24 +3376,7 @@ public partial class JobRepository(
                     .AsNoTracking()
                     .FirstOrDefaultAsync();
 
-                if (liveJob.AssignedFlight == null || liveJob.AssignedFlight.FlightSegments.Count == 0) return liveJob;
-
-                liveJob.AssignedFlight.ExpectedArrival = liveJob.AssignedFlight.ExpectedArrival.HasValue
-                    ? TimeZoneHelper.SetDateTimeWithTimeZone(liveJob.AssignedFlight.ExpectedArrival.Value,
-                        liveJob.AssignedFlight.ArrivalTimeZone)
-                    : null;
-                liveJob.AssignedFlight.ExpectedDeparture = liveJob.AssignedFlight.ExpectedDeparture.HasValue
-                    ? TimeZoneHelper.SetDateTimeWithTimeZone(liveJob.AssignedFlight.ExpectedDeparture.Value,
-                        liveJob.AssignedFlight.DepartureTimeZone)
-                    : null;
-
-                foreach (var segment in liveJob.AssignedFlight.FlightSegments)
-                {
-                    segment.ArrivalTime =
-                        TimeZoneHelper.SetDateTimeWithTimeZone(segment.ArrivalTime, segment.ArrivalAirportTimeZone);
-                    segment.DepartureTime =
-                        TimeZoneHelper.SetDateTimeWithTimeZone(segment.DepartureTime, segment.DepartureAirportTimeZone);
-                }
+                AddTimeZoneToJobViewModelDates(liveJob, _infoService.GetTenantTimeZone());
 
                 return liveJob;
             }

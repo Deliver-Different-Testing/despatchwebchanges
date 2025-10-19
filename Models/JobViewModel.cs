@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json.Serialization;
 
 namespace DespatchWeb.Models;
 
 public class JobViewModel : DispatchJobViewModel
 {
-    public DateTime? BookedDate { get; set; }
     public bool Van { get; set; }
     public bool? VanOk { get; set; }
     public bool? Void { get; set; }
@@ -24,7 +22,7 @@ public class JobViewModel : DispatchJobViewModel
     
     public string LoggedInContactName { get; set; }
 
-    [JsonPropertyName("deliverToContact")] public string DeliverToContact { get; set; }
+    public string DeliverToContact { get; set; }
 
     public int? TrackingMethod { get; set; }
     public string TrackingMobile { get; set; }
@@ -43,10 +41,10 @@ public class JobViewModel : DispatchJobViewModel
     public string SigNotRequired { get; set; }
     public decimal? Charge { get; set; }
     public string Date { get; set; }
-    public DateTime? DispatchTime { get; set; }
-    public DateTime? PuTime { get; set; }
+    public DateTimeOffset? DispatchTime { get; set; }
+    public DateTimeOffset? PuTime { get; set; }
 
-    public DateTime? FollowupTime { get; set; }
+    public DateTimeOffset? FollowupTime { get; set; }
     public int? InternalStatusId { get; set; }
     public string ConNote {get;set;}
     public List<PalletInfo> PalletInfo { get; set; }
@@ -54,21 +52,21 @@ public class JobViewModel : DispatchJobViewModel
     public bool? DgDocumentation { get; set; }
 
     public bool? PrivateRes { get; set; }
-    public DateTime? CompletedTime { get; set; }
+    public DateTimeOffset? CompletedTime { get; set; }
     public string FromContactName { get; set; }
     public string FromContactNumber { get; set; }
 
 
     public string ScheduleName { get; set; }
 
-    public DateTime? CreatedDate { get; set; }
+    public DateTimeOffset? CreatedDate { get; set; }
 
     public List<ParcelDimensions> ParcelDimensions { get; set; }
 
     public int? DeliverToLeaveId { get; set; }
 
     public bool IsArchived { get; set; }
-    public DateTime? DeliverByTime { get; set; }
+    public DateTimeOffset? DeliverByTime { get; set; }
 
     public List<TucNoteViewModel> Notes { get; set; }
 
@@ -89,6 +87,7 @@ public class JobViewModel : DispatchJobViewModel
     public bool TailLiftPu { get; set; }
     public bool TailLiftDo { get; set; }
     public bool DeliverToPrivateRes { get; set; }
+    public Suggestion BookingSource { get; set; }
     
 }
 

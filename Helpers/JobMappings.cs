@@ -21,10 +21,6 @@ public static class JobMappings
             HasBeenRead = j.TucJobReadTracker != null && j.TucJobReadTracker.HasBeenRead,
             IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.UcjbId,
             ParentId = j.ParentId,
-
-            // For remain time calculation
-            DeliverByTime = j.DeliverByTime,
-            RequiredDeliveryTime = j.RequiredDeliveryTime,
             JobTypeMins = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.Minutes : null,
 
             InternalStatusId = j.InternalStatus,
@@ -193,6 +189,13 @@ public static class JobMappings
         FollowupTime = j.FollowupTime,
         Void = j.UcjbVoid,
         LoggedInContactName = j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname,
+        BookingSource = j.Source != null
+            ? new Suggestion
+            {
+                Id = j.Source.SourceId,
+                Text = j.Source.Name
+            }
+            : null,
 
         PickupTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.PickupTime : null,
         DeliveryTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime : null,
@@ -217,7 +220,7 @@ public static class JobMappings
                     Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
                 }
                 : null,
-        
+
         // Tail Lift
         TailLiftPu = j.TucJobItemJobs != null && j.TucJobItemJobs.Any(i => i.Pu == true),
         TailLiftDo = j.TucJobItemJobs != null && j.TucJobItemJobs.Any(i => i.Do == true),
@@ -468,11 +471,11 @@ public static class JobMappings
         OurRef = j.UcjbOurRef,
 
         // Pricing 
-        Charge = j.Parent != null && j.Parent.PricingBreakdowns != null
-            ? j.Parent.PricingBreakdowns.Sum(p => p.ChargeAmount)
-            : j.PricingBreakdowns != null
-                ? j.PricingBreakdowns.Sum(p => p.ChargeAmount)
-                : j.UcjbAmount ?? 0,
+        Charge = j.Parent != null && j.Parent.PricingBreakdownJobs != null 
+            ? j.Parent.PricingBreakdownJobs.Sum(p => p.ChargeAmount) 
+            : j.PricingBreakdownChildJobs != null 
+                ? j.PricingBreakdownChildJobs.Sum(p => p.ChargeAmount) 
+                : 69,
 
         // Status
         StatusId = j.UcjbStatus,
@@ -495,8 +498,8 @@ public static class JobMappings
                 : null,
 
         // Job items
-        PalletInfo = j
-            .TucJobItemJobs.Select(i => new PalletInfo
+        PalletInfo = j.TucJobItemJobs != null ?
+            j.TucJobItemJobs.Select(i => new PalletInfo
             {
                 Id = i.JobId,
                 Quantity = i.Items,
@@ -510,7 +513,7 @@ public static class JobMappings
                 DgClass = i.Dgclass,
                 Notes = i.Notes
             })
-            .ToList(),
+            .ToList() : null,
 
         // Related jobs
         RelatedJobs = j.Parent != null && j.Parent.InverseParent.Any()
@@ -575,6 +578,14 @@ public static class JobMappings
         CreatedDate = j.BookDate,
         ScheduleName = j.ScheduleName,
         Void = j.Void,
+        BookingSource = j.Source != null
+            ? new Suggestion
+            {
+                Id = j.Source.SourceId,
+                Text = j.Source.Name
+            }
+            : null,
+
 
         PickupTime = j.SpeedNavigation != null ? j.SpeedNavigation.PickupTime : null,
         DeliveryTime = j.SpeedNavigation != null ? j.SpeedNavigation.DeliveryTime : null,
@@ -599,12 +610,12 @@ public static class JobMappings
                     Text = j.Courier.UccrName + " " + j.Courier.UccrSurname
                 }
                 : null,
-        
+
         // Tail Lift
         TailLiftPu = j.TblBulkJobItems != null && j.TblBulkJobItems.Any(i => i.Pu == true),
         TailLiftDo = j.TblBulkJobItems != null && j.TblBulkJobItems.Any(i => i.Do == true),
         DeliverToPrivateRes = j.TblBulkJobItems != null && j.TblBulkJobItems.Any(i => i.PrivateRes == true),
-        
+
         // Address information
         PickupAddress = new AddressViewModel
         {
@@ -735,7 +746,7 @@ public static class JobMappings
         AssignedCourier = j.UcjbCourierId.HasValue
             ? new Suggestion { Id = j.UcjbCourierId.Value }
             : null,
-        
+
         // Address information - directly available in the archive
         PickupAddress = new AddressViewModel
         {
@@ -892,7 +903,7 @@ public static class JobMappings
                     Text = j.DeliverByTimeZone.Name
                 }
                 : null,
-
+ 
         Locked = j.UcjbLocked != null && j.UcjbLocked != 0
     };
 
@@ -919,7 +930,16 @@ public static class JobMappings
                 : SqlMinDateTime,
             CreatedDate = j.UcbkDate,
             ScheduleName = j.ScheduleName,
-            LoggedInContactName = j.LoggedInContact != null ? j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname : null,
+            LoggedInContactName = j.LoggedInContact != null
+                ? j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname
+                : null,
+            BookingSource = j.Source != null
+                ? new Suggestion
+                {
+                    Id = j.Source.SourceId,
+                    Text = j.Source.Name
+                }
+                : null,
 
             PickupTime = null,
             DeliveryTime = null,
@@ -931,11 +951,12 @@ public static class JobMappings
             AssignedCourier = j.Courier != null
                 ? new Suggestion { Id = j.Courier.UccrId, Text = j.Courier.UccrName }
                 : null,
-            
+
             // Tail Lift
             TailLiftPu = j.TucJobBookingItemBookings != null && j.TucJobBookingItemBookings.Any(i => i.Pu == true),
             TailLiftDo = j.TucJobBookingItemBookings != null && j.TucJobBookingItemBookings.Any(i => i.Do == true),
-            DeliverToPrivateRes = j.TucJobBookingItemBookings != null && j.TucJobBookingItemBookings.Any(i => i.PrivateRes == true),
+            DeliverToPrivateRes = j.TucJobBookingItemBookings != null &&
+                                  j.TucJobBookingItemBookings.Any(i => i.PrivateRes == true),
 
             // Address information - directly available in the archive
             PickupAddress = new AddressViewModel
@@ -1236,7 +1257,7 @@ public static class JobMappings
             Length = item.Length
         };
     }
-    
+
     public static readonly Expression<Func<TucJobBooking, PrebookListViewModel>> ToPrebookListViewModel = j =>
         new PrebookListViewModel
         {
