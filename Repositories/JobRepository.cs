@@ -2957,6 +2957,11 @@ public partial class JobRepository(
             .Select(JobMappings.JobDispatchMapping(isUsCustomer))
             .AsNoTracking()
             .FirstOrDefaultAsync();
+        
+        // Apply date fix
+        AddTimeZoneToDispatchJobDates(job, infoService.GetTenantTimeZone(),
+            infoService.GetCurrentTenantTime());
+        
         return job;
     }
 
