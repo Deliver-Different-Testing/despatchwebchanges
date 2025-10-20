@@ -15,7 +15,9 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
     public async Task<ClientViewModel> ValidateClientAsync(int contactId)
     {
         return await Context
-            .TucClientContacts.Where(contact => contact.UcctId == contactId)
+            .TucClientContacts
+            .AsNoTracking()
+            .Where(contact => contact.UcctId == contactId)
             .Join(
                 Context.TblClients,
                 contact => contact.UcctClientId,
@@ -36,8 +38,9 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
 
     public async Task<List<Suggestion>> ClientContactsAsync(int contactId)
     {
-        return await Context
-            .TblClientContacts.Where(c => c.ContactId == contactId)
+        return await Context.TblClientContacts
+            .AsNoTracking()
+            .Where(c => c.ContactId == contactId)
             .Join(
                 Context.TblClientContactInternetPermissions,
                 c => c.ClientContactId,
@@ -66,6 +69,7 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
         var likePattern = $"%{searchTerm}%";
 
         var results = await Context.TucClients
+            .AsNoTracking()
             .Where(c => c.UcclActive == true &&
                         EF.Functions.Like(c.UcclCode + " " + c.UcclName, likePattern))
             .OrderBy(c => c.UcclCode)

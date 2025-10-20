@@ -100,7 +100,9 @@ export function formatMins(date: Date | Dayjs | string): string {
 
 export function formatDateFromApi(dateString: string): Dayjs {
     const originalTimezone = dateString.slice(-6);
-    return dayjs(dateString).utcOffset(originalTimezone);
+    const dateFormatted = dayjs(dateString).utcOffset(originalTimezone);
+    console.log("DateFormatted: ", dateFormatted.format());
+    return dateFormatted
 }
 
 export function getIanaTimezone(timezone: string): string {

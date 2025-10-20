@@ -28,12 +28,12 @@ public partial class JobRepository(
 
     public async Task<List<Suggestion>> RelatedJobsAsync(int parentId, int clientId)
     {
-        return await Context
-            .TucJobs.Where(j => (j.ParentId == parentId || j.ParentId == null) && j.UcjbClientId == clientId)
+        return await Context.TucJobs
+            .AsNoTracking()
+            .Where(j => (j.ParentId == parentId || j.ParentId == null) && j.UcjbClientId == clientId)
             .OrderBy(j => j.UcjbDate)
             .ThenBy(j => j.UcjbTime)
             .Select(j => new Suggestion { Id = j.UcjbId, Text = j.UcjbNumber })
-            .AsNoTracking()
             .ToListAsync();
     }
 
@@ -43,9 +43,9 @@ public partial class JobRepository(
         try
         {
             var bulkJob = await Context.TblBulkJobs
+                .AsNoTracking()
                 .Where(j => j.BulkJobId == bulkJobId)
                 .Select(JobMappings.BulkJobMapping)
-                .AsNoTracking()
                 .FirstOrDefaultAsync();
 
             return bulkJob;
@@ -300,9 +300,9 @@ public partial class JobRepository(
         var pageSize = data.PageSize ?? 50;
 
         var bulkJobs = await query
+            .AsNoTracking()
             .Skip(page * pageSize)
             .Take(pageSize)
-            .AsNoTracking()
             .ToListAsync();
 
         return new JobSearchResult
@@ -477,9 +477,9 @@ public partial class JobRepository(
             var pageSize = data.PageSize ?? 50;
 
             var jobSearchResults = await query
+                .AsNoTracking()
                 .Skip(page * pageSize)
                 .Take(pageSize)
-                .AsNoTracking()
                 .ToListAsync();
 
             return new JobSearchResult
@@ -812,8 +812,8 @@ public partial class JobRepository(
         }
 
         var statusLookup = await Context.TucJobStatuses
-            .Where(s => statusNames.Contains(s.UcjsName))
             .AsNoTracking()
+            .Where(s => statusNames.Contains(s.UcjsName))
             .ToDictionaryAsync(s => s.UcjsName, s => s.UcjsId);
 
         // Update statuses for each job
@@ -995,12 +995,12 @@ public partial class JobRepository(
     {
         var isUsCustomer = _infoService.IsUsTenant();
 
-        return await Context
-            .TucCouriers.Where(c => c.UccrId == courierId)
+        return await Context.TucCouriers
+            .AsNoTracking()
+            .Where(c => c.UccrId == courierId)
             .SelectMany(c => c.TucJobUcjbCouriers)
             .Where(j => j.UcjbJobDone == done)
             .Select(JobMappings.JobDispatchMapping(isUsCustomer))
-            .AsNoTracking()
             .ToListAsync();
     }
 
@@ -1569,29 +1569,30 @@ public partial class JobRepository(
 
     public async Task<List<SuburbLookup>> GetSuburbsAsync()
     {
-        return await Context
-            .TucSuburbs.Select(x => new SuburbLookup
+        return await Context.TucSuburbs
+            .AsNoTracking()
+            .Select(x => new SuburbLookup
             {
                 Id = x.UcsuId,
                 Text = x.UcsuName,
                 Alias = x.GoogleSuburbAlias
             })
-            .AsNoTracking()
             .ToListAsync();
     }
 
     public async Task<List<Suggestion>> GetSpeedsAsync()
     {
-        return await Context
-            .DesQryAllJobTypes.Select(x => new Suggestion { Id = x.JobTypeId, Text = x.Name })
+        return await Context.DesQryAllJobTypes
             .AsNoTracking()
+            .Select(x => new Suggestion { Id = x.JobTypeId, Text = x.Name })
             .ToListAsync();
     }
 
     public async Task<List<Suggestion>> GetContactsByClientIdAsync(int clientId)
     {
-        var contacts = await Context
-            .UtlQryContactLookups.Join(
+        var contacts = await Context.UtlQryContactLookups
+            .AsNoTracking()
+            .Join(
                 Context.TblClientContacts,
                 s => s.ContactId,
                 cc => cc.ContactId,
@@ -1600,7 +1601,6 @@ public partial class JobRepository(
             .Where(x => x.cc.ClientId == clientId && x.s.Active)
             .Select(x => new Suggestion { Id = x.s.ContactId, Text = x.s.UcctFirstname + Space + x.s.UcctSurname })
             .Distinct()
-            .AsNoTracking()
             .ToListAsync();
 
         return contacts;
@@ -1608,8 +1608,8 @@ public partial class JobRepository(
 
     public async Task<List<Lookup>> LeaveParcelLocationsAsync()
     {
-        return await Context
-            .TblJobLeaveNotHomes
+        return await Context.TblJobLeaveNotHomes
+            .AsNoTracking()
             .OrderBy(l => l.Sequence)
             .Select(x => new Lookup { Id = x.LeaveNotHomeId, Text = x.Name })
             .ToListAsync();
@@ -1617,8 +1617,9 @@ public partial class JobRepository(
 
     public async Task<List<UndeliverableLocation>> UndeliverableLocationsAsync()
     {
-        return await Context
-            .TblUndeliverableLocations.OrderBy(u => u.Name)
+        return await Context.TblUndeliverableLocations
+            .AsNoTracking()
+            .OrderBy(u => u.Name)
             .Select(x => new UndeliverableLocation
             {
                 Id = x.UndeliverableLocationId,
@@ -1631,7 +1632,9 @@ public partial class JobRepository(
     public async Task<List<InternalStatus>> GetInternalStatusListAsync()
     {
         return await Context
-            .TucJobInternalStatuses.Where(x => x.Tcis != (int)InternalJobStatus.OvernightCp
+            .TucJobInternalStatuses
+            .AsNoTracking()
+            .Where(x => x.Tcis != (int)InternalJobStatus.OvernightCp
                                                && x.Tcis != (int)InternalJobStatus.ActionRequired)
             .OrderBy(u => u.Tcis)
             .Select(x => new InternalStatus
@@ -1647,19 +1650,19 @@ public partial class JobRepository(
     public async Task<List<Suggestion>> GetStatusListAsync()
     {
         return await Context.TucJobStatuses
+            .AsNoTracking()
             .OrderBy(s => s.UcjsName)
             .Select(s => new Suggestion { Id = s.UcjsId, Text = s.UcjsName })
-            .AsNoTracking()
             .ToListAsync();
     }
 
     public async Task<List<Suggestion>> EventTypeListAsync()
     {
         return await Context.TucEventTypes
+            .AsNoTracking()
             .Where(u => u.UcetGroup == "CS" || u.UcetGroup == "GE")
             .OrderBy(u => u.UcetName)
             .Select(x => new Suggestion { Id = x.UcetId, Text = x.UcetName })
-            .AsNoTracking()
             .ToListAsync();
     }
 
@@ -1670,6 +1673,7 @@ public partial class JobRepository(
         {
             effectivePrebookId = await GetJobBookingRelationshipInfoAsync(jobId);
             return await Context.PricingBreakdowns
+                .AsNoTracking()
                 .Where(p => p.PrebookJobId == effectivePrebookId)
                 .Select(p => new ChargeViewModel
                 {
@@ -1680,12 +1684,12 @@ public partial class JobRepository(
                     PrebookJobId = p.PrebookJobId,
                     CostAmount = p.CostAmount
                 })
-                .AsNoTracking()
                 .ToListAsync();
         }
 
         var effectiveJobId = await GetJobRelationshipInfoAsync(jobId);
         var pricingBreakdowns = await Context.PricingBreakdowns
+            .AsNoTracking()
             .Where(p => p.JobId == effectiveJobId)
             .Select(p => new ChargeViewModel
             {
@@ -1697,7 +1701,6 @@ public partial class JobRepository(
                 CostAmount = p.CostAmount,
                 ChildJobId = p.ChildJobId
             })
-            .AsNoTracking()
             .ToListAsync();
 
         return pricingBreakdowns;
@@ -2167,33 +2170,33 @@ public partial class JobRepository(
     }
 
     public async Task<string> GetStaffNameAsync(int staffId) => await Context.TucStaffs
+        .AsNoTracking()
         .Where(s => s.UcstId == staffId)
         .Select(s => s.UcstFirstName + " " + s.UcstLastName)
-        .AsNoTracking()
         .FirstOrDefaultAsync();
 
     private async Task<Suggestion> GetSpeedSuggestionBySpeedIdAsync(int speedId)
     {
         var speed = await Context.TucJobTypes
+            .AsNoTracking()
             .Where(s => s.UcjtId == speedId)
             .Select(s => new Suggestion
             {
                 Id = s.UcjtId,
                 Text = s.UcjtName
             })
-            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         return speed;
     }
 
     private async Task<Suggestion> GetDefaultSpeedType() => await Context.TucJobTypes
+        .AsNoTracking()
         .Select(t => new Suggestion
         {
             Id = t.UcjtId,
             Text = t.SystemName
         })
-        .AsNoTracking()
         .FirstOrDefaultAsync();
 
     public async Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel)
@@ -2343,6 +2346,7 @@ public partial class JobRepository(
             query = query.OrderBy(j => j.PickUpTime.Value);
 
             var openJobs = await query
+                .AsNoTracking()
                 .Select(j => new OpenJobResponse
                 {
                     JobId = j.UcjbId,
@@ -2396,7 +2400,6 @@ public partial class JobRepository(
                     PackageType = j.AcceptedJobType != null ? j.AcceptedJobType.UcjtName : null,
                     Mileage = j.TotalDistance ?? 0
                 })
-                .AsNoTracking()
                 .ToListAsync();
 
             return openJobs;
@@ -2532,6 +2535,7 @@ public partial class JobRepository(
     public async Task<List<TimeZoneSuggestion>> GetTimeZoneOptions()
     {
         var timeZones = await Context.TimeZones
+            .AsNoTracking()
             .Select(t => new TimeZoneSuggestion
             {
                 Id = t.Id,
@@ -2539,7 +2543,6 @@ public partial class JobRepository(
                 TimeZoneIana = t.Name
             })
             .OrderBy(tz => tz.TimeZoneIana)
-            .AsNoTracking()
             .ToListAsync();
 
         return timeZones;
@@ -2566,8 +2569,8 @@ public partial class JobRepository(
     {
         var timezone = _infoService.GetTenantTimeZone();
         var eventsTempList = await Context.TucEvents
-            .Where(e => e.UcevJobId == jobId)
             .AsNoTracking()
+            .Where(e => e.UcevJobId == jobId)
             .Include(e => e.UcevStaffIdinNavigation)
             .Include(e => e.UcevStaffIdoutNavigation)
             .ToListAsync();
@@ -2605,8 +2608,8 @@ public partial class JobRepository(
         {
             // Get notes from the live job table
             var notesTempList = await Context.TucNotes
-                .Where(n => n.JobId == jobId)
                 .AsNoTracking()
+                .Where(n => n.JobId == jobId)
                 .Include(n => n.CreatedByNavigation)
                 .Include(n => n.UpdatedByNavigation)
                 .ToListAsync();
@@ -2637,8 +2640,8 @@ public partial class JobRepository(
         {
             // Get notes from the archived job table
             var archivedNotesTempList = await Context.TucNoteArchives
-                .Where(n => n.JobId == jobId)
                 .AsNoTracking()
+                .Where(n => n.JobId == jobId)
                 .ToListAsync();
 
             notes = archivedNotesTempList.Select(n => new DeliveryJourneyViewModel
@@ -2670,8 +2673,8 @@ public partial class JobRepository(
     {
         var timezone = _infoService.GetTenantTimeZone();
         var messagesTempList = await Context.TucManualMessages
-            .Where(m => m.JobId == jobId)
             .AsNoTracking()
+            .Where(m => m.JobId == jobId)
             .Include(m => m.UcmmSendFromStaff)
             .Include(m => m.UcmmSendToStaff)
             .Include(m => m.UcmmSendToCourier)
@@ -2805,8 +2808,8 @@ public partial class JobRepository(
         {
             // Get status updates from the archived job table
             var archivedStatusUpdatesTempList = await Context.JobDeliveryJourneyArchives
-                .Where(j => j.JobId == jobId && j.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus))
                 .AsNoTracking()
+                .Where(j => j.JobId == jobId && j.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus))
                 .ToListAsync();
 
             statusUpdates = archivedStatusUpdatesTempList
@@ -2952,17 +2955,11 @@ public partial class JobRepository(
     {
         var isUsCustomer = _infoService.IsUsTenant();
 
-        var job = await Context.TucJobs
+        return await Context.TucJobs
+            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(JobMappings.JobDispatchMapping(isUsCustomer))
-            .AsNoTracking()
             .FirstOrDefaultAsync();
-        
-        // Apply date fix
-        AddTimeZoneToDispatchJobDates(job, infoService.GetTenantTimeZone(),
-            infoService.GetCurrentTenantTime());
-        
-        return job;
     }
 
     public async Task UpdateJobRateAsync(int jobId, decimal rate, string noteText)
@@ -3003,18 +3000,18 @@ public partial class JobRepository(
     public async Task<bool> IsJobParentAsync(int jobId)
     {
         var jobInfo = await Context.TucJobs
+            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(j => new { HasParent = j.ParentId.HasValue })
-            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         if (jobInfo != null)
             return jobInfo.HasParent;
 
         var bookingInfo = await Context.TucJobBookings
+            .AsNoTracking()
             .Where(j => j.UcbkId == jobId)
             .Select(j => new { HasParent = j.ParentId.HasValue })
-            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         return bookingInfo?.HasParent ?? false;
@@ -3192,9 +3189,9 @@ public partial class JobRepository(
     private async Task<bool> IsStopJob(int jobId)
     {
         var jobNumber = await Context.TucJobs
+            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(j => j.UcjbNumber)
-            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         ArgumentNullException.ThrowIfNull(jobNumber);
@@ -3220,8 +3217,9 @@ public partial class JobRepository(
         var isUsCustomer = _infoService.IsUsTenant();
 
         // Get active jobs to display on a map
-        var jobs = await Context
-            .TucJobs.Where(j =>
+        var jobs = await Context.TucJobs
+            .AsNoTracking()
+            .Where(j =>
                 j.UcjbStatus.HasValue
                 && JobStatusGroups.Active.Contains(j.UcjbStatus.Value)
                 && !j.UcjbVoid
@@ -3295,7 +3293,6 @@ public partial class JobRepository(
                             .FirstOrDefault()
                         : null
             })
-            .AsNoTracking()
             .ToListAsync();
 
         return jobs;
@@ -3372,25 +3369,26 @@ public partial class JobRepository(
             await MarkJobAsReadAsync(jobId);
 
             // Check for a live job first
-            var isLiveJob = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
+            var isLiveJob = await Context.TucJobs
+                .AsNoTracking()
+                .AnyAsync(j => j.UcjbId == jobId);
+            
             if (isLiveJob)
             {
                 var liveJob = await Context.TucJobs
+                    .AsNoTracking()
                     .Where(j => j.UcjbId == jobId)
                     .Select(JobMappings.JobMapping)
-                    .AsNoTracking()
                     .FirstOrDefaultAsync();
-
-                AddTimeZoneToJobViewModelDates(liveJob, _infoService.GetTenantTimeZone());
-
+                
                 return liveJob;
             }
 
             // Check for an archived job
             var archivedJob = await Context.TucJobArchives
+                .AsNoTracking()
                 .Where(j => j.UcjbId == jobId)
                 .Select(JobMappings.JobArchiveMapping)
-                .AsNoTracking()
                 .FirstOrDefaultAsync();
             ArgumentNullException.ThrowIfNull(archivedJob);
 
@@ -3453,8 +3451,8 @@ public partial class JobRepository(
     public async Task<TucJobType> GetJobTypeByIdAsync(int speedId)
     {
         var jobType = await Context.TucJobTypes
-            .Include(s => s.Grouping)
             .AsNoTracking()
+            .Include(s => s.Grouping)
             .FirstOrDefaultAsync(x => x.UcjtId == speedId);
 
         return jobType ?? throw new KeyNotFoundException($"Job type with ID {speedId} not found");
@@ -3599,9 +3597,9 @@ public partial class JobRepository(
         var today = _infoService.GetCurrentTenantTime();
 
         var isValid = await Context.TblJobs
+            .AsNoTracking()
             .Where(j => j.Number == jobNumber)
             .Where(j => j.Date.HasValue && j.Date.Value.Date == today.Date)
-            .AsNoTracking()
             .AnyAsync();
 
         return isValid;
