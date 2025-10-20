@@ -471,9 +471,9 @@ public static class JobMappings
         OurRef = j.UcjbOurRef,
 
         // Pricing 
-        Charge = j.Parent != null && j.Parent.PricingBreakdownJobs != null 
+        Charge = j.Parent != null && j.Parent.PricingBreakdownJobs != null && j.Parent.PricingBreakdownJobs.Any() == true 
             ? j.Parent.PricingBreakdownJobs.Sum(p => p.ChargeAmount) 
-            : j.PricingBreakdownChildJobs != null 
+            : j.PricingBreakdownChildJobs != null && j.PricingBreakdownChildJobs.Any() == true 
                 ? j.PricingBreakdownChildJobs.Sum(p => p.ChargeAmount) 
                 : j.UcjbAmount,
 
@@ -846,9 +846,9 @@ public static class JobMappings
         OurRef = j.UcjbOurRef,
 
         // Pricing
-        Charge = j.Parent != null && j.Parent.PricingBreakdowns != null
+        Charge = j.Parent != null && j.Parent.PricingBreakdowns != null && j.Parent.PricingBreakdowns.Any() == true
             ? j.Parent.PricingBreakdowns.Sum(p => p.ChargeAmount)
-            : j.PricingBreakdowns != null
+            : j.PricingBreakdowns != null && j.PricingBreakdowns.Any() == true
                 ? j.PricingBreakdowns.Sum(p => p.ChargeAmount)
                 : j.UcjbAmount ?? 0,
 
