@@ -80,15 +80,13 @@ public class BaseJobRepository(
             }
 
             var jobs = await query
-                .Select(JobMappings.JobDispatchMapping(isUsTenant))
                 .AsNoTracking()
+                .Select(JobMappings.JobDispatchMapping(isUsTenant))
                 .ToListAsync();
 
-        var (economySpeedId, ecoDeliveryTime) = await GetEconomySpeedAndDeliveryTimeAsync();
-
-            // Apply date fix
-            AddTimeZoneToDispatchJobDates(jobs, infoService.GetTenantTimeZone(),
-                infoService.GetCurrentTenantTime(), economySpeedId, ecoDeliveryTime);
+            var (economySpeedId, ecoDeliveryTime) = await GetEconomySpeedAndDeliveryTimeAsync();
+            var now = infoService.GetCurrentTenantTime();
+            foreach (var job in jobs) job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
 
             return jobs;
         }
@@ -223,6 +221,7 @@ public class BaseJobRepository(
             query = query.Where(j => j.UcjbStatus != 9);
 
             var jobCoordinates = await query
+                .AsNoTracking()
                 .Select(j => new JobCoordinateModel
                 {
                     Id = j.UcjbId,
@@ -239,7 +238,6 @@ public class BaseJobRepository(
                     FromAddress = j.UcjbFromAddr,
                     ToAddress = j.UcjbToAddr
                 })
-                .AsNoTracking()
                 .ToListAsync();
 
             return jobCoordinates;
@@ -256,6 +254,7 @@ public class BaseJobRepository(
     public async Task<List<TucNoteViewModel>> GetBulkJobNotesByBulkJobIdAsync(int bulkJobId)
     {
         var bulkNotes = await Context.TblBulkJobNotes
+            .AsNoTracking()
             .Where(n => n.BulkJobId == bulkJobId)
             .Select(n => new TucNoteViewModel
             {
@@ -276,7 +275,6 @@ public class BaseJobRepository(
                     ? FormatName(n.UpdatedByNavigation.UcstFirstName, n.UpdatedByNavigation.UcstLastName)
                     : string.Empty
             })
-            .AsNoTracking()
             .ToListAsync();
 
         return bulkNotes;
@@ -528,10 +526,10 @@ public class BaseJobRepository(
     private async Task<TucNoteViewModel> GetActiveNoteByIdAsync(int noteId)
     {
         return await Context.TucNotes
+            .AsNoTracking()
             .Include(x => x.NoteType)
             .Include(x => x.CreatedByNavigation)
             .Include(x => x.UpdatedByNavigation)
-            .AsNoTracking()
             .Where(x => x.NoteId == noteId)
             .Select(x => new TucNoteViewModel(x))
             .FirstOrDefaultAsync();
@@ -542,11 +540,11 @@ public class BaseJobRepository(
         var effectiveJobId = await GetEffectiveJobId(jobId, false);
 
         return await Context.TucNotes
+            .AsNoTracking()
             .Include(x => x.NoteType)
             .Include(x => x.CreatedByNavigation)
             .Include(x => x.UpdatedByNavigation)
             .Where(x => x.JobId == effectiveJobId)
-            .AsNoTracking()
             .Select(x => new TucNoteViewModel(x))
             .ToListAsync();
     }
@@ -747,119 +745,6 @@ public class BaseJobRepository(
         }
     }
 
-    protected static void AddTimeZoneToDispatchJobDates(DispatchJobViewModel job,
-        string tenantTimezone, DateTime currentTenantTime, int? economySpeedId = null, DateTime? ecoDeliveryTime = null)
-    {
-        try
-        {
-            // Remain Time
-            job.Remain = CalculateRemainTime(job, currentTenantTime, economySpeedId, ecoDeliveryTime);
-
-            // Dates
-            job.Booked = job.Booked.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(job.Booked.Value, tenantTimezone)
-                : null;
-            job.Time = job.Time.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(job.Time.Value, tenantTimezone)
-                : null;
-            job.FollowupTime = job.FollowupTime.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(job.FollowupTime.Value,
-                    job.DeliveryTimeZone?.Text ?? tenantTimezone)
-                : null;
-
-            Log.Debug("Applied job date fix");
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository),
-                    nameof(AddTimeZoneToDispatchJobDates)));
-            throw;
-        }
-    }
-
-    private static void AddTimeZoneToDispatchJobDates(List<DispatchJobViewModel> jobs,
-        string tenantTimezone, DateTime currentTenantTime, int? economySpeedId, DateTime? ecoDeliveryTime)
-    {
-        try
-        {
-            foreach (var job in jobs)
-                AddTimeZoneToDispatchJobDates(job, tenantTimezone, currentTenantTime, economySpeedId, ecoDeliveryTime);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository),
-                    nameof(AddTimeZoneToDispatchJobDates)));
-            throw;
-        }
-    }
-
-    protected static void AddTimeZoneToJobViewModelDates(JobViewModel job, string tenantTimezone)
-    {
-        try
-        {
-            job.Booked = job.Booked.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(job.Booked.Value, tenantTimezone)
-                : null;
-            job.Time = job.Time.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(job.Time.Value, tenantTimezone)
-                : null;
-            job.FollowupTime = job.FollowupTime.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(job.FollowupTime.Value,
-                    job.DeliveryTimeZone?.Text ?? tenantTimezone)
-                : null;
-            job.DeliverByTime = job.DeliverByTime.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(job.DeliverByTime.Value,
-                    job.DeliveryTimeZone?.Text ?? tenantTimezone)
-                : null;
-            job.DispatchTime = job.DispatchTime.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(job.DispatchTime.Value, tenantTimezone)
-                : null;
-            job.PuTime = job.PuTime.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(job.PuTime.Value, job.PickUpTimeZone?.Text ?? tenantTimezone)
-                : null;
-            job.CompletedTime = job.CompletedTime.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(job.CompletedTime.Value,
-                    job.DeliveryTimeZone?.Text ?? tenantTimezone)
-                : null;
-            job.CreatedDate = job.CreatedDate.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(job.CreatedDate.Value, tenantTimezone)
-                : null;
-
-            if (job.AssignedFlight == null || job.AssignedFlight.FlightSegments.Count == 0) return;
-
-            // Apply to flights 
-            job.AssignedFlight.ExpectedArrival = job.AssignedFlight.ExpectedArrival.HasValue &&
-                                                 !string.IsNullOrEmpty(job.AssignedFlight.ArrivalTimeZone)
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(job.AssignedFlight.ExpectedArrival.Value,
-                    job.AssignedFlight.ArrivalTimeZone)
-                : null;
-            job.AssignedFlight.ExpectedDeparture = job.AssignedFlight.ExpectedDeparture.HasValue &&
-                                                   !string.IsNullOrEmpty(job.AssignedFlight.DepartureTimeZone)
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(job.AssignedFlight.ExpectedDeparture.Value,
-                    job.AssignedFlight.DepartureTimeZone)
-                : null;
-
-            foreach (var segment in job.AssignedFlight.FlightSegments)
-            {
-                segment.ArrivalTime =
-                    TimeZoneHelper.SetDateTimeWithTimeZone(segment.ArrivalTime, segment.ArrivalAirportTimeZone);
-                segment.DepartureTime =
-                    TimeZoneHelper.SetDateTimeWithTimeZone(segment.DepartureTime, segment.DepartureAirportTimeZone);
-            }
-
-            Log.Debug("Applied job date fix");
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository),
-                    nameof(AddTimeZoneToJobViewModelDates)));
-            throw;
-        }
-    }
-    
     private async Task<(int? economySpeedId, DateTime? ecoDeliveryTime)> GetEconomySpeedAndDeliveryTimeAsync()
     {
         // Calculate remain times

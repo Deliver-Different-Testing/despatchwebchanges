@@ -15,6 +15,7 @@ public partial class JobRepository
         try
         {
             var jobDetails = await Context.TucJobs
+                .AsNoTracking()
                 .Where(j => j.UcjbId == jobId)
                 .Include(j => j.UcjbClient)
                 .Include(j => j.UcjbSpeedNavigation)
@@ -85,6 +86,7 @@ public partial class JobRepository
         try
         {
             var jobDetailsForRating = await Context.TucJobs
+                .AsNoTracking()
                 .Where(j => j.UcjbId == jobId)
                 .Include(j => j.UcjbClient)
                 .Include(j => j.UcjbSpeedNavigation)
@@ -192,6 +194,7 @@ public partial class JobRepository
         try
         {
             var jobDetails = await Context.TucJobBookings
+                .AsNoTracking()
                 .Where(j => j.UcbkId == jobId)
                 .Include(j => j.UcbkClient) // Include client info
                 .Include(j => j.UcbkSpeedNavigation) // Include job type info
@@ -257,6 +260,7 @@ public partial class JobRepository
         try
         {
             var jobDetails = await Context.TucJobBookings
+                .AsNoTracking()
                 .Where(j => j.UcbkId == jobId)
                 .Include(j => j.UcbkClient)
                 .Include(j => j.UcbkSpeedNavigation)

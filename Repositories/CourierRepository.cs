@@ -28,6 +28,7 @@ public class CourierRepository(
     {
         var now = infoService.GetCurrentTenantTime();
         var courier = await Context.TucCouriers
+            .AsNoTracking()
             .Where(c => c.UccrId == courierId)
             .Select(c => new ActiveCouriersViewModel
             {
@@ -45,7 +46,6 @@ public class CourierRepository(
                      c.CourierLogInOut.LogOutTime == null)
                 )
             })
-            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         return courier;
@@ -59,6 +59,7 @@ public class CourierRepository(
             const string truckVehicleName = "Truck";
 
             var courierStatusData = await Context.TucCouriers
+                .AsNoTracking()
                 .Where(c => c.Active && c.UccrId == courierId)
                 .Select(c => new TruckCourierStatusViewModel
                 {
@@ -93,7 +94,6 @@ public class CourierRepository(
                             .Sum(i => i.Items * i.Weight)
                         : null
                 })
-                .AsNoTracking()
                 .OrderBy(c => c.CourierCode)
                 .FirstOrDefaultAsync();
 
@@ -120,6 +120,7 @@ public class CourierRepository(
         var uaFleetIds = new[] { 32, 33, 34, 35, 36, 37, 38, 64 };
 
         var courierData = await Context.TucCouriers
+            .AsNoTracking()
             .Where(c => c.CourierFleetId != 29 &&
                         c.CourierGps != null &&
                         c.CourierGps.Longitude >= data.MinLng &&
@@ -151,7 +152,6 @@ public class CourierRepository(
                     })
                     .ToList()
             })
-            .AsNoTracking()
             .ToListAsync();
 
         var result = courierData.Select(c => new AvailableCourierPosition
@@ -177,6 +177,7 @@ public class CourierRepository(
     private async Task<List<AvailableCourierPosition>> GetNzAvailableCourierPositionsAsync(CourierLocationRequest data)
     {
         var couriers = await Context.TucCouriers
+            .AsNoTracking()
             .Where(c => c.CourierLogInOut.LogOutTime == null &&
                         c.CourierGps.Longitude >= data.MinLng && c.CourierGps.Longitude <= data.MaxLng &&
                         c.CourierGps.Latitude >= data.MinLat && c.CourierGps.Latitude <= data.MaxLat &&
@@ -204,7 +205,6 @@ public class CourierRepository(
                     })
                     .ToList()
             })
-            .AsNoTracking()
             .ToListAsync();
 
         var now = infoService.GetCurrentTenantTime();
@@ -275,8 +275,9 @@ public class CourierRepository(
                 searchTerm
             );
 
-            var results = await Context
-                .TucCouriers.Where(c =>
+            var results = await Context.TucCouriers
+                .AsNoTracking()
+                .Where(c =>
                     c.Active == true
                     && EF.Functions.Like(
                         c.Code + " " + c.UccrName + " " + c.UccrSurname,
@@ -289,7 +290,6 @@ public class CourierRepository(
                     Id = c.UccrId,
                     Text = c.UccrName + " " + c.UccrSurname
                 })
-                .AsNoTracking()
                 .ToListAsync();
 
             Log.Information(
@@ -345,6 +345,7 @@ public class CourierRepository(
         var today = infoService.GetCurrentTenantTime();
 
         return await Context.TucCouriers
+            .AsNoTracking()
             .Where(c => c.Active &&
                         (c.SendJobsViaSms ||
                          c.SendAlertSms ||
@@ -362,7 +363,6 @@ public class CourierRepository(
                 JobCount = c.TucJobUcjbCouriers.Count(jt => !jt.UcjbVoid && !jt.UcjbJobDone)
             })
             .OrderBy(c => c.Code)
-            .AsNoTracking()
             .ToListAsync();
     }
 
@@ -426,9 +426,9 @@ public class CourierRepository(
     public async Task<List<Suggestion>> GetVehicleSizesAsync()
     {
         var vehicles = await Context.VehicleSizes
+            .AsNoTracking()
             .OrderBy(v => v.VehicleName)
             .Select(v => new Suggestion { Id = v.VehicleSizeId, Text = v.VehicleName })
-            .AsNoTracking()
             .ToListAsync();
 
         return vehicles;
@@ -437,9 +437,9 @@ public class CourierRepository(
     public async Task<List<Suggestion>> GetAllRegionsAsync()
     {
         var regions = await Context.TblBulkRegions
+            .AsNoTracking()
             .OrderBy(r => r.Name)
             .Select(r => new Suggestion { Id = r.BulkRegionId, Text = r.Name })
-            .AsNoTracking()
             .ToListAsync();
 
         return regions;
@@ -448,9 +448,9 @@ public class CourierRepository(
     public async Task<List<Suggestion>> GetAllSpeedsAsync()
     {
         var speeds = await Context.TucJobTypes
+            .AsNoTracking()
             .OrderBy(r => r.UcjtName)
             .Select(r => new Suggestion { Id = r.UcjtId, Text = r.UcjtName })
-            .AsNoTracking()
             .ToListAsync();
 
         return speeds;
@@ -615,6 +615,7 @@ public class CourierRepository(
         var searchPattern = $"%{searchTerm}%";
 
         var couriers = await Context.TucCouriers
+            .AsNoTracking()
             .Where(c => EF.Functions.Like(c.Code, searchPattern)
                         || EF.Functions.Like(c.UccrName, searchPattern)
                         || EF.Functions.Like(c.UccrSurname, searchPattern)
@@ -629,7 +630,6 @@ public class CourierRepository(
                 Id = c.UccrId,
                 Text = $"{c.Code} - {c.UccrName} {c.UccrSurname}"
             })
-            .AsNoTracking()
             .ToListAsync();
 
         return couriers;
@@ -638,6 +638,7 @@ public class CourierRepository(
     public async Task<CourierDataDashboardViewModel> GetCourierDetailsForDashboardAsync(int courierId)
     {
         var courierData = await Context.TucCouriers
+            .AsNoTracking()
             .Where(c => c.UccrId == courierId)
             .Select(c => new CourierDataDashboardViewModel
             {
@@ -684,7 +685,6 @@ public class CourierRepository(
                     Notes = c.UccrNotes
                 }
             })
-            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         return courierData;
@@ -801,6 +801,7 @@ public class CourierRepository(
 
         // Apply pagination and get the data
         var couriersCompliance = await query
+            .AsNoTracking()
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(c => new CourierComplianceViewModel
@@ -815,7 +816,6 @@ public class CourierRepository(
                 DaysUntilExpiry = CalculateDaysUntilExpiry(now,
                     c.UccrDangerousGoods == 1 ? c.DglicenseExpiry : c.DriversLicenseExpiry),
             })
-            .AsNoTracking()
             .ToListAsync();
 
         foreach (var compliance in couriersCompliance)
@@ -927,6 +927,7 @@ public class CourierRepository(
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
         var afterHoursSchedule = await query
+            .AsNoTracking()
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(c => new AfterHoursCourierScheduleViewModel
@@ -946,7 +947,6 @@ public class CourierRepository(
                 EndTime = c.EndTime,
                 Duration = CalculateDuration(c.StartTime, c.EndTime)
             })
-            .AsNoTracking()
             .ToListAsync();
 
         foreach (var schedule in afterHoursSchedule)
@@ -1031,9 +1031,9 @@ public class CourierRepository(
             c.CourierLogInOut.LogInTime.Date == today.Date).CountAsync();
 
         var sessionData = await query
+            .AsNoTracking()
             .Where(c => c.CourierLogInOut != null && c.CourierLogInOut.LogInTime.Date == today.Date)
             .Select(c => new { c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime })
-            .AsNoTracking()
             .ToListAsync();
 
         var averageSessionTime = sessionData.Count != 0
@@ -1044,6 +1044,7 @@ public class CourierRepository(
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
         var couriers = await query
+            .AsNoTracking()
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(c => new TodayActiveDriversViewModel
@@ -1060,7 +1061,6 @@ public class CourierRepository(
                     : 0,
                 Status = c.CourierLogInOut.LogOutTime == null ? "Active" : "Inactive"
             })
-            .AsNoTracking()
             .ToListAsync();
 
         foreach (var courier in couriers)
@@ -1103,13 +1103,13 @@ public class CourierRepository(
     public async Task<List<Suggestion>> GetAllFleetOptionsAsync()
     {
         var fleetOptions = await Context.TucCourierFleets
+            .AsNoTracking()
             .Select(f => new Suggestion
             {
                 Id = f.UccfId,
                 Text = f.UccfName
             })
             .OrderBy(f => f.Text)
-            .AsNoTracking()
             .ToListAsync();
 
         return fleetOptions;
@@ -1150,7 +1150,9 @@ public class CourierRepository(
         // Calculate total pages
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
-        var courierDailyEarnings = await query.Select(c => new CourierDailyEarningsViewModel
+        var courierDailyEarnings = await query
+            .AsNoTracking()
+            .Select(c => new CourierDailyEarningsViewModel
             {
                 CourierId = c.UccrId,
                 Name = c.UccrName + " " + c.UccrSurname,
@@ -1169,7 +1171,6 @@ public class CourierRepository(
                              60.0m)
                         : 0
             })
-            .AsNoTracking()
             .ToListAsync();
 
         return new CourierDailyEarningsPaginatedResponse
@@ -1207,6 +1208,7 @@ public class CourierRepository(
     private async Task<decimal> GetAverageHourlyWageForDateAsync(DateTime date)
     {
         var courierData = await Context.TucCouriers
+            .AsNoTracking()
             .Where(c => c.CourierLogInOut != null && c.CourierLogInOut.LogInTime.Date == date.Date)
             .Select(c => new
             {
@@ -1214,7 +1216,6 @@ public class CourierRepository(
                     EF.Functions.DateDiffMinute(c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime ?? date),
                 Earnings = c.TucJobUcjbCouriers != null ? c.TucJobUcjbCouriers.Sum(j => j.CourierPayment ?? 0) : 0
             })
-            .AsNoTracking()
             .ToListAsync();
 
         var hourlyRates = courierData
@@ -1253,7 +1254,9 @@ public class CourierRepository(
         var totalCount = await query.CountAsync();
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
-        var courierEmails = await query.Select(c => new CourierEmailViewModel
+        var courierEmails = await query
+            .AsNoTracking()
+            .Select(c => new CourierEmailViewModel
             {
                 CourierId = c.UccrId,
                 Code = c.Code,
@@ -1262,7 +1265,6 @@ public class CourierRepository(
                 Phone = c.UccrMobile,
                 Fleet = c.CourierFleet != null ? c.CourierFleet.UccfName : "Not Available"
             })
-            .AsNoTracking()
             .ToListAsync();
 
 
@@ -1278,9 +1280,9 @@ public class CourierRepository(
     public async Task SendEmailToCouriersAsync(GroupEmailDataViewModel request)
     {
         var emailsToSendTo = await Context.TucCouriers
+            .AsNoTracking()
             .Where(c => request.CourierIds.Contains(c.UccrId))
             .Select(c => c.UccrEmail)
-            .AsNoTracking()
             .ToListAsync();
 
         var manualMessages = emailsToSendTo.Select(email =>
