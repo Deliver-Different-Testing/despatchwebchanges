@@ -475,7 +475,7 @@ public static class JobMappings
             ? j.Parent.PricingBreakdownJobs.Sum(p => p.ChargeAmount) 
             : j.PricingBreakdownChildJobs != null 
                 ? j.PricingBreakdownChildJobs.Sum(p => p.ChargeAmount) 
-                : 69,
+                : j.UcjbAmount,
 
         // Status
         StatusId = j.UcjbStatus,
@@ -516,11 +516,7 @@ public static class JobMappings
             .ToList() : null,
 
         // Related jobs
-        RelatedJobs = j.Parent != null && j.Parent.InverseParent.Any()
-            ? j
-                .Parent.InverseParent.Select(p => new Suggestion { Id = p.UcjbId, Text = p.UcjbNumber })
-                .ToList()
-            : null,
+        RelatedJobs = null,
 
         IsArchived = false,
         PreBook = false,
@@ -916,14 +912,8 @@ public static class JobMappings
             CustomJobName = j.CustomJobName,
             Time = j.UcbkTime,
             RootParentId = j.RootParentId,
-            RelatedJobs = j.BookingParent != null && j.BookingParent.InverseBookingParent.Any()
-                ? j.BookingParent.InverseBookingParent.Select(p => new Suggestion
-                    {
-                        Id = p.UcbkId,
-                        Text = p.UcbkJobNumber
-                    })
-                    .ToList()
-                : null,
+            RelatedJobs = null,
+
             Date = FormatDate(j.UcbkDate),
             Booked = j.UcbkDate.HasValue
                 ? CombineDateAndTime(j.UcbkDate.Value, j.UcbkTime)
