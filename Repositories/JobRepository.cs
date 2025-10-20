@@ -3361,45 +3361,99 @@ public partial class JobRepository(
         }
     }
 
-    public async Task<JobViewModel> GetJobByIdAsync(int jobId)
+  public async Task<JobViewModel> GetJobByIdAsync(int jobId)
+{
+    try
     {
-        try
-        {
-            // Mark the job as ready
-            await MarkJobAsReadAsync(jobId);
+        // Mark the job as ready
+        await MarkJobAsReadAsync(jobId);
+        
+        var liveJob = await Context.TucJobs
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(j => j.Parent)
+                .ThenInclude(p => p.TucJobItemJobs)
+            .Include(j => j.Parent)
+                .ThenInclude(p => p.TucJobNationwides)
+            .Include(j => j.TucJobNationwides)
+            .Include(j => j.UcjbStatusNavigation)
+            .Include(j => j.UcjbSpeedNavigation)
+            .Include(j => j.UcjbCourier)
+            .Include(j => j.NotifiedJobType)
+            .Include(j => j.UcjbClient)
+            .Include(j => j.Agent)
+            .Include(j => j.UcjbSizeNavigation)
+            .Include(j => j.UcjbFromNavigation)
+            .Include(j => j.LoggedInContact)
+            .Include(j => j.Source)
+            .Include(j => j.PickupTimeZone)
+            .Include(j => j.DeliverByTimeZone)
+            .Include(j => j.TucJobReadTracker)
+            .Include(j => j.TucJobItemChildJobs)
+            .Where(j => j.UcjbId == jobId)
+            .Select(JobMappings.JobMapping)
+            .FirstOrDefaultAsync();
 
-            // Check for a live job first
-            var isLiveJob = await Context.TucJobs
-                .AsNoTracking()
-                .AnyAsync(j => j.UcjbId == jobId);
-            
-            if (isLiveJob)
+        if (liveJob is not null)
+        {
+            // Load related jobs separately and assign to the property
+            if (liveJob.ParentId.HasValue && liveJob.ParentId != liveJob.Id)
             {
-                var liveJob = await Context.TucJobs
+                liveJob.RelatedJobs = await Context.TucJobs
                     .AsNoTracking()
-                    .Where(j => j.UcjbId == jobId)
-                    .Select(JobMappings.JobMapping)
-                    .FirstOrDefaultAsync();
-                
-                return liveJob;
+                    .Where(j => j.ParentId == liveJob.ParentId)
+                    .Select(j => new Suggestion
+                    {
+                        Id = j.UcjbId,
+                        Text = j.UcjbNumber
+                    })
+                    .ToListAsync();
             }
 
-            // Check for an archived job
-            var archivedJob = await Context.TucJobArchives
-                .AsNoTracking()
-                .Where(j => j.UcjbId == jobId)
-                .Select(JobMappings.JobArchiveMapping)
-                .FirstOrDefaultAsync();
-            ArgumentNullException.ThrowIfNull(archivedJob);
+            return liveJob;
+        }
+       
+        // Check for an archived job
+        var archivedJob = await Context.TucJobArchives
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(j => j.Parent)
+            .Include(j => j.NotifiedJobType)
+            .Include(j => j.UcjbClient)
+            .Include(j => j.Agent)
+            .Include(j => j.UcjbSizeNavigation)
+            .Include(j => j.LoggedInContact)
+            .Include(j => j.PickupTimeZone)
+            .Include(j => j.DeliverByTimeZone)
+            .Where(j => j.UcjbId == jobId)
+            .Select(JobMappings.JobArchiveMapping)
+            .FirstOrDefaultAsync();
 
-            return archivedJob;
-        }
-        catch (Exception e)
+        if (archivedJob is null) 
+            throw new ArgumentNullException(nameof(archivedJob), $"Job {jobId} not found");
+        
+        // Load related jobs separately and assign to the property
+        if (archivedJob.ParentId.HasValue && archivedJob.ParentId != archivedJob.Id)
         {
-            Log.Error(e, "Error occurred getting job {JobId}. Please see exception.", jobId);
-            throw;
+            archivedJob.RelatedJobs = await Context.TucJobArchives
+                .AsNoTracking()
+                .Where(j => j.ParentId == archivedJob.ParentId)
+                .Select(j => new Suggestion
+                {
+                    Id = j.UcjbId,
+                    Text = j.UcjbNumber
+                })
+                .ToListAsync();
         }
+
+        return archivedJob;
     }
+    catch (Exception e)
+    {
+        Log.Error(e, "Error occurred getting job {JobId}. Please see exception.", jobId);
+        throw;
+    }
+}
 
     public async Task<List<AddressWithAgent>> GetClosestAirportsAsync(
         decimal latitude,
