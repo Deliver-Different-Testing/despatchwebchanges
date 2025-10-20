@@ -174,7 +174,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         if (job.allowSplit) {
             menuOptions.push({
                 text: "Split Job",
-                icon: "call_split",
+                icon: "arrow_split",
                 click: (_$itemScope: any, $event: MouseEvent) =>
                     this.splitJobAction($event, job, callbacks.onSplitJob),
                 hasBottomDivider: true,
@@ -439,7 +439,7 @@ class JobContextMenuService implements angular.IServiceProvider {
                     .cancel("No")
             );
 
-            await this.DispatchData.splitJob(job.id, FirstName);
+            await this.DispatchData.splitJob(job.id);
 
             if (onSplitJob) {
                 onSplitJob({job: job});
