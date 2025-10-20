@@ -8,7 +8,7 @@ class DateFilterMenuComponent implements angular.IController {
     static $inject = [
         'toastrService',
     ];
-    
+
     onRefreshData?: (locals: { dateFilterData: IDateFilterData }) => void;
     timeZone: string = TimeZone;
     private dateFilterData?: IDateFilterData;
@@ -156,8 +156,14 @@ class DateFilterMenuComponent implements angular.IController {
             endDate: end,
         }
 
+        this.toasterService.showSuccessToast(`Dates Applied: ${start.format('MMM DD, YYYY')} - ${end.format('MMM DD, YYYY')}`);
         console.log("Date filter data:", this.dateFilterData);
         await this.refreshData();
+    }
+
+    async applyButtonClicked(): Promise<void> {
+        console.log("Apply button clicked");
+        await this.validateAndRefresh();
     }
 }
 
