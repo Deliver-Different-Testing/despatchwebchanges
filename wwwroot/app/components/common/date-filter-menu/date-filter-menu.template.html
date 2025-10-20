@@ -73,8 +73,12 @@
 
                 <!-- Action Buttons -->
                 <div layout="row" layout-align="end center">
-                    <md-button class="md-raised" ng-click="ctrl.clearDateFilter()">
-                        Reset to Default
+                    <md-button ng-click="ctrl.clearDateFilter()">
+                        Reset
+                    </md-button>
+
+                    <md-button class="md-raised md-primary" ng-click="ctrl.refreshData()">
+                        Apply
                     </md-button>
                 </div>
             </div>
