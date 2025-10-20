@@ -4,3 +4,7 @@ export interface UpdatePodDetailsRequest {
     podName: string;
     podTime: string;
 }
+
+export interface IJobUpdateBaseRequest {
+    jobId: number;
+}

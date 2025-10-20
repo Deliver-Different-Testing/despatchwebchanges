@@ -995,9 +995,10 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> SplitJob(int jobId, string despatcherName)
+    public async Task<IActionResult> SplitJob([FromBody] JobUpdateBaseRequest request)
     {
-        await jobRepository.SplitJobAsync(jobId, despatcherName);
+        var staffInfo = await infoService.GetStaffInfoAsync();
+        await jobRepository.SplitJobAsync(request.JobId, staffInfo.Text);
         return Ok();
     }
 
@@ -1022,15 +1023,16 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> ReRateSplitJob(int jobId)
+    public async Task<IActionResult> ReRateSplitJob([FromBody] JobUpdateBaseRequest request)
     {
-        await jobRepository.ReRateSplitJobAsync(jobId);
+        await jobRepository.ReRateSplitJobAsync(request.JobId);
         return Ok();
     }
 
-    public async Task<IActionResult> FinishSplitJobProcess(int jobId, string despatcherName)
+    public async Task<IActionResult> FinishSplitJobProcess([FromBody] JobUpdateBaseRequest request)
     {
-        await jobRepository.FinishSplitJobProcessAsync(jobId, despatcherName);
+        var staffInfo = await infoService.GetStaffInfoAsync();
+        await jobRepository.FinishSplitJobProcessAsync(request.JobId, staffInfo.Text);
         return Ok();
     }
 

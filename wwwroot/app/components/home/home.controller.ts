@@ -1128,7 +1128,7 @@ class HomeController extends BaseController {
         try {
             const result = await this.showConfirm($event, "Split Job?", "Are you sure you wish to split this job?");
             if (result) {
-                await this.DispatchData.splitJob(job.id, FirstName);
+                await this.DispatchData.splitJob(job.id);
                 await this.setSplitJobMeetingPoint($event, job);
             }
         } catch (error: any) {
@@ -1769,7 +1769,7 @@ class HomeController extends BaseController {
         if (!callData.toAddress || !callData.toSuburbId) return;
         await this.DispatchData.updateSplitJobAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long);
         await this.DispatchData.reRateSplitJob(callData.jobID);
-        await this.DispatchData.finishSplitJobProcess(callData.jobID, FirstName);
+        await this.DispatchData.finishSplitJobProcess(callData.jobID);
         await this.getData();
 
         this.toastrService.showSuccessToast("Job Successfully Split");

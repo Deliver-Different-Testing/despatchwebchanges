@@ -102,4 +102,5 @@ public class DispatchJobViewModel
     public int? JobTypeMins { get; set; }
     public Suggestion PickUpTimeZone { get; set; }
     public Suggestion DeliveryTimeZone { get; set; }
+    public bool AllowSplit { get; set; }
 }

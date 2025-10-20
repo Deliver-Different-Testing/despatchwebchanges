@@ -23,7 +23,7 @@ import {IEventGroupViewModel} from "../interfaces/event-group-view-model.interfa
 import {ClearListEnvelopeViewModel, DfrntPageViewModel,} from "../interfaces/dfrnt-page-view-model.interface";
 import {TaskTableFiltersRequest, ITask, ITaskDto,} from "../components/task-dashboard/task-dashboard.interfaces";
 import {JobProperty} from "../enums/job-property.enum";
-import {UpdatePodDetailsRequest} from "../interfaces/requests.interfaces";
+import {IJobUpdateBaseRequest, UpdatePodDetailsRequest} from "../interfaces/requests.interfaces";
 import {JobEventData} from "../components/dialogs/add-event-dialog/add-event-dialog.interfaces";
 import {
     IDeliveryJourney,
@@ -454,9 +454,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         const url = "job/LateCall";
 
         try {
-            await this.$http.post(url, lateCallRequest, {
-                headers: {"Content-Type": "application/json"},
-            });
+            await this.$http.post(url, lateCallRequest);
         } catch (error) {
             console.error("Error in lateCall:", error);
             throw error;
@@ -512,40 +510,32 @@ class DispatchCoreService implements angular.IServiceProvider {
         });
     }
 
-    async splitJob(jobId: number, despatcherName: string): Promise<void> {
-        await this.$http.post(
-            `job/splitJob`,
-            null, {
-                params: {
-                    jobId,
-                    despatcherName,
-                }
-            }
-        );
+    async splitJob(jobId: number): Promise<void> {
+        const data: IJobUpdateBaseRequest = {
+            jobId
+        };
+        
+        await this.$http.post(`job/splitJob`, data);
     }
 
-    async finishSplitJobProcess(jobId: number, despatcherName: string): Promise<void> {
-        await this.$http.post(
-            `job/finishSplitJobProcess`,
-            null, {
-                params: {
-                    jobId,
-                    despatcherName,
-                }
-            }
-        );
+    async finishSplitJobProcess(jobId: number): Promise<void> {
+        const data: IJobUpdateBaseRequest = {
+            jobId
+        };
+        
+        await this.$http.post(`job/finishSplitJobProcess`, data);
     }
 
-    async updatePODDetail(requestData: UpdatePodDetailsRequest): Promise<void> {
-        await this.$http.post("job/UpdatePODDetails", requestData);
+    async updatePODDetail(data: UpdatePodDetailsRequest): Promise<void> {
+        await this.$http.post("job/UpdatePODDetails", data);
     }
 
     async reRateSplitJob(jobId: number): Promise<void> {
-        await this.$http.post(`job/ReRateSplitJob`, null, {
-            params: {
-                jobId,
-            }
-        });
+        const data: IJobUpdateBaseRequest = {
+            jobId
+        };
+        
+        await this.$http.post(`job/ReRateSplitJob`, data);
     }
 
     private async updateAddress(
