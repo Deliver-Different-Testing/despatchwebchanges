@@ -768,7 +768,7 @@ public class BaseJobRepository(
                     ? TimeZoneHelper.SetDateTimeWithTimeZone(job.Time.Value, tenantTimezone)
                     : null;  
                 job.FollowupTime = job.FollowupTime.HasValue
-                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.FollowupTime.Value, job.DeliveryTimeZone.Text)
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.FollowupTime.Value, job.DeliveryTimeZone?.Text ?? tenantTimezone)
                     : null;   
             }
             
@@ -777,7 +777,7 @@ public class BaseJobRepository(
         catch (Exception e)
         {
             Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository), nameof(AddTimeZoneToJobViewModelDates)));
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository), nameof(AddTimeZoneToDispatchJobDates)));
             throw;
         }
     }    
@@ -793,19 +793,19 @@ public class BaseJobRepository(
                     ? TimeZoneHelper.SetDateTimeWithTimeZone(job.Time.Value, tenantTimezone)
                     : null;  
                 job.FollowupTime = job.FollowupTime.HasValue
-                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.FollowupTime.Value, job.DeliveryTimeZone.Text)
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.FollowupTime.Value, job.DeliveryTimeZone?.Text ?? tenantTimezone)
                     : null;      
                 job.DeliverByTime = job.DeliverByTime.HasValue
-                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.DeliverByTime.Value, job.DeliveryTimeZone.Text)
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.DeliverByTime.Value, job.DeliveryTimeZone?.Text ?? tenantTimezone)
                     : null;    
                 job.DispatchTime = job.DispatchTime.HasValue
                     ? TimeZoneHelper.SetDateTimeWithTimeZone(job.DispatchTime.Value, tenantTimezone)
                     : null;   
                 job.PuTime = job.PuTime.HasValue
-                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.PuTime.Value, job.PickUpTimeZone.Text)
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.PuTime.Value, job.PickUpTimeZone?.Text ?? tenantTimezone)
                     : null; 
                 job.CompletedTime = job.CompletedTime.HasValue
-                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.CompletedTime.Value, job.DeliveryTimeZone.Text)
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(job.CompletedTime.Value, job.DeliveryTimeZone?.Text ?? tenantTimezone)
                     : null;  
                 job.CreatedDate = job.CreatedDate.HasValue
                     ? TimeZoneHelper.SetDateTimeWithTimeZone(job.CreatedDate.Value, tenantTimezone)
@@ -814,11 +814,11 @@ public class BaseJobRepository(
                 if (job.AssignedFlight == null || job.AssignedFlight.FlightSegments.Count == 0) return;
 
                 // Apply to flights 
-                job.AssignedFlight.ExpectedArrival = job.AssignedFlight.ExpectedArrival.HasValue
+                job.AssignedFlight.ExpectedArrival = job.AssignedFlight.ExpectedArrival.HasValue && !string.IsNullOrEmpty(job.AssignedFlight.ArrivalTimeZone)
                     ? TimeZoneHelper.SetDateTimeWithTimeZone(job.AssignedFlight.ExpectedArrival.Value,
                         job.AssignedFlight.ArrivalTimeZone)
                     : null;
-                job.AssignedFlight.ExpectedDeparture = job.AssignedFlight.ExpectedDeparture.HasValue
+                job.AssignedFlight.ExpectedDeparture = job.AssignedFlight.ExpectedDeparture.HasValue && !string.IsNullOrEmpty(job.AssignedFlight.DepartureTimeZone)
                     ? TimeZoneHelper.SetDateTimeWithTimeZone(job.AssignedFlight.ExpectedDeparture.Value,
                         job.AssignedFlight.DepartureTimeZone)
                     : null;
