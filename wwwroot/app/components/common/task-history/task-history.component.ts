@@ -1,6 +1,6 @@
 ﻿import "./task-history.styles.less";
 import BaseController from "../../base-controller";
-import {IDeliveryHistoryConfig, IDeliveryJourney} from "./task-history.interfaces";
+import {IDeliveryHistoryConfig, IDeliveryJourney, ITimelineItem} from "./task-history.interfaces";
 import ToastrService from "../../../services/toastr.service";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
 import dayjs, {Dayjs} from "dayjs";
@@ -32,10 +32,7 @@ class TaskHistoryController extends BaseController {
     deliveryEvents: IDeliveryJourney[] = [];
 
     // Combined timeline items
-    timelineItems: Array<{
-        type: 'delivery-event';
-        data: IDeliveryJourney;
-    }> = [];
+    timelineItems: ITimelineItem[] = [];
 
     historyLoading?: boolean;
     densityMode: DensityMode = DensityMode.Normal;
@@ -154,7 +151,10 @@ class TaskHistoryController extends BaseController {
         // Build timeline items directly from the delivery journey
         this.timelineItems = deliveryJourney.map((event) => ({
             type: 'delivery-event' as const,
-            data: event,
+            data: {
+                ...event,
+                date: dayjs(event.date).tz(this.timeZone)
+            },
         }));
     }
 

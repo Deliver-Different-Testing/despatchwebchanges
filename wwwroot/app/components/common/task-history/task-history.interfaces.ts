@@ -29,3 +29,8 @@ export interface IDeliveryJourneyDto {
     status: string;
     notes: string;
 }
+
+export interface ITimelineItem {
+    type: 'delivery-event';
+    data: IDeliveryJourney;
+}
