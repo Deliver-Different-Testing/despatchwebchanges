@@ -91,6 +91,8 @@ public class JobRatingDetailsDtoNz : JobRatingDetailsDto
     public string TruckStartTime { get; set; }
     public int? TruckHours { get; set; }
     public JobType JobType { get; set; }
+    
+    public bool IsTruck { get; set; }
 }
 
 public class PackageDetailsDto

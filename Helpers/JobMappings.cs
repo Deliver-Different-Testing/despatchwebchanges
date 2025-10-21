@@ -1219,7 +1219,7 @@ public static class JobMappings
             ItemName = item.Notes,
             Height = item.Height,
             Depth = item.Depth,
-            Length = item.Length,
+            Length = item.Length
         };
     }
 

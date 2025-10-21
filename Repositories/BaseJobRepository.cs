@@ -434,7 +434,7 @@ public class BaseJobRepository(
             BulkJobId = viewModel.BulkJobId.Value,
             IsImportant = viewModel.IsImportant,
             NoteText = viewModel.NoteText,
-            NoteTypeId = viewModel.NoteTypeId,
+            NoteTypeId = viewModel.NoteTypeId
         };
 
         await Context.TblBulkJobNotes.AddAsync(newNote, cancellationToken);
@@ -455,7 +455,7 @@ public class BaseJobRepository(
             BulkJobId = bulkJobId,
             IsImportant = isImportant,
             NoteText = noteText,
-            NoteTypeId = (int)noteType,
+            NoteTypeId = (int)noteType
         };
 
         await Context.TblBulkJobNotes.AddAsync(newNote);
@@ -869,69 +869,69 @@ public class BaseJobRepository(
     }
 
     private static IQueryable<TucJob> ApplySearchFilter(IQueryable<TucJob> query, string searchText)
-{
-    if (string.IsNullOrWhiteSpace(searchText)) 
-        return query;
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+            return query;
 
-    var searchPattern = $"%{searchText.Trim()}%";
+        var searchPattern = $"%{searchText.Trim()}%";
 
-    return query.Where(j =>
-        // Core job information
-        EF.Functions.Like(j.UcjbNumber, searchPattern) ||
-        EF.Functions.Like(j.UcjbClient.UcclName ?? "", searchPattern) ||
-        EF.Functions.Like(j.UcjbStatusNavigation.UcjsName ?? "", searchPattern) ||
-        
-        // Courier information - search name parts separately
-        EF.Functions.Like(j.UcjbCourier.UccrName ?? "", searchPattern) ||
-        EF.Functions.Like(j.UcjbCourier.UccrSurname ?? "", searchPattern) ||
-        
-        // Pickup contact - search name parts separately
-        EF.Functions.Like(j.Contact.UcctFirstname ?? "", searchPattern) ||
-        EF.Functions.Like(j.Contact.UcctSurname ?? "", searchPattern) ||
-        
-        // Pickup address
-        EF.Functions.Like(j.PickupAddressLine1 ?? "", searchPattern) ||
-        EF.Functions.Like(j.PickupAddressLine2 ?? "", searchPattern) ||
-        EF.Functions.Like(j.PickupAddressLine3 ?? "", searchPattern) ||
-        EF.Functions.Like(j.PickupAddressLine4 ?? "", searchPattern) ||
-        EF.Functions.Like(j.PickupAddressLine5 ?? "", searchPattern) ||
-        EF.Functions.Like(j.PickupAddressLine6 ?? "", searchPattern) ||
-        EF.Functions.Like(j.PickupAddressLine7 ?? "", searchPattern) ||
-        EF.Functions.Like(j.PickupAddressLine8 ?? "", searchPattern) ||
-        EF.Functions.Like(j.UcjbFromAddr ?? "", searchPattern) ||
-        
-        // Delivery contact and address
-        EF.Functions.Like(j.DeliverToContact ?? "", searchPattern) ||
-        EF.Functions.Like(j.DeliveryAddressLine1 ?? "", searchPattern) ||
-        EF.Functions.Like(j.DeliveryAddressLine2 ?? "", searchPattern) ||
-        EF.Functions.Like(j.DeliveryAddressLine3 ?? "", searchPattern) ||
-        EF.Functions.Like(j.DeliveryAddressLine4 ?? "", searchPattern) ||
-        EF.Functions.Like(j.DeliveryAddressLine5 ?? "", searchPattern) ||
-        EF.Functions.Like(j.DeliveryAddressLine6 ?? "", searchPattern) ||
-        EF.Functions.Like(j.DeliveryAddressLine7 ?? "", searchPattern) ||
-        EF.Functions.Like(j.DeliveryAddressLine8 ?? "", searchPattern) ||
-        EF.Functions.Like(j.UcjbToAddr ?? "", searchPattern) ||
-        
-        // Job properties
-        EF.Functions.Like(j.UcjbSpeedNavigation.ShortName ?? "", searchPattern) ||
-        EF.Functions.Like(j.NotifiedJobType.UcjtName ?? "", searchPattern) ||
-        EF.Functions.Like(j.Connote ?? "", searchPattern) ||
-        
-        // Flight information - consolidated
-        j.TucJobNationwides.Any(nw => 
-            EF.Functions.Like(nw.UcnwFlightNo ?? "", searchPattern) ||
-            EF.Functions.Like(nw.CarrierFsCode ?? "", searchPattern) ||
-            EF.Functions.Like(nw.UcnwAirlineName ?? "", searchPattern) ||
-            EF.Functions.Like(nw.DepartureAirportName ?? "", searchPattern) ||
-            EF.Functions.Like(nw.DepartureAirportCity ?? "", searchPattern) ||
-            EF.Functions.Like(nw.DepartureAirportCountry ?? "", searchPattern) ||
-            EF.Functions.Like(nw.ArrivalAirportName ?? "", searchPattern) ||
-            EF.Functions.Like(nw.ArrivalAirportCity ?? "", searchPattern) ||
-            EF.Functions.Like(nw.ArrivalAirportCountry ?? "", searchPattern)
-        ) ||
-        
-        // Agent information
-        EF.Functions.Like(j.Agent.UcagName ?? "", searchPattern)
-    );
-}
+        return query.Where(j =>
+            // Core job information
+            EF.Functions.Like(j.UcjbNumber, searchPattern) ||
+            EF.Functions.Like(j.UcjbClient.UcclName ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.UcjbStatusNavigation.UcjsName ?? string.Empty, searchPattern) ||
+
+            // Courier information - search name parts separately
+            EF.Functions.Like(j.UcjbCourier.UccrName ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.UcjbCourier.UccrSurname ?? string.Empty, searchPattern) ||
+
+            // Pickup contact - search name parts separately
+            EF.Functions.Like(j.Contact.UcctFirstname ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.Contact.UcctSurname ?? string.Empty, searchPattern) ||
+
+            // Pickup address
+            EF.Functions.Like(j.PickupAddressLine1 ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.PickupAddressLine2 ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.PickupAddressLine3 ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.PickupAddressLine4 ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.PickupAddressLine5 ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.PickupAddressLine6 ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.PickupAddressLine7 ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.PickupAddressLine8 ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.UcjbFromAddr ?? string.Empty, searchPattern) ||
+
+            // Delivery contact and address
+            EF.Functions.Like(j.DeliverToContact ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.DeliveryAddressLine1 ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.DeliveryAddressLine2 ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.DeliveryAddressLine3 ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.DeliveryAddressLine4 ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.DeliveryAddressLine5 ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.DeliveryAddressLine6 ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.DeliveryAddressLine7 ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.DeliveryAddressLine8 ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.UcjbToAddr ?? string.Empty, searchPattern) ||
+
+            // Job properties
+            EF.Functions.Like(j.UcjbSpeedNavigation.ShortName ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.NotifiedJobType.UcjtName ?? string.Empty, searchPattern) ||
+            EF.Functions.Like(j.Connote ?? string.Empty, searchPattern) ||
+
+            // Flight information - consolidated
+            j.TucJobNationwides.Any(nw =>
+                EF.Functions.Like(nw.UcnwFlightNo ?? string.Empty, searchPattern) ||
+                EF.Functions.Like(nw.CarrierFsCode ?? string.Empty, searchPattern) ||
+                EF.Functions.Like(nw.UcnwAirlineName ?? string.Empty, searchPattern) ||
+                EF.Functions.Like(nw.DepartureAirportName ?? string.Empty, searchPattern) ||
+                EF.Functions.Like(nw.DepartureAirportCity ?? string.Empty, searchPattern) ||
+                EF.Functions.Like(nw.DepartureAirportCountry ?? string.Empty, searchPattern) ||
+                EF.Functions.Like(nw.ArrivalAirportName ?? string.Empty, searchPattern) ||
+                EF.Functions.Like(nw.ArrivalAirportCity ?? string.Empty, searchPattern) ||
+                EF.Functions.Like(nw.ArrivalAirportCountry ?? string.Empty, searchPattern)
+            ) ||
+
+            // Agent information
+            EF.Functions.Like(j.Agent.UcagName ?? string.Empty, searchPattern)
+        );
+    }
 }

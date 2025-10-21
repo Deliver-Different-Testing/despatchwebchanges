@@ -814,7 +814,7 @@ public class CourierRepository(
                 Status = GetComplianceStatus(now,
                     c.UccrDangerousGoods == 1 ? c.DglicenseExpiry : c.DriversLicenseExpiry),
                 DaysUntilExpiry = CalculateDaysUntilExpiry(now,
-                    c.UccrDangerousGoods == 1 ? c.DglicenseExpiry : c.DriversLicenseExpiry),
+                    c.UccrDangerousGoods == 1 ? c.DglicenseExpiry : c.DriversLicenseExpiry)
             })
             .ToListAsync();
 

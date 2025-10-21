@@ -2588,7 +2588,7 @@ public partial class JobRepository(
                     n.UpdatedByNavigation != null && n.UpdatedDate.HasValue
                         ? $"Updated by {n.UpdatedByNavigation.UcstFirstName} {n.UpdatedByNavigation.UcstLastName} on {n.UpdatedDate.Value:dd/MM/yyyy HH:mm}"
                         : null
-                }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList(),
+                }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList()
             }).ToList();
         }
         else
@@ -2691,7 +2691,7 @@ public partial class JobRepository(
                     }
                     : Array.Empty<string>())
                 .Where(tag => !string.IsNullOrWhiteSpace(tag))
-                .ToList(),
+                .ToList()
         }).ToList();
 
         return messages;

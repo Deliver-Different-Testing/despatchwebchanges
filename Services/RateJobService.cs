@@ -35,7 +35,6 @@ public class RateJobService(
             ArgumentNullException.ThrowIfNull(jobDetails.FromId);
             ArgumentNullException.ThrowIfNull(jobDetails.ToId);
             ArgumentNullException.ThrowIfNull(jobDetails.SpeedId);
-            ArgumentNullException.ThrowIfNull(jobDetails.SpeedId);
             ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
 
             var rateResult = await RateUrgentJobAsync(jobDetails);
@@ -329,10 +328,10 @@ public class RateJobService(
             DateTime = dto.BookedDate,
             Van = dto.IsVan,
             Bike = dto.IsPedal,
-            Truck = CreateTruckObject(dto),
+            Truck = dto.IsTruck ? CreateTruckObject(dto) : null,
             OurReference = dto.OurRef,
             ClientReferenceA = dto.RefA,
-            ClientReferenceB = dto.RefB,
+            ClientReferenceB = dto.RefB
         };
     }
 
