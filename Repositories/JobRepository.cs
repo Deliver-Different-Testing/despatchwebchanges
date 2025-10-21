@@ -305,11 +305,13 @@ public partial class JobRepository(
             .Take(pageSize)
             .ToListAsync();
 
+        var hasMore = (page + 1) * pageSize < totalCount;
+
         return new JobSearchResult
         {
             Jobs = bulkJobs,
             TotalCount = totalCount,
-            HasMore = (page + 1) * pageSize < totalCount
+            HasMore = hasMore
         };
     }
 
@@ -3361,99 +3363,61 @@ public partial class JobRepository(
         }
     }
 
-  public async Task<JobViewModel> GetJobByIdAsync(int jobId)
-{
-    try
+    public async Task<JobViewModel> GetJobByIdAsync(int jobId)
     {
-        // Mark the job as ready
-        await MarkJobAsReadAsync(jobId);
-        
-        var liveJob = await Context.TucJobs
-            .AsNoTracking()
-            .AsSplitQuery()
-            .Include(j => j.Parent)
-                .ThenInclude(p => p.TucJobItemJobs)
-            .Include(j => j.Parent)
-                .ThenInclude(p => p.TucJobNationwides)
-            .Include(j => j.TucJobNationwides)
-            .Include(j => j.UcjbStatusNavigation)
-            .Include(j => j.UcjbSpeedNavigation)
-            .Include(j => j.UcjbCourier)
-            .Include(j => j.NotifiedJobType)
-            .Include(j => j.UcjbClient)
-            .Include(j => j.Agent)
-            .Include(j => j.UcjbSizeNavigation)
-            .Include(j => j.UcjbFromNavigation)
-            .Include(j => j.LoggedInContact)
-            .Include(j => j.Source)
-            .Include(j => j.PickupTimeZone)
-            .Include(j => j.DeliverByTimeZone)
-            .Include(j => j.TucJobReadTracker)
-            .Include(j => j.TucJobItemChildJobs)
-            .Where(j => j.UcjbId == jobId)
-            .Select(JobMappings.JobMapping)
-            .FirstOrDefaultAsync();
-
-        if (liveJob is not null)
+        try
         {
-            // Load related jobs separately and assign to the property
-            if (liveJob.ParentId.HasValue && liveJob.ParentId != liveJob.Id)
+            // Mark the job as ready
+            await MarkJobAsReadAsync(jobId);
+
+            // Check for a live job first
+            var isLiveJob = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
+            if (isLiveJob)
             {
-                liveJob.RelatedJobs = await Context.TucJobs
+                var liveJob = await Context.TucJobs
+                    .Where(j => j.UcjbId == jobId)
+                    .Select(JobMappings.JobMapping)
                     .AsNoTracking()
-                    .Where(j => j.ParentId == liveJob.ParentId)
-                    .Select(j => new Suggestion
-                    {
-                        Id = j.UcjbId,
-                        Text = j.UcjbNumber
-                    })
-                    .ToListAsync();
+                    .FirstOrDefaultAsync();
+
+                if (liveJob.AssignedFlight == null || liveJob.AssignedFlight.FlightSegments.Count == 0) return liveJob;
+
+                liveJob.AssignedFlight.ExpectedArrival = liveJob.AssignedFlight.ExpectedArrival.HasValue
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(liveJob.AssignedFlight.ExpectedArrival.Value,
+                        liveJob.AssignedFlight.ArrivalTimeZone)
+                    : null;
+                liveJob.AssignedFlight.ExpectedDeparture = liveJob.AssignedFlight.ExpectedDeparture.HasValue
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(liveJob.AssignedFlight.ExpectedDeparture.Value,
+                        liveJob.AssignedFlight.DepartureTimeZone)
+                    : null;
+
+                foreach (var segment in liveJob.AssignedFlight.FlightSegments)
+                {
+                    segment.ArrivalTime =
+                        TimeZoneHelper.SetDateTimeWithTimeZone(segment.ArrivalTime, segment.ArrivalAirportTimeZone);
+                    segment.DepartureTime =
+                        TimeZoneHelper.SetDateTimeWithTimeZone(segment.DepartureTime, segment.DepartureAirportTimeZone);
+                }
+
+                return liveJob;
             }
 
-            return liveJob;
-        }
-       
-        // Check for an archived job
-        var archivedJob = await Context.TucJobArchives
-            .AsNoTracking()
-            .AsSplitQuery()
-            .Include(j => j.Parent)
-            .Include(j => j.NotifiedJobType)
-            .Include(j => j.UcjbClient)
-            .Include(j => j.Agent)
-            .Include(j => j.UcjbSizeNavigation)
-            .Include(j => j.LoggedInContact)
-            .Include(j => j.PickupTimeZone)
-            .Include(j => j.DeliverByTimeZone)
-            .Where(j => j.UcjbId == jobId)
-            .Select(JobMappings.JobArchiveMapping)
-            .FirstOrDefaultAsync();
-
-        if (archivedJob is null) 
-            throw new ArgumentNullException(nameof(archivedJob), $"Job {jobId} not found");
-        
-        // Load related jobs separately and assign to the property
-        if (archivedJob.ParentId.HasValue && archivedJob.ParentId != archivedJob.Id)
-        {
-            archivedJob.RelatedJobs = await Context.TucJobArchives
+            // Check for an archived job
+            var archivedJob = await Context.TucJobArchives
+                .Where(j => j.UcjbId == jobId)
+                .Select(JobMappings.JobArchiveMapping)
                 .AsNoTracking()
-                .Where(j => j.ParentId == archivedJob.ParentId)
-                .Select(j => new Suggestion
-                {
-                    Id = j.UcjbId,
-                    Text = j.UcjbNumber
-                })
-                .ToListAsync();
-        }
+                .FirstOrDefaultAsync();
+            ArgumentNullException.ThrowIfNull(archivedJob);
 
-        return archivedJob;
+            return archivedJob;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error occurred getting job {JobId}. Please see exception.", jobId);
+            throw;
+        }
     }
-    catch (Exception e)
-    {
-        Log.Error(e, "Error occurred getting job {JobId}. Please see exception.", jobId);
-        throw;
-    }
-}
 
     public async Task<List<AddressWithAgent>> GetClosestAirportsAsync(
         decimal latitude,

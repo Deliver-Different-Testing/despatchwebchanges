@@ -22,6 +22,106 @@ public class BaseJobRepository(
 {
     protected const string Space = " ";
 
+    
+    protected async Task<JobSearchResult> DespatchQryWithPagination(
+    AppPage page,
+    JobQueryParams queryParams,
+    bool isInternal,
+    bool isUsTenant,
+    string clientIds,
+    List<int> selectedViewIds,
+    NationwideWidget? windowPane = null,
+    int? selectedClearListId = null
+)
+{
+    try
+    {
+        var query = await BuildBaseQuery(selectedViewIds, isUsTenant);
+        if (query == null) 
+            return new JobSearchResult 
+            { 
+                Jobs = [], 
+                TotalCount = 0,
+                HasMore = false
+            };
+
+        ClearListEnvelopeViewModel clearListEnvelope = null;
+        if (selectedClearListId.HasValue)
+        {
+            Log.Debug("ClearListId {ClearListID} provided. Getting ClearListEnvelope", selectedClearListId);
+            var country = isUsTenant ? Country.Us : Country.Nz;
+            clearListEnvelope =
+                await clearListEnvelopeService.GetClearListAreaEnvelopeAsync(selectedClearListId.Value, country);
+        }
+
+        query = ApplyGeographicFilters(query, clearListEnvelope);
+
+        switch (page)
+        {
+            case AppPage.Dispatch:
+                query = query.Where(j => j.UcjbStatus != (int)JobStatus.AwaitingPod);
+                if (queryParams.DateCutoff.HasValue)
+                    query = query.Where(j => j.UcjbDate.Date <= queryParams.DateCutoff.Value.Date);
+                if (queryParams.StartDate.HasValue)
+                    query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
+                if (queryParams.EndDate.HasValue)
+                    query = query.Where(j => j.UcjbDate.Date <= queryParams.EndDate.Value.Date);
+                break;
+            case AppPage.Domestic:
+                query = ApplyNationwideSpecificFilters(
+                    query,
+                    queryParams,
+                    isInternal,
+                    windowPane ?? NationwideWidget.JobList,
+                    clientIds
+                );
+                break;
+            case AppPage.JobSearch:
+            case AppPage.Prebooks:
+            default:
+                return new JobSearchResult 
+                { 
+                    Jobs = [], 
+                    TotalCount = 0,
+                    HasMore = false
+                };
+        }
+
+        // Get a total count before pagination
+        var totalCount = await query.CountAsync();
+        
+        // Apply pagination
+        var pageNumber = queryParams.Page ?? 0;
+        var pageSize = queryParams.PageSize ?? 50;
+        
+        var jobs = await query
+            .AsNoTracking()
+            .Skip(pageNumber * pageSize)
+            .Take(pageSize)
+            .Select(JobMappings.JobDispatchMapping(isUsTenant))
+            .ToListAsync();
+
+        var (economySpeedId, ecoDeliveryTime) = await GetEconomySpeedAndDeliveryTimeAsync();
+        var now = infoService.GetCurrentTenantTime();
+        foreach (var job in jobs) 
+            job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
+        
+        var hasMore = (pageNumber + 1) * pageSize < totalCount;
+        
+        return new JobSearchResult
+        {
+            Jobs = jobs,
+            TotalCount = totalCount,
+            HasMore = hasMore
+        };
+    }
+    catch (Exception e)
+    {
+        Log.Error(e, "Error occurred getting jobs for dispatch page with pagination. Please see exception.");
+        throw;
+    }
+}
+    
     protected async Task<List<DispatchJobViewModel>> DespatchQry(
         AppPage page,
         JobQueryParams queryParams,

@@ -5,11 +5,15 @@
 </md-progress-linear>
 
 <jobs-list
-        ng-if="!ctrl.repriceListLoading && (ctrl.jobListReprice || ctrl.jobListReprice.length > 0)"
         jobs="ctrl.jobListReprice"
         selected-job="ctrl.currentJob"
-        on-job-select="ctrl.handleJobSelection(job)"
+        on-job-select="ctrl.selectJob(job)"
+        on-job-dispatch="ctrl.handleJobDispatch(job, courierId)"
         on-job-action="ctrl.handleJobAction(action, job, params)"
-        get-context-menu-options="ctrl.getJobContextMenuOptions()"
-        job-list-type="ctrl.nationwideRepriceJobList">
+        get-context-menu-options="ctrl.getContextMenuOptions(job)"
+        on-refresh="ctrl.getJobList([ctrl.JobDataType.REPRICE])"
+        on-load-more-jobs="ctrl.handleLoadMoreRepriceJobs(page, pageSize)"
+        enable-virtual-scrolling="true"
+        job-list-type="ctrl.nationwideRepriceJobList"
+        total-jobs-count="ctrl.totalRepriceCount">
 </jobs-list>

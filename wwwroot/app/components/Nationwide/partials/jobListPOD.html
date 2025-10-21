@@ -5,11 +5,15 @@
 </md-progress-linear>
 
 <jobs-list
-        ng-if="!ctrl.podListLoading && (ctrl.jobListPOD || ctrl.jobListPOD.length > 0)"
         jobs="ctrl.jobListPOD"
         selected-job="ctrl.currentJob"
-        on-job-select="ctrl.handleJobSelection(job)"
+        on-job-select="ctrl.selectJob(job)"
+        on-job-dispatch="ctrl.handleJobDispatch(job, courierId)"
         on-job-action="ctrl.handleJobAction(action, job, params)"
-        get-context-menu-options="ctrl.getJobContextMenuOptions()"
-        job-list-type="ctrl.nationwidePodJobList">
+        get-context-menu-options="ctrl.getContextMenuOptions(job)"
+        on-refresh="ctrl.getJobList([ctrl.JobDataType.POD])"
+        on-load-more-jobs="ctrl.handleLoadMorePodJobs(page, pageSize)"
+        enable-virtual-scrolling="true"
+        job-list-type="ctrl.nationwidePodJobList"
+        total-jobs-count="ctrl.totalPodCount">
 </jobs-list>
