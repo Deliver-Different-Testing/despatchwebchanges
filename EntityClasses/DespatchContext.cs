@@ -1274,6 +1274,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.JobId).HasColumnName("JobID");
             entity.Property(e => e.JobNumber).HasMaxLength(50);
             entity.Property(e => e.JobRelationshipTypeId).HasColumnName("JobRelationshipTypeID");
+            entity.Property(e => e.LabelPrinted).HasPrecision(3);
             entity.Property(e => e.Length).HasColumnType("numeric(18, 0)");
             entity.Property(e => e.LinehaulRunId).HasColumnName("LinehaulRunID");
             entity.Property(e => e.LoggedInContactId).HasColumnName("LoggedInContactID");
@@ -5083,6 +5084,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => new { e.UcjbClientId, e.UcjbDate }, "IX_Client_Date");
 
+            entity.HasIndex(e => e.CourierSettlementBatchId, "IX_CourierSettlementBatchId").IsDescending();
+
             entity.HasIndex(e => e.MasterCourierId, "IX_MasterCourierId");
 
             entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
@@ -5157,6 +5160,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ClosestCourierId).HasColumnName("ClosestCourierID");
             entity.Property(e => e.ContactId).HasColumnName("ContactID");
             entity.Property(e => e.CourierBonus).HasColumnType("money");
+            entity.Property(e => e.CourierBonusCancelled).HasPrecision(3);
             entity.Property(e => e.CourierFuel).HasColumnType("money");
             entity.Property(e => e.CourierPayment).HasColumnType("money");
             entity.Property(e => e.CourierPercentage).HasColumnType("numeric(18, 4)");

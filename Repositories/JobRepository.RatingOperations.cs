@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using DespatchWeb.Models.Dto;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -174,7 +177,8 @@ public partial class JobRepository
                     PrivateRes = job.TucJobItemJobs != null & job.TucJobItemJobs.Any(i => i.PrivateRes == true),
                     HasDgDocuments = job.Dgdocument,
                     TruckStartTime = job.TruckStartTime.HasValue ? job.TruckStartTime.ToString() : null,
-                    TruckHours = job.TruckHours.HasValue ? (int)job.TruckHours : null
+                    TruckHours = job.TruckHours.HasValue ? (int)job.TruckHours : null,
+                    JobType = JobType.Active
                 })
                 .FirstOrDefaultAsync();
 
@@ -350,7 +354,8 @@ public partial class JobRepository
                     PrivateRes = job.DeliverToPrivateBusiness == 1,
                     HasDgDocuments = job.Dgdocument,
                     TruckStartTime = job.TruckStartTime != null ? job.TruckStartTime.ToString() : null,
-                    TruckHours = job.TruckHours != null ? (int)job.TruckHours : null
+                    TruckHours = job.TruckHours != null ? (int)job.TruckHours : null,
+                    JobType = JobType.Recurring
                 })
                 .FirstOrDefaultAsync();
 
@@ -364,7 +369,7 @@ public partial class JobRepository
             throw new ApplicationException($"Failed to retrieve NZ job booking details for rating: {ex.Message}", ex);
         }
     }
-
+    
     public async Task RateJobUsAsync(RateJobUsDto dto)
     {
         var rate = new OutputParameter<decimal?>();
@@ -446,5 +451,29 @@ public partial class JobRepository
             .AnyAsync();
 
         return hasMatchingAirport;
+    }
+    
+    public async Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType)
+    {
+        try
+        {
+            var rowsUpdated = jobType switch
+            {
+                JobType.Active => await Context.TucJobs.Where(j => j.UcjbId == jobId)
+                    .ExecuteUpdateAsync(setter => setter.SetProperty(x => x.UcjbAmount, rate)),
+                JobType.Recurring => await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                    .ExecuteUpdateAsync(setter => setter.SetProperty(x => x.UcbkAmount, rate)),
+                _ => 0
+            };
+
+            if(rowsUpdated == 0) throw new KeyNotFoundException($"Job with ID {jobId} not found");
+            
+            await SaveNoteAsync(jobId, $"Rate updated to {rate}", true, JobType.Recurring == jobType);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}", ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(UpdateUrgentJobRateAsync)));
+            throw;
+        }
     }
 }
