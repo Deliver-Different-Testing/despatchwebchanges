@@ -83,7 +83,6 @@ public partial class JobRepository
         }
     }
 
-
     public async Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId)
     {
         try
@@ -113,7 +112,14 @@ public partial class JobRepository
                     RefA = job.UcjbClientRefa,
                     RefB = job.UcjbClientRefb,
                     Quantity = job.UcjbQty ?? 1,
-                    BookedDate = job.UcjbDate,
+                    BookedDate = new DateTime(
+                        job.UcjbDate.Year,
+                        job.UcjbDate.Month,
+                        job.UcjbDate.Day,
+                        job.UcjbTime.HasValue ? job.UcjbTime.Value.Hour : 0,
+                        job.UcjbTime.HasValue ? job.UcjbTime.Value.Minute : 0,
+                        job.UcjbTime.HasValue ? job.UcjbTime.Value.Second : 0
+                    ),
 
                     // Coordinates
                     PickupLat = job.PickUpLatitude ?? 0,
@@ -178,7 +184,8 @@ public partial class JobRepository
                     HasDgDocuments = job.Dgdocument,
                     TruckStartTime = job.TruckStartTime.HasValue ? job.TruckStartTime.ToString() : null,
                     TruckHours = job.TruckHours.HasValue ? (int)job.TruckHours : null,
-                    JobType = JobType.Active
+                    JobType = JobType.Active,
+                    IsTruck = job.Truck ?? false
                 })
                 .FirstOrDefaultAsync();
 
@@ -207,7 +214,7 @@ public partial class JobRepository
                     JobId = job.UcbkId,
                     ClientId = job.UcbkClientId ?? 0,
                     FromId = (int)job.UcbkFrom,
-                    ToId =  (int)job.UcbkTo,
+                    ToId = (int)job.UcbkTo,
                     SpeedId = job.UcbkSpeed ?? 0,
                     IsPedal = job.UcbkCbd ?? false,
                     IsVan = job.UcbkVan,
@@ -243,7 +250,9 @@ public partial class JobRepository
                     ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
 
                     ClientDiscount = job.UcbkClient != null ? job.UcbkClient.Discount : 0,
-                    Cubic = job.TucJobBookingItemBookings != null ? job.TucJobBookingItemBookings.Sum(i => i.Cubic) : null,
+                    Cubic = job.TucJobBookingItemBookings != null
+                        ? job.TucJobBookingItemBookings.Sum(i => i.Cubic)
+                        : null,
                     CalculateDimsOncePerJob = job.DimensionsType == 1
                 })
                 .FirstOrDefaultAsync();
@@ -288,7 +297,17 @@ public partial class JobRepository
                     RefA = job.UcbkClientRefa,
                     RefB = job.UcbkClientRefb,
                     Quantity = job.Quantity.HasValue ? (int)job.Quantity : 0,
-                    BookedDate = job.UcbkDate ?? DateTime.MinValue,
+                    BookedDate = job.UcbkDate.HasValue
+                        ? new DateTime(
+                            job.UcbkDate.Value.Year,
+                            job.UcbkDate.Value.Month,
+                            job.UcbkDate.Value.Day,
+                            job.UcbkTime.HasValue ? job.UcbkTime.Value.Hour : 0,
+                            job.UcbkTime.HasValue ? job.UcbkTime.Value.Minute : 0,
+                            job.UcbkTime.HasValue ? job.UcbkTime.Value.Second : 0
+                        )
+                        : DateTime.MinValue,
+
                     PreviousRate = job.PricingBreakdowns != null ? job.PricingBreakdowns.Sum(p => p.Charged) : null,
 
                     PickupLat = job.PickUpLatitude ?? 0,
@@ -310,7 +329,9 @@ public partial class JobRepository
                     ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
 
                     ClientDiscount = job.UcbkClient != null ? job.UcbkClient.Discount : 0,
-                    Cubic = job.TucJobBookingItemBookings != null ? job.TucJobBookingItemBookings.Sum(i => i.Cubic) : null,
+                    Cubic = job.TucJobBookingItemBookings != null
+                        ? job.TucJobBookingItemBookings.Sum(i => i.Cubic)
+                        : null,
                     IsManuallyRated = job.RatedManually,
                     IsPrebook = true,
                     CalculateDimsOncePerJob = job.DimensionsType == 1,
@@ -333,20 +354,20 @@ public partial class JobRepository
                     ToPostCode = job.DeliveryAddressLine7,
                     ToCountryCode = job.DeliveryAddressLine8,
 
-                    Packages = job.TucJobBookingItemBookings != null 
+                    Packages = job.TucJobBookingItemBookings != null
                         ? job.TucJobBookingItemBookings.Select(item => new PackageDetailsDto
-                    {
-                        Name = item.Notes,
-                        Length = item.Length,
-                        Width = item.Depth,
-                        Height = item.Height,
-                        Cubic = item.Cubic.HasValue ? (double)item.Cubic : 0,
-                        Kg = item.Weight,
-                        Type = null,
-                        PackageCode = null,
-                        Units = job.TucJobBookingItemBookings.Count
-                    }).ToList() 
-                    : null,
+                        {
+                            Name = item.Notes,
+                            Length = item.Length,
+                            Width = item.Depth,
+                            Height = item.Height,
+                            Cubic = item.Cubic.HasValue ? (double)item.Cubic : 0,
+                            Kg = item.Weight,
+                            Type = null,
+                            PackageCode = null,
+                            Units = job.TucJobBookingItemBookings.Count
+                        }).ToList()
+                        : null,
 
                     // NEW Truck-specific properties
                     PickupTailLift = null,
@@ -355,7 +376,8 @@ public partial class JobRepository
                     HasDgDocuments = job.Dgdocument,
                     TruckStartTime = job.TruckStartTime != null ? job.TruckStartTime.ToString() : null,
                     TruckHours = job.TruckHours != null ? (int)job.TruckHours : null,
-                    JobType = JobType.Recurring
+                    JobType = JobType.Recurring,
+                    IsTruck = job.Truck ?? false
                 })
                 .FirstOrDefaultAsync();
 
@@ -369,7 +391,7 @@ public partial class JobRepository
             throw new ApplicationException($"Failed to retrieve NZ job booking details for rating: {ex.Message}", ex);
         }
     }
-    
+
     public async Task RateJobUsAsync(RateJobUsDto dto)
     {
         var rate = new OutputParameter<decimal?>();
@@ -452,7 +474,7 @@ public partial class JobRepository
 
         return hasMatchingAirport;
     }
-    
+
     public async Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType)
     {
         try
@@ -466,13 +488,15 @@ public partial class JobRepository
                 _ => 0
             };
 
-            if(rowsUpdated == 0) throw new KeyNotFoundException($"Job with ID {jobId} not found");
-            
+            if (rowsUpdated == 0) throw new KeyNotFoundException($"Job with ID {jobId} not found");
+
             await SaveNoteAsync(jobId, $"Rate updated to {rate}", true, JobType.Recurring == jobType);
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(UpdateUrgentJobRateAsync)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository),
+                    nameof(UpdateUrgentJobRateAsync)));
             throw;
         }
     }
