@@ -16,7 +16,7 @@ class NavigationService implements angular.IServiceProvider {
         private toastrService: ToastrService,
         private customUrlService: CustomUrlService,
     ) {
-        console.debug("OpenJobDispatchService: Service instantiated");
+        console.log("OpenJobDispatchService: Service instantiated");
     }
 
     $get() {
@@ -51,7 +51,7 @@ class NavigationService implements angular.IServiceProvider {
         }
 
         this.$window.open(url, '_blank');
-        console.debug(`${urlType} opened successfully:`, url);
+        console.log(`${urlType} opened successfully:`, url);
     }
 
     openJobDetail(jobId: string | number, options: IOpenJobOptions = {}): boolean {

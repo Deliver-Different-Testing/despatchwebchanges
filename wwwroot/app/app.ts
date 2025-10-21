@@ -158,12 +158,6 @@ app.config(["$qProvider", ($qProvider: angular.IQProvider) => {
         }
     }]);
 
-/*app.config(["$logProvider", ($logProvider: angular.ILogProvider) => {
-    // Disable debug logging in production
-    const isProduction = process.env.NODE_ENV === "production";
-    $logProvider.debugEnabled(!isProduction);
-}]);*/
-
 // Filters
 app.filter("bytes", () => bytesFilter);
 app.filter("replace", () => replaceFilter);
