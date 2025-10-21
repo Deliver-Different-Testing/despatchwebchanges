@@ -10,8 +10,7 @@ import {
     IAirportSuggestion,
     IDispatchJob,
     IJob,
-    IJobQueryParams,
-    ISuggestion
+    IJobQueryParams, ISuggestion
 } from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
 import {
@@ -166,9 +165,6 @@ class NationwideControl extends BaseController {
     agentsLoading: boolean = false;
     agentListPromise?: Promise<IGetAgentOptionsResponse>;
     flightListPromise?: Promise<IGetFlightOptionsResponse>;
-    jobListPromise?: Promise<IDispatchJob[]>;
-    podListPromise?: Promise<IDispatchJob[]>;
-    repriceListPromise?: Promise<IDispatchJob[]>;
     taskItemConfig = {
         showAssign: true,
         showClose: true,
@@ -1520,64 +1516,63 @@ class NationwideControl extends BaseController {
         if (requestedTypes.includes(JobDataType.REPRICE)) this.repriceListLoading = true;
 
         try {
-            // Initialize promises
-            if (requestedTypes.includes(JobDataType.NEW)) {
-                this.jobListPromise = this.nationwideService.getNationwideJobsNew(
-                    this.jobFilters || {},
-                    ClientInternal,
-                    this.selectedViews
-                );
-            }
-
-            if (requestedTypes.includes(JobDataType.POD)) {
-                this.podListPromise = this.nationwideService.getNationwideJobsPOD(
-                    this.jobPodFilters || {},
-                    ClientInternal,
-                    this.selectedViews
-                );
-            }
-
-            if (requestedTypes.includes(JobDataType.REPRICE)) {
-                this.repriceListPromise = this.nationwideService.getNationwideJobsReprice(
-                    this.jobRepriceFilters || {},
-                    ClientInternal,
-                    this.selectedViews
-                );
-            }
-
             // Create fetch promises
             const fetchPromises = [];
 
-            if (requestedTypes.includes(JobDataType.NEW) && this.jobListPromise) {
-                fetchPromises.push(this.jobListPromise.then(data => ({type: JobDataType.NEW, data})));
+            if (requestedTypes.includes(JobDataType.NEW)) {
+                const jobListPromise = this.nationwideService.getNationwideJobsNew(
+                    this.jobFilters || {},
+                    ClientInternal,
+                    this.selectedViews,
+                    0,  // page
+                    50  // pageSize
+                );
+                fetchPromises.push(jobListPromise.then(data => ({type: JobDataType.NEW, data})));
             }
 
-            if (requestedTypes.includes(JobDataType.POD) && this.podListPromise) {
-                fetchPromises.push(this.podListPromise.then(data => ({type: JobDataType.POD, data})));
+            if (requestedTypes.includes(JobDataType.POD)) {
+                const podListPromise = this.nationwideService.getNationwideJobsPOD(
+                    this.jobPodFilters || {},
+                    ClientInternal,
+                    this.selectedViews,
+                    0,
+                    50
+                );
+                fetchPromises.push(podListPromise.then(data => ({type: JobDataType.POD, data})));
             }
 
-            if (requestedTypes.includes(JobDataType.REPRICE) && this.repriceListPromise) {
-                fetchPromises.push(this.repriceListPromise.then(data => ({type: JobDataType.REPRICE, data})));
+            if (requestedTypes.includes(JobDataType.REPRICE)) {
+                const repriceListPromise = this.nationwideService.getNationwideJobsReprice(
+                    this.jobRepriceFilters || {},
+                    ClientInternal,
+                    this.selectedViews,
+                    0,
+                    50
+                );
+                fetchPromises.push(repriceListPromise.then(data => ({type: JobDataType.REPRICE, data})));
             }
 
             // Execute in parallel
             const tasksPromise = this.loadTasks();
             const results = await Promise.all(fetchPromises);
 
-            // Update state with results
+            // Update state with results - now handling IJobSearchResult
             results.forEach(({type, data}) => {
                 if (type === JobDataType.NEW) {
-                    this.jobList = data || [];
-                    this.totalJobCount = data.length || 0;
+                    this.jobList = data.jobs || [];
+                    this.totalJobCount = data.totalCount || 0;
                     this.jobListLoading = false;
+                    console.log(`Loaded ${this.jobList.length} of ${this.totalJobCount} NEW jobs`);
                 } else if (type === JobDataType.POD) {
-                    this.jobListPOD = data || [];
-                    this.totalPodCount = data.length || 0;
+                    this.jobListPOD = data.jobs || [];
+                    this.totalPodCount = data.totalCount || 0;
                     this.podListLoading = false;
+                    console.log(`Loaded ${this.jobListPOD.length} of ${this.totalPodCount} POD jobs`);
                 } else if (type === JobDataType.REPRICE) {
-                    this.jobListReprice = data || [];
-                    this.totalRepriceCount = data.length;
+                    this.jobListReprice = data.jobs || [];
+                    this.totalRepriceCount = data.totalCount || 0;
                     this.repriceListLoading = false;
+                    console.log(`Loaded ${this.jobListReprice.length} of ${this.totalRepriceCount} REPRICE jobs`);
                 }
             });
 
@@ -1593,7 +1588,7 @@ class NationwideControl extends BaseController {
             this.applyScope();
         }
     }
-
+    
     async openFileAttachmentDialog($event: MouseEvent, job: IDispatchJob) {
         await this.jobFileUploadDialogService.openJobFileUploadDialog($event, job);
     }
@@ -2275,6 +2270,85 @@ class NationwideControl extends BaseController {
             this.toastrService.showSuccessToast(`${job.jobNo} dispatched to ${courier.name}`);
         } catch (error: any) {
             console.error("Error in dispatch:", error);
+        }
+    }
+    
+    // Scroll job data
+    async handleLoadMoreNationwideJobs(page: number, pageSize: number): Promise<{
+        jobs: IDispatchJob[],
+        totalCount: number,
+        hasMore: boolean
+    }> {
+        try {
+            const result = await this.nationwideService.getNationwideJobsNew(
+                this.jobFilters || {},
+                ClientInternal,
+                this.selectedViews,
+                page,
+                pageSize
+            );
+
+            return {
+                jobs: result.jobs || [],
+                totalCount: result.totalCount || 0,
+                hasMore: result.hasMore || false
+            };
+        } catch (error) {
+            console.error('Error loading more nationwide jobs:', error);
+            this.toastrService.showErrorToast('Failed to load more jobs');
+            throw error;
+        }
+    }
+
+    async handleLoadMorePodJobs(page: number, pageSize: number): Promise<{
+        jobs: IDispatchJob[],
+        totalCount: number,
+        hasMore: boolean
+    }> {
+        try {
+            const result = await this.nationwideService.getNationwideJobsPOD(
+                this.jobPodFilters || {},
+                ClientInternal,
+                this.selectedViews,
+                page,
+                pageSize
+            );
+
+            return {
+                jobs: result.jobs || [],
+                totalCount: result.totalCount || 0,
+                hasMore: result.hasMore || false
+            };
+        } catch (error) {
+            console.error('Error loading more POD jobs:', error);
+            this.toastrService.showErrorToast('Failed to load more POD jobs');
+            throw error;
+        }
+    }
+
+    async handleLoadMoreRepriceJobs(page: number, pageSize: number): Promise<{
+        jobs: IDispatchJob[],
+        totalCount: number,
+        hasMore: boolean
+    }> {
+        try {
+            const result = await this.nationwideService.getNationwideJobsReprice(
+                this.jobRepriceFilters || {},
+                ClientInternal,
+                this.selectedViews,
+                page,
+                pageSize
+            );
+
+            return {
+                jobs: result.jobs || [],
+                totalCount: result.totalCount || 0,
+                hasMore: result.hasMore || false
+            };
+        } catch (error) {
+            console.error('Error loading more reprice jobs:', error);
+            this.toastrService.showErrorToast('Failed to load more reprice jobs');
+            throw error;
         }
     }
 }

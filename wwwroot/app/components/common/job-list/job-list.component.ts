@@ -159,7 +159,8 @@ class JobsListController extends BaseController {
         super.$onDestroy();
 
         if (this.enableVirtualScrolling) {
-            const scrollContainer = angular.element('.jobs-scroll-container');
+            const selector = this.getScrollContainerSelector();
+            const scrollContainer = angular.element(selector);
             if (scrollContainer.length) {
                 scrollContainer.off('scroll');
             }
@@ -1352,17 +1353,32 @@ class JobsListController extends BaseController {
     }
 
     private setupScrollListener(): void {
-        this.registerTimeout(() => {
-            const scrollContainer = angular.element('.jobs-scroll-container');
-            if (scrollContainer.length) {
-                scrollContainer.on('scroll', async () => {
-                    await this.handleScroll(scrollContainer[0]);
-                });
-            }
-        });
-    }
+        // Wait for jobs to be available, then set up a scroll listener
+        const unwatch = this.watchScope(
+            () => this.jobs && this.jobs.length > 0,
+            (hasJobs: boolean) => {
+                if (hasJobs) {
+                    // Give ng-if time to render the DOM
+                    this.registerTimeout(() => {
+                        const selector = this.getScrollContainerSelector();
+                        const scrollContainer = angular.element(selector);
+                        console.log(`Setting up scroll listener for: ${selector}`, scrollContainer.length);
 
-    private async handleScroll(element: HTMLElement): Promise<void> {
+                        if (scrollContainer.length) {
+                            scrollContainer.on('scroll', () => {
+                                this.handleScroll(scrollContainer[0]);
+                            });
+                            unwatch(); // Stop watching once successful
+                        } else {
+                            console.warn(`Scroll container not found: ${selector}`);
+                        }
+                    }, 100);
+                }
+            }
+        );
+    }
+    
+    private handleScroll(element: HTMLElement): void {
         if (!this.enableVirtualScrolling || this.isLoadingMore || this.allJobsLoaded) return;
 
         const scrollTop = element.scrollTop;
@@ -1370,11 +1386,11 @@ class JobsListController extends BaseController {
         const clientHeight = element.clientHeight;
 
         if (scrollTop + clientHeight >= scrollHeight - 200) {
-            await this.loadMoreJobsFromBackend();
+            this.loadMoreJobsFromBackend();
         }
     }
 
-    private async loadMoreJobsFromBackend(): Promise<void> {
+    private loadMoreJobsFromBackend(): void {
         if (!this.onLoadMoreJobs || this.isLoadingMore || this.allJobsLoaded) {
             return;
         }
@@ -1382,14 +1398,12 @@ class JobsListController extends BaseController {
         this.isLoadingMore = true;
         this.currentPage++;
 
-        try {
-            const result = await this.onLoadMoreJobs({
-                page: this.currentPage,
-                pageSize: this.DEFAULT_PAGE_SIZE
-            });
-
+        this.onLoadMoreJobs({
+            page: this.currentPage,
+            pageSize: this.DEFAULT_PAGE_SIZE
+        }).then((result) => {
             if (result && result.jobs && result.jobs.length > 0) {
-                // Append new jobs to existing jobs array
+                // Append new jobs to the existing jobs array
                 this.jobs = [...(this.jobs || []), ...result.jobs];
 
                 if (this.shouldGroupJobs()) {
@@ -1404,17 +1418,21 @@ class JobsListController extends BaseController {
             } else {
                 this.allJobsLoaded = true;
             }
-        } catch (error) {
+        }).catch((error) => {
             console.error('Error loading more jobs:', error);
             this.toastrService?.showErrorToast('Failed to load more jobs');
-        } finally {
+        }).finally(() => {
             this.isLoadingMore = false;
             this.applyScope();
-        }
+        });
     }
 
     isLoadingMoreJobs(): boolean {
         return this.isLoadingMore;
+    }
+
+    private getScrollContainerSelector(): string {
+        return `.jobs-scroll-container-${this.jobListType}`;
     }
 }
 
@@ -1434,6 +1452,7 @@ const JobsListComponent: angular.IComponentOptions = {
         refreshInterval: '<?',
         jobListType: '<?',
         enableVirtualScrolling: '<?',
+        totalJobsCount: '<?',
     }
 };
 

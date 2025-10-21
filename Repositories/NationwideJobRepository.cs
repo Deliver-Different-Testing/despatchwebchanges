@@ -526,15 +526,20 @@ public class NationwideJobRepository(
         await Context.SaveChangesAsync();
     }
 
-    public async Task<List<DispatchJobViewModel>> NationwideJobListAsync(JobQueryParams queryParams, bool isInternal,
+    public async Task<JobSearchResult> NationwideJobListAsync(JobQueryParams queryParams, bool isInternal,
         bool isUsTenant,
         string clientIds, NationwideWidget windowPane,
         List<int> selectedViewIds)
     {
         if (!isInternal && string.IsNullOrEmpty(clientIds))
-            return [];
+            return new JobSearchResult 
+            { 
+                Jobs = [], 
+                TotalCount = 0,
+                HasMore = false
+            };
 
-        return await DespatchQry(
+        return await DespatchQryWithPagination(
             AppPage.Domestic,
             queryParams,
             isInternal,
@@ -1387,13 +1392,13 @@ public class NationwideJobRepository(
     public async Task<string> GetWebhookEventsAsStringAsync()
     {
         var webhookEvents = await Context.FlightWebhookEventTypes
+            .AsNoTracking()
             .Where(e => e.IsActive && e.IsEnabled)
             .Select(e => new WebhookEventDto
             {
                 EventCode = e.EventCode,
                 AdditionalParameter = e.RequiresParameter ? e.ParameterValue : null
             })
-            .AsNoTracking()
             .ToListAsync();
 
         var eventStrings = webhookEvents.Select(e => e.AdditionalParameter != null
@@ -1429,57 +1434,15 @@ public class NationwideJobRepository(
         return cargoModel;
     }
 
-    public async Task<(GetArrivalAndDepartureAirportsDto fromAirport, GetArrivalAndDepartureAirportsDto toAirport)>
-        GetArrivalAndDepartureAirports(int jobId, int? departureAirportId = null, int? arrivalAirportId = null)
-    {
-        var query = Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .Select(j => new
-            {
-                FromAirport = departureAirportId.HasValue
-                    ? Context.TblAirports
-                        .Where(a => a.AirportId == departureAirportId.Value)
-                        .Select(MapToAirportDto())
-                        .FirstOrDefault()
-                    : j.FromAirport != null
-                        ? MapToAirportDto().Compile()(j.FromAirport)
-                        : null,
-                ToAirport = arrivalAirportId.HasValue
-                    ? Context.TblAirports
-                        .Where(a => a.AirportId == arrivalAirportId.Value)
-                        .Select(MapToAirportDto())
-                        .FirstOrDefault()
-                    : j.ToAirport != null
-                        ? MapToAirportDto().Compile()(j.ToAirport)
-                        : null
-            });
-
-        var result = await query.AsNoTracking().FirstOrDefaultAsync();
-
-        return result != null
-            ? (result.FromAirport, result.ToAirport)
-            : (null, null);
-    }
-
-    private static Expression<Func<TblAirport, GetArrivalAndDepartureAirportsDto>> MapToAirportDto()
-    {
-        return a => new GetArrivalAndDepartureAirportsDto
-        {
-            AirportId = a.AirportId,
-            AirportCode = a.AirportCode,
-            FlightBufferMinutes = a.FlightBufferMinutes
-        };
-    }
-
     public async Task<bool> CanAssignAgentToJobAsync(int agentJobId)
     {
         if (System.Diagnostics.Debugger.IsAttached)
             return true;
 
         var result = await Context.TucJobs
+            .AsNoTracking()
             .Where(j => j.UcjbId == agentJobId)
             .SelectMany(j => j.Parent.InverseParent)
-            .AsNoTracking()
             .Select(siblingJob => new
             {
                 HasFlightSpeedGrouping = siblingJob.UcjbSpeedNavigation != null

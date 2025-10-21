@@ -113,6 +113,7 @@ class JobSearchController extends BaseController {
     deliveryHistoryConfig: IDeliveryHistoryConfig;
     isJobListLoading: boolean = false;
     isBulkJobListLoading: boolean = false;
+    totalJobs?: number;
 
     constructor(
         $scope: angular.IScope,
@@ -764,6 +765,7 @@ class JobSearchController extends BaseController {
 
             const response = await this.handleLoadMoreJobs(0, 50);
             this.jobList = response.jobs;
+            this.totalJobs = response.totalCount;
         } catch (error) {
             this.handleError(error);
         } finally {

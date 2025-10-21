@@ -14,12 +14,10 @@ public interface INationwideJobRepository
 {
     Task<T> GetByIdAsync<T>(int id) where T : class;
 
-    Task<List<DispatchJobViewModel>> NationwideJobListAsync(JobQueryParams queryParams, bool isInternal,
+    Task<JobSearchResult> NationwideJobListAsync(JobQueryParams queryParams, bool isInternal,
         bool isUsTenant, string clientIds, NationwideWidget windowPane, List<int> selectedViewIds);
 
     Task AddJobNationwideAsync(AssignFlightToJobRequest requestData, List<string> webhookIds);
-
-    Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId);
 
     Task<List<AgentViewModel>> GetAgentsAsync(int jobId);
 
@@ -51,7 +49,6 @@ public interface INationwideJobRepository
 
     Task<FlightCargoProcessingModel> CalculateCargoReadyTimeAsync(int jobId, string carrierFsCode,
         DateTime flightArrivalTime);
-    Task<(GetArrivalAndDepartureAirportsDto fromAirport, GetArrivalAndDepartureAirportsDto toAirport)> GetArrivalAndDepartureAirports(int jobId, int? departureAirportId = null, int? arrivalAirportId = null);
     Task<bool> CanAssignAgentToJobAsync(int agentJobId);
 
     Task<FlightRateCalculationDto> GetFlightRateCalculationDtoAsync(int jobId, string carrierCode, bool extraStopOffs,
