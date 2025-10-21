@@ -22,106 +22,108 @@ public class BaseJobRepository(
 {
     protected const string Space = " ";
 
-    
     protected async Task<JobSearchResult> DespatchQryWithPagination(
-    AppPage page,
-    JobQueryParams queryParams,
-    bool isInternal,
-    bool isUsTenant,
-    string clientIds,
-    List<int> selectedViewIds,
-    NationwideWidget? windowPane = null,
-    int? selectedClearListId = null
-)
-{
-    try
+        AppPage page,
+        JobQueryParams queryParams,
+        bool isInternal,
+        bool isUsTenant,
+        string clientIds,
+        List<int> selectedViewIds,
+        NationwideWidget? windowPane = null,
+        int? selectedClearListId = null
+    )
     {
-        var query = await BuildBaseQuery(selectedViewIds, isUsTenant);
-        if (query == null) 
-            return new JobSearchResult 
-            { 
-                Jobs = [], 
-                TotalCount = 0,
-                HasMore = false
-            };
-
-        ClearListEnvelopeViewModel clearListEnvelope = null;
-        if (selectedClearListId.HasValue)
+        try
         {
-            Log.Debug("ClearListId {ClearListID} provided. Getting ClearListEnvelope", selectedClearListId);
-            var country = isUsTenant ? Country.Us : Country.Nz;
-            clearListEnvelope =
-                await clearListEnvelopeService.GetClearListAreaEnvelopeAsync(selectedClearListId.Value, country);
-        }
-
-        query = ApplyGeographicFilters(query, clearListEnvelope);
-
-        switch (page)
-        {
-            case AppPage.Dispatch:
-                query = query.Where(j => j.UcjbStatus != (int)JobStatus.AwaitingPod);
-                if (queryParams.DateCutoff.HasValue)
-                    query = query.Where(j => j.UcjbDate.Date <= queryParams.DateCutoff.Value.Date);
-                if (queryParams.StartDate.HasValue)
-                    query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
-                if (queryParams.EndDate.HasValue)
-                    query = query.Where(j => j.UcjbDate.Date <= queryParams.EndDate.Value.Date);
-                break;
-            case AppPage.Domestic:
-                query = ApplyNationwideSpecificFilters(
-                    query,
-                    queryParams,
-                    isInternal,
-                    windowPane ?? NationwideWidget.JobList,
-                    clientIds
-                );
-                break;
-            case AppPage.JobSearch:
-            case AppPage.Prebooks:
-            default:
-                return new JobSearchResult 
-                { 
-                    Jobs = [], 
+            var query = await BuildBaseQuery(selectedViewIds, isUsTenant);
+            if (query == null)
+                return new JobSearchResult
+                {
+                    Jobs = [],
                     TotalCount = 0,
                     HasMore = false
                 };
+
+            ClearListEnvelopeViewModel clearListEnvelope = null;
+            if (selectedClearListId.HasValue)
+            {
+                Log.Debug("ClearListId {ClearListID} provided. Getting ClearListEnvelope", selectedClearListId);
+                var country = isUsTenant ? Country.Us : Country.Nz;
+                clearListEnvelope =
+                    await clearListEnvelopeService.GetClearListAreaEnvelopeAsync(selectedClearListId.Value, country);
+            }
+
+            query = ApplyGeographicFilters(query, clearListEnvelope);
+
+            switch (page)
+            {
+                case AppPage.Dispatch:
+                    query = query.Where(j => j.UcjbStatus != (int)JobStatus.AwaitingPod);
+                    if (queryParams.DateCutoff.HasValue)
+                        query = query.Where(j => j.UcjbDate.Date <= queryParams.DateCutoff.Value.Date);
+                    if (queryParams.StartDate.HasValue)
+                        query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
+                    if (queryParams.EndDate.HasValue)
+                        query = query.Where(j => j.UcjbDate.Date <= queryParams.EndDate.Value.Date);
+                    break;
+                case AppPage.Domestic:
+                    query = ApplyNationwideSpecificFilters(
+                        query,
+                        queryParams,
+                        isInternal,
+                        windowPane ?? NationwideWidget.JobList,
+                        clientIds
+                    );
+                    break;
+                case AppPage.JobSearch:
+                case AppPage.Prebooks:
+                default:
+                    return new JobSearchResult
+                    {
+                        Jobs = [],
+                        TotalCount = 0,
+                        HasMore = false
+                    };
+            }
+
+            // Search
+            if (!string.IsNullOrEmpty(queryParams.SearchText)) query = ApplySearchFilter(query, queryParams.SearchText);
+
+            // Get a total count before pagination
+            var totalCount = await query.CountAsync();
+
+            // Apply pagination
+            var pageNumber = queryParams.Page ?? 0;
+            var pageSize = queryParams.PageSize ?? 50;
+
+            var jobs = await query
+                .AsNoTracking()
+                .Skip(pageNumber * pageSize)
+                .Take(pageSize)
+                .Select(JobMappings.JobDispatchMapping(isUsTenant))
+                .ToListAsync();
+
+            var (economySpeedId, ecoDeliveryTime) = await GetEconomySpeedAndDeliveryTimeAsync();
+            var now = infoService.GetCurrentTenantTime();
+            foreach (var job in jobs)
+                job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
+
+            var hasMore = (pageNumber + 1) * pageSize < totalCount;
+
+            return new JobSearchResult
+            {
+                Jobs = jobs,
+                TotalCount = totalCount,
+                HasMore = hasMore
+            };
         }
-
-        // Get a total count before pagination
-        var totalCount = await query.CountAsync();
-        
-        // Apply pagination
-        var pageNumber = queryParams.Page ?? 0;
-        var pageSize = queryParams.PageSize ?? 50;
-        
-        var jobs = await query
-            .AsNoTracking()
-            .Skip(pageNumber * pageSize)
-            .Take(pageSize)
-            .Select(JobMappings.JobDispatchMapping(isUsTenant))
-            .ToListAsync();
-
-        var (economySpeedId, ecoDeliveryTime) = await GetEconomySpeedAndDeliveryTimeAsync();
-        var now = infoService.GetCurrentTenantTime();
-        foreach (var job in jobs) 
-            job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
-        
-        var hasMore = (pageNumber + 1) * pageSize < totalCount;
-        
-        return new JobSearchResult
+        catch (Exception e)
         {
-            Jobs = jobs,
-            TotalCount = totalCount,
-            HasMore = hasMore
-        };
+            Log.Error(e, "Error occurred getting jobs for dispatch page with pagination. Please see exception.");
+            throw;
+        }
     }
-    catch (Exception e)
-    {
-        Log.Error(e, "Error occurred getting jobs for dispatch page with pagination. Please see exception.");
-        throw;
-    }
-}
-    
+
     protected async Task<List<DispatchJobViewModel>> DespatchQry(
         AppPage page,
         JobQueryParams queryParams,
@@ -178,6 +180,9 @@ public class BaseJobRepository(
                 default:
                     return [];
             }
+
+            // Search
+            if (!string.IsNullOrEmpty(queryParams.SearchText)) query = ApplySearchFilter(query, queryParams.SearchText);
 
             var jobs = await query
                 .AsNoTracking()
@@ -862,4 +867,71 @@ public class BaseJobRepository(
 
         return (economySpeedId, ecoDeliveryTime);
     }
+
+    private static IQueryable<TucJob> ApplySearchFilter(IQueryable<TucJob> query, string searchText)
+{
+    if (string.IsNullOrWhiteSpace(searchText)) 
+        return query;
+
+    var searchPattern = $"%{searchText.Trim()}%";
+
+    return query.Where(j =>
+        // Core job information
+        EF.Functions.Like(j.UcjbNumber, searchPattern) ||
+        EF.Functions.Like(j.UcjbClient.UcclName ?? "", searchPattern) ||
+        EF.Functions.Like(j.UcjbStatusNavigation.UcjsName ?? "", searchPattern) ||
+        
+        // Courier information - search name parts separately
+        EF.Functions.Like(j.UcjbCourier.UccrName ?? "", searchPattern) ||
+        EF.Functions.Like(j.UcjbCourier.UccrSurname ?? "", searchPattern) ||
+        
+        // Pickup contact - search name parts separately
+        EF.Functions.Like(j.Contact.UcctFirstname ?? "", searchPattern) ||
+        EF.Functions.Like(j.Contact.UcctSurname ?? "", searchPattern) ||
+        
+        // Pickup address
+        EF.Functions.Like(j.PickupAddressLine1 ?? "", searchPattern) ||
+        EF.Functions.Like(j.PickupAddressLine2 ?? "", searchPattern) ||
+        EF.Functions.Like(j.PickupAddressLine3 ?? "", searchPattern) ||
+        EF.Functions.Like(j.PickupAddressLine4 ?? "", searchPattern) ||
+        EF.Functions.Like(j.PickupAddressLine5 ?? "", searchPattern) ||
+        EF.Functions.Like(j.PickupAddressLine6 ?? "", searchPattern) ||
+        EF.Functions.Like(j.PickupAddressLine7 ?? "", searchPattern) ||
+        EF.Functions.Like(j.PickupAddressLine8 ?? "", searchPattern) ||
+        EF.Functions.Like(j.UcjbFromAddr ?? "", searchPattern) ||
+        
+        // Delivery contact and address
+        EF.Functions.Like(j.DeliverToContact ?? "", searchPattern) ||
+        EF.Functions.Like(j.DeliveryAddressLine1 ?? "", searchPattern) ||
+        EF.Functions.Like(j.DeliveryAddressLine2 ?? "", searchPattern) ||
+        EF.Functions.Like(j.DeliveryAddressLine3 ?? "", searchPattern) ||
+        EF.Functions.Like(j.DeliveryAddressLine4 ?? "", searchPattern) ||
+        EF.Functions.Like(j.DeliveryAddressLine5 ?? "", searchPattern) ||
+        EF.Functions.Like(j.DeliveryAddressLine6 ?? "", searchPattern) ||
+        EF.Functions.Like(j.DeliveryAddressLine7 ?? "", searchPattern) ||
+        EF.Functions.Like(j.DeliveryAddressLine8 ?? "", searchPattern) ||
+        EF.Functions.Like(j.UcjbToAddr ?? "", searchPattern) ||
+        
+        // Job properties
+        EF.Functions.Like(j.UcjbSpeedNavigation.ShortName ?? "", searchPattern) ||
+        EF.Functions.Like(j.NotifiedJobType.UcjtName ?? "", searchPattern) ||
+        EF.Functions.Like(j.Connote ?? "", searchPattern) ||
+        
+        // Flight information - consolidated
+        j.TucJobNationwides.Any(nw => 
+            EF.Functions.Like(nw.UcnwFlightNo ?? "", searchPattern) ||
+            EF.Functions.Like(nw.CarrierFsCode ?? "", searchPattern) ||
+            EF.Functions.Like(nw.UcnwAirlineName ?? "", searchPattern) ||
+            EF.Functions.Like(nw.DepartureAirportName ?? "", searchPattern) ||
+            EF.Functions.Like(nw.DepartureAirportCity ?? "", searchPattern) ||
+            EF.Functions.Like(nw.DepartureAirportCountry ?? "", searchPattern) ||
+            EF.Functions.Like(nw.ArrivalAirportName ?? "", searchPattern) ||
+            EF.Functions.Like(nw.ArrivalAirportCity ?? "", searchPattern) ||
+            EF.Functions.Like(nw.ArrivalAirportCountry ?? "", searchPattern)
+        ) ||
+        
+        // Agent information
+        EF.Functions.Like(j.Agent.UcagName ?? "", searchPattern)
+    );
+}
 }

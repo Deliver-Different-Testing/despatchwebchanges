@@ -15,5 +15,6 @@
         on-load-more-jobs="ctrl.handleLoadMoreNationwideJobs(page, pageSize)"
         enable-virtual-scrolling="true"
         job-list-type="ctrl.nationwideJobList"
-        total-jobs-count="ctrl.totalJobCount">
+        total-jobs-count="ctrl.totalJobCount"
+        on-search-change="ctrl.updateJobSearchText(searchText, jobType)">
 </jobs-list>

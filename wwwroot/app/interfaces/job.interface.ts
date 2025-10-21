@@ -503,6 +503,9 @@ export interface IJobQueryParams {
     orderDirection?: string;
     startDate?: Dayjs;
     endDate?: Dayjs;
+    page?: number;
+    pageSize?: number;
+    searchText?: string;
 }
 
 export interface PriceBreakdown {

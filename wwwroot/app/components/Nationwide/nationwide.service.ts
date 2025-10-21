@@ -45,9 +45,7 @@ class NationwideService implements angular.IServiceProvider {
         endpoint: string,
         queryParams: IJobQueryParams,
         isInternal: boolean,
-        selectedAreas: DfrntPageViewModel[],
-        page?: number,
-        pageSize?: number
+        selectedAreas: DfrntPageViewModel[]
     ): Promise<IJobSearchResult> {
         const despatchViewIds = selectedAreas.map(area => area.id);
 
@@ -60,41 +58,37 @@ class NationwideService implements angular.IServiceProvider {
                 dateCutoff: queryParams.endDate ? formatDateForApiWithTzs(queryParams.endDate) : null,
                 isInternal: isInternal,
                 despatchViewIds,
-                page: page ?? 0,
-                pageSize: pageSize ?? 50
+                page: queryParams.page ?? 0,
+                pageSize: queryParams.pageSize ?? 50,
+                searchText: queryParams.searchText ?? '',
             }
         });
+        
         return response.data;
     }
     
     async getNationwideJobsNew(
         queryParams: IJobQueryParams,
         internal: boolean,
-        selectedAreas: DfrntPageViewModel[],
-        page?: number,
-        pageSize?: number
+        selectedAreas: DfrntPageViewModel[]
     ): Promise<IJobSearchResult> {
-        return await this.getNationwideJobs("nationwideJobListNew", queryParams, internal, selectedAreas, page, pageSize);
+        return await this.getNationwideJobs("nationwideJobListNew", queryParams, internal, selectedAreas);
     }
 
     async getNationwideJobsPOD(
         queryParams: IJobQueryParams,
         internal: boolean,
-        selectedAreas: DfrntPageViewModel[],
-        page?: number,
-        pageSize?: number
+        selectedAreas: DfrntPageViewModel[]
     ): Promise<IJobSearchResult> {
-        return await this.getNationwideJobs("NationwideJobListPod", queryParams, internal, selectedAreas, page, pageSize);
+        return await this.getNationwideJobs("NationwideJobListPod", queryParams, internal, selectedAreas);
     }
 
     async getNationwideJobsReprice(
         queryParams: IJobQueryParams,
         internal: boolean,
-        selectedAreas: DfrntPageViewModel[],
-        page?: number,
-        pageSize?: number
+        selectedAreas: DfrntPageViewModel[]
     ): Promise<IJobSearchResult> {
-        return await this.getNationwideJobs("nationwideJobListReprice", queryParams, internal, selectedAreas, page, pageSize);
+        return await this.getNationwideJobs("nationwideJobListReprice", queryParams, internal, selectedAreas);
     }
 
     async getFlightOptions(

@@ -10,12 +10,15 @@ import {
     IAirportSuggestion,
     IDispatchJob,
     IJob,
-    IJobQueryParams, ISuggestion
+    IJobQueryParams,
+    ISuggestion
 } from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
 import {
-    AssignFlightToJobRequest, IFlightSegment,
-    IFlightViewModel, IGetAgentOptionsResponse,
+    AssignFlightToJobRequest,
+    IFlightSegment,
+    IFlightViewModel,
+    IGetAgentOptionsResponse,
     IGetFlightOptionsResponse,
     StatusChangeEvent
 } from "./nationwide.interfaces";
@@ -128,7 +131,6 @@ class NationwideControl extends BaseController {
     totalJobCount: number = 0;
     totalPodCount: number = 0;
     totalRepriceCount: number = 0;
-    jobRecordSearchText?: string;
     mapCenter?: Coordinates;
     sort: Record<string, string> = {};
     flightOptions?: IFlightViewModel[] = [];
@@ -148,14 +150,17 @@ class NationwideControl extends BaseController {
     jobFilters: IJobQueryParams = {
         order: 'time',
         orderDirection: 'asc',
+        searchText: ''
     };
     jobPodFilters: IJobQueryParams = {
         order: 'time',
         orderDirection: 'asc',
+        searchText: ''
     };
     jobRepriceFilters: IJobQueryParams = {
         order: 'time',
         orderDirection: 'asc',
+        searchText: ''
     };
     boxes?: Record<string, IBox>;
     boxSortableOptions: angular.ui.SortableOptions<any>;
@@ -217,6 +222,11 @@ class NationwideControl extends BaseController {
     flightSearchText: string = '';
     filteredFlightOptions?: IFlightViewModel[] = [];
     private isHandlingJobChange: boolean = false;
+
+    // Job search
+    jobListSearchText: string = '';
+    podListSearchText: string = '';
+    repriceListSearchText: string = '';
 
     constructor(
         $scope: angular.IScope,
@@ -398,8 +408,6 @@ class NationwideControl extends BaseController {
             console.info("[NationwideController] - Active Airlines:", response);
             this.activeAirlineOptions = response;
         });
-
-        this.jobRecordSearchText = "";
 
         // New map
         this.mapCenter = this.appConfig.US_Customer
@@ -701,26 +709,6 @@ class NationwideControl extends BaseController {
 
         this.saveViewsToStorage(this.selectedViews);
         await this.getData();
-    }
-
-    async jobRecordSearch(searchText: string): Promise<ISuggestion[]> {
-        if (!this.jobList) return [];
-
-        return this.jobList
-            .filter(job => job.jobNo.toLowerCase().includes(searchText.toLowerCase()))
-            .map(job => ({id: job.id, text: job.jobNo}));
-    }
-
-    jobRecordSelected(selectedJobId: number) {
-        if (!selectedJobId) return;
-
-        const selectedJob = this.findJobInLocalLists(selectedJobId);
-        if (!selectedJob) {
-            console.warn(`Job with ID ${selectedJobId} not found`);
-            return;
-        }
-
-        return this.selectJob(selectedJob);
     }
 
     loadLayout(index: number): void {
@@ -1527,9 +1515,7 @@ class NationwideControl extends BaseController {
                 const jobListPromise = this.nationwideService.getNationwideJobsNew(
                     this.jobFilters || {},
                     ClientInternal,
-                    this.selectedViews,
-                    0,  // page
-                    50  // pageSize
+                    this.selectedViews
                 );
                 fetchPromises.push(jobListPromise.then(data => ({type: JobDataType.NEW, data})));
             }
@@ -1538,9 +1524,7 @@ class NationwideControl extends BaseController {
                 const podListPromise = this.nationwideService.getNationwideJobsPOD(
                     this.jobPodFilters || {},
                     ClientInternal,
-                    this.selectedViews,
-                    0,
-                    50
+                    this.selectedViews
                 );
                 fetchPromises.push(podListPromise.then(data => ({type: JobDataType.POD, data})));
             }
@@ -1549,9 +1533,7 @@ class NationwideControl extends BaseController {
                 const repriceListPromise = this.nationwideService.getNationwideJobsReprice(
                     this.jobRepriceFilters || {},
                     ClientInternal,
-                    this.selectedViews,
-                    0,
-                    50
+                    this.selectedViews
                 );
                 fetchPromises.push(repriceListPromise.then(data => ({type: JobDataType.REPRICE, data})));
             }
@@ -1592,7 +1574,7 @@ class NationwideControl extends BaseController {
             this.applyScope();
         }
     }
-    
+
     async openFileAttachmentDialog($event: MouseEvent, job: IDispatchJob) {
         await this.jobFileUploadDialogService.openJobFileUploadDialog($event, job);
     }
@@ -2263,7 +2245,7 @@ class NationwideControl extends BaseController {
             this.toastrService.showWarningToast("Courier dispatch is not supported for US customers");
             return false;
         }
-        
+
         try {
             await this.dispatchJobService.dispatchJobs(courierId, [job]);
             const courier = await this.DispatchData.getCourierById(courierId);
@@ -2276,7 +2258,7 @@ class NationwideControl extends BaseController {
             console.error("Error in dispatch:", error);
         }
     }
-    
+
     // Scroll job data
     async handleLoadMoreNationwideJobs(page: number, pageSize: number): Promise<{
         jobs: IDispatchJob[],
@@ -2285,11 +2267,13 @@ class NationwideControl extends BaseController {
     }> {
         try {
             const result = await this.nationwideService.getNationwideJobsNew(
-                this.jobFilters || {},
+                {
+                    ...(this.jobFilters || {}),
+                    page: page,
+                    pageSize: pageSize
+                },
                 ClientInternal,
-                this.selectedViews,
-                page,
-                pageSize
+                this.selectedViews
             );
 
             return {
@@ -2311,11 +2295,13 @@ class NationwideControl extends BaseController {
     }> {
         try {
             const result = await this.nationwideService.getNationwideJobsPOD(
-                this.jobPodFilters || {},
+                {
+                    ...(this.jobPodFilters || {}),
+                    page: page,
+                    pageSize: pageSize
+                },
                 ClientInternal,
-                this.selectedViews,
-                page,
-                pageSize
+                this.selectedViews
             );
 
             return {
@@ -2337,11 +2323,13 @@ class NationwideControl extends BaseController {
     }> {
         try {
             const result = await this.nationwideService.getNationwideJobsReprice(
-                this.jobRepriceFilters || {},
+                {
+                    ...(this.jobRepriceFilters || {}),
+                    page: page,
+                    pageSize: pageSize
+                },
                 ClientInternal,
-                this.selectedViews,
-                page,
-                pageSize
+                this.selectedViews
             );
 
             return {
@@ -2353,6 +2341,25 @@ class NationwideControl extends BaseController {
             console.error('Error loading more reprice jobs:', error);
             this.toastrService.showErrorToast('Failed to load more reprice jobs');
             throw error;
+        }
+    }
+
+    async updateJobSearchText(searchText: string, jobListType: JobListType): Promise<void> {
+        switch (jobListType) {
+            case JobListType.NationwideJobList:
+                this.jobFilters.searchText = searchText || '';
+                await this.getJobList([JobDataType.NEW]);
+                break;
+
+            case JobListType.NationwidePodJobList:
+                this.jobPodFilters.searchText = searchText || '';
+                await this.getJobList([JobDataType.POD]);
+                break;
+
+            case JobListType.NationwideRepriceJobList:
+                this.jobRepriceFilters.searchText = searchText || '';
+                await this.getJobList([JobDataType.REPRICE]);
+                break;
         }
     }
 }
