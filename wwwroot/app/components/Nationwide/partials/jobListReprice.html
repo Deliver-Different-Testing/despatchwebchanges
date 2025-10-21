@@ -15,5 +15,6 @@
         on-load-more-jobs="ctrl.handleLoadMoreRepriceJobs(page, pageSize)"
         enable-virtual-scrolling="true"
         job-list-type="ctrl.nationwideRepriceJobList"
-        total-jobs-count="ctrl.totalRepriceCount">
+        total-jobs-count="ctrl.totalRepriceCount"
+        on-search-change="ctrl.updateJobSearchText(searchText, jobType)">
 </jobs-list>

@@ -38,6 +38,7 @@ class JobsListController extends BaseController {
     // Parent-provided data
     jobs?: IDispatchJob[];
     selectedJob?: IDispatchJob;
+    onSearchChange?: (data: { searchText: string, jobType: JobListType }) => void;
     onJobSelect?: (data: { job: IDispatchJob }) => Promise<void>;
     onJobDispatch?: (data: { job: IDispatchJob, courierId: number }) => Promise<void>;
     onJobAction?: (data: { action: string, job: IDispatchJob, params?: any }) => Promise<void>;
@@ -112,6 +113,7 @@ class JobsListController extends BaseController {
     private totalJobsCount: number = 0;
     private isLoadingMore: boolean = false;
     private allJobsLoaded: boolean = false;
+    private readonly debouncedSearchHandler: (...args: Parameters<(searchText: string) => void>) => void;
 
     constructor(
         private DispatchData: DispatchCoreService,
@@ -128,6 +130,15 @@ class JobsListController extends BaseController {
         super();
         this.initServices($timeout, $interval, $scope);
         this.isUsCustomer = appConfig.US_Customer;
+
+        this.debouncedSearchHandler = this.debounce((searchText: string) => {
+            if (this.onSearchChange) {
+                this.onSearchChange({
+                    searchText: searchText,
+                    jobType: this.jobListType
+                });
+            }
+        }, 300, 'job-list-search');
     }
 
     $onInit() {
@@ -180,9 +191,12 @@ class JobsListController extends BaseController {
     private setupJobListVariables() {
         switch (this.jobListType) {
             case JobListType.DispatchJobList:
-            case JobListType.JobSearchMainList:
                 this.allowDispatch = true;
                 this.allowSearch = true;
+                break;
+            case JobListType.JobSearchMainList:
+                this.allowDispatch = true;
+                this.allowSearch = false;
                 break;
             case JobListType.NationwideJobList:
                 this.allowDispatch = !this.isUsCustomer;
@@ -191,9 +205,12 @@ class JobsListController extends BaseController {
             case JobListType.CurrentWorkList:
             case JobListType.NationwidePodJobList:
             case JobListType.NationwideRepriceJobList:
-            case JobListType.JobSearchBulkList:
                 this.allowDispatch = false;
                 this.allowSearch = true;
+                break;
+            case JobListType.JobSearchBulkList:
+                this.allowDispatch = false;
+                this.allowSearch = false;
                 break;
         }
 
@@ -319,9 +336,18 @@ class JobsListController extends BaseController {
     }
 
     searchJobs(query: string): void {
+        if (query.length > 0 && query.length < 3)
+            return;
+
         this.searchQuery = query.toLowerCase();
-        this.applyFilters();
-        this.updateSelectAllState();
+
+        if (this.onSearchChange && this.debouncedSearchHandler) {
+            this.debouncedSearchHandler(query);
+        } else {
+            // Fallback to local filtering
+            this.applyFilters();
+            this.updateSelectAllState();
+        }
     }
 
     setDensityMode(mode: DensityMode) {
@@ -1453,6 +1479,7 @@ const JobsListComponent: angular.IComponentOptions = {
         jobListType: '<?',
         enableVirtualScrolling: '<?',
         totalJobsCount: '<?',
+        onSearchChange: '&?' 
     }
 };
 

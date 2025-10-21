@@ -15,5 +15,6 @@
         on-load-more-jobs="ctrl.handleLoadMorePodJobs(page, pageSize)"
         enable-virtual-scrolling="true"
         job-list-type="ctrl.nationwidePodJobList"
-        total-jobs-count="ctrl.totalPodCount">
+        total-jobs-count="ctrl.totalPodCount"
+        on-search-change="ctrl.updateJobSearchText(searchText, jobType)">
 </jobs-list>
