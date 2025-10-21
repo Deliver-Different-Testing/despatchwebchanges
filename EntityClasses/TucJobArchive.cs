@@ -471,6 +471,10 @@ public partial class TucJobArchive
 
     public string PickupCondition { get; set; }
 
+    public int? CourierSettlementBatchId { get; set; }
+
+    public DateTime? CourierBonusCancelled { get; set; }
+
     public virtual TucAgent Agent { get; set; }
 
     public virtual TimeZone DeliverByTimeZone { get; set; }

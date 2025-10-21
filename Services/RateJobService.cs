@@ -26,7 +26,7 @@ public class RateJobService(
 {
     private const string HereMapsApiBaseUrl = "https://router.hereapi.com/v8";
 
-    public async Task<decimal> RateJobNzAsync(JobRatingDetailsDtoNz jobDetails)
+    public async Task RateJobNzAsync(JobRatingDetailsDtoNz jobDetails)
     {
         try
         {
@@ -39,7 +39,7 @@ public class RateJobService(
             ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
 
             var rateResult = await RateUrgentJobAsync(jobDetails);
-            return rateResult.Rate;
+            await jobRepository.UpdateUrgentJobRateAsync(jobDetails.JobId, rateResult.Rate, jobDetails.JobType);
         }
         catch (Exception ex)
         {

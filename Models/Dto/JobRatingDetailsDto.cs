@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DespatchWeb.Enums;
 
 namespace DespatchWeb.Models.Dto;
 
@@ -89,6 +90,7 @@ public class JobRatingDetailsDtoNz : JobRatingDetailsDto
     public bool? HasDgDocuments { get; set; }
     public string TruckStartTime { get; set; }
     public int? TruckHours { get; set; }
+    public JobType JobType { get; set; }
 }
 
 public class PackageDetailsDto

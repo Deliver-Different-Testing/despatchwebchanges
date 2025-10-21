@@ -149,39 +149,6 @@ public class JobController(
         }
     }
 
-    [HttpPost]
-    public async Task<IActionResult> AddPallet(
-        [FromBody] PalletInfo palletInfo,
-        bool preBook,
-        string despatcher
-    )
-    {
-        await jobRepository.AddPalletInfoAsync(palletInfo, preBook, despatcher);
-        return Ok("OK");
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> EditPallet(
-        [FromBody] PalletInfo palletInfo,
-        bool preBook,
-        string despatcher
-    )
-    {
-        await jobRepository.EditPalletInfoAsync(palletInfo, preBook, despatcher);
-        return Ok("OK");
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> DeletePallet(
-        [FromBody] PalletInfo palletInfo,
-        bool preBook,
-        string despatcher
-    )
-    {
-        await jobRepository.DeletePalletInfoAsync(palletInfo, preBook, despatcher);
-        return Ok("OK");
-    }
-
     public async Task<IActionResult> GetPricingBreakdown(int jobId, bool isPrebook)
     {
         try
@@ -1235,7 +1202,7 @@ public class JobController(
             }
             else
             {
-                var jobDetails = await jobRepository.GetJobDetailsForRatingNzAsync(jobId);
+                var jobDetails = await jobRepository.GetJobBookingDetailsForRatingNzAsync(jobId);
                 if (jobDetails.IsManuallyRated) return Ok();
 
                 await rateJobService.RateJobNzAsync(jobDetails);
@@ -1722,7 +1689,7 @@ public class JobController(
             await updateAddressAction(request);
 
             // Get job details for rating and update
-            await RecalculateJobRateAsync(request.JobId, request.Address.FullAddress, addressType, isBooking);
+            await RecalculateJobRateAsync(request.JobId, isBooking);
 
             return Ok();
         }
@@ -1734,7 +1701,7 @@ public class JobController(
         }
     }
 
-    private async Task RecalculateJobRateAsync(int jobId, string newAddress, AddressType addressType, bool isBooking)
+    private async Task RecalculateJobRateAsync(int jobId, bool isBooking)
     {
         var isUsCustomer = infoService.IsUsTenant();
 
@@ -1752,9 +1719,7 @@ public class JobController(
                 ? await jobRepository.GetJobBookingDetailsForRatingNzAsync(jobId)
                 : await jobRepository.GetJobDetailsForRatingNzAsync(jobId);
 
-            var rate = await rateJobService.RateJobNzAsync(jobDetailsNz);
-            var noteText = $"{addressType} address updated to {newAddress}. Rate recalculated: {rate:C}";
-            await jobRepository.UpdateJobRateAsync(jobId, rate, noteText);
+            await rateJobService.RateJobNzAsync(jobDetailsNz);
         }
     }
 

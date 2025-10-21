@@ -151,7 +151,7 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
         }
     }
 
-    [HttpPost]
+    [HttpDelete]
     public async Task<IActionResult> DeleteQuickResponse(int responseId)
     {
         try

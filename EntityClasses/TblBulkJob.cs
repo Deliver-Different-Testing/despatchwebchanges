@@ -231,6 +231,8 @@ public partial class TblBulkJob
 
     public int? DimensionsType { get; set; }
 
+    public DateTime? LabelPrinted { get; set; }
+
     public virtual TucClient Client { get; set; }
 
     public virtual TucCourier Courier { get; set; }

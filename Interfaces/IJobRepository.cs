@@ -105,9 +105,6 @@ public interface IJobRepository
     Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel);
     Task DeleteJobPriceBreakdownAsync(int chargeId);
 
-    Task AddPalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
-    Task EditPalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
-    Task DeletePalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
     Task VoidPrebookJobAsync(int jobId);
     
     /* Address Updates */
@@ -182,7 +179,6 @@ public interface IJobRepository
     Task<JobRatingDetailsDto> GetJobDetailsForRatingAsync(int jobId);
     Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId);
     Task<JobRatingDetailsDtoNz> GetJobBookingDetailsForRatingNzAsync(int jobId);
-    Task UpdateJobRateAsync(int jobId, decimal rate, string noteText);
     Task<List<TimeZoneSuggestion>> GetTimeZoneOptions();
     Task<JobRatingDetailsDto> GetJobBookingDetailsForRatingAsync(int jobId);
 
@@ -202,4 +198,5 @@ public interface IJobRepository
    Task<List<ScanDetailResult>> ScanList(DateTimeOffset? runDate, string scan);
    Task<bool> ValidatePodSwapAsync(string jobNumber);
    Task<string> GetStaffNameAsync(int staffId);
+   Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType);
 }

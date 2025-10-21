@@ -1819,53 +1819,6 @@ public partial class JobRepository(
         await CreateNewRecurringJobNote(prebookJobId, note, false);
     }
 
-    public async Task AddPalletInfoAsync(PalletInfo p, bool preBook, string despatcher)
-    {
-        await Context.Procedures.DESWEB_stpJobItems_InsertAsync(
-            p.Id,
-            p.Quantity,
-            p.Weight,
-            p.Length,
-            p.Height,
-            p.Depth,
-            p.Pu,
-            p.Do,
-            p.DgClass,
-            p.Notes,
-            preBook,
-            despatcher
-        );
-    }
-
-    public async Task EditPalletInfoAsync(PalletInfo p, bool preBook, string despatcher)
-    {
-        await Context.Procedures.DESWEB_stpJobItems_UpdateAsync(
-            p.Id,
-            p.ItemId,
-            p.Quantity,
-            p.Weight,
-            p.Length,
-            p.Height,
-            p.Depth,
-            p.Pu,
-            p.Do,
-            p.DgClass,
-            p.Notes,
-            preBook,
-            despatcher
-        );
-    }
-
-    public async Task DeletePalletInfoAsync(PalletInfo p, bool preBook, string despatcher)
-    {
-        await Context.Procedures.DESWEB_stpJobItems_DeleteAsync(
-            p.Id,
-            p.ItemId,
-            preBook,
-            despatcher
-        );
-    }
-
     public async Task VoidPrebookJobAsync(int jobId)
     {
         var staffInfo = await _infoService.GetStaffInfoAsync();
@@ -2210,8 +2163,8 @@ public partial class JobRepository(
 
             var note = $"From # {viewModel.FromCourierId} To # {viewModel.ToCourierId}";
 
-            var fromJobNumber = await GenerateJobNumberAsync(staffId, (int)JobType.AllServices);
-            var toJobNumber = await GenerateJobNumberAsync(staffId, (int)JobType.AllServices);
+            var fromJobNumber = await GenerateJobNumberAsync(staffId, (int)JobServiceType.AllServices);
+            var toJobNumber = await GenerateJobNumberAsync(staffId, (int)JobServiceType.AllServices);
 
             var address = new AddressViewModel("Inter-Courier Charge", string.Empty, string.Empty, string.Empty,
                 string.Empty, string.Empty, string.Empty, string.Empty);
@@ -2963,28 +2916,7 @@ public partial class JobRepository(
             .Select(JobMappings.JobDispatchMapping(isUsCustomer))
             .FirstOrDefaultAsync();
     }
-
-    public async Task UpdateJobRateAsync(int jobId, decimal rate, string noteText)
-    {
-        try
-        {
-            var rowsAffected = await Context.TucJobs
-                .Where(j => j.UcjbId == jobId)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(j => j.UcjbAmount, rate));
-
-            if (rowsAffected == 0) throw new ArgumentException($"Job with ID {jobId} not found", nameof(jobId));
-
-            // Record change in note
-            await SaveNoteAsync(jobId, noteText);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "An error occurred updating the rate for job {JobId}", jobId);
-            throw;
-        }
-    }
-
+    
     public async Task AddNewTucNoteTypeAsync(NoteTypeViewModel noteType)
     {
         var newType = new TucNoteType

@@ -87,7 +87,7 @@ class MessagingService implements angular.IServiceProvider {
     }
 
     async deleteQuickResponse(responseId: number) {
-        await this.$http.post('messages/DeleteQuickResponse', null, {
+        await this.$http.delete('messages/DeleteQuickResponse', {
             params: {
                 responseId,
             }
