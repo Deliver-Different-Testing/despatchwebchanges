@@ -77,7 +77,7 @@ class TasksService implements angular.IServiceProvider {
         private $http: angular.IHttpService,
         private DispatchData: DispatchCoreService
     ) {
-        console.debug("Tasks service initialized");
+        console.log("Tasks service initialized");
 
         // Initialize background loading states for all pages
         Object.values(AppPages).forEach(page => {
@@ -209,7 +209,7 @@ class TasksService implements angular.IServiceProvider {
         // Add page context for potential future use
         if (appPage) {
             // This could be used for page-specific filtering logic if needed
-            console.debug(`Building filter request for page: ${AppPages[appPage]}`);
+            console.log(`Building filter request for page: ${AppPages[appPage]}`);
         }
 
         switch (filterType) {
@@ -270,7 +270,7 @@ class TasksService implements angular.IServiceProvider {
 
         // Cancel previous loading for this job if still in progress
         if (this.jobTaskLoadingStates[loadingKey]) {
-            console.debug(`Cancelling previous task loading for job ${jobId} on ${AppPages[appPage]}`);
+            console.log(`Cancelling previous task loading for job ${jobId} on ${AppPages[appPage]}`);
             return; // Skip this request
         }
 
@@ -280,7 +280,7 @@ class TasksService implements angular.IServiceProvider {
             try {
                 // Check if this loading is still relevant
                 if (!this.jobTaskLoadingStates[loadingKey]) {
-                    console.debug(`Task loading cancelled for job ${jobId}`);
+                    console.log(`Task loading cancelled for job ${jobId}`);
                     return;
                 }
 
@@ -304,7 +304,7 @@ class TasksService implements angular.IServiceProvider {
     cancelJobTaskLoading(appPage: AppPages, jobId?: number): void {
         const loadingKey = `${appPage}-${jobId || 'all'}`;
         if (this.jobTaskLoadingStates[loadingKey]) {
-            console.debug(`Manually cancelling task loading for job ${jobId}`);
+            console.log(`Manually cancelling task loading for job ${jobId}`);
             this.jobTaskLoadingStates[loadingKey] = false;
         }
     }
@@ -366,7 +366,7 @@ class TasksService implements angular.IServiceProvider {
 
         const filterName = this.PAGE_FILTER_MAPPING[appPage]?.eventType;
         if (!filterName) {
-            console.debug(`No event type filter mapping found for page: ${AppPages[appPage]}`);
+            console.log(`No event type filter mapping found for page: ${AppPages[appPage]}`);
             return;
         }
 

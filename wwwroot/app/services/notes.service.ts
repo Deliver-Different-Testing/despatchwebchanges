@@ -4,14 +4,13 @@ import dayjs from "dayjs";
 class NoteService implements angular.IServiceProvider {
     static $inject = [
         '$http',
-        '$log'
     ];
 
     constructor(
         private $http: angular.IHttpService,
         private $log: angular.ILogService,
     ) {
-        this.$log.debug('Notes service initialized');
+        console.log('Notes service initialized');
     }
 
     $get() {
@@ -23,7 +22,7 @@ class NoteService implements angular.IServiceProvider {
             const response = await this.$http.post<IJobNote>('note/CreateNote', noteViewModel);
             return response.data;
         } catch (error) {
-            this.$log.error('Error creating note:', error);
+            console.error('Error creating note:', error);
             throw error;
         }
     } 
@@ -33,7 +32,7 @@ class NoteService implements angular.IServiceProvider {
             const response = await this.$http.post<IJobNote>('note/CreateBulkJobNote', noteViewModel);
             return response.data;
         } catch (error) {
-            this.$log.error('Error creating note:', error);
+            console.error('Error creating note:', error);
             throw error;
         }
     }
@@ -42,7 +41,7 @@ class NoteService implements angular.IServiceProvider {
         try {
             await this.$http.post('note/UpdateNote', noteViewModel);
         } catch (error) {
-            this.$log.error('Error updating note:', error);
+            console.error('Error updating note:', error);
             throw error;
         }
     }
@@ -51,7 +50,7 @@ class NoteService implements angular.IServiceProvider {
         try {
             await this.$http.post('note/UpdateBulkJobNote', noteViewModel);
         } catch (error) {
-            this.$log.error('Error updating note:', error);
+            console.error('Error updating note:', error);
             throw error;
         }
     }
@@ -62,7 +61,7 @@ class NoteService implements angular.IServiceProvider {
                 params: { noteId }
             });
         } catch (error) {
-            this.$log.error('Error deleting note:', error);
+            console.error('Error deleting note:', error);
             throw error;
         }
     }
@@ -77,7 +76,7 @@ class NoteService implements angular.IServiceProvider {
             });
             return response.data;
         } catch (error) {
-            this.$log.error('Error getting job notes:', error);
+            console.error('Error getting job notes:', error);
             return [];
         }
     }
@@ -91,7 +90,7 @@ class NoteService implements angular.IServiceProvider {
             });
             return response.data;
         } catch (error) {
-            this.$log.error('Error getting job notes:', error);
+            console.error('Error getting job notes:', error);
             return [];
         }
     }
@@ -101,7 +100,7 @@ class NoteService implements angular.IServiceProvider {
             const response = await this.$http.get<INoteType[]>('note/GetNoteTypes');
             return response.data;
         } catch (error) {
-            this.$log.error('Error getting note types:', error);
+            console.error('Error getting note types:', error);
             return [];
         }
     }
@@ -111,7 +110,7 @@ class NoteService implements angular.IServiceProvider {
             const response = await this.$http.post<INoteType>('note/CreateNoteType', noteType);
             return response.data;
         } catch (error) {
-            this.$log.error('Error creating note type:', error);
+            console.error('Error creating note type:', error);
             throw error;
         }
     }

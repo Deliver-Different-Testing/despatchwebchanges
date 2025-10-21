@@ -1461,7 +1461,11 @@ class NationwideControl extends BaseController {
             }
 
             await this.getJobList([JobDataType.NEW, JobDataType.POD]);
-            this.currentJob = this.findJobInLocalLists(job.id);
+
+            const updatedJob = this.findJobInLocalLists(job.id);
+            if (updatedJob) {
+                await this.selectJob(updatedJob);
+            }
 
             this.isDataLoading = false;
 
