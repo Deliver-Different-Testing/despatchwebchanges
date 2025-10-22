@@ -1030,7 +1030,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<List<DES_stpJob_AutoDespatchChildJobsResult>> DES_stpJob_AutoDespatchChildJobsAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<DES_stpJob_AutoDespatchChildJobsResult>> DES_stpJob_AutoDespatchChildJobsAsync(int? jobID, int? internalStatus, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -1047,9 +1047,15 @@ namespace DespatchWeb.EntityClasses
                     Value = jobID ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Int,
                 },
+                new SqlParameter
+                {
+                    ParameterName = "InternalStatus",
+                    Value = internalStatus ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
                 parameterreturnValue,
             };
-            var _ = await _context.SqlQueryAsync<DES_stpJob_AutoDespatchChildJobsResult>("EXEC @returnValue = [dbo].[DES_stpJob_AutoDespatchChildJobs] @JobID = @JobID", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<DES_stpJob_AutoDespatchChildJobsResult>("EXEC @returnValue = [dbo].[DES_stpJob_AutoDespatchChildJobs] @JobID = @JobID, @InternalStatus = @InternalStatus", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 
@@ -1326,7 +1332,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> DESWEB_stpJob_AutoDespatchSelectedJobsAsync(string jobIDs, int? courierID, int? dispID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<int> DESWEB_stpJob_AutoDespatchSelectedJobsAsync(string jobIDs, int? courierID, int? dispID, int? internalStatus, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -1356,9 +1362,15 @@ namespace DespatchWeb.EntityClasses
                     Value = dispID ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Int,
                 },
+                new SqlParameter
+                {
+                    ParameterName = "InternalStatus",
+                    Value = internalStatus ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpJob_AutoDespatchSelectedJobs] @JobIDs = @JobIDs, @CourierID = @CourierID, @DispID = @DispID", sqlParameters, cancellationToken);
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpJob_AutoDespatchSelectedJobs] @JobIDs = @JobIDs, @CourierID = @CourierID, @DispID = @DispID, @InternalStatus = @InternalStatus", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 

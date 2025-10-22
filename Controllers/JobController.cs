@@ -256,11 +256,11 @@ public class JobController(
         return Ok();
     }
 
-    public async Task<IActionResult> Current(int courierId, bool done)
+    public async Task<IActionResult> Current(int courierId, bool done, int page, int pageSize)
     {
         try
         {
-            var result = await jobRepository.CurrentJobListAsync(courierId, done);
+            var result = await jobRepository.CurrentJobListAsync(courierId, done, page, pageSize);
             return Json(result);
         }
         catch (Exception e)
@@ -809,11 +809,11 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> Allocate(int courierId, List<int> jobIds)
+    public async Task<IActionResult> Allocate([FromBody] AllocateJobsToCourierRequest data)
     {
         try
         {
-            await jobRepository.DispatchSelectedJobsAsync(courierId, jobIds);
+            await jobRepository.DispatchSelectedJobsAsync(data.CourierId, data.JobIds);
             return Ok();
         }
         catch (Exception ex)
@@ -824,11 +824,11 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> ReAllocate(int courierId, List<int> jobIds)
+    public async Task<IActionResult> ReAllocate([FromBody] AllocateJobsToCourierRequest data)
     {
         try
         {
-            await jobRepository.ReDispatchSelectedJobsAsync(courierId, jobIds);
+            await jobRepository.ReDispatchSelectedJobsAsync(data.CourierId, data.JobIds);
             return Ok();
         }
         catch (Exception ex)

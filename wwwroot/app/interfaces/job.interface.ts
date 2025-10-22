@@ -632,8 +632,8 @@ export interface IDispatchJob {
     from?: string;
     toAddress?: string;
     toSuburbID?: number;
-    pickupAddress?: IAddressViewModel;
-    deliveryAddress?: IAddressViewModel;
+    pickupAddress: IAddressViewModel;
+    deliveryAddress: IAddressViewModel;
     pickUpLongitude?: number;
     pickUpLatitude?: number;
     deliveryLongitude?: number;
@@ -852,12 +852,22 @@ export interface IJobSearchResultDto {
     jobs: IDispatchJobDto[];
     totalCount: number;
     hasMore: boolean;
+    mapItems?: IDispatchMapItem[];
 }
 
 export interface IJobSearchResult {
     jobs: IDispatchJob[];
     totalCount: number;
     hasMore: boolean;
+    mapItems?: IDispatchMapItem[];
+}
+
+export interface IDispatchMapItem {
+    jobId: number;
+    jobNo: string;
+    pickupAddress: IAddressViewModel;
+    deliveryAddress: IAddressViewModel;
+    assignedCourier?: ISuggestion;
 }
 
 export interface IDeletePriceComponentRequest {

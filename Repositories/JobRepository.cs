@@ -993,17 +993,39 @@ public partial class JobRepository(
     }
 
 
-    public async Task<List<DispatchJobViewModel>> CurrentJobListAsync(int courierId, bool done)
+    public async Task<JobSearchResult> CurrentJobListAsync(int courierId, bool done, int page, int pageSize)
     {
         var isUsCustomer = _infoService.IsUsTenant();
 
-        return await Context.TucCouriers
+        var query = Context.TucJobs
             .AsNoTracking()
-            .Where(c => c.UccrId == courierId)
-            .SelectMany(c => c.TucJobUcjbCouriers)
-            .Where(j => j.UcjbJobDone == done)
+            .Where(j => j.UcjbCourierId != null && j.UcjbCourierId == courierId
+                                                && j.UcjbJobDone == done);
+        
+        // Get a total count before pagination
+        var totalCount = await query.CountAsync();
+
+        var mapItems = await query
+            .AsNoTracking()
+            .Select(JobMappings.ToDispatchMapItem)
+            .ToListAsync();
+
+        // Apply pagination
+        var jobs = await query
+            .Skip(page * pageSize)
+            .Take(pageSize)
             .Select(JobMappings.JobDispatchMapping(isUsCustomer))
             .ToListAsync();
+
+        var hasMore = (page + 1) * pageSize < totalCount;
+
+        return new JobSearchResult
+        {
+            Jobs = jobs,
+            TotalCount = totalCount,
+            HasMore = hasMore,
+            MapItems = mapItems
+        };
     }
 
     public async Task<JobSearchResult> JobListAsync(
@@ -1030,9 +1052,9 @@ public partial class JobRepository(
     {
         var staffId = _infoService.GetStaffId();
         var jobIdsString = string.Join(",", jobIds);
-        await Context.Procedures.DESWEB_stpJob_AutoDespatchSelectedJobsAsync(jobIdsString, courierId, staffId);
+        await Context.Procedures.DESWEB_stpJob_AutoDespatchSelectedJobsAsync(jobIdsString, courierId, staffId, (int)InternalJobStatus.AwaitingPod);
 
-        foreach (var jobId in jobIds) await Context.Procedures.DES_stpJob_AutoDespatchChildJobsAsync(jobId);
+        foreach (var jobId in jobIds) await Context.Procedures.DES_stpJob_AutoDespatchChildJobsAsync(jobId, (int)InternalJobStatus.AwaitingPod);
     }
 
     public async Task SwapPodAsync(string job1, string job2) =>
@@ -1637,7 +1659,7 @@ public partial class JobRepository(
             .TucJobInternalStatuses
             .AsNoTracking()
             .Where(x => x.Tcis != (int)InternalJobStatus.OvernightCp
-                                               && x.Tcis != (int)InternalJobStatus.ActionRequired)
+                        && x.Tcis != (int)InternalJobStatus.ActionRequired)
             .OrderBy(u => u.Tcis)
             .Select(x => new InternalStatus
             {
@@ -1716,7 +1738,7 @@ public partial class JobRepository(
                 return 0;
 
             var isPrebook = viewModel.PrebookJobId.HasValue;
-      
+
             int effectiveJobId;
             if (!isPrebook) effectiveJobId = await GetJobRelationshipInfoAsync(viewModel.ChildJobId ?? 0);
             else effectiveJobId = await GetJobBookingRelationshipInfoAsync(viewModel.PrebookJobId ?? 0);
@@ -1738,7 +1760,8 @@ public partial class JobRepository(
                     await SetPrebookJobAsManuallyPriceAsync(viewModel.PrebookJobId.Value, note);
                     break;
                 default:
-                    if (viewModel.ChildJobId != null) await SetJobAsManuallyPriceAsync(viewModel.ChildJobId.Value, note);
+                    if (viewModel.ChildJobId != null)
+                        await SetJobAsManuallyPriceAsync(viewModel.ChildJobId.Value, note);
                     break;
             }
 
@@ -1749,8 +1772,9 @@ public partial class JobRepository(
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(AddJobPriceBreakdownAsync)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository),
+                    nameof(AddJobPriceBreakdownAsync)));
             throw;
         }
     }
@@ -2916,7 +2940,7 @@ public partial class JobRepository(
             .Select(JobMappings.JobDispatchMapping(isUsCustomer))
             .FirstOrDefaultAsync();
     }
-    
+
     public async Task AddNewTucNoteTypeAsync(NoteTypeViewModel noteType)
     {
         var newType = new TucNoteType

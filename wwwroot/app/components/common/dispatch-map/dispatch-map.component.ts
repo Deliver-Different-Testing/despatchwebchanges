@@ -1,7 +1,7 @@
-import ConfigService from "../../../services/config.service";
-import {IJob} from "../../../interfaces/job.interface";
-import {IAvailableCourierPosition} from "../../../interfaces/courier.interface";
 import "./dispatch-map.styles.less";
+import ConfigService from "../../../services/config.service";
+import {IDispatchMapItem} from "../../../interfaces/job.interface";
+import {IAvailableCourierPosition} from "../../../interfaces/courier.interface";
 import BaseController from "../../base-controller";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
@@ -25,8 +25,8 @@ class DispatchMapController extends BaseController {
     private refreshCouriersMarkerListener: Function | null = null;
     private boundsChangedListener: Function | null = null;
     private pendingChanges: {
-        jobs?: IJob[];
-        currentJob?: IJob;
+        jobs?: IDispatchMapItem[];
+        currentJob?: IDispatchMapItem;
         mapCenter?: google.maps.LatLng | google.maps.LatLngLiteral;
         mapZoom?: number;
         showAvailableCouriers?: boolean;
@@ -45,12 +45,12 @@ class DispatchMapController extends BaseController {
     OTHER_DELIVERY_ICON_HOVER: google.maps.Symbol | null = null;
 
     initialMapZoom?: number;
-    jobs?: IJob[] = [];
-    currentJob?: IJob;
+    jobs?: IDispatchMapItem[] = [];
+    currentJob?: IDispatchMapItem;
     courierPositions?: IAvailableCourierPosition[] = [];
     mapCenter?: google.maps.LatLng | google.maps.LatLngLiteral;
     mapZoom: number = 12;
-    onMarkerClick?: (params: { job: IJob }) => void;
+    onMarkerClick?: (params: { job: IDispatchMapItem }) => void;
     showAvailableCouriers: boolean = false;
     autoZoomEnabled: boolean = true;
     markers: google.maps.Marker[] = [];
@@ -151,7 +151,7 @@ class DispatchMapController extends BaseController {
                         if (retryCount < maxRetries) {
                             retryCount++;
                             console.log(`[DispatchMapController] NgMap.getMap failed, retry ${retryCount}/${maxRetries}:`, error);
-                            setTimeout(() => {
+                            this.registerTimeout(() => {
                                 tryGetMap().then(resolve).catch(reject);
                             }, 500);
                         } else {
@@ -424,17 +424,16 @@ class DispatchMapController extends BaseController {
 
         try {
             let markersAdded = 0;
-            const currentJobId = this.currentJob?.id;
+            const currentJobId = this.currentJob?.jobId;
 
             const isShowingCourierJobs = Boolean(
-                this.currentJob &&
-                (this.currentJob.courier || this.currentJob.assignedCourier) &&
+                this.currentJob && this.currentJob.assignedCourier &&
                 this.jobs && this.jobs.length > 1
             );
 
             console.log(`[DispatchMapController] Map mode: ${isShowingCourierJobs ? 'Courier jobs view' : 'Normal view'}`);
 
-            // Add current job first (if exists)
+            // Add the current job first (if exists)
             if (this.currentJob) {
                 console.log(`[DispatchMapController] Adding current job to map: ${this.currentJob.jobNo}`);
 
@@ -460,7 +459,7 @@ class DispatchMapController extends BaseController {
                 console.log(`[DispatchMapController] Adding ${this.jobs.length} jobs to map in batches`);
 
                 const jobsToAdd = this.jobs.filter(job =>
-                    !currentJobId || job.id !== currentJobId
+                    !currentJobId || job.jobId !== currentJobId
                 );
 
                 const batchMarkersAdded = await this.addMarkersInBatches(
@@ -491,7 +490,7 @@ class DispatchMapController extends BaseController {
     }
 
     private async addMarkersInBatches(
-        jobs: IJob[],
+        jobs: IDispatchMapItem[],
         useAlternateColor: boolean = false,
         batchSize: number = 50
     ): Promise<number> {
@@ -505,7 +504,7 @@ class DispatchMapController extends BaseController {
 
             this.isUpdating = true;
 
-            batch.forEach((job: IJob) => {
+            batch.forEach((job: IDispatchMapItem) => {
                 if (this.isValidCoordinates(
                     job.pickupAddress?.latitude,
                     job.pickupAddress?.longitude
@@ -557,7 +556,7 @@ class DispatchMapController extends BaseController {
         });
     }
 
-    private addPickupMarker(job: IJob, isCurrentJob: boolean = false, useAlternateColor: boolean = false) {
+    private addPickupMarker(job: IDispatchMapItem, isCurrentJob: boolean = false, useAlternateColor: boolean = false) {
         if (!job.pickupAddress) return;
 
         const position = new this.$window.google.maps.LatLng(
@@ -594,7 +593,7 @@ class DispatchMapController extends BaseController {
         this.markers.push(marker);
     }
 
-    private addDeliveryMarker(job: IJob, isCurrentJob: boolean = false, useAlternateColor: boolean = false) {
+    private addDeliveryMarker(job: IDispatchMapItem, isCurrentJob: boolean = false, useAlternateColor: boolean = false) {
         if (!job.deliveryAddress) return;
 
         const position = new this.$window.google.maps.LatLng(
@@ -643,8 +642,8 @@ class DispatchMapController extends BaseController {
         }, 40); // 40 ms intervals for smooth fade
     }
 
-    private setupMarkerListeners(marker: google.maps.Marker, job: any, normalIcon: google.maps.Symbol, hoverIcon: google.maps.Symbol, locationType: string) {
-        const isCurrentJob = job.id === this.currentJob?.id;
+    private setupMarkerListeners(marker: google.maps.Marker, job: IDispatchMapItem, normalIcon: google.maps.Symbol, hoverIcon: google.maps.Symbol, locationType: string) {
+        const isCurrentJob = job.jobId === this.currentJob?.jobId;
 
         marker.addListener("mouseover", () => {
             marker.setIcon(hoverIcon);

@@ -24,7 +24,11 @@ import {IEventGroupViewModel} from "../interfaces/event-group-view-model.interfa
 import {ClearListEnvelopeViewModel, DfrntPageViewModel,} from "../interfaces/dfrnt-page-view-model.interface";
 import {TaskTableFiltersRequest, ITask, ITaskDto,} from "../components/task-dashboard/task-dashboard.interfaces";
 import {JobProperty} from "../enums/job-property.enum";
-import {IJobUpdateBaseRequest, UpdatePodDetailsRequest} from "../interfaces/requests.interfaces";
+import {
+    IAllocateJobsToCourierRequest,
+    IJobUpdateBaseRequest,
+    UpdatePodDetailsRequest
+} from "../interfaces/requests.interfaces";
 import {JobEventData} from "../components/dialogs/add-event-dialog/add-event-dialog.interfaces";
 import {
     IDeliveryJourney,
@@ -140,26 +144,14 @@ class DispatchCoreService implements angular.IServiceProvider {
         courierId: number,
         jobIds: number[]
     ): Promise<void> {
-        await this.$http.post("job/Allocate", null, {
-            params: {
-                courierId,
-                jobIds,
-            },
-        });
+        const data:IAllocateJobsToCourierRequest = {
+            courierId,
+            jobIds,
+        };
+        
+        await this.$http.post("job/Allocate", data);
     }
-
-    async reAllocateJobs(
-        courierId: number,
-        jobIds: number[]
-    ): Promise<void> {
-        await this.$http.post("job/ReAllocate", null, {
-            params: {
-                courierId,
-                jobIds,
-            },
-        });
-    }
-
+    
     async setFirstJob(jobId: number, courierId: number): Promise<void> {
         await this.$http.post("job/SetFirstJob", null, {
             params: {
@@ -321,17 +313,22 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getJobsCurrent(courierId: number): Promise<IDispatchJob[]> {
-        const response = await this.$http.get<IDispatchJobDto[]>(
+    async getJobsCurrent(courierId: number, page: number, pageSize: number): Promise<IJobSearchResult> {
+        const response = await this.$http.get<IJobSearchResultDto>(
             `job/current`, {
                 params: {
                     courierId,
                     done: false,
+                    page,
+                    pageSize,
                 },
             }
         );
 
-        return response.data.map(transformDispatchJobDTO);
+        return {
+            ...response.data,
+            jobs: response.data.jobs.map(transformDispatchJobDTO)
+        }  
     }
 
     async getDriverLocations(selectedViews: DfrntPageViewModel[]): Promise<IClearListViewModel> {
@@ -725,6 +722,8 @@ class DispatchCoreService implements angular.IServiceProvider {
             order: queryParams.order ?? "time",
             orderDirection: queryParams.orderDirection ?? "asc",
             isInternal: internal,
+            page: queryParams.page ?? 0,
+            pageSize: queryParams.pageSize ?? 50,
             despatchViewIds,
             ...additionalParams
         };
