@@ -7,6 +7,7 @@ import dayjs, {Dayjs} from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import DensityMode from "../../../enums/densityMode";
+import {getIanaTimezone} from "../../../functions/formatDates";
 
 dayjs.extend(relativeTime);
 
@@ -49,7 +50,7 @@ class TaskHistoryController extends BaseController {
         this.initServices($timeout, $interval);
 
         this.isUsCustomer = appConfig.US_Customer;
-        this.timeZone = TimeZone;
+        this.timeZone = getIanaTimezone(TimeZone);
     }
 
     $onInit() {
