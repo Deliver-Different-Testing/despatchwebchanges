@@ -163,7 +163,7 @@ public interface IJobRepository
 
     Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(List<int> selectedViewIds);
 
-    Task<int> SaveNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default);
+    Task SaveNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default);
     Task SaveBulkNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default);
 
     Task<TucNoteViewModel> GetNoteByIdAsync(int noteId);

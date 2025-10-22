@@ -9,6 +9,7 @@ import dayjs from "dayjs";
 class StickyNoteController extends BaseController {
     private previousJobId?: number;
     private previousBulkJobId?: number;
+    private timezone: string = TimeZone;
     private readonly isRecurringJob: boolean = false;
 
     notes?: IJobNote[] = [];
@@ -35,10 +36,10 @@ class StickyNoteController extends BaseController {
         private $filter: angular.IFilterService,
     ) {
         super();
-
+        
         this.noteService.getNoteTypes().then((noteTypes: INoteType[]) => {
             this.noteCategories = noteTypes;
-        })
+        });
     }
 
     $onInit(): void {
@@ -167,7 +168,7 @@ class StickyNoteController extends BaseController {
             jobId: !this.isRecurringJob ? this.jobId : undefined,
             jobBookingId: this.isRecurringJob ? this.jobId : undefined,
             bulkJobId: this.bulkJobId != null ? this.bulkJobId : undefined,
-            createdDate: dayjs().toDate(),
+            createdDate: dayjs().tz(this.timezone),
         };
 
         try {

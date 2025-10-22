@@ -1,5 +1,6 @@
 import {IJobNote, INoteType} from "../interfaces/job.interface";
 import dayjs from "dayjs";
+import {transformJobNoteToDTO} from "../functions/toDtoMappings";
 
 class NoteService implements angular.IServiceProvider {
     static $inject = [
@@ -19,7 +20,8 @@ class NoteService implements angular.IServiceProvider {
 
     async createNote(noteViewModel: IJobNote): Promise<IJobNote> {
         try {
-            const response = await this.$http.post<IJobNote>('note/CreateNote', noteViewModel);
+            const data = transformJobNoteToDTO(noteViewModel);
+            const response = await this.$http.post<IJobNote>('note/CreateNote', data);
             return response.data;
         } catch (error) {
             console.error('Error creating note:', error);
@@ -29,7 +31,8 @@ class NoteService implements angular.IServiceProvider {
     
     async createBulkJobNote(noteViewModel: IJobNote): Promise<IJobNote> {
         try {
-            const response = await this.$http.post<IJobNote>('note/CreateBulkJobNote', noteViewModel);
+            const data = transformJobNoteToDTO(noteViewModel);
+            const response = await this.$http.post<IJobNote>('note/CreateBulkJobNote', data);
             return response.data;
         } catch (error) {
             console.error('Error creating note:', error);
@@ -39,7 +42,8 @@ class NoteService implements angular.IServiceProvider {
 
     async updateNote(noteViewModel: IJobNote): Promise<void> {
         try {
-            await this.$http.post('note/UpdateNote', noteViewModel);
+            const data = transformJobNoteToDTO(noteViewModel);
+            await this.$http.post('note/UpdateNote', data);
         } catch (error) {
             console.error('Error updating note:', error);
             throw error;
@@ -48,7 +52,8 @@ class NoteService implements angular.IServiceProvider {
   
     async updateBulkJobNote(noteViewModel: IJobNote): Promise<void> {
         try {
-            await this.$http.post('note/UpdateBulkJobNote', noteViewModel);
+            const data = transformJobNoteToDTO(noteViewModel);
+            await this.$http.post('note/UpdateBulkJobNote', data);
         } catch (error) {
             console.error('Error updating note:', error);
             throw error;

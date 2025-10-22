@@ -346,24 +346,16 @@ public class RecurringJobRepository(
             .ToListAsync();
     }
 
-    public async Task<int> SaveRecurringJobNote(TucNoteViewModel note)
+    public async Task SaveRecurringJobNote(TucNoteViewModel note)
     {
         ArgumentNullException.ThrowIfNull(note);
         ArgumentNullException.ThrowIfNull(note.JobId);
 
-        var noteId = note.NoteId;
         if (note.NoteId == 0)
-        {
-            var newNoteId = await CreateNewRecurringJobNote(note.JobId.Value, note.NoteText, note.IsImportant,
+            await CreateNewRecurringJobNote(note.JobId.Value, note.NoteText, note.IsImportant,
                 (NoteType)note.NoteTypeId);
-            noteId = newNoteId;
-        }
         else
-        {
             await UpdateRecurringJobNote(note.NoteId, note.NoteText, note.IsImportant, (NoteType)note.NoteTypeId);
-        }
-
-        return noteId;
     }
 
     public async Task UpdateBookingDeliveryAddressAsync(UpdateAddressRequest request)

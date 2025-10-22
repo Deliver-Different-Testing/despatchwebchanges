@@ -73,14 +73,12 @@ public class NoteController(
             ArgumentNullException.ThrowIfNull(noteViewModel);
             ArgumentNullException.ThrowIfNull(noteViewModel.NoteId);
 
-            int savedNoteId;
             if (noteViewModel.JobBookingId.HasValue)
-                savedNoteId = await recurringJobRepository.SaveRecurringJobNote(noteViewModel);
+                await recurringJobRepository.SaveRecurringJobNote(noteViewModel);
             else
-                savedNoteId = await jobRepository.SaveNoteAsync(noteViewModel);
+                await jobRepository.SaveNoteAsync(noteViewModel);
 
-            var savedViewModel = await jobRepository.GetNoteByIdAsync(savedNoteId);
-            return savedViewModel;
+            return Ok();
         }
         catch (Exception ex)
         {

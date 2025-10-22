@@ -858,11 +858,11 @@ class JobsListController extends BaseController {
                 return `Loading more jobs...`;
             }
             if (!this.allJobsLoaded) {
-                return `Showing ${displayed} of ${this.totalJobsCount} jobs (${multiPart} child jobs) - Scroll for more`;
+                return `Showing ${displayed} of ${this.totalJobsCount} jobs (${multiPart} parent jobs with children) - Scroll for more`;
             }
         }
 
-        return `Showing ${displayed} jobs (${multiPart} child jobs)`;
+        return `Showing ${displayed} jobs (${multiPart} parent jobs with children)`;
     }
 
     getLastUpdatedText(): string {

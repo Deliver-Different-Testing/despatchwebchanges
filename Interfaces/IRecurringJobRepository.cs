@@ -14,7 +14,7 @@ public interface IRecurringJobRepository
     Task<PaginatedResponse<PrebookListViewModel>> PreBookJobListAsync(RecurringJobQueryRequest request);
     Task UpdateTucJobRecurringAsync(int jobId, JobProperty property, string value);
     Task<List<TucNoteViewModel>> GetRecurringNotesByJobIdAsync(int jobId);
-    Task<int> SaveRecurringJobNote(TucNoteViewModel note);
+    Task SaveRecurringJobNote(TucNoteViewModel note);
     Task UpdateBookingDeliveryAddressAsync(UpdateAddressRequest request);
     Task UpdateBookingPickupAddressAsync(UpdateAddressRequest request);
 }
