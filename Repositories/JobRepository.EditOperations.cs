@@ -263,6 +263,9 @@ public partial class JobRepository
                 if(job.TucJobItemJobs == null) throw new NullReferenceException("TucJobItemJobs is null");
                 foreach (var item in job.TucJobItemJobs) item.PrivateRes = bool.Parse(value);
                 break;
+            case JobProperty.Barcode:
+                job.Barcode = value[..Math.Min(value.Length, 20)];
+                break;
             case JobProperty.DeliverToContact:
             case JobProperty.StopDate:
             case JobProperty.RestartDate:
@@ -544,6 +547,9 @@ public partial class JobRepository
                 break;
             case JobProperty.BookedTime:
                 archive.UcjbDate = DateTimeOffset.Parse(value).DateTime;
+                break;
+            case JobProperty.Barcode:
+                archive.Barcode = value[..Math.Min(value.Length, 20)];
                 break;
             case JobProperty.FollowupTime:
             case JobProperty.DeliverToContact:

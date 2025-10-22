@@ -765,6 +765,12 @@ class JobDetailController extends BaseController {
         await this.refreshJobDetails(job.id);
     }
 
+    async editBarcode($event: MouseEvent, job: IJob): Promise<void> {
+     await this.showEditDialog($event, job, "Barcode", 
+         "Enter job barcode..", "barcode", 
+         job.barcode, JobProperty.Barcode)
+    }
+    
     async showJobDimensionsDialog($event: MouseEvent, job: IJob): Promise<void> {
         await this.editParcelDimensionsDialogService.showJobDimensionsDialog(
             $event,

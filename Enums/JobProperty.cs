@@ -63,5 +63,6 @@ public enum JobProperty
     CustomJobName,
     TailLiftPu,
     TailLiftDo,
-    DeliverToPrivateRes
+    DeliverToPrivateRes,
+    Barcode
 }

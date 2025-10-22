@@ -52,5 +52,6 @@ export enum JobProperty {
     CustomJobName = 'CustomJobName',
     TailLiftPu = 'TailLiftPu',
     TailLiftDo = 'TailLiftDo',
-    DeliverToPrivateRes = 'DeliverToPrivateRes'
+    DeliverToPrivateRes = 'DeliverToPrivateRes',
+    Barcode = 'Barcode',
 }
