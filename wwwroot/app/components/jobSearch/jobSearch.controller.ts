@@ -516,7 +516,7 @@ class JobSearchController extends BaseController {
             const courierNumber = await this.$mdDialog.show(dispatchDialog);
 
             if (courierNumber) {
-                await this.dispatchJobService.dispatchJob(courierNumber, job);
+                await this.dispatchJobService.assignSingleJobToCourier(courierNumber, job);
                 await this.selectJob(job);
                 this.toastrService.showSuccessToast('Job dispatched to courier ' + courierNumber);
             }

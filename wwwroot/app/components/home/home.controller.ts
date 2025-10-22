@@ -50,6 +50,7 @@ import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dial
 import IDateFilterData from "../common/date-filter-menu/IDateFilterData";
 import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
 import utc from "dayjs/plugin/utc";
+import JobDataType from "../Nationwide/enums/JobDataType";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -58,7 +59,6 @@ class HomeController extends BaseController {
     static $inject = [
         '$document',
         '$mdDialog',
-        '$window',
         'toastrService',
         'DispatchData',
         'dispatchJobService',
@@ -94,7 +94,7 @@ class HomeController extends BaseController {
 
     readonly currentWorkListName: JobListType = JobListType.CurrentWorkList;
     readonly dispatchListName: JobListType = JobListType.DispatchJobList;
-    
+
     private readonly currentAppPage: AppPages = AppPages.Dispatch;
     private static COURIER_URL: string = "/courier/AllActiveSearch";
 
@@ -113,8 +113,6 @@ class HomeController extends BaseController {
     queryParams: IJobQueryParams;
     isUsCustomer: boolean;
     selectedCourier?: ISuggestion;
-    jobDetailFabIsOpen: boolean = false;
-    isCheckingAttachments: boolean = false;
     hasAttachedFile: boolean = false;
     views: DfrntPageViewModel[];
     selectedViews: DfrntPageViewModel[];
@@ -134,15 +132,12 @@ class HomeController extends BaseController {
     defaultLayout?: ILayout;
     currentLayoutName?: string;
     layout?: { columns: IColumn[] };
-    map: any;
     courierSearchText?: string;
     courierSearchOpen: boolean = false;
     currentCourier?: ISuggestion;
     jobsCurrentList?: IDispatchJob[];
     potentialCouriers?: IPotentialCouriers[];
     currentWorkSelection?: string;
-    currentSupport?: ITask;
-    potentialCouriersSelection?: string;
     currentSelection?: string;
     boxSortableOptions: angular.ui.SortableOptions<any>;
     supportItemConfig = {
@@ -171,11 +166,12 @@ class HomeController extends BaseController {
     private refreshIntervalPromise?: angular.IPromise<any>;
     private isAutoRefreshEnabled: boolean = false;
     private selectedJobsForDispatch: Set<number>;
+    totalJobCount: number = 0;
+    private selectedClearListId?: number;
 
     constructor(
         private $document: angular.IDocumentService,
         private $mdDialog: angular.material.IDialogService,
-        private $window: angular.IWindowService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
         private dispatchJobService: DispatchExecutorService,
@@ -294,6 +290,8 @@ class HomeController extends BaseController {
         this.queryParams = {
             order: "time",
             orderDirection: "asc",
+            page: 0,
+            pageSize: 50
         };
 
         this.isUsCustomer = this.APP_CONFIG.US_Customer;
@@ -827,46 +825,6 @@ class HomeController extends BaseController {
         this.applyScope();
     }
 
-    static attention(job: IDispatchJob): string {
-        const components = [];
-
-        // Add DIRECT if applicable
-        if (job.direct) {
-            components.push("DIRECT");
-        }
-
-        // Size label is always included (capitalized) if present
-        if (job.size?.text) {
-            components.push(job.size.text.toUpperCase());
-        }
-
-        // Add RTN for return jobs
-        if (job.return) {
-            components.push("RTN");
-        }
-
-        // Add child notes if present
-        if (job.childNotes && Array.isArray(job.childNotes) && job.childNotes.length > 0) {
-            components.push(job.childNotes);
-        }
-
-        // Add a pickup location indicator
-        const pickupMap: { [key: number]: string } = {
-            1: "R", 2: "D",
-        };
-        if (job.pickupFrom && job.pickupFrom in pickupMap) {
-            components.push(pickupMap[job.pickupFrom]);
-        }
-
-        // Add Saturday delivery indicator
-        if (job.saturdayDelivery) {
-            components.push("Sat Del");
-        }
-
-        // Join all components with spaces and trim
-        return components.join(" ").trim();
-    }
-
     async unlockJob(currentJob: IDispatchJob): Promise<void> {
         await this.DispatchData.updateJobDetail(currentJob.id, JobProperty.Locked, false, currentJob.preBook ?? false)
     }
@@ -878,7 +836,7 @@ class HomeController extends BaseController {
     async selectClearList(selectedClearList: IAreaClearList): Promise<void> {
         try {
             console.log("Selecting clear list:", selectedClearList);
-            
+
             if (!selectedClearList) {
                 this.toastrService.showErrorToast("An error occurred while selecting a clear list. Please try again.");
                 return;
@@ -890,28 +848,27 @@ class HomeController extends BaseController {
             this.jobList = [];
         }
     }
-    
+
     private async processClearListJobs(selectedClearListId: number): Promise<void> {
         try {
             console.log("Processing clear list jobs:", selectedClearListId);
-            
-            const selectedClients = this.pickService.clients.map((client: { id: number }) => client.id);
-            const result = await this.dispatchJobService.getJobListWithCourierData(
+            this.selectedClearListId = selectedClearListId; // Save for later use
+
+            const result = await this.dispatchJobService.getJobsWithDispatchInfo(
                 this.queryParams,
-                selectedClients,
                 ClientInternal ?? false,
                 this.selectedViews,
-                selectedClearListId
+                selectedClearListId,
             );
 
-            if (result.items?.length > 0) {
-                console.log("Processing clear list jobs:", result.items);
-                this.jobList = HomeController.initializeJobSearchFields(result.items);
+            if (result.jobs?.length > 0) {
+                console.log("Processing clear list jobs:", result.jobs);
+                this.jobList = HomeController.initializeJobSearchFields(result.jobs);
 
                 if (!this.currentCourier) {
                     this.mapJobList = this.jobList;
                 }
-                
+
                 console.log("Clear list Job list:", this.jobList);
             } else {
                 console.log("No jobs found for clear list:", selectedClearListId);
@@ -923,7 +880,8 @@ class HomeController extends BaseController {
             }
 
             this.jobsCurrentList = undefined;
-            
+            this.totalJobCount = result.totalCount;
+
         } catch (error) {
             console.error("Error fetching jobs for clear list:", error);
             this.jobList = [];
@@ -1113,8 +1071,8 @@ class HomeController extends BaseController {
 
     async reAllocateJobs(job: IDispatchJob): Promise<void> {
         if (!job) return;
-        
-        await this.dispatchJobService.reallocateJob(job);
+
+        await this.dispatchJobService.reassignJob(job);
         await this.getData();
         await this.searchCourier();
     }
@@ -1222,7 +1180,7 @@ class HomeController extends BaseController {
 
     async searchCourier(): Promise<void> {
         try {
-            if(!this.selectedCourier) return;
+            if (!this.selectedCourier) return;
             const foundCourier = await this.DispatchData.getCourierById(this.selectedCourier.id);
             if (!foundCourier) {
                 this.toastrService.showWarningToast("Courier not found");
@@ -1306,12 +1264,8 @@ class HomeController extends BaseController {
         this.jobsCurrentList = data;
     }
 
-    private static isValidCoordinates(lat: number, lng: number): 0 | false | boolean {
-        return (lat && lng && !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0 && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180);
-    }
-
     async updateUIForPotentialCourier(courier: ICourierData): Promise<void> {
-        if(!courier || !courier.courierId || !courier.courierName) return;
+        if (!courier || !courier.courierId || !courier.courierName) return;
         this.currentWorkSelection = ` for Courier ${courier.courier}`;
         this.currentCourier = {id: courier.courierId, text: courier.courierName};
     }
@@ -1349,8 +1303,6 @@ class HomeController extends BaseController {
             jobNumber: task.jobNumber,
             taskId: task.id
         });
-
-        this.currentSupport = task;
 
         if (!this.tasksService.validateTaskJobId(task, (message) => {
             this.toastrService.showWarningToast(message);
@@ -1403,8 +1355,6 @@ class HomeController extends BaseController {
         // Load tasks in the background without blocking job selection
         this.loadSupportsInBackground(undefined, job.id);
 
-        this.currentSupport = undefined;
-
         // Create a new reference to trigger change detection
         this.currentJob = angular.copy(job);
         this.currentJobId = job.id;
@@ -1442,7 +1392,7 @@ class HomeController extends BaseController {
                         text: job.courierData.courierName || job.courier || job.assignedCourier?.text || 'Unknown Courier'
                     };
 
-                    if(!this.currentCourier) return;
+                    if (!this.currentCourier) return;
                     this.currentWorkSelection = ` for Courier ${this.currentCourier.id}`;
 
                     // Get all jobs for this courier
@@ -1458,26 +1408,6 @@ class HomeController extends BaseController {
                         this.truckCourierStatus = await this.DispatchData.truckCourierStatus(job.courierData.courierId);
                     } catch (error: any) {
                         console.warn("Error fetching truck courier status:", error);
-                    }
-
-                    // Set map bounds to include pickup, delivery and courier positions if available
-                    if (job.pickupAddress?.latitude != null && job.pickupAddress?.longitude != null &&
-                        job.deliveryAddress?.latitude != null && job.deliveryAddress?.longitude != null &&
-                        HomeController.isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude) &&
-                        HomeController.isValidCoordinates(job.deliveryAddress.latitude, job.deliveryAddress.longitude)) {
-
-                        if (this.map) {
-                            // Create bounds that include pickup and delivery points
-                            const bounds = new this.$window.google.maps.LatLngBounds();
-                            bounds.extend(new this.$window.google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
-                            bounds.extend(new this.$window.google.maps.LatLng(job.deliveryAddress.latitude, job.deliveryAddress.longitude));
-
-                            // If courier position is available, include it
-                            if (job.courierData.latitude != null && job.courierData.longitude != null &&
-                                HomeController.isValidCoordinates(job.courierData.latitude, job.courierData.longitude)) {
-                                bounds.extend(new this.$window.google.maps.LatLng(job.courierData.latitude, job.courierData.longitude));
-                            }
-                        }
                     }
                 } else {
                     // Fallback if no courier data available
@@ -1537,27 +1467,8 @@ class HomeController extends BaseController {
 
     async handleUndispatchedJob(job: IDispatchJob): Promise<void> {
         await this.getPotentialCouriers(job.id);
-        this.potentialCouriersSelection = ` for Job ${job.jobNo}`;
         this.currentCourier = undefined;
         this.currentSelection = ` for Job ${job.jobNo}`;
-
-        // Verify we have valid coordinates before displaying
-        if (this.autoZoomEnabled && this.map) {
-            if (job.pickupAddress?.latitude != null && job.pickupAddress?.longitude != null &&
-                HomeController.isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude)) {
-                // Set bounds for pickup point
-                const bounds = new this.$window.google.maps.LatLngBounds();
-                bounds.extend(new this.$window.google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
-
-                // If delivery coordinates are valid, include them too
-                if (job.deliveryAddress?.latitude != null && job.deliveryAddress?.longitude != null &&
-                    HomeController.isValidCoordinates(job.deliveryAddress.latitude, job.deliveryAddress.longitude)) {
-                    bounds.extend(new this.$window.google.maps.LatLng(job.deliveryAddress.latitude, job.deliveryAddress.longitude));
-                }
-            } else {
-                console.warn("Invalid pickup coordinates for job:", job);
-            }
-        }
     }
 
     focusDispatchField(jobId: number): void {
@@ -1629,8 +1540,6 @@ class HomeController extends BaseController {
                 localStorage.setItem(this.DispatchFiltersKey, JSON.stringify(this.queryParams));
             }
 
-            const selectedClients = this.pickService.clients.map((a: any) => a.id);
-
             let orderBy = this.queryParams.order || '';
             let orderDirection = "asc";
 
@@ -1643,18 +1552,17 @@ class HomeController extends BaseController {
                 order: orderBy,
                 orderDirection: orderDirection,
                 startDate: this.dateFilterData.startDate,
-                endDate: this.dateFilterData.endDate,
+                endDate: this.dateFilterData.endDate
             };
 
-            const result = await this.dispatchJobService.getJobListWithCourierData(
+            const result = await this.dispatchJobService.getJobsWithDispatchInfo(
                 params,
-                selectedClients,
                 ClientInternal ?? false,
                 this.selectedViews
             );
 
-            if (result.items?.length > 0) {
-                this.jobList = HomeController.initializeJobSearchFields(result.items);
+            if (result.jobs?.length > 0) {
+                this.jobList = HomeController.initializeJobSearchFields(result.jobs);
 
                 if (!this.currentCourier) {
                     this.mapJobList = this.jobList;
@@ -1668,6 +1576,7 @@ class HomeController extends BaseController {
             }
 
             this.jobsCurrentList = undefined;
+            this.totalJobCount = result.totalCount;
         } catch (error: any) {
             console.error("Error getting job list:", error);
             this.toastrService.showErrorToast("Failed to get job list. Please try again.");
@@ -1820,7 +1729,6 @@ class HomeController extends BaseController {
     }
 
     async checkForAttachments(jobId: number): Promise<any> {
-        this.isCheckingAttachments = true;
         this.hasAttachedFile = false;
 
         try {
@@ -1831,8 +1739,6 @@ class HomeController extends BaseController {
             console.log("Error checking for attachments:", error);
             this.hasAttachedFile = false;
             throw error;
-        } finally {
-            this.isCheckingAttachments = false;
         }
     }
 
@@ -1961,7 +1867,7 @@ class HomeController extends BaseController {
                 return 'All Supports';
         }
     }
-    
+
     async loadSupports(filterType: string = this.supportsFilter): Promise<void> {
         try {
             this.supportsLoading = true;
@@ -2369,19 +2275,19 @@ class HomeController extends BaseController {
 
         // Update map
         this.clearListId = selectedArea.id;
-        
+
         // First, set the active state
         this.driverLocations.areas.forEach((area: IAreaClearList) => {
             area.isActive = area === selectedArea;
         });
 
         // Then process jobs if needed
-            try {
-                await this.processClearListJobs(selectedArea.id);
-            } catch (error) {
-                console.error("Clear list processing error:", error);
-                this.jobList = [];
-            }
+        try {
+            await this.processClearListJobs(selectedArea.id);
+        } catch (error) {
+            console.error("Clear list processing error:", error);
+            this.jobList = [];
+        }
 
         this.applyScope();
     }
@@ -2409,6 +2315,40 @@ class HomeController extends BaseController {
         }
 
         this.applyScope();
+    }
+
+    async handleLoadMoreJobs(page: number, pageSize: number): Promise<{
+        jobs: IDispatchJob[],
+        totalCount: number,
+        hasMore: boolean
+    }> {
+        try {
+            const result = await this.dispatchJobService.getJobsWithDispatchInfo(
+                {
+                    ...this.queryParams,
+                    page: page,
+                    pageSize: pageSize
+                },
+                ClientInternal ?? false,
+                this.selectedViews,
+                this.selectedClearListId,
+            );
+
+            return {
+                jobs: result.jobs || [],
+                totalCount: result.totalCount || 0,
+                hasMore: result.hasMore || false
+            };
+        } catch (error) {
+            console.error('Error loading more POD jobs:', error);
+            this.toastrService.showErrorToast('Failed to load more POD jobs');
+            throw error;
+        }
+    }
+
+    async updateJobSearchText(searchText: string): Promise<void> {
+        this.queryParams.searchText = searchText || '';
+        await this.getJobList();
     }
 }
 

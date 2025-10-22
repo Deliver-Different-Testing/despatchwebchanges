@@ -208,7 +208,7 @@ export class CreateJobDialogController extends BaseController {
             // Handle courier dispatch separately with its own error handling
             if (this.selectedCourier) {
                 try {
-                    await this.dispatchJobService.dispatchJobByJobId(this.selectedCourier.id, newJobId);
+                    await this.dispatchJobService.assignSingleJobById(this.selectedCourier.id, newJobId);
                     this.toastrService.showSuccessToast("Job created and dispatched successfully");
                 } catch (dispatchError: any) {
                     console.error("Courier dispatch failed:", dispatchError);

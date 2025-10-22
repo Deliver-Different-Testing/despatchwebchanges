@@ -86,9 +86,38 @@ public class BaseJobRepository(
                     };
             }
 
+            // Get All Jobs For Map (before search to not limit)
+            var mapItems = new List<DispatchMapItems>();
+            if (page == AppPage.Dispatch)
+            {
+                mapItems = await query.AsNoTracking()
+                    .Select(j => new DispatchMapItems
+                    {
+                        JobId = j.UcjbId,
+                        PickupAddress = new AddressViewModel(
+                            j.PickupAddressLine1,
+                            j.PickupAddressLine2,
+                            j.PickupAddressLine3,
+                            j.PickupAddressLine4,
+                            j.PickupAddressLine5,
+                            j.PickupAddressLine6,
+                            j.PickupAddressLine7,
+                            j.PickupAddressLine8),
+                        DeliveryAddress = new AddressViewModel(
+                            j.DeliveryAddressLine1,
+                            j.DeliveryAddressLine2,
+                            j.DeliveryAddressLine3,
+                            j.DeliveryAddressLine4,
+                            j.DeliveryAddressLine5,
+                            j.DeliveryAddressLine6,
+                            j.DeliveryAddressLine7,
+                            j.DeliveryAddressLine8)
+                    }).ToListAsync();
+            }
+            
             // Search
             if (!string.IsNullOrEmpty(queryParams.SearchText)) query = ApplySearchFilter(query, queryParams.SearchText);
-
+            
             // Get a total count before pagination
             var totalCount = await query.CountAsync();
 
@@ -114,90 +143,13 @@ public class BaseJobRepository(
             {
                 Jobs = jobs,
                 TotalCount = totalCount,
-                HasMore = hasMore
+                HasMore = hasMore,
+                MapItems = page == AppPage.Dispatch ? mapItems : null
             };
         }
         catch (Exception e)
         {
             Log.Error(e, "Error occurred getting jobs for dispatch page with pagination. Please see exception.");
-            throw;
-        }
-    }
-
-    protected async Task<List<DispatchJobViewModel>> DespatchQry(
-        AppPage page,
-        JobQueryParams queryParams,
-        bool isInternal,
-        bool isUsTenant,
-        string clientIds,
-        List<int> selectedViewIds,
-        NationwideWidget? windowPane = null,
-        int? selectedClearListId = null
-    )
-    {
-        try
-        {
-            var query = await BuildBaseQuery(selectedViewIds, isUsTenant);
-            if (query == null) return [];
-
-            ClearListEnvelopeViewModel clearListEnvelope = null;
-            if (selectedClearListId.HasValue)
-            {
-                Log.Debug("'ClearListId {ClearListID} provided. Getting ClearListEnvelope", selectedClearListId);
-                var country = isUsTenant ? Country.Us : Country.Nz;
-                clearListEnvelope =
-                    await clearListEnvelopeService.GetClearListAreaEnvelopeAsync(selectedClearListId.Value, country);
-            }
-
-            query = ApplyGeographicFilters(query, clearListEnvelope);
-
-            switch (page)
-            {
-                case AppPage.Dispatch:
-                    // Filters
-                    query = query.Where(j => j.UcjbStatus != (int)JobStatus.AwaitingPod);
-                    if (queryParams.DateCutoff.HasValue)
-                        query = query.Where(j => j.UcjbDate.Date <= queryParams.DateCutoff.Value.Date);
-
-                    // Add support for start date and end date filters
-                    if (queryParams.StartDate.HasValue)
-                        query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
-
-                    if (queryParams.EndDate.HasValue)
-                        query = query.Where(j => j.UcjbDate.Date <= queryParams.EndDate.Value.Date);
-                    break;
-                case AppPage.Domestic:
-                    query = ApplyNationwideSpecificFilters(
-                        query,
-                        queryParams,
-                        isInternal,
-                        windowPane ?? NationwideWidget.JobList,
-                        clientIds
-                    );
-                    break;
-                case AppPage.JobSearch:
-                case AppPage.Prebooks:
-                default:
-                    return [];
-            }
-
-            // Search
-            if (!string.IsNullOrEmpty(queryParams.SearchText)) query = ApplySearchFilter(query, queryParams.SearchText);
-
-            var jobs = await query
-                .AsNoTracking()
-                .Select(JobMappings.JobDispatchMapping(isUsTenant))
-                .ToListAsync();
-
-            var (economySpeedId, ecoDeliveryTime) = await GetEconomySpeedAndDeliveryTimeAsync();
-            var now = infoService.GetCurrentTenantTime();
-            foreach (var job in jobs) job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
-
-            return jobs;
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "Error occured getting jobs for dispatch page. Please see exception.");
             throw;
         }
     }
