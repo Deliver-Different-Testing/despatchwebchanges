@@ -88,7 +88,7 @@ public class JobViewModel : DispatchJobViewModel
     public bool TailLiftDo { get; set; }
     public bool DeliverToPrivateRes { get; set; }
     public Suggestion BookingSource { get; set; }
-    
+    public string Barcode { get; set; }
 }
 
 public class ParcelDimensions

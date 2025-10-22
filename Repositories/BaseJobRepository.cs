@@ -818,11 +818,11 @@ public class BaseJobRepository(
             EF.Functions.Like(j.UcjbClient.UcclName ?? string.Empty, searchPattern) ||
             EF.Functions.Like(j.UcjbStatusNavigation.UcjsName ?? string.Empty, searchPattern) ||
 
-            // Courier information - search name parts separately
+            // Courier information
             EF.Functions.Like(j.UcjbCourier.UccrName ?? string.Empty, searchPattern) ||
             EF.Functions.Like(j.UcjbCourier.UccrSurname ?? string.Empty, searchPattern) ||
 
-            // Pickup contact - search name parts separately
+            // Pickup contact
             EF.Functions.Like(j.Contact.UcctFirstname ?? string.Empty, searchPattern) ||
             EF.Functions.Like(j.Contact.UcctSurname ?? string.Empty, searchPattern) ||
 
@@ -854,7 +854,7 @@ public class BaseJobRepository(
             EF.Functions.Like(j.NotifiedJobType.UcjtName ?? string.Empty, searchPattern) ||
             EF.Functions.Like(j.Connote ?? string.Empty, searchPattern) ||
 
-            // Flight information - consolidated
+            // Flight information
             j.TucJobNationwides.Any(nw =>
                 EF.Functions.Like(nw.UcnwFlightNo ?? string.Empty, searchPattern) ||
                 EF.Functions.Like(nw.CarrierFsCode ?? string.Empty, searchPattern) ||
@@ -868,7 +868,10 @@ public class BaseJobRepository(
             ) ||
 
             // Agent information
-            EF.Functions.Like(j.Agent.UcagName ?? string.Empty, searchPattern)
+            EF.Functions.Like(j.Agent.UcagName ?? string.Empty, searchPattern) ||
+            
+            // Barcode
+            EF.Functions.Like(j.Barcode ?? string.Empty, searchPattern)
         );
     }
 }

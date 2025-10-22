@@ -208,7 +208,9 @@ public partial class JobRepository(
                         + " "
                         + (j.OurRef ?? string.Empty)
                         + " "
-                        + j.JobNumber.ToLower(),
+                        + j.JobNumber.ToLower() 
+                        + " " 
+                        + j.Barcode.ToLower(),
                         wildSearch
                     )
                 )
@@ -383,7 +385,9 @@ public partial class JobRepository(
                                             + " "
                                             + (j.OurRef ?? string.Empty)
                                             + " "
-                                            + j.Number.ToLower(),
+                                            + j.Number.ToLower()
+                                            + " " 
+                                            + j.Barcode.ToLower(),
                                             wildSearch
                                         )
                                     )
