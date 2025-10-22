@@ -925,7 +925,7 @@ class NationwideControl extends BaseController {
         try {
             if (!job) return;
 
-            await this.dispatchJobService.reallocateJob(job);
+            await this.dispatchJobService.reassignJob(job);
             await this.getData();
         } catch (error) {
             console.error('Error restoring job:', error);

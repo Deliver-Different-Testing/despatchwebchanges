@@ -1006,7 +1006,7 @@ public partial class JobRepository(
             .ToListAsync();
     }
 
-    public async Task<List<DispatchJobViewModel>> JobListAsync(
+    public async Task<JobSearchResult> JobListAsync(
         JobQueryParams queryParams,
         bool isInternal,
         bool isUsTenant,
@@ -1014,7 +1014,7 @@ public partial class JobRepository(
         List<int> selectedViewIds,
         int? selectedClearListId = null)
     {
-        return await DespatchQry(
+        return await DespatchQryWithPagination(
             AppPage.Dispatch,
             queryParams,
             isInternal,

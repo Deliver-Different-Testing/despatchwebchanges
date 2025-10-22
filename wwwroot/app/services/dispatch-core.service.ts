@@ -12,6 +12,7 @@ import {
     ISuggestion,
     VoidJobRequest, UpdateJobPackagesRequest, VoidBulkJobRequest, UpdateBulkJobPackagesRequest,
     IJobDto, IDispatchJobDto, ITimeZoneSuggestion, JobCreateViewModelDto, IDeletePriceComponentRequest,
+    IJobSearchResult, IJobSearchResultDto,
 } from "../interfaces/job.interface";
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {
@@ -52,7 +53,6 @@ class DispatchCoreService implements angular.IServiceProvider {
         private $window: angular.IWindowService,
         private $timeout: angular.ITimeoutService,
     ) {
-        console.log("DispatchCoreService initialized");
     }
 
     $get() {
@@ -122,8 +122,6 @@ class DispatchCoreService implements angular.IServiceProvider {
         await this.$http.post("job/AddRestoreEvent", null, {
             params: {
                 jobId,
-                staffId: ContactID,
-                despatcherName: FirstName,
             },
         });
     }
@@ -514,7 +512,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         const data: IJobUpdateBaseRequest = {
             jobId
         };
-        
+
         await this.$http.post(`job/splitJob`, data);
     }
 
@@ -522,7 +520,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         const data: IJobUpdateBaseRequest = {
             jobId
         };
-        
+
         await this.$http.post(`job/finishSplitJobProcess`, data);
     }
 
@@ -534,7 +532,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         const data: IJobUpdateBaseRequest = {
             jobId
         };
-        
+
         await this.$http.post(`job/ReRateSplitJob`, data);
     }
 
@@ -676,47 +674,49 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async getJobsWithFilters(
         queryParams: IJobQueryParams,
-        selectedClients: string[],
         internal: boolean,
         selectedAreas: ISuggestion[]
-    ): Promise<IDispatchJob[]> {
+    ): Promise<IJobSearchResult> {
         const params = this.buildJobParams(
             queryParams,
-            selectedClients,
             internal,
             selectedAreas.map(area => area.id)
         );
 
-        const response = await this.$http.get<IDispatchJobDto[]>("job", {params});
-        return response.data.map(transformDispatchJobDTO);
+        const response = await this.$http.get<IJobSearchResultDto>("job", {params});
+
+        return {
+            ...response.data,
+            jobs: response.data.jobs.map(transformDispatchJobDTO)
+        }
     }
 
     async getClearListJobs(
         queryParams: IJobQueryParams,
-        selectedClients: string[],
         internal: boolean,
         selectedAreas: DfrntPageViewModel[],
         selectedClearListId: number
-    ): Promise<IDispatchJob[]> {
+    ): Promise<IJobSearchResult> {
         const params = this.buildJobParams(
             queryParams,
-            selectedClients,
             internal,
             selectedAreas.map(view => view.id),
             {selectedClearListId}
         );
 
-        const response = await this.$http.get<IDispatchJobDto[]>(
+        const response = await this.$http.get<IJobSearchResultDto>(
             'job/GetJobsByClearListEnvelope',
             {params}
         );
 
-        return response.data.map(transformDispatchJobDTO);
+        return {
+            ...response.data,
+            jobs: response.data.jobs.map(transformDispatchJobDTO)
+        }
     }
 
     private buildJobParams(
         queryParams: IJobQueryParams,
-        selectedClients: string[],
         internal: boolean,
         despatchViewIds: (string | number)[],
         additionalParams: Record<string, any> = {}
@@ -725,7 +725,6 @@ class DispatchCoreService implements angular.IServiceProvider {
             order: queryParams.order ?? "time",
             orderDirection: queryParams.orderDirection ?? "asc",
             isInternal: internal,
-            clientIds: selectedClients.length ? selectedClients.join(",") : "",
             despatchViewIds,
             ...additionalParams
         };

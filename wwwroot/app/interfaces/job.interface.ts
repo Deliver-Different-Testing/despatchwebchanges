@@ -848,6 +848,12 @@ export interface IBulkReadUpdateRequest extends IBulkUpdateRequest {
     shouldMarkAsRead: boolean;
 }
 
+export interface IJobSearchResultDto {
+    jobs: IDispatchJobDto[];
+    totalCount: number;
+    hasMore: boolean;
+}
+
 export interface IJobSearchResult {
     jobs: IDispatchJob[];
     totalCount: number;

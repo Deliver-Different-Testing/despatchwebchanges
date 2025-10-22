@@ -33,7 +33,7 @@ public interface IJobRepository
 
     Task<List<DispatchJobViewModel>> CurrentJobListAsync(int courierId, bool done);
 
-    Task<List<DispatchJobViewModel>> JobListAsync(
+    Task<JobSearchResult> JobListAsync(
         JobQueryParams queryParams,
         bool isInternal,
         bool isUsTenant,

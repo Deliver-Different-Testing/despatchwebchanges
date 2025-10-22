@@ -13,7 +13,11 @@
         on-job-action="ctrl.handleJobAction(action, job, params)"
         get-context-menu-options="ctrl.getJobContextMenuOptions()"
         on-refresh="ctrl.getData()"
-        job-list-type="ctrl.dispatchListName">
+        job-list-type="ctrl.dispatchListName"
+        on-load-more-jobs="ctrl.handleLoadMoreJobs(page, pageSize)"
+        enable-virtual-scrolling="true"
+        total-jobs-count="ctrl.totalJobCount"
+        on-search-change="ctrl.updateJobSearchText(searchText)">
 </jobs-list>
 
 <!-- No Data Message -->

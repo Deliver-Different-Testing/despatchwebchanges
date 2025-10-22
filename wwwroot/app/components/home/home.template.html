@@ -96,7 +96,7 @@
                         <md-menu-item ng-repeat="lo in ctrl.layouts track by $index">
                             <md-button>
                                 <md-icon md-font-set="material-symbols-outlined" ng-click="ctrl.deleteLayout($index)"
-                                         ng-if="::lo.name != 'Default'">
+                                         ng-if="lo.name != 'Default'">
                                     delete
                                 </md-icon>
                                 <md-icon md-font-set="material-symbols-outlined" ng-if="lo.name == 'Default'">
@@ -213,14 +213,18 @@
                         <md-toolbar class="widget-toolbar">
                             <div class="md-toolbar-tools">
                                 <!--Icon-->
-                                <span class="material-symbols-outlined">{{::ctrl.boxes[box.name].icon}}</span>
+                                <span class="material-symbols-outlined">{{ctrl.boxes[box.name].icon}}</span>
 
                                 <span class="md-card-title" flex>
-                                {{::ctrl.boxes[box.name].title}}
-                                <span ng-if="::box.name == 'jobDetail'">{{ctrl.currentSelection}}</span>
-                                <span ng-if="::box.name == 'potentialCouriers'">{{ctrl.potentialCouriersSelection}}</span>
-                                <span ng-if="::box.name == 'currentWork' || box.name == 'map'">{{ctrl.currentWorkSelection}}</span>
-                                <span ng-if="::box.name == 'supports'">{{ctrl.getActiveSupportFilterNames()}}</span>
+                                {{ctrl.boxes[box.name].title}}
+                                <span ng-if="box.name == 'jobDetail'">
+                                    {{ctrl.currentSelection}}
+                                    <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.hasAttachedFile">
+                                        attachment
+                                    </md-icon>
+                                </span>
+                                <span ng-if="box.name == 'currentWork' || box.name == 'map'">{{ctrl.currentWorkSelection}}</span>
+                                <span ng-if="box.name == 'supports'">{{ctrl.getActiveSupportFilterNames()}}</span>
                             </span>
 
                                 <div flex></div>
@@ -243,7 +247,7 @@
 
                                         <md-fab-actions>
                                             <md-button
-                                                    ng-if="::ctrl.isDeliveryJob(ctrl.currentJob)"
+                                                    ng-if="ctrl.isDeliveryJob(ctrl.currentJob)"
                                                     class="md-fab md-raised md-mini"
                                                     ng-click="ctrl.addStopToJob($event, ctrl.currentJob)">
                                                 <md-tooltip md-direction="bottom">Add Stop</md-tooltip>
@@ -358,7 +362,7 @@
 
                                 </div>
 
-                                <div class="row-overflow" ng-if="::box.name === 'driverLocations'">
+                                <div class="row-overflow" ng-if="box.name === 'driverLocations'">
                                     <md-button ng-if="ctrl.clearListId"
                                                class="md-icon-button"
                                                ng-click="ctrl.clearDriverLocationFilter()">
@@ -391,7 +395,7 @@
                                     </md-menu>
                                 </div>
 
-                                <div ng-if="::box.name == 'supports'">
+                                <div ng-if="box.name == 'supports'">
                                     <md-menu>
                                         <md-button aria-label="open staff support filter menu"
                                                    class="md-icon-button"
@@ -475,7 +479,7 @@
                                 </div>
 
                                 <md-button class="md-icon-button" ng-click="ctrl.getData()"
-                                           ng-if="::ctrl.boxes[box.name].showRefresh">
+                                           ng-if="ctrl.boxes[box.name].showRefresh">
                                     <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
                                     <md-tooltip md-direction="bottom">Refresh</md-tooltip>
                                 </md-button>
