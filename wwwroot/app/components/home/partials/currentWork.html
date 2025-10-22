@@ -7,7 +7,10 @@
         on-job-action="ctrl.handleJobAction(action, job, params)"
         get-context-menu-options="ctrl.getJobContextMenuOptions()"
         refresh-interval="30000"
-        job-list-type="ctrl.currentWorkListName">
+        job-list-type="ctrl.currentWorkListName"
+        on-load-more-jobs="ctrl.handleLoadMoreCurrentJobs(page, pageSize)"
+        enable-virtual-scrolling="true"
+        total-jobs-count="ctrl.currentJobListTotalCount">
 </jobs-list>
 
 <no-data

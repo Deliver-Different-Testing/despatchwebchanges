@@ -8,3 +8,8 @@ export interface UpdatePodDetailsRequest {
 export interface IJobUpdateBaseRequest {
     jobId: number;
 }
+
+export interface IAllocateJobsToCourierRequest {
+    courierId: number;
+    jobIds: number[];
+}

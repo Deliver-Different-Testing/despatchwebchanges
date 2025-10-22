@@ -6,6 +6,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
+using DespatchWeb.Models.Response;
 
 namespace DespatchWeb.Helpers;
 
@@ -1307,5 +1308,45 @@ public static class JobMappings
                 Longitude = j.DeliveryLongitude
             },
             CustomJobName = j.CustomJobName
+        };
+
+    public static readonly Expression<Func<TucJob, DispatchMapItem>> ToDispatchMapItem = j =>
+        new DispatchMapItem
+        {
+            JobId = j.UcjbId,
+            JobNo = j.UcjbNumber,
+            PickupAddress = new AddressViewModel
+            {
+                AddressLine1 = j.PickupAddressLine1,
+                AddressLine2 = j.PickupAddressLine2,
+                AddressLine3 = j.PickupAddressLine3,
+                AddressLine4 = j.PickupAddressLine4,
+                AddressLine5 = j.PickupAddressLine5,
+                AddressLine6 = j.PickupAddressLine6,
+                AddressLine7 = j.PickupAddressLine7,
+                AddressLine8 = j.PickupAddressLine8,
+                Latitude = j.PickUpLatitude,
+                Longitude = j.PickUpLongitude
+            },
+            DeliveryAddress = new AddressViewModel
+            {
+                AddressLine1 = j.DeliveryAddressLine1,
+                AddressLine2 = j.DeliveryAddressLine2,
+                AddressLine3 = j.DeliveryAddressLine3,
+                AddressLine4 = j.DeliveryAddressLine4,
+                AddressLine5 = j.DeliveryAddressLine5,
+                AddressLine6 = j.DeliveryAddressLine6,
+                AddressLine7 = j.DeliveryAddressLine7,
+                AddressLine8 = j.DeliveryAddressLine8,
+                Latitude = j.DeliveryLatitude,
+                Longitude = j.DeliveryLongitude
+            },
+            AssignedCourier = j.UcjbCourier != null
+                ? new Suggestion
+                {
+                    Id = j.UcjbCourier.UccrId,
+                    Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
+                }
+                : null
         };
 }

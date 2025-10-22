@@ -62,6 +62,7 @@ import VoidJobConfirmationDialogService
     from "./components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
 import DateFilterMenuComponent from "./components/common/date-filter-menu/date-filter-menu.component";
 import DayJsDatePickerComponent from "./components/common/dayjs-date-picker/dayjs-date-picker.component";
+import {minutesToTimeFilter} from "./components/Nationwide/filters/minutesToTimeFilter";
 
 const app = (window as any).uDispatchApp;
 
@@ -164,6 +165,7 @@ app.filter("replace", () => replaceFilter);
 app.filter('momentFormat', () => momentFormatFilter);
 app.filter('timezoneShort', () => timezoneShortFilter);
 app.filter('timezoneLongFilter', () => timezoneLongFilter);
+app.filter('minutesToTime', () => minutesToTimeFilter);
 
 // Components
 app.component("jobDetailWidget", JobDetailComponent);

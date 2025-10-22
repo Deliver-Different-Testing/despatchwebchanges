@@ -66,8 +66,5 @@ nationwideModule
     .controller("agentInfoDialogController", AgentInfoDialogController)
     .controller("AdditionalServicesDialogController", AdditionalServicesDialogController)
     .controller("recoveryAgentManagementController", RecoveryAgentManagementController);
-
-nationwideModule
-    .filter('minutesToTime', () => minutesToTimeFilter);
-
+ 
 export default nationwideModule;

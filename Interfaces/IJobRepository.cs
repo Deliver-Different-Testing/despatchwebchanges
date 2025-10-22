@@ -31,7 +31,7 @@ public interface IJobRepository
         int? clientId
     );
 
-    Task<List<DispatchJobViewModel>> CurrentJobListAsync(int courierId, bool done);
+    Task<JobSearchResult> CurrentJobListAsync(int courierId, bool done, int page, int pageSize);
 
     Task<JobSearchResult> JobListAsync(
         JobQueryParams queryParams,
@@ -106,7 +106,7 @@ public interface IJobRepository
     Task DeleteJobPriceBreakdownAsync(int chargeId);
 
     Task VoidPrebookJobAsync(int jobId);
-    
+
     /* Address Updates */
     Task UpdateDeliveryAddressAsync(UpdateAddressRequest request);
     Task UpdatePickupAddressAsync(UpdateAddressRequest request);
@@ -194,9 +194,9 @@ public interface IJobRepository
     Task SaveChangesAsync();
     Task<List<DeliveryJourneyViewModel>> GetDeliveryJourneyForJobAsync(int jobId);
     Task BulkUpdateReadStatusAsync(BulkReadUpdateRequestModel data);
-   Task AddPackagesToJobAsync(int effectiveJobId, List<TucJobItem> items);
-   Task<List<ScanDetailResult>> ScanList(DateTimeOffset? runDate, string scan);
-   Task<bool> ValidatePodSwapAsync(string jobNumber);
-   Task<string> GetStaffNameAsync(int staffId);
-   Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType);
+    Task AddPackagesToJobAsync(int effectiveJobId, List<TucJobItem> items);
+    Task<List<ScanDetailResult>> ScanList(DateTimeOffset? runDate, string scan);
+    Task<bool> ValidatePodSwapAsync(string jobNumber);
+    Task<string> GetStaffNameAsync(int staffId);
+    Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType);
 }

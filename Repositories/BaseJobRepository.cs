@@ -87,32 +87,13 @@ public class BaseJobRepository(
             }
 
             // Get All Jobs For Map (before search to not limit)
-            var mapItems = new List<DispatchMapItems>();
+            var mapItems = new List<DispatchMapItem>();
             if (page == AppPage.Dispatch)
             {
-                mapItems = await query.AsNoTracking()
-                    .Select(j => new DispatchMapItems
-                    {
-                        JobId = j.UcjbId,
-                        PickupAddress = new AddressViewModel(
-                            j.PickupAddressLine1,
-                            j.PickupAddressLine2,
-                            j.PickupAddressLine3,
-                            j.PickupAddressLine4,
-                            j.PickupAddressLine5,
-                            j.PickupAddressLine6,
-                            j.PickupAddressLine7,
-                            j.PickupAddressLine8),
-                        DeliveryAddress = new AddressViewModel(
-                            j.DeliveryAddressLine1,
-                            j.DeliveryAddressLine2,
-                            j.DeliveryAddressLine3,
-                            j.DeliveryAddressLine4,
-                            j.DeliveryAddressLine5,
-                            j.DeliveryAddressLine6,
-                            j.DeliveryAddressLine7,
-                            j.DeliveryAddressLine8)
-                    }).ToListAsync();
+                mapItems = await query
+                    .AsNoTracking()
+                    .Select(JobMappings.ToDispatchMapItem)
+                    .ToListAsync();
             }
             
             // Search
