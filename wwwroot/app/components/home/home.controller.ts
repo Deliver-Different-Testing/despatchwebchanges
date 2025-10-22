@@ -1500,7 +1500,9 @@ class HomeController extends BaseController {
                 order: orderBy,
                 orderDirection: orderDirection,
                 startDate: this.dateFilterData.startDate,
-                endDate: this.dateFilterData.endDate
+                endDate: this.dateFilterData.endDate,
+                page: this.currentJobListPage,
+                pageSize: this.currentJobListPageSize,
             };
 
             const result = await this.dispatchJobService.getJobsWithDispatchInfo(

@@ -95,12 +95,17 @@ public class BaseJobRepository(
                     .Select(JobMappings.ToDispatchMapItem)
                     .ToListAsync();
             }
-            
+
             // Search
             if (!string.IsNullOrEmpty(queryParams.SearchText)) query = ApplySearchFilter(query, queryParams.SearchText);
-            
+
             // Get a total count before pagination
-            var totalCount = await query.CountAsync();
+            // Dispatch page groups by parent id, so we need to count the parent jobs
+            int totalCount;
+            if (page == AppPage.Dispatch)
+                totalCount = await query.CountAsync(j => !j.ParentId.HasValue || j.ParentId == j.UcjbId);
+            else
+                totalCount = await query.CountAsync();
 
             // Apply pagination
             var pageNumber = queryParams.Page ?? 0;
@@ -338,7 +343,7 @@ public class BaseJobRepository(
         return note ?? await GetArchivedNoteByIdAsync(noteId);
     }
 
-    public async Task<int> SaveNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default)
+    public async Task SaveNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(viewModel.JobId);
@@ -346,9 +351,10 @@ public class BaseJobRepository(
         var staffId = infoService.GetStaffId();
         var currentTime = infoService.GetCurrentTenantTime();
 
-        return viewModel.NoteId == 0
-            ? await CreateNoteAsync(viewModel, staffId, currentTime, cancellationToken)
-            : await UpdateNoteAsync(viewModel, staffId, currentTime, cancellationToken);
+        if (viewModel.NoteId == 0)
+            await CreateNoteAsync(viewModel, staffId, currentTime, cancellationToken);
+        else
+            await UpdateNoteAsync(viewModel, staffId, currentTime, cancellationToken);
     }
 
     public async Task SaveBulkNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default)
@@ -460,7 +466,7 @@ public class BaseJobRepository(
     }
 
     // Note Create/Update Operations
-    private async Task<int> CreateNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime,
+    private async Task CreateNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime,
         CancellationToken cancellationToken = default)
     {
         var isArchived = viewModel.JobId.HasValue && await IsJobArchived(viewModel.JobId.Value) &&
@@ -478,7 +484,7 @@ public class BaseJobRepository(
 
             await Context.TucNoteArchives.AddAsync(archivedNote, cancellationToken);
             await Context.SaveChangesAsync(cancellationToken);
-            return archivedNote.NoteId;
+            return;
         }
 
         var activeNote = viewModel.ToEntity();
@@ -499,10 +505,9 @@ public class BaseJobRepository(
 
         await Context.TucNotes.AddAsync(activeNote, cancellationToken);
         await Context.SaveChangesAsync(cancellationToken);
-        return activeNote.NoteId;
     }
 
-    private async Task<int> UpdateNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime,
+    private async Task UpdateNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime,
         CancellationToken cancellationToken = default)
     {
         var isArchived = viewModel.JobId.HasValue && await IsJobArchived(viewModel.JobId.Value);
@@ -522,7 +527,7 @@ public class BaseJobRepository(
 
             Context.TucNoteArchives.Update(archivedNote);
             await Context.SaveChangesAsync(cancellationToken);
-            return archivedNote.NoteId;
+            return;
         }
 
         var activeNote = await Context.TucNotes.FindAsync([viewModel.NoteId], cancellationToken);
@@ -546,7 +551,6 @@ public class BaseJobRepository(
 
         Context.TucNotes.Update(activeNote);
         await Context.SaveChangesAsync(cancellationToken);
-        return activeNote.NoteId;
     }
 
     private static void UpdateNoteProperties<T>(T note, TucNoteViewModel viewModel)

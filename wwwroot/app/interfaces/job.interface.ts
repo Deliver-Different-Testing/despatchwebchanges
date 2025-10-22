@@ -589,10 +589,29 @@ export interface IJobNote {
     jobBookingId?: number;
     noteText: string;
     isImportant: boolean;
-    createdDate?: Date;
+    createdDate?: Dayjs;
     createdBy?: number;
     createdByName?: string;
-    updatedDate?: Date;
+    updatedDate?: Dayjs;
+    updatedBy?: number;
+    updatedByName?: string;
+    noteTextSummary?: string;
+}
+
+export interface IJobNoteDto {
+    noteId?: number;
+    noteTypeId: number;
+    noteTypeName?: string;
+    jobId?: number;
+    bulkJobId?: number;
+    jobNumber?: string;
+    jobBookingId?: number;
+    noteText: string;
+    isImportant: boolean;
+    createdDate?: string;
+    createdBy?: number;
+    createdByName?: string;
+    updatedDate?: string;
     updatedBy?: number;
     updatedByName?: string;
     noteTextSummary?: string;
