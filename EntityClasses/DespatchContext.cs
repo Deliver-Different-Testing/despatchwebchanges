@@ -1372,6 +1372,9 @@ public partial class DespatchContext : DbContext
 
             entity.Property(e => e.JobId).HasColumnName("JobID");
             entity.Property(e => e.ItemId).HasColumnName("ItemID");
+            entity.Property(e => e.Barcode)
+                .HasMaxLength(100)
+                .IsUnicode(false);
             entity.Property(e => e.ChildJobId).HasColumnName("ChildJobID");
             entity.Property(e => e.Cubic).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.Dgclass).HasColumnName("DGClass");
@@ -5855,6 +5858,9 @@ public partial class DespatchContext : DbContext
 
             entity.Property(e => e.JobId).HasColumnName("JobID");
             entity.Property(e => e.ItemId).HasColumnName("ItemID");
+            entity.Property(e => e.Barcode)
+                .HasMaxLength(100)
+                .IsUnicode(false);
             entity.Property(e => e.ChildJobId).HasColumnName("ChildJobID");
             entity.Property(e => e.Cubic).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.Dgclass).HasColumnName("DGClass");

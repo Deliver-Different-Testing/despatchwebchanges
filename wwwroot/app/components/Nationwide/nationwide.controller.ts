@@ -223,11 +223,6 @@ class NationwideControl extends BaseController {
     filteredFlightOptions?: IFlightViewModel[] = [];
     private isHandlingJobChange: boolean = false;
 
-    // Job search
-    jobListSearchText: string = '';
-    podListSearchText: string = '';
-    repriceListSearchText: string = '';
-
     constructor(
         $scope: angular.IScope,
         private nationwideService: NationwideService,

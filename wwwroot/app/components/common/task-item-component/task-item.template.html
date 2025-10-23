@@ -17,13 +17,13 @@
     <div class="md-list-item-text task-content" flex>
         <!-- Task title -->
         <h3 class="task-title" ng-class="{'completed-text': ctrl.task.closed}">
-            {{ctrl.task.title}}
+            {{::ctrl.task.title}}
             <!-- Status chips -->
-            <span ng-if="ctrl.config.showStatusIndicators !== false && ctrl.task.closed"
+            <span ng-if="::ctrl.config.showStatusIndicators !== false && ctrl.task.closed"
                   class="status-chip done">Done</span>
-            <span ng-if="ctrl.config.showStatusIndicators !== false && !ctrl.task.closed && ctrl.isTaskOverdue(ctrl.task)"
+            <span ng-if="::ctrl.config.showStatusIndicators !== false && !ctrl.task.closed && ctrl.isTaskOverdue(ctrl.task)"
                   class="status-chip overdue">Overdue</span>
-            <span ng-if="ctrl.config.showStatusIndicators !== false && !ctrl.task.closed && !ctrl.isTaskOverdue(ctrl.task)"
+            <span ng-if="::ctrl.config.showStatusIndicators !== false && !ctrl.task.closed && !ctrl.isTaskOverdue(ctrl.task)"
                   class="status-chip todo">To do</span>
         </h3>
 
@@ -31,29 +31,29 @@
         <p class="task-description"
            ng-if="ctrl.config.showDescription !== false"
            ng-class="{'completed-text': ctrl.task.closed}">
-            {{ctrl.task.description}}
+            {{::ctrl.task.description}}
         </p>
 
         <!-- Task metadata -->
         <div class="task-meta">
             <!-- Assignee -->
             <button
-                    ng-if="ctrl.config.showAssignee !== false"
+                    ng-if="::ctrl.config.showAssignee !== false"
                     class="assignee-button"
                     ng-click="$event.stopPropagation(); ctrl.reassignTask($event, ctrl.task)">
                 <md-icon md-font-set="material-symbols-outlined" style="margin-right: 6px; font-size: 16px; color: rgba(0,0,0,0.54);">person</md-icon>
-                <span>{{ctrl.task.assignee.text || 'Unassigned'}}</span>
+                <span>{{::ctrl.task.assignee.text || 'Unassigned'}}</span>
             </button>
 
             <!-- Job ID -->
             <div
-                    ng-if="ctrl.config.showJobId !== false"
+                    ng-if="::ctrl.config.showJobId !== false"
                     class="job-id-chip">
-                Job #{{ctrl.task.jobNumber}}
+                Job #{{::ctrl.task.jobNumber}}
             </div>
 
             <!-- Job type -->
-            <div ng-if="ctrl.config.showJobType !== false" class="meta-item job-type">
+            <div ng-if="::ctrl.config.showJobType !== false" class="meta-item job-type">
                 <md-icon class="icon" md-font-set="material-symbols-outlined">label</md-icon>
                 <span>{{ctrl.task.eventType.charAt(0).toUpperCase() + ctrl.task.eventType.slice(1)}}</span>
             </div>

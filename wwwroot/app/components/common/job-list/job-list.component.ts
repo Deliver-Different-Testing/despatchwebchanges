@@ -31,7 +31,7 @@ class JobsListController extends BaseController {
     private readonly DENSE_MODE_SAVE_KEY: string = `jobListComponentDenseViewMode_${ContactID}`;
     private readonly COLUMN_WIDTHS_SAVE_KEY: string = `jobListColumnWidths_${ContactID}`;
     private readonly SORT_STATE_SAVE_KEY: string = `jobListSortState_${ContactID}`;
-    private static COURIER_URL: string = "/courier/AllActiveSearch";
+    private readonly COURIER_URL: string = "/courier/AllActiveSearch";
 
     private unsubscribeFromHighlights?: () => void;
 
@@ -873,7 +873,7 @@ class JobsListController extends BaseController {
         if (!searchText || searchText.length < 2) return [];
 
         try {
-            const url = JobsListController.COURIER_URL;
+            const url = this.COURIER_URL;
             return this.DispatchData.autocompleteSearch(searchText, url);
         } catch (error: any) {
             console.error("Error in courier search:", error.message);
@@ -884,21 +884,7 @@ class JobsListController extends BaseController {
     hasRelatedJobs(job: IDispatchJob): boolean {
         return this.jobHighlightService.isJobHighlighted(job.id);
     }
-
-    getRelatedJobsCount(job: IDispatchJob): number {
-        return job.relatedJobs ? job.relatedJobs.length : 0;
-    }
-
-    getRelatedJobsText(job: IDispatchJob): string {
-        if (!job.relatedJobs || job.relatedJobs.length === 0) return '';
-
-        if (job.relatedJobs.length === 1) {
-            return job.relatedJobs[0].text;
-        } else {
-            return `${job.relatedJobs.length} related jobs`;
-        }
-    }
-
+    
     isWarning(job: IDispatchJob): boolean {
         return [
             JobStatus.Warning,
@@ -968,11 +954,7 @@ class JobsListController extends BaseController {
             localStorage.setItem(`${this.SORT_STATE_SAVE_KEY}_${this.jobListType}`, JSON.stringify(this.sortState));
         }
     }
-
-    getGridTemplateColumnsWithSelect(): string {
-        return this.getGridTemplateColumns();
-    }
-
+    
     getGridTemplateColumns(): string {
         if (this.isJobSearchPage()) {
             return `${this.columnWidths.priority}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.isArchived}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
@@ -1152,7 +1134,6 @@ class JobsListController extends BaseController {
             const headerElement = angular.element('.jobs-header');
 
             if (headerElement.length) {
-                headerElement.css('position', 'relative');
                 headerElement.css('position', 'sticky');
                 headerElement.css('z-index', '49');
                 headerElement.css('background', 'white');
@@ -1223,14 +1204,7 @@ class JobsListController extends BaseController {
         });
         return visibleJobs;
     }
-
-    isIndeterminate(): boolean {
-        const visibleJobs = this.getVisibleJobs();
-        const selectedCount = visibleJobs.filter(job => job.selected).length;
-
-        return selectedCount > 0 && selectedCount < visibleJobs.length;
-    }
-
+    
     canBulkAssign(): boolean {
         return this.selectedJobs.length > 0 && this.allowDispatch;
     }
@@ -1244,7 +1218,7 @@ class JobsListController extends BaseController {
             if (!this.canBulkAssign()) return;
 
             const selectedCourier = await this.autoCompleteDialogService.showAutocompleteDialog($event,
-                JobsListController.COURIER_URL,
+                this.COURIER_URL,
                 "Search couriers...",
                 "Courier",
                 "Bulk Assign Courier",

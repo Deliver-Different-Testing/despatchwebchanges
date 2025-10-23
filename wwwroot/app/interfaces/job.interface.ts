@@ -171,7 +171,6 @@ export interface IJob {
     deliverToPrivateRes: boolean;
     deliverToPrivateResString: string;
     bookingSource?: ISuggestion;
-    barcode?: string;
 }
 
 export interface IJobDto {
@@ -337,7 +336,6 @@ export interface IJobDto {
     tailLiftDo: boolean;
     deliverToPrivateRes: boolean;
     bookingSource?: ISuggestion;
-    barcode?: string;
 }
 
 export interface UpdateBulkJobPackagesRequest extends UpdateJobPackagesBase {
@@ -359,6 +357,7 @@ export interface IParcelDimensions {
     length?: number;
     depth?: number;
     dimensions: string;
+    barcode?: string;
 }
 
 export interface IAssignedFlight {

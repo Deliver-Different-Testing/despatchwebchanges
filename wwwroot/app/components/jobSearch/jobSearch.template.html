@@ -64,10 +64,10 @@
                         <md-toolbar class="widget-toolbar">
                             <div class="md-toolbar-tools">
                                 <!--Icon-->
-                                <span class="material-symbols-outlined">{{ctrl.boxes[box.name].icon}}</span>
+                                <span class="material-symbols-outlined">{{::ctrl.boxes[box.name].icon}}</span>
 
                                 <span class="md-card-title"
-                                      flex>{{ctrl.boxes[box.name].title}}
+                                      flex>{{::ctrl.boxes[box.name].title}}
                                     <span ng-if="box.name == 'scanList'">{{ctrl.currentSelection}}</span>
                                     <span ng-if="box.name == 'jobDetail'">{{ctrl.currentSelection}}</span>
                                     <span ng-if="box.name == 'jobDetail' && ctrl.currentJob.locked"> - LOCKED</span>

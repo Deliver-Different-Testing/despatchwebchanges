@@ -9,20 +9,17 @@
      ng-class="{'dense-view': ctrl.isDenseView(), 'ultradense-view': ctrl.isUltraDenseView()}">
     <md-card
             class="warning-section "
-            ng-if="ctrl.job.isArchived || ctrl.job.preBook || ctrl.job.isBulkJob">
+            ng-if="::ctrl.job.isArchived || ctrl.job.preBook || ctrl.job.isBulkJob">
         <md-card-content>
             <div layout="row" layout-align="start center">
                 <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
-                <span class="warning-text"
-                      ng-if="ctrl.job.isArchived">
+                <span class="warning-text" ng-if="::ctrl.job.isArchived">
                     Job archived. Some fields can't be edited
                 </span>
-                <span class="warning-text"
-                      ng-if="ctrl.job.preBook">
+                <span class="warning-text" ng-if="::ctrl.job.preBook">
                     Recurring job. Some fields may require confirmation
                 </span>
-                <span class="warning-text"
-                      ng-if="ctrl.job.isBulkJob">
+                <span class="warning-text" ng-if="::ctrl.job.isBulkJob">
                 Bulk job. Changes will be applied to all matching records. Confirm your selections before submitting.
                 </span>
             </div>
@@ -44,8 +41,8 @@
                             ng-repeat="relatedJob in ctrl.jobGroups track by relatedJob.job.id"
                             ng-click="ctrl.switchToRelatedJob($index)">
                         <md-tab-label>
-                            <span ng-if="ctrl.isRecurringJob">Job #{{$index + 1}}</span>
-                            <span ng-if="!ctrl.isRecurringJob">Job #{{relatedJob.job.text}}</span>
+                            <span ng-if="::ctrl.isRecurringJob">Job #{{$index + 1}}</span>
+                            <span ng-if="::!ctrl.isRecurringJob">Job #{{::relatedJob.job.text}}</span>
                             <md-icon
                                     md-font-set="material-symbols-outlined"
                                     ng-if="relatedJob.subJobs.length > 0">
@@ -94,7 +91,7 @@
 
             <!-- Status Button -->
             <md-button
-                    ng-if="!ctrl.job.preBook"
+                    ng-if="::!ctrl.job.preBook"
                     class="status-button {{ctrl.job.statusName | lowercase | replace:' ':'-'}}"
                     ng-click="ctrl.statusClick($event, ctrl.job)">
                 <md-icon class="status-icon" md-font-set="material-symbols-outlined">
@@ -143,21 +140,21 @@
                 <div class="metric-label">Booked</div>
                 <div class="metric-value">
                     {{ctrl.job.createdDate ? (ctrl.job.createdDate | momentFormat:'MMM DD') : '—'}}
-                    ({{ (ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort}})
+                    ({{:: (ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort}})
                 </div>
             </div>
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editStartTime($event, ctrl.job)">
                 <div class="metric-label">Start Time</div>
                 <div class="metric-value">
                     {{ctrl.job.time ? (ctrl.job.time | momentFormat:'HH:mm') : '—'}}
-                    ({{ (ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort}})
+                    ({{:: (ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort}})
                 </div>
             </div>
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editPuDate($event, ctrl.job)">
                 <div class="metric-label">PU Time</div>
                 <div class="metric-value">
                 <span ng-if="ctrl.job.puTime">
-                      {{ ctrl.job.puTime | momentFormat:'MM/DD HH:mm'}} ({{ (ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort}})
+                      {{ ctrl.job.puTime | momentFormat:'MM/DD HH:mm'}} ({{:: (ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort}})
                     </span>
                     <span ng-if="!ctrl.job.puTime">-</span>
                 </div>
@@ -166,7 +163,7 @@
                 <div class="metric-label">Deliver By</div>
                 <div class="metric-value" ng-if="ctrl.job.deliverByTime">
                     {{ctrl.job.deliverByTime | momentFormat:'MMM DD HH:mm' }}
-                    ({{ (ctrl.job.deliveryTimeZone ? ctrl.job.deliveryTimeZone.text : ctrl.timeZone) | timezoneShort}})
+                    ({{:: (ctrl.job.deliveryTimeZone ? ctrl.job.deliveryTimeZone.text : ctrl.timeZone) | timezoneShort}})
                 </div>
                 <div class="metric-value" ng-if="!ctrl.job.deliverByTime">
                     -
@@ -179,7 +176,7 @@
                 <div class="metric-label">Dispatch</div>
                 <div class="metric-value">
                     <span ng-if="ctrl.job.dispatchTime">
-                      {{ ctrl.job.dispatchTime | momentFormat:'MM/DD HH:mm' }} ({{ ctrl.timeZone | timezoneShort }})
+                      {{ ctrl.job.dispatchTime | momentFormat:'MM/DD HH:mm' }} ({{:: ctrl.timeZone | timezoneShort }})
                     </span>
                     <span ng-if="!ctrl.job.dispatchTime">-</span>
                 </div>
@@ -195,7 +192,7 @@
                 <div class="metric-label">POD Time</div>
                 <div class="metric-value">
                     <span ng-if="ctrl.job.completedTime">
-                      {{ ctrl.job.completedTime | momentFormat:'MM/DD HH:mm'}} ({{ ctrl.job.deliveryTimeZone.text | timezoneShort}})
+                      {{ ctrl.job.completedTime | momentFormat:'MM/DD HH:mm'}} ({{:: ctrl.job.deliveryTimeZone.text | timezoneShort}})
                     </span>
                     <span ng-if="!ctrl.job.completedTime">-</span>
                 </div>
@@ -205,7 +202,7 @@
                 <div class="metric-label">Follow Up</div>
                 <div class="metric-value">
                     <span ng-if="ctrl.job.followupTime">
-                      {{ ctrl.job.followupTime | momentFormat:'MM/DD HH:mm' }} ({{ ctrl.timeZone | timezoneShort }})
+                      {{ ctrl.job.followupTime | momentFormat:'MM/DD HH:mm' }} ({{:: ctrl.timeZone | timezoneShort }})
                     </span>
                     <span ng-if="!ctrl.job.followupTime">-</span>
                 </div>
@@ -408,8 +405,8 @@
                 font-size: 14px;
                 font-weight: 500;
               "
-                        >Total {{ctrl.isUsCustomer ? 'Miles' : 'KMs'}}:
-              {{ctrl.job.distance || '0'}} {{ctrl.isUsCustomer ? 'miles' : 'km'}}</span>
+                        >Total {{::ctrl.isUsCustomer ? 'Miles' : 'KMs'}}:
+              {{ctrl.job.distance || '0'}} {{::ctrl.isUsCustomer ? 'miles' : 'km'}}</span>
                     </div>
                 </div>
 
@@ -457,7 +454,7 @@
                                             <div class="time">
                                                 {{segment.departureTime | momentFormat: 'MM/DD/YYYY HH:mm'}}
                                                 <span ng-if="segment.departureAirportTimeZone">
-                                                    ({{segment.departureAirportTimeZone | timezoneShort}})
+                                                    ({{::segment.departureAirportTimeZone | timezoneShort}})
                                                 </span>
                                             </div>
                                             <div class="airport-code">
@@ -490,7 +487,7 @@
                                             <div class="time">
                                                 {{segment.arrivalTime | momentFormat: 'MM/DD/YYYY HH:mm'}}
                                                 <span ng-if="segment.arrivalAirportTimeZone">
-                          ({{segment.arrivalAirportTimeZone | timezoneShort}})
+                          ({{::segment.arrivalAirportTimeZone | timezoneShort}})
                         </span>
                                             </div>
                                             <div class="airport-code">
@@ -662,7 +659,7 @@
                                 <div class="md-list-item-text">
                                     <h3>
                                         Dimensions/Items
-                                        <span ng-if="ctrl.job.calculateDimsOncePerJob"
+                                        <span ng-if="::ctrl.job.calculateDimsOncePerJob"
                                               class="calculate-dims-badge"
                                               style="background: #4CAF50; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; font-weight: normal;">
                             CALC ONCE
@@ -670,30 +667,10 @@
                                     </h3>
                                     <p>
                                         {{ctrl.job.parcelDimensions.length || 0}} packages
-                                        <span ng-if="ctrl.job.calculateDimsOncePerJob"
+                                        <span ng-if="::ctrl.job.calculateDimsOncePerJob"
                                               style="color: #4CAF50; font-size: 12px; margin-left: 8px;">
                             • Calculated once per job
                         </span>
-                                    </p>
-                                </div>
-                            </md-list-item>
-                            
-                            <md-list-item
-                                    ng-if="ctrl.job.barcode"
-                                    class="md-2-line md-long-text"
-                                    ng-click="!ctrl.job.locked && ctrl.editBarcode($event, ctrl.job)">
-                                <md-icon
-                                        class="md-avatar"
-                                        aria-label="barcode"
-                                        md-font-set="material-symbols-outlined">
-                                    barcode
-                                </md-icon>
-                                <div class="md-list-item-text">
-                                    <h3>
-                                        Barcode
-                                    </h3>
-                                    <p>
-                                        {{ctrl.job.barcode}}
                                     </p>
                                 </div>
                             </md-list-item>
@@ -709,14 +686,14 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Weight
-                                        <span ng-if="ctrl.job.calculateDimsOncePerJob"
+                                        <span ng-if="::ctrl.job.calculateDimsOncePerJob"
                                               class="calculate-dims-badge"
                                               style="background: #4CAF50; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; font-weight: normal;">
                             CALC ONCE
                         </span>
                                     </h3>
                                     <p>{{ctrl.job.weight || 0}}
-                                        <span ng-if="ctrl.job.calculateDimsOncePerJob"
+                                        <span ng-if="::ctrl.job.calculateDimsOncePerJob"
                                               style="color: #4CAF50; font-size: 12px; margin-left: 8px;">
                             • Calculated once per job
                         </span>
@@ -830,7 +807,7 @@
                                     </md-icon>
                                     <div class="md-list-item-text">
                                         <h3>Dispatcher Name</h3>
-                                        <p>{{ctrl.job.dispatcherName || '-'}}</p>
+                                        <p>{{::ctrl.job.dispatcherName || '-'}}</p>
                                     </div>
 
                                     <md-icon class="md-secondary"
@@ -948,7 +925,7 @@
                                         front_loader
                                     </md-icon>
                                     <div class="md-list-item-text">
-                                        <h3>{{ ctrl.isUsCustomer ? 'Lift Gate Pickup' : 'Tail Lift Pickup'}}</h3>
+                                        <h3>{{ ::ctrl.isUsCustomer ? 'Lift Gate Pickup' : 'Tail Lift Pickup'}}</h3>
                                         <p>
                                             <md-checkbox class="md-primary"
                                                          ng-change="ctrl.onTailLiftPickupClick(job)"
@@ -969,7 +946,7 @@
                                         front_loader
                                     </md-icon>
                                     <div class="md-list-item-text">
-                                        <h3>{{ ctrl.isUsCustomer ? 'Lift Gate Drop-off' : 'Tail Lift Drop-off'}}</h3>
+                                        <h3>{{ ::ctrl.isUsCustomer ? 'Lift Gate Drop-off' : 'Tail Lift Drop-off'}}</h3>
                                         <p>
                                             <md-checkbox class="md-primary"
                                                     ng-model="job.tailLiftDo"
@@ -1276,7 +1253,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Logged-in Contact</h3>
-                                    <p>{{ctrl.job.loggedInContactName || '-'}}</p>
+                                    <p>{{::ctrl.job.loggedInContactName || '-'}}</p>
                                 </div>
 
                                 <md-icon class="md-secondary"
@@ -1299,7 +1276,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Source</h3>
-                                    <p>{{ctrl.job.bookingSource.text || '-'}}</p>
+                                    <p>{{::ctrl.job.bookingSource.text || '-'}}</p>
                                 </div>
 
                                 <md-icon class="md-secondary"
@@ -1627,14 +1604,14 @@
 
                             <td class="pallet-cell-weight">
                                 <span class="pallet-weight-value">{{pallet.weight || 0}}</span>
-                                <span class="pallet-weight-unit">{{ctrl.isUsCustomer ? 'lbs' : 'kg'}}</span>
+                                <span class="pallet-weight-unit">{{::ctrl.isUsCustomer ? 'lbs' : 'kg'}}</span>
                             </td>
 
                             <td class="pallet-cell-dims">
                             <span class="pallet-dims-values">
                                 {{pallet.length || 0}} × {{pallet.depth || 0}} × {{pallet.height || 0}}
                             </span>
-                                <span class="pallet-dims-unit">{{ctrl.isUsCustomer ? 'in' : 'cm'}}</span>
+                                <span class="pallet-dims-unit">{{::ctrl.isUsCustomer ? 'in' : 'cm'}}</span>
                             </td>
 
                             <td class="pallet-cell-status">
@@ -1698,7 +1675,7 @@
                         <div class="pallet-summary-details">
                             <span class="pallet-summary-label">Total Weight</span>
                             <span class="pallet-summary-value">
-                        {{ctrl.getTotalPalletWeight()}} {{ctrl.isUsCustomer ? 'lbs' : 'kg'}}
+                        {{ctrl.getTotalPalletWeight()}} {{::ctrl.isUsCustomer ? 'lbs' : 'kg'}}
                     </span>
                         </div>
                     </div>
@@ -1708,7 +1685,7 @@
                         <div class="pallet-summary-details">
                             <span class="pallet-summary-label">Total Volume</span>
                             <span class="pallet-summary-value">
-                        {{ctrl.getTotalPalletVolume()}} {{ctrl.isUsCustomer ? 'in³' : 'cm³'}}
+                        {{ctrl.getTotalPalletVolume()}} {{::ctrl.isUsCustomer ? 'in³' : 'cm³'}}
                     </span>
                         </div>
                     </div>
@@ -1840,7 +1817,7 @@
 
                 <div class="read-details" ng-if="ctrl.job.readTrackerInfo.hasBeenRead">
                     <span>Read by: <strong>{{ctrl.job.readTrackerInfo.readBy || 'Unknown'}}</strong></span>
-                    <span class="read-date">on {{ctrl.job.readTrackerInfo.readDate | momentFormat:'MM/DD/YYYY'}} ({{ctrl.timeZone | timezoneShort}})</span>
+                    <span class="read-date">on {{ctrl.job.readTrackerInfo.readDate | momentFormat:'MM/DD/YYYY'}} ({{::ctrl.timeZone | timezoneShort}})</span>
                 </div>
 
                 <div
@@ -1929,7 +1906,7 @@
         <div class="pod-photo-info">
             <p class="timestamp">
                 {{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].timestamp |
-            date:'medium'}} ({{ctrl.job.deliveryTimeZone.text | timezoneShort}})
+            date:'medium'}} ({{::ctrl.job.deliveryTimeZone.text | timezoneShort}})
             </p>
             <p class="uploader">
                 Delivered by
@@ -2008,7 +1985,7 @@
                 <md-grid-tile-footer>
                     <h3>
                         {{photo.timestamp | date:'shortTime'}}
-                        ({{ctrl.job.deliveryTimeZone.text | timezoneShort}})
+                        ({{::ctrl.job.deliveryTimeZone.text | timezoneShort}})
                         <md-icon ng-if="!ctrl.isImageFile(photo)" md-font-set="material-symbols-outlined"
                                  style="font-size: 16px; margin-left: 4px;">
                             download

@@ -45,36 +45,43 @@
 
                 <!-- Main content with form and visualization -->
                 <div layout="row" layout-wrap layout-align="space-between start" class="md-padding">
-                        <form ng-submit="ctrl.submit()">
-                            <md-input-container class="md-block">
-                                <label for="itemName">Item Name</label>
-                                <input id="itemName" ng-model="ctrl.getCurrentParcel().itemName" type="text" placeholder="Enter item name">
-                            </md-input-container>
+                    <form ng-submit="ctrl.submit()">
+                        <md-input-container class="md-icon-float md-block">
+                            <label for="itemName">Item Name</label>
+                            <md-icon md-font-set="material-symbols-outlined">package</md-icon>
+                            <input id="itemName" ng-model="ctrl.getCurrentParcel().itemName" type="text" placeholder="Enter item name">
+                        </md-input-container>
 
-                            <md-card class="md-padding" md-colors="{background: 'background-hue-1'}">
-                                <h4 class="md-subhead">Dimensions</h4>
+                        <md-input-container class="md-block">
+                            <label for="barcode">Barcode</label>
+                            <md-icon md-font-set="material-symbols-outlined">barcode</md-icon>
+                            <input id="barcode" ng-model="ctrl.getCurrentParcel().barcode" type="text" placeholder="Enter barcode">
+                        </md-input-container>
 
-                                <div layout-gt-sm="row">
-                                    <md-input-container class="md-block" flex-gt-sm>
-                                        <label for="length">Length</label>
-                                        <input id="length" min="0" ng-model="ctrl.getCurrentParcel().length" step="0.01" type="number" placeholder="0.00">
-                                        <div class="md-caption dimension-unit">inches</div>
-                                    </md-input-container>
+                        <md-card class="md-padding" md-colors="{background: 'background-hue-1'}">
+                            <h4 class="md-subhead">Dimensions</h4>
 
-                                    <md-input-container class="md-block" flex-gt-sm>
-                                        <label for="width">Width</label>
-                                        <input id="width" min="0" ng-model="ctrl.getCurrentParcel().depth" step="0.01" type="number" placeholder="0.00">
-                                        <div class="md-caption dimension-unit">inches</div>
-                                    </md-input-container>
+                            <div layout-gt-sm="row">
+                                <md-input-container class="md-block" flex-gt-sm>
+                                    <label for="length">Length</label>
+                                    <input id="length" min="0" ng-model="ctrl.getCurrentParcel().length" step="0.01" type="number" placeholder="0.00">
+                                    <div class="md-caption dimension-unit">inches</div>
+                                </md-input-container>
 
-                                    <md-input-container class="md-block" flex-gt-sm>
-                                        <label for="height">Height</label>
-                                        <input id="height" min="0" ng-model="ctrl.getCurrentParcel().height" step="0.01" type="number" placeholder="0.00">
-                                        <div class="md-caption dimension-unit">inches</div>
-                                    </md-input-container>
-                                </div>
-                            </md-card>
-                        </form>
+                                <md-input-container class="md-block" flex-gt-sm>
+                                    <label for="width">Width</label>
+                                    <input id="width" min="0" ng-model="ctrl.getCurrentParcel().depth" step="0.01" type="number" placeholder="0.00">
+                                    <div class="md-caption dimension-unit">inches</div>
+                                </md-input-container>
+
+                                <md-input-container class="md-block" flex-gt-sm>
+                                    <label for="height">Height</label>
+                                    <input id="height" min="0" ng-model="ctrl.getCurrentParcel().height" step="0.01" type="number" placeholder="0.00">
+                                    <div class="md-caption dimension-unit">inches</div>
+                                </md-input-container>
+                            </div>
+                        </md-card>
+                    </form>
                 </div>
             </div>
         </md-dialog-content>
