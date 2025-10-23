@@ -4,10 +4,10 @@ export interface IBox {
     title?: string;
     icon?: string;
     templateUrl?: string;
-    showSearch?: number;
-    showRefresh?: number;
-    showDetailButtons?: number;
-    showFilter?: number;
+    showSearch?: boolean;
+    showRefresh?: boolean;
+    showDetailButtons?: boolean;
+    showFilter?: boolean;
 }
 
 export interface IColumn {
@@ -21,4 +21,13 @@ export interface ILayout {
     layout: {
         columns: IColumn[];
     };
+}
+
+export interface IGridsterLayout {
+    name: string;
+    items: GridsterItemWithName[];
+}
+
+export interface GridsterItemWithName extends angular.gridster.StandardGridsterItem {
+    name: string;
 }
