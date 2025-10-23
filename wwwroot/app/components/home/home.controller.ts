@@ -49,6 +49,7 @@ import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dial
 import IDateFilterData from "../common/date-filter-menu/IDateFilterData";
 import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
 import utc from "dayjs/plugin/utc";
+import { getMinsSelectionOptions } from "../../functions/MinsSelectionOptions";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -1973,39 +1974,15 @@ class HomeController extends BaseController {
     }
 
     initRefreshIntervalOptions(): void {
-        const disabledOption: ISuggestion = {id: 0, text: "Disabled"};
-        this.selectedRefreshInterval = disabledOption;
+        const disabledOption: ISuggestion = { id: 0, text: "Disabled" };
 
-        const options: ISuggestion[] = [
-            disabledOption
+        this.refreshIntervalOptions = [
+            disabledOption,
+            ...getMinsSelectionOptions()
         ];
-
-        const maxSeconds = 15 * 60; // 15 minutes in seconds
-
-        for (let seconds = 30; seconds <= maxSeconds; seconds += 30) {
-            options.push({
-                id: seconds,
-                text: HomeController.formatDuration(seconds)
-            });
-        }
-
-        this.refreshIntervalOptions = options;
+        this.selectedRefreshInterval = this.refreshIntervalOptions[0];
     }
-
-    private static formatDuration(seconds: number): string {
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-
-        if (minutes === 0) {
-            return `${seconds} seconds`;
-        } else if (remainingSeconds === 0) {
-            return minutes === 1 ? `${minutes} min` : `${minutes} mins`;
-        } else {
-            const minText = minutes === 1 ? 'min' : 'mins';
-            return `${minutes} ${minText} ${remainingSeconds} seconds`;
-        }
-    }
-
+    
     onRefreshIntervalChange(selectedInterval: ISuggestion): void {
         console.log('Refresh interval changed to:', selectedInterval, 'seconds');
 
