@@ -1,84 +1,172 @@
 ﻿<md-menu>
     <md-button
             aria-label="Open date filter menu"
-            class="md-icon-button"
+            class="md-icon-button date-filter-trigger"
             ng-click="$mdMenu.open($event)">
         <md-icon md-font-set="material-symbols-outlined">calendar_today</md-icon>
         <md-tooltip md-direction="bottom">Date Filter</md-tooltip>
     </md-button>
 
     <md-menu-content class="date-filter-menu">
-        <div md-prevent-menu-close>
+        <div md-prevent-menu-close class="date-filter-wrapper">
             <!-- Professional Header -->
-            <md-toolbar class="md-primary md-hue-2 date-filter-header">
-                <div class="md-toolbar-tools">
-                    <md-icon class="header-icon" md-font-set="material-symbols-outlined">date_range</md-icon>
-                    <h3 class="md-title">Date Range Filter</h3>
-                    <span flex></span>
-                    <span class="timezone-label">{{::ctrl.timeZone | timezoneShort}}</span>
+            <div class="date-filter-header">
+                <div class="header-content">
+                    <div class="header-icon-wrapper">
+                        <md-icon class="header-icon" md-font-set="material-symbols-outlined">date_range</md-icon>
+                    </div>
+                    <div class="header-text">
+                        <h3 class="header-title">Date Range Filter</h3>
+                        <span class="header-subtitle">Select your preferred time range</span>
+                    </div>
                 </div>
-            </md-toolbar>
+                <div class="timezone-badge">
+                    <md-icon class="timezone-icon dialog-icon" md-font-set="material-symbols-outlined">globe_location_pin</md-icon>
+                    <span class="timezone-text">{{::ctrl.timeZone | timezoneLongFilter}}</span>
+                </div>
+            </div>
 
             <div class="date-filter-content">
                 <!-- Range Type Selection -->
                 <div class="range-selection-section">
                     <md-radio-group
-                            class="md-primary range-radio-group"
-                            ng-change="ctrl.onSearchRangeChange(ctrl.dateSearchRange)"
-                            ng-model="ctrl.dateSearchRange"
+                            class="range-radio-group"
+                            ng-change="ctrl.onSearchRangeChange(ctrl.selectedRangeOption)"
+                            ng-model="ctrl.selectedRangeOption"
                             aria-label="Date range selection">
-                        <md-radio-button value="1" class="range-option">
-                            <span class="option-label">Last 24 Hours</span>
+                        <md-radio-button value="all_time" class="range-option">
+                            <div class="option-content">
+                                <md-icon class="option-icon" md-font-set="material-symbols-outlined">all_inclusive</md-icon>
+                                <div class="option-text">
+                                    <span class="option-label">All Time</span>
+                                    <span class="option-description">Up to 24 hours ahead</span>
+                                </div>
+                            </div>
                         </md-radio-button>
-                        <md-radio-button value="2" class="range-option">
-                            <span class="option-label">Custom Date Range</span>
+
+                        <md-radio-button value="custom_minutes" class="range-option">
+                            <div class="option-content">
+                                <md-icon class="option-icon" md-font-set="material-symbols-outlined">timer</md-icon>
+                                <div class="option-text">
+                                    <span class="option-label">Time Range</span>
+                                    <span class="option-description">Select duration in minutes</span>
+                                </div>
+                            </div>
+                        </md-radio-button>
+
+                        <md-radio-button value="custom_date" class="range-option">
+                            <div class="option-content">
+                                <md-icon class="option-icon" md-font-set="material-symbols-outlined">calendar_month</md-icon>
+                                <div class="option-text">
+                                    <span class="option-label">Custom Range</span>
+                                    <span class="option-description">Pick start and end dates</span>
+                                </div>
+                            </div>
                         </md-radio-button>
                     </md-radio-group>
                 </div>
 
                 <!-- Custom Date Range Section -->
-                <div class="custom-date-section" ng-if="ctrl.dateSearchRange == 2">
+                <div class="custom-date-section" ng-if="ctrl.selectedRangeOption === 'custom_date'">
                     <md-divider class="section-divider"></md-divider>
 
-                    <div class="date-picker-container" layout="column" layout-gt-xs="row" layout-align="space-between start">
-                        <!-- From Date -->
-                        <div flex class="date-picker-wrapper">
+                    <div class="date-picker-grid">
+                        <!-- Start Date -->
+                        <div class="date-picker-item">
                             <label class="date-picker-label">
-                                <md-icon class="date-icon dialog-icon" md-font-set="material-symbols-outlined">event</md-icon>
-                                Start Date
+                                <md-icon class="label-icon dialog-icon" md-font-set="material-symbols-outlined">event_available</md-icon>
+                                <span class="label-text">Start Date</span>
                             </label>
-                            <custom-date-picker
-                                    date-time="ctrl.startDate"
-                                    show-date="true"
-                                    show-time="false"
-                                    on-change="ctrl.onStartDateChange(dateTime)">
-                            </custom-date-picker>
+                            <div class="date-picker-field">
+                                <custom-date-picker
+                                        date-time="ctrl.startDate"
+                                        show-date="true"
+                                        show-time="false"
+                                        on-change="ctrl.onStartDateChange(dateTime)">
+                                </custom-date-picker>
+                            </div>
                         </div>
 
-                        <!-- To Date -->
-                        <div flex class="date-picker-wrapper">
+                        <!-- End Date -->
+                        <div class="date-picker-item">
                             <label class="date-picker-label">
-                                <md-icon class="date-icon dialog-icon" md-font-set="material-symbols-outlined">event</md-icon>
-                                End Date
+                                <md-icon class="label-icon dialog-icon" md-font-set="material-symbols-outlined">event_busy</md-icon>
+                                <span class="label-text">End Date</span>
                             </label>
-                            <custom-date-picker
-                                    date-time="ctrl.endDate"
-                                    show-date="true"
-                                    show-time="false"
-                                    on-change="ctrl.onEndDateChange(dateTime)">
-                            </custom-date-picker>
+                            <div class="date-picker-field">
+                                <custom-date-picker
+                                        date-time="ctrl.endDate"
+                                        show-date="true"
+                                        show-time="false"
+                                        on-change="ctrl.onEndDateChange(dateTime)">
+                                </custom-date-picker>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="date-range-display" ng-if="ctrl.startDate && ctrl.endDate">
+                        <md-icon class="display-icon dialog-icon" md-font-set="material-symbols-outlined">info</md-icon>
+                        <span class="display-text">
+                            {{ctrl.startDate.format('MMM DD, YYYY')}} → {{ctrl.endDate.format('MMM DD, YYYY')}}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Custom Minutes Section -->
+                <div class="custom-minutes-section" ng-if="ctrl.selectedRangeOption === 'custom_minutes'">
+                    <md-divider class="section-divider"></md-divider>
+
+                    <div class="minutes-selector-wrapper">
+                        <label class="minutes-selector-label">
+                            <md-icon class="label-icon dialog-icon" md-font-set="material-symbols-outlined">schedule</md-icon>
+                            <span class="label-text">Duration</span>
+                        </label>
+
+                        <md-input-container class="duration-select">
+                            <md-select
+                                    ng-model="ctrl.selectedMinsOption"
+                                    ng-change="ctrl.onMinsOptionChange(ctrl.selectedMinsOption)"
+                                    placeholder="Select duration"
+                                    aria-label="Select time duration">
+                                <md-option ng-repeat="option in ctrl.minsOptions" ng-value="option">
+                                    {{option.text}}
+                                </md-option>
+                            </md-select>
+                        </md-input-container>
+
+                        <div class="time-range-display" ng-if="ctrl.selectedMinsOption">
+                            <div class="time-card start-time">
+                                <div class="time-card-header">
+                                    <md-icon class="time-card-icon dialog-icon" md-font-set="material-symbols-outlined">play_arrow</md-icon>
+                                    <span class="time-card-label">Start</span>
+                                </div>
+                                <div class="time-card-value">{{ctrl.startDate.format('MMM DD, h:mm A')}}</div>
+                            </div>
+
+                            <div class="time-arrow">
+                                <md-icon md-font-set="material-symbols-outlined">arrow_forward</md-icon>
+                            </div>
+
+                            <div class="time-card end-time">
+                                <div class="time-card-header">
+                                    <md-icon class="time-card-icon dialog-icon" md-font-set="material-symbols-outlined">stop</md-icon>
+                                    <span class="time-card-label">End</span>
+                                </div>
+                                <div class="time-card-value">{{ctrl.endDate.format('MMM DD, h:mm A')}}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Action Buttons -->
-                <div layout="row" layout-align="end center">
+                <div class="action-buttons">
                     <md-button ng-click="ctrl.clearDateFilter()">
                         Reset
                     </md-button>
 
                     <md-button class="md-raised md-primary" ng-click="ctrl.refreshData()">
-                        Apply
+                        <md-icon md-font-set="material-symbols-outlined">check_circle</md-icon>
+                        Apply Filter
                     </md-button>
                 </div>
             </div>

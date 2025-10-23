@@ -314,6 +314,7 @@
   <ItemGroup>
     <TypeScriptCompile Include="wwwroot\app\components\base-controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\date-filter-menu\date-filter-menu.component.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\date-filter-menu\enums\dateRangeOptions.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\date-filter-menu\IDateFilterData.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\dayjs-date-picker\dayjs-date-picker.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.interfaces.ts" />
@@ -460,6 +461,7 @@
     <TypeScriptCompile Include="wwwroot\app\functions\getJobTableRowClass.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\greetUser.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\handleAddressFieldsFromLookup.ts" />
+    <TypeScriptCompile Include="wwwroot\app\functions\MinsSelectionOptions.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\setDateFilterDefaults.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\sortRelatedJobs.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\toDtoMappings.ts" />
