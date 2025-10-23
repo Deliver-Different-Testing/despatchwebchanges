@@ -7,7 +7,7 @@ import {
     ISuggestion,
     JobGroup,
 } from "../../../interfaces/job.interface";
-import {ContactID, FirstName} from "../../../contants";
+import {ContactID, FirstName, TimeZone} from "../../../contants";
 import {CallData, TabItem} from "./job-details.interfaces";
 import {PodPhoto} from "../pod-photo-viewer/pod-photo-viewer.interfaces";
 import DispatchCoreService from "../../../services/dispatch-core.service";
@@ -34,7 +34,7 @@ import dayjs, {Dayjs} from "dayjs";
 import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
 import VoidJobConfirmationDialogService
     from "../../dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
-import {displayLongDate} from "../../../functions/formatDates";
+import {displayLongDate, getIanaTimezone} from "../../../functions/formatDates";
 import JobPhotoType from "../../../enums/job-photo-type.enum";
 import {IFlightSegment} from "../../Nationwide/nationwide.interfaces";
 import PodPhotoType from "../../../enums/podPhotoType";
@@ -124,7 +124,7 @@ class JobDetailController extends BaseController {
         this.initServices($timeout, $interval, $scope);
 
         this.isUsCustomer = appConfig.US_Customer;
-        this.timeZone = TimeZone;
+        this.timeZone = getIanaTimezone(TimeZone);
 
         this.selectedTab = 0;
         this.allTabs = [];
@@ -1378,17 +1378,9 @@ class JobDetailController extends BaseController {
             job.statusName
         );
     }
-
-    private showLoading(): void {
-        this.isLoading = true;
-    }
-
-    private hideLoading() {
-        this.isLoading = false;
-    }
-
+    
     async updateField(job: IJob, callData: CallData): Promise<void> {
-        this.showLoading();
+       this.isLoading = true;
 
         try {
             // Ensure rate is decimal
@@ -1418,7 +1410,7 @@ class JobDetailController extends BaseController {
             );
             throw error;
         } finally {
-            this.hideLoading();
+            this.isLoading = false
         }
     }
 
@@ -1803,7 +1795,7 @@ class JobDetailController extends BaseController {
         );
 
         try {
-            this.showLoading();
+            this.isLoading = true;
 
             // Update the job's read status in the database
             await this.DispatchData.updateJobReadStatus(job.id, newReadStatus);
@@ -1844,7 +1836,7 @@ class JobDetailController extends BaseController {
             };
 
             this.$rootScope.$broadcast("jobReadChanged", data);
-            this.hideLoading();
+            this.isLoading = false;
         }
     }
 
@@ -1927,21 +1919,7 @@ class JobDetailController extends BaseController {
             FileUploadType.POD
         );
     }
-
-    async loadSubJobData(relatedJobIndex: number) {
-        this.selectedRelatedJob = this.jobGroups[relatedJobIndex];
-
-        this.selectedSubJobIndex = 0;
-
-        if (
-            this.selectedRelatedJob &&
-            this.selectedRelatedJob.subJobs &&
-            this.selectedRelatedJob.subJobs.length > 0
-        ) {
-            await this.loadSubJobDetails(0);
-        }
-    }
-
+    
     async switchToSubJob(subJobIndex: number): Promise<void> {
         if (subJobIndex === this.selectedSubJobIndex) return;
 
@@ -2285,7 +2263,6 @@ const JobDetailComponent: angular.IComponentOptions = {
         onStatusChange: "&",
         isRecurringJob: "<",
         isBulkJob: "<",
-        isEditMode: "<",
         onJobUpdate: "&"
     },
     controller: JobDetailController,

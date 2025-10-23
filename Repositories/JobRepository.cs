@@ -3038,6 +3038,7 @@ public partial class JobRepository(
                         Length = parcel.Length ?? 0,
                         Depth = parcel.Depth ?? 0,
                         Notes = parcel.ItemName,
+                        Barcode = parcel.Barcode,
                         ItemId = nextItemId++ // Increment for each new item
                     };
 
@@ -3065,6 +3066,7 @@ public partial class JobRepository(
                         .SetProperty(i => i.Height, parcel.Height ?? 0)
                         .SetProperty(i => i.Length, parcel.Length ?? 0)
                         .SetProperty(i => i.Depth, parcel.Depth ?? 0)
+                        .SetProperty(i => i.Barcode, parcel.Barcode)
                         .SetProperty(i => i.Notes, parcel.ItemName));
             }
         }
@@ -3109,6 +3111,7 @@ public partial class JobRepository(
                         Length = parcel.Length ?? 0,
                         Depth = parcel.Depth ?? 0,
                         Notes = parcel.ItemName,
+                        Barcode = parcel.Barcode,
                         ItemId = nextItemId++ // Increment for each new item
                     };
 
@@ -3136,6 +3139,7 @@ public partial class JobRepository(
                         .SetProperty(i => i.Height, parcel.Height ?? 0)
                         .SetProperty(i => i.Length, parcel.Length ?? 0)
                         .SetProperty(i => i.Depth, parcel.Depth ?? 0)
+                        .SetProperty(i => i.Barcode, parcel.Barcode)
                         .SetProperty(i => i.Notes, parcel.ItemName));
             }
         }

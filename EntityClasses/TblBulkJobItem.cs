@@ -35,5 +35,7 @@ public partial class TblBulkJobItem
 
     public int? ChildJobId { get; set; }
 
+    public string Barcode { get; set; }
+
     public virtual TblBulkJob ChildJob { get; set; }
 }

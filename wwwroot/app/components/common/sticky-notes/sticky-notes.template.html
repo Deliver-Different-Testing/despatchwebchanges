@@ -66,25 +66,25 @@
 
         <div class="sticky-notes-container">
             <div ng-repeat="note in ctrl.getDisplayNotes()"
-                 class="sticky-note {{note.noteTypeName | lowercase}} {{note.isImportant ? 'important' : ''}}"
+                 class="sticky-note {{::note.noteTypeName | lowercase}} {{::note.isImportant ? 'important' : ''}}"
                  ng-style="{'transform': 'rotate(' + (-1 + $index % 3) + 'deg)'}"
                  ng-click="ctrl.editNote($event, note)">
 
                 <div class="note-header">
                     <div class="note-type-info">
                         <md-icon md-font-set="material-symbols-outlined">
-                            {{note.isImportant ? 'priority_high' : 'note'}}
+                            {{::note.isImportant ? 'priority_high' : 'note'}}
                         </md-icon>
                         <div class="note-type">
-                            {{note.noteTypeName || 'Note'}}
+                            {{::note.noteTypeName || 'Note'}}
                         </div>
                     </div>
                     <div class="note-metadata">
-                        {{ctrl.formatDate(note.createdDate)}}
+                        {{::ctrl.formatDate(note.createdDate)}}
                     </div>
                 </div>
 
-                <div class="note-content">{{note.noteText}}</div>
+                <div class="note-content">{{::note.noteText}}</div>
 
                 <div class="note-actions">
                     <md-button class="md-icon-button" ng-click="ctrl.deleteNote($event, note)" aria-label="Delete">

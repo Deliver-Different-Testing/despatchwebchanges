@@ -567,7 +567,6 @@ public static class JobMappings
                 : null,
 
         Locked = j.UcjbLocked ?? false,
-        Barcode = j.Barcode
     };
 
     public static readonly Expression<Func<TblBulkJob, JobViewModel>> BulkJobMapping = j => new JobViewModel
@@ -718,7 +717,6 @@ public static class JobMappings
         ParcelDimensions = GetPackagesForBulkJob(j, j.Parent,
             j.TblBulkJobItems, j.Parent.TblBulkJobItems,
             j.TblBulkJobItems),
-        Barcode = j.Barcode
     };
 
     public static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping = j => new JobViewModel
@@ -1222,7 +1220,8 @@ public static class JobMappings
             ItemName = item.Notes,
             Height = item.Height,
             Depth = item.Depth,
-            Length = item.Length
+            Length = item.Length,
+            Barcode = item.Barcode
         };
     }
 
@@ -1259,7 +1258,8 @@ public static class JobMappings
             ItemName = item.Notes,
             Height = item.Height,
             Depth = item.Depth,
-            Length = item.Length
+            Length = item.Length,
+            Barcode = item.Barcode
         };
     }
 
