@@ -314,7 +314,6 @@
   <ItemGroup>
     <TypeScriptCompile Include="wwwroot\app\components\base-controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\date-filter-menu\date-filter-menu.component.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\common\date-filter-menu\enums\dateRangeOptions.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\date-filter-menu\IDateFilterData.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\dayjs-date-picker\dayjs-date-picker.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.interfaces.ts" />
@@ -336,6 +335,10 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\compose-email-dialog\compose-email-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\compose-email-dialog\compose-email-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\create-job-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\dashboard-settings-dialog\dashboard-settings-dialog.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\dashboard-settings-dialog\dashboard-settings-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\dashboard-settings-dialog\interfaces\IDashboardSettingsConfig.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\dashboard-settings-dialog\interfaces\IDashboardSettingsDialogResult.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-afterhours-dialog\edit-afterhours-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-afterhours-dialog\edit-afterhours-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.service.ts" />

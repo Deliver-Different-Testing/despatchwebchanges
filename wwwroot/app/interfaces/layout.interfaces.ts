@@ -8,6 +8,8 @@ export interface IBox {
     showRefresh?: boolean;
     showDetailButtons?: boolean;
     showFilter?: boolean;
+    visible: boolean;
+    description: string;
 }
 
 export interface IColumn {
@@ -30,4 +32,5 @@ export interface IGridsterLayout {
 
 export interface GridsterItemWithName extends angular.gridster.StandardGridsterItem {
     name: string;
+    visible: boolean;
 }

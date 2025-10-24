@@ -1,6 +1,6 @@
 enum DispatchBoxes {
-    JobsList = "jobsList",
-    JobDetail = "jobDetail",
+    JobsList = "list",
+    JobDetail = "detail",
     CurrentWork = "currentWork",
     Supports = "supports",
     DriverLocations = "driverLocations",

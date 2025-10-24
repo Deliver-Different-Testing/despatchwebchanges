@@ -1,5 +1,4 @@
-﻿// Date Filter Menu Styles
-// Professional, modern design with clean aesthetics
+﻿@import '../../../../css/variables.less';
 
 // Variables
 @primary-color: #1976d2;
@@ -12,7 +11,6 @@
 @border-color: #e0e0e0;
 @background-hover: #f5f5f5;
 @success-color: #4caf50;
-@shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.08);
 @shadow-medium: 0 2px 8px rgba(0, 0, 0, 0.12);
 @shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.16);
 @transition-standard: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -20,8 +18,7 @@
 // Mixins
 .card-style {
   background: white;
-  border-radius: 8px;
-  box-shadow: @shadow-subtle;
+  box-shadow: @menu-box-shadow;
 }
 
 .flex-center {
@@ -38,7 +35,6 @@
   min-width: 420px;
   max-width: 480px;
   max-height: calc(100vh - 80px);
-  border-radius: 12px;
   box-shadow: @shadow-elevated;
   overflow-y: auto;
   overflow-x: hidden;
@@ -57,12 +53,10 @@
 
   &::-webkit-scrollbar-track {
     background: #f1f1f1;
-    border-radius: 4px;
   }
 
   &::-webkit-scrollbar-thumb {
     background: #888;
-    border-radius: 4px;
 
     &:hover {
       background: #555;
@@ -98,7 +92,6 @@
       width: 48px;
       height: 48px;
       background: rgba(255, 255, 255, 0.15);
-      border-radius: 12px;
       backdrop-filter: blur(10px);
 
       .header-icon {
