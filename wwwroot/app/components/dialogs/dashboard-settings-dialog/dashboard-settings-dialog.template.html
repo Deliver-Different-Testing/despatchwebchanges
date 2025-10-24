@@ -1,22 +1,26 @@
 ﻿<md-dialog aria-label="Settings" class="settings-dialog">
-    <md-toolbar>
+    <md-toolbar class="md-hue-1">
         <div class="md-toolbar-tools">
-            <h2>Settings</h2>
+            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">settings_applications</md-icon>
+            <h2>{{ ctrl.config.title }}</h2>
             <span flex></span>
-            <md-button class="md-icon-button" ng-click="ctrl.cancel()">
-                <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+            <md-button class="md-icon-button close-dialog-button" ng-click="ctrl.cancel()">
+                <md-tooltip md-direction="bottom">Cancel</md-tooltip>
+                <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
+                    close
+                </md-icon>
             </md-button>
         </div>
     </md-toolbar>
-
+    
     <md-dialog-content>
-        <md-tabs md-dynamic-height md-border-bottom>
+        <md-tabs class="md-primary" md-center-tabs md-dynamic-height md-border-bottom>
             <!-- Refresh Interval Tab -->
             <md-tab label="Refresh Interval">
                 <md-content class="md-padding">
                     <div class="settings-section">
                         <label class="settings-label" id="refreshInterval">
-                            <md-icon md-font-set="material-symbols-outlined" class="popup-icon">
+                            <md-icon md-font-set="material-symbols-outlined" class="popup-icon dialog-icon">
                                 timer
                                 <md-tooltip md-direction="bottom">
                                     Set how often the dashboard lists automatically refresh with new data
@@ -67,8 +71,8 @@
             </md-tab>
 
             <!-- Dashboard Layout Management Tab -->
-            <md-tab label="Dashboard Layout" ng-if="ctrl.config.showDashboards">
-                <md-content class="md-padding">
+            <md-tab label="Dashboard Layout">
+                <md-content class="md-padding" ng-if="ctrl.config.showDashboards">
                     <div class="dashboard-layout-section">
                         <h3 class="section-title">
                             <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">box</md-icon>
@@ -94,7 +98,8 @@
 
                                 <md-card-content>
                                     <div class="dashboard-icon-wrapper">
-                                        <md-icon md-font-set="material-symbols-outlined" class="dashboard-icon dialog-icon">
+                                        <md-icon md-font-set="material-symbols-outlined"
+                                                 class="dashboard-icon dialog-icon">
                                             {{ctrl.boxes[dashboard.name].icon || 'dashboard'}}
                                         </md-icon>
                                     </div>
@@ -113,6 +118,13 @@
                             </md-card>
                         </div>
                     </div>
+                </md-content>
+                <md-content class="md-padding" ng-if="!ctrl.config.showDashboards">
+                    <no-data
+                            title="Unable to Hide Box"
+                            message="Boxes cannot be hidden in the default layout. To hide boxes, please create a custom layout first."
+                            icon="block">
+                    </no-data>
                 </md-content>
             </md-tab>
         </md-tabs>

@@ -391,6 +391,7 @@ class HomeController extends BaseController {
                     this.applyScope();
                 },
                 stop: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
+                    this.updateCurrentLayout();
                     this.applyScope();
                 }
             },
@@ -404,6 +405,7 @@ class HomeController extends BaseController {
                     this.applyScope();
                 },
                 stop: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
+                    this.updateCurrentLayout();
                     this.applyScope();
                 }
             }
