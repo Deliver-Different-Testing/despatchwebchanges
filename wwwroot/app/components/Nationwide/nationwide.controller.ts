@@ -22,7 +22,7 @@ import {
     IGetFlightOptionsResponse,
     StatusChangeEvent
 } from "./nationwide.interfaces";
-import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
+import {GridsterItemWithName, IBox, IColumn, IGridsterLayout, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import JobDataType from "./enums/JobDataType";
@@ -96,18 +96,28 @@ class NationwideControl extends BaseController {
         'tasksService',
         'recoveryAgentManagementService',
     ];
-
-    private readonly NationwideLayoutKey: string = `layoutsNW-${ContactID}`;
-    private readonly NationwideLastActiveLayoutKey: string = `lastActiveLayoutNW-${ContactID}`;
+    
     private readonly refreshDurationIntervalKey: string = `refreshInterval-${AppPages.Domestic}-${ContactID}`;
     private readonly DateFilterKey: string = `dateFilter-${AppPages.Domestic}-${ContactID}`;
     private readonly SelectedViewsKey: string = `selectedViews-NW-${ContactID}`;
 
+    private readonly GridsterLayoutsKey: string = `gridsterLayouts-${AppPages.Domestic}-${ContactID}`;
+    private readonly GridsterLastActiveLayoutKey: string = `gridsterLastActiveLayout-${AppPages.Domestic}-${ContactID}`;
+    private readonly V2DialogSeenKey: string = `hasSeenV2Dialog-${AppPages.Domestic}-${ContactID}`;
+    
     readonly nationwideJobList: JobListType = JobListType.NationwideJobList;
     readonly nationwidePodJobList: JobListType = JobListType.NationwidePodJobList;
     readonly nationwideRepriceJobList: JobListType = JobListType.NationwideRepriceJobList;
     readonly nationwidePageId: number = AppPages.Domestic;
 
+    // Gridster layout
+    boxes?: Record<NationwideBoxes, IBox>;
+    layouts: IGridsterLayout[] = [];
+    defaultLayout?: IGridsterLayout;
+    currentLayoutName?: string;
+    gridsterOpts?: angular.gridster.GridsterConfig;
+    gridsterItems: GridsterItemWithName[] = [];
+    
     private lastMapJobId?: number;
     private cachedMapConfig?: any;
     private isSelectingJob: boolean = false;
@@ -117,11 +127,6 @@ class NationwideControl extends BaseController {
     private tasksLoadingInBackground: boolean = false;
     greeting: string;
     isDataLoading: boolean = false;
-    layouts: ILayout[] = [];
-    defaultLayout?: ILayout;
-    currentLayoutIndex: number = 0;
-    currentLayoutName: string = "Default";
-    layout?: { columns: IColumn[] };
     currentJob?: IDispatchJob;
     currentJobId?: number;
     jobList?: IDispatchJob[] = [];
@@ -162,8 +167,6 @@ class NationwideControl extends BaseController {
         orderDirection: 'asc',
         searchText: ''
     };
-    boxes?: Record<string, IBox>;
-    boxSortableOptions: angular.ui.SortableOptions<any>;
     hereCredentials?: ApiConfig;
     mapConfig?: HereMapConfig;
     currentSelection?: string;
@@ -258,26 +261,15 @@ class NationwideControl extends BaseController {
         this.greeting = greetUser(FirstName);
         this.isUsCustomer = this.appConfig.US_Customer;
         this.timeZone = getIanaTimezone(TimeZone);
+        
+        // Init layouts
+        this.initializeGridster();
+        this.initializeBoxes();
+        this.loadGridsterLayoutsFromStorage();
 
         // Date filter
         this.dateFilterData = setDateFilterDefaults();
         this.loadDateFilterFromStorage();
-
-        this.watchEvent("angular-resizable.resizeEnd", (_, args: {
-            id?: string,
-            width: number,
-            height: number
-        }) => {
-            const mapContainer = angular.element(args.id ? '#' + args.id : '').find('.here-map');
-            if (mapContainer.length > 0) {
-                $scope.$emit("map-container-resized", {
-                    id: args.id,
-                    width: args.width,
-                    height: args.height
-                });
-                console.info("Map container resized: ", args.id);
-            }
-        });
 
         this.watchEvent<IJobReadChanged>('jobReadChanged', (_, data) => {
             this.markJobReadStatus(data.jobId, data.isRead);
@@ -306,87 +298,7 @@ class NationwideControl extends BaseController {
             }
         });
 
-        this.watchScope(() => this.layout, () => {
-            this.registerTimeout(() => this.applyLayoutDimensions());
-        }, true);
-
-        if (angular.element('#draggingItems').length === 0) {
-            angular.element('body').append('<div id="draggingItems"></div>');
-        }
-
         this.initHereMaps();
-
-        const jobsListBox: IBox = {name: NationwideBoxes.NewJobs, height: "60%"};
-        const jobsListPODBox: IBox = {name: NationwideBoxes.PodJobs, height: "40%"};
-        const tasksListBox: IBox = {name: NationwideBoxes.Tasks, height: "50%"};
-        const jobsListRepriceBox: IBox = {name: NationwideBoxes.RepriceJobs, height: "50%"};
-        const mapBox: IBox = {name: NationwideBoxes.Map, height: "30%"};
-        const jobDetailBox: IBox = {name: NationwideBoxes.JobDetail, height: "60%"};
-        const flightAgentDataTableBox: IBox = {name: NationwideBoxes.FlightAgents, height: "30%"};
-
-        // Define columns
-        const column1: IColumn = {
-            id: "col1",
-            width: "35%",
-            boxes: [jobsListBox, flightAgentDataTableBox]
-        };
-
-        const column2: IColumn = {
-            id: "col2",
-            width: "35%",
-            boxes: [jobDetailBox, mapBox]
-        };
-
-        const column3: IColumn = {
-            id: "col3",
-            width: "30%",
-            boxes: [jobsListPODBox, tasksListBox, jobsListRepriceBox]
-        };
-
-        // Create default layout
-        this.defaultLayout = {
-            name: "Default",
-            layout: {
-                columns: [column1, column2, column3]
-            }
-        };
-
-        // Load saved layouts or use default
-        if (Modernizr.localstorage) {
-            try {
-                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(this.NationwideLayoutKey) || '[]');
-                const lastActiveLayout = localStorage.getItem(this.NationwideLastActiveLayoutKey);
-
-                this.layouts = storedLayouts || [this.defaultLayout];
-                this.layouts[0] = this.defaultLayout; // Ensure default is always up to date
-
-                // Load last active layout or default
-                const layoutToLoad = lastActiveLayout
-                    ? this.layouts.findIndex((l: ILayout) => l.name === lastActiveLayout)
-                    : 0;
-                this.loadLayout(layoutToLoad >= 0 ? layoutToLoad : 0);
-            } catch (error: any) {
-                console.error('Error loading stored layouts:', error);
-                this.layouts = [this.defaultLayout];
-                this.loadLayout(0);
-            }
-        } else {
-            this.layouts = [this.defaultLayout];
-            this.loadLayout(0);
-        }
-
-        // Auto-save changes
-        this.watchScope("layout", (newValue: { columns: IColumn[] }, oldValue: { columns: IColumn[] }) => {
-            if (newValue !== oldValue && this.currentLayoutName) {
-                const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
-                if (index !== -1) {
-                    this.layouts[index].layout = angular.copy(newValue);
-                    if (Modernizr.localstorage) {
-                        localStorage.setItem(this.NationwideLayoutKey, JSON.stringify(this.layouts));
-                    }
-                }
-            }
-        }, true);
 
         // Start loading data
         this.loadPageViews().then(() => {
@@ -410,97 +322,6 @@ class NationwideControl extends BaseController {
             : this.appConfig.NZ_Coordinates_Center
         this.showInput = {};
         this.inputWidth = {};
-
-        this.boxes = {
-            [NationwideBoxes.NewJobs]: {
-                "title": "New Jobs",
-                "icon": "new_releases",
-                "templateUrl": "app/components/Nationwide/partials/jobList.html",
-                "showRefresh": 1
-            }, [NationwideBoxes.PodJobs]: {
-                "title": "Awaiting POD",
-                "icon": "pending_actions",
-                "templateUrl": "app/components/Nationwide/partials/jobListPOD.html",
-                "showRefresh": 1
-            }, [NationwideBoxes.Tasks]: {
-                "title": "Tasks",
-                "icon": "support",
-                "templateUrl": "app/components/Nationwide/partials/tasksList.html",
-                "showRefresh": 1
-            }, [NationwideBoxes.RepriceJobs]: {
-                "title": "Reprice",
-                "icon": "price_change",
-                "templateUrl": "app/components/Nationwide/partials/jobListReprice.html",
-                "showRefresh": 1
-            }, [NationwideBoxes.JobDetail]: {
-                "title": "Detail",
-                "icon": "assignment",
-                "templateUrl": "app/components/Nationwide/partials/jobDetail.html",
-                "showRefresh": 1,
-                "showDetailButtons": 1
-            }, [NationwideBoxes.Map]: {
-                "title": "Map",
-                "icon": "pin_drop",
-                "templateUrl": "app/components/Nationwide/partials/map.html",
-                "showRefresh": 1
-            }, [NationwideBoxes.FlightAgents]: {
-                "title": "Available",
-                "icon": "docs_add_on",
-                "templateUrl": "app/components/Nationwide/partials/flightAgentDataTableBox.html",
-                "showRefresh": 1
-            }
-        };
-
-        this.boxSortableOptions = {
-            handle: '.box-handle',
-            connectWith: '.column-sortable',
-            placeholder: 'box-placeholder',
-            tolerance: 'pointer',
-            cursor: 'move',
-            opacity: 0.8,
-            scroll: true,
-            revert: 200,
-            delay: 150,
-            forcePlaceholderSize: true,
-            distance: 5,
-
-            start: (e: JQueryEventObject, ui: any) => {
-                ui.item.addClass('dragging');
-
-                const dragInfo = angular.element('#draggingItems');
-                dragInfo.html(`Moving: ${ui.item.find('.md-headline-title').text().trim()}`);
-                dragInfo.css({
-                    display: 'block',
-                    top: e.pageY + 20 + 'px',
-                    left: e.pageX + 10 + 'px'
-                });
-
-                this.$document.on('mousemove.sortable', (event) => {
-                    dragInfo.css({
-                        top: (event.pageY || 0) + 20 + 'px',
-                        left: (event.pageX || 0) + 10 + 'px'
-                    });
-                });
-            },
-
-            over: (e: JQueryEventObject, _: any) => {
-                angular.element(e.target).addClass('ui-sortable-active');
-            },
-
-            out: (e: JQueryEventObject, _: any) => {
-                angular.element(e.target).removeClass('ui-sortable-active');
-            },
-
-            stop: (_: JQueryEventObject, ui: any) => {
-                angular.element(this.$document[0]).off('mousemove.sortable');
-                angular.element('#draggingItems').css('display', 'none');
-                ui.item.removeClass('dragging');
-                angular.element('.column-sortable').removeClass('ui-sortable-active');
-
-                this.updateBoxMetrics();
-                this.saveCurrentLayout();
-            }
-        };
 
         this.initRefreshIntervalOptions();
         this.loadSavedRefreshInterval();
@@ -537,6 +358,343 @@ class NationwideControl extends BaseController {
         this.stopAutoRefresh();
     }
 
+    // Gridster layouts
+    private initializeGridster(): void {
+        this.gridsterOpts = {
+            columns: 12,
+            pushing: true,
+            floating: true,
+            swapping: true,
+            width: 'auto',
+            colWidth: 'auto',
+            rowHeight: '150',
+            margins: [10, 10],
+            outerMargin: true,
+            minColumns: 1,
+            minRows: 2,
+            maxRows: 10,
+            defaultSizeX: 4,
+            defaultSizeY: 3,
+            minSizeX: 2,
+            minSizeY: 2,
+            resizable: {
+                enabled: true,
+                handles: ['n', 'e', 's', 'w', 'ne', 'se', 'sw', 'nw'],
+                start: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
+                    this.applyScope();
+                },
+                resize: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
+                    this.applyScope();
+                },
+                stop: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
+                    this.applyScope();
+                }
+            },
+            draggable: {
+                enabled: true,
+                handle: '.gridster-item-handle',
+                start: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
+                    this.applyScope();
+                },
+                drag: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
+                    this.applyScope();
+                },
+                stop: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
+                    this.applyScope();
+                }
+            }
+        };
+    }
+
+    private initializeBoxes(): void {
+        this.boxes = {
+            [NationwideBoxes.Map]: {
+                name: NationwideBoxes.Map,
+                title: 'Map',
+                icon: "pin_drop",
+                templateUrl: "app/components/Nationwide/partials/map.html",
+                showRefresh: true,
+                visible: true,
+                description: "Geographic view of nationwide job locations and coverage areas"
+            },
+            [NationwideBoxes.NewJobs]: {
+                name: NationwideBoxes.NewJobs,
+                title: 'New Jobs',
+                icon: "new_releases",
+                templateUrl: "app/components/Nationwide/partials/jobList.html",
+                showRefresh: true,
+                visible: true,
+                description: "Recently created jobs requiring assignment or review"
+            },
+            [NationwideBoxes.JobDetail]: {
+                name: NationwideBoxes.JobDetail,
+                title: 'Job Detail',
+                icon: "assignment",
+                templateUrl: "app/components/Nationwide/partials/jobDetail.html",
+                showRefresh: true,
+                showDetailButtons: true,
+                visible: true,
+                description: "Complete job information with management actions"
+            },
+            [NationwideBoxes.PodJobs]: {
+                name: NationwideBoxes.PodJobs,
+                title: 'Awaiting POD',
+                icon: "pending_actions",
+                templateUrl: "app/components/Nationwide/partials/jobListPOD.html",
+                showRefresh: true,
+                visible: true,
+                description: "Jobs pending proof of delivery documentation"
+            },
+            [NationwideBoxes.RepriceJobs]: {
+                name: NationwideBoxes.RepriceJobs,
+                title: 'Reprice',
+                icon: "price_change",
+                templateUrl: "app/components/Nationwide/partials/jobListReprice.html",
+                showRefresh: true,
+                visible: true,
+                description: "Jobs flagged for pricing adjustment or review"
+            },
+            [NationwideBoxes.Tasks]: {
+                name: NationwideBoxes.Tasks,
+                title: 'Tasks',
+                icon: "support",
+                templateUrl: "app/components/Nationwide/partials/tasksList.html",
+                showRefresh: true,
+                visible: true,
+                description: "Administrative tasks and follow-up items"
+            },
+            [NationwideBoxes.FlightAgents]: {
+                name: NationwideBoxes.FlightAgents,
+                title: 'Available',
+                icon: "docs_add_on",
+                templateUrl: "app/components/Nationwide/partials/flightAgentDataTableBox.html",
+                showRefresh: true,
+                visible: true,
+                description: "List of available agents ready for job assignment"
+            },
+        };
+    }
+
+    private loadGridsterLayoutsFromStorage(): void {
+        if (Modernizr.localstorage) {
+            try {
+                const savedLayouts = localStorage.getItem(this.GridsterLayoutsKey);
+                if (savedLayouts) {
+                    // Load saved layouts but excluded any 'Default' layouts from storage
+                    this.layouts = JSON.parse(savedLayouts).filter((l: { name: string; }) => l.name !== 'Default');
+                }
+            } catch (error) {
+                console.error('Error loading gridster layouts:', error);
+                this.layouts = [];
+            }
+        }
+
+        // Always recreate the default layout (not saved to storage)
+        this.defaultLayout = this.createDefaultGridsterLayout();
+        this.layouts.unshift(this.defaultLayout);
+
+        // Load last active layout or default
+        const lastActiveLayoutName = this.getLastActiveLayoutName();
+        const layoutToLoad = this.layouts.find(l => l.name === lastActiveLayoutName) || this.defaultLayout;
+        this.loadGridsterLayout(this.layouts.indexOf(layoutToLoad));
+    }
+
+    private createDefaultGridsterLayout(): IGridsterLayout {
+        return {
+            name: 'Default',
+            items: [
+                // Column 1 (35% width, left side)
+                {
+                    name: NationwideBoxes.NewJobs,
+                    sizeX: 4,
+                    sizeY: 5,
+                    row: 0,
+                    col: 0
+                },
+                {
+                    name: NationwideBoxes.FlightAgents,
+                    sizeX: 4,
+                    sizeY: 3,
+                    row: 5,
+                    col: 0
+                },
+
+                // Column 2 (35% width, middle)
+                {
+                    name: NationwideBoxes.JobDetail,
+                    sizeX: 4,
+                    sizeY: 5,
+                    row: 0,
+                    col: 4
+                },
+                {
+                    name: NationwideBoxes.Map,
+                    sizeX: 4,
+                    sizeY: 3,
+                    row: 5,
+                    col: 4
+                },
+
+                // Column 3 (30% width, right side)
+                {
+                    name: NationwideBoxes.PodJobs,
+                    sizeX: 4,
+                    sizeY: 4,
+                    row: 0,
+                    col: 8
+                },
+                {
+                    name: NationwideBoxes.Tasks,
+                    sizeX: 4,
+                    sizeY: 2,
+                    row: 4,
+                    col: 8
+                },
+                {
+                    name: NationwideBoxes.RepriceJobs,
+                    sizeX: 4,
+                    sizeY: 2,
+                    row: 6,
+                    col: 8
+                }
+            ]
+        };
+    }
+
+    private saveGridsterLayoutsToStorage(): void {
+        if (Modernizr.localstorage) {
+            try {
+                localStorage.setItem(this.GridsterLayoutsKey, JSON.stringify(this.layouts));
+            } catch (error) {
+                console.error('Error saving gridster layouts:', error);
+            }
+        }
+    }
+
+    private getLastActiveLayoutName(): string | null {
+        if (Modernizr.localstorage) {
+            try {
+                return localStorage.getItem(this.GridsterLastActiveLayoutKey);
+            } catch (error) {
+                console.error('Error loading last active layout:', error);
+            }
+        }
+        return null;
+    }
+
+    private setLastActiveLayoutName(name: string): void {
+        if (Modernizr.localstorage) {
+            try {
+                localStorage.setItem(this.GridsterLastActiveLayoutKey, name);
+            } catch (error) {
+                console.error('Error saving last active layout:', error);
+            }
+        }
+    }
+
+    loadGridsterLayout(index: number): void {
+        if (index < 0 || index >= this.layouts.length) {
+            console.error('Invalid layout index:', index);
+            return;
+        }
+
+        const layout = this.layouts[index];
+        this.currentLayoutName = layout.name;
+        this.gridsterItems = JSON.parse(JSON.stringify(layout.items)); // Deep copy
+        this.setLastActiveLayoutName(layout.name);
+        this.applyScope();
+    }
+
+    async saveGridsterLayout(): Promise<void> {
+        try {
+            const layoutName: string = await this.$mdDialog
+                .show(this.$mdDialog
+                    .prompt()
+                    .title("Save Layout")
+                    .textContent("Please enter a name for this layout.")
+                    .required(true)
+                    .ok("Save")
+                    .cancel("Cancel"))
+
+            if (!layoutName || layoutName.trim() === '') {
+                this.toastrService.showErrorToast('Layout name cannot be empty');
+                return;
+            }
+
+            const trimmedName = layoutName.trim();
+            const existingIndex = this.layouts.findIndex(l => l.name === trimmedName);
+
+            const newLayout: IGridsterLayout = {
+                name: trimmedName,
+                items: JSON.parse(JSON.stringify(this.gridsterItems)) // Deep copy
+            };
+
+            if (existingIndex >= 0) {
+                // Update existing layout
+                this.layouts[existingIndex] = newLayout;
+                this.toastrService.showSuccessToast(`Layout "${trimmedName}" updated`);
+            } else {
+                // Add a new layout
+                this.layouts.push(newLayout);
+                this.toastrService.showSuccessToast(`Layout "${trimmedName}" saved`);
+            }
+
+            this.currentLayoutName = trimmedName;
+            this.setLastActiveLayoutName(trimmedName);
+            this.saveGridsterLayoutsToStorage();
+            this.applyScope();
+        } catch (error) {
+            if (!error) return;
+            console.error('Error saving gridster layout:', error);
+            this.toastrService.showErrorToast('Error saving layout');
+        }
+    }
+
+    async deleteGridsterLayout(index: number): Promise<void> {
+        try {
+            if (index < 0 || index >= this.layouts.length) {
+                console.error('Invalid layout index:', index);
+                return;
+            }
+
+            const layout = this.layouts[index];
+
+            if (layout.name === 'Default') {
+                this.toastrService.showErrorToast('Cannot delete the Default layout');
+                return;
+            }
+
+            const confirmed: boolean = await this.$mdDialog
+                .show(this.$mdDialog
+                    .confirm()
+                    .title("Delete Layout?")
+                    .textContent(`Are you sure you want to delete the layout "${layout.name}"?`)
+                    .ok("Delete")
+                    .cancel("Cancel"))
+            if (!confirmed) return;
+
+            this.layouts.splice(index, 1);
+            this.saveGridsterLayoutsToStorage();
+
+            // If we deleted the current layout, load the default
+            if (this.currentLayoutName === layout.name) {
+                const defaultIndex = this.layouts.findIndex(l => l.name === 'Default');
+                this.loadGridsterLayout(defaultIndex);
+            }
+
+            this.toastrService.showSuccessToast(`Layout "${layout.name}" deleted`);
+            this.applyScope();
+        } catch (error) {
+            if (!error) return;
+            console.error('Error deleting gridster layout:', error);
+            this.toastrService.showErrorToast('Error deleting layout');
+        }
+    }
+
+    getGridsterItemByName(name: string): GridsterItemWithName | undefined {
+        return this.gridsterItems.find(item => item.name === name);
+    }
+    
     private loadSavedRefreshInterval(): void {
         if (Modernizr.localstorage) {
             try {
@@ -570,44 +728,7 @@ class NationwideControl extends BaseController {
             console.error('Error initializing task service:', error);
         }
     }
-
-    private updateBoxMetrics(): void {
-        if (!this.layout || !this.layout.columns) return;
-
-        this.layout.columns.forEach((column: IColumn) => {
-            const columnEl = angular.element(`#co-${column.id}`);
-            if (columnEl.length) {
-                column.width = columnEl.css('flex-basis');
-
-                column.boxes.forEach((box: IBox) => {
-                    const boxEl = angular.element(`#box-${box.name}`);
-                    if (boxEl.length) {
-                        box.height = boxEl.css('flex-basis');
-                    }
-                });
-            }
-        });
-    }
-
-    private saveCurrentLayout(): void {
-        if (!this.currentLayoutName || this.currentLayoutName === 'Default') {
-            return;
-        }
-
-        this.updateBoxMetrics();
-
-        const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
-        if (index !== -1) {
-            if (this.layout) {
-                this.layouts[index].layout = angular.copy(this.layout);
-            }
-
-            if (Modernizr.localstorage) {
-                localStorage.setItem(this.NationwideLayoutKey, JSON.stringify(this.layouts));
-            }
-        }
-    }
-
+    
     initHereMaps(): void {
         this.configService.getHereMapsKey().then((response: string) => {
             this.hereCredentials = {
@@ -706,128 +827,6 @@ class NationwideControl extends BaseController {
         await this.getData();
     }
 
-    loadLayout(index: number): void {
-        const layout: ILayout = this.layouts[index] || this.layouts[0];
-        this.currentLayoutName = layout.name;
-        this.currentLayoutIndex = index;
-        this.layout = angular.copy(layout.layout);
-
-        this.applyLayoutDimensions();
-
-        if (Modernizr.localstorage) {
-            localStorage.setItem(this.NationwideLastActiveLayoutKey, layout.name);
-        }
-
-        this.applyScope();
-    }
-
-    async saveLayout(): Promise<ILayout | null> {
-        try {
-            const layoutName = await this.$mdDialog.show(
-                this.$mdDialog
-                    .prompt()
-                    .title("Save Layout")
-                    .textContent("Please enter a name for this layout.")
-                    .ariaLabel("Layout name")
-                    .required(true)
-                    .ok("Save")
-                    .cancel("Cancel")
-            );
-
-            this.updateBoxMetrics();
-
-            const currentLayout: ILayout = {
-                name: layoutName,
-                layout: {
-                    columns: this.layout?.columns?.map((col: IColumn) => ({
-                        ...col,
-                        width: angular.element(`#co-${col.id}`).css("flex-basis"),
-                        boxes: col.boxes.map((box: IBox) => ({
-                            ...box,
-                            height: angular.element(`#box-${box.name}`).css("flex-basis"),
-                        })),
-                    })) || []
-                }
-            };
-
-            this.layouts.push(currentLayout);
-            this.currentLayoutName = layoutName;
-            this.layout = currentLayout.layout;
-
-            if (Modernizr.localstorage) {
-                localStorage.setItem(this.NationwideLayoutKey, JSON.stringify(this.layouts));
-                localStorage.setItem(this.NationwideLastActiveLayoutKey, layoutName);
-            }
-
-            this.applyScope();
-            return currentLayout;
-        } catch (error) {
-            if (!error) {
-                console.info("Save Layout Cancelled!");
-            } else {
-                console.error("Unable to save layout:", error);
-            }
-            this.applyScope();
-            return null;
-        }
-    }
-
-    async deleteLayout(index: number): Promise<void> {
-        if (index === 0) return; // Prevent deleting default layout
-
-        try {
-            await this.$mdDialog.show(
-                this.$mdDialog
-                    .confirm()
-                    .title("Delete Layout?")
-                    .textContent("Are you sure you would like to delete this layout?")
-                    .ok("Delete")
-                    .cancel("Cancel")
-            );
-
-            this.layouts.splice(index, 1);
-
-            if (Modernizr.localstorage) {
-                localStorage.setItem(this.NationwideLayoutKey, JSON.stringify(this.layouts));
-            }
-
-            if (this.currentLayoutName === this.layouts[index]?.name) {
-                this.loadLayout(0);
-            }
-
-            this.toastrService.showSuccessToast("Layout deleted successfully");
-        } catch (error) {
-            this.handleError(error);
-        } finally {
-            this.applyScope();
-        }
-    }
-
-    private applyLayoutDimensions(): void {
-        if (!this.layout || !this.layout.columns) return;
-
-        const updates: (() => void)[] = [];
-
-        this.layout?.columns?.forEach((column: IColumn) => {
-            const columnEl = angular.element(`#co-${column.id}`);
-            if (columnEl.length) {
-                updates.push(() => columnEl.css('flex-basis', column.width));
-
-                column.boxes.forEach((box: IBox) => {
-                    const boxEl = angular.element(`#box-${box.name}`);
-                    if (boxEl.length) {
-                        updates.push(() => boxEl.css('flex-basis', box.height || 'auto'));
-                    }
-                });
-            }
-        });
-
-        // Execute all updates in a single frame
-        updates.forEach(update => update());
-
-        this.applyScope();
-    }
-
     private saveViewsToStorage(views: any): void {
         if (Modernizr.localstorage) {
             localStorage.setItem(this.SelectedViewsKey, JSON.stringify(views));
@@ -888,17 +887,6 @@ class NationwideControl extends BaseController {
         }
     }
 
-    openSearch(boxName: string, index: number): void {
-        const boxID = boxName + '-' + index;
-        if (this.showInput[boxID]) {
-            this.showInput[boxID] = false;
-            this.inputWidth[boxID] = 31;
-        } else {
-            this.inputWidth[boxID] = 200;
-            this.showInput[boxID] = true;
-        }
-    }
-
     async unlockJob(currentJob: IDispatchJob): Promise<void> {
         await this.DispatchData.updateJobDetail(currentJob.id, JobProperty.Locked, false, currentJob.preBook ?? false)
     }
@@ -924,25 +912,6 @@ class NationwideControl extends BaseController {
             await this.getData();
         } catch (error) {
             console.error('Error restoring job:', error);
-        }
-    }
-
-    async loadRelatedJobDetail(jobId: number, jobNumber: string): Promise<void> {
-        try {
-            console.info(`Loading related job detail for ID: ${jobId}, Number: ${jobNumber}`);
-
-            // Use optimized job lookup
-            const currentJob = this.findJobInLocalLists(jobId);
-
-            if (currentJob) {
-                console.info(`Found job ${jobNumber} in local lists`);
-                await this.selectJob(currentJob);
-                this.currentSelection = ` for Job ${jobNumber}`;
-            } else {
-                console.warn(`Job with ID ${jobId} not found in any list, may need to refresh data`);
-            }
-        } catch (error) {
-            console.error("Error in loadRelatedJobDetail:", error);
         }
     }
 

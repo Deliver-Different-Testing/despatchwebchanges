@@ -1,0 +1,52 @@
+﻿.gridster-container {
+  padding: 16px;
+  height: calc(100vh - 64px);
+
+  .gridster {
+    height: 100%;
+  }
+}
+
+.gridster-item-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+
+  .box-content {
+    flex: 1;
+    overflow: auto;
+    padding: 8px;
+  }
+}
+
+.gridster-item-handle {
+  cursor: move;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  user-select: none;
+
+  md-icon {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+li[gridster-item] {
+  background-color: transparent !important;
+  list-style: none;
+
+  &:hover {
+    .gridster-item-content {
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+  }
+}
+
+.gridster-item-resizable-handler {
+  z-index: 2;
+}

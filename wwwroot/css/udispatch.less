@@ -1212,12 +1212,11 @@ md-dialog {
 }
 
 .professional-menu-content {
-  min-width: 280px;
-  max-width: 320px;
+  min-width: 300px;
+  max-width: 400px;
   padding: 8px 0;
   background: #ffffff;
-  border-radius: @dialog-border-radius;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  box-shadow: @menu-box-shadow;
 
   .empty-state {
     padding: 24px 20px;
@@ -1247,32 +1246,6 @@ md-dialog {
       display: flex;
       gap: 8px;
     }
-
-    .clear-button {
-      flex: 1;
-      min-height: 40px;
-      margin: 0;
-      padding: 8px 12px;
-      background: #f8f9fa;
-      border: 1px solid #e9ecef;
-      border-radius: 6px;
-      color: #6c757d;
-      font-size: 13px;
-      font-weight: 500;
-      text-transform: none;
-      transition: all 0.2s ease;
-
-      &:hover {
-        background: #e9ecef;
-        border-color: #dee2e6;
-        color: #495057;
-      }
-
-      .clear-icon {
-        margin-right: 6px;
-        font-size: 20px;
-      }
-    }
   }
   
   .view-list {
@@ -1292,12 +1265,6 @@ md-dialog {
         background-color: #f8f9fa;
       }
     }
-  }
-
-  .menu-divider {
-    margin: 8px 0;
-    border-color: #f0f0f0;
-    opacity: 1;
   }
 }
 

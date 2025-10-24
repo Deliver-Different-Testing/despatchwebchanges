@@ -1,0 +1,199 @@
+﻿.settings-dialog {
+  min-width: 800px;
+  max-width: 1500px;
+
+  md-toolbar {
+    min-height: 64px;
+  }
+
+  md-tabs {
+    min-height: 400px;
+  }
+}
+
+// Refresh Interval Tab Styles
+.settings-section {
+  padding: 16px 0;
+}
+
+.settings-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.popup-icon {
+  color: rgba(0, 0, 0, 0.54);
+}
+
+.settings-select {
+  width: 100%;
+  margin: 0;
+}
+
+.status-indicator {
+  margin-top: 24px;
+  padding: 16px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.status-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-icon-wrapper {
+  flex-shrink: 0;
+}
+
+.status-icon {
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+
+  &.status-active {
+    color: #4caf50;
+  }
+
+  &.status-inactive {
+    color: #9e9e9e;
+  }
+}
+
+.status-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.status-label {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.54);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-value {
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+// Dashboard Layout Tab Styles
+.dashboard-layout-section {
+  padding: 8px 0;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.section-description {
+  margin: 0 0 24px 0;
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 14px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.dashboard-card {
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  &.dashboard-visible {
+    border-color: #4caf50;
+  }
+
+  &.dashboard-hidden {
+    opacity: 0.6;
+  }
+}
+
+.visibility-overlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+}
+
+.check-icon {
+  color: #4caf50;
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+}
+
+.dashboard-icon-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.dashboard-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+  color: rgba(0, 0, 0, 0.54);
+}
+
+.dashboard-name {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 500;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.dashboard-description {
+  margin: 0 0 12px 0;
+  font-size: 12px;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.54);
+  min-height: 32px;
+}
+
+.visibility-status {
+  display: flex;
+  justify-content: center;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  &.visible-badge {
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
+
+  &.hidden-badge {
+    background: #f5f5f5;
+    color: #757575;
+  }
+}

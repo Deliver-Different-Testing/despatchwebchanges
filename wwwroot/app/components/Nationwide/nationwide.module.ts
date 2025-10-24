@@ -24,6 +24,9 @@ import RecoveryAgentManagementController
     from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.controller";
 import RecoveryAgentManagementService
     from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.service";
+import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
+import DashboardSettingsDialogController
+    from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.controller";
 
 const nationwideModule = angular.module('uDispatch.nationwide', [
     'ngMap',
@@ -57,7 +60,8 @@ nationwideModule
     .service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService)
     .service("jobContextMenuService", JobContextMenuService)
     .service("jobHighlightService", JobHighlightService)
-    .service("recoveryAgentManagementService", RecoveryAgentManagementService);
+    .service("recoveryAgentManagementService", RecoveryAgentManagementService)
+    .service("dashboardSettingsDialogService", DashboardSettingsDialogService);
 
 // Register controllers
 nationwideModule
@@ -65,6 +69,7 @@ nationwideModule
     .controller("flightAgentConformationDialogController", FlightAgentConformationDialogController)
     .controller("agentInfoDialogController", AgentInfoDialogController)
     .controller("AdditionalServicesDialogController", AdditionalServicesDialogController)
-    .controller("recoveryAgentManagementController", RecoveryAgentManagementController);
+    .controller("recoveryAgentManagementController", RecoveryAgentManagementController)
+    .controller("DashboardSettingsDialogController", DashboardSettingsDialogController);
  
 export default nationwideModule;

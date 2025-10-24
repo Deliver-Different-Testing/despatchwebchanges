@@ -1,0 +1,130 @@
+﻿<md-dialog aria-label="Settings" class="settings-dialog">
+    <md-toolbar>
+        <div class="md-toolbar-tools">
+            <h2>Settings</h2>
+            <span flex></span>
+            <md-button class="md-icon-button" ng-click="ctrl.cancel()">
+                <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+            </md-button>
+        </div>
+    </md-toolbar>
+
+    <md-dialog-content>
+        <md-tabs md-dynamic-height md-border-bottom>
+            <!-- Refresh Interval Tab -->
+            <md-tab label="Refresh Interval">
+                <md-content class="md-padding">
+                    <div class="settings-section">
+                        <label class="settings-label" id="refreshInterval">
+                            <md-icon md-font-set="material-symbols-outlined" class="popup-icon">
+                                timer
+                                <md-tooltip md-direction="bottom">
+                                    Set how often the dashboard lists automatically refresh with new data
+                                </md-tooltip>
+                            </md-icon>
+                            Refresh Interval
+                        </label>
+
+                        <md-select
+                                ng-model="ctrl.selectedRefreshInterval"
+                                ng-change="ctrl.onRefreshIntervalChange(ctrl.selectedRefreshInterval)"
+                                aria-labelledby="refreshInterval"
+                                placeholder="Select interval"
+                                class="settings-select"
+                                md-container-class="settings-select-container">
+                            <md-option
+                                    ng-repeat="option in ctrl.refreshIntervalOptions track by option.id"
+                                    ng-value="option">
+                                {{option.text}}
+                            </md-option>
+                        </md-select>
+
+                        <!-- Status Indicator -->
+                        <div class="status-indicator" ng-if="ctrl.selectedRefreshInterval">
+                            <div class="status-content">
+                                <div class="status-icon-wrapper">
+                                    <md-icon
+                                            md-font-set="material-symbols-outlined"
+                                            ng-if="ctrl.isAutoRefreshActive()"
+                                            class="status-icon status-active">
+                                        refresh
+                                    </md-icon>
+                                    <md-icon
+                                            md-font-set="material-symbols-outlined"
+                                            ng-if="!ctrl.isAutoRefreshActive()"
+                                            class="status-icon status-inactive">
+                                        pause
+                                    </md-icon>
+                                </div>
+                                <div class="status-text">
+                                    <span class="status-label">Current Status:</span>
+                                    <span class="status-value">{{ctrl.getCurrentRefreshIntervalText()}}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </md-content>
+            </md-tab>
+
+            <!-- Dashboard Layout Management Tab -->
+            <md-tab label="Dashboard Layout" ng-if="ctrl.config.showDashboards">
+                <md-content class="md-padding">
+                    <div class="dashboard-layout-section">
+                        <h3 class="section-title">
+                            <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">box</md-icon>
+                            Manage Boxes Visibility
+                        </h3>
+                        <p class="section-description">
+                            Toggle boxes on or off to customize your view
+                        </p>
+
+                        <div class="dashboard-grid">
+                            <md-card
+                                    ng-repeat="dashboard in ctrl.boxes track by dashboard.name"
+                                    class="dashboard-card"
+                                    ng-class="{'dashboard-visible': ctrl.boxes[dashboard.name].visible, 'dashboard-hidden': !ctrl.boxes[dashboard.name].visible}"
+                                    ng-click="ctrl.toggleDashboard(dashboard)">
+
+                                <!-- Visibility Overlay -->
+                                <div class="visibility-overlay" ng-if="ctrl.boxes[dashboard.name].visible">
+                                    <md-icon md-font-set="material-symbols-outlined" class="check-icon">
+                                        check_circle
+                                    </md-icon>
+                                </div>
+
+                                <md-card-content>
+                                    <div class="dashboard-icon-wrapper">
+                                        <md-icon md-font-set="material-symbols-outlined" class="dashboard-icon dialog-icon">
+                                            {{ctrl.boxes[dashboard.name].icon || 'dashboard'}}
+                                        </md-icon>
+                                    </div>
+                                    <h4 class="dashboard-name">{{ctrl.boxes[dashboard.name].title}}</h4>
+                                    <p class="dashboard-description">{{ctrl.boxes[dashboard.name].description}}</p>
+
+                                    <div class="visibility-status">
+                                        <span ng-if="dashboard.visible" class="status-badge visible-badge">
+                                            Visible
+                                        </span>
+                                        <span ng-if="!dashboard.visible" class="status-badge hidden-badge">
+                                            Hidden
+                                        </span>
+                                    </div>
+                                </md-card-content>
+                            </md-card>
+                        </div>
+                    </div>
+                </md-content>
+            </md-tab>
+        </md-tabs>
+    </md-dialog-content>
+
+    <md-dialog-actions layout="row">
+        <span flex></span>
+        <md-button ng-click="ctrl.cancel()">
+            Cancel
+        </md-button>
+        <md-button ng-click="ctrl.save()" class="md-primary md-raised">
+            Save Changes
+        </md-button>
+    </md-dialog-actions>
+</md-dialog>

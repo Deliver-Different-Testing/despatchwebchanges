@@ -8,9 +8,11 @@ import {
     IAreaClearList,
     IClearListViewModel,
     ICourierData,
-    IDispatchJob, IDispatchMapItem,
+    IDispatchJob,
+    IDispatchMapItem,
     IJob,
-    IJobQueryParams, IJobSearchResult,
+    IJobQueryParams,
+    IJobSearchResult,
     ISuggestion,
 } from "../../interfaces/job.interface";
 import {IPotentialCouriers, ITruckCourierStatus} from "../../interfaces/courier.interface";
@@ -50,6 +52,8 @@ import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
 import utc from "dayjs/plugin/utc";
 import {getMinsSelectionOptions} from "../../functions/MinsSelectionOptions";
 import {getIanaTimezone} from "../../functions/formatDates";
+import DispatchBoxes from "./enums/DispatchBoxes";
+import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -77,6 +81,7 @@ class HomeController extends BaseController {
         'messagingService',
         'tasksService',
         'createJobDialogService',
+        'dashboardSettingsDialogService',
         '$scope',
         '$timeout',
         '$interval',
@@ -90,7 +95,6 @@ class HomeController extends BaseController {
     private readonly DateFilterKey: string = `dateFilter-${AppPages.Dispatch}-${ContactID}`;
     private readonly GridsterLayoutsKey: string = `gridsterLayouts-${ContactID}`;
     private readonly GridsterLastActiveLayoutKey: string = `gridsterLastActiveLayout-${AppPages.Dispatch}-${ContactID}`;
-    private readonly V2DialogSeenKey: string = `hasSeenV2Dialog-${AppPages.Dispatch}-${ContactID}`;
 
     readonly currentWorkListName: JobListType = JobListType.CurrentWorkList;
     readonly dispatchListName: JobListType = JobListType.DispatchJobList;
@@ -183,19 +187,20 @@ class HomeController extends BaseController {
         private APP_CONFIG: IAppConfig,
         private $mdSidenav: angular.material.ISidenavService,
         private $stateParams: angular.ui.IStateParamsService,
-        private additionalServicesDialogService: AdditionalServicesDialogService,
-        private editAddressDialogService: EditAddressDialogService,
-        private jobFileUploadDialogService: JobFileUploadDialogService,
-        private addEventDialogService: AddEventDialogService,
-        private interCourierChargeDialogService: InterCourierChargeDialogService,
+        private additionalServicesDialog: AdditionalServicesDialogService,
+        private editAddressDialog: EditAddressDialogService,
+        private jobFileUploadDialog: JobFileUploadDialogService,
+        private addEventDialog: AddEventDialogService,
+        private interCourierChargeDialog: InterCourierChargeDialogService,
         private jobContextMenuService: JobContextMenuService,
         private navigationService: NavigationService,
-        private truckCourierStatusDialogService: TruckCourierStatusDialogService,
+        private truckCourierStatusDialog: TruckCourierStatusDialogService,
         private jobAddStopService: JobAddStopService,
-        private messagingDialogService: MessagingDialogService,
+        private messagingDialog: MessagingDialogService,
         private messagingService: MessagingService,
         private tasksService: TasksService,
-        private createJobDialogService: CreateJobDialogService,
+        private createJobDialog: CreateJobDialogService,
+        private dashboardSettingsDialog: DashboardSettingsDialogService,
         $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
@@ -281,9 +286,6 @@ class HomeController extends BaseController {
         this.initRefreshIntervalOptions();
         this.loadSavedRefreshInterval();
         this.initializeTaskService();
-
-        // Dashboard v2 info dialog on the first load
-        this.showV2WelcomeDialog();
     }
 
     $onInit(): void {
@@ -410,48 +412,60 @@ class HomeController extends BaseController {
 
     private initializeBoxes(): void {
         this.boxes = {
-            map: {
-                name: 'map',
+            [DispatchBoxes.Map]: {
+                name: DispatchBoxes.Map,
                 title: 'Map',
                 icon: "pin_drop",
                 templateUrl: "app/components/home/partials/map.html",
-                showRefresh: true
+                showRefresh: true,
+                visible: true,
+                description: "Interactive map view showing job locations and routes"
             },
-            list: {
-                name: 'list',
+            [DispatchBoxes.JobsList]: {
+                name: DispatchBoxes.JobsList,
                 title: 'Job List',
                 icon: "list_alt",
                 templateUrl: "app/components/home/partials/jobList.html",
-                showRefresh: true
+                showRefresh: true,
+                visible: true,
+                description: "Sortable list of all active and pending jobs"
             },
-            detail: {
-                name: 'jobDetail',
+            [DispatchBoxes.JobDetail]: {
+                name: DispatchBoxes.JobDetail,
                 title: 'Job Detail',
                 icon: "assignment",
                 templateUrl: "app/components/home/partials/jobDetail.html",
                 showRefresh: true,
-                showDetailButtons: true
+                showDetailButtons: true,
+                visible: true,
+                description: "Detailed information for selected job including status and actions"
             },
-            driverLocations: {
-                name: 'driverLocations',
+            [DispatchBoxes.DriverLocations]: {
+                name: DispatchBoxes.DriverLocations,
                 title: 'Driver Locations',
                 icon: "person_pin_circle",
                 templateUrl: "app/components/home/partials/driverLocations.html",
-                showRefresh: false
+                showRefresh: false,
+                visible: true,
+                description: "Real-time tracking of all driver positions"
             },
-            currentWork: {
-                name: 'currentWork',
+            [DispatchBoxes.CurrentWork]: {
+                name: DispatchBoxes.CurrentWork,
                 title: 'Current Work',
                 icon: "local_shipping",
                 templateUrl: "app/components/home/partials/currentWork.html",
-                showRefresh: false
+                showRefresh: false,
+                visible: true,
+                description: "Overview of jobs currently in progress"
             },
-            supports: {
-                name: 'supports',
+            [DispatchBoxes.Supports]: {
+                name: DispatchBoxes.Supports,
                 title: 'Support Tasks',
                 icon: "support",
                 templateUrl: "app/components/home/partials/supports.html",
-                showRefresh: false
+                showRefresh: false,
+                visible: true,
+                description: "Manage support requests and auxiliary tasks"
             }
         };
     }
@@ -485,16 +499,16 @@ class HomeController extends BaseController {
             name: 'Default',
             items: [
                 // Column 1 (50% width = 6 cols out of 12)
-                {sizeX: 6, sizeY: 5, row: 0, col: 0, name: 'list'},        // JobsList - top half
-                {sizeX: 6, sizeY: 4, row: 5, col: 0, name: 'detail'},   // JobDetail - bottom half
+                {sizeX: 6, sizeY: 4, row: 0, col: 0, name: DispatchBoxes.JobsList, visible: true},
+                {sizeX: 6, sizeY: 3, row: 4, col: 0, name: DispatchBoxes.JobDetail, visible: true},
 
                 // Column 2 (25% width = 3 cols out of 12)
-                {sizeX: 3, sizeY: 5, row: 0, col: 6, name: 'currentWork'}, // CurrentWork - top half
-                {sizeX: 3, sizeY: 4, row: 5, col: 6, name: 'supports'},    // Supports - bottom half
+                {sizeX: 3, sizeY: 4, row: 0, col: 6, name: DispatchBoxes.CurrentWork, visible: true},
+                {sizeX: 3, sizeY: 3, row: 4, col: 6, name: DispatchBoxes.Supports, visible: true},
 
                 // Column 3 (25% width = 3 cols out of 12)
-                {sizeX: 3, sizeY: 4, row: 0, col: 9, name: 'driverLocations'}, // DriverLocations - top half
-                {sizeX: 3, sizeY: 5, row: 4, col: 9, name: 'map'},              // Map - bottom half
+                {sizeX: 3, sizeY: 4, row: 0, col: 9, name: DispatchBoxes.DriverLocations, visible: true},
+                {sizeX: 3, sizeY: 3, row: 4, col: 9, name: DispatchBoxes.Map, visible: true},
             ]
         };
     }
@@ -564,7 +578,7 @@ class HomeController extends BaseController {
 
             const newLayout: IGridsterLayout = {
                 name: trimmedName,
-                items: JSON.parse(JSON.stringify(this.gridsterItems)) // Deep copy
+                items: JSON.parse(JSON.stringify(this.gridsterItems)) // Deep copy with visibility
             };
 
             if (existingIndex >= 0) {
@@ -585,6 +599,33 @@ class HomeController extends BaseController {
             if (!error) return;
             console.error('Error saving gridster layout:', error);
             this.toastrService.showErrorToast('Error saving layout');
+        }
+    }
+
+    updateCurrentLayout(): void {
+        try {
+            if (!this.currentLayoutName) {
+                this.toastrService.showErrorToast('No layout currently loaded to update');
+                return;
+            }
+
+            const existingIndex = this.layouts.findIndex(l => l.name === this.currentLayoutName);
+
+            if (existingIndex < 0) {
+                this.toastrService.showErrorToast(`Layout "${this.currentLayoutName}" not found`);
+                return;
+            }
+
+            this.layouts[existingIndex] = {
+                name: this.currentLayoutName,
+                items: JSON.parse(JSON.stringify(this.gridsterItems)) // Deep copy with visibility
+            };
+            this.saveGridsterLayoutsToStorage();
+            this.toastrService.showSuccessToast(`Layout "${this.currentLayoutName}" updated`);
+            this.applyScope();
+        } catch (error) {
+            console.error('Error updating gridster layout:', error);
+            this.toastrService.showErrorToast('Error updating layout');
         }
     }
 
@@ -974,7 +1015,7 @@ class HomeController extends BaseController {
     }
 
     async otherEventForm($event: MouseEvent, job: IDispatchJob): Promise<void> {
-        await this.addEventDialogService.openAddEventDialog($event, job);
+        await this.addEventDialog.openAddEventDialog($event, job);
     }
 
     jobClass(job: IDispatchJob): string {
@@ -1579,7 +1620,7 @@ class HomeController extends BaseController {
         try {
             if (!currentJob.deliveryAddress) return;
 
-            const newAddress = await this.editAddressDialogService.openEditAddressDialog(currentJob.deliveryAddress, $event)
+            const newAddress = await this.editAddressDialog.openEditAddressDialog(currentJob.deliveryAddress, $event)
             if (!newAddress) return;
 
             await this.handleNewAddressForSplitJobs(newAddress, currentJob);
@@ -1626,12 +1667,12 @@ class HomeController extends BaseController {
             console.error("No truck courier status available");
             return
         }
-        await this.truckCourierStatusDialogService.showTruckLoadingStatus($event, this.truckCourierStatus);
+        await this.truckCourierStatusDialog.showTruckLoadingStatus($event, this.truckCourierStatus);
     }
 
     async createNewJob($event: MouseEvent): Promise<void> {
         try {
-            const newJobId = await this.createJobDialogService.showCreateJobDialog($event);
+            const newJobId = await this.createJobDialog.showCreateJobDialog($event);
             if (newJobId) {
                 await this.processNewJob(newJobId);
                 console.log("Create new job process completed.");
@@ -1654,11 +1695,11 @@ class HomeController extends BaseController {
     }
 
     async interCourierCharge($event: MouseEvent): Promise<void> {
-        await this.interCourierChargeDialogService.showInterCourierCharge($event);
+        await this.interCourierChargeDialog.showInterCourierCharge($event);
     }
 
     async createEvent($event: MouseEvent, job: IDispatchJob): Promise<void> {
-        await this.addEventDialogService.openAddEventDialog($event, job);
+        await this.addEventDialog.openAddEventDialog($event, job);
     }
 
     async checkForAttachments(jobId: number): Promise<any> {
@@ -1676,11 +1717,11 @@ class HomeController extends BaseController {
     }
 
     async openFileAttachmentDialog($event: MouseEvent, job: IDispatchJob): Promise<void> {
-        await this.jobFileUploadDialogService.openJobFileUploadDialog($event, job);
+        await this.jobFileUploadDialog.openJobFileUploadDialog($event, job);
     }
 
     async showAdditionalServicesMenu($event: MouseEvent, job: IDispatchJob): Promise<void> {
-        await this.additionalServicesDialogService.showAdditionalServicesDialog($event, job);
+        await this.additionalServicesDialog.showAdditionalServicesDialog($event, job);
     }
 
     static updateCallData(callData: any, job: IDispatchJob, jobIdElement: any): void {
@@ -1879,7 +1920,7 @@ class HomeController extends BaseController {
     }
 
     async openMessagingDialog($event: MouseEvent): Promise<void> {
-        await this.messagingDialogService.openMessagingDialog($event);
+        await this.messagingDialog.openMessagingDialog($event);
     }
 
     private async getUnreadMessageCount(): Promise<void> {
@@ -2174,77 +2215,41 @@ class HomeController extends BaseController {
         return await this.DispatchData.getJobsCurrent(this.currentCourier?.id, page, pageSize);
     }
 
-    private showV2WelcomeDialog(): void {
-        const hasSeenDialog = localStorage.getItem(this.V2DialogSeenKey);
+    async openSettingsDialog($event: MouseEvent): Promise<void> {
+        if (!this.boxes) return;
 
-        console.log('showV2WelcomeDialog called, hasSeenDialog:', hasSeenDialog);
+        try {
+            const result = await this.dashboardSettingsDialog.openSettingsDialog(
+                $event,
+                AppPages.Dispatch,
+                this.currentLayoutName ?? 'Default',
+                this.boxes,
+                this.selectedRefreshInterval
+            );
 
-        if (hasSeenDialog) {
-            console.log('Dialog already seen, skipping');
-            return;
+            if (!result) return;
+
+            // Update gridsterItems visibility based on boxes visibility
+            this.syncVisibilityToGridsterItems();
+
+            this.updateCurrentLayout();
+            this.applyScope();
+            this.toastrService.showSuccessToast('Settings saved and applied successfully');
+        } catch (error) {
+            if (!error) return;
+            console.error('Error opening settings dialog:', error);
+            this.toastrService.showErrorToast('Failed to open settings dialog');
         }
+    }
 
-        this.registerTimeout(() => {
-            console.log('Attempting to show dialog');
-
-            const self = this;  // Capture 'this' context
-
-            this.$mdDialog.show({
-                template: `
-            <md-dialog aria-label="Dashboard v2">
-                <md-toolbar>
-                    <div class="md-toolbar-tools">
-                        <h2>Welcome to Dashboard v2!</h2>
-                        <span flex></span>
-                        <md-button class="md-icon-button" ng-click="closeDialog()">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="Close dialog">close</md-icon>
-                        </md-button>
-                    </div>
-                </md-toolbar>
-                <md-dialog-content>
-                    <div class="md-dialog-content">
-                        <h3>New v2 Dashboard Implemented</h3>
-                        <p>We're excited to introduce the completely redesigned dashboard experience!</p>
-                        <h4>New Features:</h4>
-                        <ul>
-                            <li><strong>Drag and Drop:</strong> Rearrange your widgets by dragging them to your preferred location</li>
-                            <li><strong>Resizable Widgets:</strong> Adjust widget sizes to fit your needs</li>
-                            <li><strong>Responsive Grid:</strong> Automatically adapts to different screen sizes</li>
-                            <li><strong>Real-time Layout Updates:</strong> Changes are reflected instantly as you customize</li>
-                            <li><strong>Smart Positioning:</strong> Widgets automatically snap into place for a clean layout</li>
-                        </ul>
-                        <h4>Coming Soon:</h4>
-                        <ul>
-                            <li><md-icon md-font-set="material-symbols-outlined" style="vertical-align: middle;">add_circle</md-icon> Ability to add and remove widgets to fully personalize your dashboard</li>
-                            <li><md-icon md-font-set="material-symbols-outlined" style="vertical-align: middle;">dashboard</md-icon> Implemented on more dashboards</li>
-                        </ul>
-                    </div>
-                </md-dialog-content>
-                <md-dialog-actions layout="row">
-                    <span flex></span>
-                    <md-button ng-click="closeDialog()" class="md-primary md-raised">
-                        Got It!
-                    </md-button>
-                </md-dialog-actions>
-            </md-dialog>
-        `,
-                parent: angular.element(document.body),
-                clickOutsideToClose: false,
-                fullscreen: false,
-                controller: function($scope: any, $mdDialog: angular.material.IDialogService) {
-                    console.log('Dialog controller initialized');
-                    $scope.closeDialog = function() {
-                        console.log('Closing dialog');
-                        localStorage.setItem(self.V2DialogSeenKey, 'true');
-                        $mdDialog.hide();
-                    };
-                }
-            }).then(() => {
-                console.log('Dialog closed successfully');
-            }).catch((error: any) => {
-                console.error('Error showing dialog:', error);
-            });
-        }, 1000);
+    private syncVisibilityToGridsterItems(): void {
+        this.gridsterItems.forEach(item => {
+            if(!this.boxes) return;
+            const box = this.boxes[item.name];
+            if (box) {
+                item.visible = box.visible;
+            }
+        });
     }
 }
 
