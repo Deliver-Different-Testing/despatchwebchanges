@@ -31,7 +31,7 @@ class DashboardSettingsDialogController extends BaseController {
         this.boxes = angular.copy(boxes);
         this.config = angular.copy(config);
     }
-
+    
     initRefreshIntervalOptions(): ISuggestion[] {
         return [
             this.createDisabledOption(),

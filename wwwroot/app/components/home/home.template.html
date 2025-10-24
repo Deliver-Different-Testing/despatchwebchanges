@@ -8,7 +8,7 @@
 
                 <div flex></div>
 
-                <md-button aria-label="Open messages window" class="md-icon-button"
+                <md-button aria-label="Open messages window" class="md-icon-button button-trigger"
                            ng-click="ctrl.openMessagingDialog($event)">
                     <md-icon md-font-set="material-symbols-outlined">sms</md-icon>
                     <span class="custom-badge"
@@ -29,7 +29,7 @@
 
                 <md-menu>
                     <md-button aria-label="Open views menu"
-                               class="md-icon-button"
+                               class="md-icon-button button-trigger"
                                ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.views">view_list</md-icon>
                         <md-tooltip md-direction="bottom">Views</md-tooltip>
@@ -46,7 +46,8 @@
                         <div ng-if="ctrl.views && ctrl.views.length > 0">
                             <div class="menu-header">
                                 <div class="button-row">
-                                    <md-button aria-label="select all views" class="md-raised"
+                                    <md-button aria-label="select all views" 
+                                               class="md-raised"
                                                ng-click="ctrl.selectAllViews()">
                                         <md-icon md-font-set="material-symbols-outlined">select_all</md-icon>
                                         Select All
@@ -109,9 +110,9 @@
 
                 <md-button
                         aria-label="Open settings menu"
-                        class="md-icon-button settings-trigger"
+                        class="md-icon-button button-trigger"
                         ng-click="ctrl.openSettingsDialog($event)">
-                    <md-icon md-font-set="material-symbols-outlined">settings</md-icon>
+                    <md-icon md-font-set="material-symbols-outlined">settings_applications</md-icon>
                     <md-tooltip md-direction="bottom">Settings</md-tooltip>
                 </md-button>
                 

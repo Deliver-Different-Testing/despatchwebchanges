@@ -62,6 +62,7 @@ import timezone from "dayjs/plugin/timezone";
 import {transformFlightToDTO} from "../../functions/toDtoMappings";
 import utc from "dayjs/plugin/utc";
 import {HereMapConfig} from "../../interfaces/hereMapCredentials.interfaces";
+import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -95,6 +96,7 @@ class NationwideControl extends BaseController {
         'messagingService',
         'tasksService',
         'recoveryAgentManagementService',
+        'dashboardSettingsDialogService',
     ];
     
     private readonly refreshDurationIntervalKey: string = `refreshInterval-${AppPages.Domestic}-${ContactID}`;
@@ -103,7 +105,6 @@ class NationwideControl extends BaseController {
 
     private readonly GridsterLayoutsKey: string = `gridsterLayouts-${AppPages.Domestic}-${ContactID}`;
     private readonly GridsterLastActiveLayoutKey: string = `gridsterLastActiveLayout-${AppPages.Domestic}-${ContactID}`;
-    private readonly V2DialogSeenKey: string = `hasSeenV2Dialog-${AppPages.Domestic}-${ContactID}`;
     
     readonly nationwideJobList: JobListType = JobListType.NationwideJobList;
     readonly nationwidePodJobList: JobListType = JobListType.NationwidePodJobList;
@@ -111,7 +112,7 @@ class NationwideControl extends BaseController {
     readonly nationwidePageId: number = AppPages.Domestic;
 
     // Gridster layout
-    boxes?: Record<NationwideBoxes, IBox>;
+    boxes?: Record<string, IBox>;
     layouts: IGridsterLayout[] = [];
     defaultLayout?: IGridsterLayout;
     currentLayoutName?: string;
@@ -254,6 +255,7 @@ class NationwideControl extends BaseController {
         private messagingService: MessagingService,
         private tasksService: TasksService,
         private recoveryAgentManagementService: RecoveryAgentManagementService,
+        private dashboardSettingsDialog: DashboardSettingsDialogService,
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
@@ -387,6 +389,7 @@ class NationwideControl extends BaseController {
                     this.applyScope();
                 },
                 stop: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
+                    this.updateCurrentLayout();
                     this.applyScope();
                 }
             },
@@ -400,6 +403,7 @@ class NationwideControl extends BaseController {
                     this.applyScope();
                 },
                 stop: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
+                    this.updateCurrentLayout();
                     this.applyScope();
                 }
             }
@@ -470,7 +474,7 @@ class NationwideControl extends BaseController {
                 templateUrl: "app/components/Nationwide/partials/flightAgentDataTableBox.html",
                 showRefresh: true,
                 visible: true,
-                description: "List of available agents ready for job assignment"
+                description: "List of available agents or flights ready for job assignment"
             },
         };
     }
@@ -509,14 +513,16 @@ class NationwideControl extends BaseController {
                     sizeX: 4,
                     sizeY: 5,
                     row: 0,
-                    col: 0
+                    col: 0,
+                    visible: true
                 },
                 {
                     name: NationwideBoxes.FlightAgents,
                     sizeX: 4,
                     sizeY: 3,
                     row: 5,
-                    col: 0
+                    col: 0,
+                    visible: true
                 },
 
                 // Column 2 (35% width, middle)
@@ -525,14 +531,16 @@ class NationwideControl extends BaseController {
                     sizeX: 4,
                     sizeY: 5,
                     row: 0,
-                    col: 4
+                    col: 4,
+                    visible: true
                 },
                 {
                     name: NationwideBoxes.Map,
                     sizeX: 4,
                     sizeY: 3,
                     row: 5,
-                    col: 4
+                    col: 4,
+                    visible: true
                 },
 
                 // Column 3 (30% width, right side)
@@ -541,21 +549,24 @@ class NationwideControl extends BaseController {
                     sizeX: 4,
                     sizeY: 4,
                     row: 0,
-                    col: 8
+                    col: 8,
+                    visible: true
                 },
                 {
                     name: NationwideBoxes.Tasks,
                     sizeX: 4,
                     sizeY: 2,
                     row: 4,
-                    col: 8
+                    col: 8,
+                    visible: true
                 },
                 {
                     name: NationwideBoxes.RepriceJobs,
                     sizeX: 4,
                     sizeY: 2,
                     row: 6,
-                    col: 8
+                    col: 8,
+                    visible: true
                 }
             ]
         };
@@ -647,6 +658,33 @@ class NationwideControl extends BaseController {
             if (!error) return;
             console.error('Error saving gridster layout:', error);
             this.toastrService.showErrorToast('Error saving layout');
+        }
+    }
+
+    updateCurrentLayout(): void {
+        try {
+            if (!this.currentLayoutName) {
+                this.toastrService.showErrorToast('No layout currently loaded to update');
+                return;
+            }
+
+            const existingIndex = this.layouts.findIndex(l => l.name === this.currentLayoutName);
+
+            if (existingIndex < 0) {
+                this.toastrService.showErrorToast(`Layout "${this.currentLayoutName}" not found`);
+                return;
+            }
+
+            this.layouts[existingIndex] = {
+                name: this.currentLayoutName,
+                items: JSON.parse(JSON.stringify(this.gridsterItems)) // Deep copy with visibility
+            };
+            this.saveGridsterLayoutsToStorage();
+            this.toastrService.showSuccessToast(`Layout "${this.currentLayoutName}" updated`);
+            this.applyScope();
+        } catch (error) {
+            console.error('Error updating gridster layout:', error);
+            this.toastrService.showErrorToast('Error updating layout');
         }
     }
 
@@ -2325,6 +2363,43 @@ class NationwideControl extends BaseController {
                 await this.getJobList([JobDataType.REPRICE]);
                 break;
         }
+    }
+
+    async openSettingsDialog($event: MouseEvent): Promise<void> {
+        if (!this.boxes) return;
+
+        try {
+            const result = await this.dashboardSettingsDialog.openSettingsDialog(
+                $event,
+                AppPages.Domestic,
+                this.currentLayoutName ?? 'Default',
+                this.boxes,
+                this.selectedRefreshInterval
+            );
+
+            if (!result) return;
+
+            // Update gridsterItems visibility based on boxes visibility
+            this.syncVisibilityToGridsterItems();
+
+            this.updateCurrentLayout();
+            this.applyScope();
+            this.toastrService.showSuccessToast('Settings saved and applied successfully');
+        } catch (error) {
+            if (!error) return;
+            console.error('Error opening settings dialog:', error);
+            this.toastrService.showErrorToast('Failed to open settings dialog');
+        }
+    }
+
+    private syncVisibilityToGridsterItems(): void {
+        this.gridsterItems.forEach(item => {
+            if(!this.boxes) return;
+            const box = this.boxes[item.name];
+            if (box) {
+                item.visible = box.visible;
+            }
+        });
     }
 }
 

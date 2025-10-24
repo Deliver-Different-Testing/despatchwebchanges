@@ -15,7 +15,7 @@
 
                 <span flex></span>
 
-                <md-button aria-label="Open messages window" class="md-icon-button"
+                <md-button aria-label="Open messages window" class="md-icon-button button-trigger"
                            ng-click="ctrl.openMessagingDialog($event)">
                     <md-icon md-font-set="material-symbols-outlined">sms</md-icon>
                     <span class="custom-badge"
@@ -36,7 +36,7 @@
 
                 <md-menu>
                     <md-button aria-label="Open views menu"
-                               class="md-icon-button"
+                               class="md-icon-button button-trigger"
                                ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.views">view_list</md-icon>
                         <md-tooltip md-direction="bottom">Views</md-tooltip>
@@ -85,7 +85,7 @@
 
                 <md-menu>
                     <md-button aria-label="Open layout options menu"
-                               class="md-icon-button"
+                               class="md-icon-button button-trigger"
                                ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined">grid_view</md-icon>
                         <md-tooltip md-direction="bottom">Layouts</md-tooltip>
@@ -115,79 +115,13 @@
                     </md-menu-content>
                 </md-menu>
 
-                <md-menu>
-                    <md-button
-                            aria-label="Open settings menu"
-                            class="md-icon-button settings-trigger"
-                            ng-click="$mdMenu.open($event)">
-                        <md-icon md-font-set="material-symbols-outlined">settings</md-icon>
-                        <md-tooltip md-direction="bottom">Settings</md-tooltip>
-                    </md-button>
-
-                    <md-menu-content class="settings-menu-content">
-                        <div class="settings-container" md-prevent-menu-close>
-                            <!-- Header -->
-                            <md-toolbar class="md-hue-1" style="margin-top: -10px;">
-                                <div class="md-toolbar-tools">
-                                    <md-icon class="popup-icon" md-font-set="material-symbols-outlined">tune</md-icon>
-                                    <h2>Settings</h2>
-                                    <span flex></span>
-                                </div>
-                            </md-toolbar>
-
-                            <!-- Settings Section -->
-                            <div class="settings-section">
-                                <label class="settings-label" id="refreshInterval">
-                                    <md-icon md-font-set="material-symbols-outlined" class="popup-icon">
-                                        timer
-                                        <md-tooltip md-direction="bottom">Set how often the dashboard lists
-                                            automatically refresh with new data
-                                        </md-tooltip>
-                                    </md-icon>
-                                    Refresh Interval
-                                </label>
-
-                                <md-select
-                                        ng-model="ctrl.selectedRefreshInterval"
-                                        ng-change="ctrl.onRefreshIntervalChange(ctrl.selectedRefreshInterval)"
-                                        aria-labelledby="refreshInterval"
-                                        placeholder="Select interval"
-                                        class="settings-select"
-                                        md-container-class="settings-select-container">
-                                    <md-option
-                                            ng-repeat="option in ctrl.refreshIntervalOptions track by option.id"
-                                            ng-value="option">
-                                        {{option.text}}
-                                    </md-option>
-                                </md-select>
-
-                                <!-- Status Indicator -->
-                                <div class="status-indicator" ng-if="ctrl.selectedRefreshInterval">
-                                    <div class="status-content">
-                                        <div class="status-icon-wrapper">
-                                            <md-icon
-                                                    md-font-set="material-symbols-outlined"
-                                                    ng-if="ctrl.isAutoRefreshActive()"
-                                                    class="status-icon status-active">
-                                                refresh
-                                            </md-icon>
-                                            <md-icon
-                                                    md-font-set="material-symbols-outlined"
-                                                    ng-if="!ctrl.isAutoRefreshActive()"
-                                                    class="status-icon status-inactive">
-                                                pause
-                                            </md-icon>
-                                        </div>
-                                        <div class="status-text">
-                                            <span class="status-label">Current Status:</span>
-                                            <span class="status-value">{{ctrl.getCurrentRefreshIntervalText()}}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </md-menu-content>
-                </md-menu>
+                <md-button
+                        aria-label="Open settings menu"
+                        class="md-icon-button button-trigger"
+                        ng-click="ctrl.openSettingsDialog($event)">
+                    <md-icon md-font-set="material-symbols-outlined">settings_applications</md-icon>
+                    <md-tooltip md-direction="bottom">Settings</md-tooltip>
+                </md-button>
 
                 <md-divider class="vertical-divider"></md-divider>
 
