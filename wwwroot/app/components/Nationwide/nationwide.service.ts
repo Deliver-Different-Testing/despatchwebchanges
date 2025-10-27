@@ -34,7 +34,7 @@ class NationwideService implements angular.IServiceProvider {
     constructor(
         private $http: angular.IHttpService,
     ) {
-        console.debug('NationwideService: Service instantiated');
+        console.log('NationwideService: Service instantiated');
     }
 
     $get(): any {
@@ -230,7 +230,7 @@ class NationwideService implements angular.IServiceProvider {
 
     async calculateCargoReadyTime(jobId: number, carrierFsCode: string, arrivalTime: Dayjs, timezone?: string): Promise<IFlightCargoProcessing> {
         const formattedArrivalTime = formatDateForApiWithTzs(arrivalTime, timezone);
-        console.debug('formattedArrivalTime', formattedArrivalTime);
+        console.log('formattedArrivalTime', formattedArrivalTime);
         const response = await this.$http.get<IFlightCargoProcessingDto>("nationwideJob/CalculateCargoReadyTime", {
             params: {
                 jobId,

@@ -65,6 +65,7 @@ import {HereMapConfig} from "../../interfaces/hereMapCredentials.interfaces";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 import ITaskItemConfig from "../../enums/task-item-config";
 import GRIDSTER_BASE_CONFIG from "../../gridster.config";
+import isDefaultLayout from "../../functions/isDefaultLayout";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -305,9 +306,7 @@ class NationwideControl extends BaseController {
         this.initHereMaps();
 
         // Start loading data
-        this.loadPageViews().then(() => {
-            console.info('Loaded Page Views and Data!');
-        });
+        this.loadPageViews();
 
         this.STATUS_TO_LIST_MAP = {
             1: [JobDataType.NEW],
@@ -334,22 +333,18 @@ class NationwideControl extends BaseController {
 
     $onInit(): void {
         const jobId = this.$stateParams.jobId;
+
+        this.loadPageViews();
+
         if (jobId) {
-            this.loadPageViews()
-                .then(() => {
-                    if (!this.jobList) return;
+            this.registerTimeout(async () => {
+                if (!this.jobList) return;
 
-                    const job = this.jobList.find((j) => j.id === jobId);
-                    if (!job) return;
+                const job = this.jobList.find((j: IDispatchJob) => j.id === jobId);
+                if (!job) return;
 
-                    return this.selectJob(job);
-                })
-                .catch((error) => {
-                    console.error("Error loading initial job:", error);
-                    this.toastrService.showErrorToast("Error loading job details");
-                });
-        } else {
-            this.loadPageViews().then(_ => console.info("Loaded Page Views!"));
+                await this.selectJob(job);
+            });
         }
 
         this.registerInterval(async () => {
@@ -367,7 +362,7 @@ class NationwideControl extends BaseController {
         this.gridsterOpts = {
             ...GRIDSTER_BASE_CONFIG,
             resizable: {
-                enabled: true,
+                enabled: !isDefaultLayout(this.currentLayoutName),
                 handles: ['n', 'e', 's', 'w', 'ne', 'se', 'sw', 'nw'],
                 start: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
                     this.applyScope();
@@ -381,7 +376,7 @@ class NationwideControl extends BaseController {
                 }
             },
             draggable: {
-                enabled: true,
+                enabled: !isDefaultLayout(this.currentLayoutName),
                 handle: '.gridster-item-handle',
                 start: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
                     this.applyScope();
@@ -600,6 +595,15 @@ class NationwideControl extends BaseController {
         this.currentLayoutName = layout.name;
         this.gridsterItems = JSON.parse(JSON.stringify(layout.items)); // Deep copy
         this.setLastActiveLayoutName(layout.name);
+
+        // Reinitialize gridster config with an updated layout name
+        this.initializeGridster();
+
+        // Force gridster to recognize the config changes
+        this.registerTimeout(() => {
+            this.broadcastEvent('gridster-resized');
+        }, 50);
+
         this.applyScope();
     }
 
@@ -650,6 +654,11 @@ class NationwideControl extends BaseController {
 
     updateCurrentLayout(): void {
         try {
+            if (this.currentLayoutName === 'Default') {
+                this.toastrService.showWarningToast('Cannot update the Default layout');
+                return;
+            }
+
             if (!this.currentLayoutName) {
                 this.toastrService.showErrorToast('No layout currently loaded to update');
                 return;
@@ -785,17 +794,18 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async loadPageViews(): Promise<void> {
-        try {
-            this.views = await this.DispatchData.getSelectedViews(AppPages.Domestic);
-            this.initializeViews();
-
-            await this.getData();
-        } catch (error) {
-            console.error('Error fetching dispatch views:', error);
-            this.views = [];
-            this.initializeViews();
-        }
+    loadPageViews(): void {
+        this.DispatchData.getSelectedViews(AppPages.Domestic)
+            .then(views => {
+                this.views = views;
+                this.initializeViews();
+                return this.getData();
+            })
+            .catch(error => {
+                console.error('Error fetching dispatch views:', error);
+                this.views = [];
+                this.initializeViews();
+            });
     }
 
     initializeViews(): void {

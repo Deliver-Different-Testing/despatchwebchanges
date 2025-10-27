@@ -321,6 +321,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\job-highlight.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\job-list.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\pod-photo-viewer\pod-photo-viewer.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\side-nav\interfaces\INavState.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\side-nav\side-nav.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\sticky-notes\sticky-notes.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\task-history\task-history.component.ts" />
@@ -465,6 +466,7 @@
     <TypeScriptCompile Include="wwwroot\app\functions\getJobTableRowClass.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\greetUser.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\handleAddressFieldsFromLookup.ts" />
+    <TypeScriptCompile Include="wwwroot\app\functions\isDefaultLayout.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\MinsSelectionOptions.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\setDateFilterDefaults.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\sortRelatedJobs.ts" />

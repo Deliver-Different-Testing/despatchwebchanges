@@ -1,5 +1,4 @@
 ﻿<div class="job-list-component job-list-{{::ctrl.jobListType}}"
-     ng-if="ctrl.jobs && ctrl.jobs.length > 0"
      ng-class="ctrl.getDensityClass()">
 
     <!-- Stats Header -->
@@ -280,7 +279,7 @@
 
                     <!-- Job ID Column -->
                     <div class="job-cell job-id-cell">
-                        <div class="job-id">{{::job.jobNo}}</div>
+                        <div class="job-id">{{job.jobNo}}</div>
                         <div class="client-name">{{job.clientName}}</div>
                     </div>
 
