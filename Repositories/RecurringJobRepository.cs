@@ -30,14 +30,6 @@ public class RecurringJobRepository(
             .AsNoTracking()
             .FirstOrDefaultAsync();
 
-        jobRecurringViewModel.RelatedJobs = Context.TucJobBookings.Where(x =>
-                x.ParentId == jobRecurringViewModel.Id || (x.ParentId == null && x.UcbkId == jobRecurringViewModel.Id))
-            .Select(p => new Suggestion
-            {
-                Id = p.UcbkId,
-                Text = p.UcbkJobNumber
-            }).ToList();
-
         return jobRecurringViewModel;
     }
 

@@ -43,7 +43,7 @@ class ToastrService implements angular.IServiceProvider {
     private showToast(message: string, type: ToastType) {
         const preset = this.$mdToast.simple()
             .textContent(message)
-            .position("top right")
+            .position("top left")
             .hideDelay(3000)
             .parent(angular.element(document.body))
             .theme(`${type}-toast`);

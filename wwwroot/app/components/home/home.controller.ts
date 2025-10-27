@@ -56,6 +56,7 @@ import DispatchBoxes from "./enums/DispatchBoxes";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 import ITaskItemConfig from "../../enums/task-item-config";
 import GRIDSTER_BASE_CONFIG from "../../gridster.config";
+import isDefaultLayout from "../../functions/isDefaultLayout";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -369,7 +370,7 @@ class HomeController extends BaseController {
         this.gridsterOpts = {
             ...GRIDSTER_BASE_CONFIG,
             resizable: {
-                enabled: true,
+                enabled: !isDefaultLayout(this.currentLayoutName),
                 handles: ['n', 'e', 's', 'w', 'ne', 'se', 'sw', 'nw'],
                 start: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
                     this.applyScope();
@@ -383,7 +384,7 @@ class HomeController extends BaseController {
                 }
             },
             draggable: {
-                enabled: true,
+                enabled: !isDefaultLayout(this.currentLayoutName),
                 handle: '.gridster-item-handle',
                 start: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
                     this.applyScope();
@@ -533,6 +534,7 @@ class HomeController extends BaseController {
         }
     }
 
+
     loadGridsterLayout(index: number): void {
         if (index < 0 || index >= this.layouts.length) {
             console.error('Invalid layout index:', index);
@@ -543,6 +545,15 @@ class HomeController extends BaseController {
         this.currentLayoutName = layout.name;
         this.gridsterItems = JSON.parse(JSON.stringify(layout.items)); // Deep copy
         this.setLastActiveLayoutName(layout.name);
+
+        // Reinitialize gridster config with an updated layout name
+        this.initializeGridster();
+
+        // Force gridster to recognize the config changes
+        this.registerTimeout(() => {
+            this.broadcastEvent('gridster-resized');
+        }, 50);
+
         this.applyScope();
     }
 
@@ -592,6 +603,11 @@ class HomeController extends BaseController {
     }
 
     updateCurrentLayout(): void {
+        if(this.currentLayoutName === 'Default') {
+            this.toastrService.showWarningToast('Cannot update the Default layout');
+            return;
+        }
+        
         try {
             this.gridsterItems.forEach((item: IGridsterItem, index: number) => {
                 if (item.row === undefined || item.col === undefined) {

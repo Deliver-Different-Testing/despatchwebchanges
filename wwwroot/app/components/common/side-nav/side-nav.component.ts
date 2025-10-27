@@ -3,6 +3,7 @@ import "./side-nav.styles.less";
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
 import {FullName} from "../../../contants";
+import INavState from "./interfaces/INavState";
 
 class MaterialSidenavComponentController extends BaseController {
     static $inject = [
@@ -21,7 +22,7 @@ class MaterialSidenavComponentController extends BaseController {
     readonly currentDate: string;
 
     // Navigation state
-    navState = {
+    navState: INavState = {
         isOpen: false,
         isAnimating: false
     };
