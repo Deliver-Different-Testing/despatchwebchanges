@@ -235,6 +235,22 @@ class BaseController implements angular.IController {
         // Log final memory state
         console.log('BaseController destroyed, resources cleaned up');
     }
+
+    protected broadcastEvent(
+        eventName: string,
+        ...args: any[]
+    ): void {
+        if (!this.$scopeService) {
+            console.warn(`Cannot broadcast event "${eventName}": Scope is undefined`);
+            return;
+        }
+
+        try {
+            this.$scopeService.$broadcast(eventName, ...args);
+        } catch (error) {
+            console.error(`Error broadcasting event "${eventName}":`, error);
+        }
+    }
 }
 
 export default BaseController;

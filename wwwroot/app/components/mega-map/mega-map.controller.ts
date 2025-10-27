@@ -1,5 +1,5 @@
 import "./mega-map.styles.less";
-import {MapPoint} from "./mega-map.interfaces";
+import {IMapDriver, MapPoint} from "./mega-map.interfaces";
 import dayjs from "dayjs";
 import ToastrService from "../../services/toastr.service";
 import {Coordinates, MegaMapResponse} from "../overview/overview.interfaces";
@@ -13,24 +13,23 @@ import {IAssignedFlight} from "../../interfaces/job.interface";
 
 class MegaMapController extends BaseController {
     static $inject = [
-        "$log",
         "toastrService",
         "$mdSidenav",
         "overviewService",
         "configService",
-        "$rootScope",
         "APP_CONFIG",
+        "$scope",
         "$timeout",
         "$interval",
     ];
 
     isUsCustomer: boolean;
-    jobs: MegaMapResponse[];
-    drivers: any[];
-    pickupPoints: any[];
-    deliveryPoints: any[];
+    jobs?: MegaMapResponse[];
+    drivers?: IMapDriver[];
+    pickupPoints?: MapPoint[];
+    deliveryPoints?: MapPoint[];
     flightRoutes: any[];
-    selectedJob: any;
+    selectedJob?: MegaMapResponse;
     mapCenter: Coordinates;
     hereMapCredentials?: HereMapCredentials;
     hereMapConfig?: HereMapConfig;
@@ -39,33 +38,27 @@ class MegaMapController extends BaseController {
     dataLoading: boolean = false;
 
     constructor(
-        private $log: angular.ILogService,
         private toastrService: ToastrService,
         private $mdSidenav: angular.material.ISidenavService,
         private overviewService: OverviewService,
         private configService: ConfigService,
-        private $rootScope: angular.IRootScopeService,
         appConfig: IAppConfig,
+        $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
     ) {
         super();
-        this.initServices($timeout, $interval);
+        this.initServices($timeout, $interval, $scope);
 
         this.isUsCustomer = appConfig.US_Customer;
 
-        this.jobs = [];
-        this.drivers = [];
-        this.pickupPoints = [];
-        this.deliveryPoints = [];
         this.flightRoutes = [];
-        this.selectedJob = null;
 
         this.mapCenter = this.isUsCustomer
             ? appConfig.US_Coordinates_Center
             : appConfig.NZ_Coordinates_Center;
 
-        this.initializeMap().then(_ => this.$log.debug("HERE Map initialized"));
+        this.initializeMap().then(_ => console.log("HERE Map initialized"));
 
         // Set up auto-refresh every 30 seconds
         this.registerInterval(async () => {
@@ -81,12 +74,12 @@ class MegaMapController extends BaseController {
         try {
             this.$mdSidenav("right").toggle();
         } catch (error) {
-            this.$log.warn('Sidenav not available yet:', error);
+            console.warn('Sidenav not available yet:', error);
             this.registerTimeout(() => {
                 try {
                     this.$mdSidenav("right").toggle();
                 } catch (retryError) {
-                    this.$log.error('Sidenav still not available:', retryError);
+                    console.error('Sidenav still not available:', retryError);
                 }
             }, 100);
         }
@@ -111,13 +104,13 @@ class MegaMapController extends BaseController {
 
             await this.refreshData();
         } catch (error) {
-            this.$log.error("Error initializing HERE Maps:", error);
+            console.error("Error initializing HERE Maps:", error);
             this.toastrService.showErrorToast("Error initializing map");
         }
     }
 
     onMapReady(mapData: { map: any, platform: any }) {
-        this.$log.debug("HERE Map is ready", mapData);
+        console.log("HERE Map is ready", mapData);
         this.map = mapData.map;
         this.platform = mapData.platform;
     }
@@ -141,14 +134,14 @@ class MegaMapController extends BaseController {
             this.updateHereMapConfig();
         } catch (error) {
             this.toastrService.showErrorToast("Error updating data");
-            this.$log.error("Error:", error);
+            console.error("Error:", error);
         } finally {
             this.dataLoading = false
         }
     }
 
     updateHereMapConfig(): void {
-        if (!this.jobs.length) return;
+        if (!this.jobs) return;
 
         const primaryJob = this.jobs[0];
         const compositeJob = {
@@ -177,7 +170,7 @@ class MegaMapController extends BaseController {
 
         // Get an average courier location if we have drivers
         let avgCourierLocation: CourierLocation | undefined = undefined;
-        if (this.drivers.length > 0) {
+        if (this.drivers && this.drivers.length > 0) {
             const avgLat = this.drivers.reduce((sum, driver) => sum + driver.lat, 0) / this.drivers.length;
             const avgLng = this.drivers.reduce((sum, driver) => sum + driver.lng, 0) / this.drivers.length;
             avgCourierLocation = {lat: avgLat, lng: avgLng};
@@ -197,7 +190,7 @@ class MegaMapController extends BaseController {
         };
 
         // Trigger map refresh
-        this.$rootScope.$broadcast('map-refresh-requested');
+        this.broadcastEvent('map-refresh-requested');
     }
     
     centerOnDriver(driver: any): void {
@@ -234,8 +227,12 @@ class MegaMapController extends BaseController {
     }
 
 
-    transformMapData(jobs: MegaMapResponse[]) {
-        this.$log.debug("Starting transformMapData with %d jobs", jobs.length);
+    transformMapData(jobs: MegaMapResponse[]): {
+        pickups: MapPoint[];
+        deliveries: MapPoint[];
+        drivers: IMapDriver[]
+    } {
+        console.log("Starting transformMapData with %d jobs", jobs.length);
 
         const pickups: MapPoint[] = [];
         const deliveries: MapPoint[] = [];
@@ -248,7 +245,7 @@ class MegaMapController extends BaseController {
         }>();
 
         jobs.forEach(job => {
-            this.$log.debug("Processing job %s:", job.jobNumber, job);
+            console.log("Processing job %s:", job.jobNumber, job);
 
             const isFlightRoute = job?.isFlightJob || false;
 
@@ -258,7 +255,7 @@ class MegaMapController extends BaseController {
                 const lng = job.pickupLocation.longitude;
 
                 if (!isNaN(lat) && !isNaN(lng)) {
-                    this.$log.debug("Adding pickup point for job %s at [%d, %d]",
+                    console.log("Adding pickup point for job %s at [%d, %d]",
                         job.jobNumber, lat, lng
                     );
 
@@ -271,10 +268,10 @@ class MegaMapController extends BaseController {
                         isFlightRoute
                     });
                 } else {
-                    this.$log.warn("Job %s has invalid pickup coordinates", job.jobNumber);
+                    console.warn("Job %s has invalid pickup coordinates", job.jobNumber);
                 }
             } else {
-                this.$log.warn("Job %s missing valid pickup location", job.jobNumber);
+                console.warn("Job %s missing valid pickup location", job.jobNumber);
             }
 
             // Add delivery points
@@ -283,7 +280,7 @@ class MegaMapController extends BaseController {
                 const lng = job.deliveryLocation.longitude;
 
                 if (!isNaN(lat) && !isNaN(lng)) {
-                    this.$log.debug("Adding delivery point for job %s at [%d, %d]",
+                    console.log("Adding delivery point for job %s at [%d, %d]",
                         job.jobNumber, lat, lng
                     );
 
@@ -296,10 +293,10 @@ class MegaMapController extends BaseController {
                         isFlightRoute
                     });
                 } else {
-                    this.$log.warn("Job %s has invalid delivery coordinates", job.jobNumber);
+                    console.warn("Job %s has invalid delivery coordinates", job.jobNumber);
                 }
             } else {
-                this.$log.warn("Job %s missing valid delivery location", job.jobNumber);
+                console.warn("Job %s missing valid delivery location", job.jobNumber);
             }
 
             // Add driver location if exists
@@ -337,7 +334,7 @@ class MegaMapController extends BaseController {
                         });
                     }
                 } else {
-                    this.$log.warn("Job %s has invalid driver coordinates", job.jobNumber);
+                    console.warn("Job %s has invalid driver coordinates", job.jobNumber);
                 }
             }
         });
@@ -350,7 +347,7 @@ class MegaMapController extends BaseController {
                 .join(", ")
         }));
 
-        this.$log.debug("Transformed data:", {
+        console.log("Transformed data:", {
             pickups: pickups.length,
             deliveries: deliveries.length,
             drivers: drivers.length,
@@ -418,7 +415,7 @@ class MegaMapController extends BaseController {
 
         // Default to start position if no valid times
         if (!departureTime || !arrivalTime || !departureTime.isValid() || !arrivalTime.isValid()) {
-            this.$log.warn(`Missing or invalid flight times for flight ${flightInfo.flightNumber}`);
+            console.warn(`Missing or invalid flight times for flight ${flightInfo.flightNumber}`);
             return {lat: startLat, lng: startLng, progress: 0};
         }
 
@@ -464,19 +461,19 @@ class MegaMapController extends BaseController {
 
     showPointInfo(point: MapPoint): void {
         if (!point) {
-            this.$log.error("Could not get point data");
+            console.error("Could not get point data");
             return;
         }
 
         if (!this.jobs) {
-            this.$log.error("No jobs saved!");
+            console.error("No jobs saved!");
             return;
         }
 
         this.selectedJob = this.jobs.find(job => job.jobId === point.jobId);
 
         if (!this.selectedJob) {
-            this.$log.error("Could not find job data for point:", point);
+            console.error("Could not find job data for point:", point);
             return;
         }
 
@@ -488,7 +485,7 @@ class MegaMapController extends BaseController {
     }
 
     closeJobInfo(): void {
-        this.selectedJob = null;
+        this.selectedJob = undefined;
     }
 
     formatDateTime(date: string | Date): string {

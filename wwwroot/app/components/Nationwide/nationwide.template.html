@@ -146,15 +146,15 @@
     <!-- Gridster Dashboard -->
     <div class="gridster-container">
         <div gridster="ctrl.gridsterOpts">
-            <li gridster-item="item" ng-repeat="item in ctrl.gridsterItems track by item.name">
+            <li gridster-item="item" ng-repeat="item in ctrl.gridsterItems track by item.name" ng-if="item.visible">
                 <div class="gridster-item-content">
                     <md-toolbar class="widget-toolbar">
                         <div class="md-toolbar-tools">
 
-                            <span class="material-symbols-outlined">{{ctrl.boxes[item.name].icon}}</span>
+                            <span class="material-symbols-outlined">{{::ctrl.boxes[item.name].icon}}</span>
 
                             <span class="md-card-title" flex>
-                                {{ctrl.boxes[item.name].title}}
+                                {{::ctrl.boxes[item.name].title}}
                                 
                                 <span ng-if="::item.name == 'tasksList'">{{ctrl.getActiveTaskFilterNames()}}</span>
                                 <span ng-if="::item.name == 'jobDetail'">{{ctrl.currentSelection}}
@@ -371,7 +371,7 @@
                                 </md-fab-speed-dial>
                             </div>
 
-                            <div class="row-overflow" ng-if="item.name === 'currentWork'">
+                            <div class="row-overflow" ng-if="::item.name === 'currentWork'">
                                 <md-autocomplete
                                         ng-if="ctrl.courierSearchOpen"
                                         md-input-name="courierSearch"

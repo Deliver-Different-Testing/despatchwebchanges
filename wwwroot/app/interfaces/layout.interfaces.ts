@@ -27,10 +27,10 @@ export interface ILayout {
 
 export interface IGridsterLayout {
     name: string;
-    items: GridsterItemWithName[];
+    items: IGridsterItem[];
 }
 
-export interface GridsterItemWithName extends angular.gridster.StandardGridsterItem {
+export interface IGridsterItem extends angular.gridster.StandardGridsterItem {
     name: string;
     visible: boolean;
 }

@@ -26,7 +26,7 @@ class TruckCourierStatusDialogController extends BaseController {
         super();
         this.initServices($timeout, $interval, $scope);
         
-        console.debug("TruckCourierStatusDialogController instantiated");
+        console.log("TruckCourierStatusDialogController instantiated");
     }
 
     async refresh(courierId: number) {
@@ -36,7 +36,7 @@ class TruckCourierStatusDialogController extends BaseController {
             console.error("Error refreshing truck courier status:", error);
             this.toastrService.showErrorToast("An error occurred while refreshing the data. Please try again later.");
         } finally {
-            console.debug("Truck courier status refreshed successfully");
+            console.log("Truck courier status refreshed successfully");
             this.applyScope();
         }
     }

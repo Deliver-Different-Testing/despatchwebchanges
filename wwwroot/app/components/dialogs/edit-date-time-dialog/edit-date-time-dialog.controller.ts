@@ -14,7 +14,6 @@ dayjs.extend(timezone);
 export class EditDateTimeDialogController extends BaseController {
     static $inject = [
         "$mdDialog",
-        "$log",
         "toastrService",
         "$timeout",
         "$interval",
@@ -32,7 +31,6 @@ export class EditDateTimeDialogController extends BaseController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private $log: angular.ILogService,
         private toastrService: ToastrService,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
@@ -45,7 +43,6 @@ export class EditDateTimeDialogController extends BaseController {
     ) {
         super();
         this.initServices($timeout, $interval);
-        this.bindMethods();
 
         this.browserTimeZone = dayjs.tz.guess();
         this.selectedTimeZone = defaultTimeZone?.text ?? TimeZone;
@@ -56,12 +53,6 @@ export class EditDateTimeDialogController extends BaseController {
             console.log('Current time:', this.dateTime);
             console.log('Selected time zone:', this.selectedTimeZone);
         }
-    }
-
-    private bindMethods(): void {
-        this.updateDateTime = this.updateDateTime.bind(this);
-        this.submit = this.submit.bind(this);
-        this.cancel = this.cancel.bind(this);
     }
 
     updateDateTime(dateTime: Dayjs): void {
@@ -87,12 +78,12 @@ export class EditDateTimeDialogController extends BaseController {
             }
 
             if (this.dateTime) {
-                this.$log.debug('DateTime updated:', formatDateForApiWithTzs(this.dateTime, this.selectedTimeZone));
+                console.log('DateTime updated:', formatDateForApiWithTzs(this.dateTime, this.selectedTimeZone));
             } else {
-                this.$log.debug('DateTime not updated');
+                console.log('DateTime not updated');
             }
         } catch (error) {
-            this.$log.error('Error updating dateTime:', error);
+            console.error('Error updating dateTime:', error);
             this.dateTime = undefined;
         }
     }
@@ -112,10 +103,10 @@ export class EditDateTimeDialogController extends BaseController {
                 timezone: this.selectedTimeZone,
             };
 
-            this.$log.debug('Submitting result:', result);
+            console.log('Submitting result:', result);
             this.$mdDialog.hide(result);
         } catch (error: any) {
-            this.$log.error('Error submitting date/time:', error);
+            console.error('Error submitting date/time:', error);
             this.toastrService.showErrorToast(error.message);
         } finally {
             this.isLoading = false;

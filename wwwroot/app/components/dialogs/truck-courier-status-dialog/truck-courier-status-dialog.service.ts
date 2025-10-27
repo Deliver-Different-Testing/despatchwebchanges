@@ -6,15 +6,13 @@ class TruckCourierStatusDialogService implements angular.IServiceProvider {
     static $inject = [
         '$mdDialog',
         '$document',
-        '$log',
     ];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private $document: angular.IDocumentService,
-        private $log: angular.ILogService,
     ) {
-        this.$log.debug('TruckCourierStatusDialogService: Service instantiated');
+        console.log('TruckCourierStatusDialogService: Service instantiated');
     }
 
     $get(): any {
@@ -32,7 +30,9 @@ class TruckCourierStatusDialogService implements angular.IServiceProvider {
                 clickOutsideToClose: false,
                 locals: {
                     truckCourierStatus,
-                }
+                },
+                bindToController: true,
+                fullscreen: true,
             });
     }
 }

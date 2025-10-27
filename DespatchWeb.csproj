@@ -456,6 +456,7 @@
     <TypeScriptCompile Include="wwwroot\app\enums\late-event-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\message-delivery-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\podPhotoType.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\task-item-config.ts" />
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\countSubJobs.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\dtoMappings.ts" />

@@ -759,8 +759,8 @@ export interface IDispatchJobDto {
     from?: string;
     toAddress?: string;
     toSuburbID?: number;
-    pickupAddress?: IAddressViewModel;
-    deliveryAddress?: IAddressViewModel;
+    pickupAddress: IAddressViewModel;
+    deliveryAddress: IAddressViewModel;
     pickUpLongitude?: number;
     pickUpLatitude?: number;
     deliveryLongitude?: number;
