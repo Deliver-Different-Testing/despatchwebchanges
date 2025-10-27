@@ -64,6 +64,7 @@ import utc from "dayjs/plugin/utc";
 import {HereMapConfig} from "../../interfaces/hereMapCredentials.interfaces";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 import ITaskItemConfig from "../../enums/task-item-config";
+import GRIDSTER_BASE_CONFIG from "../../gridster.config";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -364,22 +365,7 @@ class NationwideControl extends BaseController {
     // Gridster layouts
     private initializeGridster(): void {
         this.gridsterOpts = {
-            columns: 12,
-            pushing: true,
-            floating: true,
-            swapping: true,
-            width: 'auto',
-            colWidth: 'auto',
-            rowHeight: '150',
-            margins: [10, 10],
-            outerMargin: true,
-            minColumns: 1,
-            minRows: 2,
-            maxRows: 10,
-            defaultSizeX: 4,
-            defaultSizeY: 3,
-            minSizeX: 2,
-            minSizeY: 2,
+            ...GRIDSTER_BASE_CONFIG,
             resizable: {
                 enabled: true,
                 handles: ['n', 'e', 's', 'w', 'ne', 'se', 'sw', 'nw'],
