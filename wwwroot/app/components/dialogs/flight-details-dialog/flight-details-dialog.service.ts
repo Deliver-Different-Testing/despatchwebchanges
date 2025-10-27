@@ -32,6 +32,7 @@ class FlightDetailsDialogService implements angular.IServiceProvider {
                 flightData
             },
             bindToController: true,
+            fullscreen: true,
         });
     }
 }

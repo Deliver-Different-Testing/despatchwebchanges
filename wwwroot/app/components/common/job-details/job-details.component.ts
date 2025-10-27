@@ -50,7 +50,6 @@ class JobDetailController extends BaseController {
         "priceBreakdownDialogService",
         "APP_CONFIG",
         "editParcelDimensionsDialogService",
-        "$rootScope",
         "$timeout",
         "$interval",
         "$scope",
@@ -112,7 +111,6 @@ class JobDetailController extends BaseController {
         private priceBreakdownDialogService: PriceBreakdownDialogService,
         appConfig: IAppConfig,
         private editParcelDimensionsDialogService: EditParcelDimensionsDialogService,
-        private $rootScope: angular.IRootScopeService,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
         $scope: angular.IScope,
@@ -306,7 +304,7 @@ class JobDetailController extends BaseController {
                 this.selectedSubJobIndex = -1;
 
                 if (previousJobId !== this.jobId) {
-                    this.$rootScope.$broadcast("jobChanged", this.job);
+                    this.broadcastEvent("jobChanged", this.job);
                 }
             } else {
                 console.log(`Already on the selected job or invalid job data`);
@@ -763,12 +761,6 @@ class JobDetailController extends BaseController {
 
         this.toastrService.showSuccessToast(`${job.jobNo} updated`);
         await this.refreshJobDetails(job.id);
-    }
-
-    async editBarcode($event: MouseEvent, job: IJob): Promise<void> {
-     await this.showEditDialog($event, job, "Barcode", 
-         "Enter job barcode..", "barcode", 
-         job.barcode, JobProperty.Barcode)
     }
     
     async showJobDimensionsDialog($event: MouseEvent, job: IJob): Promise<void> {
@@ -1835,7 +1827,7 @@ class JobDetailController extends BaseController {
                 isRead: job.readTrackerInfo.hasBeenRead,
             };
 
-            this.$rootScope.$broadcast("jobReadChanged", data);
+            this.broadcastEvent("jobReadChanged", data);
             this.isLoading = false;
         }
     }
@@ -1978,7 +1970,7 @@ class JobDetailController extends BaseController {
             this.initializeJobData();
 
             // Broadcast the subj ob change
-            this.$rootScope.$broadcast("subJobChanged", this.job);
+            this.broadcastEvent("subJobChanged", this.job);
 
             console.log(
                 `Successfully loaded subjob: ${subJob.id}`

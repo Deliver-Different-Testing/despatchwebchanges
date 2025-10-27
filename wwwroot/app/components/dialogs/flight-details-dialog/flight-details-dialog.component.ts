@@ -2,6 +2,7 @@ import { IFlightViewModel, IFlightSegment } from "../../Nationwide/nationwide.in
 import "./flight-details-dialog.styles.less";
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
+import {getIanaTimezone} from "../../../functions/formatDates";
 
 class FlightDetailsDialogController extends BaseController {
     static $inject = [
@@ -11,7 +12,7 @@ class FlightDetailsDialogController extends BaseController {
 
     flight: IFlightViewModel;
     isLoading: boolean = false;
-    timeZone: string = TimeZone;
+    timeZone: string;
     selectedTabIndex: number = 0;
     currentSegment: IFlightSegment;
     isDisplayingOverview: boolean = true;
@@ -21,6 +22,8 @@ class FlightDetailsDialogController extends BaseController {
         flightData: IFlightViewModel
     ) {
         super();
+        
+        this.timeZone = getIanaTimezone(TimeZone);
         this.flight = flightData;
 
         // Initialize with an overview or first segment

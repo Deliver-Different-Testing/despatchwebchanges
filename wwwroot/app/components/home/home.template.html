@@ -46,7 +46,7 @@
                         <div ng-if="ctrl.views && ctrl.views.length > 0">
                             <div class="menu-header">
                                 <div class="button-row">
-                                    <md-button aria-label="select all views" 
+                                    <md-button aria-label="select all views"
                                                class="md-raised"
                                                ng-click="ctrl.selectAllViews()">
                                         <md-icon md-font-set="material-symbols-outlined">select_all</md-icon>
@@ -61,7 +61,7 @@
                                     </md-button>
                                 </div>
                             </div>
-                            
+
                             <div class="view-list">
                                 <md-menu-item class="view-item" ng-repeat="view in ctrl.views track by view.id">
                                     <md-checkbox
@@ -94,7 +94,8 @@
                         <md-divider></md-divider>
                         <md-menu-item ng-repeat="lo in ctrl.layouts track by $index">
                             <md-button>
-                                <md-icon md-font-set="material-symbols-outlined" ng-click="ctrl.deleteGridsterLayout($index)"
+                                <md-icon md-font-set="material-symbols-outlined"
+                                         ng-click="ctrl.deleteGridsterLayout($index)"
                                          ng-if="lo.name != 'Default'">
                                     delete
                                 </md-icon>
@@ -115,7 +116,7 @@
                     <md-icon md-font-set="material-symbols-outlined">settings_applications</md-icon>
                     <md-tooltip md-direction="bottom">Settings</md-tooltip>
                 </md-button>
-                
+
                 <md-divider class="vertical-divider"></md-divider>
 
                 <span class="greeting-message">{{::ctrl.greeting}}</span>
@@ -141,18 +142,18 @@
                     <md-toolbar class="widget-toolbar">
                         <div class="md-toolbar-tools">
 
-                            <span class="material-symbols-outlined">{{ctrl.boxes[item.name].icon}}</span>
+                            <span class="material-symbols-outlined">{{::ctrl.boxes[item.name].icon}}</span>
 
                             <span class="md-card-title" flex>
-                                {{ctrl.boxes[item.name].title}}
-                                <span ng-if="item.name == 'jobDetail'">
+                                {{::ctrl.boxes[item.name].title}}
+                                <span ng-if="::item.name == 'jobDetail'">
                                     {{ctrl.currentSelection}}
                                     <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.hasAttachedFile">
                                         attachment
                                     </md-icon>
                                 </span>
-                                <span ng-if="item.name == 'currentWork' || item.name == 'map'">{{ctrl.currentWorkSelection}}</span>
-                                <span ng-if="item.name == 'supports'">{{ctrl.getActiveSupportFilterNames()}}</span>
+                                <span ng-if="::item.name == 'currentWork' || item.name == 'map'">{{ctrl.currentWorkSelection}}</span>
+                                <span ng-if="::item.name == 'supports'">{{ctrl.getActiveSupportFilterNames()}}</span>
                             </span>
 
                             <span flex></span>
@@ -357,7 +358,7 @@
                                 </md-fab-speed-dial>
                             </div>
 
-                            <div class="row-overflow" ng-if="item.name === 'currentWork'">
+                            <div class="row-overflow" ng-if="::item.name === 'currentWork'">
                                 <md-autocomplete
                                         ng-if="ctrl.courierSearchOpen"
                                         md-input-name="courierSearch"
@@ -408,7 +409,7 @@
                             <!-- Refresh button -->
                             <md-button class="md-icon-button"
                                        ng-click="ctrl.getData()"
-                                       ng-if="ctrl.boxes[item.name].showRefresh">
+                                       ng-if="::ctrl.boxes[item.name].showRefresh">
                                 <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
                                 <md-tooltip md-direction="bottom">Refresh</md-tooltip>
                             </md-button>

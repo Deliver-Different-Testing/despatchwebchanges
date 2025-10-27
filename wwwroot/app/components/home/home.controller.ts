@@ -16,7 +16,7 @@ import {
     ISuggestion,
 } from "../../interfaces/job.interface";
 import {IPotentialCouriers, ITruckCourierStatus} from "../../interfaces/courier.interface";
-import {GridsterItemWithName, IBox, IColumn, IGridsterLayout} from "../../interfaces/layout.interfaces";
+import {IGridsterItem, IBox, IColumn, IGridsterLayout} from "../../interfaces/layout.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import BaseController from "../base-controller";
 import {ExtendedTask, ITask} from "../task-dashboard/task-dashboard.interfaces";
@@ -54,6 +54,7 @@ import {getMinsSelectionOptions} from "../../functions/MinsSelectionOptions";
 import {getIanaTimezone} from "../../functions/formatDates";
 import DispatchBoxes from "./enums/DispatchBoxes";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
+import ITaskItemConfig from "../../enums/task-item-config";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -108,7 +109,7 @@ class HomeController extends BaseController {
     defaultLayout?: IGridsterLayout;
     currentLayoutName?: string;
     gridsterOpts?: angular.gridster.GridsterConfig;
-    gridsterItems: GridsterItemWithName[] = [];
+    gridsterItems: IGridsterItem[] = [];
 
     dateFilterData: IDateFilterData;
     isLoadingData: boolean = false;
@@ -147,7 +148,7 @@ class HomeController extends BaseController {
     potentialCouriers?: IPotentialCouriers[];
     currentWorkSelection?: string;
     currentSelection?: string;
-    supportItemConfig = {
+    supportItemConfig: ITaskItemConfig = {
         showAssign: true,
         showClose: true,
         showDelete: true,
@@ -672,7 +673,7 @@ class HomeController extends BaseController {
         }
     }
 
-    getGridsterItemByName(name: string): GridsterItemWithName | undefined {
+    getGridsterItemByName(name: string): IGridsterItem | undefined {
         return this.gridsterItems.find(item => item.name === name);
     }
 
@@ -823,18 +824,18 @@ class HomeController extends BaseController {
         }
 
         if (this.selectedViews.length === 1) {
-            // For single view, use its coordinates
+            // For a single view, use its coordinates
             const view = this.selectedViews[0];
             if (view.centerLatitude && view.centerLongitude) {
                 this.mapCenter = {
                     lat: view.centerLatitude, lng: view.centerLongitude,
                 };
-                this.mapZoom = 7; // Closer zoom for single view
+                this.mapZoom = 7; // Closer zoom for a single view
             }
         } else {
             // For multiple views, center on continental US
             this.mapCenter = this.APP_CONFIG.US_Coordinates_Center;
-            this.mapZoom = 4; // Zoom level to show most of continental US
+            this.mapZoom = 4; // Zoom level to show most of the continental US
         }
 
         this.initialViewSet = true;
@@ -2221,6 +2222,9 @@ class HomeController extends BaseController {
         if (!this.boxes) return;
 
         try {
+            // Sync boxes with items
+            this.syncVisibilityToBoxes();
+            
             const result = await this.dashboardSettingsDialog.openSettingsDialog(
                 $event,
                 AppPages.Dispatch,
@@ -2245,11 +2249,21 @@ class HomeController extends BaseController {
     }
 
     private syncVisibilityToGridsterItems(): void {
-        this.gridsterItems.forEach(item => {
+        this.gridsterItems.forEach((item: IGridsterItem) => {
             if(!this.boxes) return;
             const box = this.boxes[item.name];
             if (box) {
                 item.visible = box.visible;
+            }
+        });
+    }
+
+    private syncVisibilityToBoxes(): void {
+        this.gridsterItems.forEach((item: IGridsterItem) => {
+            if (!this.boxes) return;
+            const box = this.boxes[item.name];
+            if (box) {
+                box.visible = item.visible;
             }
         });
     }

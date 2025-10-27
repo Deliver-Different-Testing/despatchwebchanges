@@ -36,7 +36,9 @@ class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
             parent: this.$document.parent(),
             targetEvent: $event,
             clickOutsideToClose: false,
-            locals: dialogLocals
+            locals: dialogLocals,
+            bindToController: true,
+            fullscreen: true,
         };
 
         try {

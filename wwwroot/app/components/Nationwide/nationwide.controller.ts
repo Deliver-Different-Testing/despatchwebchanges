@@ -22,7 +22,7 @@ import {
     IGetFlightOptionsResponse,
     StatusChangeEvent
 } from "./nationwide.interfaces";
-import {GridsterItemWithName, IBox, IColumn, IGridsterLayout, ILayout} from "../../interfaces/layout.interfaces";
+import {IGridsterItem, IBox, IGridsterLayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import JobDataType from "./enums/JobDataType";
@@ -63,15 +63,14 @@ import {transformFlightToDTO} from "../../functions/toDtoMappings";
 import utc from "dayjs/plugin/utc";
 import {HereMapConfig} from "../../interfaces/hereMapCredentials.interfaces";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
+import ITaskItemConfig from "../../enums/task-item-config";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
 class NationwideControl extends BaseController {
     static $inject = [
-        '$scope',
         'NWData',
-        '$timeout',
         '$mdDialog',
         '$document',
         'toastrService',
@@ -83,7 +82,6 @@ class NationwideControl extends BaseController {
         'addEventDialogService',
         'additionalServicesDialogService',
         'jobContextMenuService',
-        '$interval',
         'flightDetailsDialogService',
         'navigationService',
         'configService',
@@ -97,15 +95,18 @@ class NationwideControl extends BaseController {
         'tasksService',
         'recoveryAgentManagementService',
         'dashboardSettingsDialogService',
+        '$scope',
+        '$timeout',
+        '$interval',
     ];
-    
+
     private readonly refreshDurationIntervalKey: string = `refreshInterval-${AppPages.Domestic}-${ContactID}`;
     private readonly DateFilterKey: string = `dateFilter-${AppPages.Domestic}-${ContactID}`;
     private readonly SelectedViewsKey: string = `selectedViews-NW-${ContactID}`;
 
     private readonly GridsterLayoutsKey: string = `gridsterLayouts-${AppPages.Domestic}-${ContactID}`;
     private readonly GridsterLastActiveLayoutKey: string = `gridsterLastActiveLayout-${AppPages.Domestic}-${ContactID}`;
-    
+
     readonly nationwideJobList: JobListType = JobListType.NationwideJobList;
     readonly nationwidePodJobList: JobListType = JobListType.NationwidePodJobList;
     readonly nationwideRepriceJobList: JobListType = JobListType.NationwideRepriceJobList;
@@ -117,8 +118,8 @@ class NationwideControl extends BaseController {
     defaultLayout?: IGridsterLayout;
     currentLayoutName?: string;
     gridsterOpts?: angular.gridster.GridsterConfig;
-    gridsterItems: GridsterItemWithName[] = [];
-    
+    gridsterItems: IGridsterItem[] = [];
+
     private lastMapJobId?: number;
     private cachedMapConfig?: any;
     private isSelectingJob: boolean = false;
@@ -174,7 +175,7 @@ class NationwideControl extends BaseController {
     agentsLoading: boolean = false;
     agentListPromise?: Promise<IGetAgentOptionsResponse>;
     flightListPromise?: Promise<IGetFlightOptionsResponse>;
-    taskItemConfig = {
+    taskItemConfig: ITaskItemConfig = {
         showAssign: true,
         showClose: true,
         showDelete: true,
@@ -228,9 +229,7 @@ class NationwideControl extends BaseController {
     private isHandlingJobChange: boolean = false;
 
     constructor(
-        $scope: angular.IScope,
         private nationwideService: NationwideService,
-        $timeout: angular.ITimeoutService,
         private $mdDialog: angular.material.IDialogService,
         private $document: angular.IDocumentService,
         private toastrService: ToastrService,
@@ -242,7 +241,6 @@ class NationwideControl extends BaseController {
         private addEventDialogService: AddEventDialogService,
         private additionalServicesDialogService: AdditionalServicesDialogService,
         private jobContextMenuService: JobContextMenuService,
-        $interval: angular.IIntervalService,
         private flightDetailsDialogService: FlightDetailsDialogService,
         private navigationService: NavigationService,
         private configService: ConfigService,
@@ -256,6 +254,9 @@ class NationwideControl extends BaseController {
         private tasksService: TasksService,
         private recoveryAgentManagementService: RecoveryAgentManagementService,
         private dashboardSettingsDialog: DashboardSettingsDialogService,
+        $scope: angular.IScope,
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
@@ -263,7 +264,7 @@ class NationwideControl extends BaseController {
         this.greeting = greetUser(FirstName);
         this.isUsCustomer = this.appConfig.US_Customer;
         this.timeZone = getIanaTimezone(TimeZone);
-        
+
         // Init layouts
         this.initializeGridster();
         this.initializeBoxes();
@@ -499,7 +500,7 @@ class NationwideControl extends BaseController {
 
         // Load last active layout or default
         const lastActiveLayoutName = this.getLastActiveLayoutName();
-        const layoutToLoad = this.layouts.find(l => l.name === lastActiveLayoutName) || this.defaultLayout;
+        const layoutToLoad = this.layouts.find((l: IGridsterLayout) => l.name === lastActiveLayoutName) || this.defaultLayout;
         this.loadGridsterLayout(this.layouts.indexOf(layoutToLoad));
     }
 
@@ -633,7 +634,7 @@ class NationwideControl extends BaseController {
             }
 
             const trimmedName = layoutName.trim();
-            const existingIndex = this.layouts.findIndex(l => l.name === trimmedName);
+            const existingIndex = this.layouts.findIndex((l: IGridsterLayout) => l.name === trimmedName);
 
             const newLayout: IGridsterLayout = {
                 name: trimmedName,
@@ -729,10 +730,10 @@ class NationwideControl extends BaseController {
         }
     }
 
-    getGridsterItemByName(name: string): GridsterItemWithName | undefined {
+    getGridsterItemByName(name: string): IGridsterItem | undefined {
         return this.gridsterItems.find(item => item.name === name);
     }
-    
+
     private loadSavedRefreshInterval(): void {
         if (Modernizr.localstorage) {
             try {
@@ -766,7 +767,7 @@ class NationwideControl extends BaseController {
             console.error('Error initializing task service:', error);
         }
     }
-    
+
     initHereMaps(): void {
         this.configService.getHereMapsKey().then((response: string) => {
             this.hereCredentials = {
@@ -2369,6 +2370,9 @@ class NationwideControl extends BaseController {
         if (!this.boxes) return;
 
         try {
+            // Sync boxes with items
+            this.syncVisibilityToBoxes();
+
             const result = await this.dashboardSettingsDialog.openSettingsDialog(
                 $event,
                 AppPages.Domestic,
@@ -2393,11 +2397,21 @@ class NationwideControl extends BaseController {
     }
 
     private syncVisibilityToGridsterItems(): void {
-        this.gridsterItems.forEach(item => {
-            if(!this.boxes) return;
+        this.gridsterItems.forEach((item: IGridsterItem) => {
+            if (!this.boxes) return;
             const box = this.boxes[item.name];
             if (box) {
                 item.visible = box.visible;
+            }
+        });
+    }
+
+    private syncVisibilityToBoxes(): void {
+        this.gridsterItems.forEach((item: IGridsterItem) => {
+            if (!this.boxes) return;
+            const box = this.boxes[item.name];
+            if (box) {
+                box.visible = item.visible;
             }
         });
     }

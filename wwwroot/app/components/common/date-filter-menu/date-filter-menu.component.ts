@@ -144,7 +144,7 @@ class DateFilterMenuComponent implements angular.IController {
                 break;
 
             case DateRangeOption.Mins:
-                // Set to current time and selected minutes
+                // Set to the current time and selected minutes
                 if (this.selectedMinsOption) {
                     this.startDate = dayjs();
                     this.dateFilterData.startDate = this.startDate;

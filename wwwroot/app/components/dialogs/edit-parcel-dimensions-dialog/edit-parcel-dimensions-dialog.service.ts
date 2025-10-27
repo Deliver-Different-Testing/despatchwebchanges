@@ -26,13 +26,13 @@ class EditParcelDimensionsDialogService {
             targetEvent: $event,
             template: require("./edit-parcel-dimensions-dialog.template.html"),
             clickOutsideToClose: false,
-            fullscreen: false,
+            fullscreen: true,
             locals: {
                 parcels: job.parcelDimensions,
                 jobId: job.bulkJob ? undefined : job.id,
                 bulkJobId: job.bulkJob ? job.id : undefined,
             },
-            bindToController: true
+            bindToController: true,
         });
     }
 }

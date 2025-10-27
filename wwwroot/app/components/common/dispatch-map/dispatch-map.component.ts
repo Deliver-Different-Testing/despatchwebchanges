@@ -74,13 +74,6 @@ class DispatchMapController extends BaseController {
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
-        this.bindMethods();
-    }
-
-    private bindMethods() {
-        this.onBoundsChanged = this.onBoundsChanged.bind(this);
-        this.refreshCourierLocations = this.refreshCourierLocations.bind(this);
-        this.toggleAutoZoom = this.toggleAutoZoom.bind(this);
     }
 
     $onInit() {

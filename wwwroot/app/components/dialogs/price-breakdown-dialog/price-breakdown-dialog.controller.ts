@@ -54,9 +54,9 @@ export class PriceBreakdownDialogController extends BaseController {
         super();
         this.initServices($timeout, $interval);
 
-        console.debug('PriceBreakdownDialogController: Service instantiated');
-        console.debug('PriceBreakdownDialogController: isPrebook', isPrebook);
-        console.debug('PriceBreakdownDialogController: jobId', jobId);
+        console.log('PriceBreakdownDialogController: Service instantiated');
+        console.log('PriceBreakdownDialogController: isPrebook', isPrebook);
+        console.log('PriceBreakdownDialogController: jobId', jobId);
 
         // Initialize if not provided
         if (!priceBreakdowns || priceBreakdowns.length === 0) {

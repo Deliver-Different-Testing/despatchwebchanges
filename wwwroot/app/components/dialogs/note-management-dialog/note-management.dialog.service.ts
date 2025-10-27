@@ -29,7 +29,9 @@ class NoteManagementDialogService implements angular.IServiceProvider {
             clickOutsideToClose: false,
             locals: {
                 model
-            }
+            },
+            bindToController: true,
+            fullscreen: true,
         });
     }
 }
