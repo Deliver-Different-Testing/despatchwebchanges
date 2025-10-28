@@ -25,14 +25,25 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
     async openSettingsDialog($event: MouseEvent, appPage: AppPages, currentLayoutName: string,
                              boxes: Record<string, IBox>, selectedRefreshInterval?: ISuggestion): Promise<ISettingsDialogResult | undefined> {
         try {
-            const title: string = appPage === AppPages.Dispatch
-                ? "Dispatch Dashboard Settings"
-                : "Dashboard Settings";
-            
+            let title: string;
+            switch (appPage) {
+                case AppPages.Dispatch:
+                    title = "Dispatch Dashboard Settings";
+                    break;
+                case AppPages.Domestic:
+                    title = "Domestic Dashboard Settings";
+                    break;
+                case AppPages.JobSearch:
+                    title = "Job Search Dashboard Settings";
+                    break;
+                default:
+                    title = "Dashboard Settings";
+            }
+                
             const config: IDashboardSettingsConfig = {
                 title,
                 showRefreshInterval: appPage === AppPages.Dispatch || appPage === AppPages.Domestic,
-                showDashboards: (appPage === AppPages.Dispatch || appPage === AppPages.Domestic)
+                showDashboards: (appPage === AppPages.Dispatch || appPage === AppPages.Domestic || appPage === AppPages.JobSearch)
                     && currentLayoutName !== "Default",
             };
 

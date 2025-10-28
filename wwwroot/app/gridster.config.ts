@@ -1,6 +1,6 @@
 ﻿const GRIDSTER_BASE_CONFIG = {
     columns: 12,
-    pushing: false,
+    pushing: true,
     floating: true,
     swapping: true,
     isMobile: false,
