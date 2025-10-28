@@ -166,9 +166,8 @@ public static class JobMappings
             Van = j.UcjbVan,
             Truck = j.Truck ?? false,
             DgClass = j.Dgclass,
-            AllowSplit = (j.ParentId == j.UcjbId && (j.InverseParent == null || !j.InverseParent.Any())) 
+            AllowSplit = (j.ParentId == j.UcjbId && (j.InverseParent == null || !j.InverseParent.Any()))
                          || j.ParentId == null,
-            
             PickUpTimeZone = j.PickupTimeZone != null
                 ? new Suggestion { Id = j.PickupTimeZone.Id, Text = j.PickupTimeZone.Name }
                 : null,
@@ -442,9 +441,12 @@ public static class JobMappings
         DgClass = j.Dgclass,
         DgDocumentation = j.Dgdocument,
         HasDgDocsString = j.Dgdocument != null ? "Yes" : "No",
-        ParcelDimensions = GetPackagesForJob(j, j.Parent,
-            j.TucJobItemJobs, j.Parent.TucJobItemJobs,
-            j.TucJobItemChildJobs),
+        ParcelDimensions = j.BulkParent == null
+            ? GetPackagesForJob(j, j.Parent,
+                j.TucJobItemJobs, j.Parent.TucJobItemJobs,
+                j.TucJobItemChildJobs)
+            : GetPackagesForBulkJob(j.BulkParent, j.BulkParent.Parent,
+                j.BulkParent.TblBulkJobItems, j.BulkParent.Parent.TblBulkJobItems),
 
         // Job status and details
         Done = j.UcjbJobDone,
@@ -474,10 +476,11 @@ public static class JobMappings
         OurRef = j.UcjbOurRef,
 
         // Pricing 
-        Charge = j.Parent != null && j.Parent.PricingBreakdownJobs != null && j.Parent.PricingBreakdownJobs.Any() == true 
-            ? j.Parent.PricingBreakdownJobs.Sum(p => p.ChargeAmount) 
-            : j.PricingBreakdownChildJobs != null && j.PricingBreakdownChildJobs.Any() == true 
-                ? j.PricingBreakdownChildJobs.Sum(p => p.ChargeAmount) 
+        Charge = j.Parent != null && j.Parent.PricingBreakdownJobs != null &&
+                 j.Parent.PricingBreakdownJobs.Any() == true
+            ? j.Parent.PricingBreakdownJobs.Sum(p => p.ChargeAmount)
+            : j.PricingBreakdownChildJobs != null && j.PricingBreakdownChildJobs.Any() == true
+                ? j.PricingBreakdownChildJobs.Sum(p => p.ChargeAmount)
                 : j.UcjbAmount,
 
         // Status
@@ -501,22 +504,23 @@ public static class JobMappings
                 : null,
 
         // Job items
-        PalletInfo = j.TucJobItemJobs != null ?
-            j.TucJobItemJobs.Select(i => new PalletInfo
-            {
-                Id = i.JobId,
-                Quantity = i.Items,
-                ItemId = i.ItemId,
-                Weight = i.Weight,
-                Length = i.Length ?? 0,
-                Depth = i.Depth ?? 0,
-                Height = i.Height ?? 0,
-                Pu = i.Pu,
-                Do = i.Do,
-                DgClass = i.Dgclass,
-                Notes = i.Notes
-            })
-            .ToList() : null,
+        PalletInfo = j.TucJobItemJobs != null
+            ? j.TucJobItemJobs.Select(i => new PalletInfo
+                {
+                    Id = i.JobId,
+                    Quantity = i.Items,
+                    ItemId = i.ItemId,
+                    Weight = i.Weight,
+                    Length = i.Length ?? 0,
+                    Depth = i.Depth ?? 0,
+                    Height = i.Height ?? 0,
+                    Pu = i.Pu,
+                    Do = i.Do,
+                    DgClass = i.Dgclass,
+                    Notes = i.Notes
+                })
+                .ToList()
+            : null,
 
         // Related jobs
         RelatedJobs = j.Parent != null && j.Parent.InverseParent.Any()
@@ -715,8 +719,7 @@ public static class JobMappings
                 : null,
 
         ParcelDimensions = GetPackagesForBulkJob(j, j.Parent,
-            j.TblBulkJobItems, j.Parent.TblBulkJobItems,
-            j.TblBulkJobItems),
+            j.TblBulkJobItems, j.Parent.TblBulkJobItems),
     };
 
     public static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping = j => new JobViewModel
@@ -906,7 +909,7 @@ public static class JobMappings
                     Text = j.DeliverByTimeZone.Name
                 }
                 : null,
- 
+
         Locked = j.UcjbLocked != null && j.UcjbLocked != 0
     };
 
@@ -1229,18 +1232,13 @@ public static class JobMappings
         TblBulkJob job,
         TblBulkJob parent,
         ICollection<TblBulkJobItem> jobItems,
-        ICollection<TblBulkJobItem> parentJobItems,
-        ICollection<TblBulkJobItem> childJobItems)
+        ICollection<TblBulkJobItem> parentJobItems)
     {
-        // Priority 1: Child items if available
-        if (HasItems(childJobItems))
-            return ConvertToParcelDimensions(childJobItems);
-
-        // Priority 2: Job items if this is a root job or self-referencing job
+        // Priority 1: Job items if this is a root job or self-referencing job
         if ((parent == null || job.ParentId == job.BulkJobId) && HasItems(jobItems))
             return ConvertToParcelDimensions(jobItems);
 
-        // Priority 3: Parent items as fallback
+        // Priority 2: Parent items as fallback
         return ConvertToParcelDimensions(parentJobItems);
     }
 
