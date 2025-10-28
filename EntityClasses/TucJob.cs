@@ -459,8 +459,6 @@ public partial class TucJob
 
     public virtual TucAgent Agent { get; set; }
 
-    public virtual TblBulkJob BulkParent { get; set; }
-
     public virtual TucClientContact Contact { get; set; }
 
     public virtual TimeZone DeliverByTimeZone { get; set; }
