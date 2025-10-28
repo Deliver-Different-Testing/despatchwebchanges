@@ -7,7 +7,7 @@ import {IAppConfig} from "../../interfaces/app-config.interface";
 import {IJobSearchResult, IDispatchJob, ISuggestion} from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
 import BaseController from "../base-controller";
-import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
+import {IBox, IColumn, IGridsterItem, IGridsterLayout, ILayout} from "../../interfaces/layout.interfaces";
 import {ContactID, TimeZone} from "../../contants";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {JobProperty} from "../../enums/job-property.enum";
@@ -31,34 +31,46 @@ import JobSearchDateRange from "./enums/JobSearchDateRange";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import {getIanaTimezone} from "../../functions/formatDates";
+import GRIDSTER_BASE_CONFIG from "../../gridster.config";
+import isDefaultLayout from "../../functions/isDefaultLayout";
+import NationwideBoxes from "../Nationwide/enums/NationwideBoxes";
+import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
 class JobSearchController extends BaseController {
     static $inject = [
-        '$scope',
         'uCSData',
         '$mdDialog',
-        '$document',
-        '$timeout',
-        '$interval',
         'dispatchJobService',
         'toastrService',
         'DispatchData',
         '$mdSidenav',
-        'APP_CONFIG',
         'jobContextMenuService',
         "navigationService",
         "messagingDialogService",
         "createJobDialogService",
         "additionalServicesDialogService",
         "jobFileUploadDialogService",
-        'interCourierChargeDialogService'
+        'interCourierChargeDialogService',
+        'dashboardSettingsDialogService',
+        'APP_CONFIG',
+        '$scope',
+        '$timeout',
+        '$interval',
     ];
-    
-    private readonly ContactIdKey: string = `layoutsCS-${ContactID}`
-    private readonly LastActiveContactIdKey: string = `lastActiveLayoutCS-${ContactID}`
+
+    private readonly GridsterLayoutsKey: string = `gridsterLayouts-${AppPages.JobSearch}-${ContactID}`;
+    private readonly GridsterLastActiveLayoutKey: string = `gridsterLastActiveLayout-${AppPages.JobSearch}-${ContactID}`;
+
+    // Gridster layout
+    boxes?: Record<string, IBox>;
+    layouts: IGridsterLayout[] = [];
+    defaultLayout?: IGridsterLayout;
+    currentLayoutName?: string;
+    gridsterOpts?: angular.gridster.GridsterConfig;
+    gridsterItems: IGridsterItem[] = [];
 
     readonly isUsCustomer: boolean;
     readonly isAdmin: boolean;
@@ -73,74 +85,57 @@ class JobSearchController extends BaseController {
     courierSearchText: string;
     showInput: any;
     inputWidth: any;
-    
+
     scanPromise?: Promise<IScanDetailResult[]>;
     scanList: IScanDetailResult[];
-    boxes?: Record<JobSearchBoxes, IBox>;
 
     jobListType = JobListType.JobSearchMainList;
     bulkJobListType = JobListType.JobSearchBulkList;
 
-    layouts: ILayout[] = [];
-    defaultLayout?: ILayout;
-    currentLayoutName?: string;
-    layout?: { columns: IColumn[] };
-
-    timeZone: string = TimeZone;
+    timeZone: string;
     jobList?: IDispatchJob[];
     bulkJobList?: IDispatchJob[];
     currentJob?: IDispatchJob;
     currentSelection?: string;
     currentJobId?: number;
     isBulkJob: boolean = false;
-
-    boxSortableOptions: {
-        handle: string;
-        connectWith: string;
-        placeholder: string;
-        tolerance: string;
-        cursor: string;
-        opacity: number;
-        scroll: boolean;
-        revert: number;
-        delay: number;
-        forcePlaceholderSize: boolean;
-        start: (e: JQueryEventObject, ui: any) => void;
-        over: (e: JQueryEventObject, ui: any) => void;
-        out: (e: JQueryEventObject, ui: any) => void;
-        stop: (e: JQueryEventObject, ui: any) => void
-    };
     deliveryHistoryConfig: IDeliveryHistoryConfig;
     isJobListLoading: boolean = false;
     isBulkJobListLoading: boolean = false;
     totalJobs?: number;
 
     constructor(
-        $scope: angular.IScope,
         private jobSearchService: JobSearchService,
         private $mdDialog: angular.material.IDialogService,
-        private $document: angular.IDocumentService,
-        $timeout: angular.ITimeoutService,
-        $interval: angular.IIntervalService,
         private dispatchJobService: DispatchExecutorService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
         private $mdSidenav: angular.material.ISidenavService,
-        appConfig: IAppConfig,
         private jobContextMenuService: JobContextMenuService,
         private navigationService: NavigationService,
         private messagingDialogService: MessagingDialogService,
         private createJobDialogService: CreateJobDialogService,
         private additionalServicesDialogService: AdditionalServicesDialogService,
         private jobFileUploadDialogService: JobFileUploadDialogService,
-        private interCourierChargeDialogService: InterCourierChargeDialogService
+        private interCourierChargeDialogService: InterCourierChargeDialogService,
+        private dashboardSettingsDialog: DashboardSettingsDialogService,
+        appConfig: IAppConfig,
+        $scope: angular.IScope,
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
     ) {
         super();
 
         this.initServices($timeout, $interval, $scope);
 
+        this.timeZone = getIanaTimezone(TimeZone);
         this.isUsCustomer = appConfig.US_Customer;
         this.isAdmin = ClientInternal;
+
+        // Init layouts
+        this.initializeGridster();
+        this.initializeBoxes();
+        this.loadGridsterLayoutsFromStorage();
 
         // New map
         this.mapCenter = appConfig.US_Customer ?
@@ -150,13 +145,13 @@ class JobSearchController extends BaseController {
 
         this.jobDetailFabIsOpen = false;
         this.dateSearchRange = JobSearchDateRange.Fortnight;
-        
+
         this.scanList = [];
-        
+
         const now = dayjs();
         this.searchCriteria = {
             date: now,
-            from_date:  now.subtract(7, 'day'),
+            from_date: now.subtract(7, 'day'),
             to_date: now.add(7, 'day'),
             followupClient: "All",
             includeClosed: true
@@ -168,103 +163,6 @@ class JobSearchController extends BaseController {
 
         this.showInput = {};
         this.inputWidth = {};
-
-        this.boxes = {
-            [JobSearchBoxes.SearchWidget]: {
-                "title": "Filters",
-                "icon": "filter_list",
-                "templateUrl": "app/components/jobSearch/partials/pickDate.html",
-                "showRefresh": 0
-            },
-            [JobSearchBoxes.JobList]: {
-                "title": "Live Job Data",
-                "icon": "list_alt",
-                "templateUrl": "app/components/jobSearch/partials/jobList.html",
-                "showRefresh": 1
-            },
-            [JobSearchBoxes.BulkJobList]: {
-                "title": "Bulk Job Data",
-                "icon": "format_list_bulleted",
-                "templateUrl": "app/components/jobSearch/partials/bulkJobList.html",
-                "showRefresh": 1
-            },
-            [JobSearchBoxes.JobDetail]: {
-                "title": "Detail",
-                "icon": "assignment",
-                "templateUrl": "app/components/jobSearch/partials/jobDetail.html",
-                "showDetailButtons": 1,
-                "showRefresh": 1
-            },
-            [JobSearchBoxes.ScanList]: {
-                "title": "Scan Detail",
-                "icon": "document_scanner",
-                "templateUrl": "app/components/jobSearch/partials/scanList.html",
-                "showRefresh": 0
-            },
-            [JobSearchBoxes.Map]: {
-                "title": "Map",
-                "icon": "pin_drop",
-                "templateUrl": "app/components/jobSearch/partials/map.html",
-                "showRefresh": 0
-            },
-            [JobSearchBoxes.DeliveryJourney]: {
-                "title": "Delivery Journey",
-                "icon": "rocket_launch",
-                "templateUrl": "app/components/jobSearch/partials/jobHistory.html",
-                "showRefresh": 0
-            }
-        };
-
-        this.boxSortableOptions = {
-            handle: '.box-handle',
-            connectWith: '.column-sortable',
-            placeholder: 'box-placeholder',
-            tolerance: 'pointer',
-            cursor: 'move',
-            opacity: 0.8,
-            scroll: true,
-            revert: 200,
-            delay: 150,
-            forcePlaceholderSize: true,
-
-            start: (e: JQueryEventObject, ui: any) => {
-                ui.item.addClass('dragging');
-
-                const dragInfo = angular.element('#draggingItems');
-                dragInfo.html(`Moving: ${ui.item.find('.md-headline-title').text().trim()}`);
-                dragInfo.css({
-                    display: 'block',
-                    top: e.pageY + 20 + 'px',
-                    left: e.pageX + 10 + 'px'
-                });
-
-                this.$document.on('mousemove.sortable', (event) => {
-                    dragInfo.css({
-                        top: (event.pageY || 0) + 20 + 'px',
-                        left: (event.pageX || 0) + 10 + 'px'
-                    });
-                });
-            },
-
-            over: (e: JQueryEventObject, _: any) => {
-                angular.element(e.target).addClass('ui-sortable-active');
-            },
-
-            out: (e: JQueryEventObject, _: any) => {
-                angular.element(e.target).removeClass('ui-sortable-active');
-            },
-
-            // When the drag operation stops
-            stop: (_: JQueryEventObject, ui: any) => {
-                angular.element(this.$document[0]).off('mousemove.sortable');
-                angular.element('#draggingItems').css('display', 'none');
-                ui.item.removeClass('dragging');
-                angular.element('.column-sortable').removeClass('ui-sortable-active');
-
-                this.updateBoxMetrics();
-                this.saveCurrentLayout()
-            }
-        };
         
         this.deliveryHistoryConfig = {
             showSummaryStats: true,
@@ -275,211 +173,378 @@ class JobSearchController extends BaseController {
         this.onSearchRangeChange(this.dateSearchRange);
     }
 
-    $onInit() {
-        this.initLayoutSystem();
-    }
-
-    private updateBoxMetrics() {
-        if (!this.layout || !this.layout.columns) return;
-
-        this.layout.columns.forEach((column: IColumn) => {
-            // Get column width from DOM
-            const columnEl = angular.element(`#co-${column.id}`);
-            if (columnEl.length) {
-                column.width = columnEl.css('flex-basis');
-
-                // Update heights for all boxes in this column
-                column.boxes.forEach((box: IBox) => {
-                    const boxEl = angular.element(`#box-${box.name}`);
-                    if (boxEl.length) {
-                        box.height = boxEl.css('flex-basis');
-                    }
-                });
+    // Gridster layouts
+    private initializeGridster(): void {
+        this.gridsterOpts = {
+            ...GRIDSTER_BASE_CONFIG,
+            resizable: {
+                enabled: !isDefaultLayout(this.currentLayoutName),
+                handles: ['n', 'e', 's', 'w', 'ne', 'se', 'sw', 'nw'],
+                start: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
+                    this.applyScope();
+                },
+                resize: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
+                    this.applyScope();
+                },
+                stop: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
+                    this.updateCurrentLayout();
+                    this.applyScope();
+                }
+            },
+            draggable: {
+                enabled: !isDefaultLayout(this.currentLayoutName),
+                handle: '.gridster-item-handle',
+                start: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
+                    this.applyScope();
+                },
+                drag: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
+                    this.applyScope();
+                },
+                stop: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
+                    this.updateCurrentLayout();
+                    this.applyScope();
+                }
             }
-        });
+        };
     }
 
-    private saveCurrentLayout() {
-        if (!this.currentLayoutName || this.currentLayoutName === 'Default') {
+    private initializeBoxes(): void {
+        this.boxes = {
+            [JobSearchBoxes.SearchWidget]: {
+                name: JobSearchBoxes.SearchWidget,
+                title: 'Filters',
+                icon: "filter_list",
+                templateUrl: "app/components/jobSearch/partials/pickDate.html",
+                showRefresh: false,
+                visible: true,
+                description: "Search filters and date range selection for job queries"
+            },
+            [JobSearchBoxes.JobList]: {
+                name: JobSearchBoxes.JobList,
+                title: 'Live Job Data',
+                icon: "list_alt",
+                templateUrl: "app/components/jobSearch/partials/jobList.html",
+                showRefresh: true,
+                visible: true,
+                description: "Real-time list of active jobs with current status"
+            },
+            [JobSearchBoxes.BulkJobList]: {
+                name: JobSearchBoxes.BulkJobList,
+                title: 'Bulk Job Data',
+                icon: "format_list_bulleted",
+                templateUrl: "app/components/jobSearch/partials/bulkJobList.html",
+                showRefresh: true,
+                visible: true,
+                description: "Aggregated view of multiple jobs for bulk operations"
+            },
+            [JobSearchBoxes.JobDetail]: {
+                name: JobSearchBoxes.JobDetail,
+                title: 'Detail',
+                icon: "assignment",
+                templateUrl: "app/components/jobSearch/partials/jobDetail.html",
+                showDetailButtons: true,
+                showRefresh: true,
+                visible: true,
+                description: "Comprehensive job information with action buttons"
+            },
+            [JobSearchBoxes.ScanList]: {
+                name: JobSearchBoxes.ScanList,
+                title: 'Scan Detail',
+                icon: "document_scanner",
+                templateUrl: "app/components/jobSearch/partials/scanList.html",
+                showRefresh: false,
+                visible: true,
+                description: "Detailed scan information and document history"
+            },
+            [JobSearchBoxes.Map]: {
+                name: JobSearchBoxes.Map,
+                title: 'Map',
+                icon: "pin_drop",
+                templateUrl: "app/components/jobSearch/partials/map.html",
+                showRefresh: false,
+                visible: true,
+                description: "Geographic visualization of job locations"
+            },
+            [JobSearchBoxes.DeliveryJourney]: {
+                name: JobSearchBoxes.DeliveryJourney,
+                title: 'Delivery Journey',
+                icon: "rocket_launch",
+                templateUrl: "app/components/jobSearch/partials/jobHistory.html",
+                showRefresh: false,
+                visible: true,
+                description: "Timeline and history of job delivery progress"
+            }
+        };
+    }
+    
+    private loadGridsterLayoutsFromStorage(): void {
+        if (Modernizr.localstorage) {
+            try {
+                const savedLayouts = localStorage.getItem(this.GridsterLayoutsKey);
+                if (savedLayouts) {
+                    // Load saved layouts but excluded any 'Default' layouts from storage
+                    this.layouts = JSON.parse(savedLayouts).filter((l: { name: string; }) => l.name !== 'Default');
+                }
+            } catch (error) {
+                console.error('Error loading gridster layouts:', error);
+                this.layouts = [];
+            }
+        }
+
+        // Always recreate the default layout (not saved to storage)
+        this.defaultLayout = this.createDefaultGridsterLayout();
+        this.layouts.unshift(this.defaultLayout);
+
+        // Load last active layout or default
+        const lastActiveLayoutName = this.getLastActiveLayoutName();
+        const layoutToLoad = this.layouts.find((l: IGridsterLayout) => l.name === lastActiveLayoutName) || this.defaultLayout;
+        this.loadGridsterLayout(this.layouts.indexOf(layoutToLoad));
+    }
+
+    private createDefaultGridsterLayout(): IGridsterLayout {
+        return {
+            name: 'Default',
+            items: [
+                // Column 1 (20% width, left side)
+                {
+                    name: JobSearchBoxes.SearchWidget,
+                    sizeX: 2,
+                    sizeY: 8,
+                    row: 0,
+                    col: 0,
+                    visible: true
+                },
+
+                // Column 2 (25% width)
+                {
+                    name: JobSearchBoxes.JobList,
+                    sizeX: 3,
+                    sizeY: 4,
+                    row: 0,
+                    col: 2,
+                    visible: true
+                },
+                {
+                    name: JobSearchBoxes.BulkJobList,
+                    sizeX: 3,
+                    sizeY: 4,
+                    row: 4,
+                    col: 2,
+                    visible: true
+                },
+
+                // Column 3 (35% width)
+                {
+                    name: JobSearchBoxes.JobDetail,
+                    sizeX: 4,
+                    sizeY: 3,
+                    row: 0,
+                    col: 5,
+                    visible: true
+                },
+                {
+                    name: JobSearchBoxes.ScanList,
+                    sizeX: 4,
+                    sizeY: 2,
+                    row: 3,
+                    col: 5,
+                    visible: true
+                },
+                {
+                    name: JobSearchBoxes.Map,
+                    sizeX: 4,
+                    sizeY: 3,
+                    row: 5,
+                    col: 5,
+                    visible: true
+                },
+
+                // Column 4 (20% width, right side)
+                {
+                    name: JobSearchBoxes.DeliveryJourney,
+                    sizeX: 2,
+                    sizeY: 8,
+                    row: 0,
+                    col: 9,
+                    visible: true
+                }
+            ]
+        };
+    }
+
+    private saveGridsterLayoutsToStorage(): void {
+        if (Modernizr.localstorage) {
+            try {
+                localStorage.setItem(this.GridsterLayoutsKey, JSON.stringify(this.layouts));
+            } catch (error) {
+                console.error('Error saving gridster layouts:', error);
+            }
+        }
+    }
+
+    private getLastActiveLayoutName(): string | null {
+        if (Modernizr.localstorage) {
+            try {
+                return localStorage.getItem(this.GridsterLastActiveLayoutKey);
+            } catch (error) {
+                console.error('Error loading last active layout:', error);
+            }
+        }
+        return null;
+    }
+
+    private setLastActiveLayoutName(name: string): void {
+        if (Modernizr.localstorage) {
+            try {
+                localStorage.setItem(this.GridsterLastActiveLayoutKey, name);
+            } catch (error) {
+                console.error('Error saving last active layout:', error);
+            }
+        }
+    }
+
+    loadGridsterLayout(index: number): void {
+        if (index < 0 || index >= this.layouts.length) {
+            console.error('Invalid layout index:', index);
             return;
         }
 
-        this.updateBoxMetrics();
-
-        const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
-        if (index !== -1) {
-            if (this.layout) {
-                this.layouts[index].layout = angular.copy(this.layout);
-            }
-
-            if (Modernizr.localstorage) {
-                localStorage.setItem(this.ContactIdKey, JSON.stringify(this.layouts));
-            }
-        }
-    }
-
-    // Layouts
-    initLayoutSystem() {
-        this.layouts = [];
-        this.defaultLayout = {
-            name: "Default",
-            layout: {
-                columns: [
-                    {
-                        id: "col1",
-                        width: "20%",
-                        boxes: [{name: JobSearchBoxes.SearchWidget, height: "100%"}],
-                    },
-                    {
-                        id: "col2",
-                        width: "25%",
-                        boxes: [{name: JobSearchBoxes.JobList, height: "50%"}, {
-                            name: JobSearchBoxes.BulkJobList,
-                            height: "50%"
-                        }],
-                    },
-                    {
-                        id: "col3",
-                        width: "35%",
-                        boxes: [{name: JobSearchBoxes.JobDetail, height: "40%"}, {
-                            name: JobSearchBoxes.ScanList,
-                            height: "30%"
-                        }, {
-                            name: JobSearchBoxes.Map,
-                            height: "30%"
-                        }],
-                    },
-                    {
-                        id: "col4",
-                        width: "20%",
-                        boxes: [{name: JobSearchBoxes.DeliveryJourney, height: "100%"}],
-                    },
-                ],
-            },
-        };
-
-        // Load saved layouts or use default
-        if (Modernizr.localstorage) {
-            try {
-                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(this.ContactIdKey) || '[]');
-                const lastActiveLayout = localStorage.getItem(this.LastActiveContactIdKey);
-
-                this.layouts = storedLayouts || [this.defaultLayout];
-                this.layouts[0] = this.defaultLayout; // Ensure default is always up to date
-
-                // Load last active layout or default
-                const layoutToLoad = lastActiveLayout ? this.layouts.findIndex((l: ILayout) => l.name === lastActiveLayout) : 0;
-                this.loadLayout(layoutToLoad >= 0 ? layoutToLoad : 0);
-            } catch (error: any) {
-                this.layouts = [this.defaultLayout];
-                this.loadLayout(0);
-            }
-        } else {
-            this.layouts = [this.defaultLayout];
-            this.loadLayout(0);
-        }
-
-        // Auto-save changes
-        this.watchScope("layout", (newValue: { columns: IColumn[] }, oldValue: { columns: IColumn[] }) => {
-            if (newValue !== oldValue && this.currentLayoutName) {
-                const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
-                if (index !== -1) {
-                    this.layouts[index].layout = angular.copy(newValue);
-                    if (Modernizr.localstorage) {
-                        localStorage.setItem(this.ContactIdKey, JSON.stringify(this.layouts));
-                    }
-                }
-            }
-        }, true);
-    }
-
-    loadLayout(index: number) {
-        const layout: ILayout = this.layouts[index] || this.layouts[0];
+        const layout = this.layouts[index];
         this.currentLayoutName = layout.name;
-        this.layout = angular.copy(layout.layout);
+        this.gridsterItems = JSON.parse(JSON.stringify(layout.items)); // Deep copy
+        this.setLastActiveLayoutName(layout.name);
 
-        // Apply dimensions on next digest cycle
+        // Reinitialize gridster config with an updated layout name
+        this.initializeGridster();
+
+        // Force gridster to recognize the config changes
         this.registerTimeout(() => {
-            this.applyLayoutDimensions();
+            this.broadcastEvent('gridster-resized');
+        }, 50);
 
-            if (Modernizr.localstorage) {
-                localStorage.setItem(this.LastActiveContactIdKey, layout.name);
+        this.applyScope();
+    }
+
+    async saveGridsterLayout(): Promise<void> {
+        try {
+            const layoutName: string = await this.$mdDialog
+                .show(this.$mdDialog
+                    .prompt()
+                    .title("Save Layout")
+                    .textContent("Please enter a name for this layout.")
+                    .required(true)
+                    .ok("Save")
+                    .cancel("Cancel"))
+
+            if (!layoutName || layoutName.trim() === '') {
+                this.toastrService.showErrorToast('Layout name cannot be empty');
+                return;
             }
-        });
-    }
 
-    private applyLayoutDimensions() {
-        if (!this.layout || !this.layout.columns) return;
+            const trimmedName = layoutName.trim();
+            const existingIndex = this.layouts.findIndex((l: IGridsterLayout) => l.name === trimmedName);
 
-        this.layout.columns.forEach((column: IColumn) => {
-            const columnEl = angular.element(`#co-${column.id}`);
-            if (columnEl.length) {
-                columnEl.css('flex-basis', column.width);
+            const newLayout: IGridsterLayout = {
+                name: trimmedName,
+                items: JSON.parse(JSON.stringify(this.gridsterItems)) // Deep copy
+            };
 
-                column.boxes.forEach((box: IBox) => {
-                    const boxEl = angular.element(`#box-${box.name}`);
-                    if (boxEl.length) {
-                        boxEl.css('flex-basis', box.height || 'auto');
-                    }
-                });
+            if (existingIndex >= 0) {
+                // Update existing layout
+                this.layouts[existingIndex] = newLayout;
+                this.toastrService.showSuccessToast(`Layout "${trimmedName}" updated`);
+            } else {
+                // Add a new layout
+                this.layouts.push(newLayout);
+                this.toastrService.showSuccessToast(`Layout "${trimmedName}" saved`);
             }
-        });
+
+            this.currentLayoutName = trimmedName;
+            this.setLastActiveLayoutName(trimmedName);
+            this.saveGridsterLayoutsToStorage();
+            this.applyScope();
+        } catch (error) {
+            if (!error) return;
+            console.error('Error saving gridster layout:', error);
+            this.toastrService.showErrorToast('Error saving layout');
+        }
     }
 
-    saveLayout() {
-        this.$mdDialog
-            .show(this.$mdDialog
-                .prompt()
-                .title("Save Layout")
-                .textContent("Please enter a name for this layout.")
-                .required(true)
-                .ok("Save")
-                .cancel("Cancel"))
-            .then((name) => {
-                if (!name) return;
+    updateCurrentLayout(): void {
+        try {
+            if (this.currentLayoutName === 'Default') {
+                this.toastrService.showWarningToast('Cannot update the Default layout');
+                return;
+            }
 
-                const currentLayout: ILayout = {
-                    name: name,
-                    layout: {
-                        columns: this.layout?.columns?.map((col: IColumn) => ({
-                            ...col,
-                            width: angular.element(`#co-${col.id}`).css("flex-basis"),
-                            boxes: col.boxes.map((box: IBox) => ({
-                                ...box, height: angular
-                                    .element(`#box-${box.name}`)
-                                    .css("flex-basis"),
-                            })),
-                        })) || [],
-                    },
-                };
+            if (!this.currentLayoutName) {
+                this.toastrService.showErrorToast('No layout currently loaded to update');
+                return;
+            }
 
-                this.layouts.push(currentLayout);
+            const existingIndex = this.layouts.findIndex(l => l.name === this.currentLayoutName);
 
-                if (Modernizr.localstorage) {
-                    localStorage.setItem(this.ContactIdKey, JSON.stringify(this.layouts));
-                    localStorage.setItem(this.LastActiveContactIdKey, name);
-                }
-            });
+            if (existingIndex < 0) {
+                this.toastrService.showErrorToast(`Layout "${this.currentLayoutName}" not found`);
+                return;
+            }
+
+            this.layouts[existingIndex] = {
+                name: this.currentLayoutName,
+                items: JSON.parse(JSON.stringify(this.gridsterItems)) // Deep copy with visibility
+            };
+            this.saveGridsterLayoutsToStorage();
+            this.toastrService.showSuccessToast(`Layout "${this.currentLayoutName}" updated`);
+            this.applyScope();
+        } catch (error) {
+            console.error('Error updating gridster layout:', error);
+            this.toastrService.showErrorToast('Error updating layout');
+        }
     }
 
-    deleteLayout(index: number) {
-        if (index === 0) return; // Prevent deleting default layout
+    async deleteGridsterLayout(index: number): Promise<void> {
+        try {
+            if (index < 0 || index >= this.layouts.length) {
+                console.error('Invalid layout index:', index);
+                return;
+            }
 
-        this.$mdDialog
-            .show(this.$mdDialog
-                .confirm()
-                .title("Delete Layout?")
-                .textContent("Are you sure you want to delete this layout?")
-                .ok("Delete")
-                .cancel("Cancel"))
-            .then(() => {
-                this.layouts.splice(index, 1);
-                if (Modernizr.localstorage) {
-                    localStorage.setItem(this.ContactIdKey, JSON.stringify(this.layouts));
-                }
-                this.loadLayout(0);
-                this.toastrService.showSuccessToast("Layout deleted successfully");
-            });
+            const layout = this.layouts[index];
+
+            if (layout.name === 'Default') {
+                this.toastrService.showErrorToast('Cannot delete the Default layout');
+                return;
+            }
+
+            const confirmed: boolean = await this.$mdDialog
+                .show(this.$mdDialog
+                    .confirm()
+                    .title("Delete Layout?")
+                    .textContent(`Are you sure you want to delete the layout "${layout.name}"?`)
+                    .ok("Delete")
+                    .cancel("Cancel"))
+            if (!confirmed) return;
+
+            this.layouts.splice(index, 1);
+            this.saveGridsterLayoutsToStorage();
+
+            // If we deleted the current layout, load the default
+            if (this.currentLayoutName === layout.name) {
+                const defaultIndex = this.layouts.findIndex(l => l.name === 'Default');
+                this.loadGridsterLayout(defaultIndex);
+            }
+
+            this.toastrService.showSuccessToast(`Layout "${layout.name}" deleted`);
+            this.applyScope();
+        } catch (error) {
+            if (!error) return;
+            console.error('Error deleting gridster layout:', error);
+            this.toastrService.showErrorToast('Error deleting layout');
+        }
+    }
+
+    getGridsterItemByName(name: string): IGridsterItem | undefined {
+        return this.gridsterItems.find(item => item.name === name);
     }
 
     toggleSidenav() {
@@ -521,7 +586,7 @@ class JobSearchController extends BaseController {
                 this.toastrService.showSuccessToast('Job dispatched to courier ' + courierNumber);
             }
         } catch (error) {
-            if(!error) return;
+            if (!error) return;
             console.error('Error in selectAndDispatchJob:', error);
         }
     }
@@ -585,11 +650,11 @@ class JobSearchController extends BaseController {
             await this.interCourierChargeDialogService.showInterCourierCharge($event);
             console.log("Inter-courier Charge Added!");
         } catch (error) {
-            if(!error) return;
+            if (!error) return;
             console.log("Inter-courier Charge Canceled!");
         }
     }
-    
+
     async unlockJob(currentJob: IDispatchJob) {
         await this.DispatchData.updateJobDetail(currentJob.id, JobProperty.Locked, false, currentJob.preBook ?? false)
     }
@@ -952,7 +1017,7 @@ class JobSearchController extends BaseController {
     onSearchRangeChange(dateRangeOption: JobSearchDateRange) {
         try {
             const tenantTimezone = getIanaTimezone(this.timeZone);
-            
+
             const now = dayjs().tz(tenantTimezone);
             const firstDayOfMonth = now.startOf('month');
             const lastDayOfMonth = now.endOf('month');
@@ -1045,7 +1110,7 @@ class JobSearchController extends BaseController {
             // Inform the user
             this.toastrService.showSuccessToast(`${job.jobNo} successfully dispatched`);
             await this.refreshData();
-            
+
             // Update the job's assigned courier display
             job.assignedCourier = {id: courierId, text: ''};
 
@@ -1090,6 +1155,55 @@ class JobSearchController extends BaseController {
             console.error('Error loading jobs:', error);
             throw error;
         }
+    }
+
+    async openSettingsDialog($event: MouseEvent): Promise<void> {
+        if (!this.boxes) return;
+
+        try {
+            // Sync boxes with items
+            this.syncVisibilityToBoxes();
+
+            const result = await this.dashboardSettingsDialog.openSettingsDialog(
+                $event,
+                AppPages.JobSearch,
+                this.currentLayoutName ?? 'Default',
+                this.boxes
+            );
+
+            if (!result) return;
+
+            // Update gridsterItems visibility based on boxes visibility
+            this.syncVisibilityToGridsterItems();
+
+            this.updateCurrentLayout();
+            this.applyScope();
+            this.toastrService.showSuccessToast('Settings saved and applied successfully');
+        } catch (error) {
+            if (!error) return;
+            console.error('Error opening settings dialog:', error);
+            this.toastrService.showErrorToast('Failed to open settings dialog');
+        }
+    }
+
+    private syncVisibilityToGridsterItems(): void {
+        this.gridsterItems.forEach((item: IGridsterItem) => {
+            if (!this.boxes) return;
+            const box = this.boxes[item.name];
+            if (box) {
+                item.visible = box.visible;
+            }
+        });
+    }
+
+    private syncVisibilityToBoxes(): void {
+        this.gridsterItems.forEach((item: IGridsterItem) => {
+            if (!this.boxes) return;
+            const box = this.boxes[item.name];
+            if (box) {
+                box.visible = item.visible;
+            }
+        });
     }
 }
 

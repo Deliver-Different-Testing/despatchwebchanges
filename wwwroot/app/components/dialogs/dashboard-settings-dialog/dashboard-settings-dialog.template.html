@@ -16,7 +16,7 @@
     <md-dialog-content>
         <md-tabs class="md-primary" md-center-tabs md-dynamic-height md-border-bottom>
             <!-- Refresh Interval Tab -->
-            <md-tab label="Refresh Interval">
+            <md-tab label="Refresh Interval" ng-if="::ctrl.config.showRefreshInterval">
                 <md-content class="md-padding">
                     <div class="settings-section">
                         <label class="settings-label" id="refreshInterval">
@@ -44,7 +44,7 @@
                         </md-select>
 
                         <!-- Status Indicator -->
-                        <div class="status-indicator" ng-if="ctrl.selectedRefreshInterval">
+                        <div class="status-indicator">
                             <div class="status-content">
                                 <div class="status-icon-wrapper">
                                     <md-icon
@@ -72,7 +72,7 @@
 
             <!-- Dashboard Layout Management Tab -->
             <md-tab label="Dashboard Layout">
-                <md-content class="md-padding" ng-if="ctrl.config.showDashboards">
+                <md-content class="md-padding" ng-if="::ctrl.config.showDashboards">
                     <div class="dashboard-layout-section">
                         <h3 class="section-title">
                             <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">box</md-icon>
@@ -100,11 +100,11 @@
                                     <div class="dashboard-icon-wrapper">
                                         <md-icon md-font-set="material-symbols-outlined"
                                                  class="dashboard-icon dialog-icon">
-                                            {{ctrl.boxes[dashboard.name].icon || 'dashboard'}}
+                                            {{::ctrl.boxes[dashboard.name].icon || 'dashboard'}}
                                         </md-icon>
                                     </div>
-                                    <h4 class="dashboard-name">{{ctrl.boxes[dashboard.name].title}}</h4>
-                                    <p class="dashboard-description">{{ctrl.boxes[dashboard.name].description}}</p>
+                                    <h4 class="dashboard-name">{{::ctrl.boxes[dashboard.name].title}}</h4>
+                                    <p class="dashboard-description">{{::ctrl.boxes[dashboard.name].description}}</p>
 
                                     <div class="visibility-status">
                                         <span ng-if="dashboard.visible" class="status-badge visible-badge">
