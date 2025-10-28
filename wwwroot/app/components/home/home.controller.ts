@@ -551,7 +551,7 @@ class HomeController extends BaseController {
 
         // Force gridster to recognize the config changes
         this.registerTimeout(() => {
-            this.broadcastEvent('gridster-resized');
+            this.$scopeService?.$broadcast('gridster-resized');
         }, 50);
 
         this.applyScope();
@@ -1353,6 +1353,7 @@ class HomeController extends BaseController {
 
         // Set the currentSelection to job-specific information
         this.currentSelection = ` for Job ${job.jobNo}`;
+        console.log('currentSelection:', this.currentSelection);
 
         try {
             if (!job.courier && !job.assignedCourier) {
@@ -1971,11 +1972,7 @@ class HomeController extends BaseController {
             this.eventTypesList
         );
     }
-
-    handleJobSelection(job: IDispatchJob): Promise<void> {
-        return this.selectJob(job);
-    }
-
+    
     async handleJobDispatch(job: IDispatchJob, courierId: number): Promise<boolean> {
         try {
             await this.dispatchJob(courierId, job.id);

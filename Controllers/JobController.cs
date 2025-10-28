@@ -1383,7 +1383,7 @@ public class JobController(
 
     public async Task<IActionResult> SendPod(int jobId, string toEmail)
     {
-        var selectedJob = await jobRepository.GetJobByIdAsync(jobId);
+        var selectedJob = await jobRepository.GetSingleJobById(jobId);
 
         if (selectedJob == null) return NotFound();
 

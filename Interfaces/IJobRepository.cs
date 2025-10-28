@@ -14,7 +14,7 @@ namespace DespatchWeb.Interfaces;
 public interface IJobRepository
 {
     Task<List<Suggestion>> RelatedJobsAsync(int parentId, int clientId);
-    Task<JobViewModel> GetBulkJobDetailAsync(int bulkJobId);
+    Task<JobGroupViewModel> GetBulkJobDetailAsync(int bulkJobId);
     Task<DispatchJobViewModel> GetBulkDispatchJobDetailAsync(int bulkJobId);
 
     Task<JobSearchResult> BulkSearchAsync(PodSearchRequest data);
@@ -140,7 +140,8 @@ public interface IJobRepository
 
     Task AddEntityAsync<T>(T entity) where T : class;
 
-    Task<JobViewModel> GetJobByIdAsync(int jobId);
+    Task<JobGroupViewModel> GetJobByIdAsync(int jobId);
+    Task<JobViewModel> GetSingleJobById(int jobId);
     Task UpdateJobNoteAsync(int jobId, string note);
     Task<OverviewStatsViewModel> GetOverviewStatsAsync();
 

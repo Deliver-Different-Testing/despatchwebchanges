@@ -38,17 +38,31 @@ public partial class JobRepository(
     }
 
     /* Bulk Job Detail*/
-    public async Task<JobViewModel> GetBulkJobDetailAsync(int bulkJobId)
+    public async Task<JobGroupViewModel> GetBulkJobDetailAsync(int bulkJobId)
     {
         try
         {
-            var bulkJob = await Context.TblBulkJobs
+            var mainBulkJob = await Context.TblBulkJobs
                 .AsNoTracking()
                 .Where(j => j.BulkJobId == bulkJobId)
                 .Select(JobMappings.BulkJobMapping)
                 .FirstOrDefaultAsync();
 
-            return bulkJob;
+            var familyRootId = mainBulkJob.ParentId ?? bulkJobId;
+
+            var relatedJobs = await Context.TblBulkJobs
+                .AsNoTracking()
+                .Where(j => (j.BulkJobId == familyRootId || j.ParentId == familyRootId) 
+                            && j.BulkJobId != bulkJobId)
+                .Select(JobMappings.BulkJobMapping)
+                .ToListAsync();
+            
+            return new JobGroupViewModel
+            {
+                Job = mainBulkJob,
+                RelatedJobs = relatedJobs
+            };
+            
         }
         catch (Exception e)
         {
@@ -3327,7 +3341,100 @@ public partial class JobRepository(
         }
     }
 
-    public async Task<JobViewModel> GetJobByIdAsync(int jobId)
+    public async Task<JobGroupViewModel> GetJobByIdAsync(int jobId)
+    {
+        try
+        {
+            // Mark the job as ready
+            await MarkJobAsReadAsync(jobId);
+
+            // Check for a live job first
+            var isLiveJob = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
+            if (isLiveJob)
+            {
+                var mainJob = await Context.TucJobs
+                    .AsNoTracking()
+                    .Where(j => j.UcjbId == jobId)
+                    .Select(JobMappings.JobMapping)
+                    .FirstOrDefaultAsync();
+
+                ApplyFlightTimezones(mainJob);
+
+                var familyRootId = mainJob.ParentId ?? jobId;
+    
+                // Get all jobs in the family (parent and all children), excluding the main job
+                var relatedJobs = await Context.TucJobs
+                    .AsNoTracking()
+                    .Where(j => (j.UcjbId == familyRootId || j.ParentId == familyRootId) 
+                                && j.UcjbId != jobId)
+                    .Select(JobMappings.JobMapping)
+                    .ToListAsync();
+                
+                foreach (var relatedJob in relatedJobs) ApplyFlightTimezones(relatedJob);
+
+                return new JobGroupViewModel
+                {
+                    Job = mainJob,
+                    RelatedJobs = relatedJobs
+                };
+            }
+
+            // Check for an archived job
+            var archivedJob = await Context.TucJobArchives
+                .Where(j => j.UcjbId == jobId)
+                .Select(JobMappings.JobArchiveMapping)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+            ArgumentNullException.ThrowIfNull(archivedJob);
+            
+            var archivedJobFamilyRootId = archivedJob.ParentId ?? jobId;
+
+            // Get all jobs in the family (parent and all children), excluding the main job
+            var archivedJobRelatedJobs = await Context.TucJobArchives
+                .AsNoTracking()
+                .Where(j => (j.UcjbId == archivedJobFamilyRootId || j.ParentId == archivedJobFamilyRootId) 
+                            && j.UcjbId != jobId)
+                .Select(JobMappings.JobArchiveMapping)
+                .ToListAsync();
+
+            return new JobGroupViewModel
+            {
+                Job =  archivedJob,
+                RelatedJobs = archivedJobRelatedJobs
+            };
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error occurred getting job {JobId}. Please see exception.", jobId);
+            throw;
+        }
+    }
+    
+    private static void ApplyFlightTimezones(JobViewModel job)
+    {
+        if (job.AssignedFlight == null || job.AssignedFlight.FlightSegments.Count == 0)
+            return;
+
+        job.AssignedFlight.ExpectedArrival = job.AssignedFlight.ExpectedArrival.HasValue
+            ? TimeZoneHelper.SetDateTimeWithTimeZone(job.AssignedFlight.ExpectedArrival.Value,
+                job.AssignedFlight.ArrivalTimeZone)
+            : null;
+        
+        job.AssignedFlight.ExpectedDeparture = job.AssignedFlight.ExpectedDeparture.HasValue
+            ? TimeZoneHelper.SetDateTimeWithTimeZone(job.AssignedFlight.ExpectedDeparture.Value,
+                job.AssignedFlight.DepartureTimeZone)
+            : null;
+
+        foreach (var segment in job.AssignedFlight.FlightSegments)
+        {
+            segment.ArrivalTime =
+                TimeZoneHelper.SetDateTimeWithTimeZone(segment.ArrivalTime, segment.ArrivalAirportTimeZone);
+            segment.DepartureTime =
+                TimeZoneHelper.SetDateTimeWithTimeZone(segment.DepartureTime, segment.DepartureAirportTimeZone);
+        }
+    }
+    
+       public async Task<JobViewModel> GetSingleJobById(int jobId)
     {
         try
         {
@@ -3343,26 +3450,7 @@ public partial class JobRepository(
                     .Select(JobMappings.JobMapping)
                     .AsNoTracking()
                     .FirstOrDefaultAsync();
-
-                if (liveJob.AssignedFlight == null || liveJob.AssignedFlight.FlightSegments.Count == 0) return liveJob;
-
-                liveJob.AssignedFlight.ExpectedArrival = liveJob.AssignedFlight.ExpectedArrival.HasValue
-                    ? TimeZoneHelper.SetDateTimeWithTimeZone(liveJob.AssignedFlight.ExpectedArrival.Value,
-                        liveJob.AssignedFlight.ArrivalTimeZone)
-                    : null;
-                liveJob.AssignedFlight.ExpectedDeparture = liveJob.AssignedFlight.ExpectedDeparture.HasValue
-                    ? TimeZoneHelper.SetDateTimeWithTimeZone(liveJob.AssignedFlight.ExpectedDeparture.Value,
-                        liveJob.AssignedFlight.DepartureTimeZone)
-                    : null;
-
-                foreach (var segment in liveJob.AssignedFlight.FlightSegments)
-                {
-                    segment.ArrivalTime =
-                        TimeZoneHelper.SetDateTimeWithTimeZone(segment.ArrivalTime, segment.ArrivalAirportTimeZone);
-                    segment.DepartureTime =
-                        TimeZoneHelper.SetDateTimeWithTimeZone(segment.DepartureTime, segment.DepartureAirportTimeZone);
-                }
-
+                
                 return liveJob;
             }
 

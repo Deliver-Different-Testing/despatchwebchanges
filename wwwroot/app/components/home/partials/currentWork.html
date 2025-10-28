@@ -2,7 +2,7 @@
         ng-if="ctrl.jobsCurrentList && ctrl.jobsCurrentList.length > 0"
         jobs="ctrl.jobsCurrentList"
         selected-job="ctrl.selectedJob"
-        on-job-select="ctrl.handleJobSelection(job)"
+        on-job-select="ctrl.selectJob(job)"
         on-job-dispatch="ctrl.handleJobDispatch(job, courierId)"
         on-job-action="ctrl.handleJobAction(action, job, params)"
         get-context-menu-options="ctrl.getJobContextMenuOptions()"

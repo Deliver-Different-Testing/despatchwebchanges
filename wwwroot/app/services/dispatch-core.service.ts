@@ -3,7 +3,6 @@ import {
     IClearListViewModel,
     ClientItemsViewModel,
     IEditAddressDialogViewModel, IBulkReadUpdateRequest, IDispatchJob,
-    IJob,
     ILateCallRequest,
     InternalStatus,
     IJobQueryParams,
@@ -11,8 +10,8 @@ import {
     PriceBreakdown,
     ISuggestion,
     VoidJobRequest, UpdateJobPackagesRequest, VoidBulkJobRequest, UpdateBulkJobPackagesRequest,
-    IJobDto, IDispatchJobDto, ITimeZoneSuggestion, JobCreateViewModelDto, IDeletePriceComponentRequest,
-    IJobSearchResult, IJobSearchResultDto,
+    IDispatchJobDto, ITimeZoneSuggestion, JobCreateViewModelDto, IDeletePriceComponentRequest,
+    IJobSearchResult, IJobSearchResultDto, IJobGroupDto, IJobGroup,
 } from "../interfaces/job.interface";
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {
@@ -41,7 +40,7 @@ import dayjs from "dayjs";
 import {
     transformDeliveryJourneyDTO,
     transformDispatchJobDTO,
-    transformJobDTO,
+    transformJobGroupDTO,
     transformTaskDTO
 } from "../functions/dtoMappings";
 
@@ -144,14 +143,14 @@ class DispatchCoreService implements angular.IServiceProvider {
         courierId: number,
         jobIds: number[]
     ): Promise<void> {
-        const data:IAllocateJobsToCourierRequest = {
+        const data: IAllocateJobsToCourierRequest = {
             courierId,
             jobIds,
         };
-        
+
         await this.$http.post("job/Allocate", data);
     }
-    
+
     async setFirstJob(jobId: number, courierId: number): Promise<void> {
         await this.$http.post("job/SetFirstJob", null, {
             params: {
@@ -269,14 +268,14 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getJobDetail(jobId: number): Promise<IJob> {
-        const response = await this.$http.get<IJobDto>(`job/Detail`, {
+    async getJobDetail(jobId: number): Promise<IJobGroup> {
+        const response = await this.$http.get<IJobGroupDto>(`job/Detail`, {
             params: {
                 jobId,
             },
         });
 
-        return transformJobDTO(response.data);
+        return transformJobGroupDTO(response.data);
     }
 
     async getDispatchJobDetail(jobId: number): Promise<IDispatchJob> {
@@ -289,8 +288,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         return transformDispatchJobDTO(response.data);
     }
 
-    async getRecurringJobDetail(jobId: number): Promise<IJob> {
-        const response = await this.$http.get<IJobDto>(
+    async getRecurringJobDetail(jobId: number): Promise<IJobGroup> {
+        const response = await this.$http.get<IJobGroupDto>(
             `job/RecurringJobDetail`, {
                 params: {
                     jobId,
@@ -298,7 +297,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             }
         );
 
-        return transformJobDTO(response.data);
+        return transformJobGroupDTO(response.data);
     }
 
     async getRelatedJobs(parentId: number, clientId: number): Promise<ISuggestion[]> {
@@ -328,7 +327,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         return {
             ...response.data,
             jobs: response.data.jobs.map(transformDispatchJobDTO)
-        }  
+        }
     }
 
     async getDriverLocations(selectedViews: DfrntPageViewModel[]): Promise<IClearListViewModel> {
@@ -1014,14 +1013,14 @@ class DispatchCoreService implements angular.IServiceProvider {
         await this.$http.post('job/BulkUpdateReadStatus', data);
     }
 
-    async getBulkJobDetail(bulkJobId: number): Promise<IJob> {
-        const response = await this.$http.get<IJobDto>(`/Job/BulkDetail`, {
+    async getBulkJobDetail(bulkJobId: number): Promise<IJobGroup> {
+        const response = await this.$http.get<IJobGroupDto>(`/Job/BulkDetail`, {
             params: {
                 bulkJobId
             }
         });
 
-        return transformJobDTO(response.data);
+        return transformJobGroupDTO(response.data);
     }
 
     async canAssignAgentToJob(agentJobId: number): Promise<boolean> {

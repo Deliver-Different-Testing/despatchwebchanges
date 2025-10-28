@@ -2,10 +2,9 @@ import ToastrService from "../../../services/toastr.service";
 import {
     IDispatchJob,
     IEditAddressDialogViewModel,
-    IJob,
+    IJob, IJobGroup,
     InternalStatus,
     ISuggestion,
-    JobGroup,
 } from "../../../interfaces/job.interface";
 import {ContactID, FirstName, TimeZone} from "../../../contants";
 import {CallData, TabItem} from "./job-details.interfaces";
@@ -28,7 +27,6 @@ import {DaysOfWeek, DaysOfWeekHelpers} from "../../../enums/days-of-week.enum";
 import AutoCompleteDialogService from "../../dialogs/auto-complete-dialog/auto-complete-dialog.service";
 import JobFileUploadDialogService from "../../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import {FileUploadType} from "../../../enums/file-upload-type.enum";
-import sortRelatedJobs from "../../../functions/sortRelatedJobs";
 import {UpdatePodDetailsRequest} from "../../../interfaces/requests.interfaces";
 import dayjs, {Dayjs} from "dayjs";
 import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
@@ -50,6 +48,7 @@ class JobDetailController extends BaseController {
         "priceBreakdownDialogService",
         "APP_CONFIG",
         "editParcelDimensionsDialogService",
+        "$rootScope",
         "$timeout",
         "$interval",
         "$scope",
@@ -66,23 +65,24 @@ class JobDetailController extends BaseController {
     readonly isRecurringJob: boolean = false;
     readonly isBulkJob: boolean = false;
     readonly isUsCustomer: boolean = false;
+
     jobId?: number;
     job?: IJob;
     selectedTab: number;
     allTabs: TabItem[];
     isPodViewerOpen: boolean = false;
     selectedPhotoIndex: number = 0;
-    internalStatusList: InternalStatus[];
+    internalStatusList?: InternalStatus[];
     isLoading: boolean = false;
     distance?: number;
-    selectedTabIndex: number = 0;
     timeZone: string;
-    jobGroups: JobGroup[] = [];
-    selectedRelatedJob?: JobGroup;
-    selectedSubJobIndex: number = 0;
     jobAddressIcon: string = "pin_drop";
     viewDensity: 'normal' | 'dense' | 'ultradense' = 'normal';
     trackingOptions: ISuggestion[];
+
+    jobGroup?: IJobGroup;
+    selectedTabIndex: number = 0;
+    sortedRelatedJobs: IJob[] = [];
 
     // Days of the week (recurring)
     daysOfWeekArray: DaysOfWeek[] = [];
@@ -111,6 +111,7 @@ class JobDetailController extends BaseController {
         private priceBreakdownDialogService: PriceBreakdownDialogService,
         appConfig: IAppConfig,
         private editParcelDimensionsDialogService: EditParcelDimensionsDialogService,
+        private $rootScope: angular.IRootScopeService,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
         $scope: angular.IScope,
@@ -132,8 +133,6 @@ class JobDetailController extends BaseController {
             {id: 2, text: "Mobile"},
             {id: 3, text: "Email & Mobile"},
         ];
-
-        this.internalStatusList = [];
     }
 
     $onInit(): void {
@@ -269,51 +268,6 @@ class JobDetailController extends BaseController {
         }
     }
 
-    async switchToRelatedJob(index: number): Promise<void> {
-        const previousJobId = this.jobId;
-        console.log(`Switching to tab ${index}`);
-
-        try {
-            if (!this.job || !this.jobGroups || this.jobGroups.length <= index) {
-                console.warn(`Invalid related job data for index ${index}`);
-                return;
-            }
-
-            const targetJobGroup = this.jobGroups[index];
-            const targetJob = targetJobGroup.job;
-
-            if (targetJob && targetJob.id && targetJob.id !== this.jobId) {
-                console.log(`Loading related job: ${targetJob.id} (${targetJob.text})`);
-
-                // Preserve the original related jobs data
-                const originalRelatedJobs = this.job.relatedJobs;
-                const originalJobGroups = this.jobGroups;
-
-                this.selectedTabIndex = index;
-                this.jobId = targetJob.id;
-
-                await this.loadJobData(targetJob.id);
-
-                // Restore the preserved data
-                if (originalRelatedJobs && this.job) {
-                    this.job.relatedJobs = originalRelatedJobs;
-                    this.jobGroups = originalJobGroups;
-                }
-
-                this.selectedRelatedJob = targetJobGroup;
-                this.selectedSubJobIndex = -1;
-
-                if (previousJobId !== this.jobId) {
-                    this.broadcastEvent("jobChanged", this.job);
-                }
-            } else {
-                console.log(`Already on the selected job or invalid job data`);
-            }
-        } finally {
-            this.applyScope();
-        }
-    }
-
     private async loadJobData(jobId: number): Promise<void> {
         if (!jobId) {
             console.log("No job ID provided");
@@ -324,31 +278,29 @@ class JobDetailController extends BaseController {
 
         try {
             if (this.isBulkJob) {
-                this.job = await this.DispatchData.getBulkJobDetail(jobId);
+                this.jobGroup = await this.DispatchData.getBulkJobDetail(jobId);
             } else if (this.isRecurringJob) {
-                this.job = await this.DispatchData.getRecurringJobDetail(jobId);
+                this.jobGroup = await this.DispatchData.getRecurringJobDetail(jobId);
             } else {
-                this.job = await this.DispatchData.getJobDetail(jobId);
+                this.jobGroup = await this.DispatchData.getJobDetail(jobId);
             }
 
-            this.initializeJobData();
-            if (!this.job) {
+            if (!this.jobGroup) {
                 console.log("No job data returned from server");
                 return;
             }
 
-            if (this.job?.relatedJobs?.length > 0) {
-                this.setupRelatedJobs(jobId);
-            } else {
-                this.selectedRelatedJob = undefined;
-                this.selectedSubJobIndex = -1;
-                this.selectedTabIndex = 0;
-                this.jobGroups = [];
-            }
+            // Sort related jobs by job number
+            this.sortRelatedJobs();
+
+            // Set the selected tab based on requested jobId
+            this.setSelectedTabFromJobId(jobId);
+
+            this.initializeJobData();
 
             this.applyScope();
 
-            if (this.job.completedTime && !this.isRecurringJob) {
+            if (this.job?.completedTime && !this.isRecurringJob) {
                 await this.loadPodPhotos();
             }
         } catch (error) {
@@ -359,49 +311,59 @@ class JobDetailController extends BaseController {
         }
     }
 
-    private setupRelatedJobs(jobId: number): void {
-        if (!this.job) return;
+    private sortRelatedJobs(): void {
+        if (!this.jobGroup) return;
 
-        this.jobGroups = sortRelatedJobs(this.job.relatedJobs);
-        const {tabIndex, subJobIndex} = this.findJobInGroups(jobId);
+        // Create an array with the main job and related jobs
+        const allJobs = [this.jobGroup.job, ...this.jobGroup.relatedJobs];
 
-        if (tabIndex !== -1) {
-            console.log(`Setting selectedTabIndex to ${tabIndex}, subJobIndex to ${subJobIndex}`);
-            this.selectedTabIndex = tabIndex;
-            this.selectedRelatedJob = this.jobGroups[tabIndex];
-            this.selectedSubJobIndex = subJobIndex;
+        // Sort by job number
+        allJobs.sort((a, b) => {
+            return a.jobNo.localeCompare(b.jobNo, undefined, { numeric: true, sensitivity: 'base' });
+        });
 
-            if (subJobIndex !== -1) {
-                console.log(`Current job is a subjob at index ${subJobIndex}`);
-            }
+        // Store sorted array (excluding the main job for backwards compatibility)
+        this.sortedRelatedJobs = allJobs;
+    }
+
+    private setSelectedTabFromJobId(jobId: number): void {
+        if (!this.sortedRelatedJobs.length) return;
+
+        // Find the job in the sorted array
+        const index = this.sortedRelatedJobs.findIndex(job => job.id === jobId);
+
+        if (index !== -1) {
+            this.selectedTabIndex = index;
+            this.job = this.sortedRelatedJobs[index];
         } else {
+            // Default to the first job if not found
             this.selectedTabIndex = 0;
-            this.selectedRelatedJob = this.jobGroups[0];
-            this.selectedSubJobIndex = -1;
+            this.job = this.sortedRelatedJobs[0];
         }
     }
 
-    private findJobInGroups(jobId: number): { tabIndex: number, subJobIndex: number } {
-        const currentJobIndex = this.jobGroups.findIndex(
-            (relatedJob) => relatedJob.job.id === jobId
-        );
 
-        if (currentJobIndex !== -1) {
-            return {tabIndex: currentJobIndex, subJobIndex: -1};
+    async switchToRelatedJob(index: number): Promise<void> {
+        if (!this.sortedRelatedJobs || index < 0 || index >= this.sortedRelatedJobs.length) return;
+
+        this.selectedTabIndex = index;
+        this.job = this.sortedRelatedJobs[index];
+
+        // Re-initialize the job data
+        this.initializeJobData();
+
+        // Reload photos if a job is completed
+        if (this.job?.completedTime && !this.isRecurringJob) {
+            await this.loadPodPhotos();
         }
 
-        for (let i = 0; i < this.jobGroups.length; i++) {
-            const subJobIndex = this.jobGroups[i].subJobs.findIndex(
-                (subJob) => subJob.id === jobId
-            );
-            if (subJobIndex !== -1) {
-                return {tabIndex: i, subJobIndex};
-            }
+        if(this.job) {
+            this.$rootScope.$broadcast("jobChanged", this.job);
         }
 
-        return {tabIndex: -1, subJobIndex: -1};
+        this.applyScope();
     }
-
+    
     getConnectionTime(firstSegment: IFlightSegment, secondSegment: IFlightSegment): string {
         if (!firstSegment || !secondSegment) return "";
 
@@ -1827,7 +1789,7 @@ class JobDetailController extends BaseController {
                 isRead: job.readTrackerInfo.hasBeenRead,
             };
 
-            this.broadcastEvent("jobReadChanged", data);
+            this.$rootScope.$broadcast("jobReadChanged", data);
             this.isLoading = false;
         }
     }
@@ -1910,81 +1872,6 @@ class JobDetailController extends BaseController {
             job,
             FileUploadType.POD
         );
-    }
-    
-    async switchToSubJob(subJobIndex: number): Promise<void> {
-        if (subJobIndex === this.selectedSubJobIndex) return;
-
-        this.selectedSubJobIndex = subJobIndex;
-
-        await this.loadSubJobDetails(subJobIndex);
-        this.applyScope();
-    }
-
-    private async loadSubJobDetails(subJobIndex: number): Promise<void> {
-        if (
-            !this.selectedRelatedJob ||
-            !this.selectedRelatedJob.subJobs ||
-            subJobIndex >= this.selectedRelatedJob.subJobs.length ||
-            subJobIndex < 0
-        ) {
-            console.warn(
-                "Invalid subjob index or no subjobs available"
-            );
-            return;
-        }
-
-        const subJob = this.selectedRelatedJob.subJobs[subJobIndex];
-
-        try {
-            this.isLoading = true;
-            console.log(
-                `Loading subjob details for ID: ${subJob.id}`
-            );
-
-            // Load the subj ob details from the server
-            const jobDetails = await this.DispatchData.getJobDetail(subJob.id);
-
-            // Preserve the original related jobs data
-            const originalRelatedJobs = this.job?.relatedJobs;
-            const originalJobGroups = this.jobGroups;
-            const originalSelectedRelatedJob = this.selectedRelatedJob;
-            const originalSelectedTabIndex = this.selectedTabIndex;
-
-            // Update the job with the subj ob details
-            this.job = jobDetails;
-
-            // Restore the preserved data
-            if (originalRelatedJobs) {
-                if (!this.job) {
-                    console.error("Failed to load subjob details");
-                    return;
-                }
-
-                this.job.relatedJobs = originalRelatedJobs;
-                this.jobGroups = originalJobGroups;
-                this.selectedRelatedJob = originalSelectedRelatedJob;
-                this.selectedTabIndex = originalSelectedTabIndex;
-            }
-
-            this.initializeJobData();
-
-            // Broadcast the subj ob change
-            this.broadcastEvent("subJobChanged", this.job);
-
-            console.log(
-                `Successfully loaded subjob: ${subJob.id}`
-            );
-        } catch (error) {
-            console.error(
-                `Error loading subjob details:`,
-                error
-            );
-            this.toastrService.showErrorToast("Failed to load subjob details");
-        } finally {
-            this.isLoading = false;
-            this.applyScope();
-        }
     }
 
     async updateActive(job: IJob): Promise<void> {

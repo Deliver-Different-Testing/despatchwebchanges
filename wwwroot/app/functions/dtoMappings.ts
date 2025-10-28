@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import IFlightCargoProcessing, {
     IFlightCargoProcessingDto
 } from "../components/dialogs/flight-agent-conformation-dialog/interfaces/IFlightCargoProcessing";
-import {IDispatchJob, IDispatchJobDto, IJob, IJobDto} from "../interfaces/job.interface";
+import {IDispatchJob, IDispatchJobDto, IJob, IJobDto, IJobGroup, IJobGroupDto} from "../interfaces/job.interface";
 import {formatDateFromApi} from "./formatDates";
 import {ITask, ITaskDto} from "../components/task-dashboard/task-dashboard.interfaces";
 import {IPrebookListModel, IPrebookListModelDto} from "../components/recurringJobs/recurringJobs.interface";
@@ -47,7 +47,14 @@ export function transformCargoHoursDTO(dto: IFlightCargoProcessingDto): IFlightC
     };
 }
 
-export function transformJobDTO(dto: IJobDto): IJob {
+export function transformJobGroupDTO(dto: IJobGroupDto): IJobGroup {
+    return {
+        job: transformJobDTO(dto.job),
+        relatedJobs: dto.relatedJobs?.map(transformJobDTO) ?? [],
+    }
+}
+
+function transformJobDTO(dto: IJobDto): IJob {
     return {
         ...dto,
         time: dto.time ? dayjs(dto.time) : undefined,
