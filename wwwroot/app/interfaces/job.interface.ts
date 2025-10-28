@@ -7,6 +7,18 @@ import {IFlightSegment, IFlightSegmentDto} from "../components/Nationwide/nation
 import {AirportViewModel} from "../components/dialogs/flight-details-dialog/flight-details-dialog.interfaces";
 import {Dayjs} from "dayjs";
 
+export interface IJobGroupDto {
+   job: IJobDto;
+   relatedJobs: IJobDto[];
+}
+
+export interface IJobGroup {
+   job: IJob;
+   relatedJobs: IJob[];
+}
+
+
+
 export interface IJob {
     id: number;
     rootParentId?: number;
@@ -840,11 +852,6 @@ export interface IReadTrackerInfo {
     hasBeenRead: boolean;
     readBy: string;
     readDate: Date | null;
-}
-
-export interface JobGroup {
-    job: ISuggestion;
-    subJobs: ISuggestion[];
 }
 
 export interface VoidJobRequest extends VoidJobRequestBase {

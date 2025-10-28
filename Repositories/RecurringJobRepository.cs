@@ -22,15 +22,30 @@ public class RecurringJobRepository(
 {
     private readonly ITenantInfoService _infoService = infoService;
 
-    public async Task<JobViewModel> GetRecurringJobByIdAsync(int jobId)
+    public async Task<JobGroupViewModel> GetRecurringJobByIdAsync(int jobId)
     {
-        var jobRecurringViewModel = await Context.TucJobBookings
+        var mainJob = await Context.TucJobBookings
             .Where(j => j.UcbkId == jobId)
             .Select(JobMappings.JobRecurringMapping)
             .AsNoTracking()
             .FirstOrDefaultAsync();
+        
+        var familyRootId = mainJob.ParentId ?? jobId;
 
-        return jobRecurringViewModel;
+        // Get all jobs in the family (parent and all children), excluding the main job
+        var relatedJobs = await Context.TucJobBookings
+            .AsNoTracking()
+            .Where(j => (j.UcbkId == familyRootId || j.ParentId == familyRootId) 
+                        && j.UcbkId != jobId)
+            .Select(JobMappings.JobRecurringMapping)
+            .ToListAsync();
+
+        return new JobGroupViewModel
+        {
+            Job = mainJob,
+            RelatedJobs = relatedJobs
+        };
+        
     }
 
     public async Task<PaginatedResponse<PrebookListViewModel>> PreBookJobListAsync(RecurringJobQueryRequest request)

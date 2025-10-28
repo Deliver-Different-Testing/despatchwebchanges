@@ -27,8 +27,8 @@
     </md-card>
 
     <md-card class="job-detail-widget md-padding">
-        <!-- Header with tabs (shown only when there are related jobs) -->
-        <div class="header-bar" ng-if="ctrl.jobGroups && ctrl.jobGroups.length > 0">
+        <!-- Header with tabs - show only if there are related jobs -->
+        <div class="header-bar" ng-if="ctrl.jobGroup && ctrl.jobGroup.relatedJobs.length > 0">
             <div class="job-ids-container">
                 <md-tabs
                         md-border-bottom
@@ -37,23 +37,19 @@
                         md-selected="ctrl.selectedTabIndex"
                         md-dynamic-height="false"
                         md-swipe-content="true">
+                    <!-- All jobs sorted by job number -->
                     <md-tab
-                            ng-repeat="relatedJob in ctrl.jobGroups track by relatedJob.job.id"
+                            ng-repeat="job in ctrl.sortedRelatedJobs track by job.id"
                             ng-click="ctrl.switchToRelatedJob($index)">
                         <md-tab-label>
                             <span ng-if="::ctrl.isRecurringJob">Job #{{$index + 1}}</span>
-                            <span ng-if="::!ctrl.isRecurringJob">Job #{{::relatedJob.job.text}}</span>
-                            <md-icon
-                                    md-font-set="material-symbols-outlined"
-                                    ng-if="relatedJob.subJobs.length > 0">
-                                arrow_drop_down
-                            </md-icon>
+                            <span ng-if="::!ctrl.isRecurringJob">{{job.jobNo}}</span>
                         </md-tab-label>
                     </md-tab>
                 </md-tabs>
             </div>
         </div>
-
+        
         <!-- Main header with controls (position depends on whether tabs exist) -->
         <div class="header-bar">
             <!-- View Density Toggle -->
@@ -100,34 +96,7 @@
                 {{ctrl.job.statusName}}
             </md-button>
         </div>
-
-        <div
-                class="subjobs-container"
-                ng-if="ctrl.selectedRelatedJob && ctrl.selectedRelatedJob.subJobs && ctrl.selectedRelatedJob.subJobs.length > 0">
-            <div class="job-ids-container">
-                <md-tabs
-                        md-border-bottom
-                        md-no-pagination="false"
-                        md-stretch-tabs="never"
-                        md-selected="ctrl.selectedSubJobIndex"
-                        md-dynamic-height="false"
-                        md-swipe-content="true">
-                    <md-tab
-                            ng-repeat="subJob in ctrl.selectedRelatedJob.subJobs track by subJob.id"
-                            ng-click="ctrl.switchToSubJob($index)">
-                        <md-tab-label>
-                            <span>{{subJob.text}}</span>
-                            <md-icon
-                                    md-font-set="material-symbols-outlined"
-                                    ng-if="subJob.subJobs && subJob.subJobs.length > 0">
-                                arrow_drop_down
-                            </md-icon>
-                        </md-tab-label>
-                    </md-tab>
-                </md-tabs>
-            </div>
-        </div>
-
+        
         <!-- Timing Section -->
         <div class="metrics-grid">
             <div class="metric-card" md-ink-ripple ng-click="ctrl.showPricingBreakdown($event, ctrl.job)">
@@ -2000,7 +1969,7 @@
 <!-- No delivery photos message -->
 <div
         class="pod-photo-section "
-        ng-if="ctrl.formattedPodPhotos.length === 0 && ctrl.job.done !ctrl.job.preBook">
+        ng-if="ctrl.formattedPodPhotos.length === 0 && ctrl.job.done && !ctrl.job.preBook">
     <div class="section-header">
         <div class="md-dense"
              style="display: flex; align-items: center; padding: 8px 16px">

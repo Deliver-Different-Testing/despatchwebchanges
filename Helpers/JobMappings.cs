@@ -182,6 +182,7 @@ public static class JobMappings
         Id = j.UcjbId,
         JobNo = j.UcjbNumber,
         Time = j.UcjbTime,
+        ParentId = j.ParentId,
         RootParentId = j.RootParentId,
         Date = FormatDate(j.UcjbDate),
         Booked = CombineDateAndTime(j.UcjbDate, j.UcjbTime),
@@ -528,13 +529,6 @@ public static class JobMappings
                 .ToList()
             : null,
 
-        // Related jobs
-        RelatedJobs = j.Parent != null && j.Parent.InverseParent.Any()
-            ? j
-                .Parent.InverseParent.Select(p => new Suggestion { Id = p.UcjbId, Text = p.UcjbNumber })
-                .ToList()
-            : null,
-
         IsArchived = false,
         PreBook = false,
         DeliverByTime = j.DeliverByTime,
@@ -585,6 +579,7 @@ public static class JobMappings
         Id = j.BulkJobId,
         JobNo = j.JobNumber,
         Time = j.BookTime,
+        ParentId = j.ParentId,
         RootParentId = j.RootParentId,
         Date = FormatDate(j.BookDate),
         Booked = CombineDateAndTime(j.BookDate, j.BookTime),
@@ -919,13 +914,14 @@ public static class JobMappings
         Locked = j.UcjbLocked != null && j.UcjbLocked != 0
     };
 
-    public static readonly Expression<Func<TucJobBooking, JobRecurringViewModel>> JobRecurringMapping = j =>
+    public static readonly Expression<Func<TucJobBooking, JobViewModel>> JobRecurringMapping = j =>
         new JobRecurringViewModel
         {
             ClientId = j.UcbkClientId,
             Id = j.UcbkId,
             JobNo = j.UcbkJobNumber,
             CustomJobName = j.CustomJobName,
+            ParentId = j.ParentId,
             Time = j.UcbkTime,
             RootParentId = j.RootParentId,
             RelatedJobs = j.BookingParent != null && j.BookingParent.InverseBookingParent.Any()
