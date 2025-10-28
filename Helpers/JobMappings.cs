@@ -441,12 +441,18 @@ public static class JobMappings
         DgClass = j.Dgclass,
         DgDocumentation = j.Dgdocument,
         HasDgDocsString = j.Dgdocument != null ? "Yes" : "No",
-        ParcelDimensions = j.BulkParent == null
-            ? GetPackagesForJob(j, j.Parent,
-                j.TucJobItemJobs, j.Parent.TucJobItemJobs,
+        ParcelDimensions = j.TblBulkJobs.FirstOrDefault() == null
+            ? GetPackagesForJob(
+                j, 
+                j.Parent,
+                j.TucJobItemJobs, 
+                j.Parent.TucJobItemJobs,
                 j.TucJobItemChildJobs)
-            : GetPackagesForBulkJob(j.BulkParent, j.BulkParent.Parent,
-                j.BulkParent.TblBulkJobItems, j.BulkParent.Parent.TblBulkJobItems),
+            : GetPackagesForBulkJob(
+                j.TblBulkJobs.FirstOrDefault(), 
+                j.TblBulkJobs.FirstOrDefault().Parent,
+                j.TblBulkJobs.FirstOrDefault().TblBulkJobItems, 
+                j.TblBulkJobs.FirstOrDefault().Parent.TblBulkJobItems),
 
         // Job status and details
         Done = j.UcjbJobDone,

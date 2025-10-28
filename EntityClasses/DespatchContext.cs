@@ -4968,10 +4968,6 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.AgentId)
                 .HasConstraintName("FK_tucJob_tucAgents");
 
-            entity.HasOne(d => d.BulkParent).WithMany(p => p.TucJobs)
-                .HasForeignKey(d => d.BulkParentId)
-                .HasConstraintName("FK_tucJob_tblBulkJob");
-
             entity.HasOne(d => d.Contact).WithMany(p => p.TucJobs)
                 .HasForeignKey(d => d.ContactId)
                 .HasConstraintName("FK_tucJob_tucClientContact");
