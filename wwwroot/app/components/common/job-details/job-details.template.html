@@ -1856,7 +1856,7 @@
 <!-- Delivery Photos Section -->
 <div
         class="pod-photo-section "
-        ng-if="ctrl.job && ctrl.job.done && ctrl.formattedPodPhotos.length > 0">
+        ng-if="ctrl.job && ctrl.job.done && ctrl.formattedPodPhotos.length > 0 && !ctrl.job.preBook">
     <div class="section-header">
         <div
                 class="md-dense"
@@ -2000,7 +2000,7 @@
 <!-- No delivery photos message -->
 <div
         class="pod-photo-section "
-        ng-if="ctrl.formattedPodPhotos.length === 0 && ctrl.job.done">
+        ng-if="ctrl.formattedPodPhotos.length === 0 && ctrl.job.done !ctrl.job.preBook">
     <div class="section-header">
         <div class="md-dense"
              style="display: flex; align-items: center; padding: 8px 16px">

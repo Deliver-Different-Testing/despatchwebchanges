@@ -271,9 +271,16 @@ public class RecurringJobRepository(
                 job.UcbkDate = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.DaysOfWeek:
-                job.UcbkDaysInt = int.Parse(value);
-                var daysEnum = (DaysOfWeek)job.UcbkDaysInt;
-                noteText = $"Days of recurring jobs set to: {daysEnum.ToDisplayString()}";
+                var dayEnum = (DaysOfWeek)int.Parse(value);
+                job.UcbkDaysInt = (int)dayEnum;
+
+                // Update child jobs
+                if (job.InverseBookingParent != null && job.InverseBookingParent.Count != 0)
+                {
+                    foreach (var childJob in job.InverseBookingParent)
+                        childJob.UcbkDaysInt = (int)dayEnum;
+                }
+                noteText = $"Days of recurring jobs set to: {dayEnum.ToDisplayString()}";
                 break;
             case JobProperty.Frequency:
                 job.UcbkFrequency = int.Parse(value);
@@ -376,7 +383,7 @@ public class RecurringJobRepository(
             var lastChildBookingId = await Context.TucJobBookings
                 .Where(jb => jb.UcbkId == request.JobId)
                 .SelectMany(jb => jb.InverseBookingParent)
-                .OrderBy(jb => jb.UcbkId)
+                .OrderBy(jb => jb.UcbkDate)
                 .Select(child => child.UcbkId)
                 .LastOrDefaultAsync();
 
@@ -431,7 +438,7 @@ public class RecurringJobRepository(
             var firstChildBookingId = await Context.TucJobBookings
                 .Where(jb => jb.UcbkId == request.JobId)
                 .SelectMany(jb => jb.InverseBookingParent)
-                .OrderBy(jb => jb.UcbkId)
+                .OrderBy(jb => jb.UcbkDate)
                 .Select(child => child.UcbkId)
                 .FirstOrDefaultAsync();
 
