@@ -35,6 +35,8 @@ public partial class TucJobBookingItem
 
     public int? ChildJobId { get; set; }
 
+    public string Barcode { get; set; }
+
     public virtual TucJobBooking Booking { get; set; }
 
     public virtual TucJobBooking ChildJob { get; set; }
