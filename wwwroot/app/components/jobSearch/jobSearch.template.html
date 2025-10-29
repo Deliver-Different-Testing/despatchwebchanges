@@ -47,6 +47,7 @@
                 </md-menu>
 
                 <md-button
+                        ng-if="::!ctrl.isUsCustomer"
                         aria-label="Open settings menu"
                         class="md-icon-button button-trigger"
                         ng-click="ctrl.openSettingsDialog($event)">

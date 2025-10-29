@@ -22,7 +22,7 @@ import {
     IGetFlightOptionsResponse,
     StatusChangeEvent
 } from "./nationwide.interfaces";
-import {IGridsterItem, IBox, IGridsterLayout} from "../../interfaces/layout.interfaces";
+import {IBox, IGridsterItem, IGridsterLayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import JobDataType from "./enums/JobDataType";
@@ -64,8 +64,7 @@ import utc from "dayjs/plugin/utc";
 import {HereMapConfig} from "../../interfaces/hereMapCredentials.interfaces";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 import ITaskItemConfig from "../../enums/task-item-config";
-import GRIDSTER_BASE_CONFIG from "../../gridster.config";
-import isDefaultLayout from "../../functions/isDefaultLayout";
+import GridsterLayoutService from "../../services/gridster-layout.service";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -97,6 +96,7 @@ class NationwideControl extends BaseController {
         'tasksService',
         'recoveryAgentManagementService',
         'dashboardSettingsDialogService',
+        'gridsterLayoutService',
         '$scope',
         '$timeout',
         '$interval',
@@ -256,6 +256,7 @@ class NationwideControl extends BaseController {
         private tasksService: TasksService,
         private recoveryAgentManagementService: RecoveryAgentManagementService,
         private dashboardSettingsDialog: DashboardSettingsDialogService,
+        private gridsterLayoutService: GridsterLayoutService,
         $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
@@ -359,37 +360,11 @@ class NationwideControl extends BaseController {
 
     // Gridster layouts
     private initializeGridster(): void {
-        this.gridsterOpts = {
-            ...GRIDSTER_BASE_CONFIG,
-            resizable: {
-                enabled: !isDefaultLayout(this.currentLayoutName),
-                handles: ['n', 'e', 's', 'w', 'ne', 'se', 'sw', 'nw'],
-                start: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
-                    this.applyScope();
-                },
-                resize: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
-                    this.applyScope();
-                },
-                stop: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
-                    this.updateCurrentLayout();
-                    this.applyScope();
-                }
-            },
-            draggable: {
-                enabled: !isDefaultLayout(this.currentLayoutName),
-                handle: '.gridster-item-handle',
-                start: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
-                    this.applyScope();
-                },
-                drag: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
-                    this.applyScope();
-                },
-                stop: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
-                    this.updateCurrentLayout();
-                    this.applyScope();
-                }
-            }
-        };
+        this.gridsterOpts = this.gridsterLayoutService.createGridsterConfig(
+            this.currentLayoutName,
+            () => this.updateCurrentLayout(),
+            this.$scopeService
+        );
     }
 
     private initializeBoxes(): void {
@@ -462,26 +437,15 @@ class NationwideControl extends BaseController {
     }
 
     private loadGridsterLayoutsFromStorage(): void {
-        if (Modernizr.localstorage) {
-            try {
-                const savedLayouts = localStorage.getItem(this.GridsterLayoutsKey);
-                if (savedLayouts) {
-                    // Load saved layouts but excluded any 'Default' layouts from storage
-                    this.layouts = JSON.parse(savedLayouts).filter((l: { name: string; }) => l.name !== 'Default');
-                }
-            } catch (error) {
-                console.error('Error loading gridster layouts:', error);
-                this.layouts = [];
-            }
-        }
+        this.layouts = this.gridsterLayoutService.loadLayoutsFromStorage(AppPage.Domestic);
 
-        // Always recreate the default layout (not saved to storage)
+        // Always recreate the default layout
         this.defaultLayout = this.createDefaultGridsterLayout();
         this.layouts.unshift(this.defaultLayout);
 
         // Load last active layout or default
-        const lastActiveLayoutName = this.getLastActiveLayoutName();
-        const layoutToLoad = this.layouts.find((l: IGridsterLayout) => l.name === lastActiveLayoutName) || this.defaultLayout;
+        const lastActiveLayoutName = this.gridsterLayoutService.getLastActiveLayoutName(AppPage.Domestic );
+        const layoutToLoad = this.layouts.find(l => l.name === lastActiveLayoutName) || this.defaultLayout;
         this.loadGridsterLayout(this.layouts.indexOf(layoutToLoad));
     }
 
@@ -554,57 +518,24 @@ class NationwideControl extends BaseController {
         };
     }
 
-    private saveGridsterLayoutsToStorage(): void {
-        if (Modernizr.localstorage) {
-            try {
-                localStorage.setItem(this.GridsterLayoutsKey, JSON.stringify(this.layouts));
-            } catch (error) {
-                console.error('Error saving gridster layouts:', error);
-            }
-        }
-    }
-
-    private getLastActiveLayoutName(): string | null {
-        if (Modernizr.localstorage) {
-            try {
-                return localStorage.getItem(this.GridsterLastActiveLayoutKey);
-            } catch (error) {
-                console.error('Error loading last active layout:', error);
-            }
-        }
-        return null;
-    }
-
-    private setLastActiveLayoutName(name: string): void {
-        if (Modernizr.localstorage) {
-            try {
-                localStorage.setItem(this.GridsterLastActiveLayoutKey, name);
-            } catch (error) {
-                console.error('Error saving last active layout:', error);
-            }
-        }
-    }
-
     loadGridsterLayout(index: number): void {
-        if (index < 0 || index >= this.layouts.length) {
-            console.error('Invalid layout index:', index);
-            return;
+        const success = this.gridsterLayoutService.loadLayout(
+            this.layouts,
+            index,
+            AppPage.Domestic,
+            (layoutName, items) => {
+                this.currentLayoutName = layoutName;
+                this.gridsterItems = items;
+                this.initializeGridster();
+            }
+        );
+
+        if (success) {
+            this.registerTimeout(() => {
+                this.$scopeService?.$broadcast('gridster-resized');
+            }, 50);
+            this.applyScope();
         }
-
-        const layout = this.layouts[index];
-        this.currentLayoutName = layout.name;
-        this.gridsterItems = JSON.parse(JSON.stringify(layout.items)); // Deep copy
-        this.setLastActiveLayoutName(layout.name);
-
-        // Reinitialize gridster config with an updated layout name
-        this.initializeGridster();
-
-        // Force gridster to recognize the config changes
-        this.registerTimeout(() => {
-            this.broadcastEvent('gridster-resized');
-        }, 50);
-
-        this.applyScope();
     }
 
     async saveGridsterLayout(): Promise<void> {
@@ -616,34 +547,22 @@ class NationwideControl extends BaseController {
                     .textContent("Please enter a name for this layout.")
                     .required(true)
                     .ok("Save")
-                    .cancel("Cancel"))
+                    .cancel("Cancel"));
 
-            if (!layoutName || layoutName.trim() === '') {
-                this.toastrService.showErrorToast('Layout name cannot be empty');
-                return;
-            }
+            const result = this.gridsterLayoutService.saveNewLayout(
+                this.layouts,
+                layoutName,
+                this.gridsterItems,
+                AppPage.Domestic,
+            );
 
-            const trimmedName = layoutName.trim();
-            const existingIndex = this.layouts.findIndex((l: IGridsterLayout) => l.name === trimmedName);
-
-            const newLayout: IGridsterLayout = {
-                name: trimmedName,
-                items: JSON.parse(JSON.stringify(this.gridsterItems)) // Deep copy
-            };
-
-            if (existingIndex >= 0) {
-                // Update existing layout
-                this.layouts[existingIndex] = newLayout;
-                this.toastrService.showSuccessToast(`Layout "${trimmedName}" updated`);
+            if (result.success) {
+                this.currentLayoutName = layoutName.trim();
+                this.toastrService.showSuccessToast(result.message);
             } else {
-                // Add a new layout
-                this.layouts.push(newLayout);
-                this.toastrService.showSuccessToast(`Layout "${trimmedName}" saved`);
+                this.toastrService.showErrorToast(result.message);
             }
 
-            this.currentLayoutName = trimmedName;
-            this.setLastActiveLayoutName(trimmedName);
-            this.saveGridsterLayoutsToStorage();
             this.applyScope();
         } catch (error) {
             if (!error) return;
@@ -653,35 +572,20 @@ class NationwideControl extends BaseController {
     }
 
     updateCurrentLayout(): void {
-        try {
-            if (this.currentLayoutName === 'Default') {
-                this.toastrService.showWarningToast('Cannot update the Default layout');
-                return;
-            }
+        const result = this.gridsterLayoutService.updateLayout(
+            AppPage.Domestic,
+            this.layouts,
+            this.currentLayoutName,
+            this.gridsterItems,
+        );
 
-            if (!this.currentLayoutName) {
-                this.toastrService.showErrorToast('No layout currently loaded to update');
-                return;
-            }
-
-            const existingIndex = this.layouts.findIndex(l => l.name === this.currentLayoutName);
-
-            if (existingIndex < 0) {
-                this.toastrService.showErrorToast(`Layout "${this.currentLayoutName}" not found`);
-                return;
-            }
-
-            this.layouts[existingIndex] = {
-                name: this.currentLayoutName,
-                items: JSON.parse(JSON.stringify(this.gridsterItems)) // Deep copy with visibility
-            };
-            this.saveGridsterLayoutsToStorage();
-            this.toastrService.showSuccessToast(`Layout "${this.currentLayoutName}" updated`);
-            this.applyScope();
-        } catch (error) {
-            console.error('Error updating gridster layout:', error);
-            this.toastrService.showErrorToast('Error updating layout');
+        if (result.success) {
+            this.toastrService.showSuccessToast(result.message);
+        } else {
+            this.toastrService.showWarningToast(result.message);
         }
+
+        this.applyScope();
     }
 
     async deleteGridsterLayout(index: number): Promise<void> {
@@ -704,19 +608,27 @@ class NationwideControl extends BaseController {
                     .title("Delete Layout?")
                     .textContent(`Are you sure you want to delete the layout "${layout.name}"?`)
                     .ok("Delete")
-                    .cancel("Cancel"))
+                    .cancel("Cancel"));
+
             if (!confirmed) return;
 
-            this.layouts.splice(index, 1);
-            this.saveGridsterLayoutsToStorage();
+            const result = this.gridsterLayoutService.deleteLayout(
+                AppPage.Domestic,
+                this.layouts,
+                index,
+                this.currentLayoutName,
+            );
 
-            // If we deleted the current layout, load the default
-            if (this.currentLayoutName === layout.name) {
-                const defaultIndex = this.layouts.findIndex(l => l.name === 'Default');
-                this.loadGridsterLayout(defaultIndex);
+            if (result.success) {
+                if (result.shouldLoadDefault) {
+                    const defaultIndex = this.layouts.findIndex(l => l.name === 'Default');
+                    this.loadGridsterLayout(defaultIndex);
+                }
+                this.toastrService.showSuccessToast(result.message);
+            } else {
+                this.toastrService.showErrorToast(result.message);
             }
 
-            this.toastrService.showSuccessToast(`Layout "${layout.name}" deleted`);
             this.applyScope();
         } catch (error) {
             if (!error) return;
@@ -724,11 +636,7 @@ class NationwideControl extends BaseController {
             this.toastrService.showErrorToast('Error deleting layout');
         }
     }
-
-    getGridsterItemByName(name: string): IGridsterItem | undefined {
-        return this.gridsterItems.find(item => item.name === name);
-    }
-
+    
     private loadSavedRefreshInterval(): void {
         if (Modernizr.localstorage) {
             try {
@@ -2393,23 +2301,13 @@ class NationwideControl extends BaseController {
     }
 
     private syncVisibilityToGridsterItems(): void {
-        this.gridsterItems.forEach((item: IGridsterItem) => {
-            if (!this.boxes) return;
-            const box = this.boxes[item.name];
-            if (box) {
-                item.visible = box.visible;
-            }
-        });
+        if (!this.boxes) return;
+        this.gridsterLayoutService.syncVisibilityToGridsterItems(this.gridsterItems, this.boxes);
     }
 
     private syncVisibilityToBoxes(): void {
-        this.gridsterItems.forEach((item: IGridsterItem) => {
-            if (!this.boxes) return;
-            const box = this.boxes[item.name];
-            if (box) {
-                box.visible = item.visible;
-            }
-        });
+        if (!this.boxes) return;
+        this.gridsterLayoutService.syncVisibilityToBoxes(this.gridsterItems, this.boxes);
     }
 }
 

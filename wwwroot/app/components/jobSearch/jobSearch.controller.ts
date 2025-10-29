@@ -35,6 +35,7 @@ import GRIDSTER_BASE_CONFIG from "../../gridster.config";
 import isDefaultLayout from "../../functions/isDefaultLayout";
 import NationwideBoxes from "../Nationwide/enums/NationwideBoxes";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
+import GridsterLayoutService from "../../services/gridster-layout.service";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -55,6 +56,7 @@ class JobSearchController extends BaseController {
         "jobFileUploadDialogService",
         'interCourierChargeDialogService',
         'dashboardSettingsDialogService',
+        'gridsterLayoutService',
         'APP_CONFIG',
         '$scope',
         '$timeout',
@@ -119,6 +121,7 @@ class JobSearchController extends BaseController {
         private jobFileUploadDialogService: JobFileUploadDialogService,
         private interCourierChargeDialogService: InterCourierChargeDialogService,
         private dashboardSettingsDialog: DashboardSettingsDialogService,
+        private gridsterLayoutService: GridsterLayoutService,
         appConfig: IAppConfig,
         $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
@@ -175,37 +178,11 @@ class JobSearchController extends BaseController {
 
     // Gridster layouts
     private initializeGridster(): void {
-        this.gridsterOpts = {
-            ...GRIDSTER_BASE_CONFIG,
-            resizable: {
-                enabled: !isDefaultLayout(this.currentLayoutName),
-                handles: ['n', 'e', 's', 'w', 'ne', 'se', 'sw', 'nw'],
-                start: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
-                    this.applyScope();
-                },
-                resize: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
-                    this.applyScope();
-                },
-                stop: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
-                    this.updateCurrentLayout();
-                    this.applyScope();
-                }
-            },
-            draggable: {
-                enabled: !isDefaultLayout(this.currentLayoutName),
-                handle: '.gridster-item-handle',
-                start: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
-                    this.applyScope();
-                },
-                drag: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
-                    this.applyScope();
-                },
-                stop: (event: angular.IAngularEvent, $element: angular.IAugmentedJQuery, options: any) => {
-                    this.updateCurrentLayout();
-                    this.applyScope();
-                }
-            }
-        };
+        this.gridsterOpts = this.gridsterLayoutService.createGridsterConfig(
+            this.currentLayoutName,
+            () => this.updateCurrentLayout(),
+            this.$scopeService
+        );
     }
 
     private initializeBoxes(): void {
@@ -276,31 +253,20 @@ class JobSearchController extends BaseController {
             }
         };
     }
-    
-    private loadGridsterLayoutsFromStorage(): void {
-        if (Modernizr.localstorage) {
-            try {
-                const savedLayouts = localStorage.getItem(this.GridsterLayoutsKey);
-                if (savedLayouts) {
-                    // Load saved layouts but excluded any 'Default' layouts from storage
-                    this.layouts = JSON.parse(savedLayouts).filter((l: { name: string; }) => l.name !== 'Default');
-                }
-            } catch (error) {
-                console.error('Error loading gridster layouts:', error);
-                this.layouts = [];
-            }
-        }
 
-        // Always recreate the default layout (not saved to storage)
+    private loadGridsterLayoutsFromStorage(): void {
+        this.layouts = this.gridsterLayoutService.loadLayoutsFromStorage(AppPage.JobSearch);
+
+        // Always recreate the default layout
         this.defaultLayout = this.createDefaultGridsterLayout();
         this.layouts.unshift(this.defaultLayout);
 
         // Load last active layout or default
-        const lastActiveLayoutName = this.getLastActiveLayoutName();
-        const layoutToLoad = this.layouts.find((l: IGridsterLayout) => l.name === lastActiveLayoutName) || this.defaultLayout;
+        const lastActiveLayoutName = this.gridsterLayoutService.getLastActiveLayoutName(AppPage.JobSearch);
+        const layoutToLoad = this.layouts.find(l => l.name === lastActiveLayoutName) || this.defaultLayout;
         this.loadGridsterLayout(this.layouts.indexOf(layoutToLoad));
     }
-
+    
     private createDefaultGridsterLayout(): IGridsterLayout {
         return {
             name: 'Default',
@@ -372,57 +338,24 @@ class JobSearchController extends BaseController {
         };
     }
 
-    private saveGridsterLayoutsToStorage(): void {
-        if (Modernizr.localstorage) {
-            try {
-                localStorage.setItem(this.GridsterLayoutsKey, JSON.stringify(this.layouts));
-            } catch (error) {
-                console.error('Error saving gridster layouts:', error);
-            }
-        }
-    }
-
-    private getLastActiveLayoutName(): string | null {
-        if (Modernizr.localstorage) {
-            try {
-                return localStorage.getItem(this.GridsterLastActiveLayoutKey);
-            } catch (error) {
-                console.error('Error loading last active layout:', error);
-            }
-        }
-        return null;
-    }
-
-    private setLastActiveLayoutName(name: string): void {
-        if (Modernizr.localstorage) {
-            try {
-                localStorage.setItem(this.GridsterLastActiveLayoutKey, name);
-            } catch (error) {
-                console.error('Error saving last active layout:', error);
-            }
-        }
-    }
-
     loadGridsterLayout(index: number): void {
-        if (index < 0 || index >= this.layouts.length) {
-            console.error('Invalid layout index:', index);
-            return;
+        const success = this.gridsterLayoutService.loadLayout(
+            this.layouts,
+            index,
+            AppPage.JobSearch,
+            (layoutName, items) => {
+                this.currentLayoutName = layoutName;
+                this.gridsterItems = items;
+                this.initializeGridster();
+            }
+        );
+
+        if (success) {
+            this.registerTimeout(() => {
+                this.$scopeService?.$broadcast('gridster-resized');
+            }, 50);
+            this.applyScope();
         }
-
-        const layout = this.layouts[index];
-        this.currentLayoutName = layout.name;
-        this.gridsterItems = JSON.parse(JSON.stringify(layout.items)); // Deep copy
-        this.setLastActiveLayoutName(layout.name);
-
-        // Reinitialize gridster config with an updated layout name
-        this.initializeGridster();
-
-        // Force gridster to recognize the config changes
-        this.registerTimeout(() => {
-            this.broadcastEvent('gridster-resized');
-        }, 50);
-
-        this.applyScope();
     }
 
     async saveGridsterLayout(): Promise<void> {
@@ -434,34 +367,22 @@ class JobSearchController extends BaseController {
                     .textContent("Please enter a name for this layout.")
                     .required(true)
                     .ok("Save")
-                    .cancel("Cancel"))
+                    .cancel("Cancel"));
 
-            if (!layoutName || layoutName.trim() === '') {
-                this.toastrService.showErrorToast('Layout name cannot be empty');
-                return;
-            }
+            const result = this.gridsterLayoutService.saveNewLayout(
+                this.layouts,
+                layoutName,
+                this.gridsterItems,
+                AppPage.JobSearch,
+            );
 
-            const trimmedName = layoutName.trim();
-            const existingIndex = this.layouts.findIndex((l: IGridsterLayout) => l.name === trimmedName);
-
-            const newLayout: IGridsterLayout = {
-                name: trimmedName,
-                items: JSON.parse(JSON.stringify(this.gridsterItems)) // Deep copy
-            };
-
-            if (existingIndex >= 0) {
-                // Update existing layout
-                this.layouts[existingIndex] = newLayout;
-                this.toastrService.showSuccessToast(`Layout "${trimmedName}" updated`);
+            if (result.success) {
+                this.currentLayoutName = layoutName.trim();
+                this.toastrService.showSuccessToast(result.message);
             } else {
-                // Add a new layout
-                this.layouts.push(newLayout);
-                this.toastrService.showSuccessToast(`Layout "${trimmedName}" saved`);
+                this.toastrService.showErrorToast(result.message);
             }
 
-            this.currentLayoutName = trimmedName;
-            this.setLastActiveLayoutName(trimmedName);
-            this.saveGridsterLayoutsToStorage();
             this.applyScope();
         } catch (error) {
             if (!error) return;
@@ -471,35 +392,20 @@ class JobSearchController extends BaseController {
     }
 
     updateCurrentLayout(): void {
-        try {
-            if (this.currentLayoutName === 'Default') {
-                this.toastrService.showWarningToast('Cannot update the Default layout');
-                return;
-            }
+        const result = this.gridsterLayoutService.updateLayout(
+            AppPage.JobSearch,
+            this.layouts,
+            this.currentLayoutName,
+            this.gridsterItems,
+        );
 
-            if (!this.currentLayoutName) {
-                this.toastrService.showErrorToast('No layout currently loaded to update');
-                return;
-            }
-
-            const existingIndex = this.layouts.findIndex(l => l.name === this.currentLayoutName);
-
-            if (existingIndex < 0) {
-                this.toastrService.showErrorToast(`Layout "${this.currentLayoutName}" not found`);
-                return;
-            }
-
-            this.layouts[existingIndex] = {
-                name: this.currentLayoutName,
-                items: JSON.parse(JSON.stringify(this.gridsterItems)) // Deep copy with visibility
-            };
-            this.saveGridsterLayoutsToStorage();
-            this.toastrService.showSuccessToast(`Layout "${this.currentLayoutName}" updated`);
-            this.applyScope();
-        } catch (error) {
-            console.error('Error updating gridster layout:', error);
-            this.toastrService.showErrorToast('Error updating layout');
+        if (result.success) {
+            this.toastrService.showSuccessToast(result.message);
+        } else {
+            this.toastrService.showWarningToast(result.message);
         }
+
+        this.applyScope();
     }
 
     async deleteGridsterLayout(index: number): Promise<void> {
@@ -522,19 +428,27 @@ class JobSearchController extends BaseController {
                     .title("Delete Layout?")
                     .textContent(`Are you sure you want to delete the layout "${layout.name}"?`)
                     .ok("Delete")
-                    .cancel("Cancel"))
+                    .cancel("Cancel"));
+
             if (!confirmed) return;
 
-            this.layouts.splice(index, 1);
-            this.saveGridsterLayoutsToStorage();
+            const result = this.gridsterLayoutService.deleteLayout(
+                AppPage.JobSearch,
+                this.layouts,
+                index,
+                this.currentLayoutName,
+            );
 
-            // If we deleted the current layout, load the default
-            if (this.currentLayoutName === layout.name) {
-                const defaultIndex = this.layouts.findIndex(l => l.name === 'Default');
-                this.loadGridsterLayout(defaultIndex);
+            if (result.success) {
+                if (result.shouldLoadDefault) {
+                    const defaultIndex = this.layouts.findIndex(l => l.name === 'Default');
+                    this.loadGridsterLayout(defaultIndex);
+                }
+                this.toastrService.showSuccessToast(result.message);
+            } else {
+                this.toastrService.showErrorToast(result.message);
             }
 
-            this.toastrService.showSuccessToast(`Layout "${layout.name}" deleted`);
             this.applyScope();
         } catch (error) {
             if (!error) return;
@@ -542,11 +456,7 @@ class JobSearchController extends BaseController {
             this.toastrService.showErrorToast('Error deleting layout');
         }
     }
-
-    getGridsterItemByName(name: string): IGridsterItem | undefined {
-        return this.gridsterItems.find(item => item.name === name);
-    }
-
+    
     toggleSidenav() {
         const sidenavElement = angular.element('material-sidenav');
         const sidenavCtrl = sidenavElement.controller('materialSidenav');
@@ -1187,23 +1097,13 @@ class JobSearchController extends BaseController {
     }
 
     private syncVisibilityToGridsterItems(): void {
-        this.gridsterItems.forEach((item: IGridsterItem) => {
-            if (!this.boxes) return;
-            const box = this.boxes[item.name];
-            if (box) {
-                item.visible = box.visible;
-            }
-        });
+        if (!this.boxes) return;
+        this.gridsterLayoutService.syncVisibilityToGridsterItems(this.gridsterItems, this.boxes);
     }
 
     private syncVisibilityToBoxes(): void {
-        this.gridsterItems.forEach((item: IGridsterItem) => {
-            if (!this.boxes) return;
-            const box = this.boxes[item.name];
-            if (box) {
-                box.visible = item.visible;
-            }
-        });
+        if (!this.boxes) return;
+        this.gridsterLayoutService.syncVisibilityToBoxes(this.gridsterItems, this.boxes);
     }
 }
 

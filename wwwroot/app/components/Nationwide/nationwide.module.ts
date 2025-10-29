@@ -26,6 +26,7 @@ import RecoveryAgentManagementService
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 import DashboardSettingsDialogController
     from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.controller";
+import GridsterLayoutService from "../../services/gridster-layout.service";
 
 const nationwideModule = angular.module('uDispatch.nationwide', [
     'ngMap',
@@ -60,7 +61,8 @@ nationwideModule
     .service("jobContextMenuService", JobContextMenuService)
     .service("jobHighlightService", JobHighlightService)
     .service("recoveryAgentManagementService", RecoveryAgentManagementService)
-    .service("dashboardSettingsDialogService", DashboardSettingsDialogService);
+    .service("dashboardSettingsDialogService", DashboardSettingsDialogService)
+    .service("gridsterLayoutService", GridsterLayoutService);
 
 // Register controllers
 nationwideModule
