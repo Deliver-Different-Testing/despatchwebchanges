@@ -1568,7 +1568,7 @@ class NationwideControl extends BaseController {
             const updatedJob = this.jobListPOD?.find(j => j.id === job.id);
 
             if (updatedJob) {
-                await this.selectJob(updatedJob);
+                await this.selectJob(updatedJob, true);
             }
 
             const successMessage = `Successfully assigned flight ${flight.flightNumber} to job ${job.jobNo}`;
@@ -1632,7 +1632,7 @@ class NationwideControl extends BaseController {
 
             const updatedJob = this.findJobInLocalLists(job.id);
             if (updatedJob) {
-                await this.selectJob(updatedJob);
+                await this.selectJob(updatedJob, true);
             }
 
             this.isDataLoading = false;

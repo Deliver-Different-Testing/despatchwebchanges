@@ -8,18 +8,17 @@ import {AirportViewModel} from "../components/dialogs/flight-details-dialog/flig
 import {Dayjs} from "dayjs";
 
 export interface IJobGroupDto {
-   job: IJobDto;
-   relatedJobs: IJobDto[];
+    job: IJobDto;
+    relatedJobs: IJobDto[];
 }
 
 export interface IJobGroup {
-   job: IJob;
-   relatedJobs: IJob[];
+    job: IJob;
+    relatedJobs: IJob[];
 }
 
-
-
 export interface IJob {
+    angularId: string;
     id: number;
     rootParentId?: number;
     hasBeenRead: boolean;
@@ -150,7 +149,7 @@ export interface IJob {
     fromAirportId?: number;
     assignedFlight?: IAssignedFlight;
     assignedAgent?: IAgent;
-    assignedCourier: ISuggestion;
+    assignedCourier?: ISuggestion;
     parcelDimensions: IParcelDimensions[];
     deliverToLeaveId?: number;
     isActive: boolean;
@@ -316,7 +315,7 @@ export interface IJobDto {
     fromAirportId?: number;
     assignedFlight?: IAssignedFlightDto;
     assignedAgent?: IAgent;
-    assignedCourier: ISuggestion;
+    assignedCourier?: ISuggestion;
     parcelDimensions: IParcelDimensions[];
     deliverToLeaveId?: number;
     isActive: boolean;
@@ -632,6 +631,7 @@ export interface IJobNoteDto {
 
 export interface IDispatchJob {
     // Core identifiers
+    guidId: string;
     selected?: boolean;
     showCourierSearch: boolean;
     id: number;
@@ -739,6 +739,7 @@ export interface IDispatchJob {
 
 export interface IDispatchJobDto {
     // Core identifiers
+    guidId: string;
     selected?: boolean;
     showCourierSearch: boolean;
     id: number;

@@ -13,7 +13,7 @@ import DispatchCoreService from "../../../services/dispatch-core.service";
 import "./job-details.styles.less";
 import {SelectDialogService} from "../../dialogs/select-dialog/select-dialog.service";
 import {EditDateTimeDialogService} from "../../dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
-import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interfaces";
+import {IDialogDateTimeResult, ISelectDialogResult} from "../../../interfaces/dialog-result.interfaces";
 import {EditAddressDialogService} from "../../dialogs/edit-address-dialog/edit-address-dialog.service";
 import PriceBreakdownDialogService from "../../dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
 import BaseController from "../../base-controller";
@@ -319,7 +319,7 @@ class JobDetailController extends BaseController {
 
         // Sort by job number
         allJobs.sort((a, b) => {
-            return a.jobNo.localeCompare(b.jobNo, undefined, { numeric: true, sensitivity: 'base' });
+            return a.jobNo.localeCompare(b.jobNo, undefined, {numeric: true, sensitivity: 'base'});
         });
 
         // Store sorted array (excluding the main job for backwards compatibility)
@@ -357,13 +357,13 @@ class JobDetailController extends BaseController {
             await this.loadPodPhotos();
         }
 
-        if(this.job) {
+        if (this.job) {
             this.$rootScope.$broadcast("jobChanged", this.job);
         }
 
         this.applyScope();
     }
-    
+
     getConnectionTime(firstSegment: IFlightSegment, secondSegment: IFlightSegment): string {
         if (!firstSegment || !secondSegment) return "";
 
@@ -520,8 +520,13 @@ class JobDetailController extends BaseController {
             };
 
             await this.updateField(job, callData);
+
+            // Update the job object immediately
+            if (this.job && this.job.id === job.id) {
+                await this.refreshJobDetails(job.id);
+            }
+
             this.toastrService.showSuccessToast(`${job.jobNo} updated`);
-            await this.refreshJobDetails(job.id);
         } catch (error) {
             this.handleError(error);
         }
@@ -637,7 +642,7 @@ class JobDetailController extends BaseController {
         checkboxLabel: string = ""
     ): Promise<void> {
         try {
-            const result = await this.selectDialogService.showSelectDialog(
+            const result: ISelectDialogResult = await this.selectDialogService.showSelectDialog(
                 $event,
                 data,
                 fieldName,
@@ -648,6 +653,9 @@ class JobDetailController extends BaseController {
             );
 
             if (result) {
+                // Update the local job object immediately
+                this.updateLocalFieldFromSelect(fieldName, data, job, result);
+
                 if (fieldName === JobProperty.DGClass) {
                     await this.DispatchData.updateJobDetail(
                         job.id,
@@ -690,6 +698,64 @@ class JobDetailController extends BaseController {
         }
     }
 
+    private updateLocalFieldFromSelect(fieldName: JobProperty,
+                                       data: ISuggestion[],
+                                       job: IJob,
+                                       result: ISelectDialogResult): void {
+        // Update the local job object immediately
+        if (this.job && this.job.id === job.id) {
+            const selectedOption = data.find(opt => opt.id === result.value || opt.text === result.value);
+
+            switch (fieldName) {
+                case JobProperty.Status:
+                    this.job.status = result.value;
+                    this.job.statusName = selectedOption?.text || '';
+                    break;
+                case JobProperty.SpeedID:
+                    this.job.speedId = result.value;
+                    this.job.speedName = selectedOption?.text || '';
+                    break;
+                case JobProperty.Size:
+                    this.job.size = selectedOption || {id: result.value, text: ''};
+                    this.job.sizeId = selectedOption?.id || undefined;
+                    break;
+                case JobProperty.ClientID:
+                    this.job.clientId = result.value;
+                    this.job.clientName = selectedOption?.text || '';
+                    break;
+                case JobProperty.CourierID:
+                    this.job.assignedCourier = selectedOption;
+                    this.job.courierData.courierName = selectedOption?.text || '';
+                    this.job.courierData.courierId = selectedOption?.id || undefined;
+                    break;
+                case JobProperty.FromContactName:
+                    this.job.fromContactName = selectedOption?.text || result.value;
+                    break;
+                case JobProperty.AcceptedJobTypeID:
+                    this.job.jobType = result.value;
+                    this.job.jobTypeDescription = selectedOption?.text || '';
+                    break;
+                case JobProperty.DeliverToLeaveID:
+                    this.job.sigNotRequired = selectedOption?.text || result.value;
+                    break;
+                case JobProperty.TrackingMethod:
+                    this.job.trackingMethod = result.value;
+                    break;
+                case JobProperty.DGClass:
+                    this.job.dgClass = result.value;
+                    if (result.checkboxValue !== undefined) {
+                        this.job.dgDocumentation = result.checkboxValue;
+                    }
+                    break;
+                case JobProperty.InActiveDate:
+                    this.job.inActiveBy = selectedOption || {id: result.value, text: ''};
+                    break;
+            }
+
+            this.applyScope();
+        }
+    }
+
     async showEditDialog(
         $event: MouseEvent,
         job: IJob,
@@ -719,12 +785,44 @@ class JobDetailController extends BaseController {
             value: result,
             jobID: job.id,
         };
-        await this.updateField(job, callData);
 
+        // Update local job object immediately before API call
+        if (this.job && this.job.id === job.id) {
+            this.updateLocalJobField(field, result);
+            this.applyScope();
+        }
+
+        await this.updateField(job, callData);
         this.toastrService.showSuccessToast(`${job.jobNo} updated`);
         await this.refreshJobDetails(job.id);
     }
-    
+
+    private updateLocalJobField(field: JobProperty, value: any): void {
+        if (!this.job) return;
+
+        const fieldMap: { [key: string]: string } = {
+            [JobProperty.RefA]: 'refA',
+            [JobProperty.RefB]: 'refB',
+            [JobProperty.OurRef]: 'ourRef',
+            [JobProperty.ConNote]: 'conNote',
+            [JobProperty.Weight]: 'weight',
+            [JobProperty.TrackingMobile]: 'trackingMobile',
+            [JobProperty.TrackingEmail]: 'trackingEmail',
+            [JobProperty.PodName]: 'podName',
+            [JobProperty.FromContactName]: 'fromContactName',
+            [JobProperty.ToContactName]: 'deliverToContact',
+            [JobProperty.FromContactPhone]: 'fromContactNumber',
+            [JobProperty.ToContactPhone]: 'toContactPhone',
+            [JobProperty.CustomJobName]: 'customJobName',
+        };
+
+        const jobFieldName = fieldMap[field];
+        if (jobFieldName && jobFieldName in this.job) {
+            (this.job as any)[jobFieldName] = value;
+        }
+    }
+
+
     async showJobDimensionsDialog($event: MouseEvent, job: IJob): Promise<void> {
         await this.editParcelDimensionsDialogService.showJobDimensionsDialog(
             $event,
@@ -1332,9 +1430,9 @@ class JobDetailController extends BaseController {
             job.statusName
         );
     }
-    
+
     async updateField(job: IJob, callData: CallData): Promise<void> {
-       this.isLoading = true;
+        this.isLoading = true;
 
         try {
             // Ensure rate is decimal
@@ -1402,6 +1500,12 @@ class JobDetailController extends BaseController {
                 } from ${!newValue} to ${newValue}`
             );
 
+            // Update local job object immediately
+            if (this.job && this.job.id === job.id) {
+                this.updateLocalJobProperty(property, newValue);
+                this.applyScope();
+            }
+
             const callData: CallData = {
                 field: property,
                 value: newValue,
@@ -1446,9 +1550,35 @@ class JobDetailController extends BaseController {
                 `[JobDetailsComponentController] Error toggling ${property}:`,
                 error
             );
+            // Revert the local change on error
+            if (this.job && this.job.id === job.id) {
+                this.updateLocalJobProperty(property, value);
+                this.applyScope();
+            }
             this.toastrService.showErrorToast(
                 `Failed to update ${property}. Please try again.`
             );
+        }
+    }
+
+    private updateLocalJobProperty(property: JobProperty, value: any): void {
+        if (!this.job) return;
+
+        const propertyMap: { [key: string]: string } = {
+            [JobProperty.Truck]: 'truck',
+            [JobProperty.Direct]: 'direct',
+            [JobProperty.Active]: 'active',
+            [JobProperty.Void]: 'void',
+            [JobProperty.Van]: 'van',
+            [JobProperty.Reprice]: 'reprice',
+            [JobProperty.TailLiftPu]: 'tailLiftPu',
+            [JobProperty.TailLiftDo]: 'tailLiftDo',
+            [JobProperty.DeliverToPrivateRes]: 'deliverToPrivateRes',
+        };
+
+        const jobFieldName = propertyMap[property];
+        if (jobFieldName && jobFieldName in this.job) {
+            (this.job as any)[jobFieldName] = value;
         }
     }
 
@@ -1805,6 +1935,12 @@ class JobDetailController extends BaseController {
         console.log("Days bitmask value calculated:", daysValue);
 
         try {
+            // Update the local job object immediately
+            if (this.job && this.job.id === job.id) {
+                this.job.daysOfWeek = daysValue;
+                this.applyScope();
+            }
+
             await this.DispatchData.updateJobDetail(
                 job.id,
                 JobProperty.DaysOfWeek,
@@ -1827,6 +1963,12 @@ class JobDetailController extends BaseController {
         console.log("Updating frequency to:", frequencyValue);
 
         try {
+            // Update the local job object immediately
+            if (this.job && this.job.id === job.id) {
+                this.job.frequency = frequencyValue;
+                this.applyScope();
+            }
+
             await this.DispatchData.updateJobDetail(
                 job.id,
                 JobProperty.Frequency,
@@ -1849,6 +1991,12 @@ class JobDetailController extends BaseController {
         console.log("Updating holiday delivery option to:", holidayOptionValue);
 
         try {
+            // Update the local job object immediately
+            if (this.job && this.job.id === job.id) {
+                this.job.holidayDeliveryOption = holidayOptionValue;
+                this.applyScope();
+            }
+
             await this.DispatchData.updateJobDetail(
                 job.id,
                 JobProperty.HolidayDelivery,
@@ -2084,15 +2232,15 @@ class JobDetailController extends BaseController {
             this.handleError(error);
         }
     }
-    
+
     async onTailLiftPickupClick(job: IJob): Promise<void> {
-        if(this.job?.tailLiftPu == true && this.job.parcelDimensions.length === 0) {
+        if (this.job?.tailLiftPu == true && this.job.parcelDimensions.length === 0) {
             this.toastrService.showWarningToast("Please enter the parcels for this job before proceeding.");
             return;
-        } 
-        
+        }
+
         try {
-            if(this.job?.bulkJob) {
+            if (this.job?.bulkJob) {
                 this.toastrService.showWarningToast("Tail Lift Pickup is not currently available for scheduled jobs.");
             } else {
                 await this.DispatchData.updateJobDetail(job.id, JobProperty.TailLiftPu, !job.tailLiftPu, job.preBook)
@@ -2100,16 +2248,16 @@ class JobDetailController extends BaseController {
         } catch (error) {
             this.handleError(error);
         }
-    } 
-    
+    }
+
     async onTailLiftDropOffClick(job: IJob): Promise<void> {
-        if(this.job?.tailLiftPu == true && this.job.parcelDimensions.length === 0) {
+        if (this.job?.tailLiftPu == true && this.job.parcelDimensions.length === 0) {
             this.toastrService.showWarningToast("Please enter the parcels for this job before proceeding.");
             return;
-        } 
-        
+        }
+
         try {
-            if(this.job?.bulkJob) {
+            if (this.job?.bulkJob) {
                 this.toastrService.showWarningToast("Tail Lift Drop-off is not currently available for scheduled jobs.");
             } else {
                 await this.DispatchData.updateJobDetail(job.id, JobProperty.TailLiftDo, !job.tailLiftDo, job.preBook)
@@ -2118,18 +2266,18 @@ class JobDetailController extends BaseController {
             this.handleError(error);
         }
     }
-    
+
     async onDeliverToPrivateResChanged(job: IJob): Promise<void> {
         try {
             job.deliverToPrivateRes = job.deliverToPrivateResString === "residential";
-        
-            if(this.job?.bulkJob) {
+
+            if (this.job?.bulkJob) {
                 this.toastrService.showWarningToast("Deliver to Private Residential is not currently available for scheduled jobs.");
             } else {
                 await this.DispatchData.updateJobDetail(job.id, JobProperty.DeliverToPrivateRes, job.deliverToPrivateRes, job.preBook)
             }
-        } catch(error) {
-            this.handleError(error);       
+        } catch (error) {
+            this.handleError(error);
         }
     }
 }

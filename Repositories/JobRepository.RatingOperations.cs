@@ -229,7 +229,7 @@ public partial class JobRepository
                     RefB = job.UcbkClientRefb,
                     Quantity = job.Quantity.HasValue ? (int)job.Quantity : 0,
                     BookedDate = job.UcbkDate ?? DateTime.MinValue,
-                    PreviousRate = job.PricingBreakdowns != null ? job.PricingBreakdowns.Sum(p => p.Charged) : null,
+                    PreviousRate = job.PricingBreakdownPrebookJobs != null ? job.PricingBreakdownPrebookJobs.Sum(p => p.Charged) : null,
 
                     PickupLat = job.PickUpLatitude ?? 0,
                     PickupLong = job.PickUpLongitude ?? 0,
@@ -308,7 +308,7 @@ public partial class JobRepository
                         )
                         : DateTime.MinValue,
 
-                    PreviousRate = job.PricingBreakdowns != null ? job.PricingBreakdowns.Sum(p => p.Charged) : null,
+                    PreviousRate = job.PricingBreakdownPrebookJobs != null ? job.PricingBreakdownPrebookJobs.Sum(p => p.Charged) : null,
 
                     PickupLat = job.PickUpLatitude ?? 0,
                     PickupLong = job.PickUpLongitude ?? 0,

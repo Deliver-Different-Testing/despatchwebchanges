@@ -49,7 +49,7 @@
                 </md-tabs>
             </div>
         </div>
-        
+
         <!-- Main header with controls (position depends on whether tabs exist) -->
         <div class="header-bar">
             <!-- View Density Toggle -->
@@ -96,7 +96,7 @@
                 {{ctrl.job.statusName}}
             </md-button>
         </div>
-        
+
         <!-- Timing Section -->
         <div class="metrics-grid">
             <div class="metric-card" md-ink-ripple ng-click="ctrl.showPricingBreakdown($event, ctrl.job)">
@@ -382,12 +382,12 @@
                 <!-- Combined Info Sections -->
                 <div
                         class="info-sections-container "
-                        ng-if="ctrl.job.assignedFlight || ctrl.job.assignedAgent"
+                        ng-show="ctrl.job.assignedFlight || ctrl.job.assignedAgent"
                         style="background: #f5f5f5">
                     <!-- Flight Information -->
                     <section
                             class="info-section client-section"
-                            ng-if="ctrl.job.assignedFlight">
+                            ng-show="ctrl.job.assignedFlight">
                         <md-toolbar class="job-detail-toolbar">
                             <div class="md-toolbar-tools">
                                 <span class="material-symbols-outlined">flight</span>
@@ -398,7 +398,7 @@
                         <!-- Flight segments information for multi-leg flights -->
                         <div
                                 class="flight-segments-container md-padding"
-                                ng-if="ctrl.job.assignedFlight.flightSegments && ctrl.job.assignedFlight.flightSegments.length > 0">
+                                ng-show="ctrl.job.assignedFlight.flightSegments && ctrl.job.assignedFlight.flightSegments.length > 0">
                             <div class="segment-header md-caption">
                 <span>SEGMENTS:
                   {{ctrl.job.assignedFlight.flightSegments.length}}</span>
@@ -422,14 +422,14 @@
                                         <div class="segment-departure" flex="30">
                                             <div class="time">
                                                 {{segment.departureTime | momentFormat: 'MM/DD/YYYY HH:mm'}}
-                                                <span ng-if="segment.departureAirportTimeZone">
+                                                <span ng-show="segment.departureAirportTimeZone">
                                                     ({{segment.departureAirportTimeZone | timezoneShort}})
                                                 </span>
                                             </div>
                                             <div class="airport-code">
                                                 {{segment.departureAirportFsCode}}
                                             </div>
-                                            <div class="terminal" ng-if="segment.departureTerminal">
+                                            <div class="terminal" ng-show="segment.departureTerminal">
                                                 Terminal {{segment.departureTerminal}}
                                             </div>
                                         </div>
@@ -455,14 +455,14 @@
                                         <div class="segment-arrival" flex="30">
                                             <div class="time">
                                                 {{segment.arrivalTime | momentFormat: 'MM/DD/YYYY HH:mm'}}
-                                                <span ng-if="segment.arrivalAirportTimeZone">
+                                                <span ng-show="segment.arrivalAirportTimeZone">
                           ({{segment.arrivalAirportTimeZone | timezoneShort}})
                         </span>
                                             </div>
                                             <div class="airport-code">
                                                 {{segment.arrivalAirportFsCode}}
                                             </div>
-                                            <div class="terminal" ng-if="segment.arrivalTerminal">
+                                            <div class="terminal" ng-show="segment.arrivalTerminal">
                                                 Terminal {{segment.arrivalTerminal}}
                                             </div>
                                         </div>
@@ -470,7 +470,7 @@
                                 </div>
 
                                 <!-- Layover/Connection time - show between segments -->
-                                <div class="layover-info" ng-if="!$last">
+                                <div class="layover-info" ng-show="!$last">
                                     <md-icon
                                             class="layover-icon"
                                             md-font-set="material-symbols-outlined">schedule
@@ -481,7 +481,7 @@
                   </span>
                                 </div>
 
-                                <md-divider ng-if="!$last"></md-divider>
+                                <md-divider ng-show="!$last"></md-divider>
                             </div>
                         </div>
                     </section>
@@ -489,7 +489,7 @@
                     <!-- Agent information -->
                     <section
                             class="info-section booker-section"
-                            ng-if="ctrl.job.assignedAgent">
+                            ng-show="ctrl.job.assignedAgent">
                         <md-toolbar class="job-detail-toolbar">
                             <div class="md-toolbar-tools">
                                 <span class="material-symbols-outlined">badge</span>
@@ -898,15 +898,15 @@
                                         <p>
                                             <md-checkbox class="md-primary"
                                                          ng-change="ctrl.onTailLiftPickupClick(job)"
-                                                    ng-model="job.tailLiftPu" 
-                                                    aria-label="tail lift pickup">
+                                                         ng-model="job.tailLiftPu"
+                                                         aria-label="tail lift pickup">
                                             </md-checkbox>
                                         </p>
                                     </div>
                                 </md-list-item>
-                                
+
                                 <md-divider></md-divider>
-                                
+
                                 <md-list-item class="md-2-line md-long-text">
                                     <md-icon
                                             class="md-avatar"
@@ -918,7 +918,7 @@
                                         <h3>{{ ::ctrl.isUsCustomer ? 'Lift Gate Drop-off' : 'Tail Lift Drop-off'}}</h3>
                                         <p>
                                             <md-checkbox class="md-primary"
-                                                    ng-model="job.tailLiftDo"
+                                                         ng-model="job.tailLiftDo"
                                                          ng-change="ctrl.onTailLiftDropOffClick(job)"
                                                          aria-label="tail lift drop-off">
                                             </md-checkbox>
@@ -947,7 +947,7 @@
                                         </p>
                                     </div>
                                 </md-list-item>
-                                
+
                             </md-list>
                         </div>
                     </div>
@@ -1232,8 +1232,8 @@
                                          aria-label="logged in contact name">
                                     {{ ctrl.isFieldVisible('loggedInContactName') ? 'visibility' : 'visibility_off' }}
                                 </md-icon>
-                            </md-list-item> 
-                            
+                            </md-list-item>
+
                             <md-list-item
                                     ng-if="ctrl.isFieldVisible('bookingSource') || ctrl.isEditMode"
                                     class="md-2-line md-long-text">
