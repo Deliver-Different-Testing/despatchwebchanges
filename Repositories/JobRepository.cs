@@ -52,17 +52,16 @@ public partial class JobRepository(
 
             var relatedJobs = await Context.TblBulkJobs
                 .AsNoTracking()
-                .Where(j => (j.BulkJobId == familyRootId || j.ParentId == familyRootId) 
+                .Where(j => (j.BulkJobId == familyRootId || j.ParentId == familyRootId)
                             && j.BulkJobId != bulkJobId)
                 .Select(JobMappings.BulkJobMapping)
                 .ToListAsync();
-            
+
             return new JobGroupViewModel
             {
                 Job = mainBulkJob,
                 RelatedJobs = relatedJobs
             };
-            
         }
         catch (Exception e)
         {
@@ -222,8 +221,8 @@ public partial class JobRepository(
                         + " "
                         + (j.OurRef ?? string.Empty)
                         + " "
-                        + j.JobNumber.ToLower() 
-                        + " " 
+                        + j.JobNumber.ToLower()
+                        + " "
                         + j.Barcode.ToLower(),
                         wildSearch
                     )
@@ -400,7 +399,7 @@ public partial class JobRepository(
                                             + (j.OurRef ?? string.Empty)
                                             + " "
                                             + j.Number.ToLower()
-                                            + " " 
+                                            + " "
                                             + j.Barcode.ToLower(),
                                             wildSearch
                                         )
@@ -1019,7 +1018,7 @@ public partial class JobRepository(
             .AsNoTracking()
             .Where(j => j.UcjbCourierId != null && j.UcjbCourierId == courierId
                                                 && j.UcjbJobDone == done);
-        
+
         // Get a total count before pagination
         var totalCount = await query.CountAsync();
 
@@ -1070,9 +1069,11 @@ public partial class JobRepository(
     {
         var staffId = _infoService.GetStaffId();
         var jobIdsString = string.Join(",", jobIds);
-        await Context.Procedures.DESWEB_stpJob_AutoDespatchSelectedJobsAsync(jobIdsString, courierId, staffId, (int)InternalJobStatus.AwaitingPod);
+        await Context.Procedures.DESWEB_stpJob_AutoDespatchSelectedJobsAsync(jobIdsString, courierId, staffId,
+            (int)InternalJobStatus.AwaitingPod);
 
-        foreach (var jobId in jobIds) await Context.Procedures.DES_stpJob_AutoDespatchChildJobsAsync(jobId, (int)InternalJobStatus.AwaitingPod);
+        foreach (var jobId in jobIds)
+            await Context.Procedures.DES_stpJob_AutoDespatchChildJobsAsync(jobId, (int)InternalJobStatus.AwaitingPod);
     }
 
     public async Task SwapPodAsync(string job1, string job2) =>
@@ -3361,15 +3362,15 @@ public partial class JobRepository(
                 ApplyFlightTimezones(mainJob);
 
                 var familyRootId = mainJob.ParentId ?? jobId;
-    
-                // Get all jobs in the family (parent and all children), excluding the main job
+
+                // Get related jobs in the family
                 var relatedJobs = await Context.TucJobs
                     .AsNoTracking()
-                    .Where(j => (j.UcjbId == familyRootId || j.ParentId == familyRootId) 
+                    .Where(j => j.ParentId == familyRootId
                                 && j.UcjbId != jobId)
                     .Select(JobMappings.JobMapping)
                     .ToListAsync();
-                
+
                 foreach (var relatedJob in relatedJobs) ApplyFlightTimezones(relatedJob);
 
                 return new JobGroupViewModel
@@ -3386,20 +3387,20 @@ public partial class JobRepository(
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
             ArgumentNullException.ThrowIfNull(archivedJob);
-            
+
             var archivedJobFamilyRootId = archivedJob.ParentId ?? jobId;
 
-            // Get all jobs in the family (parent and all children), excluding the main job
+            // Get related jobs in the family
             var archivedJobRelatedJobs = await Context.TucJobArchives
                 .AsNoTracking()
-                .Where(j => (j.UcjbId == archivedJobFamilyRootId || j.ParentId == archivedJobFamilyRootId) 
+                .Where(j => j.ParentId == archivedJobFamilyRootId
                             && j.UcjbId != jobId)
                 .Select(JobMappings.JobArchiveMapping)
                 .ToListAsync();
 
             return new JobGroupViewModel
             {
-                Job =  archivedJob,
+                Job = archivedJob,
                 RelatedJobs = archivedJobRelatedJobs
             };
         }
@@ -3409,7 +3410,7 @@ public partial class JobRepository(
             throw;
         }
     }
-    
+
     private static void ApplyFlightTimezones(JobViewModel job)
     {
         if (job.AssignedFlight == null || job.AssignedFlight.FlightSegments.Count == 0)
@@ -3419,7 +3420,7 @@ public partial class JobRepository(
             ? TimeZoneHelper.SetDateTimeWithTimeZone(job.AssignedFlight.ExpectedArrival.Value,
                 job.AssignedFlight.ArrivalTimeZone)
             : null;
-        
+
         job.AssignedFlight.ExpectedDeparture = job.AssignedFlight.ExpectedDeparture.HasValue
             ? TimeZoneHelper.SetDateTimeWithTimeZone(job.AssignedFlight.ExpectedDeparture.Value,
                 job.AssignedFlight.DepartureTimeZone)
@@ -3433,8 +3434,8 @@ public partial class JobRepository(
                 TimeZoneHelper.SetDateTimeWithTimeZone(segment.DepartureTime, segment.DepartureAirportTimeZone);
         }
     }
-    
-       public async Task<JobViewModel> GetSingleJobById(int jobId)
+
+    public async Task<JobViewModel> GetSingleJobById(int jobId)
     {
         try
         {
@@ -3450,7 +3451,7 @@ public partial class JobRepository(
                     .Select(JobMappings.JobMapping)
                     .AsNoTracking()
                     .FirstOrDefaultAsync();
-                
+
                 return liveJob;
             }
 
