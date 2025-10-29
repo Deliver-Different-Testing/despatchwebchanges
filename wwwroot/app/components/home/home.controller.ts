@@ -91,7 +91,6 @@ class HomeController extends BaseController {
     ];
 
     private readonly MapZoomKey: string = `mapZoom-${AppPage.Dispatch}-${ContactID}`;
-    private readonly SelectedFilterKey: string = `selectedFilter-${AppPage.Dispatch}-${ContactID}`;
     private readonly SelectedViewsKey: string = `selectedViews-${AppPage.Dispatch}-${ContactID}`;
     private readonly DispatchFiltersKey: string = `disp-filters-${AppPage.Dispatch}-${ContactID}`;
     private readonly RefreshDurationIntervalKey: string = `refreshInterval-${AppPage.Dispatch}-${ContactID}`;
@@ -118,8 +117,7 @@ class HomeController extends BaseController {
     oldLayouts: ILayout[] = [];
     oldDefaultLayout?: ILayout;
     layout?: { columns: IColumn[] };
-
-
+    
     dateFilterData: IDateFilterData;
     isLoadingData: boolean = false;
     showDriverLocationsNoData: boolean = false;
@@ -703,9 +701,7 @@ class HomeController extends BaseController {
         this.layouts.unshift(this.defaultLayout);
 
         // Load last active layout or default
-        const lastActiveLayoutName = this.gridsterLayoutService.getLastActiveLayoutName(
-            this.currentAppPage,
-        );
+        const lastActiveLayoutName = this.gridsterLayoutService.getLastActiveLayoutName(AppPage.Dispatch);
         const layoutToLoad = this.layouts.find(l => l.name === lastActiveLayoutName) || this.defaultLayout;
         this.loadGridsterLayout(this.layouts.indexOf(layoutToLoad));
     }
@@ -733,7 +729,7 @@ class HomeController extends BaseController {
         const success = this.gridsterLayoutService.loadLayout(
             this.layouts,
             index,
-            this.currentAppPage,
+            AppPage.Dispatch,
             (layoutName, items) => {
                 this.currentLayoutName = layoutName;
                 this.gridsterItems = items;
@@ -764,7 +760,7 @@ class HomeController extends BaseController {
                 this.layouts,
                 layoutName,
                 this.gridsterItems,
-                this.currentAppPage,
+                AppPage.Dispatch,
             );
 
             if (result.success) {
@@ -847,20 +843,7 @@ class HomeController extends BaseController {
             this.toastrService.showErrorToast('Error deleting layout');
         }
     }
-
-    getGridsterItemByName(name: string): IGridsterItem | undefined {
-        return this.gridsterLayoutService.getItemByName(this.gridsterItems, name);
-    }
     
-    loadFilterFromStorage(): number {
-        if (Modernizr.localstorage) {
-            const savedFilter = localStorage.getItem(this.SelectedFilterKey);
-            return savedFilter ? parseInt(savedFilter) : 2; // Default to 2 if not found
-        }
-
-        return 2; // Default value if localStorage not available
-    }
-
     saveViewsToStorage(views: any): void {
         if (Modernizr.localstorage) {
             localStorage.setItem(this.SelectedViewsKey, JSON.stringify(views));

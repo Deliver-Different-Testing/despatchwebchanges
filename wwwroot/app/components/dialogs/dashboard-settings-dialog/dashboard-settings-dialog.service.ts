@@ -4,16 +4,19 @@ import {IBox} from "../../../interfaces/layout.interfaces";
 import IDashboardSettingsConfig from "./interfaces/IDashboardSettingsConfig";
 import DashboardSettingsDialogController from "./dashboard-settings-dialog.controller";
 import ISettingsDialogResult from "./interfaces/IDashboardSettingsDialogResult";
+import {IAppConfig} from "../../../interfaces/app-config.interface";
 
 class DashboardSettingsDialogService implements angular.IServiceProvider {
     static $inject = [
         "$mdDialog",
-        "$document"
+        "$document",
+        'APP_CONFIG',
     ];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private $document: angular.IDocumentService,
+        private appConfig: IAppConfig,
     ) {
         console.log('DashboardSettingsDialogService: Service instantiated');
     }
@@ -43,8 +46,9 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
             const config: IDashboardSettingsConfig = {
                 title,
                 showRefreshInterval: appPage === AppPage.Dispatch || appPage === AppPage.Domestic,
-                showDashboards: (appPage === AppPage.Dispatch || appPage === AppPage.Domestic || appPage === AppPage.JobSearch)
-                    && currentLayoutName !== "Default",
+                showDashboards: !this.appConfig.US_Customer && ((appPage === AppPage.Dispatch || appPage === AppPage.Domestic || appPage === AppPage.JobSearch)
+                    && currentLayoutName !== "Default"),
+                oldLayout: this.appConfig.US_Customer
             };
 
             if (selectedRefreshInterval) {

@@ -71,7 +71,7 @@
             </md-tab>
 
             <!-- Dashboard Layout Management Tab -->
-            <md-tab label="Dashboard Layout">
+            <md-tab label="Dashboard Layout" ng-if="::!ctrl.config.oldLayout">
                 <md-content class="md-padding" ng-if="::ctrl.config.showDashboards">
                     <div class="dashboard-layout-section">
                         <h3 class="section-title">

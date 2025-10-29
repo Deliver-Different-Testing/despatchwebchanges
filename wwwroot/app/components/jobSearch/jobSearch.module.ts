@@ -18,6 +18,7 @@ import InterCourierChargeDialogController
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 import DashboardSettingsDialogController
     from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.controller";
+import GridsterLayoutService from "../../services/gridster-layout.service";
 
 const jobSearchModule = angular.module('uDispatch.jobSearch', [
     'ngMap',
@@ -44,7 +45,8 @@ jobSearchModule
     .controller("AdditionalServicesDialogController", AdditionalServicesDialogController)
     .controller("CreateJobDialogController", CreateJobDialogController)
     .controller("InterCourierChargeDialog", InterCourierChargeDialogController)
-    .controller("DashboardSettingsDialogController", DashboardSettingsDialogController);
+    .controller("DashboardSettingsDialogController", DashboardSettingsDialogController)
+    .service("gridsterLayoutService", GridsterLayoutService);
 
 // Services
 jobSearchModule
