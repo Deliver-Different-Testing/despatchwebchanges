@@ -498,6 +498,7 @@
     <TypeScriptCompile Include="wwwroot\app\services\address-lookup.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\config.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\dispatch-executor.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\services\gridster-layout.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\job-add-stop.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\job-context-menu.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\messaging.service.ts" />

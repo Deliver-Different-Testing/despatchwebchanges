@@ -11,7 +11,7 @@ import greetUser from "../../functions/greetUser";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import IContextMenuOption from "../../interfaces/context-menu-option.interface";
 import dayjs from "dayjs";
-import {AppPages} from "../../enums/app-pages.enum";
+import {AppPage} from "../../enums/app-pages.enum";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import {getIanaTimezone} from "../../functions/formatDates";
@@ -33,8 +33,8 @@ class RecurringJobsController extends BaseController {
         'APP_CONFIG',
     ];
 
-    private readonly RecurringJobsLayoutKey: string = `layouts-${AppPages.Recurring}-${ContactID}`;
-    private readonly RecurringJobsLastActiveLayoutKey: string = `lastActiveLayout-${AppPages.Recurring}-${ContactID}`
+    private readonly RecurringJobsLayoutKey: string = `layouts-${AppPage.Recurring}-${ContactID}`;
+    private readonly RecurringJobsLastActiveLayoutKey: string = `lastActiveLayout-${AppPage.Recurring}-${ContactID}`
 
     readonly boxes: Record<string, IBox> = {
         jobList: {

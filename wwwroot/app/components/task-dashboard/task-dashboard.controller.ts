@@ -13,7 +13,7 @@ import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog
 import timezone from 'dayjs/plugin/timezone';
 import {IDeliveryHistoryConfig} from "../common/task-history/task-history.interfaces";
 import DensityMode from "../../enums/densityMode";
-import {AppPages} from "../../enums/app-pages.enum";
+import {AppPage} from "../../enums/app-pages.enum";
 import IDateFilterData from "../common/date-filter-menu/IDateFilterData";
 import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
 import {formatDateForApiWithTzs} from "../../functions/formatDates";
@@ -29,7 +29,7 @@ class TaskDashboardController extends BaseController {
         "$scope",
     ];
 
-    private readonly DateFilterKey: string = `dateFilter-${AppPages.Tasks}-${ContactID}`;
+    private readonly DateFilterKey: string = `dateFilter-${AppPage.Tasks}-${ContactID}`;
 
     // Properties
     greeting: string;

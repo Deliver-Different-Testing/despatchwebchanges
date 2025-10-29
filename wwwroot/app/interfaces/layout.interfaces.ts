@@ -8,8 +8,8 @@ export interface IBox {
     showRefresh?: boolean;
     showDetailButtons?: boolean;
     showFilter?: boolean;
-    visible: boolean;
-    description: string;
+    visible?: boolean;
+    description?: string;
 }
 
 export interface IColumn {

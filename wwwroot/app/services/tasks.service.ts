@@ -5,7 +5,7 @@ import {
 } from "../components/task-dashboard/task-dashboard.interfaces";
 import {ISuggestion} from "../interfaces/job.interface";
 import {StatusFilter} from "../components/task-dashboard/enums/status-filter";
-import {AppPages} from "../enums/app-pages.enum";
+import {AppPage} from "../enums/app-pages.enum";
 import {ContactID} from "../contants";
 import DispatchCoreService from "./dispatch-core.service";
 import {
@@ -28,38 +28,38 @@ class TasksService implements angular.IServiceProvider {
         'DispatchData'
     ];
 
-    private readonly PAGE_FILTER_MAPPING: Record<AppPages, PageFilterNames> = {
-        [AppPages.Dispatch]: {
+    private readonly PAGE_FILTER_MAPPING: Record<AppPage, PageFilterNames> = {
+        [AppPage.Dispatch]: {
             staff: `selectedSupportTypeDispatchFilter-${ContactID}`,
             eventType: `selectedSupportTypeDispatchFilter-${ContactID}`
         },
-        [AppPages.Domestic]: {
+        [AppPage.Domestic]: {
             staff: `selectedSupportTypeNWFilter-${ContactID}`,
             eventType: `selectedSupportTypeNWFilter-${ContactID}`
         },
-        [AppPages.Tasks]: {
+        [AppPage.Tasks]: {
             staff: `selectedSupportTypeTasksFilter-${ContactID}`,
             eventType: `selectedSupportTypeTasksFilter-${ContactID}`
         },
-        [AppPages.JobSearch]: {
+        [AppPage.JobSearch]: {
             staff: `selectedSupportTypeJobSearchFilter-${ContactID}`,
             eventType: `selectedSupportTypeJobSearchFilter-${ContactID}`
         },
-        [AppPages.Recurring]: {
+        [AppPage.Recurring]: {
             staff: `selectedSupportTypeRecurringFilter-${ContactID}`,
             eventType: `selectedSupportTypeRecurringFilter-${ContactID}`
         },
-        [AppPages.Overview]: {
+        [AppPage.Overview]: {
             staff: `selectedSupportTypeOverviewFilter-${ContactID}`,
             eventType: `selectedSupportTypeOverviewFilter-${ContactID}`
         },
-        [AppPages.MegaMap]: {
+        [AppPage.MegaMap]: {
             staff: `selectedSupportTypeMegaMapFilter-${ContactID}`,
             eventType: `selectedSupportTypeMegaMapFilter-${ContactID}`
         } ,
-        [AppPages.DriverManagement]: {
-            staff: `selectedSupportType-${AppPages.DriverManagement}-Filter-${ContactID}`,
-            eventType: `selectedSupportType-${AppPages.DriverManagement}-Filter-${ContactID}`
+        [AppPage.DriverManagement]: {
+            staff: `selectedSupportType-${AppPage.DriverManagement}-Filter-${ContactID}`,
+            eventType: `selectedSupportType-${AppPage.DriverManagement}-Filter-${ContactID}`
         }
     };
 
@@ -69,7 +69,7 @@ class TasksService implements angular.IServiceProvider {
     private eventTypesPromise?: Promise<ISuggestion[]>;
 
     private loadTasksDebounced?: ReturnType<typeof setTimeout>;
-    private backgroundLoadingStates: Record<AppPages, boolean> = {} as Record<AppPages, boolean>;
+    private backgroundLoadingStates: Record<AppPage, boolean> = {} as Record<AppPage, boolean>;
 
     private jobTaskLoadingStates: Record<string, boolean> = {};
 
@@ -80,9 +80,9 @@ class TasksService implements angular.IServiceProvider {
         console.log("Tasks service initialized");
 
         // Initialize background loading states for all pages
-        Object.values(AppPages).forEach(page => {
+        Object.values(AppPage).forEach(page => {
             if (typeof page === 'number') {
-                this.backgroundLoadingStates[page as AppPages] = false;
+                this.backgroundLoadingStates[page as AppPage] = false;
             }
         });
     }
@@ -192,7 +192,7 @@ class TasksService implements angular.IServiceProvider {
         currentJobId?: number,
         staffFilter?: string,
         eventTypeFilter?: string,
-        appPage?: AppPages
+        appPage?: AppPage
     ): TaskTableFiltersRequest {
         let filters: TaskTableFiltersRequest = {};
         filters.jobId = currentJobId;
@@ -209,7 +209,7 @@ class TasksService implements angular.IServiceProvider {
         // Add page context for potential future use
         if (appPage) {
             // This could be used for page-specific filtering logic if needed
-            console.log(`Building filter request for page: ${AppPages[appPage]}`);
+            console.log(`Building filter request for page: ${AppPage[appPage]}`);
         }
 
         switch (filterType) {
@@ -263,14 +263,14 @@ class TasksService implements angular.IServiceProvider {
     loadTasksInBackground(
         filterRequest: TaskTableFiltersRequest,
         callback: (tasks: ExtendedTask[], error?: any) => void,
-        appPage: AppPages = AppPages.Dispatch,
+        appPage: AppPage = AppPage.Dispatch,
         jobId?: number 
     ): void {
         const loadingKey = `${appPage}-${jobId || 'all'}`;
 
         // Cancel previous loading for this job if still in progress
         if (this.jobTaskLoadingStates[loadingKey]) {
-            console.log(`Cancelling previous task loading for job ${jobId} on ${AppPages[appPage]}`);
+            console.log(`Cancelling previous task loading for job ${jobId} on ${AppPage[appPage]}`);
             return; // Skip this request
         }
 
@@ -301,7 +301,7 @@ class TasksService implements angular.IServiceProvider {
         }, 0);
     }
 
-    cancelJobTaskLoading(appPage: AppPages, jobId?: number): void {
+    cancelJobTaskLoading(appPage: AppPage, jobId?: number): void {
         const loadingKey = `${appPage}-${jobId || 'all'}`;
         if (this.jobTaskLoadingStates[loadingKey]) {
             console.log(`Manually cancelling task loading for job ${jobId}`);
@@ -325,55 +325,55 @@ class TasksService implements angular.IServiceProvider {
         }
     }
 
-    getSavedStaffFilter(appPage: AppPages): string {
+    getSavedStaffFilter(appPage: AppPage): string {
         if (!Modernizr.localstorage) return StatusFilter.All;
 
         const filterName = this.PAGE_FILTER_MAPPING[appPage]?.staff;
         if (!filterName) {
-            console.warn(`No staff filter mapping found for page: ${AppPages[appPage]}`);
+            console.warn(`No staff filter mapping found for page: ${AppPage[appPage]}`);
             return StatusFilter.All;
         }
 
         return localStorage.getItem(filterName) ?? StatusFilter.All;
     }
 
-    getSavedEventTypeFilter(appPage: AppPages): string {
+    getSavedEventTypeFilter(appPage: AppPage): string {
         if (!Modernizr.localstorage) return StatusFilter.All;
 
         const filterName = this.PAGE_FILTER_MAPPING[appPage]?.eventType;
         if (!filterName) {
-            console.warn(`No event type filter mapping found for page: ${AppPages[appPage]}`);
+            console.warn(`No event type filter mapping found for page: ${AppPage[appPage]}`);
             return StatusFilter.All;
         }
 
         return localStorage.getItem(filterName) ?? StatusFilter.All;
     }
 
-    saveStaffFilter(filter: string, appPage: AppPages): void {
+    saveStaffFilter(filter: string, appPage: AppPage): void {
         if (!Modernizr.localstorage) return;
 
         const filterName = this.PAGE_FILTER_MAPPING[appPage]?.staff;
         if (!filterName) {
-            console.warn(`No staff filter mapping found for page: ${AppPages[appPage]}`);
+            console.warn(`No staff filter mapping found for page: ${AppPage[appPage]}`);
             return;
         }
 
         localStorage.setItem(filterName, filter);
     }
 
-    saveEventTypeFilter(filter: string, appPage: AppPages): void {
+    saveEventTypeFilter(filter: string, appPage: AppPage): void {
         if (!Modernizr.localstorage) return;
 
         const filterName = this.PAGE_FILTER_MAPPING[appPage]?.eventType;
         if (!filterName) {
-            console.log(`No event type filter mapping found for page: ${AppPages[appPage]}`);
+            console.log(`No event type filter mapping found for page: ${AppPage[appPage]}`);
             return;
         }
 
         localStorage.setItem(filterName, filter);
     }
 
-    initializePageFilters(appPage: AppPages): { staffFilter: string, eventTypeFilter: string } {
+    initializePageFilters(appPage: AppPage): { staffFilter: string, eventTypeFilter: string } {
         return {
             staffFilter: this.getSavedStaffFilter(appPage),
             eventTypeFilter: this.getSavedEventTypeFilter(appPage)

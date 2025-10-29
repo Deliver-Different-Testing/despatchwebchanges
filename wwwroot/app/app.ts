@@ -1,5 +1,5 @@
 import {IAppConfig} from "./interfaces/app-config.interface";
-import {AppPages} from "./enums/app-pages.enum";
+import {AppPage} from "./enums/app-pages.enum";
 import {PodPhotoViewerComponent} from "./components/common/pod-photo-viewer/pod-photo-viewer.component";
 import {MaterialSidenavComponent} from "./components/common/side-nav/side-nav.component";
 import {AutoCompleteDialogController} from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.controller";
@@ -79,7 +79,7 @@ app
             lng: 174.7633
         }
     } as IAppConfig)
-    .constant("AppPages", AppPages);
+    .constant("AppPages", AppPage);
 
 // Routes
 app.config(["$urlRouterProvider", "$stateProvider",

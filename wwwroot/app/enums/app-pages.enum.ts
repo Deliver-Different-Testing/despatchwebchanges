@@ -1,4 +1,4 @@
-export enum AppPages {
+export enum AppPage {
     Dispatch = 1,
     Domestic = 2,
     JobSearch = 3,
