@@ -1,4 +1,4 @@
-﻿import {AppPages} from "../../../enums/app-pages.enum";
+﻿import {AppPage} from "../../../enums/app-pages.enum";
 import {ISuggestion} from "../../../interfaces/job.interface";
 import {IBox} from "../../../interfaces/layout.interfaces";
 import IDashboardSettingsConfig from "./interfaces/IDashboardSettingsConfig";
@@ -22,18 +22,18 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
         return this;
     }
 
-    async openSettingsDialog($event: MouseEvent, appPage: AppPages, currentLayoutName: string,
+    async openSettingsDialog($event: MouseEvent, appPage: AppPage, currentLayoutName: string,
                              boxes: Record<string, IBox>, selectedRefreshInterval?: ISuggestion): Promise<ISettingsDialogResult | undefined> {
         try {
             let title: string;
             switch (appPage) {
-                case AppPages.Dispatch:
+                case AppPage.Dispatch:
                     title = "Dispatch Dashboard Settings";
                     break;
-                case AppPages.Domestic:
+                case AppPage.Domestic:
                     title = "Domestic Dashboard Settings";
                     break;
-                case AppPages.JobSearch:
+                case AppPage.JobSearch:
                     title = "Job Search Dashboard Settings";
                     break;
                 default:
@@ -42,8 +42,8 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
                 
             const config: IDashboardSettingsConfig = {
                 title,
-                showRefreshInterval: appPage === AppPages.Dispatch || appPage === AppPages.Domestic,
-                showDashboards: (appPage === AppPages.Dispatch || appPage === AppPages.Domestic || appPage === AppPages.JobSearch)
+                showRefreshInterval: appPage === AppPage.Dispatch || appPage === AppPage.Domestic,
+                showDashboards: (appPage === AppPage.Dispatch || appPage === AppPage.Domestic || appPage === AppPage.JobSearch)
                     && currentLayoutName !== "Default",
             };
 

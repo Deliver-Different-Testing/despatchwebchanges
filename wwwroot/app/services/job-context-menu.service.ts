@@ -8,7 +8,7 @@ import InternalJobStatus from "../enums/job-internal-status.enum";
 import JobInternalStatusEnum from "../enums/job-internal-status.enum";
 import {JobProperty} from "../enums/job-property.enum";
 import JobAddStopService from "./job-add-stop.service";
-import {AppPages} from "../enums/app-pages.enum";
+import {AppPage} from "../enums/app-pages.enum";
 import {IPrebookListModel} from "../components/recurringJobs/recurringJobs.interface";
 import DispatchExecutorService from "./dispatch-executor.service";
 import {LateEventType} from "../enums/late-event-type.enum";
@@ -72,7 +72,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         return menuOptions;
     }
 
-    getMenuOptions(job: IDispatchJob, callbacks: any, appPage: AppPages): IContextMenuOption[] {
+    getMenuOptions(job: IDispatchJob, callbacks: any, appPage: AppPage): IContextMenuOption[] {
         if (!job) return [];
 
         const menuOptions: IContextMenuOption[] = [];
@@ -84,7 +84,7 @@ class JobContextMenuService implements angular.IServiceProvider {
             hasBottomDivider: true,
         });
 
-        if (appPage === AppPages.Domestic) {
+        if (appPage === AppPage.Domestic) {
             // Flight
             if (job.assignedFlight && job.isFlightJob) {
                 menuOptions.push({
@@ -116,7 +116,7 @@ class JobContextMenuService implements angular.IServiceProvider {
             });
         }
 
-        if (appPage === AppPages.Dispatch || appPage === AppPages.JobSearch) {
+        if (appPage === AppPage.Dispatch || appPage === AppPage.JobSearch) {
             menuOptions.push({
                 text: "Late Pickup",
                 icon: "schedule",

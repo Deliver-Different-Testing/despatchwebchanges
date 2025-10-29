@@ -2,7 +2,7 @@ import './nationwide.styles.less';
 import NationwideService from "./nationwide.service";
 import ToastrService from "../../services/toastr.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
-import {AppPages} from "../../enums/app-pages.enum";
+import {AppPage} from "../../enums/app-pages.enum";
 import {IAppConfig} from "../../interfaces/app-config.interface";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
 import {
@@ -102,17 +102,17 @@ class NationwideControl extends BaseController {
         '$interval',
     ];
 
-    private readonly refreshDurationIntervalKey: string = `refreshInterval-${AppPages.Domestic}-${ContactID}`;
-    private readonly DateFilterKey: string = `dateFilter-${AppPages.Domestic}-${ContactID}`;
+    private readonly refreshDurationIntervalKey: string = `refreshInterval-${AppPage.Domestic}-${ContactID}`;
+    private readonly DateFilterKey: string = `dateFilter-${AppPage.Domestic}-${ContactID}`;
     private readonly SelectedViewsKey: string = `selectedViews-NW-${ContactID}`;
 
-    private readonly GridsterLayoutsKey: string = `gridsterLayouts-${AppPages.Domestic}-${ContactID}`;
-    private readonly GridsterLastActiveLayoutKey: string = `gridsterLastActiveLayout-${AppPages.Domestic}-${ContactID}`;
+    private readonly GridsterLayoutsKey: string = `gridsterLayouts-${AppPage.Domestic}-${ContactID}`;
+    private readonly GridsterLastActiveLayoutKey: string = `gridsterLastActiveLayout-${AppPage.Domestic}-${ContactID}`;
 
     readonly nationwideJobList: JobListType = JobListType.NationwideJobList;
     readonly nationwidePodJobList: JobListType = JobListType.NationwidePodJobList;
     readonly nationwideRepriceJobList: JobListType = JobListType.NationwideRepriceJobList;
-    readonly nationwidePageId: number = AppPages.Domestic;
+    readonly nationwidePageId: number = AppPage.Domestic;
 
     // Gridster layout
     boxes?: Record<string, IBox>;
@@ -795,7 +795,7 @@ class NationwideControl extends BaseController {
     }
 
     loadPageViews(): void {
-        this.DispatchData.getSelectedViews(AppPages.Domestic)
+        this.DispatchData.getSelectedViews(AppPage.Domestic)
             .then(views => {
                 this.views = views;
                 this.initializeViews();
@@ -1618,7 +1618,7 @@ class NationwideControl extends BaseController {
             }
         };
 
-        return this.jobContextMenuService.getMenuOptions(job, callbacks, AppPages.Domestic);
+        return this.jobContextMenuService.getMenuOptions(job, callbacks, AppPage.Domestic);
     }
 
     async handleSplitJob(job: IDispatchJob): Promise<void> {
@@ -2371,7 +2371,7 @@ class NationwideControl extends BaseController {
 
             const result = await this.dashboardSettingsDialog.openSettingsDialog(
                 $event,
-                AppPages.Domestic,
+                AppPage.Domestic,
                 this.currentLayoutName ?? 'Default',
                 this.boxes,
                 this.selectedRefreshInterval

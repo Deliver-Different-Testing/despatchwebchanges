@@ -4,7 +4,7 @@ import IDateFilterData from "./IDateFilterData";
 import setDateFilterDefaults from "../../../functions/setDateFilterDefaults";
 import ToastrService from "../../../services/toastr.service";
 import DateRangeOption from "./enums/dateRangeOption";
-import {AppPages} from "../../../enums/app-pages.enum";
+import {AppPage} from "../../../enums/app-pages.enum";
 import {ISuggestion} from "../../../interfaces/job.interface";
 import {getMinsSelectionOptions} from "../../../functions/MinsSelectionOptions";
 
@@ -15,7 +15,7 @@ class DateFilterMenuComponent implements angular.IController {
     
     private readonly DateRangeOptionKey: string = `dateRangeOption-${ContactID}`;
 
-    appPage?: AppPages;
+    appPage?: AppPage;
     onRefreshData?: (locals: { dateFilterData: IDateFilterData }) => void;
     timeZone: string = TimeZone;
     private dateFilterData?: IDateFilterData;

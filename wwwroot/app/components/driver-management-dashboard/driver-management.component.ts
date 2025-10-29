@@ -23,7 +23,7 @@ import {
 import {ComposeEmailDialogService} from "../dialogs/compose-email-dialog/compose-email-dialog.service";
 import EditAfterhoursDialogService from "../dialogs/edit-afterhours-dialog/edit-afterhours-dialog.service";
 import {IAfterHoursCourierSchedule} from "./interfaces/IAfterHoursCourierSchedule";
-import {AppPages} from "../../enums/app-pages.enum";
+import {AppPage} from "../../enums/app-pages.enum";
 import {ITodayActiveDrivers} from "./interfaces/ITodayActiveDrivers";
 import {ICourierCompliance} from "./interfaces/ICourierCompliance";
 
@@ -42,7 +42,7 @@ class DriverManagementController extends BaseController {
         "editAfterhoursDialogService",
     ];
 
-    private readonly LastActiveTabKey = `lastActiveTab-${AppPages.DriverManagement}-${ContactID}`;
+    private readonly LastActiveTabKey = `lastActiveTab-${AppPage.DriverManagement}-${ContactID}`;
     
     isUsCustomer: boolean = false;
 

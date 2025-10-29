@@ -13,7 +13,7 @@ import JobContextMenuService from "../../services/job-context-menu.service";
 import {JobProperty} from "../../enums/job-property.enum";
 import NavigationService from "../../services/navigation.service";
 import greetUser from "../../functions/greetUser";
-import {AppPages} from "../../enums/app-pages.enum";
+import {AppPage} from "../../enums/app-pages.enum";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import JobSearchBoxes from "./enums/jobSearchBoxes";
 import {IDeliveryHistoryConfig} from "../common/task-history/task-history.interfaces";
@@ -61,8 +61,8 @@ class JobSearchController extends BaseController {
         '$interval',
     ];
 
-    private readonly GridsterLayoutsKey: string = `gridsterLayouts-${AppPages.JobSearch}-${ContactID}`;
-    private readonly GridsterLastActiveLayoutKey: string = `gridsterLastActiveLayout-${AppPages.JobSearch}-${ContactID}`;
+    private readonly GridsterLayoutsKey: string = `gridsterLayouts-${AppPage.JobSearch}-${ContactID}`;
+    private readonly GridsterLastActiveLayoutKey: string = `gridsterLastActiveLayout-${AppPage.JobSearch}-${ContactID}`;
 
     // Gridster layout
     boxes?: Record<string, IBox>;
@@ -1053,7 +1053,7 @@ class JobSearchController extends BaseController {
             onRefresh: () => this.refreshAllData()
         };
 
-        return this.jobContextMenuService.getMenuOptions(job, callbacks, AppPages.JobSearch);
+        return this.jobContextMenuService.getMenuOptions(job, callbacks, AppPage.JobSearch);
     }
 
     async openHubUrl() {
@@ -1166,7 +1166,7 @@ class JobSearchController extends BaseController {
 
             const result = await this.dashboardSettingsDialog.openSettingsDialog(
                 $event,
-                AppPages.JobSearch,
+                AppPage.JobSearch,
                 this.currentLayoutName ?? 'Default',
                 this.boxes
             );
