@@ -27,7 +27,11 @@ public partial class PricingBreakdown
 
     public int? ChildJobId { get; set; }
 
+    public int? ChildPrebookJobId { get; set; }
+
     public virtual TucJob ChildJob { get; set; }
+
+    public virtual TucJobBooking ChildPrebookJob { get; set; }
 
     public virtual TucJob Job { get; set; }
 

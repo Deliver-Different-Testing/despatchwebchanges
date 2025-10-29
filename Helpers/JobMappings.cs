@@ -17,6 +17,7 @@ public static class JobMappings
     public static Expression<Func<TucJob, DispatchJobViewModel>> JobDispatchMapping(bool isUsCustomer) =>
         j => new DispatchJobViewModel
         {
+            AngularId = Guid.NewGuid(),
             Id = j.UcjbId,
             JobNo = j.UcjbNumber,
             HasBeenRead = j.TucJobReadTracker != null && j.TucJobReadTracker.HasBeenRead,
@@ -178,6 +179,7 @@ public static class JobMappings
 
     public static readonly Expression<Func<TucJob, JobViewModel>> JobMapping = j => new JobViewModel
     {
+        AngularId = Guid.NewGuid(),
         ClientId = j.UcjbClientId,
         Id = j.UcjbId,
         JobNo = j.UcjbNumber,
@@ -575,6 +577,7 @@ public static class JobMappings
 
     public static readonly Expression<Func<TblBulkJob, JobViewModel>> BulkJobMapping = j => new JobViewModel
     {
+        AngularId = Guid.NewGuid(),
         ClientId = j.ClientId,
         Id = j.BulkJobId,
         JobNo = j.JobNumber,
@@ -725,6 +728,7 @@ public static class JobMappings
 
     public static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping = j => new JobViewModel
     {
+        AngularId = Guid.NewGuid(),
         ClientId = j.UcjbClientId,
         Id = j.UcjbId,
         JobNo = j.UcjbNumber,
@@ -917,6 +921,7 @@ public static class JobMappings
     public static readonly Expression<Func<TucJobBooking, JobViewModel>> JobRecurringMapping = j =>
         new JobRecurringViewModel
         {
+            AngularId = Guid.NewGuid(),
             ClientId = j.UcbkClientId,
             Id = j.UcbkId,
             JobNo = j.UcbkJobNumber,
@@ -1055,10 +1060,10 @@ public static class JobMappings
             OurRef = j.UcbkOurRef,
 
             // Pricing
-            Charge = j.BookingParent != null && j.BookingParent.PricingBreakdowns != null
-                ? j.BookingParent.PricingBreakdowns.Sum(p => p.ChargeAmount)
-                : j.PricingBreakdowns != null
-                    ? j.PricingBreakdowns.Sum(p => p.ChargeAmount)
+            Charge = j.BookingParent != null && j.BookingParent.PricingBreakdownPrebookJobs != null
+                ? j.BookingParent.PricingBreakdownPrebookJobs.Sum(p => p.ChargeAmount)
+                : j.PricingBreakdownPrebookJobs != null
+                    ? j.PricingBreakdownPrebookJobs.Sum(p => p.ChargeAmount)
                     : j.UcbkAmount ?? 0,
 
             // Size - has navigation in the archive
@@ -1165,9 +1170,8 @@ public static class JobMappings
         return dateToUse.ToString("MM/dd/yyyy");
     }
 
-    private static DateTime CombineDateAndTime(DateTime date, DateTime? time)
-    {
-        return new DateTime(
+    private static DateTime CombineDateAndTime(DateTime date, DateTime? time) =>
+        new(
             date.Year,
             date.Month,
             date.Day,
@@ -1175,7 +1179,6 @@ public static class JobMappings
             time?.Minute ?? 0,
             time?.Second ?? 0
         );
-    }
 
     private static string FormatFullName(TucStaff staff) =>
         staff.UcstFirstName + " " + staff.UcstLastName;
@@ -1217,9 +1220,8 @@ public static class JobMappings
     private static List<ParcelDimensions> ConvertToParcelDimensions(ICollection<TucJobItem> items) =>
         items?.Select(CreateParcelDimensions).ToList() ?? [];
 
-    private static ParcelDimensions CreateParcelDimensions(TucJobItem item)
-    {
-        return new ParcelDimensions
+    private static ParcelDimensions CreateParcelDimensions(TucJobItem item) =>
+        new()
         {
             ItemId = item.ItemId,
             ItemName = item.Notes,
@@ -1228,7 +1230,6 @@ public static class JobMappings
             Length = item.Length,
             Barcode = item.Barcode
         };
-    }
 
     private static List<ParcelDimensions> GetPackagesForBulkJob(
         TblBulkJob job,

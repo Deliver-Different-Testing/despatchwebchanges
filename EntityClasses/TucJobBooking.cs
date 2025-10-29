@@ -388,7 +388,9 @@ public partial class TucJobBooking
 
     public virtual TimeZone PickupTimeZone { get; set; }
 
-    public virtual ICollection<PricingBreakdown> PricingBreakdowns { get; set; } = new List<PricingBreakdown>();
+    public virtual ICollection<PricingBreakdown> PricingBreakdownChildPrebookJobs { get; set; } = new List<PricingBreakdown>();
+
+    public virtual ICollection<PricingBreakdown> PricingBreakdownPrebookJobs { get; set; } = new List<PricingBreakdown>();
 
     public virtual TucSource Source { get; set; }
 

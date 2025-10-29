@@ -1019,6 +1019,7 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(100);
             entity.Property(e => e.Charged).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.ChildJobId).HasColumnName("ChildJobID");
+            entity.Property(e => e.ChildPrebookJobId).HasColumnName("ChildPrebookJobID");
             entity.Property(e => e.CostAmount).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.Included).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.JobId).HasColumnName("JobID");
@@ -1029,11 +1030,15 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.ChildJobId)
                 .HasConstraintName("FK_PricingBreakdown_tucJob");
 
+            entity.HasOne(d => d.ChildPrebookJob).WithMany(p => p.PricingBreakdownChildPrebookJobs)
+                .HasForeignKey(d => d.ChildPrebookJobId)
+                .HasConstraintName("FK__PricingBr__Child__265C5597");
+
             entity.HasOne(d => d.Job).WithMany(p => p.PricingBreakdownJobs)
                 .HasForeignKey(d => d.JobId)
                 .HasConstraintName("FK__PricingBr__JobID__1B69C5D8");
 
-            entity.HasOne(d => d.PrebookJob).WithMany(p => p.PricingBreakdowns)
+            entity.HasOne(d => d.PrebookJob).WithMany(p => p.PricingBreakdownPrebookJobs)
                 .HasForeignKey(d => d.PrebookJobId)
                 .HasConstraintName("FK__PricingBr__Prebo__1C5DEA11");
         });

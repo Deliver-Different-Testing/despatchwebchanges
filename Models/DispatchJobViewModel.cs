@@ -6,6 +6,7 @@ namespace DespatchWeb.Models;
 public class DispatchJobViewModel
 {
     // Core identifiers
+    public Guid AngularId { get; set; }
     public int Id { get; set; }
     public string JobNo { get; set; }
 
