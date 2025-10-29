@@ -229,8 +229,8 @@ class HomeController extends BaseController {
             this.initializeBoxes();
             this.loadGridsterLayoutsFromStorage();
         } else {
-            // Initialize old layout system for US customers
-            this.initializeBoxes(); // Still need boxes for old system
+            // Initialize an old layout system for US customers
+            this.initializeBoxes(); // Still need boxes for an old system
             this.initLayoutSystem();
         }
         
@@ -442,7 +442,7 @@ class HomeController extends BaseController {
                 if (index !== -1) {
                     this.oldLayouts[index].layout = angular.copy(newValue);
                     if (Modernizr.localstorage) {
-                        localStorage.setItem(this.LayoutKey, JSON.stringify(this.layouts));
+                        localStorage.setItem(this.LayoutKey, JSON.stringify(this.oldLayouts));
                     }
                 }
             }
