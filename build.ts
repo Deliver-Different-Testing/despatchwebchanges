@@ -84,7 +84,8 @@ function createHtmlMinifierPlugin(): esbuild.Plugin {
                             removeStyleLinkTypeAttributes: true,
                             conservativeCollapse: true,
                             preserveLineBreaks: false,
-                            preventAttributesEscaping: true
+                            preventAttributesEscaping: true,
+                            ignoreCustomFragments: [/\{\{[\s\S]*?\}\}/] 
                         });
                     } catch (error) {
                         console.error(`Error minifying HTML in ${args.path}:`, error);
