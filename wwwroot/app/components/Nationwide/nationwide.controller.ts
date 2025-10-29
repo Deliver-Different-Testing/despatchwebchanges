@@ -22,7 +22,7 @@ import {
     IGetFlightOptionsResponse,
     StatusChangeEvent
 } from "./nationwide.interfaces";
-import {IBox, IGridsterItem, IGridsterLayout} from "../../interfaces/layout.interfaces";
+import {IBox, IColumn, IGridsterItem, IGridsterLayout, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import JobDataType from "./enums/JobDataType";
@@ -105,9 +105,9 @@ class NationwideControl extends BaseController {
     private readonly refreshDurationIntervalKey: string = `refreshInterval-${AppPage.Domestic}-${ContactID}`;
     private readonly DateFilterKey: string = `dateFilter-${AppPage.Domestic}-${ContactID}`;
     private readonly SelectedViewsKey: string = `selectedViews-NW-${ContactID}`;
+    private readonly NationwideLayoutKey: string = `layoutsNW-${ContactID}`;
+    private readonly NationwideLastActiveLayoutKey: string = `lastActiveLayoutNW-${ContactID}`;
 
-    private readonly GridsterLayoutsKey: string = `gridsterLayouts-${AppPage.Domestic}-${ContactID}`;
-    private readonly GridsterLastActiveLayoutKey: string = `gridsterLastActiveLayout-${AppPage.Domestic}-${ContactID}`;
 
     readonly nationwideJobList: JobListType = JobListType.NationwideJobList;
     readonly nationwidePodJobList: JobListType = JobListType.NationwidePodJobList;
@@ -122,13 +122,19 @@ class NationwideControl extends BaseController {
     gridsterOpts?: angular.gridster.GridsterConfig;
     gridsterItems: IGridsterItem[] = [];
 
+    // Old layout 
+    boxSortableOptions?: angular.ui.SortableOptions<any>;
+    oldLayouts: ILayout[] = [];
+    oldDefaultLayout?: ILayout;
+    layout?: { columns: IColumn[] };
+
     private lastMapJobId?: number;
     private cachedMapConfig?: any;
     private isSelectingJob: boolean = false;
     private lastSelectedJobId?: number;
 
-    readonly isUsCustomer: boolean = false;
     private tasksLoadingInBackground: boolean = false;
+    isUsCustomer: boolean;
     greeting: string;
     isDataLoading: boolean = false;
     currentJob?: IDispatchJob;
@@ -269,9 +275,14 @@ class NationwideControl extends BaseController {
         this.timeZone = getIanaTimezone(TimeZone);
 
         // Init layouts
-        this.initializeGridster();
-        this.initializeBoxes();
-        this.loadGridsterLayoutsFromStorage();
+        if (!this.isUsCustomer) {
+            this.initializeGridster();
+            this.initializeBoxes();
+            this.loadGridsterLayoutsFromStorage();
+        } else {
+            this.initializeBoxes();
+            this.initializeOldLayoutSystem();
+        }
 
         // Date filter
         this.dateFilterData = setDateFilterDefaults();
@@ -315,7 +326,7 @@ class NationwideControl extends BaseController {
             4: [JobDataType.REPRICE]
         };
 
-        this.nationwideService.getActiveAirlines().then((response) => {
+        this.nationwideService.getActiveAirlines().then((response: ISuggestion[]) => {
             console.info("[NationwideController] - Active Airlines:", response);
             this.activeAirlineOptions = response;
         });
@@ -356,6 +367,268 @@ class NationwideControl extends BaseController {
     $onDestroy(): void {
         super.$onDestroy();
         this.stopAutoRefresh();
+    }
+
+    // Old layout system 
+    private initializeOldLayoutSystem(): void {
+        // Set up layout watchers
+        this.watchScope(() => this.layout, () => {
+            this.registerTimeout(() => this.applyLayoutDimensions());
+        }, true);
+
+        // Ensure draggingItems container exists
+        if (angular.element('#draggingItems').length === 0) {
+            angular.element('body').append('<div id="draggingItems"></div>');
+        }
+
+        const jobsListBox: IBox = {name: NationwideBoxes.NewJobs, height: "60%"};
+        const jobsListPODBox: IBox = {name: NationwideBoxes.PodJobs, height: "40%"};
+        const tasksListBox: IBox = {name: NationwideBoxes.Tasks, height: "50%"};
+        const jobsListRepriceBox: IBox = {name: NationwideBoxes.RepriceJobs, height: "50%"};
+        const mapBox: IBox = {name: NationwideBoxes.Map, height: "30%"};
+        const jobDetailBox: IBox = {name: NationwideBoxes.JobDetail, height: "60%"};
+        const flightAgentDataTableBox: IBox = {name: NationwideBoxes.FlightAgents, height: "30%"};
+
+        // Define columns
+        const column1: IColumn = {
+            id: "col1",
+            width: "35%",
+            boxes: [jobsListBox, flightAgentDataTableBox]
+        };
+
+        const column2: IColumn = {
+            id: "col2",
+            width: "35%",
+            boxes: [jobDetailBox, mapBox]
+        };
+
+        const column3: IColumn = {
+            id: "col3",
+            width: "30%",
+            boxes: [jobsListPODBox, tasksListBox, jobsListRepriceBox]
+        };
+
+        // Create default layout
+        this.oldDefaultLayout = {
+            name: "Default",
+            layout: {
+                columns: [column1, column2, column3]
+            }
+        };
+
+        // Load saved layouts or use default
+        if (Modernizr.localstorage) {
+            try {
+                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(this.NationwideLayoutKey) || '[]');
+                const lastActiveLayout = localStorage.getItem(this.NationwideLastActiveLayoutKey);
+
+                this.oldLayouts = storedLayouts || [this.oldDefaultLayout];
+                this.oldLayouts[0] = this.oldDefaultLayout; // Ensure default is always up to date
+
+                // Load last active layout or default
+                const layoutToLoad = lastActiveLayout
+                    ? this.oldLayouts.findIndex((l: ILayout) => l.name === lastActiveLayout)
+                    : 0;
+                this.loadLayout(layoutToLoad >= 0 ? layoutToLoad : 0);
+            } catch (error: any) {
+                console.error('Error loading stored layouts:', error);
+                this.oldLayouts = [this.oldDefaultLayout];
+                this.loadLayout(0);
+            }
+        } else {
+            this.oldLayouts = [this.oldDefaultLayout];
+            this.loadLayout(0);
+        }
+
+        // Auto-save changes
+        this.watchScope("layout", (newValue: { columns: IColumn[] }, oldValue: { columns: IColumn[] }) => {
+            if (newValue !== oldValue && this.currentLayoutName) {
+                const index = this.oldLayouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
+                if (index !== -1) {
+                    this.oldLayouts[index].layout = angular.copy(newValue);
+                    if (Modernizr.localstorage) {
+                        localStorage.setItem(this.NationwideLayoutKey, JSON.stringify(this.oldLayouts));
+                    }
+                }
+            }
+        }, true);
+
+        // Initialize box sortable options
+        this.boxSortableOptions = {
+            handle: '.box-handle',
+            connectWith: '.column-sortable',
+            placeholder: 'box-placeholder',
+            tolerance: 'pointer',
+            cursor: 'move',
+            opacity: 0.8,
+            scroll: true,
+            revert: 200,
+            delay: 150,
+            forcePlaceholderSize: true,
+            distance: 5,
+
+            start: (e: JQueryEventObject, ui: any) => {
+                ui.item.addClass('dragging');
+
+                const dragInfo = angular.element('#draggingItems');
+                dragInfo.html(`Moving: ${ui.item.find('.md-headline-title').text().trim()}`);
+                dragInfo.css({
+                    display: 'block',
+                    top: e.pageY + 20 + 'px',
+                    left: e.pageX + 10 + 'px'
+                });
+
+                this.$document.on('mousemove.sortable', (event) => {
+                    dragInfo.css({
+                        top: (event.pageY || 0) + 20 + 'px',
+                        left: (event.pageX || 0) + 10 + 'px'
+                    });
+                });
+            },
+
+            over: (e: JQueryEventObject, _: any) => {
+                angular.element(e.target).addClass('ui-sortable-active');
+            },
+
+            out: (e: JQueryEventObject, _: any) => {
+                angular.element(e.target).removeClass('ui-sortable-active');
+            },
+
+            stop: (_: JQueryEventObject, ui: any) => {
+                angular.element(this.$document[0]).off('mousemove.sortable');
+                angular.element('#draggingItems').css('display', 'none');
+                ui.item.removeClass('dragging');
+                angular.element('.column-sortable').removeClass('ui-sortable-active');
+
+                this.updateBoxMetrics();
+                this.saveCurrentLayout();
+            }
+        };
+    }
+
+    loadLayout(index: number): void {
+        const layout: ILayout = this.oldLayouts[index] || this.oldLayouts[0];
+        this.currentLayoutName = layout.name;
+        this.layout = angular.copy(layout.layout);
+
+        this.applyLayoutDimensions();
+
+        if (Modernizr.localstorage) {
+            localStorage.setItem(this.NationwideLastActiveLayoutKey, layout.name);
+        }
+
+        this.applyScope();
+    }
+
+    saveLayout(): void {
+        this.$mdDialog
+            .show(this.$mdDialog
+                .prompt()
+                .title("Save Layout")
+                .textContent("Please enter a name for this layout.")
+                .required(true)
+                .ok("Save")
+                .cancel("Cancel"))
+            .then((name) => {
+                if (!name) return;
+
+                const currentLayout: ILayout = {
+                    name: name,
+                    layout: {
+                        columns: this.layout?.columns?.map((col: IColumn) => ({
+                            ...col,
+                            width: angular.element(`#co-${col.id}`).css("flex-basis"),
+                            boxes: col.boxes.map((box: IBox) => ({
+                                ...box, height: angular
+                                    .element(`#box-${box.name}`)
+                                    .css("flex-basis"),
+                            })),
+                        })) || [],
+                    },
+                };
+
+                this.oldLayouts.push(currentLayout);
+
+                if (Modernizr.localstorage) {
+                    localStorage.setItem(this.NationwideLayoutKey, JSON.stringify(this.oldLayouts));
+                    localStorage.setItem(this.NationwideLastActiveLayoutKey, name);
+                }
+            });
+    }
+
+    deleteLayout(index: number): void {
+        if (index === 0) return; // Prevent deleting default layout
+
+        this.$mdDialog
+            .show(this.$mdDialog
+                .confirm()
+                .title("Delete Layout?")
+                .textContent("Are you sure you want to delete this layout?")
+                .ok("Delete")
+                .cancel("Cancel"))
+            .then(() => {
+                this.oldLayouts.splice(index, 1);
+                if (Modernizr.localstorage) {
+                    localStorage.setItem(this.NationwideLayoutKey, JSON.stringify(this.oldLayouts));
+                }
+                this.loadLayout(0);
+                this.toastrService.showSuccessToast("Layout deleted successfully");
+            });
+    }
+
+    private updateBoxMetrics(): void {
+        if (!this.layout || !this.layout.columns) return;
+
+        this.layout.columns.forEach((column: IColumn) => {
+            const columnEl = angular.element(`#co-${column.id}`);
+            if (columnEl.length) {
+                column.width = columnEl.css('flex-basis');
+
+                column.boxes.forEach((box: IBox) => {
+                    const boxEl = angular.element(`#box-${box.name}`);
+                    if (boxEl.length) {
+                        box.height = boxEl.css('flex-basis');
+                    }
+                });
+            }
+        });
+    }
+
+    private saveCurrentLayout(): void {
+        if (!this.currentLayoutName || this.currentLayoutName === 'Default') {
+            return;
+        }
+
+        this.updateBoxMetrics();
+
+        const index = this.oldLayouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
+        if (index !== -1) {
+            if (this.layout) {
+                this.oldLayouts[index].layout = angular.copy(this.layout);
+            }
+
+            if (Modernizr.localstorage) {
+                localStorage.setItem(this.NationwideLayoutKey, JSON.stringify(this.oldLayouts));
+            }
+        }
+    }
+
+    private applyLayoutDimensions(): void {
+        if (!this.layout || !this.layout.columns) return;
+
+        this.layout.columns.forEach((column: IColumn) => {
+            const columnEl = angular.element(`#co-${column.id}`);
+            if (columnEl.length) {
+                columnEl.css('flex-basis', column.width);
+
+                column.boxes.forEach((box: IBox) => {
+                    const boxEl = angular.element(`#box-${box.name}`);
+                    if (boxEl.length) {
+                        boxEl.css('flex-basis', box.height || 'auto');
+                    }
+                });
+            }
+        });
     }
 
     // Gridster layouts
@@ -444,7 +717,7 @@ class NationwideControl extends BaseController {
         this.layouts.unshift(this.defaultLayout);
 
         // Load last active layout or default
-        const lastActiveLayoutName = this.gridsterLayoutService.getLastActiveLayoutName(AppPage.Domestic );
+        const lastActiveLayoutName = this.gridsterLayoutService.getLastActiveLayoutName(AppPage.Domestic);
         const layoutToLoad = this.layouts.find(l => l.name === lastActiveLayoutName) || this.defaultLayout;
         this.loadGridsterLayout(this.layouts.indexOf(layoutToLoad));
     }
@@ -636,7 +909,7 @@ class NationwideControl extends BaseController {
             this.toastrService.showErrorToast('Error deleting layout');
         }
     }
-    
+
     private loadSavedRefreshInterval(): void {
         if (Modernizr.localstorage) {
             try {

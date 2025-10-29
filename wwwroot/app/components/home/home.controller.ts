@@ -227,9 +227,8 @@ class HomeController extends BaseController {
             this.initializeBoxes();
             this.loadGridsterLayoutsFromStorage();
         } else {
-            // Initialize an old layout system for US customers
-            this.initializeBoxes(); // Still need boxes for an old system
-            this.initLayoutSystem();
+            this.initializeBoxes();
+            this.initializeOldLayoutSystem();
         }
         
         // Date filter
@@ -377,7 +376,7 @@ class HomeController extends BaseController {
     }
     
     // Old layout
-    initLayoutSystem(): void {
+    initializeOldLayoutSystem(): void {
         this.oldDefaultLayout = {
             name: "Default",
             layout: {
@@ -601,7 +600,7 @@ class HomeController extends BaseController {
             }
 
             if (Modernizr.localstorage) {
-                localStorage.setItem(this.LayoutKey, JSON.stringify(this.layouts));
+                localStorage.setItem(this.LayoutKey, JSON.stringify(this.oldLayouts));
             }
         }
     }
