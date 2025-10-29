@@ -105,33 +105,7 @@
                                             </md-menu-item>
                                         </md-menu-content>
                                     </md-menu>
-
-                                    <div class="row-overflow" id="box-{{box.name}}-{{$index}}" layout="row"
-                                         ng-if="::ctrl.boxes[box.name].showSearch">
-                                        <md-button class="md-icon-button" ng-click="ctrl.openSearch(box.name, $index)">
-                                            <md-icon md-font-set="material-symbols-outlined"
-                                                     ng-if="!ctrl.showInput[box.name + '-' + $index]">
-                                                search
-                                                <md-tooltip md-direction="bottom">Search</md-tooltip>
-                                            </md-icon>
-                                            <md-icon md-font-set="material-symbols-outlined"
-                                                     ng-if="ctrl.showInput[box.name + '-' + $index]">
-                                                close
-                                                <md-tooltip md-direction="bottom">Close Search</md-tooltip>
-                                            </md-icon>
-                                        </md-button>
-
-                                        <md-input-container class="md-block search-input-container" md-no-float
-                                                            ng-if="ctrl.showInput[box.name + '-' + $index]">
-                                            <md-icon md-font-set="material-symbols-outlined">search</md-icon>
-                                            <input class="search-input"
-                                                   ng-change="ctrl.searchJobs(ctrl.jobQuery.searchText)"
-                                                   ng-model="ctrl.jobQuery.searchText"
-                                                   placeholder="Search jobs..."
-                                                   type="text"
-                                                   style="color: black;">
-                                        </md-input-container>
-                                    </div>
+                                    
                                 </div>
                             </md-toolbar>
 

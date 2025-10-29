@@ -48,6 +48,7 @@ class JobSearchController extends BaseController {
         'toastrService',
         'DispatchData',
         '$mdSidenav',
+        '$document',
         'jobContextMenuService',
         "navigationService",
         "messagingDialogService",
@@ -63,8 +64,10 @@ class JobSearchController extends BaseController {
         '$interval',
     ];
 
-    private readonly GridsterLayoutsKey: string = `gridsterLayouts-${AppPage.JobSearch}-${ContactID}`;
-    private readonly GridsterLastActiveLayoutKey: string = `gridsterLastActiveLayout-${AppPage.JobSearch}-${ContactID}`;
+    private readonly LayoutKey: string = `layoutsCS-${ContactID}`
+    private readonly LastActiveLayoutKey: string = `lastActiveLayoutCS-${ContactID}`
+
+    readonly isAdmin: boolean;
 
     // Gridster layout
     boxes?: Record<string, IBox>;
@@ -74,19 +77,22 @@ class JobSearchController extends BaseController {
     gridsterOpts?: angular.gridster.GridsterConfig;
     gridsterItems: IGridsterItem[] = [];
 
-    readonly isUsCustomer: boolean;
-    readonly isAdmin: boolean;
+    // Old layout 
+    boxSortableOptions?: angular.ui.SortableOptions<any>;
+    oldLayouts: ILayout[] = [];
+    oldDefaultLayout?: ILayout;
+    layout?: { columns: IColumn[] };
+    
+    isUsCustomer: boolean;
     mapCenter: Coordinates;
     mapZoom: number;
     jobDetailFabIsOpen: boolean = false;
     dateSearchRange: JobSearchDateRange;
     searchCriteria: ISearchCriteria;
     clientSelectedItem?: number;
-    courierSelectedItem: any;
+    courierSelectedItem?: number;
     clientSearchText: string;
     courierSearchText: string;
-    showInput: any;
-    inputWidth: any;
 
     scanPromise?: Promise<IScanDetailResult[]>;
     scanList: IScanDetailResult[];
@@ -113,6 +119,7 @@ class JobSearchController extends BaseController {
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
         private $mdSidenav: angular.material.ISidenavService,
+        private $document: angular.IDocumentService,
         private jobContextMenuService: JobContextMenuService,
         private navigationService: NavigationService,
         private messagingDialogService: MessagingDialogService,
@@ -136,9 +143,15 @@ class JobSearchController extends BaseController {
         this.isAdmin = ClientInternal;
 
         // Init layouts
-        this.initializeGridster();
-        this.initializeBoxes();
-        this.loadGridsterLayoutsFromStorage();
+        if(!this.isUsCustomer) {
+            this.initializeGridster();
+            this.initializeBoxes();
+            this.loadGridsterLayoutsFromStorage();
+        } else {
+            this.initializeBoxes();
+            this.initializeOldLayoutSystem();
+        }
+
 
         // New map
         this.mapCenter = appConfig.US_Customer ?
@@ -163,9 +176,6 @@ class JobSearchController extends BaseController {
         this.courierSelectedItem = this.searchCriteria.client;
         this.clientSearchText = '';
         this.courierSearchText = '';
-
-        this.showInput = {};
-        this.inputWidth = {};
         
         this.deliveryHistoryConfig = {
             showSummaryStats: true,
@@ -174,6 +184,268 @@ class JobSearchController extends BaseController {
 
         // Default to a fortnight
         this.onSearchRangeChange(this.dateSearchRange);
+    }
+    
+    // Old layout system
+    private initializeOldLayoutSystem(): void {
+        // Set up layout watchers
+        this.watchScope(() => this.layout, () => {
+            this.registerTimeout(() => this.applyLayoutDimensions());
+        }, true);
+
+        // Ensure draggingItems container exists
+        if (angular.element('#draggingItems').length === 0) {
+            angular.element('body').append('<div id="draggingItems"></div>');
+        }
+
+        this.oldLayouts = [];
+        this.oldDefaultLayout = {
+            name: "Default",
+            layout: {
+                columns: [
+                    {
+                        id: "col1",
+                        width: "20%",
+                        boxes: [{name: JobSearchBoxes.SearchWidget, height: "100%"}],
+                    },
+                    {
+                        id: "col2",
+                        width: "25%",
+                        boxes: [
+                            {name: JobSearchBoxes.JobList, height: "50%"},
+                            {name: JobSearchBoxes.BulkJobList, height: "50%"}
+                        ],
+                    },
+                    {
+                        id: "col3",
+                        width: "35%",
+                        boxes: [
+                            {name: JobSearchBoxes.JobDetail, height: "40%"},
+                            {name: JobSearchBoxes.ScanList, height: "30%"},
+                            {name: JobSearchBoxes.Map, height: "30%"}
+                        ],
+                    },
+                    {
+                        id: "col4",
+                        width: "20%",
+                        boxes: [{name: JobSearchBoxes.DeliveryJourney, height: "100%"}],
+                    },
+                ],
+            },
+        };
+
+        // Load saved layouts or use default
+        if (Modernizr.localstorage) {
+            try {
+                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(this.LayoutKey) || '[]');
+                const lastActiveLayout = localStorage.getItem(this.LastActiveLayoutKey);
+
+                this.oldLayouts = storedLayouts || [this.oldDefaultLayout];
+                this.oldLayouts[0] = this.oldDefaultLayout; // Ensure default is always up to date
+
+                // Load last active layout or default
+                const layoutToLoad = lastActiveLayout
+                    ? this.oldLayouts.findIndex((l: ILayout) => l.name === lastActiveLayout)
+                    : 0;
+                this.loadLayout(layoutToLoad >= 0 ? layoutToLoad : 0);
+            } catch (error: any) {
+                console.error('Error loading stored layouts:', error);
+                this.oldLayouts = [this.oldDefaultLayout];
+                this.loadLayout(0);
+            }
+        } else {
+            this.oldLayouts = [this.oldDefaultLayout];
+            this.loadLayout(0);
+        }
+
+        // Auto-save changes
+        this.watchScope("layout", (newValue: { columns: IColumn[] }, oldValue: { columns: IColumn[] }) => {
+            if (newValue !== oldValue && this.currentLayoutName) {
+                const index = this.oldLayouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
+                if (index !== -1) {
+                    this.oldLayouts[index].layout = angular.copy(newValue);
+                    if (Modernizr.localstorage) {
+                        localStorage.setItem(this.LayoutKey, JSON.stringify(this.layouts));
+                    }
+                }
+            }
+        }, true);
+
+        // Initialize box sortable options
+        this.boxSortableOptions = {
+            handle: '.box-handle',
+            connectWith: '.column-sortable',
+            placeholder: 'box-placeholder',
+            tolerance: 'pointer',
+            cursor: 'move',
+            opacity: 0.8,
+            scroll: true,
+            revert: 200,
+            delay: 150,
+            forcePlaceholderSize: true,
+
+            start: (e: JQueryEventObject, ui: any) => {
+                ui.item.addClass('dragging');
+
+                const dragInfo = angular.element('#draggingItems');
+                dragInfo.html(`Moving: ${ui.item.find('.md-headline-title').text().trim()}`);
+                dragInfo.css({
+                    display: 'block',
+                    top: e.pageY + 20 + 'px',
+                    left: e.pageX + 10 + 'px'
+                });
+
+                this.$document.on('mousemove.sortable', (event) => {
+                    dragInfo.css({
+                        top: (event.pageY || 0) + 20 + 'px',
+                        left: (event.pageX || 0) + 10 + 'px'
+                    });
+                });
+            },
+
+            over: (e: JQueryEventObject, _: any) => {
+                angular.element(e.target).addClass('ui-sortable-active');
+            },
+
+            out: (e: JQueryEventObject, _: any) => {
+                angular.element(e.target).removeClass('ui-sortable-active');
+            },
+
+            stop: (_: JQueryEventObject, ui: any) => {
+                angular.element(this.$document[0]).off('mousemove.sortable');
+                angular.element('#draggingItems').css('display', 'none');
+                ui.item.removeClass('dragging');
+                angular.element('.column-sortable').removeClass('ui-sortable-active');
+
+                this.updateBoxMetrics();
+                this.saveCurrentLayout();
+            }
+        };
+    }
+
+    loadLayout(index: number): void {
+        const layout: ILayout = this.oldLayouts[index] || this.oldLayouts[0];
+        this.currentLayoutName = layout.name;
+        this.layout = angular.copy(layout.layout);
+
+        this.applyLayoutDimensions();
+
+        if (Modernizr.localstorage) {
+            localStorage.setItem(this.LastActiveLayoutKey, layout.name);
+        }
+
+        this.applyScope();
+    }
+
+    saveLayout(): void {
+        this.$mdDialog
+            .show(this.$mdDialog
+                .prompt()
+                .title("Save Layout")
+                .textContent("Please enter a name for this layout.")
+                .required(true)
+                .ok("Save")
+                .cancel("Cancel"))
+            .then((name) => {
+                if (!name) return;
+
+                const currentLayout: ILayout = {
+                    name: name,
+                    layout: {
+                        columns: this.layout?.columns?.map((col: IColumn) => ({
+                            ...col,
+                            width: angular.element(`#co-${col.id}`).css("flex-basis"),
+                            boxes: col.boxes.map((box: IBox) => ({
+                                ...box, height: angular
+                                    .element(`#box-${box.name}`)
+                                    .css("flex-basis"),
+                            })),
+                        })) || [],
+                    },
+                };
+
+                this.oldLayouts.push(currentLayout);
+
+                if (Modernizr.localstorage) {
+                    localStorage.setItem(this.LayoutKey, JSON.stringify(this.oldLayouts));
+                    localStorage.setItem(this.LastActiveLayoutKey, name);
+                }
+            });
+    }
+
+    deleteLayout(index: number): void {
+        if (index === 0) return; // Prevent deleting default layout
+
+        this.$mdDialog
+            .show(this.$mdDialog
+                .confirm()
+                .title("Delete Layout?")
+                .textContent("Are you sure you want to delete this layout?")
+                .ok("Delete")
+                .cancel("Cancel"))
+            .then(() => {
+                this.oldLayouts.splice(index, 1);
+                if (Modernizr.localstorage) {
+                    localStorage.setItem(this.LayoutKey, JSON.stringify(this.oldLayouts));
+                }
+                this.loadLayout(0);
+                this.toastrService.showSuccessToast("Layout deleted successfully");
+            });
+    }
+
+    private updateBoxMetrics(): void {
+        if (!this.layout || !this.layout.columns) return;
+
+        this.layout.columns.forEach((column: IColumn) => {
+            const columnEl = angular.element(`#co-${column.id}`);
+            if (columnEl.length) {
+                column.width = columnEl.css('flex-basis');
+
+                column.boxes.forEach((box: IBox) => {
+                    const boxEl = angular.element(`#box-${box.name}`);
+                    if (boxEl.length) {
+                        box.height = boxEl.css('flex-basis');
+                    }
+                });
+            }
+        });
+    }
+
+    private saveCurrentLayout(): void {
+        if (!this.currentLayoutName || this.currentLayoutName === 'Default') {
+            return;
+        }
+
+        this.updateBoxMetrics();
+
+        const index = this.oldLayouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
+        if (index !== -1) {
+            if (this.layout) {
+                this.oldLayouts[index].layout = angular.copy(this.layout);
+            }
+
+            if (Modernizr.localstorage) {
+                localStorage.setItem(this.LayoutKey, JSON.stringify(this.oldLayouts));
+            }
+        }
+    }
+
+    private applyLayoutDimensions(): void {
+        if (!this.layout || !this.layout.columns) return;
+
+        this.layout.columns.forEach((column: IColumn) => {
+            const columnEl = angular.element(`#co-${column.id}`);
+            if (columnEl.length) {
+                columnEl.css('flex-basis', column.width);
+
+                column.boxes.forEach((box: IBox) => {
+                    const boxEl = angular.element(`#box-${box.name}`);
+                    if (boxEl.length) {
+                        boxEl.css('flex-basis', box.height || 'auto');
+                    }
+                });
+            }
+        });
     }
 
     // Gridster layouts
@@ -456,7 +728,7 @@ class JobSearchController extends BaseController {
             this.toastrService.showErrorToast('Error deleting layout');
         }
     }
-    
+
     toggleSidenav() {
         const sidenavElement = angular.element('material-sidenav');
         const sidenavCtrl = sidenavElement.controller('materialSidenav');

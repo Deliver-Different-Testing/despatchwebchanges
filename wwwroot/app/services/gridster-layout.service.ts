@@ -242,7 +242,7 @@ class GridsterLayoutService implements angular.IServiceProvider {
         gridsterItems.forEach((item: IGridsterItem) => {
             const box = boxes[item.name];
             if (box) {
-                item.visible = box.visible;
+                item.visible = box.visible ?? false;
             }
         });
     }

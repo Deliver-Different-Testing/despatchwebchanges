@@ -9,7 +9,6 @@ import {formatMins, formatShortDateTime} from "../../../functions/formatDates";
 
 class OpenJobsWidgetController extends BaseController {
     static $inject = [
-        "$log",
         "overviewService",
         "overviewFiltersService",
         "$filter",
@@ -36,7 +35,6 @@ class OpenJobsWidgetController extends BaseController {
     };
 
     constructor(
-        private $log: angular.ILogService,
         private overviewService: OverviewService,
         private overviewFiltersService: OverviewFiltersService,
         private $filter: angular.IFilterService,
@@ -79,7 +77,7 @@ class OpenJobsWidgetController extends BaseController {
 
     private loadSavedLimit() {
         const savedLimit = localStorage.getItem(OpenJobsWidgetController.LimitNameKey);
-        this.$log.debug(`Saved limit is: ${savedLimit}`);
+        console.log(`Saved limit is: ${savedLimit}`);
         if (savedLimit) {
             this.tableQuery.limit = parseInt(savedLimit);
         }
@@ -145,7 +143,7 @@ class OpenJobsWidgetController extends BaseController {
                 this.tableJobs.sort(this.compareJobs);
             })
             .catch(error => {
-                this.$log.error("Error loading open jobs:", error);
+                console.error("Error loading open jobs:", error);
             });
     }
 
@@ -204,7 +202,7 @@ class OpenJobsWidgetController extends BaseController {
 
             return isDesc ? -comparison : comparison;
         } catch (error) {
-            this.$log.error("Error comparing jobs:", error);
+            console.error("Error comparing jobs:", error);
             return 0;
         }
     }
@@ -234,7 +232,7 @@ class OpenJobsWidgetController extends BaseController {
             // For table view
             this.tableJobs.sort((a, b) => this.compareJobs(a, b));
         } catch (error) {
-            this.$log.error("Error during sort:", error);
+            console.error("Error during sort:", error);
         }
     }
 
