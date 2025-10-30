@@ -73,7 +73,6 @@ public class DispatchJobViewModel
     // Job flags
     public bool? Locked { get; set; }
     public bool? Done { get; set; }
-    public bool? BulkJob { get; set; }
     public bool? PreBook { get; set; }
 
     // Special delivery options

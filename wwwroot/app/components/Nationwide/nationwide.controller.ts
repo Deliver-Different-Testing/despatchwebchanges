@@ -138,7 +138,6 @@ class NationwideControl extends BaseController {
     greeting: string;
     isDataLoading: boolean = false;
     currentJob?: IDispatchJob;
-    currentJobId?: number;
     jobList?: IDispatchJob[] = [];
     jobListPOD?: IDispatchJob[] = [];
     jobListReprice?: IDispatchJob[] = [];
@@ -298,7 +297,7 @@ class NationwideControl extends BaseController {
                 return;
             }
 
-            if (this.currentJobId === newJob.id) {
+            if (this.currentJob?.id === newJob.id) {
                 console.info(`Job ${newJob.jobNo} is already the current job, skipping reload`);
                 return;
             }
@@ -1163,8 +1162,10 @@ class NationwideControl extends BaseController {
                 return;
             }
 
-            if (this.lastSelectedJobId === job.id && !isRefresh) {
-                console.log(`Job ${job.id} already selected, skipping`);
+            if (this.currentJob?.id === job.id &&
+                this.currentJob?.angularId === job.angularId &&
+                !isRefresh) {
+                console.log(`Job ${job.id} already selected with same angularId, skipping`);
                 return;
             }
 
@@ -1174,15 +1175,13 @@ class NationwideControl extends BaseController {
             console.info(`Selecting job ${job.jobNo}`);
 
             // Cancel any existing task loading for a previous job
-            if (this.currentJobId && this.currentJobId !== job.id) {
-                this.tasksService.cancelJobTaskLoading(this.nationwidePageId, this.currentJobId);
+            if (this.currentJob?.id && this.currentJob?.id !== job.id) {
+                this.tasksService.cancelJobTaskLoading(this.nationwidePageId, this.currentJob?.id);
             }
 
             this.markJobReadStatus(job.id, true);
 
             this.currentJob = job;
-            this.currentJobId = job.id;
-
             this.isDeliveryJobType = this.isDeliveryJob(job);
 
             // Update UI first
@@ -1205,10 +1204,10 @@ class NationwideControl extends BaseController {
     }
 
     private loadTasksInBackground(filterType: string = this.tasksFilter, jobId?: number): void {
-        const effectiveJobId = jobId || this.currentJobId;
+        const effectiveJobId = jobId || this.currentJob?.id;
 
         if (this.tasksLoadingInBackground) {
-            this.tasksService.cancelJobTaskLoading(this.nationwidePageId, this.currentJobId);
+            this.tasksService.cancelJobTaskLoading(this.nationwidePageId, this.currentJob?.id);
         }
 
         this.tasksLoadingInBackground = true;
@@ -1223,7 +1222,7 @@ class NationwideControl extends BaseController {
 
         this.tasksService.loadTasksInBackground(filterRequest, (tasks, error) => {
             // Only process if this is still the current job
-            if (effectiveJobId === this.currentJobId) {
+            if (effectiveJobId === this.currentJob?.id) {
                 this.tasksLoadingInBackground = false;
 
                 if (error) {
@@ -1830,7 +1829,7 @@ class NationwideControl extends BaseController {
 
             const filterRequest = this.tasksService.buildFilterRequest(
                 filterType,
-                this.currentJobId,
+                this.currentJob?.id,
                 this.staffFilter,
                 this.eventTypeFilter,
                 this.nationwidePageId
@@ -2125,11 +2124,10 @@ class NationwideControl extends BaseController {
                 await this.getJobList(JobDataType.POD);
                 break;
             case NationwideBoxes.JobDetail:
-                if (!this.currentJobId) return;
+                if (!this.currentJob?.id) return;
 
                 // Clear job
-                const jobIdToRefresh = this.currentJobId;
-                this.currentJobId = undefined;
+                const jobIdToRefresh = this.currentJob?.id;
                 this.currentJob = undefined;
 
                 // Reselect to trigger refresh
@@ -2317,7 +2315,7 @@ class NationwideControl extends BaseController {
                     await this.getData();
 
                     // Also refresh tasks if a job is selected
-                    if (this.currentJobId) {
+                    if (this.currentJob?.id) {
                         await this.loadTasks();
                     }
 
