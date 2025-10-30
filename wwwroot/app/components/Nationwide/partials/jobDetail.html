@@ -1,6 +1,7 @@
 <div class="basic-box-scroll">
     <job-detail-widget
-            job-id="ctrl.currentJobId"
+            job-id="ctrl.currentJob.id"
+            angular-id="ctrl.currentJob.angularId"
             app-page="ctrl.nationwidePageId"
             on-status-change="ctrl.handleStatusChange($event)"
             on-job-update="ctrl.getJobList()">

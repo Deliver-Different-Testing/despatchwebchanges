@@ -185,6 +185,7 @@ export interface IJob {
 }
 
 export interface IJobDto {
+    angularId: string;
     id: number;
     rootParentId?: number;
     hasBeenRead: boolean;
@@ -631,7 +632,7 @@ export interface IJobNoteDto {
 
 export interface IDispatchJob {
     // Core identifiers
-    guidId: string;
+    angularId: string;
     selected?: boolean;
     showCourierSearch: boolean;
     id: number;
@@ -739,7 +740,7 @@ export interface IDispatchJob {
 
 export interface IDispatchJobDto {
     // Core identifiers
-    guidId: string;
+    angularId: string;
     selected?: boolean;
     showCourierSearch: boolean;
     id: number;

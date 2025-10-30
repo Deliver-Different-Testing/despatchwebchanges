@@ -67,6 +67,7 @@ class JobDetailController extends BaseController {
     readonly isUsCustomer: boolean = false;
 
     jobId?: number;
+    angularId?: string;
     job?: IJob;
     selectedTab: number;
     allTabs: TabItem[];
@@ -158,6 +159,52 @@ class JobDetailController extends BaseController {
         this.setupUI();
     }
 
+    $onChanges(changes: angular.IOnChangesObject) {
+        console.log("$onChanges called with changes:", changes);
+
+        if (changes["angularId"] && changes["angularId"].currentValue) {
+            console.log("angularId changed:", changes["angularId"].currentValue);
+
+            if (this.jobId) {
+                return this.loadJobData(this.jobId);
+            }
+        }
+        
+        if (changes["jobId"]) {
+            console.log("jobId changed:", changes["jobId"].currentValue);
+
+            if (changes["jobId"].currentValue) {
+                return this.loadJobData(changes["jobId"].currentValue);
+            } else {
+                this.job = undefined;
+            }
+        }
+    }
+
+    $onDestroy(): void {
+        super.$onDestroy();
+        console.log("$onDestroy called - cleaning up resources");
+
+        // Clean up delivery photos
+        this.formattedPodPhotos?.forEach(photo => {
+            if (photo?.url) {
+                URL.revokeObjectURL(photo.url);
+            }
+        });
+
+        // Clean up pickup photos
+        this.formattedPickupPhotos?.forEach(photo => {
+            if (photo?.url) {
+                URL.revokeObjectURL(photo.url);
+            }
+        });
+
+        const photoSection = angular.element(".pod-photo-section");
+        if (photoSection) {
+            photoSection.off("keydown", this.handleKeydown);
+        }
+    }
+
     private setupUI(): void {
         this.loadViewDensity();
         this.initializeFieldVisibility();
@@ -228,44 +275,6 @@ class JobDetailController extends BaseController {
 
         // Load from localStorage or use defaults
         this.fieldVisibility = this.loadFieldVisibilityFromStorage();
-    }
-
-    $onChanges(changes: angular.IOnChangesObject) {
-        console.log("$onChanges called with changes:", changes);
-
-        if (changes["jobId"]) {
-            console.log("jobId changed:", changes["jobId"].currentValue);
-
-            if (changes["jobId"].currentValue) {
-                return this.loadJobData(changes["jobId"].currentValue);
-            } else {
-                this.job = undefined;
-            }
-        }
-    }
-
-    $onDestroy(): void {
-        super.$onDestroy();
-        console.log("$onDestroy called - cleaning up resources");
-
-        // Clean up delivery photos
-        this.formattedPodPhotos?.forEach(photo => {
-            if (photo?.url) {
-                URL.revokeObjectURL(photo.url);
-            }
-        });
-
-        // Clean up pickup photos
-        this.formattedPickupPhotos?.forEach(photo => {
-            if (photo?.url) {
-                URL.revokeObjectURL(photo.url);
-            }
-        });
-
-        const photoSection = angular.element(".pod-photo-section");
-        if (photoSection) {
-            photoSection.off("keydown", this.handleKeydown);
-        }
     }
 
     private async loadJobData(jobId: number): Promise<void> {
@@ -2286,6 +2295,7 @@ const JobDetailComponent: angular.IComponentOptions = {
     template: require("./job-details.template.html"),
     bindings: {
         jobId: "<",
+        angularId: "<",
         appPage: "<",
         onStatusChange: "&",
         isRecurringJob: "<",
