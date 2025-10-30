@@ -45,7 +45,6 @@ public class RecurringJobRepository(
             Job = mainJob,
             RelatedJobs = relatedJobs
         };
-        
     }
 
     public async Task<PaginatedResponse<PrebookListViewModel>> PreBookJobListAsync(RecurringJobQueryRequest request)

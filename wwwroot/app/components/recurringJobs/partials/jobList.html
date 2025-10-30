@@ -22,7 +22,7 @@
                 context-menu="ctrl.getContextMenuOptions(job)"
                 context-menu-on="contextmenu"
                 context-menu-class="job-context-menu"
-                ng-repeat="job in ctrl.jobList">
+                ng-repeat="job in ctrl.jobList track by job.id">
             <td md-cell>{{job.booked | momentFormat:"HH:mm"}} ({{::ctrl.timeZone | timezoneShort}})</td>
             <td md-cell>{{job.speed}}</td>
             <td md-cell>{{job.customJobName}}</td>
