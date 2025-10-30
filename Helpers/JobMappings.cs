@@ -17,7 +17,6 @@ public static class JobMappings
     public static Expression<Func<TucJob, DispatchJobViewModel>> JobDispatchMapping(bool isUsCustomer) =>
         j => new DispatchJobViewModel
         {
-            AngularId = Guid.NewGuid(),
             Id = j.UcjbId,
             JobNo = j.UcjbNumber,
             HasBeenRead = j.TucJobReadTracker != null && j.TucJobReadTracker.HasBeenRead,

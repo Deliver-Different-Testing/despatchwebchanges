@@ -307,6 +307,8 @@ public partial class JobRepository(
                 IsBulkJob = true
             };
 
+        query = query.Distinct(new DispatchJobViewModelComparer());
+        
         // Get a total count before pagination
         var totalCount = await query.CountAsync();
 
@@ -320,6 +322,8 @@ public partial class JobRepository(
             .Take(pageSize)
             .ToListAsync();
 
+        foreach (var bulkJob in bulkJobs) bulkJob.AngularId = Guid.NewGuid();
+        
         var hasMore = (page + 1) * pageSize < totalCount;
 
         return new JobSearchResult
@@ -489,6 +493,8 @@ public partial class JobRepository(
                     FromAirportId = j.FromAirportId
                 };
 
+            query = query.Distinct(new DispatchJobViewModelComparer());
+
             var totalCount = await query.CountAsync();
 
             // Apply pagination
@@ -500,6 +506,8 @@ public partial class JobRepository(
                 .Skip(page * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+
+            foreach (var job in jobSearchResults) job.AngularId = Guid.NewGuid();
 
             return new JobSearchResult
             {
@@ -2579,6 +2587,7 @@ public partial class JobRepository(
             JobId = jobId,
             Title = e.UcevDescription,
             Icon = "task",
+            Date = TimeZoneHelper.SetDateTimeWithTimeZone(e.UcevDate ?? DateTime.MinValue, timezone),
             Tags = new[]
             {
                 "Task",
@@ -2591,7 +2600,6 @@ public partial class JobRepository(
                     ? $"Completed by {e.UcevStaffIdoutNavigation.UcstFirstName} {e.UcevStaffIdoutNavigation.UcstLastName}"
                     : null
             }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList(),
-            Date = TimeZoneHelper.SetDateTimeWithTimeZone(e.UcevDate ?? DateTime.MinValue, timezone)
         }).ToList();
 
         return events;
@@ -2600,6 +2608,7 @@ public partial class JobRepository(
     private async Task<List<DeliveryJourneyViewModel>> GetNotesForDeliveryJourneyAsync(int jobId, bool isLiveJob)
     {
         var timezone = _infoService.GetTenantTimeZone();
+        var isUsCustomer = _infoService.IsUsTenant();
         List<DeliveryJourneyViewModel> notes;
 
         if (isLiveJob)
@@ -2626,10 +2635,10 @@ public partial class JobRepository(
                 {
                     "Note",
                     n.CreatedByNavigation != null
-                        ? $"Created by {n.CreatedByNavigation.UcstFirstName} {n.CreatedByNavigation.UcstLastName} on {n.CreatedDate:dd/MM/yyyy HH:mm}"
+                        ? $"Created by {n.CreatedByNavigation.UcstFirstName} {n.CreatedByNavigation.UcstLastName} on {n.CreatedDate.ToString(isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm")}"
                         : null,
                     n.UpdatedByNavigation != null && n.UpdatedDate.HasValue
-                        ? $"Updated by {n.UpdatedByNavigation.UcstFirstName} {n.UpdatedByNavigation.UcstLastName} on {n.UpdatedDate.Value:dd/MM/yyyy HH:mm}"
+                        ? $"Updated by {n.UpdatedByNavigation.UcstFirstName} {n.UpdatedByNavigation.UcstLastName} on {n.UpdatedDate.Value.ToString(isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm")}"
                         : null
                 }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList()
             }).ToList();
@@ -2649,15 +2658,17 @@ public partial class JobRepository(
                 Title = "Note added by System",
                 Icon = "sticky_note_2",
                 Description = n.NoteText,
-                Date = n.UpdatedDate.HasValue || n.CreatedDate.HasValue ? _infoService.ConvertUtcToTenantTimeZone(n.UpdatedDate ?? n.CreatedDate.Value) : DateTime.MinValue,
+                Date = n.UpdatedDate.HasValue || n.CreatedDate.HasValue 
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(n.UpdatedDate ?? n.CreatedDate.Value, timezone) 
+                    : TimeZoneHelper.SetDateTimeWithTimeZone(DateTime.MinValue, timezone) ,
                 Tags = new[]
                 {
                     "Note",
                     n.CreatedDate.HasValue
-                        ? $"Created on {n.CreatedDate.Value:dd/MM/yyyy HH:mm}"
+                        ? $"Created on {n.CreatedDate.Value.ToString(isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm")}"
                         : null,
                     n.UpdatedDate.HasValue
-                        ? $"Updated on {n.UpdatedDate.Value:dd/MM/yyyy HH:mm}"
+                        ? $"Updated on {n.UpdatedDate.Value.ToString(isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm")}"
                         : null
                 }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList()
             }).ToList();
@@ -2742,6 +2753,7 @@ public partial class JobRepository(
     private async Task<List<DeliveryJourneyViewModel>> GetStatusUpdatesForDeliveryJourneyAsync(int jobId,
         bool isLiveJob)
     {
+        var isUsCustomer = _infoService.IsUsTenant();
         List<DeliveryJourneyViewModel> statusUpdates;
 
         if (isLiveJob)
@@ -2767,14 +2779,14 @@ public partial class JobRepository(
                     Id = Guid.NewGuid(),
                     JobId = jobId,
                     Date = _infoService.ConvertUtcToTenantTimeZone(group.Key),
-                    Title = "Status Changed",
+                    Title = "Update to Job",
                     Description = string.Join("; ",
                         group.Select(s => s.Comments).Where(c => !string.IsNullOrWhiteSpace(c))),
                     Icon = "update",
                     Tags = group.SelectMany(s => new[]
                         {
                             s.ChangeType,
-                            $"Updated on {_infoService.ConvertUtcToTenantTimeZone(s.UpdatedAt):dd/MM/yyyy HH:mm}",
+                            $"Updated on {_infoService.ConvertUtcToTenantTimeZone(s.UpdatedAt).ToString(isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm")}",
                             s.Staff != null ? $"Updated by {s.Staff.UcstFirstName} {s.Staff.UcstLastName}" : null,
                             s.Courier != null ? $"Updated by {s.Courier.UccrName}, {s.Courier.UccrSurname}" : null,
                             s.Flight != null ? $"Flight {s.Flight.UcnwFlightNo} assigned" : null,
@@ -2788,8 +2800,6 @@ public partial class JobRepository(
                                 ? $"Unassigned from Agent {s.OldAgent.UcagName}"
                                 : null,
                             s.FieldName != null ? $"Field {s.FieldName} updated" : null,
-                            s.FieldName != null && s.OldValue != null ? $"Old value: {s.OldValue}" : null,
-                            s.FieldName != null && s.NewValue != null ? $"New value: {s.NewValue}" : null,
                             s.NewJobStatus != null && s.OldJobStatus != null
                                 ? $"Status changed from {s.OldJobStatus.UcjsName} to {s.NewJobStatus?.UcjsName}"
                                 : null
@@ -2825,7 +2835,7 @@ public partial class JobRepository(
                     Tags = group.SelectMany(s => new[]
                         {
                             s.ChangeType,
-                            $"Updated on {_infoService.ConvertUtcToTenantTimeZone(s.UpdatedAt):dd/MM/yyyy HH:mm}",
+                            $"Updated on {_infoService.ConvertUtcToTenantTimeZone(s.UpdatedAt).ToString(isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm")}",
                             s.UpdatedByType != null ? $"Updated by {s.UpdatedByType}" : null,
                             s.FlightId != null ? $"Flight ID {s.FlightId} assigned" : null,
                             s.NewAgentId != null && s.OldAgentId != null
@@ -2837,10 +2847,6 @@ public partial class JobRepository(
                             s.FieldName != null ? $"Field {s.FieldName} updated" : null,
                             s.FieldName != null && s.OldValue != null ? $"Old value: {s.OldValue}" : null,
                             s.FieldName != null && s.NewValue != null ? $"New value: {s.NewValue}" : null,
-                            s.Comments != null ? $"Comments: {s.Comments}" : null,
-                            s.OldJobStatusId != null && s.NewJobStatusId != null
-                                ? $"Status changed from status ID {s.OldJobStatusId} to {s.NewJobStatusId}"
-                                : null
                         })
                         .Where(tag => !string.IsNullOrWhiteSpace(tag))
                         .Distinct()
