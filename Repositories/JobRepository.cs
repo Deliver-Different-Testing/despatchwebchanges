@@ -2591,7 +2591,7 @@ public partial class JobRepository(
                     ? $"Completed by {e.UcevStaffIdoutNavigation.UcstFirstName} {e.UcevStaffIdoutNavigation.UcstLastName}"
                     : null
             }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList(),
-            Date = TimeZoneHelper.SetDateTimeWithTimeZone(e.UcevDate ?? DateTime.MinValue, timezone)
+            Date = _infoService.ConvertUtcToTenantTimeZone(e.UcevDate ?? DateTime.UtcNow)
         }).ToList();
 
         return events;
@@ -2621,7 +2621,7 @@ public partial class JobRepository(
                     : "Note added by System",
                 Icon = "sticky_note_2",
                 Description = n.NoteText,
-                Date = TimeZoneHelper.SetDateTimeWithTimeZone(n.UpdatedDate ?? n.CreatedDate, timezone),
+                Date = _infoService.ConvertUtcToTenantTimeZone(n.UpdatedDate ?? n.CreatedDate),
                 Tags = new[]
                 {
                     "Note",
@@ -2649,8 +2649,7 @@ public partial class JobRepository(
                 Title = "Note added by System",
                 Icon = "sticky_note_2",
                 Description = n.NoteText,
-                Date = TimeZoneHelper.SetDateTimeWithTimeZone(n.UpdatedDate ?? n.CreatedDate ?? DateTime.MinValue,
-                    timezone),
+                Date = _infoService.ConvertUtcToTenantTimeZone(n.UpdatedDate ?? n.CreatedDate ?? DateTime.UtcNow),
                 Tags = new[]
                 {
                     "Note",
@@ -2684,7 +2683,7 @@ public partial class JobRepository(
             Id = Guid.NewGuid(),
             JobId = jobId,
             Title = m.Subject,
-            Date = TimeZoneHelper.SetDateTimeWithTimeZone(m.UcmmDate, timezone),
+            Date = _infoService.ConvertUtcToTenantTimeZone(m.UcmmDate),
             Description = m.UcmmMessage,
             Icon = "sms",
             Tags = new List<string>()
@@ -2768,7 +2767,7 @@ public partial class JobRepository(
                 {
                     Id = Guid.NewGuid(),
                     JobId = jobId,
-                    Date = TimeZoneHelper.SetDateTimeWithTimeZone(group.Key, timezone),
+                    Date = _infoService.ConvertUtcToTenantTimeZone(group.Key),
                     Title = "Status Changed",
                     Description = string.Join("; ",
                         group.Select(s => s.Comments).Where(c => !string.IsNullOrWhiteSpace(c))),
@@ -2816,7 +2815,7 @@ public partial class JobRepository(
                 {
                     Id = Guid.NewGuid(),
                     JobId = jobId,
-                    Date = TimeZoneHelper.SetDateTimeWithTimeZone(group.Key, timezone),
+                    Date = _infoService.ConvertUtcToTenantTimeZone(group.Key),
                     Title = "Status Changed",
                     Description = string.Join("; ", group
                         .Select(s => s.OldJobStatusId != null && s.NewJobStatusId != null

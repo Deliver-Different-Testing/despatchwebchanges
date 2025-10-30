@@ -69,7 +69,6 @@ public class TenantInfoService(
         if (timeZone is null)
             return GetCurrentTenantTime();
 
-        // Cache TimeZoneInfo objects at application level since they don't change
         var cacheKey = $"timezone_info_{timeZone.Name}";
         var timeZoneInfo = cache.GetOrCreate(cacheKey, entry =>
         {
@@ -141,4 +140,12 @@ public class TenantInfoService(
     }
     
     public string GetTenantTimeZone() => GetTimeZone() ?? "UTC";
+    
+    public DateTimeOffset ConvertUtcToTenantTimeZone(DateTime utcDateTime)
+    {
+        var tenantTimeZoneInfo = GetTimeZoneInfo();
+        var tenantTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tenantTimeZoneInfo);
+        var offset = tenantTimeZoneInfo.GetUtcOffset(utcDateTime);
+        return new DateTimeOffset(tenantTime, offset);
+    }
 }
