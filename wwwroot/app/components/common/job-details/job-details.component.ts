@@ -60,6 +60,8 @@ class JobDetailController extends BaseController {
     private readonly FIELD_VISIBILITY_KEY = `jobDetail_fieldVisibility_${ContactID}`;
     private readonly VIEW_DENSITY_KEY = `jobDetail_viewDensity_${ContactID}`;
 
+    private isTabSwitch: boolean = false;
+    
     onJobUpdate?: () => Promise<void>;
 
     readonly isRecurringJob: boolean = false;
@@ -69,8 +71,6 @@ class JobDetailController extends BaseController {
     jobId?: number;
     angularId?: string;
     job?: IJob;
-    selectedTab: number;
-    allTabs: TabItem[];
     isPodViewerOpen: boolean = false;
     selectedPhotoIndex: number = 0;
     internalStatusList?: InternalStatus[];
@@ -125,10 +125,7 @@ class JobDetailController extends BaseController {
 
         this.isUsCustomer = appConfig.US_Customer;
         this.timeZone = getIanaTimezone(TimeZone);
-
-        this.selectedTab = 0;
-        this.allTabs = [];
-
+        
         this.trackingOptions = [
             {id: 1, text: "Email"},
             {id: 2, text: "Mobile"},
@@ -165,11 +162,18 @@ class JobDetailController extends BaseController {
         if (changes["angularId"] && changes["angularId"].currentValue) {
             console.log("angularId changed:", changes["angularId"].currentValue);
 
+            // Skip reload if this is a tab switch
+            if (this.isTabSwitch) {
+                this.isTabSwitch = false;  // Reset flag
+                console.log("Skipping reload - tab switch detected");
+                return;
+            }
+
             if (this.jobId) {
                 return this.loadJobData(this.jobId);
             }
         }
-        
+
         if (changes["jobId"]) {
             console.log("jobId changed:", changes["jobId"].currentValue);
 
@@ -355,6 +359,7 @@ class JobDetailController extends BaseController {
     async switchToRelatedJob(index: number): Promise<void> {
         if (!this.sortedRelatedJobs || index < 0 || index >= this.sortedRelatedJobs.length) return;
 
+        this.isTabSwitch = true;  // Set flag before switching
         this.selectedTabIndex = index;
         this.job = this.sortedRelatedJobs[index];
 
