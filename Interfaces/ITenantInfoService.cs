@@ -15,4 +15,5 @@ public interface ITenantInfoService
     bool IsUsTenant();
     Task<Suggestion> GetStaffInfoAsync();
     string GetTenantTimeZone();
+    DateTimeOffset ConvertUtcToTenantTimeZone(DateTime utcDateTime);
 }
