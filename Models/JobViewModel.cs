@@ -195,6 +195,11 @@ public class Suggestion
     public string Text { get; set; }
 }
 
+public class AirlineSuggestion : Suggestion
+{
+    public string FullAirlineName { get; set; } 
+}
+
 public class AirportSuggestion : Suggestion
 {
     public string Timezone { get; set; }

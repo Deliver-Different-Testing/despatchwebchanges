@@ -6,7 +6,7 @@ import {AppPage} from "../../enums/app-pages.enum";
 import {IAppConfig} from "../../interfaces/app-config.interface";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
 import {
-    IAgent,
+    IAgent, IAirlineSuggestion,
     IAirportSuggestion,
     IDispatchJob,
     IJob,
@@ -189,7 +189,7 @@ class NationwideControl extends BaseController {
         onTaskClick: true
     };
     currentSupport?: ITask;
-    activeAirlineOptions?: ISuggestion[];
+    activeAirlineOptions?: IAirlineSuggestion[];
     timeZone: string;
     lastDepartureTime?: Dayjs;
     outboundAirportOptions?: IAirportSuggestion[];
@@ -325,7 +325,7 @@ class NationwideControl extends BaseController {
             4: [JobDataType.REPRICE]
         };
 
-        this.nationwideService.getActiveAirlines().then((response: ISuggestion[]) => {
+        this.nationwideService.getActiveAirlines().then((response: IAirlineSuggestion[]) => {
             console.info("[NationwideController] - Active Airlines:", response);
             this.activeAirlineOptions = response;
         });
@@ -1153,19 +1153,12 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async selectJob(job: IDispatchJob, isRefresh = false): Promise<void> {
+    async selectJob(job: IDispatchJob): Promise<void> {
         try {
             if (!job) return;
 
             if (this.isSelectingJob) {
                 console.log('Already selecting a job, skipping');
-                return;
-            }
-
-            if (this.currentJob?.id === job.id &&
-                this.currentJob?.angularId === job.angularId &&
-                !isRefresh) {
-                console.log(`Job ${job.id} already selected with same angularId, skipping`);
                 return;
             }
 
@@ -1567,7 +1560,7 @@ class NationwideControl extends BaseController {
             const updatedJob = this.jobListPOD?.find(j => j.id === job.id);
 
             if (updatedJob) {
-                await this.selectJob(updatedJob, true);
+                await this.selectJob(updatedJob);
             }
 
             const successMessage = `Successfully assigned flight ${flight.flightNumber} to job ${job.jobNo}`;
@@ -1631,7 +1624,7 @@ class NationwideControl extends BaseController {
 
             const updatedJob = this.findJobInLocalLists(job.id);
             if (updatedJob) {
-                await this.selectJob(updatedJob, true);
+                await this.selectJob(updatedJob);
             }
 
             this.isDataLoading = false;
@@ -2132,7 +2125,7 @@ class NationwideControl extends BaseController {
 
                 // Reselect to trigger refresh
                 const job = await this.DispatchData.getDispatchJobDetail(jobIdToRefresh);
-                await this.selectJob(job, true);
+                await this.selectJob(job);
                 break;
             default:
                 break;
