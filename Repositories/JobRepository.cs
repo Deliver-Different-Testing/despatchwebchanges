@@ -2591,7 +2591,7 @@ public partial class JobRepository(
                     ? $"Completed by {e.UcevStaffIdoutNavigation.UcstFirstName} {e.UcevStaffIdoutNavigation.UcstLastName}"
                     : null
             }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList(),
-            Date = _infoService.ConvertUtcToTenantTimeZone(e.UcevDate ?? DateTime.UtcNow)
+            Date = TimeZoneHelper.SetDateTimeWithTimeZone(e.UcevDate ?? DateTime.MinValue, timezone)
         }).ToList();
 
         return events;
@@ -2621,7 +2621,7 @@ public partial class JobRepository(
                     : "Note added by System",
                 Icon = "sticky_note_2",
                 Description = n.NoteText,
-                Date = _infoService.ConvertUtcToTenantTimeZone(n.UpdatedDate ?? n.CreatedDate),
+                Date = TimeZoneHelper.SetDateTimeWithTimeZone(n.UpdatedDate ?? n.CreatedDate, timezone),
                 Tags = new[]
                 {
                     "Note",
@@ -2649,7 +2649,7 @@ public partial class JobRepository(
                 Title = "Note added by System",
                 Icon = "sticky_note_2",
                 Description = n.NoteText,
-                Date = _infoService.ConvertUtcToTenantTimeZone(n.UpdatedDate ?? n.CreatedDate ?? DateTime.UtcNow),
+                Date = n.UpdatedDate.HasValue || n.CreatedDate.HasValue ? _infoService.ConvertUtcToTenantTimeZone(n.UpdatedDate ?? n.CreatedDate.Value) : DateTime.MinValue,
                 Tags = new[]
                 {
                     "Note",
@@ -2683,7 +2683,7 @@ public partial class JobRepository(
             Id = Guid.NewGuid(),
             JobId = jobId,
             Title = m.Subject,
-            Date = _infoService.ConvertUtcToTenantTimeZone(m.UcmmDate),
+            Date = TimeZoneHelper.SetDateTimeWithTimeZone(m.UcmmDate, timezone),
             Description = m.UcmmMessage,
             Icon = "sms",
             Tags = new List<string>()
@@ -2742,7 +2742,6 @@ public partial class JobRepository(
     private async Task<List<DeliveryJourneyViewModel>> GetStatusUpdatesForDeliveryJourneyAsync(int jobId,
         bool isLiveJob)
     {
-        var timezone = _infoService.GetTenantTimeZone();
         List<DeliveryJourneyViewModel> statusUpdates;
 
         if (isLiveJob)
@@ -2775,7 +2774,7 @@ public partial class JobRepository(
                     Tags = group.SelectMany(s => new[]
                         {
                             s.ChangeType,
-                            $"Updated on {s.UpdatedAt:dd/MM/yyyy HH:mm}",
+                            $"Updated on {_infoService.ConvertUtcToTenantTimeZone(s.UpdatedAt):dd/MM/yyyy HH:mm}",
                             s.Staff != null ? $"Updated by {s.Staff.UcstFirstName} {s.Staff.UcstLastName}" : null,
                             s.Courier != null ? $"Updated by {s.Courier.UccrName}, {s.Courier.UccrSurname}" : null,
                             s.Flight != null ? $"Flight {s.Flight.UcnwFlightNo} assigned" : null,
@@ -2826,7 +2825,7 @@ public partial class JobRepository(
                     Tags = group.SelectMany(s => new[]
                         {
                             s.ChangeType,
-                            $"Updated on {s.UpdatedAt:dd/MM/yyyy HH:mm}",
+                            $"Updated on {_infoService.ConvertUtcToTenantTimeZone(s.UpdatedAt):dd/MM/yyyy HH:mm}",
                             s.UpdatedByType != null ? $"Updated by {s.UpdatedByType}" : null,
                             s.FlightId != null ? $"Flight ID {s.FlightId} assigned" : null,
                             s.NewAgentId != null && s.OldAgentId != null
