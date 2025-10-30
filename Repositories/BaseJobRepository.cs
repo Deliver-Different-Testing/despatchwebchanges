@@ -98,7 +98,7 @@ public class BaseJobRepository(
 
             // Search
             if (!string.IsNullOrEmpty(queryParams.SearchText)) query = ApplySearchFilter(query, queryParams.SearchText);
-
+            
             // Get a total count before pagination
             // Dispatch page groups by parent id, so we need to count the parent jobs
             int totalCount;
@@ -121,7 +121,10 @@ public class BaseJobRepository(
             var (economySpeedId, ecoDeliveryTime) = await GetEconomySpeedAndDeliveryTimeAsync();
             var now = infoService.GetCurrentTenantTime();
             foreach (var job in jobs)
+            {
+                job.AngularId = Guid.NewGuid();
                 job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
+            }
 
             var hasMore = (pageNumber + 1) * pageSize < totalCount;
 

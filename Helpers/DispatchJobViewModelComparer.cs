@@ -1,0 +1,18 @@
+﻿using System.Collections.Generic;
+using DespatchWeb.Models;
+
+namespace DespatchWeb.Helpers;
+
+public class DispatchJobViewModelComparer : IEqualityComparer<DispatchJobViewModel>
+{
+    public bool Equals(DispatchJobViewModel x, DispatchJobViewModel y)
+    {
+        if (x == null || y == null) return false;
+        return x.Id == y.Id;
+    }
+
+    public int GetHashCode(DispatchJobViewModel obj)
+    {
+        return obj.Id.GetHashCode();
+    }
+}

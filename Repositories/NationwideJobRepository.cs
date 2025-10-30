@@ -290,9 +290,10 @@ public class NationwideJobRepository(
                 FlightId = jobNationwide.UcnwId,
                 ChangeType = nameof(DeliveryJourneyChangeType.FlightAssignment),
                 StaffId = _infoService.GetStaffId(),
+                UpdatedAt = DateTime.UtcNow,
                 UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
             };
-            await Context.AddAsync(journeyRecord);
+            await Context.JobDeliveryJourneys.AddAsync(journeyRecord);
 
             // Final save for the journey record
             await Context.SaveChangesAsync();
