@@ -307,23 +307,29 @@ public partial class JobRepository(
                 IsBulkJob = true
             };
 
-        query = query.Distinct(new DispatchJobViewModelComparer());
-        
-        // Get a total count before pagination
-        var totalCount = await query.CountAsync();
+        // Materialize the query first to enable client-side evaluation
+        var allResults = await query
+            .AsNoTracking()
+            .ToListAsync();
 
-        // Apply pagination
+        // Apply distinct with custom comparer in memory
+        var distinctResults = allResults
+            .Distinct(new DispatchJobViewModelComparer())
+            .ToList();
+
+        var totalCount = distinctResults.Count;
+
+        // Apply pagination in memory
         var page = data.Page ?? 0;
         var pageSize = data.PageSize ?? 50;
 
-        var bulkJobs = await query
-            .AsNoTracking()
+        var bulkJobs = distinctResults
             .Skip(page * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToList();
 
         foreach (var bulkJob in bulkJobs) bulkJob.AngularId = Guid.NewGuid();
-        
+
         var hasMore = (page + 1) * pageSize < totalCount;
 
         return new JobSearchResult
@@ -493,19 +499,26 @@ public partial class JobRepository(
                     FromAirportId = j.FromAirportId
                 };
 
-            query = query.Distinct(new DispatchJobViewModelComparer());
+            // Materialize the query first to enable client-side evaluation
+            var allResults = await query
+                .AsNoTracking()
+                .ToListAsync();
 
-            var totalCount = await query.CountAsync();
+            // Apply distinct with custom comparer in memory
+            var distinctResults = allResults
+                .Distinct(new DispatchJobViewModelComparer())
+                .ToList();
 
-            // Apply pagination
+            var totalCount = distinctResults.Count;
+
+            // Apply pagination in memory
             var page = data.Page ?? 0;
             var pageSize = data.PageSize ?? 50;
 
-            var jobSearchResults = await query
-                .AsNoTracking()
+            var jobSearchResults = distinctResults
                 .Skip(page * pageSize)
                 .Take(pageSize)
-                .ToListAsync();
+                .ToList();
 
             foreach (var job in jobSearchResults) job.AngularId = Guid.NewGuid();
 
