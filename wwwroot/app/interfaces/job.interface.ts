@@ -446,6 +446,10 @@ export interface ISuggestion {
     selected?: boolean;
 }
 
+export interface IAirlineSuggestion extends ISuggestion {
+    fullAirlineName: string;
+}
+
 export interface IAirportSuggestion extends ISuggestion {
     timezone: string;
 }

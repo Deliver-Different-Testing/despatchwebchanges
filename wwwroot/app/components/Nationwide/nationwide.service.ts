@@ -1,14 +1,12 @@
 import {
     IAgent,
-    IAgentInfoDialog,
+    IAgentInfoDialog, IAirlineSuggestion,
     IAirportSuggestion,
-    IDispatchJob,
     IJobQueryParams, IJobSearchResult,
     ISuggestion
 } from "../../interfaces/job.interface";
 import {
     AssignFlightToJobRequest,
-    IFlightViewModel,
     IFlightViewModelDto, IGetAgentOptionsResponse,
     IGetFlightOptionsResponse
 } from "./nationwide.interfaces";
@@ -149,8 +147,8 @@ class NationwideService implements angular.IServiceProvider {
         });
     }
 
-    async getActiveAirlines(): Promise<ISuggestion[]> {
-        const response = await this.$http.get<ISuggestion[]>("nationwideJob/GetActiveAirlines");
+    async getActiveAirlines(): Promise<IAirlineSuggestion[]> {
+        const response = await this.$http.get<IAirlineSuggestion[]>("nationwideJob/GetActiveAirlines");
         return response.data;
     }
 

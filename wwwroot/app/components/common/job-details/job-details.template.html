@@ -550,11 +550,13 @@
                                 </div>
                                 <md-button
                                         class="md-secondary md-icon-button"
-                                        href="tel:{{ctrl.assignedAgent.agentPhone}}"
+                                        href="tel:{{ctrl.job.assignedAgent.agentPhone}}"
                                         ng-click="$event.stopPropagation()"
                                         ng-if="ctrl.job.assignedAgent.agentPhone"
                                         aria-label="call">
                                     <md-icon md-font-set="material-symbols-outlined">phone</md-icon>
+                                    <md-tooltip md-direction="bottom">Call {{ctrl.job.assignedAgent.agentPhone }}
+                                    </md-tooltip>
                                 </md-button>
                             </md-list-item>
 
@@ -575,6 +577,7 @@
                                         ng-if="ctrl.job.assignedAgent.agentEmail"
                                         aria-label="email">
                                     <md-icon md-font-set="material-symbols-outlined">email</md-icon>
+                                    <md-tooltip md-direction="bottom">Email {{ctrl.job.assignedAgent.agentEmail }}</md-tooltip>
                                 </md-button>
                             </md-list-item>
                         </md-list>

@@ -730,14 +730,15 @@ public class NationwideJobRepository(
             .FirstOrDefault();
     }
 
-    public async Task<List<Suggestion>> GetActiveAirlineOptionsAsync()
+    public async Task<List<AirlineSuggestion>> GetActiveAirlineOptionsAsync()
     {
         var airlines = await Context.FlightCarriers
             .Where(fc => fc.IsActive)
-            .Select(x => new Suggestion
+            .Select(x => new AirlineSuggestion
             {
                 Id = x.FlightCarrierId,
-                Text = x.CarrierCode
+                Text = x.CarrierCode,
+                FullAirlineName = x.FlightCarrierName
             })
             .AsNoTracking()
             .ToListAsync();
