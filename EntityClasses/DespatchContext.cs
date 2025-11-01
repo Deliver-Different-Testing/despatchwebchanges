@@ -71,6 +71,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TblClearListArea> TblClearListAreas { get; set; }
 
+    public virtual DbSet<TblClearListAreaOrder> TblClearListAreaOrders { get; set; }
+
     public virtual DbSet<TblClearListAreaPolygon> TblClearListAreaPolygons { get; set; }
 
     public virtual DbSet<TblClient> TblClients { get; set; }
@@ -1562,6 +1564,47 @@ public partial class DespatchContext : DbContext
                 .IsRequired()
                 .HasMaxLength(100);
             entity.Property(e => e.Order).HasDefaultValue(1);
+        });
+
+        modelBuilder.Entity<TblClearListAreaOrder>(entity =>
+        {
+            entity.HasKey(e => e.ClearListAreaOrderId);
+
+            entity.ToTable("tblClearListAreaOrder");
+
+            entity.HasIndex(e => e.ClearListAreaId, "ClearListAreaID");
+
+            entity.HasIndex(e => e.CourierId, "CourierID");
+
+            entity.HasIndex(e => e.CourierId, "UC_CourierID").IsUnique();
+
+            entity.Property(e => e.ClearListAreaOrderId).HasColumnName("ClearListAreaOrderID");
+            entity.Property(e => e.ClearListAreaId).HasColumnName("ClearListAreaID");
+            entity.Property(e => e.CourierId).HasColumnName("CourierID");
+            entity.Property(e => e.Created)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.LastModified)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.Notes).HasColumnType("ntext");
+            entity.Property(e => e.OrderTime).HasColumnType("datetime");
+
+            entity.HasOne(d => d.ClearListArea).WithMany(p => p.TblClearListAreaOrders)
+                .HasForeignKey(d => d.ClearListAreaId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_tblClearListAreaOrder_tblClearListArea");
+
+            entity.HasOne(d => d.Courier).WithOne(p => p.TblClearListAreaOrder)
+                .HasForeignKey<TblClearListAreaOrder>(d => d.CourierId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_tblClearListAreaOrder_tucCourier");
         });
 
         modelBuilder.Entity<TblClearListAreaPolygon>(entity =>

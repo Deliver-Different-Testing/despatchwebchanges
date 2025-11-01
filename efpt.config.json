@@ -119,6 +119,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tblClearListAreaOrder]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tblClearListAreaPolygon]",
          "ObjectType": 0
       },
@@ -500,10 +504,6 @@
       },
       {
          "Name": "[dbo].[uspRestoreJob]",
-         "ObjectType": 1
-      },
-      {
-         "Name": "[dbo].[UTL_stpCourier_ResetClearListAreaOrder]",
          "ObjectType": 1
       },
       {

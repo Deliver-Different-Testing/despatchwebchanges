@@ -595,8 +595,7 @@ public static class JobMappings
                 Text = j.Source.Name
             }
             : null,
-
-
+        
         PickupTime = j.SpeedNavigation != null ? j.SpeedNavigation.PickupTime : null,
         DeliveryTime = j.SpeedNavigation != null ? j.SpeedNavigation.DeliveryTime : null,
 
