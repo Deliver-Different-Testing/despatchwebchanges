@@ -22,52 +22,16 @@ public class RecurringJobRepository(
 {
     private readonly ITenantInfoService _infoService = infoService;
 
-    public async Task<JobGroupViewModel> GetRecurringJobByIdAsync(int jobId)
+        public async Task<PaginatedResponse<PrebookListViewModel>> GetRecurringJobsListAsync(RecurringJobQueryRequest request)
     {
         var isUsTenant = _infoService.IsUsTenant();
-    
-        var mainJob = await Context.TucJobBookings
-            .Where(j => j.UcbkId == jobId)
-            .Select(JobMappings.JobRecurringMapping)
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
-
-        var familyRootId = mainJob.ParentId ?? jobId;
-
-        var relatedJobs = await GetRelatedJobsAsync(jobId, familyRootId, isUsTenant);
-
-        return new JobGroupViewModel
-        {
-            Job = mainJob,
-            RelatedJobs = relatedJobs
-        };
-    }
-
-    private async Task<List<JobViewModel>> GetRelatedJobsAsync(
-        int excludedJobId, 
-        int familyRootId, 
-        bool isUsTenant)
-    {
+        
         var query = Context.TucJobBookings
-            .AsNoTracking()
-            .Where(j => j.UcbkId != excludedJobId)
-            .Where(j => j.UcbkId == familyRootId || j.ParentId == familyRootId);
+            .Where(j => j.UcbkActive == request.Active && j.UcbkOneOff == false);
 
         // US tenants: exclude child jobs (only show jobs where ParentId is null or matches root)
-        if (isUsTenant) query = query.Where(j => j.ParentId == null || j.ParentId == familyRootId);
-
-        return await query
-            .Select(JobMappings.JobRecurringMapping)
-            .ToListAsync();
-    }
-
-    public async Task<PaginatedResponse<PrebookListViewModel>> PreBookJobListAsync(RecurringJobQueryRequest request)
-    {
-        var query = Context.TucJobBookings
-            .Where(j => j.UcbkActive == request.Active
-                        && j.UcbkOneOff == false
-                        && (j.ParentId == null || j.ParentId == j.UcbkId));
-
+        if (isUsTenant) query = query.Where(j=> j.ParentId == null || j.ParentId == j.UcbkId);
+        
         if (!string.IsNullOrWhiteSpace(request.SearchText))
         {
             var searchPattern = $"%{request.SearchText}%";
@@ -152,6 +116,46 @@ public class RecurringJobRepository(
         };
     }
 
+    
+    public async Task<JobGroupViewModel> GetRecurringJobByIdAsync(int jobId)
+    {
+        var isUsTenant = _infoService.IsUsTenant();
+    
+        var mainJob = await Context.TucJobBookings
+            .Where(j => j.UcbkId == jobId)
+            .Select(JobMappings.JobRecurringMapping)
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        var familyRootId = mainJob.ParentId ?? jobId;
+
+        var relatedJobs = await GetRelatedJobsAsync(jobId, familyRootId, isUsTenant);
+
+        return new JobGroupViewModel
+        {
+            Job = mainJob,
+            RelatedJobs = relatedJobs
+        };
+    }
+
+    private async Task<List<JobViewModel>> GetRelatedJobsAsync(
+        int excludedJobId, 
+        int familyRootId, 
+        bool isUsTenant)
+    {
+        var query = Context.TucJobBookings
+            .AsNoTracking()
+            .Where(j => j.UcbkId != excludedJobId)
+            .Where(j => j.UcbkId == familyRootId || j.ParentId == familyRootId);
+
+        // US tenants: exclude child jobs (only show jobs where ParentId is null or matches root)
+        if (isUsTenant) query = query.Where(j => j.ParentId == null || j.ParentId == familyRootId);
+
+        return await query
+            .Select(JobMappings.JobRecurringMapping)
+            .ToListAsync();
+    }
+    
     public async Task UpdateTucJobRecurringAsync(int jobId, JobProperty property, string value)
     {
         var job = await Context.TucJobBookings
