@@ -444,7 +444,7 @@ public class JobController(
     {
         try
         { 
-            var result = await recurringJobRepository.PreBookJobListAsync(request);
+            var result = await recurringJobRepository.GetRecurringJobsListAsync(request);
             return Json(result);
         }
         catch (Exception e)
