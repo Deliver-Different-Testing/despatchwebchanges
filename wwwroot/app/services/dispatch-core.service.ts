@@ -217,11 +217,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async restoreJobs(jobIds: number[]): Promise<void> {
-        await this.$http.post(`job/RestoreJobs`, null, {
-            params: {
-                jobIds,
-            }
-        });
+        await this.$http.post(`job/RestoreJobs`, {jobIds});
     }
 
     async restoreSplitJobs(jobIds: number[]): Promise<void> {

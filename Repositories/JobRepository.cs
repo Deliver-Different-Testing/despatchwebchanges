@@ -1417,10 +1417,19 @@ public partial class JobRepository(
 
     public async Task RestoreJobsAsync(List<int> jobIds)
     {
-        if (jobIds == null || jobIds.Count == 0)
-            return;
+        try
+        {
+            if (jobIds == null || jobIds.Count == 0)
+                return;
 
-        foreach (var jobId in jobIds) await Context.Procedures.uspRestoreJobAsync(jobId);
+            foreach (var jobId in jobIds) await Context.Procedures.uspRestoreJobAsync(jobId);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(RestoreJobsAsync)));
+            throw;
+        }
     }
 
     public async Task VoidJobAsync(VoidJobRequest data)
@@ -2671,9 +2680,9 @@ public partial class JobRepository(
                 Title = "Note added by System",
                 Icon = "sticky_note_2",
                 Description = n.NoteText,
-                Date = n.UpdatedDate.HasValue || n.CreatedDate.HasValue 
-                    ? TimeZoneHelper.SetDateTimeWithTimeZone(n.UpdatedDate ?? n.CreatedDate.Value, timezone) 
-                    : TimeZoneHelper.SetDateTimeWithTimeZone(DateTime.MinValue, timezone) ,
+                Date = n.UpdatedDate.HasValue || n.CreatedDate.HasValue
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(n.UpdatedDate ?? n.CreatedDate.Value, timezone)
+                    : TimeZoneHelper.SetDateTimeWithTimeZone(DateTime.MinValue, timezone),
                 Tags = new[]
                 {
                     "Note",
@@ -3579,29 +3588,39 @@ public partial class JobRepository(
 
     public async Task UpdateJobReadStatusAsync(int jobId, bool hasBeenRead)
     {
-        var staffId = _infoService.GetStaffId();
-        var currentTenantTime = _infoService.GetCurrentTenantTime();
-
-        var rowsAffected = await Context.TucJobReadTrackers
-            .Where(x => x.JobId == jobId)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(x => x.HasBeenRead, hasBeenRead)
-                .SetProperty(x => x.ReadByStaffId, staffId)
-                .SetProperty(x => x.ReadTimestamp, currentTenantTime));
-
-        if (rowsAffected == 0)
+        try
         {
-            // Record doesn't exist, create a new one
-            var data = new TucJobReadTracker
-            {
-                JobId = jobId,
-                HasBeenRead = hasBeenRead,
-                ReadByStaffId = staffId,
-                ReadTimestamp = currentTenantTime
-            };
+            var staffId = _infoService.GetStaffId();
+            var currentTenantTime = _infoService.GetCurrentTenantTime();
 
-            await Context.AddAsync(data);
-            await Context.SaveChangesAsync();
+            var rowsAffected = await Context.TucJobReadTrackers
+                .Where(x => x.JobId == jobId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(x => x.HasBeenRead, hasBeenRead)
+                    .SetProperty(x => x.ReadByStaffId, staffId)
+                    .SetProperty(x => x.ReadTimestamp, currentTenantTime));
+
+            if (rowsAffected == 0)
+            {
+                // Record doesn't exist, create a new one
+                var data = new TucJobReadTracker
+                {
+                    JobId = jobId,
+                    HasBeenRead = hasBeenRead,
+                    ReadByStaffId = staffId,
+                    ReadTimestamp = currentTenantTime
+                };
+
+                await Context.TucJobReadTrackers.AddAsync(data);
+                await Context.SaveChangesAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository),
+                    nameof(UpdateJobReadStatusAsync)));
+            throw;
         }
     }
 
