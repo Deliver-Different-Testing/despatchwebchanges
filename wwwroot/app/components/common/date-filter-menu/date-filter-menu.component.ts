@@ -121,11 +121,11 @@ class DateFilterMenuComponent implements angular.IController {
         if (!this.dateFilterData) return;
 
         this.selectedRangeOption = optionSelected;
+        const defaults = setDateFilterDefaults();
 
         switch (optionSelected) {
             case DateRangeOption.AllTime:
                 // 24 Hours mode - reset to defaults
-                const defaults = setDateFilterDefaults();
                 this.dateFilterData = defaults;
                 this.startDate = defaults.startDate;
                 this.endDate = defaults.endDate;
@@ -146,17 +146,17 @@ class DateFilterMenuComponent implements angular.IController {
             case DateRangeOption.Mins:
                 // Set to the current time and selected minutes
                 if (this.selectedMinsOption) {
-                    this.startDate = dayjs();
-                    this.dateFilterData.startDate = this.startDate;
+                    this.startDate = defaults.startDate;
+                    this.dateFilterData.startDate = defaults.startDate;
 
                     const seconds = this.selectedMinsOption.id as number;
                     this.endDate = dayjs().add(seconds, 'seconds');
                     this.dateFilterData.endDate = this.endDate;
                 } else {
                     // Default to 5 minutes if no option selected
-                    this.startDate = dayjs();
+                    this.startDate = defaults.startDate;
                     this.endDate = dayjs().add(5, 'minutes');
-                    this.dateFilterData.startDate = this.startDate;
+                    this.dateFilterData.startDate = defaults.startDate;
                     this.dateFilterData.endDate = this.endDate;
 
                     // Set default selection

@@ -86,16 +86,6 @@ public class BaseJobRepository(
                     };
             }
 
-            // Get All Jobs For Map (before search to not limit)
-            var mapItems = new List<DispatchMapItem>();
-            if (page == AppPage.Dispatch)
-            {
-                mapItems = await query
-                    .AsNoTracking()
-                    .Select(JobMappings.ToDispatchMapItem)
-                    .ToListAsync();
-            }
-
             // Search
             if (!string.IsNullOrEmpty(queryParams.SearchText)) query = ApplySearchFilter(query, queryParams.SearchText);
             
@@ -111,6 +101,16 @@ public class BaseJobRepository(
             var pageNumber = queryParams.Page ?? 0;
             var pageSize = queryParams.PageSize ?? 50;
 
+            // Get All Jobs For Map
+            var mapItems = new List<DispatchMapItem>();
+            if (page == AppPage.Dispatch)
+            {
+                mapItems = await query
+                    .AsNoTracking()
+                    .Select(JobMappings.ToDispatchMapItem)
+                    .ToListAsync();
+            }
+            
             var jobs = await query
                 .AsNoTracking()
                 .Skip(pageNumber * pageSize)
@@ -153,9 +153,15 @@ public class BaseJobRepository(
     {
         if (selectedViewIds == null || selectedViewIds.Count == 0)
         {
-            return await Context
-                .DeswebQryDespatchJobViewFilters.Select(x => x.UcjbId)
-                .ToListAsync();
+            if (isUsTenant)
+            {
+                // Default to everything for US tenants
+                return await Context
+                    .DeswebQryDespatchJobViewFilters.Select(x => x.UcjbId)
+                    .ToListAsync();
+            }
+
+            return [];
         }
 
         var viewFilters =
