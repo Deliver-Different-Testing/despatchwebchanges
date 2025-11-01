@@ -516,8 +516,9 @@ public class BaseJobRepository(
         else
         {
             ArgumentNullException.ThrowIfNull(viewModel.JobId);
-            var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
-            activeNote.JobId = effectiveJobId;
+            // Use the actual job ID instead of the effective job ID to avoid FK constraint issues
+            // The note should be associated with the specific job being voided, not its parent
+            activeNote.JobId = viewModel.JobId.Value;
         }
 
         await Context.TucNotes.AddAsync(activeNote, cancellationToken);
