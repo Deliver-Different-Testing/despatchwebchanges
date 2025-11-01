@@ -10,7 +10,6 @@ import {JobProperty} from "../enums/job-property.enum";
 import JobAddStopService from "./job-add-stop.service";
 import {AppPage} from "../enums/app-pages.enum";
 import {IPrebookListModel} from "../components/recurringJobs/recurringJobs.interface";
-import DispatchExecutorService from "./dispatch-executor.service";
 import {LateEventType} from "../enums/late-event-type.enum";
 import VoidJobConfirmationDialogService
     from "../components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
@@ -24,7 +23,6 @@ class JobContextMenuService implements angular.IServiceProvider {
         "eventGroupDialogService",
         "addEventDialogService",
         "jobAddStopService",
-        "dispatchJobService",
         "voidJobConfirmationDialogService",
     ];
 
@@ -38,7 +36,6 @@ class JobContextMenuService implements angular.IServiceProvider {
         private eventGroupDialogService: EventGroupDialogService,
         private addEventDialogService: AddEventDialogService,
         private jobAddStopService: JobAddStopService,
-        private dispatchJobService: DispatchExecutorService,
         private voidJobConfirmationDialogService: VoidJobConfirmationDialogService,
     ) {
         console.log("JobContextMenuService initialized");
@@ -482,7 +479,7 @@ class JobContextMenuService implements angular.IServiceProvider {
     private async restoreJob(
         job: IDispatchJob,
         onRefresh?: () => void) {
-        await this.dispatchJobService.assignSingleJobById(job.assignedCourier?.id ?? job.courierData?.courierId ?? 0, job.id);
+        await this.DispatchData.restoreJobs([job.id]);
 
         if (onRefresh) {
             onRefresh();
