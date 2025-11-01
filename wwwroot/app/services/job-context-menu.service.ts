@@ -12,7 +12,6 @@ import {AppPage} from "../enums/app-pages.enum";
 import {IPrebookListModel} from "../components/recurringJobs/recurringJobs.interface";
 import DispatchExecutorService from "./dispatch-executor.service";
 import {LateEventType} from "../enums/late-event-type.enum";
-import {ContactID, FirstName} from "../contants";
 import VoidJobConfirmationDialogService
     from "../components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
 
@@ -483,7 +482,7 @@ class JobContextMenuService implements angular.IServiceProvider {
     private async restoreJob(
         job: IDispatchJob,
         onRefresh?: () => void) {
-        await this.dispatchJobService.restoreJob(job);
+        await this.dispatchJobService.assignSingleJobById(job.assignedCourier?.id ?? job.courierData?.courierId ?? 0, job.id);
 
         if (onRefresh) {
             onRefresh();

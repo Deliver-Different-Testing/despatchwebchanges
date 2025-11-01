@@ -140,6 +140,16 @@ class DispatchExecutorService implements angular.IServiceProvider {
     async assignSingleJobById(courierId: number, jobId: number): Promise<void> {
         console.log("Dispatching job by ID:", {courierId, jobId});
         try {
+            if(!jobId) {
+                console.warn("No job ID provided");
+                return;
+            }
+            
+            if(!courierId) {
+                console.warn("No courier ID provided");
+                return;
+            }
+            
             const job = await this.DispatchData.getDispatchJobDetail(jobId);
             console.log("Job details fetched:", job);
 
