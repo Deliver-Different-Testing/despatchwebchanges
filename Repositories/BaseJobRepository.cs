@@ -88,7 +88,7 @@ public class BaseJobRepository(
 
             // Search
             if (!string.IsNullOrEmpty(queryParams.SearchText)) query = ApplySearchFilter(query, queryParams.SearchText);
-            
+
             // Get a total count before pagination
             // Dispatch page groups by parent id, so we need to count the parent jobs
             int totalCount;
@@ -110,7 +110,7 @@ public class BaseJobRepository(
                     .Select(JobMappings.ToDispatchMapItem)
                     .ToListAsync();
             }
-            
+
             var jobs = await query
                 .AsNoTracking()
                 .Skip(pageNumber * pageSize)
@@ -421,22 +421,30 @@ public class BaseJobRepository(
     protected async Task SaveNoteAsync(int jobId, string noteText, bool isImportant = false,
         bool isRecurringJob = false, NoteType noteType = NoteType.InternalNote)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(noteText);
-
-        // If a note type is not found, default to the internal note
-        var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
-        if (!noteTypeExists) noteType = NoteType.InternalNote;
-
-        var viewModel = new TucNoteViewModel
+        try
         {
-            JobId = isRecurringJob ? null : jobId,
-            JobBookingId = isRecurringJob ? jobId : null,
-            NoteText = noteText,
-            IsImportant = isImportant,
-            NoteTypeId = (int)noteType
-        };
+            ArgumentException.ThrowIfNullOrWhiteSpace(noteText);
 
-        await SaveNoteAsync(viewModel);
+            // If a note type is not found, default to the internal note
+            var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
+            if (!noteTypeExists) noteType = NoteType.InternalNote;
+
+            var viewModel = new TucNoteViewModel
+            {
+                JobId = isRecurringJob ? null : jobId,
+                JobBookingId = isRecurringJob ? jobId : null,
+                NoteText = noteText,
+                IsImportant = isImportant,
+                NoteTypeId = (int)noteType
+            };
+
+            await SaveNoteAsync(viewModel);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository), nameof(SaveNoteAsync)));
+        }
     }
 
     public async Task DeleteNoteAsync(int noteId, CancellationToken cancellationToken = default)
@@ -878,7 +886,7 @@ public class BaseJobRepository(
 
             // Agent information
             EF.Functions.Like(j.Agent.UcagName ?? string.Empty, searchPattern) ||
-            
+
             // Barcode
             EF.Functions.Like(j.Barcode ?? string.Empty, searchPattern)
         );

@@ -1446,9 +1446,9 @@ public partial class JobRepository(
             // Add Notes
             foreach (var id in jobsToVoid) await SaveNoteAsync(id, data.VoidReason);
 
-            var courierMapping = await Context.TblJobs
-                .Where(jt => jobsToVoid.Contains(jt.JobId) && jt.CourierId.HasValue)
-                .Select(jt => jt.CourierId)
+            var courierMapping = await Context.TucJobs
+                .Where(jt => jobsToVoid.Contains(jt.UcjbId) && jt.UcjbCourierId.HasValue)
+                .Select(jt => jt.UcjbCourierId)
                 .Distinct()
                 .ToListAsync();
 
@@ -1458,8 +1458,7 @@ public partial class JobRepository(
                     .SetProperty(j => j.UcjbStatus, (int)JobStatus.Void)
                     .SetProperty(j => j.UcjbVoid, true));
 
-            foreach (var courierId in courierMapping)
-                await Context.Procedures.UTL_stpCourier_ResetClearListAreaOrderAsync(courierId);
+            foreach (var courierId in courierMapping.Where(courierId => courierId.HasValue)) await UpdateClearListAreaOrderStatus(courierId.Value);
 
             // Close tasks based on the voiding scope
             await CloseTasksByJobIdAsync(data.JobId, data.VoidSingleJobOnly);
@@ -1500,8 +1499,7 @@ public partial class JobRepository(
                     .SetProperty(j => j.JobStatus, (int)JobStatus.Void)
                     .SetProperty(j => j.Void, true));
 
-            foreach (var courierId in courierMapping)
-                await Context.Procedures.UTL_stpCourier_ResetClearListAreaOrderAsync(courierId);
+            foreach (var courierId in courierMapping.Where(courierId => courierId.HasValue)) await UpdateClearListAreaOrderStatus(courierId.Value);
 
             // Close tasks based on the voiding scope
             await CloseBulkTasksByBulkJobIdAsync(data.BulkJobId, data.VoidSingleJobOnly);
@@ -3710,5 +3708,69 @@ public partial class JobRepository(
             .AnyAsync();
 
         return isValid;
+    }
+
+    public async Task UpdateClearListAreaOrderStatus(int courierId)
+    {
+        var now = _infoService.GetCurrentTenantTime();
+        try
+        {
+            // Count jobs that are not void and not done for the courier
+            var jobCount = await Context.TucJobs
+                .Where(j => j.UcjbDate.Date == now.Date
+                                            && !j.UcjbVoid &&
+                                            !j.UcjbJobDone &&
+                                            j.UcjbCourierId == courierId)
+                .CountAsync();
+
+            if (jobCount == 0)
+            {
+                // No jobs-set status to 3
+                var clearListOrders = await Context.TblClearListAreaOrders
+                    .Where(c => c.CourierId == courierId)
+                    .ToListAsync();
+
+                foreach (var order in clearListOrders)
+                {
+                    order.Status = (int)JobStatus.Rejected;
+                    order.OrderTime = now;
+                }
+            }
+            else // jobCount > 0
+            {
+                // Check if jobs are only status 5 (picked up) or 8 (late delivery)
+                var jobsNotPickedUpOrLate = await Context.TucJobs
+                    .Where(j =>
+                        j.UcjbDate.Date == now.Date && 
+                        j.UcjbVoid == false &&
+                                j.UcjbJobDone == false &&
+                                j.UcjbCourierId == courierId &&
+                                j.UcjbStatus != (int)JobStatus.PickedUp &&
+                                j.UcjbStatus != (int)JobStatus.LateDelivery)
+                    .CountAsync();
+
+                if (jobsNotPickedUpOrLate == 0)
+                {
+                    // All jobs are only picked up or late delivery - set status to 5
+                    var clearListOrders = await Context.TblClearListAreaOrders
+                        .Where(c => c.CourierId == courierId)
+                        .ToListAsync();
+
+                    foreach (var order in clearListOrders)
+                    {
+                        order.Status = (int)JobStatus.PickedUp;
+                        order.OrderTime = now;
+                    }
+                }
+            }
+
+            await Context.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(UpdateClearListAreaOrderStatus)));
+            throw;
+        }
     }
 }

@@ -289,6 +289,8 @@ public partial class TucCourier
 
     public virtual ICollection<TblBulkScan> TblBulkScans { get; set; } = new List<TblBulkScan>();
 
+    public virtual TblClearListAreaOrder TblClearListAreaOrder { get; set; }
+
     public virtual ICollection<TblHoliday> TblHolidays { get; set; } = new List<TblHoliday>();
 
     public virtual ICollection<TucEvent> TucEvents { get; set; } = new List<TucEvent>();

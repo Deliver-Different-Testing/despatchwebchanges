@@ -27,6 +27,8 @@ public partial class TblClearListArea
 
     public int Order { get; set; }
 
+    public virtual ICollection<TblClearListAreaOrder> TblClearListAreaOrders { get; set; } = new List<TblClearListAreaOrder>();
+
     public virtual ICollection<TblClearListAreaPolygon> TblClearListAreaPolygons { get; set; } = new List<TblClearListAreaPolygon>();
 
     public virtual ICollection<ZoneGroup> ZoneGroups { get; set; } = new List<ZoneGroup>();
