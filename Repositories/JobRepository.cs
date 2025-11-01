@@ -1443,7 +1443,17 @@ public partial class JobRepository(
             else
                 jobsToVoid = await GetAllRelatedJobIdsIncludingParentAsync(data.JobId);
 
-            // Add Notes
+            // Void jobs FIRST before adding notes
+            await Context.TucJobs
+                .Where(j => jobsToVoid.Contains(j.UcjbId))
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.UcjbStatus, (int)JobStatus.Void)
+                    .SetProperty(j => j.UcjbVoid, true));
+
+            // Save changes to ensure jobs are voided before adding notes
+            await Context.SaveChangesAsync();
+
+            // Add Notes AFTER voiding to ensure foreign key references are valid
             foreach (var id in jobsToVoid) await SaveNoteAsync(id, data.VoidReason);
 
             var courierMapping = await Context.TucJobs
@@ -1452,13 +1462,8 @@ public partial class JobRepository(
                 .Distinct()
                 .ToListAsync();
 
-            await Context.TucJobs
-                .Where(j => jobsToVoid.Contains(j.UcjbId))
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(j => j.UcjbStatus, (int)JobStatus.Void)
-                    .SetProperty(j => j.UcjbVoid, true));
-
-            foreach (var courierId in courierMapping.Where(courierId => courierId.HasValue)) await UpdateClearListAreaOrderStatus(courierId.Value);
+            foreach (var courierId in courierMapping.Where(courierId => courierId.HasValue)) 
+                await UpdateClearListAreaOrderStatus(courierId.Value);
 
             // Close tasks based on the voiding scope
             await CloseTasksByJobIdAsync(data.JobId, data.VoidSingleJobOnly);
