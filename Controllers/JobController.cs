@@ -942,11 +942,11 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> RestoreJobs([FromQuery] List<int> jobIds)
+    public async Task<IActionResult> RestoreJobs([FromBody] RestoreJobsRequest data)
     {
         try
         {
-            await jobRepository.RestoreJobsAsync(jobIds);
+            await jobRepository.RestoreJobsAsync(data.JobIds);
             return Ok();
         }
         catch (Exception ex)
@@ -954,7 +954,7 @@ public class JobController(
             Log.Error(
                 ex,
                 "Error restoring the following jobs {JobId}. Error: {ErrorMessage}",
-                jobIds.ToString(),
+                data.JobIds.ToString(),
                 ex.Message
             );
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
