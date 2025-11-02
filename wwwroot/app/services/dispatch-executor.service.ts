@@ -92,13 +92,14 @@ class DispatchExecutorService implements angular.IServiceProvider {
     ): Promise<IJobSearchResult> {
         try {
             await this.loadCourierData();
-   
-         return await this.fetchJobsByParameters(
-             queryParams,
-             isInternal,
-             selectedAreas,
-             selectedClearListId
-         );
+
+            // Ensure all query params are passed through to the fetch method
+            return await this.fetchJobsByParameters(
+                queryParams,
+                isInternal,
+                selectedAreas,
+                selectedClearListId
+            );
         } catch (error) {
             console.error("Error fetching jobs with dispatch status:", error);
             throw error;

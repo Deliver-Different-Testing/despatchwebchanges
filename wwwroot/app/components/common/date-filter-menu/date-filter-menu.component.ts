@@ -21,14 +21,13 @@ class DateFilterMenuComponent extends BaseController {
         'toastrService',
         '$timeout',
         '$interval',
-        '$scope',
     ];
-    
+
     private readonly DateRangeOptionKey: string = `dateRangeOption-${ContactID}`;
     private readonly timeZone: string;
 
     private minsUpdateInterval?: angular.IPromise<any>;
-    private dateFilterData?: IDateFilterData;
+    dateFilterData?: IDateFilterData;
 
     appPage?: AppPage;
     onRefreshData?: (locals: { dateFilterData: IDateFilterData }) => void;
@@ -42,16 +41,15 @@ class DateFilterMenuComponent extends BaseController {
         private toasterService: ToastrService,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
-        $scope: angular.IScope
     ) {
         super();
-        this.initServices($timeout, $interval, $scope);
+        this.initServices($timeout, $interval);
 
         this.minsOptions = getMinsSelectionOptions(5 * 60, 5 * 60, 180);
-        
+
         // Set the default selection
         this.timeZone = getIanaTimezone(TimeZone);
-        
+
         // Set dates
         this.startDate = this.dateFilterData?.startDate || dayjs().tz(this.timeZone);
         this.endDate = this.dateFilterData?.endDate || dayjs().tz(this.timeZone);
@@ -113,7 +111,7 @@ class DateFilterMenuComponent extends BaseController {
         try {
             if (Modernizr.localstorage) {
                 const savedDateOption = localStorage.getItem(`${this.appPage}-${this.DateRangeOptionKey}`);
-                if(savedDateOption) {
+                if (savedDateOption) {
                     this.selectedRangeOption = savedDateOption as DateRangeOption;
                 } else {
                     // Default to all time

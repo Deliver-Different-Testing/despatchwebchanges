@@ -1039,7 +1039,14 @@ class HomeController extends BaseController {
             this.selectedClearListId = selectedClearListId; // Save for later use
 
             const result = await this.dispatchJobService.getJobsWithDispatchInfo(
-                this.queryParams,
+                {
+                    ...this.queryParams,
+                    startDate: this.dateFilterData.startDate,
+                    endDate: this.dateFilterData.endDate,
+                    useTime: this.dateFilterData.useTime,
+                    page: this.currentJobListPage,
+                    pageSize: this.currentJobListPageSize
+                },
                 ClientInternal ?? false,
                 this.selectedViews,
                 selectedClearListId,
@@ -2334,10 +2341,12 @@ class HomeController extends BaseController {
 
     async handleLoadMoreJobs(page: number, pageSize: number): Promise<IJobSearchResult> {
         try {
-            this.queryParams.useTime = this.dateFilterData.useTime;
             return await this.dispatchJobService.getJobsWithDispatchInfo(
                 {
                     ...this.queryParams,
+                    startDate: this.dateFilterData.startDate,
+                    endDate: this.dateFilterData.endDate,
+                    useTime: this.dateFilterData.useTime,
                     page: page,
                     pageSize: pageSize
                 },

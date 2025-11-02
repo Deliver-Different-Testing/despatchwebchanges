@@ -59,25 +59,15 @@ public class BaseJobRepository(
             {
                 case AppPage.Dispatch:
                     query = query.Where(j => j.UcjbStatus != (int)JobStatus.AwaitingPod);
-    
+
                     if (queryParams.DateCutoff.HasValue)
                         query = query.Where(j => j.UcjbDate.Date <= queryParams.DateCutoff.Value.Date);
-    
+
                     if (queryParams.StartDate.HasValue)
                         query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
-    
-                    if (queryParams.EndDate.HasValue)
-                    {
-                        if (queryParams.UseTime)
-                            // Compare full datetime (date and time)
-                            query = query.Where(j =>
-                                j.UcjbDate.Date <= queryParams.EndDate.Value.Date &&
-                                j.UcjbTime.HasValue &&
-                                j.UcjbTime.Value.TimeOfDay <= queryParams.EndDate.Value.TimeOfDay);
-                        else
-                            // Compare date only
-                            query = query.Where(j => j.UcjbDate.Date <= queryParams.EndDate.Value.Date);
-                    }
+
+                    query = ApplyEndDateFilter(query, queryParams.EndDate, queryParams.UseTime);
+
                     break;
                 case AppPage.Domestic:
                     query = ApplyNationwideSpecificFilters(
@@ -102,13 +92,7 @@ public class BaseJobRepository(
             // Search
             if (!string.IsNullOrEmpty(queryParams.SearchText)) query = ApplySearchFilter(query, queryParams.SearchText);
 
-            // Get a total count before pagination
-            // Dispatch page groups by parent id, so we need to count the parent jobs
-            int totalCount;
-            /*if (page == AppPage.Dispatch)
-                totalCount = await query.CountAsync(j => !j.ParentId.HasValue || j.ParentId == j.UcjbId);
-            else*/
-                totalCount = await query.CountAsync();
+            var totalCount = await query.CountAsync();
 
             // Apply pagination
             var pageNumber = queryParams.Page ?? 0;
@@ -238,6 +222,8 @@ public class BaseJobRepository(
         if (queryParams.DateCutoff != null)
             query = query.Where(j => j.UcjbDate.Date <= queryParams.DateCutoff.Value.Date);
 
+        query = ApplyEndDateFilter(query, queryParams.DateCutoff, queryParams.UseTime);
+
         // Apply window pane viewFilters
         query = windowPane switch
         {
@@ -272,6 +258,28 @@ public class BaseJobRepository(
         query = query.Where(j => clientIdList.Contains((int)j.UcjbClientId));
 
         return query;
+    }
+    
+    private static IQueryable<TucJob> ApplyEndDateFilter(
+        IQueryable<TucJob> query,
+        DateTimeOffset? endDate,
+        bool useTime)
+    {
+        if (!endDate.HasValue)
+            return query;
+
+        if (!useTime) return query.Where(j => j.UcjbDate.Date <= endDate.Value.Date);
+        
+        // Compare full datetime by checking date first, then time
+        var filterDate = endDate.Value.Date;
+        var filterTime = endDate.Value.TimeOfDay;
+        
+        return query.Where(j =>
+            j.UcjbDate.Date < filterDate ||
+            (j.UcjbDate.Date == filterDate && 
+             (!j.UcjbTime.HasValue || j.UcjbTime.Value.TimeOfDay <= filterTime)));
+
+        // Compare date only
     }
 
     public async Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(
