@@ -59,6 +59,7 @@ class NationwideService implements angular.IServiceProvider {
                 page: queryParams.page ?? 0,
                 pageSize: queryParams.pageSize ?? 50,
                 searchText: queryParams.searchText ?? '',
+                useTime: queryParams.useTime ?? false,
             }
         });
         

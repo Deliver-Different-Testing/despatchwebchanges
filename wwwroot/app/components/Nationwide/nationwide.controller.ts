@@ -131,7 +131,6 @@ class NationwideControl extends BaseController {
     private lastMapJobId?: number;
     private cachedMapConfig?: any;
     private isSelectingJob: boolean = false;
-    private lastSelectedJobId?: number;
 
     private tasksLoadingInBackground: boolean = false;
     isUsCustomer: boolean;
@@ -1163,7 +1162,6 @@ class NationwideControl extends BaseController {
             }
 
             this.isSelectingJob = true;
-            this.lastSelectedJobId = job.id;
 
             console.info(`Selecting job ${job.jobNo}`);
 
@@ -1450,15 +1448,6 @@ class NationwideControl extends BaseController {
             const arrivalAirportId = this.selectedInboundAirport?.id;
             const minimumLayoverMinutes = 60;
 
-            console.info('Loading flights with params:', {
-                jobId: this.currentJob.id,
-                departureDate: departureDate,
-                airlineId: airlineId,
-                departureAirportId: departureAirportId,
-                arrivalAirportId: arrivalAirportId,
-                minimumLayoverMinutes: minimumLayoverMinutes
-            });
-
             this.flightListPromise = this.nationwideService.getFlightOptions(
                 this.currentJob.id,
                 departureDate,
@@ -1645,14 +1634,17 @@ class NationwideControl extends BaseController {
         if (dataTypes.includes(JobDataType.NEW)) {
             this.jobFilters.startDate = this.dateFilterData.startDate;
             this.jobFilters.endDate = this.dateFilterData.endDate;
+            this.jobFilters.useTime = this.dateFilterData.useTime;
         }
         if (dataTypes.includes(JobDataType.POD)) {
             this.jobPodFilters.startDate = this.dateFilterData.startDate;
             this.jobPodFilters.endDate = this.dateFilterData.endDate;
+            this.jobPodFilters.useTime = this.dateFilterData.useTime;
         }
         if (dataTypes.includes(JobDataType.REPRICE)) {
             this.jobRepriceFilters.startDate = this.dateFilterData.startDate;
             this.jobRepriceFilters.endDate = this.dateFilterData.endDate;
+            this.jobRepriceFilters.useTime = this.dateFilterData.useTime;
         }
     }
 
@@ -1667,7 +1659,7 @@ class NationwideControl extends BaseController {
             }
         }
 
-        const types = Array.isArray(dataTypes) ? dataTypes : [dataTypes];
+        const types: JobDataType[] = Array.isArray(dataTypes) ? dataTypes : [dataTypes];
 
         const requestedTypes = types.includes(JobDataType.ALL)
             ? [JobDataType.NEW, JobDataType.POD, JobDataType.REPRICE]

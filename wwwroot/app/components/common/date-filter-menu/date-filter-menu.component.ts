@@ -11,29 +11,41 @@ import {getIanaTimezone} from "../../../functions/formatDates";
 import {TimeZone} from "../../../contants";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
+import BaseController from "../../base-controller";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-class DateFilterMenuComponent implements angular.IController {
+class DateFilterMenuComponent extends BaseController {
     static $inject = [
         'toastrService',
+        '$timeout',
+        '$interval',
+        '$scope',
     ];
     
     private readonly DateRangeOptionKey: string = `dateRangeOption-${ContactID}`;
     private readonly timeZone: string;
-    
+
+    private minsUpdateInterval?: angular.IPromise<any>;
+    private dateFilterData?: IDateFilterData;
+
     appPage?: AppPage;
     onRefreshData?: (locals: { dateFilterData: IDateFilterData }) => void;
-    private dateFilterData?: IDateFilterData;
     selectedRangeOption: DateRangeOption = DateRangeOption.AllTime;
     startDate: Dayjs;
     endDate: Dayjs;
     minsOptions: ISuggestion[];
     selectedMinsOption?: ISuggestion;
 
-    constructor(private toasterService: ToastrService) {
-        console.log("Component: DateFilterMenuComponent");
+    constructor(
+        private toasterService: ToastrService,
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
+        $scope: angular.IScope
+    ) {
+        super();
+        this.initServices($timeout, $interval, $scope);
 
         this.minsOptions = getMinsSelectionOptions(5 * 60, 5 * 60, 180);
         
@@ -51,6 +63,11 @@ class DateFilterMenuComponent implements angular.IController {
         if (!this.dateFilterData) {
             console.warn("DateFilterData is null on init, creating default values");
         }
+    }
+
+    $onDestroy() {
+        this.stopMinsUpdate();
+        super.$onDestroy();
     }
 
     $onChanges(changes: angular.IOnChangesObject) {
@@ -132,6 +149,9 @@ class DateFilterMenuComponent implements angular.IController {
         this.selectedRangeOption = optionSelected;
         const defaults = setDateFilterDefaults();
 
+        // Stop any existing mins update interval
+        this.stopMinsUpdate();
+
         switch (optionSelected) {
             case DateRangeOption.AllTime:
                 // 24 Hours mode - reset to defaults
@@ -162,7 +182,7 @@ class DateFilterMenuComponent implements angular.IController {
                     this.startDate = defaults.startDate;
                     this.dateFilterData.startDate = defaults.startDate;
 
-                    const seconds = this.selectedMinsOption.id as number;
+                    const seconds = this.selectedMinsOption.id;
                     this.endDate = dayjs().tz(this.timeZone).add(seconds, 'seconds');
                     this.dateFilterData.endDate = this.endDate;
                 } else {
@@ -175,8 +195,11 @@ class DateFilterMenuComponent implements angular.IController {
                     // Set default selection
                     this.selectedMinsOption = this.minsOptions.find(opt => opt.id === 5 * 60); // 5 mins
                 }
-                
+
                 this.dateFilterData.useTime = true;
+
+                // Start the interval to update every minute
+                this.startMinsUpdate();
                 break;
         }
 
@@ -188,9 +211,39 @@ class DateFilterMenuComponent implements angular.IController {
         await this.refreshData();
     }
 
+    private startMinsUpdate(): void {
+        // Update every minute (60,000 ms)
+        this.minsUpdateInterval = this.registerInterval(async () => {
+            if (this.selectedRangeOption === DateRangeOption.Mins && this.selectedMinsOption && this.dateFilterData) {
+                console.log('Updating mins filter to keep it synchronized');
+
+                const defaults = setDateFilterDefaults();
+                this.startDate = defaults.startDate;
+                this.dateFilterData.startDate = defaults.startDate;
+
+                const seconds = this.selectedMinsOption.id;
+                this.endDate = dayjs().tz(this.timeZone).add(seconds, 'seconds');
+                this.dateFilterData.endDate = this.endDate;
+
+                // Refresh the data with the updated times
+                await this.refreshData();
+            }
+        }, 60000); // 60 seconds = 1 minute
+    }
+
+    private stopMinsUpdate(): void {
+        if (this.minsUpdateInterval) {
+            this.cancelInterval(this.minsUpdateInterval);
+            this.minsUpdateInterval = undefined;
+        }
+    }
+
     async clearDateFilter(): Promise<void> {
         if (!this.dateFilterData) return;
         console.log("Clearing date filter");
+
+        // Stop any mins update interval
+        this.stopMinsUpdate();
 
         const defaults = setDateFilterDefaults();
         this.dateFilterData = defaults;
@@ -247,13 +300,18 @@ class DateFilterMenuComponent implements angular.IController {
         this.selectedMinsOption = option;
 
         // Set the start date now
-        this.startDate = dayjs().tz(this.timeZone);
-        this.dateFilterData.startDate = this.startDate;
+        const defaults = setDateFilterDefaults();
+        this.startDate = defaults.startDate;
+        this.dateFilterData.startDate = defaults.startDate;
 
         // Set the end date to now + selected minutes (id is in seconds)
         const seconds = option.id;
         this.endDate = dayjs().tz(this.timeZone).add(seconds, 'seconds');
         this.dateFilterData.endDate = this.endDate;
+
+        // Restart the interval with the new mins selection
+        this.stopMinsUpdate();
+        this.startMinsUpdate();
 
         await this.refreshData();
     }
