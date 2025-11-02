@@ -22,16 +22,17 @@ public class RecurringJobRepository(
 {
     private readonly ITenantInfoService _infoService = infoService;
 
-        public async Task<PaginatedResponse<PrebookListViewModel>> GetRecurringJobsListAsync(RecurringJobQueryRequest request)
+    public async Task<PaginatedResponse<PrebookListViewModel>> GetRecurringJobsListAsync(
+        RecurringJobQueryRequest request)
     {
         var isUsTenant = _infoService.IsUsTenant();
-        
+
         var query = Context.TucJobBookings
             .Where(j => j.UcbkActive == request.Active && j.UcbkOneOff == false);
 
         // US tenants: exclude child jobs (only show jobs where ParentId is null or matches root)
-        if (isUsTenant) query = query.Where(j=> j.ParentId == null || j.ParentId == j.UcbkId);
-        
+        if (isUsTenant) query = query.Where(j => j.ParentId == null || j.ParentId == j.UcbkId);
+
         if (!string.IsNullOrWhiteSpace(request.SearchText))
         {
             var searchPattern = $"%{request.SearchText}%";
@@ -101,12 +102,15 @@ public class RecurringJobRepository(
         var tenantTimeZone = _infoService.GetTenantTimeZone();
         foreach (var item in items)
         {
-            item.Booked = TimeZoneHelper.SetDateTimeWithTimeZone(item.Booked, tenantTimeZone);
-            item.NextDueTime = item.NextDueTime.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(item.NextDueTime.Value, tenantTimeZone)
-                : null;
+            // Only apply timezone if Booked has a meaningful value
+            if (item.Booked != default(DateTime) && item.Booked > DateTime.MinValue)
+                item.Booked = TimeZoneHelper.SetDateTimeWithTimeZone(item.Booked, tenantTimeZone);
+    
+            // NextDueTime already has null-check but also check for default/MinValue
+            if (item.NextDueTime.HasValue && item.NextDueTime.Value > DateTime.MinValue) 
+                item.NextDueTime = TimeZoneHelper.SetDateTimeWithTimeZone(item.NextDueTime.Value, tenantTimeZone);
         }
-
+        
         return new PaginatedResponse<PrebookListViewModel>
         {
             Items = items,
@@ -116,11 +120,10 @@ public class RecurringJobRepository(
         };
     }
 
-    
     public async Task<JobGroupViewModel> GetRecurringJobByIdAsync(int jobId)
     {
         var isUsTenant = _infoService.IsUsTenant();
-    
+
         var mainJob = await Context.TucJobBookings
             .Where(j => j.UcbkId == jobId)
             .Select(JobMappings.JobRecurringMapping)
@@ -139,8 +142,8 @@ public class RecurringJobRepository(
     }
 
     private async Task<List<JobViewModel>> GetRelatedJobsAsync(
-        int excludedJobId, 
-        int familyRootId, 
+        int excludedJobId,
+        int familyRootId,
         bool isUsTenant)
     {
         var query = Context.TucJobBookings
@@ -155,7 +158,7 @@ public class RecurringJobRepository(
             .Select(JobMappings.JobRecurringMapping)
             .ToListAsync();
     }
-    
+
     public async Task UpdateTucJobRecurringAsync(int jobId, JobProperty property, string value)
     {
         var job = await Context.TucJobBookings
@@ -312,6 +315,7 @@ public class RecurringJobRepository(
                     foreach (var childJob in job.InverseBookingParent)
                         childJob.UcbkDaysInt = (int)dayEnum;
                 }
+
                 noteText = $"Days of recurring jobs set to: {dayEnum.ToDisplayString()}";
                 break;
             case JobProperty.Frequency:

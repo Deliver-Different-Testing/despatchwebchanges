@@ -7,6 +7,13 @@ import DateRangeOption from "./enums/dateRangeOption";
 import {AppPage} from "../../../enums/app-pages.enum";
 import {ISuggestion} from "../../../interfaces/job.interface";
 import {getMinsSelectionOptions} from "../../../functions/MinsSelectionOptions";
+import {getIanaTimezone} from "../../../functions/formatDates";
+import {TimeZone} from "../../../contants";
+import timezone from "dayjs/plugin/timezone";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 class DateFilterMenuComponent implements angular.IController {
     static $inject = [
@@ -14,10 +21,10 @@ class DateFilterMenuComponent implements angular.IController {
     ];
     
     private readonly DateRangeOptionKey: string = `dateRangeOption-${ContactID}`;
-
+    private readonly timeZone: string;
+    
     appPage?: AppPage;
     onRefreshData?: (locals: { dateFilterData: IDateFilterData }) => void;
-    timeZone: string = TimeZone;
     private dateFilterData?: IDateFilterData;
     selectedRangeOption: DateRangeOption = DateRangeOption.AllTime;
     startDate: Dayjs;
@@ -27,13 +34,15 @@ class DateFilterMenuComponent implements angular.IController {
 
     constructor(private toasterService: ToastrService) {
         console.log("Component: DateFilterMenuComponent");
-        console.log("Browser Time Zone:", this.timeZone);
 
         this.minsOptions = getMinsSelectionOptions(5 * 60, 5 * 60, 180);
         
+        // Set the default selection
+        this.timeZone = getIanaTimezone(TimeZone);
+        
         // Set dates
-        this.startDate = this.dateFilterData?.startDate || dayjs();
-        this.endDate = this.dateFilterData?.endDate || dayjs();
+        this.startDate = this.dateFilterData?.startDate || dayjs().tz(this.timeZone);
+        this.endDate = this.dateFilterData?.endDate || dayjs().tz(this.timeZone);
     }
 
     $onInit() {
@@ -56,7 +65,7 @@ class DateFilterMenuComponent implements angular.IController {
             this.endDate = this.dateFilterData.endDate;
 
             // Ensure the end date is at least 24 hours from now
-            const minEndDate = dayjs().add(24, 'hour');
+            const minEndDate = dayjs().tz(this.timeZone).add(24, 'hour');
 
             if (this.endDate.isBefore(minEndDate)) {
                 this.endDate = minEndDate;
@@ -134,11 +143,11 @@ class DateFilterMenuComponent implements angular.IController {
             case DateRangeOption.Date:
                 // Custom mode - set reasonable defaults if dates are not set
                 if (!this.dateFilterData.startDate || this.dateFilterData.startDate.valueOf() === 0) {
-                    this.startDate = dayjs().subtract(7, 'days');
+                    this.startDate = dayjs().tz(this.timeZone).subtract(7, 'days');
                     this.dateFilterData.startDate = this.startDate;
                 }
                 if (!this.dateFilterData.endDate || this.dateFilterData.endDate.valueOf() === 0) {
-                    this.endDate = dayjs();
+                    this.endDate = dayjs().tz(this.timeZone);
                     this.dateFilterData.endDate = this.endDate;
                 }
                 break;
@@ -150,12 +159,12 @@ class DateFilterMenuComponent implements angular.IController {
                     this.dateFilterData.startDate = defaults.startDate;
 
                     const seconds = this.selectedMinsOption.id as number;
-                    this.endDate = dayjs().add(seconds, 'seconds');
+                    this.endDate = dayjs().tz(this.timeZone).add(seconds, 'seconds');
                     this.dateFilterData.endDate = this.endDate;
                 } else {
                     // Default to 5 minutes if no option selected
                     this.startDate = defaults.startDate;
-                    this.endDate = dayjs().add(5, 'minutes');
+                    this.endDate = dayjs().tz(this.timeZone).add(5, 'minutes');
                     this.dateFilterData.startDate = defaults.startDate;
                     this.dateFilterData.endDate = this.endDate;
 
@@ -232,12 +241,12 @@ class DateFilterMenuComponent implements angular.IController {
         this.selectedMinsOption = option;
 
         // Set the start date now
-        this.startDate = dayjs();
+        this.startDate = dayjs().tz(this.timeZone);
         this.dateFilterData.startDate = this.startDate;
 
         // Set the end date to now + selected minutes (id is in seconds)
         const seconds = option.id;
-        this.endDate = dayjs().add(seconds, 'seconds');
+        this.endDate = dayjs().tz(this.timeZone).add(seconds, 'seconds');
         this.dateFilterData.endDate = this.endDate;
 
         await this.refreshData();
