@@ -34,7 +34,7 @@ public class BaseJobRepository(
     )
     {
         try
-        {
+        { 
             var query = await BuildBaseQuery(selectedViewIds, isUsTenant);
             if (query == null)
                 return new JobSearchResult

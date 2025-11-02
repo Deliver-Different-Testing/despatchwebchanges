@@ -1047,7 +1047,7 @@ class HomeController extends BaseController {
 
             if (result.jobs?.length > 0) {
                 console.log("Processing clear list jobs:", result.jobs);
-                this.jobList = HomeController.initializeJobSearchFields(result.jobs);
+                this.jobList = this.initializeJobSearchFields(result.jobs);
 
                 if (!this.currentCourier) {
                     this.mapJobList = result.mapItems;
@@ -1360,7 +1360,7 @@ class HomeController extends BaseController {
 
     async selectPotentialCourier(courier: ICourierData): Promise<void> {
         try {
-            HomeController.updateCourierInfo(courier);
+            this.updateCourierInfo(courier);
             await this.displayJobsForCourier(courier);
             await this.updateUIForPotentialCourier(courier);
         } catch (error: any) {
@@ -1368,7 +1368,7 @@ class HomeController extends BaseController {
         }
     }
 
-    static updateCourierInfo(courier: ICourierData): void {
+    updateCourierInfo(courier: ICourierData): void {
         if (!courier.courier) {
             courier.courier = `${courier.courier} ${courier.courierName}`;
         }
@@ -1507,7 +1507,7 @@ class HomeController extends BaseController {
                 // Scenario 2: Job has no courier assigned - show only this job
                 console.log("Selected job has no courier - showing only this job on map");
 
-                const mapJobItem = HomeController.mapToDispatchMapItem(job);
+                const mapJobItem = this.mapToDispatchMapItem(job);
                 this.mapJobList = [mapJobItem]
 
                 await this.handleUndispatchedJob(job);
@@ -1537,14 +1537,14 @@ class HomeController extends BaseController {
                 } else {
                     // Fallback if no courier data available
                     console.warn("Job has courier assigned but missing courierData");
-                    const mapJobItem = HomeController.mapToDispatchMapItem(job);
+                    const mapJobItem = this.mapToDispatchMapItem(job);
                     this.mapJobList = [mapJobItem]
                 }
             }
         } catch (error: any) {
             console.error("Error in selectJob:", error);
             // Fallback to showing just the current job
-            const mapJobItem = HomeController.mapToDispatchMapItem(job);
+            const mapJobItem = this.mapToDispatchMapItem(job);
             this.mapJobList = [mapJobItem]
         }
 
@@ -1553,7 +1553,7 @@ class HomeController extends BaseController {
         this.applyScope();
     }
 
-    private static mapToDispatchMapItem(job: IDispatchJob): IDispatchMapItem {
+    private mapToDispatchMapItem(job: IDispatchJob): IDispatchMapItem {
         return {
             jobId: job.id,
             jobNo: job.jobNo,
@@ -1630,7 +1630,7 @@ class HomeController extends BaseController {
         await this.getData();
     }
 
-    private static initializeJobSearchFields(jobs: IDispatchJob[]): IDispatchJob[] {
+    private initializeJobSearchFields(jobs: IDispatchJob[]): IDispatchJob[] {
         if (!Array.isArray(jobs)) {
             return jobs;
         }
@@ -1701,7 +1701,7 @@ class HomeController extends BaseController {
             );
 
             if (result.jobs?.length > 0) {
-                this.jobList = HomeController.initializeJobSearchFields(result.jobs);
+                this.jobList = this.initializeJobSearchFields(result.jobs);
 
                 if (!this.currentCourier) {
                     this.mapJobListFull = angular.copy(result.mapItems);
@@ -1885,7 +1885,7 @@ class HomeController extends BaseController {
         await this.additionalServicesDialog.showAdditionalServicesDialog($event, job);
     }
 
-    static updateCallData(callData: any, job: IDispatchJob, jobIdElement: any): void {
+    updateCallData(callData: any, job: IDispatchJob, jobIdElement: any): void {
         if (!callData.courierId) {
             callData.courierId = job.courierData?.courierId ?? 0;
         }

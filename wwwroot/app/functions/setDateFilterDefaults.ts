@@ -1,11 +1,19 @@
 ﻿import IDateFilterData from "../components/common/date-filter-menu/IDateFilterData";
 import dayjs from "dayjs";
+import {getIanaTimezone} from "./formatDates";
+import {TimeZone} from "../contants";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
 
-function setDateFilterDefaults(): IDateFilterData {
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+function setDateFilterDefaults(timeZone?: string): IDateFilterData {
+    if(!timeZone) timeZone = getIanaTimezone(TimeZone);
+    
     return {
-        startDate: dayjs(0),
-        endDate: dayjs().add(24, 'hours')
+        startDate: dayjs(0).tz(timeZone),
+        endDate: dayjs().tz(timeZone).add(24, 'hours')
     };
 }
-
 export default setDateFilterDefaults;
