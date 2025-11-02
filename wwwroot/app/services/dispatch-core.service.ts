@@ -305,19 +305,7 @@ class DispatchCoreService implements angular.IServiceProvider {
 
         return transformJobGroupDTO(response.data);
     }
-
-    async getRelatedJobs(parentId: number, clientId: number): Promise<ISuggestion[]> {
-        const response = await this.$http.get<ISuggestion[]>(
-            `job/Related`, {
-                params: {
-                    parentId,
-                    clientId,
-                },
-            }
-        );
-        return response.data;
-    }
-
+    
     async getJobsCurrent(courierId: number, page: number, pageSize: number): Promise<IJobSearchResult> {
         const response = await this.$http.get<IJobSearchResultDto>(
             `job/current`, {

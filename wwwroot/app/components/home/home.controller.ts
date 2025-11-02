@@ -1491,16 +1491,6 @@ class HomeController extends BaseController {
         // Create a new reference to trigger change detection
         this.currentJob = angular.copy(job);
         this.currentJobId = job.id;
-        
-        if (job.rootParentId) {
-            try {
-                if (this.currentJob?.rootParentId && this.currentJob?.clientId) {
-                    this.currentJob.relatedJobs = await this.DispatchData.getRelatedJobs(this.currentJob.rootParentId, this.currentJob.clientId);
-                }
-            } catch (error: any) {
-                console.error("Error getting related jobs:", error);
-            }
-        }
 
         // Set the currentSelection to job-specific information
         this.currentSelection = ` for Job ${job.jobNo}`;

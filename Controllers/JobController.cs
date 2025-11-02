@@ -427,12 +427,6 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> Related(int parentId, int clientId)
-    {
-        var result = await jobRepository.RelatedJobsAsync(parentId, clientId);
-        return Json(result);
-    }
-
     public async Task<IActionResult> BulkDetail(int bulkJobId)
     {
         var result = await jobRepository.GetBulkJobDetailAsync(bulkJobId);
