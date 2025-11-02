@@ -13,7 +13,6 @@ namespace DespatchWeb.Interfaces;
 
 public interface IJobRepository
 {
-    Task<List<Suggestion>> RelatedJobsAsync(int parentId, int clientId);
     Task<JobGroupViewModel> GetBulkJobDetailAsync(int bulkJobId);
     Task<DispatchJobViewModel> GetBulkDispatchJobDetailAsync(int bulkJobId);
 

@@ -25,17 +25,7 @@ public partial class JobRepository(
     : BaseJobRepository(contextFactory, infoService, clearListEnvelopeService), IJobRepository
 {
     private readonly ITenantInfoService _infoService = infoService;
-
-    public async Task<List<Suggestion>> RelatedJobsAsync(int parentId, int clientId)
-    {
-        return await Context.TucJobs
-            .AsNoTracking()
-            .Where(j => (j.ParentId == parentId || j.ParentId == null) && j.UcjbClientId == clientId)
-            .OrderBy(j => j.UcjbDate)
-            .ThenBy(j => j.UcjbTime)
-            .Select(j => new Suggestion { Id = j.UcjbId, Text = j.UcjbNumber })
-            .ToListAsync();
-    }
+    private static readonly DateTime SqlMinDateTime = new(1753, 1, 1);
 
     /* Bulk Job Detail*/
     public async Task<JobGroupViewModel> GetBulkJobDetailAsync(int bulkJobId)
@@ -1462,7 +1452,7 @@ public partial class JobRepository(
                 .Distinct()
                 .ToListAsync();
 
-            foreach (var courierId in courierMapping.Where(courierId => courierId.HasValue)) 
+            foreach (var courierId in courierMapping.Where(courierId => courierId.HasValue))
                 await UpdateClearListAreaOrderStatus(courierId.Value);
 
             // Close tasks based on the voiding scope
@@ -1504,7 +1494,8 @@ public partial class JobRepository(
                     .SetProperty(j => j.JobStatus, (int)JobStatus.Void)
                     .SetProperty(j => j.Void, true));
 
-            foreach (var courierId in courierMapping.Where(courierId => courierId.HasValue)) await UpdateClearListAreaOrderStatus(courierId.Value);
+            foreach (var courierId in courierMapping.Where(courierId => courierId.HasValue))
+                await UpdateClearListAreaOrderStatus(courierId.Value);
 
             // Close tasks based on the voiding scope
             await CloseBulkTasksByBulkJobIdAsync(data.BulkJobId, data.VoidSingleJobOnly);
@@ -3375,68 +3366,257 @@ public partial class JobRepository(
     {
         try
         {
-            // Mark the job as ready
             await MarkJobAsReadAsync(jobId);
 
             // Check for a live job first
             var isLiveJob = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
-            if (isLiveJob)
-            {
-                var mainJob = await Context.TucJobs
-                    .AsNoTracking()
-                    .Where(j => j.UcjbId == jobId)
-                    .Select(JobMappings.JobMapping)
-                    .FirstOrDefaultAsync();
 
-                ApplyFlightTimezones(mainJob);
+            if (isLiveJob) return await GetLiveJobByIdAsync(jobId);
 
-                var familyRootId = mainJob.ParentId ?? jobId;
-
-                // Get related jobs in the family
-                var relatedJobs = await Context.TucJobs
-                    .AsNoTracking()
-                    .Where(j => j.ParentId == familyRootId
-                                && j.UcjbId != jobId)
-                    .Select(JobMappings.JobMapping)
-                    .ToListAsync();
-
-                foreach (var relatedJob in relatedJobs) ApplyFlightTimezones(relatedJob);
-
-                return new JobGroupViewModel
-                {
-                    Job = mainJob,
-                    RelatedJobs = relatedJobs
-                };
-            }
-
-            // Check for an archived job
-            var archivedJob = await Context.TucJobArchives
-                .Where(j => j.UcjbId == jobId)
-                .Select(JobMappings.JobArchiveMapping)
-                .AsNoTracking()
-                .FirstOrDefaultAsync();
-            ArgumentNullException.ThrowIfNull(archivedJob);
-
-            var archivedJobFamilyRootId = archivedJob.ParentId ?? jobId;
-
-            // Get related jobs in the family
-            var archivedJobRelatedJobs = await Context.TucJobArchives
-                .AsNoTracking()
-                .Where(j => j.ParentId == archivedJobFamilyRootId
-                            && j.UcjbId != jobId)
-                .Select(JobMappings.JobArchiveMapping)
-                .ToListAsync();
-
-            return new JobGroupViewModel
-            {
-                Job = archivedJob,
-                RelatedJobs = archivedJobRelatedJobs
-            };
+            // Handle archived job
+            return await GetArchivedJobByIdAsync(jobId);
         }
         catch (Exception e)
         {
             Log.Error(e, "Error occurred getting job {JobId}. Please see exception.", jobId);
             throw;
+        }
+    }
+
+    private async Task<JobGroupViewModel> GetLiveJobByIdAsync(int jobId)
+    {
+        var mainJob = await Context.TucJobs
+            .AsNoTracking()
+            .Where(j => j.UcjbId == jobId)
+            .Select(JobMappings.JobMappingCore)
+            .FirstOrDefaultAsync();
+
+        if (mainJob == null)
+            throw new KeyNotFoundException($"Job {jobId} not found");
+
+        var effectiveJobId = mainJob.ParentId ?? jobId;
+
+        // Load collections sequentially
+        await LoadFlightInfoAsync(effectiveJobId, mainJob);
+        await LoadPricingBreakdownAsync(effectiveJobId, mainJob);
+        await LoadParcelDimensionsAsync(jobId, effectiveJobId, mainJob);
+        await LoadJobItemFlagsAsync(jobId, mainJob);
+
+        var familyRootId = mainJob.ParentId ?? jobId;
+        var relatedJobs = await Context.TucJobs
+            .AsNoTracking()
+            .Where(j => j.ParentId == familyRootId && j.UcjbId != jobId)
+            .Select(JobMappings.JobMappingCore)
+            .ToListAsync();
+
+        foreach (var relatedJob in relatedJobs)
+        {
+            var relatedEffectiveJobId = relatedJob.ParentId ?? relatedJob.Id;
+            await LoadFlightInfoAsync(relatedEffectiveJobId, relatedJob);
+            await LoadPricingBreakdownAsync(relatedEffectiveJobId, relatedJob);
+            await LoadParcelDimensionsAsync(relatedJob.Id, relatedEffectiveJobId, relatedJob);
+            await LoadJobItemFlagsAsync(relatedJob.Id, relatedJob);
+        }
+
+        ApplyFlightTimezones(mainJob);
+        foreach (var relatedJob in relatedJobs)
+            ApplyFlightTimezones(relatedJob);
+
+        return new JobGroupViewModel
+        {
+            Job = mainJob,
+            RelatedJobs = relatedJobs
+        };
+    }
+
+    private async Task<JobGroupViewModel> GetArchivedJobByIdAsync(int jobId)
+    {
+        var archivedJob = await Context.TucJobArchives
+            .Where(j => j.UcjbId == jobId)
+            .Select(JobMappings.JobArchiveMapping)
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        if (archivedJob == null)
+            throw new KeyNotFoundException($"Archived job {jobId} not found");
+
+        var archivedJobFamilyRootId = archivedJob.ParentId ?? jobId;
+
+        var archivedJobRelatedJobs = await Context.TucJobArchives
+            .AsNoTracking()
+            .Where(j => j.ParentId == archivedJobFamilyRootId && j.UcjbId != jobId)
+            .Select(JobMappings.JobArchiveMapping)
+            .ToListAsync();
+
+        return new JobGroupViewModel
+        {
+            Job = archivedJob,
+            RelatedJobs = archivedJobRelatedJobs
+        };
+    }
+
+    private async Task LoadFlightInfoAsync(int effectiveJobId, JobViewModel job)
+    {
+        // Check if this is a flight job
+        if (job.SpeedId == null)
+            return;
+
+        var speed = await Context.TucJobTypes
+            .AsNoTracking()
+            .Where(s => s.UcjtId == job.SpeedId.Value)
+            .Select(s => new { s.GroupingId })
+            .FirstOrDefaultAsync();
+
+        var isUsTenant = _infoService.IsUsTenant();
+        var isFlightJob = speed?.GroupingId == (isUsTenant
+            ? (int)SpeedGrouping.Flight
+            : (int)UrgentSpeedGrouping.Flight);
+
+        if (!isFlightJob)
+            return;
+
+        // Load flight segments
+        var flightSegments = await Context.TucJobNationwides
+            .AsNoTracking()
+            .Where(n => n.UcnwJobId == effectiveJobId)
+            .OrderBy(n => n.UcnwLegNumber)
+            .Select(segment => new FlightSegmentViewModel
+            {
+                SegmentOrder = segment.UcnwLegNumber - 1,
+                CarrierFsCode = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length >= 2
+                    ? segment.UcnwFlightNo.Substring(0, 2)
+                    : "??",
+                FlightNumber = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length > 2
+                    ? segment.UcnwFlightNo.Substring(2)
+                    : "????",
+                DepartureTime = segment.UcnwEtd ?? SqlMinDateTime,
+                ArrivalTime = segment.UcnwEta ?? SqlMinDateTime,
+                DepartureAirportFsCode = segment.DepartureAirportFsCode,
+                DepartureAirportName = segment.DepartureAirportName,
+                DepartureAirportCity = segment.DepartureAirportCity,
+                DepartureAirportCountry = segment.DepartureAirportCountry,
+                DepartureAirportTimeZone = segment.DepartureAirportTimeZoneNavigation.Name,
+                DepartureAirportTimeZoneId = segment.DepartureAirportTimeZoneId ?? 0,
+                DepartureTerminal = segment.DepartureTerminal,
+                ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
+                ArrivalAirportName = segment.ArrivalAirportName,
+                ArrivalAirportCity = segment.ArrivalAirportCity,
+                ArrivalAirportCountry = segment.ArrivalAirportCountry,
+                ArrivalAirportTimeZone = segment.ArrivalAirportTimeZoneNavigation.Name,
+                ArrivalAirportTimeZoneId = segment.ArrivalAirportTimeZoneId ?? 0,
+                ArrivalTerminal = segment.ArrivalTerminal,
+                ElapsedTime = (int)(segment.UcnwEta.HasValue && segment.UcnwEtd.HasValue
+                    ? (segment.UcnwEta.Value - segment.UcnwEtd.Value).TotalMinutes
+                    : 0),
+                AircraftName = segment.AircraftName,
+                AirlineName = segment.UcnwAirlineName
+            })
+            .ToListAsync();
+
+        if (flightSegments.Count > 0)
+        {
+            var firstSegment = flightSegments[0];
+            job.AssignedFlight = new AssignedFlight
+            {
+                FlightNumber = firstSegment.CarrierFsCode + firstSegment.FlightNumber,
+                ExpectedDeparture = firstSegment.DepartureTime,
+                DepartureTimeZone = firstSegment.DepartureAirportTimeZone,
+                ExpectedArrival = flightSegments[^1].ArrivalTime,
+                ArrivalTimeZone = flightSegments[^1].ArrivalAirportTimeZone,
+                FlightSegments = flightSegments
+            };
+        }
+    }
+
+    private async Task LoadPricingBreakdownAsync(int effectiveJobId, JobViewModel job)
+    {
+        var pricingTotal = await Context.PricingBreakdowns
+            .AsNoTracking()
+            .Where(p => p.JobId == effectiveJobId)
+            .SumAsync(p => (decimal?)p.ChargeAmount);
+
+        if (pricingTotal is > 0) job.Charge = pricingTotal.Value;
+    }
+
+    private async Task LoadParcelDimensionsAsync(int jobId, int effectiveJobId, JobViewModel job)
+    {
+        // First try to load items for this specific job (child items)
+        var childItems = await Context.TucJobItems
+            .AsNoTracking()
+            .Where(i => i.ChildJobId == jobId)
+            .Select(i => new ParcelDimensions
+            {
+                ItemId = i.ItemId,
+                ItemName = i.Notes,
+                Height = i.Height,
+                Depth = i.Depth,
+                Length = i.Length,
+                Barcode = i.Barcode
+            })
+            .ToListAsync();
+
+        if (childItems.Count > 0)
+        {
+            job.ParcelDimensions = childItems;
+            return;
+        }
+
+        // Otherwise load items for the effective job
+        var items = await Context.TucJobItems
+            .AsNoTracking()
+            .Where(i => i.JobId == effectiveJobId && i.ChildJobId == null)
+            .Select(i => new ParcelDimensions
+            {
+                ItemId = i.ItemId,
+                ItemName = i.Notes,
+                Height = i.Height,
+                Depth = i.Depth,
+                Length = i.Length,
+                Barcode = i.Barcode
+            })
+            .ToListAsync();
+
+        job.ParcelDimensions = items;
+
+        // Load PalletInfo as well
+        var pallets = await Context.TucJobItems
+            .AsNoTracking()
+            .Where(i => i.JobId == effectiveJobId)
+            .Select(i => new PalletInfo
+            {
+                Id = i.JobId,
+                Quantity = i.Items,
+                ItemId = i.ItemId,
+                Weight = i.Weight,
+                Length = i.Length ?? 0,
+                Depth = i.Depth ?? 0,
+                Height = i.Height ?? 0,
+                Pu = i.Pu,
+                Do = i.Do,
+                DgClass = i.Dgclass,
+                Notes = i.Notes
+            })
+            .ToListAsync();
+
+        if (pallets.Count > 0)
+        {
+            job.PalletInfo = pallets;
+        }
+    }
+
+    private async Task LoadJobItemFlagsAsync(int jobId, JobViewModel job)
+    {
+        var flags = await Context.TucJobItems
+            .AsNoTracking()
+            .Where(i => i.JobId == jobId)
+            .Select(i => new { i.Pu, i.Do, i.PrivateRes })
+            .ToListAsync();
+
+        if (flags.Count > 0)
+        {
+            job.TailLiftPu = flags.Any(f => f.Pu == true);
+            job.TailLiftDo = flags.Any(f => f.Do == true);
+            job.DeliverToPrivateRes = flags.Any(f => f.PrivateRes == true);
         }
     }
 
@@ -3468,31 +3648,8 @@ public partial class JobRepository(
     {
         try
         {
-            // Mark the job as ready
-            await MarkJobAsReadAsync(jobId);
-
-            // Check for a live job first
-            var isLiveJob = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
-            if (isLiveJob)
-            {
-                var liveJob = await Context.TucJobs
-                    .Where(j => j.UcjbId == jobId)
-                    .Select(JobMappings.JobMapping)
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync();
-
-                return liveJob;
-            }
-
-            // Check for an archived job
-            var archivedJob = await Context.TucJobArchives
-                .Where(j => j.UcjbId == jobId)
-                .Select(JobMappings.JobArchiveMapping)
-                .AsNoTracking()
-                .FirstOrDefaultAsync();
-            ArgumentNullException.ThrowIfNull(archivedJob);
-
-            return archivedJob;
+            var jobGroup = await GetJobByIdAsync(jobId);
+            return jobGroup.Job;
         }
         catch (Exception e)
         {
@@ -3723,9 +3880,9 @@ public partial class JobRepository(
             // Count jobs that are not void and not done for the courier
             var jobCount = await Context.TucJobs
                 .Where(j => j.UcjbDate.Date == now.Date
-                                            && !j.UcjbVoid &&
-                                            !j.UcjbJobDone &&
-                                            j.UcjbCourierId == courierId)
+                            && !j.UcjbVoid &&
+                            !j.UcjbJobDone &&
+                            j.UcjbCourierId == courierId)
                 .CountAsync();
 
             if (jobCount == 0)
@@ -3746,12 +3903,12 @@ public partial class JobRepository(
                 // Check if jobs are only status 5 (picked up) or 8 (late delivery)
                 var jobsNotPickedUpOrLate = await Context.TucJobs
                     .Where(j =>
-                        j.UcjbDate.Date == now.Date && 
+                        j.UcjbDate.Date == now.Date &&
                         j.UcjbVoid == false &&
-                                j.UcjbJobDone == false &&
-                                j.UcjbCourierId == courierId &&
-                                j.UcjbStatus != (int)JobStatus.PickedUp &&
-                                j.UcjbStatus != (int)JobStatus.LateDelivery)
+                        j.UcjbJobDone == false &&
+                        j.UcjbCourierId == courierId &&
+                        j.UcjbStatus != (int)JobStatus.PickedUp &&
+                        j.UcjbStatus != (int)JobStatus.LateDelivery)
                     .CountAsync();
 
                 if (jobsNotPickedUpOrLate == 0)
@@ -3773,8 +3930,9 @@ public partial class JobRepository(
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(UpdateClearListAreaOrderStatus)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository),
+                    nameof(UpdateClearListAreaOrderStatus)));
             throw;
         }
     }
