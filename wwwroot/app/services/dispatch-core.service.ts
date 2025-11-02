@@ -1,27 +1,39 @@
 import {
-    IAddressViewModel,
-    IClearListViewModel,
     ClientItemsViewModel,
-    IEditAddressDialogViewModel, IBulkReadUpdateRequest, IDispatchJob,
+    IAddressViewModel,
+    IBulkReadUpdateRequest,
+    IClearListViewModel,
+    IDeletePriceComponentRequest,
+    IDispatchJob,
+    IDispatchJobDto,
+    IEditAddressDialogViewModel,
+    IJobGroup,
+    IJobGroupDto,
+    IJobQueryParams, IJobQueryParamsDto,
+    IJobSearchResult,
+    IJobSearchResultDto,
     ILateCallRequest,
     InternalStatus,
-    IJobQueryParams,
     IParcelDimensions,
-    PriceBreakdown,
     ISuggestion,
-    VoidJobRequest, UpdateJobPackagesRequest, VoidBulkJobRequest, UpdateBulkJobPackagesRequest,
-    IDispatchJobDto, ITimeZoneSuggestion, JobCreateViewModelDto, IDeletePriceComponentRequest,
-    IJobSearchResult, IJobSearchResultDto, IJobGroupDto, IJobGroup,
+    ITimeZoneSuggestion,
+    JobCreateViewModelDto,
+    PriceBreakdown,
+    UpdateBulkJobPackagesRequest,
+    UpdateJobPackagesRequest,
+    VoidBulkJobRequest,
+    VoidJobRequest,
 } from "../interfaces/job.interface";
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {
     ActiveCourierViewModel,
-    IAvailableCourierPosition, IPotentialCouriers,
+    IAvailableCourierPosition,
+    IPotentialCouriers,
     ITruckCourierStatus,
 } from "../interfaces/courier.interface";
 import {IEventGroupViewModel} from "../interfaces/event-group-view-model.interface";
 import {ClearListEnvelopeViewModel, DfrntPageViewModel,} from "../interfaces/dfrnt-page-view-model.interface";
-import {TaskTableFiltersRequest, ITask, ITaskDto,} from "../components/task-dashboard/task-dashboard.interfaces";
+import {ITask, ITaskDto, TaskTableFiltersRequest,} from "../components/task-dashboard/task-dashboard.interfaces";
 import {JobProperty} from "../enums/job-property.enum";
 import {
     IAllocateJobsToCourierRequest,
@@ -29,10 +41,7 @@ import {
     UpdatePodDetailsRequest
 } from "../interfaces/requests.interfaces";
 import {JobEventData} from "../components/dialogs/add-event-dialog/add-event-dialog.interfaces";
-import {
-    IDeliveryJourney,
-    IDeliveryJourneyDto
-} from "../components/common/task-history/task-history.interfaces";
+import {IDeliveryJourney, IDeliveryJourneyDto} from "../components/common/task-history/task-history.interfaces";
 import {formatDateForApiWithTzs} from "../functions/formatDates";
 import IInterCourierData from "../components/dialogs/inter-courier-charge-dialog/interfaces/IInterCourierData";
 import {Is3PhotoInfo} from "../interfaces/aws.interfaces";
@@ -43,6 +52,7 @@ import {
     transformJobGroupDTO,
     transformTaskDTO
 } from "../functions/dtoMappings";
+import {transformJobQueryParamsToDTO} from "../functions/toDtoMappings";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = [
@@ -713,36 +723,21 @@ class DispatchCoreService implements angular.IServiceProvider {
         despatchViewIds: (string | number)[],
         additionalParams: Record<string, any> = {}
     ): Record<string, any> {
-        const params: Record<string, any> = {
-            order: queryParams.order ?? "time",
-            orderDirection: queryParams.orderDirection ?? "asc",
+        const dtoParams: IJobQueryParamsDto = transformJobQueryParamsToDTO(queryParams);
+
+        return {
+            startDate: dtoParams.startDate,
+            endDate: dtoParams.endDate,
+            order: dtoParams.order ?? "time",
+            orderDirection: dtoParams.orderDirection ?? "asc",
             isInternal: internal,
-            page: queryParams.page ?? 0,
-            pageSize: queryParams.pageSize ?? 50,
+            page: dtoParams.page ?? 0,
+            pageSize: dtoParams.pageSize ?? 50,
             despatchViewIds,
             ...additionalParams
         };
-
-        // Add date filter parameters
-        DispatchCoreService.applyDateFilters(params, queryParams);
-
-        return params;
     }
-
-    private static applyDateFilters(
-        params: Record<string, any>,
-        queryParams: IJobQueryParams
-    ): void {
-        if (queryParams.startDate) {
-            params.startDate = formatDateForApiWithTzs(queryParams.startDate);
-        }
-
-        if (queryParams.endDate) {
-            params.endDate = formatDateForApiWithTzs(queryParams.endDate);
-            params.dateCutoff = formatDateForApiWithTzs(queryParams.endDate);
-        }
-    }
-
+    
     async autocompleteSearch(
         searchTerm: string,
         url: string

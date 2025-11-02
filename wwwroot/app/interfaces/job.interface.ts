@@ -525,6 +525,16 @@ export interface IJobQueryParams {
     searchText?: string;
 }
 
+export interface IJobQueryParamsDto {
+    order?: string;
+    orderDirection?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    pageSize?: number;
+    searchText?: string;
+}
+
 export interface PriceBreakdown {
     chargeId: number;
     name: string;

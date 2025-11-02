@@ -111,11 +111,9 @@ class DispatchExecutorService implements angular.IServiceProvider {
         selectedAreas: Array<any>,
         selectedClearListId?: number,
     ): Promise<IJobSearchResult> {
-        const cleanedParams = this.cleanQueryParameters(queryParams);
-
         if (selectedClearListId) {
             return this.DispatchData.getClearListJobs(
-                cleanedParams,
+                queryParams,
                 isInternal,
                 selectedAreas,
                 selectedClearListId
@@ -123,18 +121,10 @@ class DispatchExecutorService implements angular.IServiceProvider {
         }
 
         return this.DispatchData.getJobsWithFilters(
-            cleanedParams,
+            queryParams,
             isInternal,
             selectedAreas
         );
-    }
-
-    private cleanQueryParameters(params: IJobQueryParams): IJobQueryParams {
-        return {
-            ...params,
-            startDate: params.startDate || undefined,
-            endDate: params.endDate || undefined
-        };
     }
     
     async assignSingleJobById(courierId: number, jobId: number): Promise<void> {
