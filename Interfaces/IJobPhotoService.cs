@@ -19,7 +19,6 @@ public interface IJobPhotoService
     Task<bool> DeleteJobPhotoOrSignatureAsync(int jobId, string key);
 
     // Job Attachment methods
-    Task<bool> IsFilesAttachedToJobAsync(int jobId);
     Task<List<S3FileInfo>> GetAttachedFilesAsync(int jobId);
     Task<AwsUploadResult> UploadJobAttachmentAsync(int jobId, IFormFile file);
     Task<AwsFileDownloadResult> DownloadFileAsync(string key);

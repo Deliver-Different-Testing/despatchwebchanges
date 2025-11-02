@@ -106,9 +106,7 @@ export function formatDateFromApi(dateString: string): Dayjs {
 }
 
 export function getIanaTimezone(timezone: string): string {
-    if (!timezone) {
-        throw new Error('Timezone is required');
-    }
+    if (!timezone) timezone = TimeZone;
 
     // Try to find IANA equivalent using windows-iana
     const ianaTimezones = findIana(timezone);

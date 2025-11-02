@@ -167,31 +167,6 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
     }
 
-
-    public async Task<bool> IsFilesAttachedToJobAsync(int jobId)
-    {
-        try
-        {
-            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-            var key = $"JobAttachments/{jobId}-";
-
-            Log.Debug("Checking for attached files with pattern {Key}", key);
-
-            var s3List = await SearchAttachmentFilesByPatternAsync(bucketName, key);
-
-            Log.Debug("Found {S3ListCount} objects for {Key}", s3List.Count, key);
-
-            return s3List.Count > 0;
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
-                    nameof(IsFilesAttachedToJobAsync)));
-            return false;
-        }
-    }
-
     public async Task<List<S3FileInfo>> GetAttachedFilesAsync(int jobId)
     {
         var s3Files = new List<S3FileInfo>();

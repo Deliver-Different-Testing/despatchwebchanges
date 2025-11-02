@@ -753,17 +753,6 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async isFilesAttachedToJob(jobId: number): Promise<boolean> {
-        const response = await this.$http.get<boolean>(
-            `job/IsFilesAttachedToJob`, {
-                params: {
-                    jobId,
-                },
-            }
-        );
-        return response.data;
-    }
-
     async getVehicleSizes(): Promise<ISuggestion[]> {
         const response = await this.$http.get<ISuggestion[]>(
             `courier/GetVehicleSizes`
