@@ -179,9 +179,6 @@
                                 {{::ctrl.boxes[item.name].title}}
                                 <span ng-if="::item.name == 'detail'">
                                     {{ctrl.currentSelection}}
-                                    <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.hasAttachedFile">
-                                        attachment
-                                    </md-icon>
                                 </span>
                                 <span ng-if="::item.name == 'currentWork' || item.name == 'map'">{{ctrl.currentWorkSelection}}</span>
                                 <span ng-if="::item.name == 'supports'">{{ctrl.getActiveSupportFilterNames()}}</span>

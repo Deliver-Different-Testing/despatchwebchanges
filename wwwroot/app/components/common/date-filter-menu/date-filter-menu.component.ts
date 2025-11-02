@@ -226,7 +226,7 @@ class DateFilterMenuComponent extends BaseController {
                 // Refresh the data with the updated times
                 await this.refreshData();
             }
-        }, 60000); // 60 seconds = 1 minute
+        }, 60000); // 1 min
     }
 
     private stopMinsUpdate(): void {

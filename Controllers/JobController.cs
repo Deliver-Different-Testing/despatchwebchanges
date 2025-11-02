@@ -1436,22 +1436,7 @@ public class JobController(
         smtp.Port = int.Parse(Environment.GetEnvironmentVariable("SMTP_Port") ?? string.Empty);
         smtp.Send(message);
     }
-
-    public async Task<IActionResult> IsFilesAttachedToJob(int jobId)
-    {
-        try
-        {
-            var hasFiles = await jobPhotoService.IsFilesAttachedToJobAsync(jobId);
-            return Json(hasFiles);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(IsFilesAttachedToJob)));
-            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
-        }
-    }
-
+    
     public async Task<IActionResult> GetAttachedFiles(int jobId)
     {
         try

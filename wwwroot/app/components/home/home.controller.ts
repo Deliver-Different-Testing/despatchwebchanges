@@ -134,7 +134,6 @@ class HomeController extends BaseController {
     queryParams: IJobQueryParams;
     isUsCustomer: boolean;
     selectedCourier?: ISuggestion;
-    hasAttachedFile: boolean = false;
     views: DfrntPageViewModel[];
     selectedViews: DfrntPageViewModel[];
     viewsInitialized: boolean = false;
@@ -1492,9 +1491,7 @@ class HomeController extends BaseController {
         // Create a new reference to trigger change detection
         this.currentJob = angular.copy(job);
         this.currentJobId = job.id;
-
-        await this.checkForAttachments(job.id);
-
+        
         if (job.rootParentId) {
             try {
                 if (this.currentJob?.rootParentId && this.currentJob?.clientId) {
@@ -1862,21 +1859,7 @@ class HomeController extends BaseController {
     async createEvent($event: MouseEvent, job: IDispatchJob): Promise<void> {
         await this.addEventDialog.openAddEventDialog($event, job);
     }
-
-    async checkForAttachments(jobId: number): Promise<any> {
-        this.hasAttachedFile = false;
-
-        try {
-            const response = await this.DispatchData.isFilesAttachedToJob(jobId);
-            this.hasAttachedFile = response;
-            return response;
-        } catch (error: any) {
-            console.log("Error checking for attachments:", error);
-            this.hasAttachedFile = false;
-            throw error;
-        }
-    }
-
+    
     async openFileAttachmentDialog($event: MouseEvent, job: IDispatchJob): Promise<void> {
         await this.jobFileUploadDialog.openJobFileUploadDialog($event, job);
     }
