@@ -1646,14 +1646,6 @@ class HomeController extends BaseController {
                 job.courierSearchLoading = false;
             }
 
-            // Initialize an assignedCourier if a job has existing courier data
-            if (!job.assignedCourier && job.courier) {
-                job.assignedCourier = {
-                    id: job.courierData?.courierId || 0,
-                    text: job.courier,
-                };
-            }
-
             return job;
         });
     }
