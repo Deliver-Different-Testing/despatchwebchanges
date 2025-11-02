@@ -2429,6 +2429,8 @@ class NationwideControl extends BaseController {
         hasMore: boolean
     }> {
         try {
+            this.jobFilters.useTime = this.dateFilterData.useTime;
+
             const result = await this.nationwideService.getNationwideJobsNew(
                 {
                     ...(this.jobFilters || {}),
@@ -2457,6 +2459,8 @@ class NationwideControl extends BaseController {
         hasMore: boolean
     }> {
         try {
+            this.jobPodFilters.useTime = this.dateFilterData.useTime;
+
             const result = await this.nationwideService.getNationwideJobsPOD(
                 {
                     ...(this.jobPodFilters || {}),
@@ -2485,6 +2489,8 @@ class NationwideControl extends BaseController {
         hasMore: boolean
     }> {
         try {
+            this.jobRepriceFilters.useTime = this.dateFilterData.useTime;
+
             const result = await this.nationwideService.getNationwideJobsReprice(
                 {
                     ...(this.jobRepriceFilters || {}),
