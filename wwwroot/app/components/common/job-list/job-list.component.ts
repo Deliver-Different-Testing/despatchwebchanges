@@ -12,7 +12,7 @@ import JobHighlightService from "./job-highlight.service";
 import DensityMode from "../../../enums/densityMode";
 import AutoCompleteDialogService from "../../dialogs/auto-complete-dialog/auto-complete-dialog.service";
 import ToastrService from "../../../services/toastr.service";
-import {formatMins} from "../../../functions/formatDates";
+import {formatMins, getIanaTimezone} from "../../../functions/formatDates";
 
 class JobsListController extends BaseController {
     static $inject = [
@@ -33,7 +33,7 @@ class JobsListController extends BaseController {
     private readonly SORT_STATE_SAVE_KEY: string = `jobListSortState_${ContactID}`;
     private readonly COURIER_URL: string = "/courier/AllActiveSearch";
 
-    private unsubscribeFromHighlights?: () => void;
+    unsubscribeFromHighlights?: () => void;
 
     // Parent-provided data
     jobs?: IDispatchJob[];
@@ -50,7 +50,7 @@ class JobsListController extends BaseController {
         hasMore: boolean
     }>;
     isUsCustomer?: boolean;
-    timeZone: string = TimeZone;
+    timeZone: string;
     jobListType: JobListType = JobListType.DispatchJobList;
     allowDispatch: boolean = false;
     allowSearch: boolean = true;
@@ -109,10 +109,10 @@ class JobsListController extends BaseController {
     // Scroll
     private readonly DEFAULT_PAGE_SIZE = 50;
     enableVirtualScrolling: boolean = false;
-    private currentPage: number = 0;
-    private totalJobsCount: number = 0;
-    private isLoadingMore: boolean = false;
-    private allJobsLoaded: boolean = false;
+    currentPage: number = 0;
+    totalJobsCount: number = 0;
+    isLoadingMore: boolean = false;
+    allJobsLoaded: boolean = false;
     private readonly debouncedSearchHandler: (...args: Parameters<(searchText: string) => void>) => void;
 
     constructor(
@@ -130,6 +130,7 @@ class JobsListController extends BaseController {
         super();
         this.initServices($timeout, $interval, $scope);
         this.isUsCustomer = appConfig.US_Customer;
+        this.timeZone = getIanaTimezone(TimeZone);
 
         this.debouncedSearchHandler = this.debounce((searchText: string) => {
             if (this.onSearchChange) {
@@ -145,8 +146,6 @@ class JobsListController extends BaseController {
         this.setupJobListVariables();
         this.loadColumnWidths();
         this.loadSortState();
-
-        if (this.shouldGroupJobs()) this.groupJobs();
 
         this.calculateStats();
         this.applyFilters();
@@ -231,9 +230,6 @@ class JobsListController extends BaseController {
                 this.allJobsLoaded = false;
             }
 
-            // Group jobs by parent if not nationwide
-            if (this.shouldGroupJobs()) this.groupJobs();
-
             this.calculateStats();
             this.applyFilters();
             this.ensureHeaderSticky();
@@ -242,78 +238,32 @@ class JobsListController extends BaseController {
         if (changes['selectedJob'] && changes['selectedJob'].currentValue) {
             this.selectedJob = changes['selectedJob'].currentValue;
         }
-    }
 
-    shouldGroupJobs(): boolean {
-        console.log('shouldGroupJobs - jobListType:', this.jobListType);
+        // Add these:
+        if (changes['jobListType'] && !changes['jobListType'].isFirstChange()) {
+            this.setupJobListVariables();
+            this.loadColumnWidths();
+            this.loadSortState();
 
-        const shouldGroup = !this.jobListType.toLowerCase().includes('nationwide')
-            && !this.jobListType.toLowerCase().includes('jobsearch');
-
-        console.log('shouldGroupJobs - result:', shouldGroup);
-        return shouldGroup;
-    }
-
-    private groupJobs() {
-        if (!this.jobs) {
-            console.log('No jobs to group');
-            return;
+            this.applyFilters();
         }
 
-        const grouped: IDispatchJob[] = [];
-        const childJobs: { [parentId: number]: IDispatchJob[] } = {};
-        const processedIds = new Set<number>();
-
-        for (let job of this.jobs) {
-            if (processedIds.has(job.id)) {
-                console.warn(`Duplicate job ID found: ${job.id}`);
-                continue;
-            }
-            processedIds.add(job.id);
-
-            if (job.isParentOrSingle) {
-                // This is a parent or standalone job
-                job._isExpanded = job._isExpanded || false;
-                job._groupChildren = [];
-                grouped.push(job);
-            } else if (job.parentId && job.parentId !== job.id) {
-                if (!childJobs[job.parentId]) {
-                    childJobs[job.parentId] = [];
+        if (changes['enableVirtualScrolling'] && !changes['enableVirtualScrolling'].isFirstChange()) {
+            if (changes['enableVirtualScrolling'].currentValue) {
+                this.setupScrollListener();
+            } else {
+                // Clean up scroll listener if disabled
+                const selector = this.getScrollContainerSelector();
+                const scrollContainer = angular.element(selector);
+                if (scrollContainer.length) {
+                    scrollContainer.off('scroll');
                 }
-                childJobs[job.parentId].push(job);
             }
         }
 
-        // Second pass: attach children to parents
-        for (const parentJob of grouped) {
-            if (childJobs[parentJob.id]) {
-                parentJob._groupChildren = childJobs[parentJob.id].sort((a, b) =>
-                    (a.jobNo || '').localeCompare(b.jobNo || '')
-                );
-            }
+        if (changes['totalJobsCount'] && changes['totalJobsCount'].currentValue) {
+            this.totalJobsCount = changes['totalJobsCount'].currentValue;
         }
-
-        // Only show parent jobs in the main list when grouped
-        this.jobs = grouped;
-    }
-
-    toggleJobGroup(job: IDispatchJob) {
-        if (!this.isMultiPartJob(job)) return;
-
-        console.log('Before toggle:', {
-            jobNo: job.jobNo,
-            isExpanded: job._isExpanded,
-            childCount: job._groupChildren?.length
-        });
-
-        job._isExpanded = !job._isExpanded;
-        this.applyScope();
-
-        console.log('After toggle:', {
-            jobNo: job.jobNo,
-            isExpanded: job._isExpanded,
-            childCount: job._groupChildren?.length
-        });
     }
 
     private calculateStats() {
@@ -852,7 +802,6 @@ class JobsListController extends BaseController {
     getDisplayedJobsText(): string {
         const displayed = this.filteredJobs?.length || 0;
         const multiPart = this.filteredJobs?.filter(j => this.isMultiPartJob(j)).length || 0;
-
         if (this.enableVirtualScrolling) {
             if (this.isLoadingMore) {
                 return `Loading more jobs...`;
@@ -860,8 +809,9 @@ class JobsListController extends BaseController {
             if (!this.allJobsLoaded) {
                 return `Showing ${displayed} of ${this.totalJobsCount} jobs (${multiPart} parent jobs with children) - Scroll for more`;
             }
+            // All jobs loaded - show the total count from backend
+            return `Showing ${this.totalJobsCount} jobs (${multiPart} parent jobs with children)`;
         }
-
         return `Showing ${displayed} jobs (${multiPart} parent jobs with children)`;
     }
 
@@ -884,7 +834,7 @@ class JobsListController extends BaseController {
     hasRelatedJobs(job: IDispatchJob): boolean {
         return this.jobHighlightService.isJobHighlighted(job.id);
     }
-    
+
     isWarning(job: IDispatchJob): boolean {
         return [
             JobStatus.Warning,
@@ -954,7 +904,7 @@ class JobsListController extends BaseController {
             localStorage.setItem(`${this.SORT_STATE_SAVE_KEY}_${this.jobListType}`, JSON.stringify(this.sortState));
         }
     }
-    
+
     getGridTemplateColumns(): string {
         if (this.isJobSearchPage()) {
             return `${this.columnWidths.priority}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.isArchived}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
@@ -1204,7 +1154,7 @@ class JobsListController extends BaseController {
         });
         return visibleJobs;
     }
-    
+
     canBulkAssign(): boolean {
         return this.selectedJobs.length > 0 && this.allowDispatch;
     }
@@ -1377,7 +1327,7 @@ class JobsListController extends BaseController {
             }
         );
     }
-    
+
     private handleScroll(element: HTMLElement): void {
         if (!this.enableVirtualScrolling || this.isLoadingMore || this.allJobsLoaded) return;
 
@@ -1405,10 +1355,10 @@ class JobsListController extends BaseController {
             if (result && result.jobs && result.jobs.length > 0) {
                 // Append new jobs to the existing jobs array
                 this.jobs = [...(this.jobs || []), ...result.jobs];
-
-                if (this.shouldGroupJobs()) {
-                    this.groupJobs();
-                }
+                /*
+                                if (this.shouldGroupJobs()) {
+                                    this.groupJobs();
+                                }*/
 
                 this.totalJobsCount = result.totalCount;
                 this.allJobsLoaded = !result.hasMore;
@@ -1453,7 +1403,7 @@ const JobsListComponent: angular.IComponentOptions = {
         jobListType: '<?',
         enableVirtualScrolling: '<?',
         totalJobsCount: '<?',
-        onSearchChange: '&?' 
+        onSearchChange: '&?'
     }
 };
 
