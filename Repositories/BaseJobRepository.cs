@@ -59,12 +59,25 @@ public class BaseJobRepository(
             {
                 case AppPage.Dispatch:
                     query = query.Where(j => j.UcjbStatus != (int)JobStatus.AwaitingPod);
+    
                     if (queryParams.DateCutoff.HasValue)
-                        query = query.Where(j => j.UcjbDate <= queryParams.DateCutoff.Value);
+                        query = query.Where(j => j.UcjbDate.Date <= queryParams.DateCutoff.Value.Date);
+    
                     if (queryParams.StartDate.HasValue)
-                        query = query.Where(j => j.UcjbDate >= queryParams.StartDate.Value);
+                        query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
+    
                     if (queryParams.EndDate.HasValue)
-                        query = query.Where(j => j.UcjbDate <= queryParams.EndDate.Value);
+                    {
+                        if (queryParams.UseTime)
+                            // Compare full datetime (date and time)
+                            query = query.Where(j =>
+                                j.UcjbDate.Date == queryParams.EndDate.Value.Date &&
+                                j.UcjbTime.HasValue &&
+                                j.UcjbTime.Value.TimeOfDay <= queryParams.EndDate.Value.TimeOfDay);
+                        else
+                            // Compare date only
+                            query = query.Where(j => j.UcjbDate.Date <= queryParams.EndDate.Value.Date);
+                    }
                     break;
                 case AppPage.Domestic:
                     query = ApplyNationwideSpecificFilters(

@@ -1691,6 +1691,7 @@ class HomeController extends BaseController {
                 endDate: this.dateFilterData.endDate,
                 page: this.currentJobListPage,
                 pageSize: this.currentJobListPageSize,
+                useTime: this.queryParams.useTime,
             };
 
             const result = await this.dispatchJobService.getJobsWithDispatchInfo(
@@ -2257,6 +2258,7 @@ class HomeController extends BaseController {
     async refreshDataTimeSpan(dateFilterData: IDateFilterData): Promise<void> {
         console.log('refreshDataTimeSpan called with data ', dateFilterData);
         this.dateFilterData = dateFilterData;
+        this.queryParams.useTime = dateFilterData.useTime;
 
         this.saveDateFilterToStorage();
         await this.getData();

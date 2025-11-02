@@ -523,6 +523,7 @@ export interface IJobQueryParams {
     page?: number;
     pageSize?: number;
     searchText?: string;
+    useTime?: boolean;
 }
 
 export interface IJobQueryParamsDto {
@@ -533,6 +534,7 @@ export interface IJobQueryParamsDto {
     page?: number;
     pageSize?: number;
     searchText?: string;
+    useTime?: boolean;
 }
 
 export interface PriceBreakdown {

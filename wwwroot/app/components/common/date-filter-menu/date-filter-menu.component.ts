@@ -138,6 +138,8 @@ class DateFilterMenuComponent implements angular.IController {
                 this.dateFilterData = defaults;
                 this.startDate = defaults.startDate;
                 this.endDate = defaults.endDate;
+
+                this.dateFilterData.useTime = false;
                 break;
 
             case DateRangeOption.Date:
@@ -150,6 +152,8 @@ class DateFilterMenuComponent implements angular.IController {
                     this.endDate = dayjs().tz(this.timeZone);
                     this.dateFilterData.endDate = this.endDate;
                 }
+
+                this.dateFilterData.useTime = false;
                 break;
 
             case DateRangeOption.Mins:
@@ -171,6 +175,8 @@ class DateFilterMenuComponent implements angular.IController {
                     // Set default selection
                     this.selectedMinsOption = this.minsOptions.find(opt => opt.id === 5 * 60); // 5 mins
                 }
+                
+                this.dateFilterData.useTime = true;
                 break;
         }
 
