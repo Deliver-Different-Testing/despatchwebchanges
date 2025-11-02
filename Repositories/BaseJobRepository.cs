@@ -105,9 +105,9 @@ public class BaseJobRepository(
             // Get a total count before pagination
             // Dispatch page groups by parent id, so we need to count the parent jobs
             int totalCount;
-            if (page == AppPage.Dispatch)
+            /*if (page == AppPage.Dispatch)
                 totalCount = await query.CountAsync(j => !j.ParentId.HasValue || j.ParentId == j.UcjbId);
-            else
+            else*/
                 totalCount = await query.CountAsync();
 
             // Apply pagination

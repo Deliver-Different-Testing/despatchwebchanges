@@ -1684,6 +1684,7 @@ class HomeController extends BaseController {
                 page: this.currentJobListPage,
                 pageSize: this.currentJobListPageSize,
                 useTime: this.dateFilterData.useTime,
+                searchText: this.queryParams.searchText,
             };
 
             const result = await this.dispatchJobService.getJobsWithDispatchInfo(
