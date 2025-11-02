@@ -71,7 +71,7 @@ public class BaseJobRepository(
                         if (queryParams.UseTime)
                             // Compare full datetime (date and time)
                             query = query.Where(j =>
-                                j.UcjbDate.Date == queryParams.EndDate.Value.Date &&
+                                j.UcjbDate.Date <= queryParams.EndDate.Value.Date &&
                                 j.UcjbTime.HasValue &&
                                 j.UcjbTime.Value.TimeOfDay <= queryParams.EndDate.Value.TimeOfDay);
                         else

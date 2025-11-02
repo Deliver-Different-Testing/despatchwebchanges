@@ -459,15 +459,13 @@ public class CourierRepository(
     private async Task<int> ClearListTotalRemainingAsync(string area)
     {
         var filter = Context
-            .TblDespatchViews.FirstOrDefault(v =>
-                (v.ShowOnAssistDespatch ?? false) == true && v.Name == area
-            )
+            .TblDespatchViews.FirstOrDefault(v => (v.ShowOnAssistDespatch ?? false) == true && v.Name == area)
             ?.WhereCondition;
 
         if (string.IsNullOrEmpty(filter))
             return 0;
 
-        filter += " AND (ucjbStatus <> 9 AND ucjbCourierId is null)";
+        filter += $" AND (ucjbStatus <> {(int)JobStatus.AwaitingPod} AND ucjbCourierId is null)";
         var query =
             $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {filter}";
         var jobs = await Context.DeswebQryDespatches.FromSqlRaw(query).ToListAsync();
