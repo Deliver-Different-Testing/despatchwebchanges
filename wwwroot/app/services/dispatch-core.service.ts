@@ -728,6 +728,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         return {
             startDate: dtoParams.startDate,
             endDate: dtoParams.endDate,
+            useTime: dtoParams.useTime,
             order: dtoParams.order ?? "time",
             orderDirection: dtoParams.orderDirection ?? "asc",
             isInternal: internal,
