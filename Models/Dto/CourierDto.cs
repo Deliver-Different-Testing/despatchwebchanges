@@ -16,6 +16,7 @@ public class CourierDto
     public int TotalJobs { get; set; }
     public List<JobDto> Jobs { get; set; }
     public string CourierName { get; set; }
+    public int? DisplayOrder { get; set; }
 }
 
 public class JobDto

@@ -51,6 +51,7 @@ export interface IAvailableCourierPosition {
     latitude: number | null;
     totalJobs: number;
     overDueJobs: number;
+    displayOrder?: number | null;
 }
 
 export interface IPotentialCouriers {
