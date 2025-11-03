@@ -15,4 +15,5 @@ public class AvailableCourierPosition
     public decimal? Latitude { get; set; }
     public int TotalJobs { get; set; }
     public int OverDueJobs { get; set; }
+    public int? DisplayOrder { get; set; }
 }

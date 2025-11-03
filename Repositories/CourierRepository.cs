@@ -108,7 +108,7 @@ public class CourierRepository(
 
     public async Task<List<AvailableCourierPosition>> GetAvailableCouriersAsync(CourierLocationRequest data)
     {
-        if (Debugger.IsAttached) return GetFakeNzAvailableCourierPositions(data);
+        //if (Debugger.IsAttached) return GetFakeNzAvailableCourierPositions(data);
         
         var isUsTenant = infoService.IsUsTenant();
         return isUsTenant
@@ -120,21 +120,22 @@ public class CourierRepository(
     {
         var random = new Random();
         var fakeData = new List<AvailableCourierPosition>();
-    
+
         // Generate 5-15 fake couriers within the bounds
         var courierCount = random.Next(5, 16);
         var vehicleTypes = new[] { "Car", "Van", "Bike", "Motorcycle", "Truck" };
         var fleetCodes = new[] { "UA", "" };
-    
+        var displayOrders = new[] { 1, 3, 5 }; // Top, Middle, Bottom priority
+
         for (var i = 1; i <= courierCount; i++)
         {
             // Generate random position within the provided bounds
             var lat = (double)data.MinLat + random.NextDouble() * ((double)data.MaxLat - (double)data.MinLat);
             var lng = (double)data.MinLng + random.NextDouble() * ((double)data.MaxLng - (double)data.MinLng);
-        
+
             var totalJobs = random.Next(0, 8);
             var overDueJobs = totalJobs > 0 ? random.Next(0, Math.Min(totalJobs, 3)) : 0;
-        
+
             fakeData.Add(new AvailableCourierPosition
             {
                 CourierId = 1000 + i,
@@ -150,10 +151,11 @@ public class CourierRepository(
                 Code = $"C{i:D3}",
                 FleetCode = fleetCodes[random.Next(fleetCodes.Length)],
                 TotalJobs = totalJobs,
-                OverDueJobs = overDueJobs
+                OverDueJobs = overDueJobs,
+                DisplayOrder = displayOrders[random.Next(displayOrders.Length)]
             });
         }
-    
+
         return fakeData;
     }
 
@@ -184,6 +186,7 @@ public class CourierRepository(
                     .Select(x => x.ClearListArea.ClearListAreaId).ToList(),
                 Code = c.Code,
                 FleetCode = uaFleetIds.Contains(c.CourierFleetId ?? 0) ? "UA" : string.Empty,
+                DisplayOrder = c.TblClearListAreaOrder != null ? c.TblClearListAreaOrder.Status : (int?)null,
                 TotalJobs = c.TucJobUcjbCouriers.Count(j => !j.UcjbVoid && !j.UcjbJobDone),
                 Jobs = c.TucJobUcjbCouriers
                     .Where(j => !j.UcjbVoid && !j.UcjbJobDone && j.UcjbTime != null)
@@ -211,7 +214,8 @@ public class CourierRepository(
             TotalJobs = c.TotalJobs,
             OverDueJobs = c.Jobs.Count(j =>
                 j.UcjbTime != null &&
-                j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes) < currentDate)
+                j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes) < currentDate),
+            DisplayOrder = c.DisplayOrder
         }).ToList();
 
         return result;
@@ -237,6 +241,7 @@ public class CourierRepository(
                     .Select(x => x.ClearListArea.ClearListAreaId).ToList(),
                 Code = c.Code,
                 FleetId = c.CourierFleetId,
+                DisplayOrder = c.TblClearListAreaOrder != null ? c.TblClearListAreaOrder.Status : (int?)null,
                 TotalJobs = c.TucJobUcjbCouriers.Count(j => !j.UcjbVoid && !j.UcjbJobDone),
                 Jobs = c.TucJobUcjbCouriers
                     .Where(j => !j.UcjbVoid && !j.UcjbJobDone && j.UcjbTime != null)
@@ -266,7 +271,8 @@ public class CourierRepository(
             FleetCode = uaFleetIds.Contains(dto.FleetId ?? 0) ? "UA" : string.Empty,
             TotalJobs = dto.TotalJobs,
             OverDueJobs = dto.Jobs.Count(j =>
-                j.UcjbTime != null && j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes ?? 0) < now)
+                j.UcjbTime != null && j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes ?? 0) < now),
+            DisplayOrder = dto.DisplayOrder
         }).ToList();
     }
 
@@ -411,7 +417,7 @@ public class CourierRepository(
 
     public async Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds)
     {
-        if (Debugger.IsAttached) return ClearListTestData.GenerateClearListViewModel();
+        //if (Debugger.IsAttached) return ClearListTestData.GenerateClearListViewModel();
 
         if (despatchViewIds.Count == 0) return new ClearListViewModel();
 

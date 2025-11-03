@@ -16,6 +16,7 @@ public class CourierPositionWithJobsDto
     public string FleetCode { get; set; }
     public int TotalJobs { get; set; }
     public List<JobTimingDto> Jobs { get; set; } = [];
+    public int? DisplayOrder { get; set; }
 }
 
 public class JobTimingDto
