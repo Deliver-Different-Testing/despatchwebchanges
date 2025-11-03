@@ -20,10 +20,10 @@ class DispatchMapController extends BaseController {
         "$scope",
     ];
 
-    private locationRefreshInterval: angular.IPromise<void> | null = null;
+    private locationRefreshInterval?: angular.IPromise<void>;
     private readonly LOCATION_REFRESH_INTERVAL = 15000;
-    private refreshCouriersMarkerListener: Function | null = null;
-    private boundsChangedListener: Function | null = null;
+    private refreshCouriersMarkerListener?: Function;
+    private boundsChangedListener?: Function;
     private pendingChanges: {
         jobs?: IDispatchMapItem[];
         currentJob?: IDispatchMapItem;
@@ -32,18 +32,17 @@ class DispatchMapController extends BaseController {
         showAvailableCouriers?: boolean;
     } = {};
 
-    mapInstance: google.maps.Map | null = null;
+    mapInstance?: google.maps.Map;
     isUpdating: boolean = false;
-    PICKUP_ICON: google.maps.Symbol | null = null;
-    DELIVERY_ICON: google.maps.Symbol | null = null;
-    COURIER_ICON: google.maps.Symbol | null = null;
-    PICKUP_ICON_HOVER: google.maps.Symbol | null = null;
-    DELIVERY_ICON_HOVER: google.maps.Symbol | null = null;
-    OTHER_PICKUP_ICON: google.maps.Symbol | null = null;
-    OTHER_DELIVERY_ICON: google.maps.Symbol | null = null;
-    OTHER_PICKUP_ICON_HOVER: google.maps.Symbol | null = null;
-    OTHER_DELIVERY_ICON_HOVER: google.maps.Symbol | null = null;
-
+    PICKUP_ICON?: google.maps.Symbol;
+    DELIVERY_ICON?: google.maps.Symbol;
+    COURIER_ICON?: google.maps.Symbol;
+    PICKUP_ICON_HOVER?: google.maps.Symbol;
+    DELIVERY_ICON_HOVER?: google.maps.Symbol;
+    OTHER_PICKUP_ICON?: google.maps.Symbol;
+    OTHER_DELIVERY_ICON?: google.maps.Symbol;
+    OTHER_PICKUP_ICON_HOVER?: google.maps.Symbol;
+    OTHER_DELIVERY_ICON_HOVER?: google.maps.Symbol;
     initialMapZoom?: number;
     jobs?: IDispatchMapItem[] = [];
     currentJob?: IDispatchMapItem;
@@ -56,9 +55,9 @@ class DispatchMapController extends BaseController {
     markers: google.maps.Marker[] = [];
     flags: any[] = [];
     labels: google.maps.Marker[] = [];
-    googleMapsUrl: string | null = null;
-    map: google.maps.Map | null = null;
-    tooltip: google.maps.InfoWindow | null = null;
+    googleMapsUrl?: string;
+    map?: google.maps.Map;
+    tooltip?: google.maps.InfoWindow;
     clearListId?: number;
     
     constructor(
@@ -74,6 +73,8 @@ class DispatchMapController extends BaseController {
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
+        
+        this.bindFunctions();
     }
 
     $onInit() {
@@ -114,6 +115,12 @@ class DispatchMapController extends BaseController {
             .catch((error) => {
                 console.error("[DispatchMapController] Error initializing map:", error);
             });
+    }
+    
+    private bindFunctions() {
+        this.onBoundsChanged = this.onBoundsChanged.bind(this);
+        this.toggleAutoZoom = this.toggleAutoZoom.bind(this);
+        this.fadeInMarker = this.fadeInMarker.bind(this);
     }
 
     private waitForMapElement(): Promise<google.maps.Map> {
@@ -218,7 +225,9 @@ class DispatchMapController extends BaseController {
 
         if (changes['showAvailableCouriers']) {
             if (changes['showAvailableCouriers'].currentValue) {
-                this.fetchCourierPositions().then(r => console.log('[DispatchMapController] Courier positions fetched:', r));
+                this.fetchCourierPositions()
+                    .then(() => console.log('[DispatchMapController] Courier positions fetched'))
+                    .catch(error => console.error('[DispatchMapController] Error fetching couriers:', error));
             } else {
                 this.clearCourierMarkers();
             }
@@ -299,7 +308,7 @@ class DispatchMapController extends BaseController {
             this.boundsChangedListener = this.$window.google.maps.event.addListener(
                 this.mapInstance,
                 'bounds_changed',
-                this.onBoundsChanged
+                () => this.onBoundsChanged()
             );
         }
     }
@@ -307,17 +316,18 @@ class DispatchMapController extends BaseController {
     private removeEventListeners() {
         if (this.refreshCouriersMarkerListener) {
             (this.refreshCouriersMarkerListener as any)();
-            this.refreshCouriersMarkerListener = null;
+            this.refreshCouriersMarkerListener = undefined;
         }
 
         if (this.boundsChangedListener && this.mapInstance) {
             this.$window.google.maps.event.removeListener(this.boundsChangedListener);
-            this.boundsChangedListener = null;
+            this.boundsChangedListener = undefined;
         }
     }
 
     private onBoundsChanged() {
-        if (this.showAvailableCouriers) {
+        if (this.showAvailableCouriers && !this.isUpdating) {
+            console.log('[DispatchMapController] Bounds changed, fetching courier positions');
             return this.fetchCourierPositions();
         }
     }
@@ -337,7 +347,12 @@ class DispatchMapController extends BaseController {
 
         try {
             const coordinates = await this.getSearchCoordinates();
-            const couriers = await this.fetchCourierData(coordinates);
+            const couriers =  await this.DispatchData.getAvailableCourierLocation(
+                coordinates.west,
+                coordinates.south,
+                coordinates.east,
+                coordinates.north
+            );
             this.updateCourierMarkers(couriers);
 
             console.log('[DispatchMapController] Successfully updated courier positions', {
@@ -380,23 +395,7 @@ class DispatchMapController extends BaseController {
             north: Number(center.lat) + offset
         };
     }
-
-    private async fetchCourierData(coordinates: {
-        west: number;
-        south: number;
-        east: number;
-        north: number;
-    }) {
-        console.log('[DispatchMapController] Fetching courier locations', coordinates);
-
-        return await this.DispatchData.getAvailableCourierLocation(
-            coordinates.west,
-            coordinates.south,
-            coordinates.east,
-            coordinates.north
-        );
-    }
-
+    
     private async updateDisplayedJobs() {
         if (this.isUpdating) {
             if (this.markers.length === 0) {
@@ -824,29 +823,22 @@ class DispatchMapController extends BaseController {
     private startLocationRefreshInterval() {
         this.clearLocationRefreshInterval();
 
-        // Start a new interval
-        this.locationRefreshInterval = this.registerTimeout(() => {
-            this.refreshCourierLocations();
-        }, this.LOCATION_REFRESH_INTERVAL);
-    }
-
-    private refreshCourierLocations() {
-        if (this.showAvailableCouriers) {
-            this.debounce(() => {
-                this.fetchCourierPositions().then(_ =>
-                    this.$rootScope.$emit('courierLocationsNeedRefresh')
-                );
-            }, 500);
-        }
-
-        this.locationRefreshInterval = this.registerTimeout(() => {
-            this.refreshCourierLocations();
+        this.locationRefreshInterval = this.registerInterval(() => {
+            if (this.showAvailableCouriers) {
+                console.log('[DispatchMapController] Refreshing courier locations...');
+                this.fetchCourierPositions()
+                    .then(() => {
+                        this.$rootScope.$emit('courierLocationsNeedRefresh');
+                        console.log('[DispatchMapController] Courier locations refreshed');
+                    })
+                    .catch(error => console.error('[DispatchMapController] Error refreshing couriers:', error));
+            }
         }, this.LOCATION_REFRESH_INTERVAL);
     }
 
     private clearLocationRefreshInterval() {
         if (this.locationRefreshInterval) {
-            this.locationRefreshInterval = null;
+            this.locationRefreshInterval = undefined;
         }
     }
 
@@ -889,10 +881,10 @@ class DispatchMapController extends BaseController {
     private addAutoZoomButton() {
         const mapControlsDiv = document.createElement('div');
         mapControlsDiv.className = 'map-controls';
-        mapControlsDiv.style.margin = '10px'; // Add some margin instead
+        mapControlsDiv.style.margin = '10px'; 
         mapControlsDiv.style.zIndex = '1';
 
-        // Create the button HTML content to match your Angular Material design
+        // Create the button HTML content 
         mapControlsDiv.innerHTML = `
         <button class="md-fab md-mini ${this.autoZoomEnabled ? 'md-primary' : 'md-warn'}" 
                 aria-label="Toggle Auto Zoom"
@@ -918,7 +910,7 @@ class DispatchMapController extends BaseController {
         // Get the button element
         const button = mapControlsDiv.querySelector('button');
 
-        // Add hover effect for tooltip
+        // Add hover effect for the tooltip
         if (button) {
             button.addEventListener('mouseenter', () => {
                 const tooltip: any = button.querySelector('.md-tooltip');
