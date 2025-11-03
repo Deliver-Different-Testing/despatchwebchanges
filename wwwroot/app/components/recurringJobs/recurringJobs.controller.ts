@@ -41,15 +41,17 @@ class RecurringJobsController extends BaseController {
             title: "Recurring Jobs List",
             icon: "list_alt",
             templateUrl: "app/components/recurringJobs/partials/jobList.html",
-            showSearch: 1,
-            showRefresh: 1,
-            showFilter: 1,
+            showSearch: true,
+            showRefresh: true,
+            showFilter: true,
         },
         jobDetail: {
             title: "Detail",
             icon: "assignment",
             templateUrl: "app/components/recurringJobs/partials/jobDetail.html",
-            showSearch: 0
+            showSearch: false,
+            showRefresh: false,
+            showFilter: false,
         },
     };
 

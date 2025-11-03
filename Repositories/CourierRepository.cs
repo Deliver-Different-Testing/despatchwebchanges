@@ -108,10 +108,53 @@ public class CourierRepository(
 
     public async Task<List<AvailableCourierPosition>> GetAvailableCouriersAsync(CourierLocationRequest data)
     {
+        if (Debugger.IsAttached) return GetFakeNzAvailableCourierPositions(data);
+        
         var isUsTenant = infoService.IsUsTenant();
         return isUsTenant
             ? await GetUsAvailableCourierPositionsAsync(data)
             : await GetNzAvailableCourierPositionsAsync(data);
+    }
+    
+    private static List<AvailableCourierPosition> GetFakeNzAvailableCourierPositions(CourierLocationRequest data)
+    {
+        var random = new Random();
+        var fakeData = new List<AvailableCourierPosition>();
+    
+        // Generate 5-15 fake couriers within the bounds
+        var courierCount = random.Next(5, 16);
+        var vehicleTypes = new[] { "Car", "Van", "Bike", "Motorcycle", "Truck" };
+        var fleetCodes = new[] { "UA", "" };
+    
+        for (var i = 1; i <= courierCount; i++)
+        {
+            // Generate random position within the provided bounds
+            var lat = (double)data.MinLat + random.NextDouble() * ((double)data.MaxLat - (double)data.MinLat);
+            var lng = (double)data.MinLng + random.NextDouble() * ((double)data.MaxLng - (double)data.MinLng);
+        
+            var totalJobs = random.Next(0, 8);
+            var overDueJobs = totalJobs > 0 ? random.Next(0, Math.Min(totalJobs, 3)) : 0;
+        
+            fakeData.Add(new AvailableCourierPosition
+            {
+                CourierId = 1000 + i,
+                CourierName = $"Test Courier {i}",
+                Latitude = (decimal)lat,
+                Longitude = (decimal)lng,
+                ChannelId = random.Next(1, 5),
+                VehicleType = vehicleTypes[random.Next(vehicleTypes.Length)],
+                ClearListAreaIDs = Enumerable.Range(1, random.Next(1, 4))
+                    .Select(_ => random.Next(1, 20))
+                    .Distinct()
+                    .ToList(),
+                Code = $"C{i:D3}",
+                FleetCode = fleetCodes[random.Next(fleetCodes.Length)],
+                TotalJobs = totalJobs,
+                OverDueJobs = overDueJobs
+            });
+        }
+    
+        return fakeData;
     }
 
     private async Task<List<AvailableCourierPosition>> GetUsAvailableCourierPositionsAsync(CourierLocationRequest data)
