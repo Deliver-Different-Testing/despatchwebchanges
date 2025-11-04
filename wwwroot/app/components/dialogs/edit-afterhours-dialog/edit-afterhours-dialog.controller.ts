@@ -1,6 +1,6 @@
 ﻿import "./edit-afterhours-dialog.styles.less";
 import BaseController from "../../base-controller";
-import dayjs from "dayjs";
+import dayjs, {Dayjs} from "dayjs";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import {ISuggestion, ITimeZoneSuggestion} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
@@ -218,6 +218,20 @@ class EditAfterhoursDialogController extends BaseController {
         }
 
         this.validateForm();
+    }
+
+    updateStartTime(dateTime: Dayjs) {
+        this.editableAfterHoursSchedule.startTime = dateTime;
+        this.validateForm();
+        this.updateDuration();
+        this.applyScope();
+    }
+
+    updateEndTime(dateTime: Dayjs) {
+        this.editableAfterHoursSchedule.endTime = dateTime;
+        this.validateForm();
+        this.updateDuration();
+        this.applyScope();
     }
 
     save(): void {

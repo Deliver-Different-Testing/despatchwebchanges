@@ -125,7 +125,7 @@
                     </div>
 
                     <!-- TimeZone Selection -->
-                    <md-input-container class="md-block" ng-if="ctrl.isU">
+                    <md-input-container class="md-block" ng-if="::ctrl.isUsTenant">
                         <label>Timezone</label>
                         <md-select ng-model="ctrl.selectedTimeZone" required>
                             <md-option ng-repeat="timezone in ctrl.timeZoneOptions track by timezone.id"
