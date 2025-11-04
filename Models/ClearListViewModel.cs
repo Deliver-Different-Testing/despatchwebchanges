@@ -5,6 +5,12 @@ namespace DespatchWeb.Models;
 public class ClearListViewModel
 {
     public List<AreaClearList> Areas { get; set; } = [];
+    public List<ClearListColumn> Columns { get; set; } = [];
+}
+
+public class ClearListColumn
+{
+    public List<AreaClearList> Areas { get; set; } = [];
 }
 
 public class AreaClearList

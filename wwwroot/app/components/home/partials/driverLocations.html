@@ -16,8 +16,8 @@
     <div id="driverLocations" ng-if="ctrl.showDriverLocationsData">
         <div class="container-fluid">
             <div class="row">
-                <div class="col-xs-3" ng-repeat="area in ctrl.driverLocations.areas">
-                    <div class="driverLocations-list" ng-style="{ 'height': area.percentHeight + '%' }">
+                <div class="col-xs-3" ng-repeat="column in ctrl.driverLocations.columns">
+                    <div class="driverLocations-list" ng-repeat="area in column.areas" ng-style="{ 'height': area.percentHeight + '%' }">
                         <div class="driverLocations-list-title"
                              ng-class="{'listActive': area.isActive}"
                              ng-click="ctrl.selectAndActivateArea(area);">
