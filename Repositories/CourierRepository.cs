@@ -397,6 +397,47 @@ public class CourierRepository(
                 })
                 .ToListAsync();
 
+            // Group areas into columns matching DespatchWeb_Urgent's vertical layout
+            var columnDefinitions = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                // Column 1
+                { "Central", 1 },
+                { "Other", 1 },
+                // Column 2
+                { "West Mid", 2 },
+                { "Shallow West", 2 },
+                { "Deep West", 2 },
+                // Column 3
+                { "East Mid", 3 },
+                { "Shallow Shore", 3 },
+                { "Deep Shore", 3 },
+                // Column 4
+                { "Mangere", 4 },
+                { "Deep South", 4 },
+                { "Deep East", 4 }
+            };
+
+            var areaDisplayOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Central", 1 },
+                { "Other", 2 },
+                { "West Mid", 3 },
+                { "Shallow West", 4 },
+                { "Deep West", 5 },
+                { "East Mid", 6 },
+                { "Shallow Shore", 7 },
+                { "Deep Shore", 8 },
+                { "Mangere", 9 },
+                { "Deep South", 10 },
+                { "Deep East", 11 }
+            };
+
+            clearLists = clearLists
+                .OrderBy(cl => areaDisplayOrder.ContainsKey(cl.AreaName ?? "")
+                    ? areaDisplayOrder[cl.AreaName]
+                    : 999)
+                .ToList();
+
             var activeCouriers = await GetActiveCouriersAsync();
 
             var areas = new List<AreaClearList>();
@@ -417,7 +458,53 @@ public class CourierRepository(
                 areas.Add(areaClearList);
             }
 
-            return new ClearListViewModel { Areas = areas };
+            // Group areas into columns for vertical layout
+            var columns = new List<ClearListColumn>();
+            var assignedAreas = new HashSet<string>();
+
+            for (int columnNum = 1; columnNum <= 4; columnNum++)
+            {
+                var columnAreas = areas
+                    .Where(a => columnDefinitions.ContainsKey(a.Name ?? "")
+                        && columnDefinitions[a.Name] == columnNum)
+                    .ToList();
+
+                // Track which areas have been assigned to columns
+                foreach (var area in columnAreas)
+                {
+                    assignedAreas.Add(area.Name ?? "");
+                }
+
+                if (columnAreas.Any())
+                {
+                    columns.Add(new ClearListColumn { Areas = columnAreas });
+                }
+            }
+
+            // Handle areas not in columnDefinitions - append them using database Order
+            var unassignedAreas = areas
+                .Where(a => !assignedAreas.Contains(a.Name ?? ""))
+                .OrderBy(a => a.Order)
+                .ToList();
+
+            if (unassignedAreas.Any())
+            {
+                // Add unassigned areas to last column or create new column
+                if (columns.Any())
+                {
+                    columns.Last().Areas.AddRange(unassignedAreas);
+                }
+                else
+                {
+                    columns.Add(new ClearListColumn { Areas = unassignedAreas });
+                }
+            }
+
+            return new ClearListViewModel
+            {
+                Areas = areas,
+                Columns = columns
+            };
         }
         catch (Exception ex)
         {
