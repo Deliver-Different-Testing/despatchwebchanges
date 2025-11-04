@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
@@ -108,55 +107,10 @@ public class CourierRepository(
 
     public async Task<List<AvailableCourierPosition>> GetAvailableCouriersAsync(CourierLocationRequest data)
     {
-        //if (Debugger.IsAttached) return GetFakeNzAvailableCourierPositions(data);
-        
         var isUsTenant = infoService.IsUsTenant();
         return isUsTenant
             ? await GetUsAvailableCourierPositionsAsync(data)
             : await GetNzAvailableCourierPositionsAsync(data);
-    }
-    
-    private static List<AvailableCourierPosition> GetFakeNzAvailableCourierPositions(CourierLocationRequest data)
-    {
-        var random = new Random();
-        var fakeData = new List<AvailableCourierPosition>();
-
-        // Generate 5-15 fake couriers within the bounds
-        var courierCount = random.Next(5, 16);
-        var vehicleTypes = new[] { "Car", "Van", "Bike", "Motorcycle", "Truck" };
-        var fleetCodes = new[] { "UA", "" };
-        var displayOrders = new[] { 1, 3, 5 }; // Top, Middle, Bottom priority
-
-        for (var i = 1; i <= courierCount; i++)
-        {
-            // Generate random position within the provided bounds
-            var lat = (double)data.MinLat + random.NextDouble() * ((double)data.MaxLat - (double)data.MinLat);
-            var lng = (double)data.MinLng + random.NextDouble() * ((double)data.MaxLng - (double)data.MinLng);
-
-            var totalJobs = random.Next(0, 8);
-            var overDueJobs = totalJobs > 0 ? random.Next(0, Math.Min(totalJobs, 3)) : 0;
-
-            fakeData.Add(new AvailableCourierPosition
-            {
-                CourierId = 1000 + i,
-                CourierName = $"Test Courier {i}",
-                Latitude = (decimal)lat,
-                Longitude = (decimal)lng,
-                ChannelId = random.Next(1, 5),
-                VehicleType = vehicleTypes[random.Next(vehicleTypes.Length)],
-                ClearListAreaIDs = Enumerable.Range(1, random.Next(1, 4))
-                    .Select(_ => random.Next(1, 20))
-                    .Distinct()
-                    .ToList(),
-                Code = $"C{i:D3}",
-                FleetCode = fleetCodes[random.Next(fleetCodes.Length)],
-                TotalJobs = totalJobs,
-                OverDueJobs = overDueJobs,
-                DisplayOrder = displayOrders[random.Next(displayOrders.Length)]
-            });
-        }
-
-        return fakeData;
     }
 
     private async Task<List<AvailableCourierPosition>> GetUsAvailableCourierPositionsAsync(CourierLocationRequest data)
@@ -186,7 +140,7 @@ public class CourierRepository(
                     .Select(x => x.ClearListArea.ClearListAreaId).ToList(),
                 Code = c.Code,
                 FleetCode = uaFleetIds.Contains(c.CourierFleetId ?? 0) ? "UA" : string.Empty,
-                DisplayOrder = c.TblClearListAreaOrder != null ? c.TblClearListAreaOrder.Status : (int?)null,
+                DisplayOrder = c.TblClearListAreaOrder != null ? c.TblClearListAreaOrder.Status : null,
                 TotalJobs = c.TucJobUcjbCouriers.Count(j => !j.UcjbVoid && !j.UcjbJobDone),
                 Jobs = c.TucJobUcjbCouriers
                     .Where(j => !j.UcjbVoid && !j.UcjbJobDone && j.UcjbTime != null)
@@ -241,7 +195,7 @@ public class CourierRepository(
                     .Select(x => x.ClearListArea.ClearListAreaId).ToList(),
                 Code = c.Code,
                 FleetId = c.CourierFleetId,
-                DisplayOrder = c.TblClearListAreaOrder != null ? c.TblClearListAreaOrder.Status : (int?)null,
+                DisplayOrder = c.TblClearListAreaOrder != null ? c.TblClearListAreaOrder.Status : null,
                 TotalJobs = c.TucJobUcjbCouriers.Count(j => !j.UcjbVoid && !j.UcjbJobDone),
                 Jobs = c.TucJobUcjbCouriers
                     .Where(j => !j.UcjbVoid && !j.UcjbJobDone && j.UcjbTime != null)
@@ -318,7 +272,7 @@ public class CourierRepository(
     public async Task<List<Suggestion>> AllActiveCouriersAsync(string searchTerm)
     {
         var isUsTenant = infoService.IsUsTenant();
-        
+
         try
         {
             Log.Information(
@@ -339,7 +293,9 @@ public class CourierRepository(
                 .Select(c => new Suggestion
                 {
                     Id = c.UccrId,
-                    Text = isUsTenant ? c.UccrName + " " + c.UccrSurname : c.Code + " (" + c.UccrName + " " + c.UccrSurname + ")"
+                    Text = isUsTenant
+                        ? c.UccrName + " " + c.UccrSurname
+                        : c.Code + " (" + c.UccrName + " " + c.UccrSurname + ")"
                 })
                 .ToListAsync();
 
@@ -873,7 +829,7 @@ public class CourierRepository(
                 ? TimeZoneHelper.SetDateTimeWithTimeZone(compliance.ExpiryDate.Value, tenantTimezone)
                 : null;
         }
-        
+
         return new CourierCompliancePaginatedResponse
         {
             Items = couriersCompliance,
@@ -901,139 +857,141 @@ public class CourierRepository(
         return days < 0 ? $"{Math.Abs(days)} days overdue" : $"{days} days";
     }
 
-  public async Task<CourierAfterHoursPaginatedResponse> GetAfterHoursCourierScheduleAsync(
-    CourierAfterHoursFilterRequest request)
-{
-    var now = infoService.GetCurrentTenantTime();
-    var tenantTimezone = infoService.GetTenantTimeZone();
-
-    // Ensure valid page and pageSize
-    var page = Math.Max(1, request.Page);
-    var pageSize = Math.Max(1, Math.Min(100, request.PageSize));
-
-    var query = Context.TblAfterhoursCouriers
-        .Where(c => c.Courier != null)
-        .AsQueryable();
-
-    if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+    public async Task<CourierAfterHoursPaginatedResponse> GetAfterHoursCourierScheduleAsync(
+        CourierAfterHoursFilterRequest request)
     {
-        var searchPattern = $"%{request.SearchTerm}%";
+        var now = infoService.GetCurrentTenantTime();
+        var tenantTimezone = infoService.GetTenantTimeZone();
 
-        query = query.Where(c =>
-            EF.Functions.Like(c.Courier.UccrName, searchPattern) ||
-            EF.Functions.Like(c.Courier.Code, searchPattern) ||
-            EF.Functions.Like(c.Courier.UccrSurname, searchPattern) ||
-            EF.Functions.Like(c.Courier.VehiclePlateNnumber, searchPattern) ||
-            EF.Functions.Like(c.Courier.UccrMobile, searchPattern) ||
-            EF.Functions.Like(c.Courier.PersonalMobile, searchPattern) ||
-            EF.Functions.Like(c.Courier.UccrEmail, searchPattern) ||
-            EF.Functions.Like(c.Courier.UccrVehicleModel, searchPattern)
-        );
-    }
+        // Ensure valid page and pageSize
+        var page = Math.Max(1, request.Page);
+        var pageSize = Math.Max(1, Math.Min(100, request.PageSize));
 
-    // Filter by day
-    if (!string.IsNullOrWhiteSpace(request.Day)
-        && !request.Day.Equals("all", StringComparison.CurrentCultureIgnoreCase))
-    {
-        if (Enum.TryParse<DayOfWeek>(request.Day, true, out var dayOfWeek))
+        var query = Context.TblAfterhoursCouriers
+            .Where(c => c.Courier != null)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
-            var dayValue = (int)dayOfWeek;
-            query = query.Where(c => c.WeekDay == dayValue);
+            var searchPattern = $"%{request.SearchTerm}%";
+
+            query = query.Where(c =>
+                EF.Functions.Like(c.Courier.UccrName, searchPattern) ||
+                EF.Functions.Like(c.Courier.Code, searchPattern) ||
+                EF.Functions.Like(c.Courier.UccrSurname, searchPattern) ||
+                EF.Functions.Like(c.Courier.VehiclePlateNnumber, searchPattern) ||
+                EF.Functions.Like(c.Courier.UccrMobile, searchPattern) ||
+                EF.Functions.Like(c.Courier.PersonalMobile, searchPattern) ||
+                EF.Functions.Like(c.Courier.UccrEmail, searchPattern) ||
+                EF.Functions.Like(c.Courier.UccrVehicleModel, searchPattern)
+            );
         }
+
+        // Filter by day
+        if (!string.IsNullOrWhiteSpace(request.Day)
+            && !request.Day.Equals("all", StringComparison.CurrentCultureIgnoreCase))
+        {
+            if (Enum.TryParse<DayOfWeek>(request.Day, true, out var dayOfWeek))
+            {
+                var dayValue = (int)dayOfWeek;
+                query = query.Where(c => c.WeekDay == dayValue);
+            }
+        }
+
+        var totalActiveDrivers = await query
+            .Where(c => c.Courier != null &&
+                        c.Courier.CourierLogInOut != null &&
+                        (c.Courier.CourierLogInOut.LogOutTime == null || c.Courier.CourierLogInOut.LogOutTime > now))
+            .Select(c => c.CourierId)
+            .Distinct()
+            .CountAsync();
+
+        // Group by courier and time schedule
+        var groupedQuery = query
+            .AsNoTracking()
+            .GroupBy(c => new
+            {
+                c.CourierId,
+                CourierName = c.Courier.UccrName + " " + c.Courier.UccrSurname,
+                c.Courier.Code,
+                c.StartTime,
+                c.EndTime
+            })
+            .Select(g => new
+            {
+                g.Key.CourierId,
+                g.Key.CourierName,
+                CourierCode = g.Key.Code,
+                g.Key.StartTime,
+                g.Key.EndTime,
+                Days = g.Select(x => x.WeekDay).ToList(),
+                AfterHoursScheduleIds = g.Select(x => x.Id).ToList()
+            });
+
+        var totalCount = await groupedQuery.CountAsync();
+
+        groupedQuery = request.OrderBy?.ToLower() switch
+        {
+            "name" => request.SortDescending
+                ? groupedQuery.OrderByDescending(c => c.CourierName)
+                : groupedQuery.OrderBy(c => c.CourierName),
+            "code" => request.SortDescending
+                ? groupedQuery.OrderByDescending(c => c.CourierCode)
+                : groupedQuery.OrderBy(c => c.CourierCode),
+            "day" => request.SortDescending
+                ? groupedQuery.OrderByDescending(c => c.Days.Min())
+                : groupedQuery.OrderBy(c => c.Days.Min()),
+            "startTime" => request.SortDescending
+                ? groupedQuery.OrderByDescending(c => c.StartTime)
+                : groupedQuery.OrderBy(c => c.StartTime),
+            "endTime" => request.SortDescending
+                ? groupedQuery.OrderByDescending(c => c.EndTime)
+                : groupedQuery.OrderBy(c => c.EndTime),
+            _ => request.SortDescending
+                ? groupedQuery.OrderByDescending(c => c.StartTime)
+                : groupedQuery.OrderBy(c => c.StartTime)
+        };
+
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        var afterHoursScheduleData = await groupedQuery
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var afterHoursSchedule = afterHoursScheduleData.Select(c => new AfterHoursCourierScheduleViewModel
+        {
+            AfterHoursScheduleId = c.AfterHoursScheduleIds.FirstOrDefault(),
+            CourierId = c.CourierId,
+            CourierName = c.CourierName,
+            CourierCode = c.CourierCode,
+            Days = c.Days.Select(d => d switch
+                {
+                    0 => "Sunday",
+                    1 => "Monday",
+                    2 => "Tuesday",
+                    3 => "Wednesday",
+                    4 => "Thursday",
+                    5 => "Friday",
+                    6 => "Saturday",
+                    _ => "Unknown"
+                }).OrderBy(day =>
+                    Array.IndexOf(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], day))
+                .ToList(),
+            StartTime = TimeZoneHelper.SetDateTimeWithTimeZone(c.StartTime, tenantTimezone),
+            EndTime = TimeZoneHelper.SetDateTimeWithTimeZone(c.EndTime, tenantTimezone),
+            Duration = CalculateDuration(c.StartTime, c.EndTime)
+        }).ToList();
+
+        return new CourierAfterHoursPaginatedResponse
+        {
+            Items = afterHoursSchedule,
+            Total = totalCount,
+            Page = page,
+            Pages = totalPages,
+            TotalActiveDrivers = totalActiveDrivers
+        };
     }
-
-    var totalActiveDrivers = await query
-        .Where(c => c.Courier != null &&
-                    c.Courier.CourierLogInOut != null &&
-                    (c.Courier.CourierLogInOut.LogOutTime == null || c.Courier.CourierLogInOut.LogOutTime > now))
-        .Select(c => c.CourierId)
-        .Distinct()
-        .CountAsync();
-
-    // Group by courier and time schedule
-    var groupedQuery = query
-        .AsNoTracking()
-        .GroupBy(c => new
-        {
-            c.CourierId,
-            CourierName = c.Courier.UccrName + " " + c.Courier.UccrSurname,
-            c.Courier.Code,
-            c.StartTime,
-            c.EndTime
-        })
-        .Select(g => new
-        {
-            g.Key.CourierId,
-            g.Key.CourierName,
-            CourierCode = g.Key.Code,
-            g.Key.StartTime,
-            g.Key.EndTime,
-            Days = g.Select(x => x.WeekDay).ToList(),
-            AfterHoursScheduleIds = g.Select(x => x.Id).ToList()
-        });
-
-    var totalCount = await groupedQuery.CountAsync();
-
-    groupedQuery = request.OrderBy?.ToLower() switch
-    {
-        "name" => request.SortDescending
-            ? groupedQuery.OrderByDescending(c => c.CourierName)
-            : groupedQuery.OrderBy(c => c.CourierName),
-        "code" => request.SortDescending
-            ? groupedQuery.OrderByDescending(c => c.CourierCode)
-            : groupedQuery.OrderBy(c => c.CourierCode),
-        "day" => request.SortDescending
-            ? groupedQuery.OrderByDescending(c => c.Days.Min())
-            : groupedQuery.OrderBy(c => c.Days.Min()),
-        "startTime" => request.SortDescending
-            ? groupedQuery.OrderByDescending(c => c.StartTime)
-            : groupedQuery.OrderBy(c => c.StartTime),
-        "endTime" => request.SortDescending
-            ? groupedQuery.OrderByDescending(c => c.EndTime)
-            : groupedQuery.OrderBy(c => c.EndTime),
-        _ => request.SortDescending
-            ? groupedQuery.OrderByDescending(c => c.StartTime)
-            : groupedQuery.OrderBy(c => c.StartTime)
-    };
-
-    var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-
-    var afterHoursScheduleData = await groupedQuery
-        .Skip((page - 1) * pageSize)
-        .Take(pageSize)
-        .ToListAsync();
-
-    var afterHoursSchedule = afterHoursScheduleData.Select(c => new AfterHoursCourierScheduleViewModel
-    {
-        AfterHoursScheduleId = c.AfterHoursScheduleIds.FirstOrDefault(),
-        CourierId = c.CourierId,
-        CourierName = c.CourierName,
-        CourierCode = c.CourierCode,
-        Days = c.Days.Select(d => d switch
-        {
-            0 => "Sunday",
-            1 => "Monday",
-            2 => "Tuesday",
-            3 => "Wednesday",
-            4 => "Thursday",
-            5 => "Friday",
-            6 => "Saturday",
-            _ => "Unknown"
-        }).OrderBy(day => Array.IndexOf(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], day)).ToList(),
-        StartTime = TimeZoneHelper.SetDateTimeWithTimeZone(c.StartTime, tenantTimezone),
-        EndTime = TimeZoneHelper.SetDateTimeWithTimeZone(c.EndTime, tenantTimezone),
-        Duration = CalculateDuration(c.StartTime, c.EndTime)
-    }).ToList();
-
-    return new CourierAfterHoursPaginatedResponse
-    {
-        Items = afterHoursSchedule,
-        Total = totalCount,
-        Page = page,
-        Pages = totalPages,
-        TotalActiveDrivers = totalActiveDrivers
-    };
-}
 
     private static string CalculateDuration(DateTime startTime, DateTime endTime)
     {
@@ -1110,6 +1068,32 @@ public class CourierRepository(
             ? sessionData.Average(s => ((s.LogOutTime ?? today) - s.LogInTime).TotalMinutes)
             : 0.0;
 
+        // Apply sorting
+        query = request.OrderBy?.ToLower() switch
+        {
+            "code" => request.SortDescending
+                ? query.OrderByDescending(c => c.Code)
+                : query.OrderBy(c => c.Code),
+            "name" => request.SortDescending
+                ? query.OrderByDescending(c => c.UccrName).ThenByDescending(c => c.UccrSurname)
+                : query.OrderBy(c => c.UccrName).ThenBy(c => c.UccrSurname),
+            "fleet" => request.SortDescending
+                ? query.OrderByDescending(c => c.CourierFleet.UccfName)
+                : query.OrderBy(c => c.CourierFleet.UccfName),
+            "logintime" => request.SortDescending
+                ? query.OrderByDescending(c => c.CourierLogInOut.LogInTime)
+                : query.OrderBy(c => c.CourierLogInOut.LogInTime),
+            "logouttime" => request.SortDescending
+                ? query.OrderByDescending(c => c.CourierLogInOut.LogOutTime)
+                : query.OrderBy(c => c.CourierLogInOut.LogOutTime),
+            "status" => request.SortDescending
+                ? query.OrderByDescending(c => c.CourierLogInOut.LogOutTime == null)
+                : query.OrderBy(c => c.CourierLogInOut.LogOutTime == null),
+            _ => request.SortDescending
+                ? query.OrderByDescending(c => c.CourierLogInOut.LogInTime)
+                : query.OrderBy(c => c.CourierLogInOut.LogInTime)
+        };
+
         // Calculate total pages
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
@@ -1136,7 +1120,9 @@ public class CourierRepository(
         foreach (var courier in couriers)
         {
             courier.LoginTime = TimeZoneHelper.SetDateTimeWithTimeZone(courier.LoginTime, tenantTimeZone);
-            courier.LogoutTime = courier.LogoutTime.HasValue ? TimeZoneHelper.SetDateTimeWithTimeZone(courier.LogoutTime.Value, tenantTimeZone) : null;
+            courier.LogoutTime = courier.LogoutTime.HasValue
+                ? TimeZoneHelper.SetDateTimeWithTimeZone(courier.LogoutTime.Value, tenantTimeZone)
+                : null;
         }
 
         return new TodayActiveDriversPaginatedResponse
@@ -1154,19 +1140,19 @@ public class CourierRepository(
     private static string CourierActiveDuration(DateTime loginTime, DateTime? logoutTime)
     {
         if (!logoutTime.HasValue) return "Currently Active";
-    
+
         var duration = logoutTime.Value - loginTime;
-    
+
         // If logout time is before login time, assume it's the next day
         if (duration.TotalMinutes < 0)
         {
             logoutTime = logoutTime.Value.AddDays(1);
             duration = logoutTime.Value - loginTime;
         }
-    
+
         var hours = (int)duration.TotalHours;
         var minutes = duration.Minutes;
-    
+
         return hours + "h " + minutes.ToString().PadLeft(2, '0') + "m";
     }
 
@@ -1402,7 +1388,7 @@ public class CourierRepository(
                          StartTime = request.StartTime.Value.DateTime,
                          EndTime = request.EndTime.Value.DateTime
                      })) await Context.TblAfterhoursCouriers.AddAsync(schedule);
-       
+
             await Context.SaveChangesAsync();
         }
         catch (Exception e)
@@ -1435,7 +1421,7 @@ public class CourierRepository(
         {
             await Context.TblAfterhoursCouriers
                 .Where(s => s.Id == afterHoursScheduleId)
-                .ExecuteDeleteAsync(); 
+                .ExecuteDeleteAsync();
         }
         catch (Exception e)
         {
@@ -1451,21 +1437,22 @@ public class CourierRepository(
         try
         {
             ArgumentNullException.ThrowIfNull(courierCode, nameof(courierCode));
-            
-           return await Context.TucCouriers
+
+            return await Context.TucCouriers
                 .AsNoTracking()
                 .Where(c => c.Code == courierCode)
                 .Select(c => new Suggestion
                 {
                     Id = c.UccrId,
-                    Text = c.Code + ": " +  c.UccrName + " " + c.UccrSurname
+                    Text = c.Code + ": " + c.UccrName + " " + c.UccrSurname
                 })
                 .FirstOrDefaultAsync();
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierRepository), nameof(GetExactCourierByCodeAsync)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierRepository),
+                    nameof(GetExactCourierByCodeAsync)));
             throw;
         }
     }
