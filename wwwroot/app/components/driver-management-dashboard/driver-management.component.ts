@@ -482,7 +482,7 @@ class DriverManagementController extends BaseController {
     exportAfterHoursSchedule(): void {
         const data = this.afterHoursSchedule.map(item => ({
             'Driver Name': item.courierName,
-            Day: item.day,
+            Days: item.days.join(', '),
             'Start Time': this.formatScheduleTime(item.startTime),
             'End Time': this.formatScheduleTime(item.endTime),
             Duration: item.duration
@@ -687,7 +687,7 @@ class DriverManagementController extends BaseController {
                 courierId: 0,
                 courierName: '',
                 courierCode: '',
-                day: today.format('dddd'),
+                days: [today.format('dddd')],
                 startTime: startTime,
                 endTime: endTime,
                 duration: '4 hours',
@@ -757,6 +757,10 @@ class DriverManagementController extends BaseController {
             console.error('Error editing after hours schedule:', error);
             this.toastrService.showErrorToast('Failed to edit after hours schedule');
         }
+    }
+    
+    displayDaysOnAfterHoursTable(days: string[]): string {
+        return days.join(', ');
     }
 }
 

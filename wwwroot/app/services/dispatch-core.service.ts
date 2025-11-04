@@ -1074,6 +1074,15 @@ class DispatchCoreService implements angular.IServiceProvider {
     async getTimeZoneOptions(): Promise<ITimeZoneSuggestion[]> {
         const response = await this.$http.get<ITimeZoneSuggestion[]>('job/GetTimeZoneOptions');
         return response.data;
+    }  
+    
+    async getExactCourierMatch(courierCode: string): Promise<ISuggestion> {
+        const response = await this.$http.get<ISuggestion>('courier/GetExactCourierByCode', {
+            params: {
+                courierCode
+            }
+        });
+        return response.data;
     }
 }
 

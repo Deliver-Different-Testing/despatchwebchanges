@@ -326,7 +326,7 @@ public class CourierController(
         catch (Exception e)
         {
             Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController ),
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
                     nameof(GetAllCourierEmails)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
@@ -350,7 +350,7 @@ public class CourierController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
-    
+
     [HttpPost]
     public async Task<IActionResult> CreateAfterHoursCourierSchedule(
         [FromBody] AfterHoursCourierScheduleViewModel request)
@@ -387,4 +387,22 @@ public class CourierController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
+
+    public async Task<IActionResult> GetExactCourierByCode(string courierCode)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(courierCode, nameof(courierCode));
+            var courier = await courierRepository.GetExactCourierByCodeAsync(courierCode);
+            return Json(courier);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(GetExactCourierByCode)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
 }

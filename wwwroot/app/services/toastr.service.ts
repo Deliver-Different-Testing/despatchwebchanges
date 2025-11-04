@@ -20,27 +20,27 @@ class ToastrService implements angular.IServiceProvider {
         return this;
     }
 
-    showInfoToast(infoMessage: string) {
+    showInfoToast(infoMessage: string): angular.IPromise<any> {
         console.info("Info:", infoMessage);
         return this.showToast(infoMessage, ToastType.INFO);
     }
 
-    showErrorToast(errorMessage: string = "An unexpected error occurred. Please try again or contact support") {
+    showErrorToast(errorMessage: string = "An unexpected error occurred. Please try again or contact support"): angular.IPromise<any> {
         console.error("Error:", errorMessage);
         return this.showToast(errorMessage, ToastType.ERROR);
     }
 
-    showSuccessToast(successMessage: string) {
+    showSuccessToast(successMessage: string): angular.IPromise<any> {
         console.debug("Success:", successMessage);
         return this.showToast(successMessage, ToastType.SUCCESS);
     }
 
-    showWarningToast(warningMessage: string) {
+    showWarningToast(warningMessage: string): angular.IPromise<any> {
         console.warn("Warning:", warningMessage);
         return this.showToast(warningMessage, ToastType.WARNING);
     }
 
-    private showToast(message: string, type: ToastType) {
+    private showToast(message: string, type: ToastType): angular.IPromise<any> {
         const preset = this.$mdToast.simple()
             .textContent(message)
             .position("top left")

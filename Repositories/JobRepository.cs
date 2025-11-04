@@ -3516,13 +3516,24 @@ public partial class JobRepository(
         if (flightSegments.Count > 0)
         {
             var firstSegment = flightSegments[0];
+            var lastSegment = flightSegments[^1];
+
+            // Get notes from the first segment's database record
+            var notes = await Context.TucJobNationwides
+                .AsNoTracking()
+                .Where(n => n.UcnwJobId == effectiveJobId)
+                .OrderBy(n => n.UcnwLegNumber)
+                .Select(n => n.UcnwNotes)
+                .FirstOrDefaultAsync();
+
             job.AssignedFlight = new AssignedFlight
             {
-                FlightNumber = firstSegment.CarrierFsCode + firstSegment.FlightNumber,
+                ExpectedArrival = lastSegment.ArrivalTime,
+                ArrivalTimeZone = lastSegment.ArrivalAirportTimeZone,
                 ExpectedDeparture = firstSegment.DepartureTime,
                 DepartureTimeZone = firstSegment.DepartureAirportTimeZone,
-                ExpectedArrival = flightSegments[^1].ArrivalTime,
-                ArrivalTimeZone = flightSegments[^1].ArrivalAirportTimeZone,
+                FlightNumber = firstSegment.CarrierFsCode + firstSegment.FlightNumber,
+                Notes = notes,
                 FlightSegments = flightSegments
             };
         }

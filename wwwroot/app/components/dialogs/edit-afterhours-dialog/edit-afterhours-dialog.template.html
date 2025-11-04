@@ -20,7 +20,6 @@
             <div class="content-container">
 
                 <!-- Courier Selection (New Schedule) -->
-                <!-- Courier Selection (New Schedule) -->
                 <div class="selection-panel" ng-if="ctrl.isNewSchedule">
                     <h3 class="driver-section-title">
                         <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">person</md-icon>
@@ -79,20 +78,25 @@
                     </h3>
 
                     <!-- Day Selection -->
+                    <!-- Replace the Day Selection section -->
                     <md-input-container class="md-block">
-                        <label>Day of Week</label>
-                        <md-select ng-model="ctrl.editableAfterHoursSchedule.day"
-                                   ng-change="ctrl.updateDay()"
+                        <label>Days of Week</label>
+                        <md-select ng-model="ctrl.editableAfterHoursSchedule.days"
+                                   ng-change="ctrl.updateDays()"
+                                   multiple
                                    required>
                             <md-option ng-repeat="day in ctrl.daysOfWeek" ng-value="day">
                                 {{day}}
                             </md-option>
                         </md-select>
-                        <div ng-messages="afterhoursForm.day.$error" ng-if="ctrl.validationErrors.day">
-                            <div ng-message="required">{{ctrl.validationErrors.day}}</div>
+                        <div ng-messages="afterhoursForm.days.$error" ng-if="ctrl.validationErrors.days">
+                            <div ng-message="required">{{ctrl.validationErrors.days}}</div>
+                        </div>
+                        <div class="selected-days-hint" ng-if="ctrl.editableAfterHoursSchedule.days.length > 0">
+                            <span class="hint-text">{{ctrl.getSelectedDaysText()}}</span>
                         </div>
                     </md-input-container>
-
+                    
                     <!-- Custom timepicker Component-->
                     <div class="time-picker-wrapper">
                         <custom-date-picker

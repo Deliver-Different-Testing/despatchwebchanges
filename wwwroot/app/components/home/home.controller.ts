@@ -147,7 +147,7 @@ class HomeController extends BaseController {
     potentialCouriersLoading: boolean = false;
     currentListLoading: boolean = false;
     courierSearchText?: string;
-    courierSearchOpen: boolean = false;
+    exactCourierMatchSearchText?: string;
     currentCourier?: ISuggestion;
     jobsCurrentList?: IDispatchJob[];
     potentialCouriers?: IPotentialCouriers[];
@@ -2202,25 +2202,10 @@ class HomeController extends BaseController {
             this.selectedRefreshInterval.id > 0;
     }
 
-    async controlCourierSearchBox(): Promise<void> {
-        this.courierSearchOpen = !this.courierSearchOpen;
-        if (!this.courierSearchOpen) return;
-
-        this.registerTimeout(() => {
-            const inputField = angular.element('input[name="courierSearch"]');
-            if (inputField.length > 0) {
-                const element = inputField[0] as HTMLInputElement;
-                element.focus();
-                element.select();
-            }
-        });
-    }
-
     async onCourierSearchSelect(selectedCourier: ISuggestion): Promise<void> {
         try {
             await this.getCurrentJobs(selectedCourier.id);
             this.courierSearchText = undefined;
-            this.courierSearchOpen = false;
         } catch (error) {
             console.error("Error in onCourierSearchClick:", error);
         } finally {
@@ -2386,6 +2371,31 @@ class HomeController extends BaseController {
     private syncVisibilityToBoxes(): void {
         if (!this.boxes) return;
         this.gridsterLayoutService.syncVisibilityToBoxes(this.gridsterItems, this.boxes);
+    }
+
+    async onExactCourierMatchSearch(exactCourierMatchSearchText: string): Promise<void> {
+        if(!exactCourierMatchSearchText) return;
+
+        const courierMatch = await this.DispatchData.getExactCourierMatch(exactCourierMatchSearchText);
+        if(!courierMatch) {
+            this.toastrService.showWarningToast(`No courier found with code: ${exactCourierMatchSearchText}. Please try again.`);
+            return;
+        }
+
+        this.currentCourier = courierMatch;
+        this.currentWorkSelection = ` for Courier ${courierMatch.text}`;
+
+        await this.getCurrentJobs(courierMatch.id);
+
+        try {
+            this.truckCourierStatus = await this.DispatchData.truckCourierStatus(courierMatch.id);
+        } catch (error: any) {
+            console.warn("Error fetching truck courier status:", error);
+        }
+
+        // Clear the search text after a successful search
+        this.exactCourierMatchSearchText = '';
+        this.applyScope();
     }
 }
 
