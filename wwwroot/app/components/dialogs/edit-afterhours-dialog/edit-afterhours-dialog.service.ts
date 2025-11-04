@@ -1,5 +1,7 @@
 ﻿import EditAfterhoursDialogController from "./edit-afterhours-dialog.controller";
-import {IAfterHoursCourierSchedule} from "../../driver-management-dashboard/interfaces/IAfterHoursCourierSchedule";
+import {
+    IAfterHoursCourierSchedule
+} from "../../driver-management-dashboard/interfaces/IAfterHoursCourierSchedule";
 
 class EditAfterhoursDialogService implements angular.IServiceProvider {
     static $inject = [

@@ -5,7 +5,7 @@ export interface IAfterHoursCourierSchedule {
     courierId: number;
     courierName: string;
     courierCode: string;
-    day: string;
+    days: string[];
     startTime?: Dayjs;
     endTime?: Dayjs;
     timezone?: string;
@@ -17,7 +17,7 @@ export interface IAfterHoursCourierScheduleDto {
     courierId: number;
     courierName: string;
     courierCode: string;
-    day: string;
+    days: string[];
     startTime?: string;
     endTime?: string;
     timezone?: string;

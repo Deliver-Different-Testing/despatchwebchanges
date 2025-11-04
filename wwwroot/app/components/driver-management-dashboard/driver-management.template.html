@@ -760,7 +760,7 @@
                                 <td md-cell>{{assignment.courierName}}</td>
                                 <td md-cell>{{assignment.courierCode}}</td>
                                 <td md-cell>
-                                    <span class="day-badge">{{assignment.day}}</span>
+                                    <span class="day-badge">{{ctrl.displayDaysOnAfterHoursTable(assignment.days)}}</span>
                                 </td>
                                 <td md-cell>
                                     <span class="time-badge start-time">{{ctrl.formatScheduleTime(assignment.startTime)}}</span>

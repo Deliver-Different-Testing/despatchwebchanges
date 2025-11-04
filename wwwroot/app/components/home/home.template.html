@@ -387,8 +387,22 @@
                             </div>
 
                             <div class="row-overflow" ng-if="::item.name === 'currentWork'">
+                                <div ng-if="::!ctrl.isUsCustomer" class="courier-match-search">
+                                    <md-input-container class="md-icon-float md-block">
+                                        <label for="courierExactMatch">Courier Match</label>
+                                        <md-icon md-font-set="material-symbols-outlined">delivery_truck_speed</md-icon>
+                                        <input id="courierExactMatch"
+                                               ng-model="ctrl.exactCourierMatchSearchText"
+                                               ng-keypress="$event.keyCode === 13 && ctrl.onExactCourierMatchSearch(ctrl.exactCourierMatchSearchText)"
+                                               type="number"
+                                               aria-label="Search for courier by code"
+                                               placeholder="Enter courier code"
+                                               class="no-spinner">
+                                    </md-input-container>
+                                </div>
+                                
                                 <md-autocomplete
-                                        ng-if="ctrl.courierSearchOpen"
+                                        ng-if="::ctrl.isUsCustomer"
                                         md-input-name="courierSearch"
                                         md-autoselect
                                         md-select-on-focus
@@ -414,16 +428,6 @@
                                         No couriers matching "{{ctrl.courierSearchText}}" were found.
                                     </md-not-found>
                                 </md-autocomplete>
-
-                                <md-button class="md-icon-button"
-                                           ng-click="ctrl.controlCourierSearchBox()">
-                                    <md-icon md-font-set="material-symbols-outlined">
-                                        {{ ctrl.courierSearchOpen ? 'close' : 'person_search' }}
-                                    </md-icon>
-                                    <md-tooltip md-direction="bottom">
-                                        {{ ctrl.courierSearchOpen ? 'Close Courier Search' : 'Open Courier Search'}}
-                                    </md-tooltip>
-                                </md-button>
 
                                 <div ng-if="ctrl.jobsCurrentList.length > 0">
                                     <md-button class="md-icon-button"

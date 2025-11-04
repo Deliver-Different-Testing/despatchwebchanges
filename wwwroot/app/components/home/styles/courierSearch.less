@@ -1,0 +1,96 @@
+﻿// Variables
+@hint-text-color: rgba(0, 0, 0, 0.54);
+@hint-font-size: 11px;
+@search-spacing: 8px;
+
+// Courier Match Search
+.courier-match-search {
+  display: flex;
+  align-items: flex-start;
+  gap: @search-spacing;
+  padding: 5px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+  max-width: 600px;
+  width: 80%;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  // Rest of the styles remain the same...
+  md-input-container {
+    flex: 1;
+    margin: 0;
+    padding-top: 0;
+
+    label {
+      font-weight: 500;
+    }
+
+    md-icon {
+      color: rgba(0, 0, 0, 0.54);
+      transition: color 0.2s ease;
+    }
+
+    input {
+      font-size: 14px;
+
+      &::placeholder {
+        color: rgba(0, 0, 0, 0.38);
+        font-style: italic;
+      }
+
+      &:focus::placeholder {
+        opacity: 0;
+      }
+
+      // Hide number input spinners
+      &[type="number"] {
+        -moz-appearance: textfield;
+
+        &::-webkit-inner-spin-button,
+        &::-webkit-outer-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+      }
+    }
+  }
+
+  // Focus state
+  &:focus-within {
+    background: rgba(0, 0, 0, 0.06);
+
+    md-input-container {
+      md-icon {
+        color: var(--md-primary-color, #1976d2);
+      }
+
+      .input-hint {
+        opacity: 1;
+        color: var(--md-primary-color, #1976d2);
+      }
+    }
+  }
+}
+
+// Loading state (optional - add if you want a loading indicator)
+.courier-match-search.searching {
+  pointer-events: none;
+  opacity: 0.7;
+
+  .search-button {
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

@@ -317,6 +317,8 @@ public class CourierRepository(
 
     public async Task<List<Suggestion>> AllActiveCouriersAsync(string searchTerm)
     {
+        var isUsTenant = infoService.IsUsTenant();
+        
         try
         {
             Log.Information(
@@ -337,7 +339,7 @@ public class CourierRepository(
                 .Select(c => new Suggestion
                 {
                     Id = c.UccrId,
-                    Text = c.UccrName + " " + c.UccrSurname
+                    Text = isUsTenant ? c.UccrName + " " + c.UccrSurname : c.Code + " (" + c.UccrName + " " + c.UccrSurname + ")"
                 })
                 .ToListAsync();
 
@@ -899,118 +901,139 @@ public class CourierRepository(
         return days < 0 ? $"{Math.Abs(days)} days overdue" : $"{days} days";
     }
 
-    public async Task<CourierAfterHoursPaginatedResponse> GetAfterHoursCourierScheduleAsync(
-        CourierAfterHoursFilterRequest request)
+  public async Task<CourierAfterHoursPaginatedResponse> GetAfterHoursCourierScheduleAsync(
+    CourierAfterHoursFilterRequest request)
+{
+    var now = infoService.GetCurrentTenantTime();
+    var tenantTimezone = infoService.GetTenantTimeZone();
+
+    // Ensure valid page and pageSize
+    var page = Math.Max(1, request.Page);
+    var pageSize = Math.Max(1, Math.Min(100, request.PageSize));
+
+    var query = Context.TblAfterhoursCouriers
+        .Where(c => c.Courier != null)
+        .AsQueryable();
+
+    if (!string.IsNullOrWhiteSpace(request.SearchTerm))
     {
-        var now = infoService.GetCurrentTenantTime();
-        var tenantTimezone = infoService.GetTenantTimeZone();
+        var searchPattern = $"%{request.SearchTerm}%";
 
-        // Ensure valid page and pageSize
-        var page = Math.Max(1, request.Page);
-        var pageSize = Math.Max(1, Math.Min(100, request.PageSize));
-
-        var query = Context.TblAfterhoursCouriers
-            .Where(c => c.Courier != null)
-            .AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(request.SearchTerm))
-        {
-            var searchPattern = $"%{request.SearchTerm}%";
-
-            query = query.Where(c =>
-                EF.Functions.Like(c.Courier.UccrName, searchPattern) ||
-                EF.Functions.Like(c.Courier.Code, searchPattern) ||
-                EF.Functions.Like(c.Courier.UccrSurname, searchPattern) ||
-                EF.Functions.Like(c.Courier.VehiclePlateNnumber, searchPattern) ||
-                EF.Functions.Like(c.Courier.UccrMobile, searchPattern) ||
-                EF.Functions.Like(c.Courier.PersonalMobile, searchPattern) ||
-                EF.Functions.Like(c.Courier.UccrEmail, searchPattern) ||
-                EF.Functions.Like(c.Courier.UccrVehicleModel, searchPattern)
-            );
-        }
-
-        // Filter by day
-        if (!string.IsNullOrWhiteSpace(request.Day)
-            && !request.Day.Equals("all", StringComparison.CurrentCultureIgnoreCase))
-        {
-            if (Enum.TryParse<DayOfWeek>(request.Day, true, out var dayOfWeek))
-            {
-                var dayValue = (int)dayOfWeek;
-                query = query.Where(c => c.WeekDay == dayValue);
-            }
-        }
-
-        var totalCount = await query.CountAsync();
-        var totalActiveDrivers = await query
-            .Where(c => c.Courier != null &&
-                        c.Courier.CourierLogInOut != null &&
-                        (c.Courier.CourierLogInOut.LogOutTime == null || c.Courier.CourierLogInOut.LogOutTime > now))
-            .CountAsync();
-
-        query = request.OrderBy?.ToLower() switch
-        {
-            "name" => request.SortDescending
-                ? query.OrderByDescending(c => c.Courier.UccrName)
-                    .ThenByDescending(c => c.Courier.UccrSurname)
-                : query.OrderBy(c => c.Courier.UccrName)
-                    .ThenBy(c => c.Courier.UccrSurname),
-            "code" => request.SortDescending
-                ? query.OrderByDescending(c => c.Courier.Code)
-                : query.OrderBy(c => c.Courier.Code),
-            "day" => request.SortDescending
-                ? query.OrderByDescending(c => c.WeekDay)
-                : query.OrderBy(c => c.WeekDay),
-            "startTime" => request.SortDescending
-                ? query.OrderByDescending(c => c.StartTime)
-                : query.OrderBy(c => c.StartTime),
-            "endTime" => request.SortDescending
-                ? query.OrderByDescending(c => c.EndTime)
-                : query.OrderBy(c => c.EndTime),
-            _ => request.SortDescending
-                ? query.OrderByDescending(c => c.StartTime)
-                : query.OrderBy(c => c.StartTime)
-        };
-
-        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-
-        var afterHoursSchedule = await query
-            .AsNoTracking()
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(c => new AfterHoursCourierScheduleViewModel
-            {
-                AfterHoursScheduleId = c.Id,
-                CourierId = c.CourierId,
-                CourierName = c.Courier.UccrName + " " + c.Courier.UccrSurname,
-                CourierCode = c.Courier.Code,
-                Day = c.WeekDay == 0 ? "Sunday" :
-                    c.WeekDay == 1 ? "Monday" :
-                    c.WeekDay == 2 ? "Tuesday" :
-                    c.WeekDay == 3 ? "Wednesday" :
-                    c.WeekDay == 4 ? "Thursday" :
-                    c.WeekDay == 5 ? "Friday" :
-                    c.WeekDay == 6 ? "Saturday" : "Unknown",
-                StartTime = c.StartTime,
-                EndTime = c.EndTime,
-                Duration = CalculateDuration(c.StartTime, c.EndTime)
-            })
-            .ToListAsync();
-
-        foreach (var schedule in afterHoursSchedule)
-        {
-            schedule.StartTime = schedule.StartTime.HasValue ? TimeZoneHelper.SetDateTimeWithTimeZone(schedule.StartTime.Value, tenantTimezone) : null;
-            schedule.EndTime = schedule.EndTime.HasValue ? TimeZoneHelper.SetDateTimeWithTimeZone(schedule.EndTime.Value, tenantTimezone) : null;
-        }
-
-        return new CourierAfterHoursPaginatedResponse
-        {
-            Items = afterHoursSchedule,
-            Total = totalCount,
-            Page = page,
-            Pages = totalPages,
-            TotalActiveDrivers = totalActiveDrivers
-        };
+        query = query.Where(c =>
+            EF.Functions.Like(c.Courier.UccrName, searchPattern) ||
+            EF.Functions.Like(c.Courier.Code, searchPattern) ||
+            EF.Functions.Like(c.Courier.UccrSurname, searchPattern) ||
+            EF.Functions.Like(c.Courier.VehiclePlateNnumber, searchPattern) ||
+            EF.Functions.Like(c.Courier.UccrMobile, searchPattern) ||
+            EF.Functions.Like(c.Courier.PersonalMobile, searchPattern) ||
+            EF.Functions.Like(c.Courier.UccrEmail, searchPattern) ||
+            EF.Functions.Like(c.Courier.UccrVehicleModel, searchPattern)
+        );
     }
+
+    // Filter by day
+    if (!string.IsNullOrWhiteSpace(request.Day)
+        && !request.Day.Equals("all", StringComparison.CurrentCultureIgnoreCase))
+    {
+        if (Enum.TryParse<DayOfWeek>(request.Day, true, out var dayOfWeek))
+        {
+            var dayValue = (int)dayOfWeek;
+            query = query.Where(c => c.WeekDay == dayValue);
+        }
+    }
+
+    var totalActiveDrivers = await query
+        .Where(c => c.Courier != null &&
+                    c.Courier.CourierLogInOut != null &&
+                    (c.Courier.CourierLogInOut.LogOutTime == null || c.Courier.CourierLogInOut.LogOutTime > now))
+        .Select(c => c.CourierId)
+        .Distinct()
+        .CountAsync();
+
+    // Group by courier and time schedule
+    var groupedQuery = query
+        .AsNoTracking()
+        .GroupBy(c => new
+        {
+            c.CourierId,
+            CourierName = c.Courier.UccrName + " " + c.Courier.UccrSurname,
+            c.Courier.Code,
+            c.StartTime,
+            c.EndTime
+        })
+        .Select(g => new
+        {
+            g.Key.CourierId,
+            g.Key.CourierName,
+            CourierCode = g.Key.Code,
+            g.Key.StartTime,
+            g.Key.EndTime,
+            Days = g.Select(x => x.WeekDay).ToList(),
+            AfterHoursScheduleIds = g.Select(x => x.Id).ToList()
+        });
+
+    var totalCount = await groupedQuery.CountAsync();
+
+    groupedQuery = request.OrderBy?.ToLower() switch
+    {
+        "name" => request.SortDescending
+            ? groupedQuery.OrderByDescending(c => c.CourierName)
+            : groupedQuery.OrderBy(c => c.CourierName),
+        "code" => request.SortDescending
+            ? groupedQuery.OrderByDescending(c => c.CourierCode)
+            : groupedQuery.OrderBy(c => c.CourierCode),
+        "day" => request.SortDescending
+            ? groupedQuery.OrderByDescending(c => c.Days.Min())
+            : groupedQuery.OrderBy(c => c.Days.Min()),
+        "startTime" => request.SortDescending
+            ? groupedQuery.OrderByDescending(c => c.StartTime)
+            : groupedQuery.OrderBy(c => c.StartTime),
+        "endTime" => request.SortDescending
+            ? groupedQuery.OrderByDescending(c => c.EndTime)
+            : groupedQuery.OrderBy(c => c.EndTime),
+        _ => request.SortDescending
+            ? groupedQuery.OrderByDescending(c => c.StartTime)
+            : groupedQuery.OrderBy(c => c.StartTime)
+    };
+
+    var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+    var afterHoursScheduleData = await groupedQuery
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .ToListAsync();
+
+    var afterHoursSchedule = afterHoursScheduleData.Select(c => new AfterHoursCourierScheduleViewModel
+    {
+        AfterHoursScheduleId = c.AfterHoursScheduleIds.FirstOrDefault(),
+        CourierId = c.CourierId,
+        CourierName = c.CourierName,
+        CourierCode = c.CourierCode,
+        Days = c.Days.Select(d => d switch
+        {
+            0 => "Sunday",
+            1 => "Monday",
+            2 => "Tuesday",
+            3 => "Wednesday",
+            4 => "Thursday",
+            5 => "Friday",
+            6 => "Saturday",
+            _ => "Unknown"
+        }).OrderBy(day => Array.IndexOf(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], day)).ToList(),
+        StartTime = TimeZoneHelper.SetDateTimeWithTimeZone(c.StartTime, tenantTimezone),
+        EndTime = TimeZoneHelper.SetDateTimeWithTimeZone(c.EndTime, tenantTimezone),
+        Duration = CalculateDuration(c.StartTime, c.EndTime)
+    }).ToList();
+
+    return new CourierAfterHoursPaginatedResponse
+    {
+        Items = afterHoursSchedule,
+        Total = totalCount,
+        Page = page,
+        Pages = totalPages,
+        TotalActiveDrivers = totalActiveDrivers
+    };
+}
 
     private static string CalculateDuration(DateTime startTime, DateTime endTime)
     {
@@ -1352,17 +1375,16 @@ public class CourierRepository(
         ArgumentNullException.ThrowIfNull(request.StartTime);
         ArgumentNullException.ThrowIfNull(request.EndTime);
 
-        var dayOfWeek = GetDayOfWeekAsInt(request.Day);
-
-        var rowsAffected = await Context.TblAfterhoursCouriers
-            .Where(c => c.Id == request.AfterHoursScheduleId)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(e => e.StartTime, request.StartTime.Value.DateTime)
-                .SetProperty(e => e.EndTime, request.EndTime.Value.DateTime)
-                .SetProperty(e => e.WeekDay, dayOfWeek)
-            );
-
-        if (rowsAffected == 0) throw new Exception("After hours schedule not found");
+        foreach (var dayOfWeek in request.Days.Select(GetDayOfWeekAsInt))
+        {
+            await Context.TblAfterhoursCouriers
+                .Where(c => c.Id == request.AfterHoursScheduleId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(e => e.StartTime, request.StartTime.Value.DateTime)
+                    .SetProperty(e => e.EndTime, request.EndTime.Value.DateTime)
+                    .SetProperty(e => e.WeekDay, dayOfWeek)
+                );
+        }
     }
 
     public async Task CreateAfterHoursCourierScheduleAsync(AfterHoursCourierScheduleViewModel request)
@@ -1372,17 +1394,15 @@ public class CourierRepository(
             ArgumentNullException.ThrowIfNull(request.StartTime);
             ArgumentNullException.ThrowIfNull(request.EndTime);
 
-            var dayOfWeek = GetDayOfWeekAsInt(request.Day);
-
-            var schedule = new TblAfterhoursCourier
-            {
-                CourierId = request.CourierId,
-                WeekDay = dayOfWeek,
-                StartTime = request.StartTime.Value.DateTime,
-                EndTime = request.EndTime.Value.DateTime
-            };
-
-            await Context.TblAfterhoursCouriers.AddAsync(schedule);
+            // Add a record for each day
+            foreach (var schedule in request.Days.Select(GetDayOfWeekAsInt).Select(dayOfWeek => new TblAfterhoursCourier
+                     {
+                         CourierId = request.CourierId,
+                         WeekDay = dayOfWeek,
+                         StartTime = request.StartTime.Value.DateTime,
+                         EndTime = request.EndTime.Value.DateTime
+                     })) await Context.TblAfterhoursCouriers.AddAsync(schedule);
+       
             await Context.SaveChangesAsync();
         }
         catch (Exception e)
@@ -1422,6 +1442,30 @@ public class CourierRepository(
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierRepository),
                     nameof(DeleteAfterHoursCourierScheduleAsync)));
+            throw;
+        }
+    }
+
+    public async Task<Suggestion> GetExactCourierByCodeAsync(string courierCode)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(courierCode, nameof(courierCode));
+            
+           return await Context.TucCouriers
+                .AsNoTracking()
+                .Where(c => c.Code == courierCode)
+                .Select(c => new Suggestion
+                {
+                    Id = c.UccrId,
+                    Text = c.Code + ": " +  c.UccrName + " " + c.UccrSurname
+                })
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierRepository), nameof(GetExactCourierByCodeAsync)));
             throw;
         }
     }

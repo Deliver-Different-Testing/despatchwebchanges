@@ -1,6 +1,6 @@
 ﻿import "./edit-afterhours-dialog.styles.less";
 import BaseController from "../../base-controller";
-import dayjs, {Dayjs} from "dayjs";
+import dayjs from "dayjs";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import {ISuggestion, ITimeZoneSuggestion} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
@@ -25,14 +25,14 @@ class EditAfterhoursDialogController extends BaseController {
         'toastrService',
         'afterHourScheduleItem',
     ];
-    
+
     private static CourierSearchURL: string = '/courier/AllActiveSearch';
 
     isNewSchedule: boolean = false;
     daysOfWeek: string[] = [
         'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
     ];
-    
+
     isFormValid: boolean = true;
     validationErrors: { [key: string]: string } = {};
     selectedCourier?: ISuggestion;
@@ -57,7 +57,7 @@ class EditAfterhoursDialogController extends BaseController {
         super();
         this.initServices($timeout, $interval, $scope);
         console.log('EditAfterhoursDialogController: Controller instantiated');
-        
+
         this.isUsTenant = appConfig.US_Customer;
 
         if (afterHourScheduleItem.afterHoursScheduleId === 0) {
@@ -89,6 +89,7 @@ class EditAfterhoursDialogController extends BaseController {
         }
     }
 
+    // Update the validateForm method
     validateForm(): boolean {
         this.isFormValid = true;
         this.validationErrors = {};
@@ -98,10 +99,10 @@ class EditAfterhoursDialogController extends BaseController {
             this.validationErrors.courierSelection = 'Please select a courier';
         }
 
-        // Validate day selection
-        if (!this.editableAfterHoursSchedule.day) {
+        // Validate days selection (changed from single day)
+        if (!this.editableAfterHoursSchedule.days || this.editableAfterHoursSchedule.days.length === 0) {
             this.isFormValid = false;
-            this.validationErrors.day = 'Please select a day';
+            this.validationErrors.days = 'Please select at least one day';
         }
 
         if (!this.selectedTimeZone) {
@@ -132,27 +133,42 @@ class EditAfterhoursDialogController extends BaseController {
         return this.isFormValid;
     }
 
-    updateDay() {
-        console.debug('EditAfterhoursDialogController: Day updated:', this.editableAfterHoursSchedule.day);
-        this.validateForm();
-        this.updateDuration();
-        this.applyScope();
-    }
-    
-    updateStartTime(startTime: Dayjs): void {
-        this.editableAfterHoursSchedule.startTime = startTime;
-
+    updateDays() {
+        console.debug('EditAfterhoursDialogController: Days updated:', this.editableAfterHoursSchedule.days);
         this.validateForm();
         this.updateDuration();
         this.applyScope();
     }
 
-    updateEndTime(endTime: Dayjs): void {
-        this.editableAfterHoursSchedule.endTime = endTime;
+    getSelectedDaysText(): string {
+        if (!this.editableAfterHoursSchedule.days || this.editableAfterHoursSchedule.days.length === 0) {
+            return '';
+        }
 
-        this.validateForm();
-        this.updateDuration();
-        this.applyScope();
+        if (this.editableAfterHoursSchedule.days.length === 7) {
+            return 'Every day';
+        }
+
+        if (this.editableAfterHoursSchedule.days.length === 1) {
+            return '1 day selected';
+        }
+
+        return `${this.editableAfterHoursSchedule.days.length} days selected`;
+    }
+
+    getEffectiveEndDay(): string {
+        if (!this.isNextDay || !this.editableAfterHoursSchedule.days || this.editableAfterHoursSchedule.days.length === 0) {
+            return '';
+        }
+
+        if (this.editableAfterHoursSchedule.days.length > 1) {
+            return 'the next day';
+        }
+
+        const currentDay = this.editableAfterHoursSchedule.days[0];
+        const currentDayIndex = this.daysOfWeek.indexOf(currentDay);
+        const nextDayIndex = (currentDayIndex + 1) % this.daysOfWeek.length;
+        return this.daysOfWeek[nextDayIndex];
     }
 
     private updateDuration(): void {
@@ -169,10 +185,8 @@ class EditAfterhoursDialogController extends BaseController {
                 .second(0)
                 .millisecond(0);
 
-            // Check if end time is before start time (crosses midnight)
             this.isNextDay = endTime.isBefore(startTime) || endTime.isSame(startTime);
 
-            // If end time is before or equal to start time, assume it's the next day
             if (this.isNextDay) {
                 endTime = endTime.add(1, 'day');
             }
@@ -191,24 +205,14 @@ class EditAfterhoursDialogController extends BaseController {
         }
     }
 
-    getEffectiveEndDay(): string {
-        if (!this.isNextDay || !this.editableAfterHoursSchedule.day) {
-            return '';
-        }
-
-        const currentDayIndex = this.daysOfWeek.indexOf(this.editableAfterHoursSchedule.day);
-        const nextDayIndex = (currentDayIndex + 1) % this.daysOfWeek.length;
-        return this.daysOfWeek[nextDayIndex];
-    }
-
     courierSelected(courier: ISuggestion) {
         if (!courier) return;
 
         this.editableAfterHoursSchedule.courierId = courier.id;
         this.editableAfterHoursSchedule.courierName = courier.text;
 
-        // Extract courier code if present in format "CODE - Name"
-        const parts = courier.text.split(' - ');
+        // Extract courier code if present
+        const parts = courier.text.split('(');
         if (parts.length > 0) {
             this.editableAfterHoursSchedule.courierCode = parts[0];
         }
