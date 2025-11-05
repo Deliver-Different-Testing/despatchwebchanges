@@ -5,16 +5,17 @@
 </md-progress-linear>
 
 <jobs-list
-        jobs="ctrl.jobList"
-        selected-job="ctrl.currentJob"
-        on-job-select="ctrl.selectJob(job)"
-        on-job-dispatch="ctrl.handleJobDispatch(job, courierId)"
-        on-job-action="ctrl.handleJobAction(action, job, params)"
-        get-context-menu-options="ctrl.getJobContextMenuOptions()"
-        on-refresh="ctrl.getData()"
-        job-list-type="ctrl.dispatchListName"
-        on-load-more-jobs="ctrl.handleLoadMoreJobs(page, pageSize)"
+        jobs="$parent.ctrl.jobList"
+        selected-job="$parent.ctrl.currentJob"
+        on-job-select="$parent.ctrl.selectJob(job)"
+        on-job-dispatch="$parent.ctrl.handleJobDispatch(job, courierId)"
+        on-job-action="$parent.ctrl.handleJobAction(action, job, params)"
+        get-context-menu-options="$parent.ctrl.getJobContextMenuOptions()"
+        on-refresh="$parent.ctrl.getData()"
+        job-list-type="$parent.ctrl.dispatchListName"
+        on-load-more-jobs="$parent.ctrl.handleLoadMoreJobs(page, pageSize)"
         enable-virtual-scrolling="true"
-        total-jobs-count="ctrl.totalJobCount"
-        on-search-change="ctrl.updateJobSearchText(searchText)">
+        total-jobs-count="$parent.ctrl.totalJobCount"
+        on-search-change="$parent.ctrl.updateJobSearchText(searchText)"
+        set-backend-filter="$parent.ctrl.handleBackendFilter(column, direction)">
 </jobs-list>
