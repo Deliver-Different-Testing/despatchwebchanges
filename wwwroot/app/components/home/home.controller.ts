@@ -263,8 +263,8 @@ class HomeController extends BaseController {
         this.truckMode = "On";
 
         this.queryParams = {
-            order: "time",
-            orderDirection: "asc",
+            order: "-time",
+            orderDirection: "desc",
             page: 0,
             pageSize: 50
         };
@@ -1644,6 +1644,13 @@ class HomeController extends BaseController {
         });
     }
 
+    handleBackendFilter = async (column: string, direction: string): Promise<void> => {
+        this.queryParams.order = (direction == 'desc' ? '-' : '') + column;
+
+        // Actually fetch the data with the new sort order
+        await this.getJobList();
+    }
+
     async getJobList(): Promise<void> {
         try {
             this.isLoadingData = true;
@@ -1663,11 +1670,13 @@ class HomeController extends BaseController {
             }
 
             let orderBy = this.queryParams.order || '';
-            let orderDirection = "asc";
+            let orderDirection = "desc";
 
             if (orderBy && orderBy.startsWith("-")) {
                 orderBy = orderBy.substring(1);
                 orderDirection = "desc";
+            } else {
+                orderDirection = "asc";
             }
 
             const params: IJobQueryParams = {
@@ -2299,6 +2308,13 @@ class HomeController extends BaseController {
 
     async handleLoadMoreJobs(page: number, pageSize: number): Promise<IJobSearchResult> {
         try {
+            if (this.queryParams.order && this.queryParams.order.startsWith("-")) {
+                this.queryParams.order = this.queryParams.order.substring(1);
+                this.queryParams.orderDirection = "desc";
+            } else if (this.queryParams.order) {
+                this.queryParams.orderDirection = "asc";
+            }
+
             return await this.dispatchJobService.getJobsWithDispatchInfo(
                 {
                     ...this.queryParams,

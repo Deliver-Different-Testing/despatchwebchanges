@@ -108,6 +108,8 @@ public class BaseJobRepository(
                     .ToListAsync();
             }
 
+            query = ApplySortFilter(query, queryParams.Order, queryParams.OrderDirection);
+
             var jobs = await query
                 .AsNoTracking()
                 .Skip(pageNumber * pageSize)
@@ -912,5 +914,107 @@ public class BaseJobRepository(
             // Barcode
             EF.Functions.Like(j.Barcode ?? string.Empty, searchPattern)
         );
+    }
+
+    private static IQueryable<TucJob> ApplySortFilter(IQueryable<TucJob> query, string sortColumn, string direction)
+    {
+        if (sortColumn == "time" || sortColumn == "remaining")
+        {
+            if (direction == "asc")
+            {
+                return query
+                    .OrderBy(x => x.UcjbDate)
+                    .ThenBy(x => x.UcjbTime.HasValue ? x.UcjbTime.Value.Hour : 0)
+                    .ThenBy(x => x.UcjbTime.HasValue ? x.UcjbTime.Value.Minute : 0);
+            }
+            else
+            {
+                return query
+                    .OrderByDescending(x => x.UcjbDate)
+                    .ThenByDescending(x => x.UcjbTime.HasValue ? x.UcjbTime.Value.Hour : 0)
+                    .ThenByDescending(x => x.UcjbTime.HasValue ? x.UcjbTime.Value.Minute : 0);
+            }
+        }
+        else if (sortColumn == "speed")
+        {
+            if (direction == "asc")
+            {
+                return query.OrderBy(x => x.UcjbSpeedNavigation.ShortName);
+            }
+            else
+            {
+                return query.OrderByDescending(x => x.UcjbSpeedNavigation.ShortName);
+            }
+        }
+        else if (sortColumn == "vehicle")
+        {
+            if (direction == "asc")
+            {
+                return query.OrderBy(x => x.UcjbSizeNavigation.VehicleName);
+            }
+            else
+            {
+                return query.OrderByDescending(x => x.UcjbSizeNavigation.VehicleName);
+            }
+        }
+        else if (sortColumn == "jobNo")
+        {
+            if (direction == "asc")
+            {
+                return query.OrderBy(x => x.UcjbNumber);
+            }
+            else
+            {
+                return query.OrderByDescending(x => x.UcjbNumber);
+            }
+        }
+        else if (sortColumn == "pickup")
+        {
+            if (direction == "asc")
+            {
+                return query.OrderBy(x => x.UcjbFromAddr);
+            }
+            else
+            {
+                return query.OrderByDescending(x => x.UcjbFromAddr);
+            }
+        }
+        else if (sortColumn == "delivery")
+        {
+            if (direction == "asc")
+            {
+                return query.OrderBy(x => x.UcjbToAddr);
+            }
+            else
+            {
+                return query.OrderByDescending(x => x.UcjbToAddr);
+            }
+        }
+        else if (sortColumn == "courier")
+        {
+            if (direction == "asc")
+            {
+                return query.OrderBy(x => x.UcjbCourier.Code);
+            }
+            else
+            {
+                return query.OrderByDescending(x => x.UcjbCourier.Code);
+            }
+        }
+        else if (sortColumn == "status")
+        {
+            if (direction == "asc")
+            {
+                return query.OrderBy(x => x.UcjbStatusNavigation.UcjsCode);
+            }
+            else
+            {
+                return query.OrderByDescending(x => x.UcjbStatusNavigation.UcjsCode);
+            }
+        }
+        else
+        {
+            return query;
+        }
     }
 }

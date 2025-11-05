@@ -13,4 +13,6 @@ public class JobQueryParams
     public int? PageSize { get; set; }
     
     public string SearchText { get; set; }
+    public string Order { get; set; }
+    public string OrderDirection { get; set; }
 }

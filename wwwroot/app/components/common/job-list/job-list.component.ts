@@ -49,6 +49,7 @@ class JobsListController extends BaseController {
         totalCount: number,
         hasMore: boolean
     }>;
+    setBackendFilter?: (data: { column: string, direction: string }) => Promise<void>;
     isUsCustomer?: boolean;
     timeZone: string;
     jobListType: JobListType = JobListType.DispatchJobList;
@@ -962,7 +963,7 @@ class JobsListController extends BaseController {
         this.applyScope();
     }
 
-    sortBy(column: string): void {
+    async sortBy(column: string): Promise<void> {
         if (this.sortState.column === column) {
             switch (this.sortState.direction) {
                 case 'asc':
@@ -979,6 +980,13 @@ class JobsListController extends BaseController {
         }
 
         this.saveSortState();
+
+        if (this.setBackendFilter && this.totalJobsCount != (this.filteredJobs?.length || 0)) {
+            await this.setBackendFilter({
+                column: this.sortState.column,
+                direction: this.sortState.direction ?? "desc"
+            });
+        }
         this.applyFilters();
     }
 
@@ -1005,6 +1013,20 @@ class JobsListController extends BaseController {
     private getSortValue(job: IDispatchJob, column: string): any {
         switch (column) {
             case 'time':
+                if (job.booked && job.time) {
+                    const bookedDate = dayjs(job.booked);
+                    const timeOnly = dayjs(job.time);
+
+                    // Combine the date from booked with the time from time
+                    const combined = bookedDate
+                        .hour(timeOnly.hour())
+                        .minute(timeOnly.minute())
+                        .second(timeOnly.second());
+
+                    return combined.valueOf();
+                }
+
+                // Fallback: use whichever is available
                 return job.time ? dayjs(job.time).valueOf() : (job.booked ? dayjs(job.booked).valueOf() : 0);
             case 'speed':
                 return job.speed || '';
@@ -1403,7 +1425,8 @@ const JobsListComponent: angular.IComponentOptions = {
         jobListType: '<?',
         enableVirtualScrolling: '<?',
         totalJobsCount: '<?',
-        onSearchChange: '&?'
+        onSearchChange: '&?',
+        setBackendFilter: '&?'
     }
 };
 
