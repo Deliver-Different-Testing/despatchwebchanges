@@ -55,6 +55,96 @@
     .toolbar-logo {
       filter: brightness(0) saturate(100%);
     }
+
+    // View Tabs in Header
+    .view-tabs-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1 1 auto;
+      justify-content: center;
+      min-width: 0;
+      margin: 0 16px;
+
+      .view-control-btn {
+        padding: 4px 10px;
+        border: 1px solid #3EAFC2;
+        background: #3EAFC2;
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 600;
+        transition: all 0.2s;
+        border-radius: 0;
+        white-space: nowrap;
+        color: #ffffff !important;
+        flex-shrink: 0;
+
+        &:hover {
+          background: #358F9F !important;
+          border-color: #358F9F;
+        }
+
+        &:focus {
+          outline: none;
+        }
+      }
+
+      .view-tabs-scroll {
+        display: flex;
+        gap: 4px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex: 1 1 auto;
+        min-width: 0;
+        padding: 2px 0;
+
+        &::-webkit-scrollbar {
+          height: 6px;
+        }
+
+        &::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 3px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 3px;
+
+          &:hover {
+            background: #a8a8a8;
+          }
+        }
+      }
+
+      .view-tab-btn {
+        padding: 4px 10px;
+        border: 1px solid #e2e8f0;
+        background: white;
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 500;
+        transition: all 0.2s;
+        border-radius: 0;
+        white-space: nowrap;
+        color: #000000 !important;
+        flex-shrink: 0;
+
+        &.active {
+          background: #1e293b !important;
+          color: white !important;
+          border-color: #1e293b;
+        }
+
+        &:hover:not(.active) {
+          background: #f8fafc !important;
+        }
+
+        &:focus {
+          outline: none;
+        }
+      }
+    }
   }
 
   md-menu-content {
