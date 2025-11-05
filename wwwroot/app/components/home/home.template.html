@@ -175,7 +175,7 @@
 
                             <span class="material-symbols-outlined">{{::ctrl.boxes[item.name].icon}}</span>
 
-                            <span class="md-card-title" flex>
+                            <span class="md-card-title">
                                 {{::ctrl.boxes[item.name].title}}
                                 <span ng-if="::item.name == 'detail'">
                                     {{ctrl.currentSelection}}
@@ -183,6 +183,23 @@
                                 <span ng-if="::item.name == 'currentWork' || item.name == 'map'">{{ctrl.currentWorkSelection}}</span>
                                 <span ng-if="::item.name == 'supports'">{{ctrl.getActiveSupportFilterNames()}}</span>
                             </span>
+
+                            <!-- Job List View Tabs -->
+                            <div class="view-tabs-header" ng-if="item.name === 'list' && ctrl.views && ctrl.views.length > 0">
+                                <button class="view-control-btn"
+                                        ng-click="ctrl.toggleAllViews()"
+                                        title="{{ctrl.getToggleAllButtonText()}}">
+                                    {{ctrl.getToggleAllButtonText()}}
+                                </button>
+                                <div class="view-tabs-scroll">
+                                    <button class="view-tab-btn"
+                                            ng-repeat="view in ctrl.views track by view.id"
+                                            ng-class="{'active': view.selected}"
+                                            ng-click="view.selected = !view.selected; ctrl.toggleView(view)">
+                                        {{view.name}}
+                                    </button>
+                                </div>
+                            </div>
 
                             <span flex></span>
 
@@ -476,12 +493,29 @@
                                     <!--Icon-->
                                     <span class="material-symbols-outlined">{{::ctrl.boxes[box.name].icon}}</span>
 
-                                    <span class="md-card-title" flex>
+                                    <span class="md-card-title">
                                 {{::ctrl.boxes[box.name].title}}
                                 <span ng-if="::box.name == 'jobDetail'">{{ctrl.currentSelection}}</span>
                                 <span ng-if="::box.name == 'currentWork' || box.name == 'map'">{{ctrl.currentWorkSelection}}</span>
                                 <span ng-if="::box.name == 'supports'">{{ctrl.getActiveSupportFilterNames()}}</span>
                             </span>
+
+                                    <!-- Job List View Tabs (Old Layout) -->
+                                    <div class="view-tabs-header" ng-if="box.name === 'list' && ctrl.views && ctrl.views.length > 0">
+                                        <button class="view-control-btn"
+                                                ng-click="ctrl.toggleAllViews()"
+                                                title="{{ctrl.getToggleAllButtonText()}}">
+                                            {{ctrl.getToggleAllButtonText()}}
+                                        </button>
+                                        <div class="view-tabs-scroll">
+                                            <button class="view-tab-btn"
+                                                    ng-repeat="view in ctrl.views track by view.id"
+                                                    ng-class="{'active': view.selected}"
+                                                    ng-click="view.selected = !view.selected; ctrl.toggleView(view)">
+                                                {{view.name}}
+                                            </button>
+                                        </div>
+                                    </div>
 
                                     <div flex></div>
 

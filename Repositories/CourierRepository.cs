@@ -481,22 +481,34 @@ public class CourierRepository(
                 }
             }
 
-            // Handle areas not in columnDefinitions - append them using database Order
+            // Handle areas not in columnDefinitions - order alphabetically by name
             var unassignedAreas = areas
                 .Where(a => !assignedAreas.Contains(a.Name ?? ""))
-                .OrderBy(a => a.Order)
+                .OrderBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
             if (unassignedAreas.Any())
             {
-                // Add unassigned areas to last column or create new column
+                // If we have predefined columns (NZ tenant), append unassigned to last column
+                // If no predefined columns (US/other tenants), distribute horizontally across 4 columns
                 if (columns.Any())
                 {
                     columns.Last().Areas.AddRange(unassignedAreas);
                 }
                 else
                 {
-                    columns.Add(new ClearListColumn { Areas = unassignedAreas });
+                    // Distribute unassigned areas horizontally across 4 columns
+                    const int maxColumns = 4;
+                    for (int i = 0; i < maxColumns; i++)
+                    {
+                        columns.Add(new ClearListColumn { Areas = new List<AreaClearList>() });
+                    }
+
+                    for (int i = 0; i < unassignedAreas.Count; i++)
+                    {
+                        int columnIndex = i % maxColumns; // Distribute horizontally: 0,1,2,3,0,1,2,3...
+                        columns[columnIndex].Areas.Add(unassignedAreas[i]);
+                    }
                 }
             }
 

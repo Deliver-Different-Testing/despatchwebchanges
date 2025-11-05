@@ -968,6 +968,22 @@ class HomeController extends BaseController {
         ]);
     }
 
+    areAllViewsSelected(): boolean {
+        return this.views && this.views.length > 0 && this.views.every((v: DfrntPageViewModel) => v.selected);
+    }
+
+    async toggleAllViews(): Promise<void> {
+        if (this.areAllViewsSelected()) {
+            await this.clearAllViews();
+        } else {
+            await this.selectAllViews();
+        }
+    }
+
+    getToggleAllButtonText(): string {
+        return this.areAllViewsSelected() ? 'UNSELECT ALL' : 'SELECT ALL';
+    }
+
     updateMapForSelectedViews(): void {
         if (this.initialViewSet) return;
 
