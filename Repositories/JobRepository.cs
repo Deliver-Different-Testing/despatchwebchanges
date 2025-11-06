@@ -189,7 +189,7 @@ public partial class JobRepository(
                 && j.BookDate.Date <= data.ToDate.Date
                 && (!data.ClientSet || j.ClientId == data.ClientId)
                 && (!data.CourierSet || j.CourierId == data.CourierId)
-                && (!data.JobSet || EF.Functions.Like(j.JobNumber.ToLower(), jobSearch))
+                && (!data.JobSet || EF.Functions.Like(j.JobNumber.ToLower(), $"%{jobSearch}%"))
                 && (
                     !data.WildSet
                     || EF.Functions.Like(
