@@ -335,8 +335,8 @@ public partial class JobRepository(
         try
         {
             var isUsCustomer = _infoService.IsUsTenant();
-            var jobSearch = $"%{data.Job}%";
-            var wildSearch = $"%{data.Wild}%";
+            var jobSearch = $"%{(data.Job ?? string.Empty).ToLower()}%";
+            var wildSearch = $"%{(data.Wild ?? string.Empty).ToLower()}%";
 
             var query =
                 from j in Context.TblJobs
