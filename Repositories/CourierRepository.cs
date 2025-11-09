@@ -1539,7 +1539,7 @@ public class CourierRepository(
 
             return await Context.TucCouriers
                 .AsNoTracking()
-                .Where(c => c.Code == courierCode)
+                .Where(c => c.Code == courierCode && c.Active)
                 .Select(c => new Suggestion
                 {
                     Id = c.UccrId,
