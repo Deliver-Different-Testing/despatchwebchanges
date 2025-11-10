@@ -26,7 +26,7 @@
                                     Set how often the dashboard lists automatically refresh with new data
                                 </md-tooltip>
                             </md-icon>
-                            Refresh Interval
+                            JobList Refresh Interval
                         </label>
 
                         <md-select
@@ -63,6 +63,59 @@
                                 <div class="status-text">
                                     <span class="status-label">Current Status:</span>
                                     <span class="status-value">{{ctrl.getCurrentRefreshIntervalText()}}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <md-divider></md-divider>
+
+                    <!-- Driver Location Refresh Interval Section -->
+                    <div class="settings-section">
+                        <label class="settings-label" id="driverLocationRefreshInterval">
+                            <md-icon md-font-set="material-symbols-outlined" class="popup-icon dialog-icon">
+                                location_on
+                                <md-tooltip md-direction="bottom">
+                                    Set how often driver locations and map automatically refresh
+                                </md-tooltip>
+                            </md-icon>
+                            Driver Locations and Map Refresh Interval
+                        </label>
+
+                        <md-select
+                                ng-model="ctrl.selectedDriverLocationRefreshInterval"
+                                ng-change="ctrl.onDriverLocationRefreshIntervalChange(ctrl.selectedDriverLocationRefreshInterval)"
+                                aria-labelledby="driverLocationRefreshInterval"
+                                placeholder="Select interval"
+                                class="settings-select"
+                                md-container-class="settings-select-container">
+                            <md-option
+                                    ng-repeat="option in ctrl.driverLocationRefreshIntervalOptions track by option.id"
+                                    ng-value="option">
+                                {{option.text}}
+                            </md-option>
+                        </md-select>
+
+                        <!-- Status Indicator -->
+                        <div class="status-indicator">
+                            <div class="status-content">
+                                <div class="status-icon-wrapper">
+                                    <md-icon
+                                            md-font-set="material-symbols-outlined"
+                                            ng-if="ctrl.isDriverLocationAutoRefreshActive()"
+                                            class="status-icon status-active">
+                                        refresh
+                                    </md-icon>
+                                    <md-icon
+                                            md-font-set="material-symbols-outlined"
+                                            ng-if="!ctrl.isDriverLocationAutoRefreshActive()"
+                                            class="status-icon status-inactive">
+                                        pause
+                                    </md-icon>
+                                </div>
+                                <div class="status-text">
+                                    <span class="status-label">Current Status:</span>
+                                    <span class="status-value">{{ctrl.getCurrentDriverLocationRefreshIntervalText()}}</span>
                                 </div>
                             </div>
                         </div>

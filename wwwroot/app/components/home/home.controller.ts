@@ -94,6 +94,7 @@ class HomeController extends BaseController {
     private readonly SelectedViewsKey: string = `selectedViews-${AppPage.Dispatch}-${ContactID}`;
     private readonly DispatchFiltersKey: string = `disp-filters-${AppPage.Dispatch}-${ContactID}`;
     private readonly RefreshDurationIntervalKey: string = `refreshInterval-${AppPage.Dispatch}-${ContactID}`;
+    private readonly DriverLocationRefreshIntervalKey: string = `driverLocationRefreshInterval-${AppPage.Dispatch}-${ContactID}`;
     private readonly DateFilterKey: string = `dateFilter-${AppPage.Dispatch}-${ContactID}`;
     private readonly LayoutKey: string = `layout-${ContactID}`;
     private readonly LastActiveLayoutKey: string = `lastActiveLayout-${ContactID}`;
@@ -178,6 +179,13 @@ class HomeController extends BaseController {
     selectedRefreshInterval?: ISuggestion;
     private refreshIntervalPromise?: angular.IPromise<any>;
     private isAutoRefreshEnabled: boolean = false;
+
+    // Driver Location Auto-Refresh
+    driverLocationRefreshIntervalOptions?: ISuggestion[];
+    selectedDriverLocationRefreshInterval?: ISuggestion;
+    private driverLocationRefreshIntervalPromise?: angular.IPromise<any>;
+    private isDriverLocationAutoRefreshEnabled: boolean = false;
+
     totalJobCount: number = 0;
     private selectedClearListId?: number;
     currentJobListPage: number = 0;
@@ -297,6 +305,8 @@ class HomeController extends BaseController {
 
         this.initRefreshIntervalOptions();
         this.loadSavedRefreshInterval();
+        this.initDriverLocationRefreshIntervalOptions();
+        this.loadSavedDriverLocationRefreshInterval();
         this.initializeTaskService();
     }
 
@@ -337,6 +347,7 @@ class HomeController extends BaseController {
     $onDestroy(): void {
         super.$onDestroy();
         this.stopAutoRefresh();
+        this.stopDriverLocationAutoRefresh();
     }
 
     private initializeTaskService(): void {
@@ -2227,6 +2238,110 @@ class HomeController extends BaseController {
             this.selectedRefreshInterval.id > 0;
     }
 
+    // Driver Location Auto-Refresh Methods
+    initDriverLocationRefreshIntervalOptions(): void {
+        const disabledOption: ISuggestion = {id: 0, text: "Disabled"};
+
+        this.driverLocationRefreshIntervalOptions = [
+            disabledOption,
+            ...getMinsSelectionOptions()
+        ];
+        this.selectedDriverLocationRefreshInterval = this.driverLocationRefreshIntervalOptions[0];
+    }
+
+    private loadSavedDriverLocationRefreshInterval(): void {
+        if (Modernizr.localstorage) {
+            try {
+                const savedIntervalString = localStorage.getItem(this.DriverLocationRefreshIntervalKey);
+                if (savedIntervalString) {
+                    const refreshId = parseInt(savedIntervalString, 10) ?? 0;
+                    this.selectedDriverLocationRefreshInterval = this.driverLocationRefreshIntervalOptions?.find(x => x.id == refreshId);
+
+                    if (this.selectedDriverLocationRefreshInterval && this.selectedDriverLocationRefreshInterval.id > 0) {
+                        this.startDriverLocationAutoRefresh();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading saved driver location refresh interval:', error);
+            }
+        }
+    }
+
+    onDriverLocationRefreshIntervalChange(selectedInterval: ISuggestion): void {
+        console.log('Driver location refresh interval changed to:', selectedInterval, 'seconds');
+
+        this.selectedDriverLocationRefreshInterval = selectedInterval;
+
+        if (Modernizr.localstorage && this.selectedDriverLocationRefreshInterval) {
+            localStorage.setItem(this.DriverLocationRefreshIntervalKey, this.selectedDriverLocationRefreshInterval?.id.toString());
+        }
+
+        this.stopDriverLocationAutoRefresh();
+
+        if (this.selectedDriverLocationRefreshInterval && this.selectedDriverLocationRefreshInterval.id > 0) {
+            this.startDriverLocationAutoRefresh();
+        }
+
+        this.applyScope();
+    }
+
+    private startDriverLocationAutoRefresh(): void {
+        if (!this.selectedDriverLocationRefreshInterval || this.selectedDriverLocationRefreshInterval.id <= 0) {
+            return;
+        }
+
+        // Always stop any existing refresh first
+        this.stopDriverLocationAutoRefresh();
+
+        console.log(`Starting driver location auto refresh every ${this.selectedDriverLocationRefreshInterval.id} seconds (${this.selectedDriverLocationRefreshInterval.text})`);
+
+        this.isDriverLocationAutoRefreshEnabled = true;
+
+        this.driverLocationRefreshIntervalPromise = this.registerInterval(async () => {
+            if (this.isDriverLocationAutoRefreshEnabled) {
+                console.log('Auto refreshing driver locations and map...');
+                try {
+                    // fetchDriverLocations() will automatically trigger map refresh
+                    await this.fetchDriverLocations();
+                    console.log('Driver location auto refresh completed successfully');
+                } catch (error) {
+                    console.error('Error during driver location auto refresh:', error);
+                }
+            }
+        }, this.selectedDriverLocationRefreshInterval.id * 1000);
+
+        this.applyScope();
+    }
+
+    private stopDriverLocationAutoRefresh(): void {
+        console.log('Stopping driver location auto refresh');
+        this.isDriverLocationAutoRefreshEnabled = false;
+
+        if (this.driverLocationRefreshIntervalPromise) {
+            const cancelled = this.cancelInterval(this.driverLocationRefreshIntervalPromise);
+            if (cancelled) {
+                console.log('Successfully cancelled driver location refresh interval');
+            } else {
+                console.warn('Failed to cancel driver location refresh interval');
+            }
+
+            this.driverLocationRefreshIntervalPromise = undefined;
+        }
+    }
+
+    getCurrentDriverLocationRefreshIntervalText(): string {
+        if (!this.selectedDriverLocationRefreshInterval || this.selectedDriverLocationRefreshInterval.id === 0) {
+            return 'Driver location auto refresh disabled';
+        }
+        return `Driver location auto refresh: ${this.selectedDriverLocationRefreshInterval.text}`;
+    }
+
+    isDriverLocationAutoRefreshActive(): boolean {
+        return this.isDriverLocationAutoRefreshEnabled &&
+            !!this.selectedDriverLocationRefreshInterval &&
+            this.selectedDriverLocationRefreshInterval.id > 0;
+    }
+
     async onCourierSearchSelect(selectedCourier: ISuggestion): Promise<void> {
         try {
             await this.getCurrentJobs(selectedCourier.id);
@@ -2371,19 +2486,31 @@ class HomeController extends BaseController {
         try {
             // Sync boxes with items
             this.syncVisibilityToBoxes();
-            
+
             const result = await this.dashboardSettingsDialog.openSettingsDialog(
                 $event,
                 AppPage.Dispatch,
                 this.currentLayoutName ?? 'Default',
                 this.boxes,
-                this.selectedRefreshInterval
+                this.selectedRefreshInterval,
+                this.selectedDriverLocationRefreshInterval
             );
 
             if (!result) return;
 
             // Update gridsterItems visibility based on boxes visibility
             this.syncVisibilityToGridsterItems();
+
+            // Handle refresh interval changes
+            if (result.selectedRefreshInterval && result.selectedRefreshInterval.id !== this.selectedRefreshInterval?.id) {
+                this.onRefreshIntervalChange(result.selectedRefreshInterval);
+            }
+
+            // Handle driver location refresh interval changes
+            if (result.selectedDriverLocationRefreshInterval &&
+                result.selectedDriverLocationRefreshInterval.id !== this.selectedDriverLocationRefreshInterval?.id) {
+                this.onDriverLocationRefreshIntervalChange(result.selectedDriverLocationRefreshInterval);
+            }
 
             this.updateCurrentLayout();
             this.applyScope();
