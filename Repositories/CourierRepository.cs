@@ -367,7 +367,10 @@ public class CourierRepository(
                 Name = c.UccrName + " " + c.UccrSurname,
                 DangerousGoods = c.UccrDangerousGoods == 1,
                 DgLicenseExpiry = c.DglicenseExpiry,
-                JobCount = c.TucJobUcjbCouriers.Count(jt => !jt.UcjbVoid && !jt.UcjbJobDone)
+                JobCount = c.TucJobUcjbCouriers.Count(jt =>
+                    !jt.UcjbVoid &&
+                    !jt.UcjbJobDone &&
+                    jt.UcjbDate.Date <= today.Date)
             })
             .OrderBy(c => c.Code)
             .ToListAsync();
@@ -571,7 +574,7 @@ public class CourierRepository(
         if (string.IsNullOrEmpty(filter))
             return 0;
 
-        filter += $" AND (ucjbStatus <> {(int)JobStatus.AwaitingPod} AND ucjbCourierId is null)";
+        filter += " AND ((ucjbStatus IS NULL OR ucjbStatus = 0) AND ucjbCourierId is null)";
         var query =
             $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {filter}";
         var jobs = await Context.DeswebQryDespatches.FromSqlRaw(query).ToListAsync();

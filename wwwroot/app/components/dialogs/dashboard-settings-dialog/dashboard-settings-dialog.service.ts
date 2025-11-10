@@ -26,7 +26,8 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
     }
 
     async openSettingsDialog($event: MouseEvent, appPage: AppPage, currentLayoutName: string,
-                             boxes: Record<string, IBox>, selectedRefreshInterval?: ISuggestion): Promise<ISettingsDialogResult | undefined> {
+                             boxes: Record<string, IBox>, selectedRefreshInterval?: ISuggestion,
+                             selectedDriverLocationRefreshInterval?: ISuggestion): Promise<ISettingsDialogResult | undefined> {
         try {
             let title: string;
             switch (appPage) {
@@ -42,7 +43,7 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
                 default:
                     title = "Dashboard Settings";
             }
-                
+
             const config: IDashboardSettingsConfig = {
                 title,
                 showRefreshInterval: appPage === AppPage.Dispatch || appPage === AppPage.Domestic,
@@ -55,6 +56,10 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
                 selectedRefreshInterval = {id: 0, text: "Disabled"};
             }
 
+            if (selectedDriverLocationRefreshInterval) {
+                selectedDriverLocationRefreshInterval = {id: 0, text: "Disabled"};
+            }
+
             return await this.$mdDialog.show({
                 controller: DashboardSettingsDialogController,
                 controllerAs: 'ctrl',
@@ -65,6 +70,7 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
                 escapeToClose: true,
                 locals: {
                     selectedRefreshInterval,
+                    selectedDriverLocationRefreshInterval,
                     boxes,
                     config
                 },

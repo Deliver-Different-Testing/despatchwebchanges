@@ -5,11 +5,12 @@ import ToastrService from "../../../services/toastr.service";
 import {IJobNote, INoteType} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
+import {getIanaTimezone} from "../../../functions/formatDates";
 
 class StickyNoteController extends BaseController {
     private previousJobId?: number;
     private previousBulkJobId?: number;
-    private timezone: string = TimeZone;
+    private timezone: string = getIanaTimezone(TimeZone);
     private readonly isRecurringJob: boolean = false;
 
     notes?: IJobNote[] = [];

@@ -10,24 +10,30 @@ class DashboardSettingsDialogController extends BaseController {
     static $inject = [
         '$mdDialog',
         'selectedRefreshInterval',
+        'selectedDriverLocationRefreshInterval',
         'boxes',
         'config'
     ];
 
     refreshIntervalOptions: ISuggestion[];
+    driverLocationRefreshIntervalOptions: ISuggestion[];
     boxes: Record<string, IBox>;
     selectedRefreshInterval: ISuggestion;
+    selectedDriverLocationRefreshInterval: ISuggestion;
     config: IDashboardSettingsConfig;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         selectedRefreshInterval: ISuggestion,
+        selectedDriverLocationRefreshInterval: ISuggestion,
         boxes: Record<string, IBox>,
         config: IDashboardSettingsConfig,
     ) {
         super();
         this.refreshIntervalOptions = this.initRefreshIntervalOptions();
+        this.driverLocationRefreshIntervalOptions = this.initRefreshIntervalOptions();
         this.selectedRefreshInterval = angular.copy(selectedRefreshInterval) ?? this.createDisabledOption();
+        this.selectedDriverLocationRefreshInterval = angular.copy(selectedDriverLocationRefreshInterval) ?? this.createDisabledOption();
         this.boxes = angular.copy(boxes);
         this.config = angular.copy(config);
     }
@@ -61,6 +67,24 @@ class DashboardSettingsDialogController extends BaseController {
             : 'Manual refresh only';
     }
 
+    onDriverLocationRefreshIntervalChange(interval: ISuggestion): void {
+        this.selectedDriverLocationRefreshInterval = interval;
+    }
+
+    isDriverLocationAutoRefreshActive(): boolean {
+        return this.selectedDriverLocationRefreshInterval &&
+            this.selectedDriverLocationRefreshInterval.id !== 0;
+    }
+
+    getCurrentDriverLocationRefreshIntervalText(): string {
+        if (!this.selectedDriverLocationRefreshInterval) {
+            return 'Not set';
+        }
+        return this.isDriverLocationAutoRefreshActive()
+            ? 'Auto-refresh active'
+            : 'Manual refresh only';
+    }
+
     toggleDashboard(box: IBox): void {
         box.visible = !box.visible;
     }
@@ -72,6 +96,7 @@ class DashboardSettingsDialogController extends BaseController {
     save(): void {
         const result: ISettingsDialogResult = {
             selectedRefreshInterval: this.selectedRefreshInterval,
+            selectedDriverLocationRefreshInterval: this.selectedDriverLocationRefreshInterval,
             boxes: this.boxes
         };
         this.$mdDialog.hide(result);
