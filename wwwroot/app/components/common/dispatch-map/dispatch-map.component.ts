@@ -7,6 +7,13 @@ import DispatchCoreService from "../../../services/dispatch-core.service";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
 import {ClearListEnvelopeViewModel} from "../../../interfaces/dfrnt-page-view-model.interface";
 
+// Declare Label class (bundled in vendor.js from lib/google-maps-label/label.js)
+declare class Label extends google.maps.OverlayView {
+    constructor(options: any);
+    bindTo(key: string, target: any, targetKey?: string): void;
+    setMap(map: google.maps.Map | null): void;
+}
+
 class DispatchMapController extends BaseController {
     static $inject = [
         "NgMap",
@@ -706,28 +713,47 @@ class DispatchMapController extends BaseController {
     private addCourierMarker(courier: IAvailableCourierPosition) {
         const position = new this.$window.google.maps.LatLng(courier.latitude, courier.longitude);
 
-        const flagColor = this.getFlagColor(courier);
         const flagTextColor = this.getFlagTextColor(courier);
 
-        const labelText = courier.overDueJobs > 0
-            ? `${courier.totalJobs}/${courier.overDueJobs}`
-            : `${courier.totalJobs}`;
+        // Determine CSS class based on courier status
+        let className = "courier courierMarker";
+        if (courier.totalJobs === 0) {
+            className = "courier courierCream courierMarker";
+        } else if (courier.overDueJobs > 0) {
+            className = "courier courierRed courierMarker";
+        }
 
-        const courierFlagIcon = this.createFlagMarkerIcon(flagColor);
+        // Create the label overlay
+        const label = new Label({
+            map: this.mapInstance,
+            color: flagTextColor,
+            isVisible: true,
+            cssClass: className
+        });
 
+        // Create the display text
+        const displayText = courier.overDueJobs > 0
+            ? `${courier.code}-${courier.vehicleType}${courier.totalJobs}/${courier.overDueJobs}`
+            : `${courier.code}-${courier.vehicleType}${courier.totalJobs}`;
+
+        // Create marker with flagpole icon
+        const iconFile = '/images/flagpole.png';
         const marker = new this.$window.google.maps.Marker({
             position: position,
+            draggable: false,
             map: this.mapInstance,
-            icon: courierFlagIcon,
+            icon: iconFile,
             title: `Courier ${courier.code}`,
-            label: {
-                text: labelText,
-                color: flagTextColor,
-                fontWeight: 'bold',
-                fontSize: '10px'
-            },
+            visible: true,
             opacity: 0.4
         });
+
+        // Bind label to marker
+        label.bindTo('position', marker, 'position');
+        label.bindTo('text', marker);
+        (marker as any).set('display', displayText);
+        label.bindTo('text', marker, 'display');
+        label.bindTo('zIndex', marker);
 
         // Add fade-in effect to courier markers
         this.registerTimeout(() => {
@@ -767,6 +793,7 @@ class DispatchMapController extends BaseController {
         });
 
         this.flags.push(marker);
+        this.labels.push(label as any);
     }
 
     private clearJobMarkers() {
