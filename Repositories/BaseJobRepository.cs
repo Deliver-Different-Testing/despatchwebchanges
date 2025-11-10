@@ -108,12 +108,12 @@ public class BaseJobRepository(
                     .ToListAsync();
             }
 
-            query = ApplySortFilter(query, queryParams.Order, queryParams.OrderDirection);
+            //query = ApplySortFilter(query, queryParams.Order, queryParams.OrderDirection);
 
             var jobs = await query
                 .AsNoTracking()
-                .Skip(pageNumber * pageSize)
-                .Take(pageSize)
+                //.Skip(pageNumber * pageSize)
+                //.Take(pageSize)
                 .Select(JobMappings.JobDispatchMapping(isUsTenant))
                 .ToListAsync();
 
@@ -125,7 +125,7 @@ public class BaseJobRepository(
                 job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
             }
 
-            var hasMore = (pageNumber + 1) * pageSize < totalCount;
+            var hasMore = false; //(pageNumber + 1) * pageSize < totalCount;
 
             return new JobSearchResult
             {
