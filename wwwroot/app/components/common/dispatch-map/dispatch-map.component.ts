@@ -731,21 +731,24 @@ class DispatchMapController extends BaseController {
             cssClass: className
         });
 
-        // Create the display text
+        // Create the display text - backend returns abbreviated vehicle type
         const displayText = courier.overDueJobs > 0
             ? `${courier.code}-${courier.vehicleType}${courier.totalJobs}/${courier.overDueJobs}`
             : `${courier.code}-${courier.vehicleType}${courier.totalJobs}`;
 
-        // Create marker with flagpole icon
-        const iconFile = '/images/flagpole.png';
+        // Create marker with flagpole icon - scale down for thinner appearance
+        const iconFile = {
+            url: '/images/flagpole.png',
+            scaledSize: new this.$window.google.maps.Size(8, 40), // Make it thinner
+            anchor: new this.$window.google.maps.Point(4, 40)
+        };
         const marker = new this.$window.google.maps.Marker({
             position: position,
             draggable: false,
             map: this.mapInstance,
             icon: iconFile,
             title: `Courier ${courier.code}`,
-            visible: true,
-            opacity: 0.4
+            visible: true
         });
 
         // Bind label to marker
