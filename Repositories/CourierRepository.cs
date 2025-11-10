@@ -161,7 +161,7 @@ public class CourierRepository(
             Latitude = c.Latitude,
             Longitude = c.Longitude,
             ChannelId = c.ChannelId,
-            VehicleType = c.VehicleType,
+            VehicleType = MapVehicleTypeToAbbreviation(c.VehicleType),
             ClearListAreaIDs = c.ClearListAreaIDs,
             Code = c.Code,
             FleetCode = c.FleetCode,
@@ -219,7 +219,7 @@ public class CourierRepository(
             Latitude = dto.Latitude,
             Longitude = dto.Longitude,
             ChannelId = dto.ChannelId,
-            VehicleType = dto.VehicleType,
+            VehicleType = MapVehicleTypeToAbbreviation(dto.VehicleType),
             ClearListAreaIDs = dto.ClearListAreaIDs,
             Code = dto.Code,
             FleetCode = uaFleetIds.Contains(dto.FleetId ?? 0) ? "UA" : string.Empty,
@@ -1554,5 +1554,26 @@ public class CourierRepository(
                     nameof(GetExactCourierByCodeAsync)));
             throw;
         }
+    }
+
+    /// <summary>
+    /// Maps full vehicle type names to single character abbreviations
+    /// Based on DESWEB_stpMapEnvelope stored procedure logic
+    /// </summary>
+    private static string MapVehicleTypeToAbbreviation(string vehicleType)
+    {
+        if (string.IsNullOrEmpty(vehicleType))
+            return null;
+
+        return vehicleType switch
+        {
+            "Hatchback" or "Sedan" => "C",
+            "MotorBike" => "M",
+            "Pushbike" => "B",
+            "Station Wagon" => "W",
+            "Truck" => "T",
+            "Utility" or "Van" => "V",
+            _ => vehicleType // Return original if no match
+        };
     }
 }
