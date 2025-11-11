@@ -524,6 +524,7 @@ export interface IJobQueryParams {
     pageSize?: number;
     searchText?: string;
     useTime?: boolean;
+    statusFilter?: string; // 'needs-dispatch', 'all', 'active', etc.
 }
 
 export interface IJobQueryParamsDto {
@@ -535,6 +536,7 @@ export interface IJobQueryParamsDto {
     pageSize?: number;
     searchText?: string;
     useTime?: boolean;
+    statusFilter?: string; // 'needs-dispatch', 'all', 'active', etc.
 }
 
 export interface PriceBreakdown {

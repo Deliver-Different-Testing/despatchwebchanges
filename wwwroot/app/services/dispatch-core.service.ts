@@ -723,6 +723,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             page: dtoParams.page ?? 0,
             pageSize: dtoParams.pageSize ?? 50,
             searchText: dtoParams.searchText ?? "",
+            statusFilter: dtoParams.statusFilter,
             despatchViewIds,
             ...additionalParams
         };

@@ -165,6 +165,7 @@ class HomeController extends BaseController {
     clearListId?: number;
     isDataLoading: boolean = false;
     unReadMessageCount: number = 0;
+    defaultJobCategory?: string; // Track default category for job list
 
     // supportFilters
     staffList?: ISuggestion[];
@@ -1045,12 +1046,13 @@ class HomeController extends BaseController {
 
     async selectClearList(selectedClearList: IAreaClearList): Promise<void> {
         try {
-            console.log("Selecting clear list:", selectedClearList);
-
             if (!selectedClearList) {
                 this.toastrService.showErrorToast("An error occurred while selecting a clear list. Please try again.");
                 return;
             }
+
+            // Set status filter to 'needs-dispatch' when ClearListArea is clicked
+            this.queryParams.statusFilter = 'needs-dispatch';
 
             await this.processClearListJobs(selectedClearList.id);
         } catch (error) {
@@ -1061,7 +1063,6 @@ class HomeController extends BaseController {
 
     private async processClearListJobs(selectedClearListId: number): Promise<void> {
         try {
-            console.log("Processing clear list jobs:", selectedClearListId);
             this.selectedClearListId = selectedClearListId; // Save for later use
 
             const result = await this.dispatchJobService.getJobsWithDispatchInfo(
@@ -1071,7 +1072,8 @@ class HomeController extends BaseController {
                     endDate: this.dateFilterData.endDate,
                     useTime: this.dateFilterData.useTime,
                     page: this.currentJobListPage,
-                    pageSize: this.currentJobListPageSize
+                    pageSize: this.currentJobListPageSize,
+                    statusFilter: this.queryParams.statusFilter
                 },
                 ClientInternal ?? false,
                 this.selectedViews,
@@ -1079,17 +1081,13 @@ class HomeController extends BaseController {
             );
 
             if (result.jobs?.length > 0) {
-                console.log("Processing clear list jobs:", result.jobs);
                 this.jobList = this.initializeJobSearchFields(result.jobs);
 
                 if (!this.currentCourier) {
                     this.mapJobList = result.mapItems;
                     this.mapJobListFull = angular.copy(this.mapJobList);
                 }
-
-                console.log("Clear list Job list:", this.jobList);
             } else {
-                console.log("No jobs found for clear list:", selectedClearListId);
                 this.jobList = [];
 
                 if (!this.currentCourier) {
@@ -1700,6 +1698,19 @@ class HomeController extends BaseController {
         await this.getJobList();
     }
 
+    handleCategoryChange = async (category: string): Promise<void> => {
+        // Only update backend filter if a ClearListArea is active
+        if (!this.selectedClearListId) {
+            return;
+        }
+
+        // Update the status filter based on category
+        this.queryParams.statusFilter = category;
+
+        // Re-fetch jobs with the new filter
+        await this.processClearListJobs(this.selectedClearListId);
+    }
+
     async getJobList(): Promise<void> {
         try {
             this.isLoadingData = true;
@@ -1737,6 +1748,7 @@ class HomeController extends BaseController {
                 pageSize: this.currentJobListPageSize,
                 useTime: this.dateFilterData.useTime,
                 searchText: this.queryParams.searchText,
+                statusFilter: this.queryParams.statusFilter,
             };
 
             const result = await this.dispatchJobService.getJobsWithDispatchInfo(
@@ -2453,6 +2465,18 @@ class HomeController extends BaseController {
             area.isActive = area === selectedArea;
         });
 
+        // Set status filter to 'needs-dispatch' when ClearListArea is clicked
+        this.queryParams.statusFilter = 'needs-dispatch';
+
+        // Force the category to update by setting to undefined first, then to needs-dispatch
+        // This ensures $onChanges fires even if it was already needs-dispatch
+        this.defaultJobCategory = undefined;
+        if (this.$timeoutService) {
+            this.$timeoutService(() => {
+                this.defaultJobCategory = 'needs-dispatch';
+            }, 0);
+        }
+
         // Then process jobs if needed
         try {
             await this.processClearListJobs(selectedArea.id);
@@ -2471,6 +2495,11 @@ class HomeController extends BaseController {
         this.driverLocations.areas.forEach((area: IAreaClearList) => {
             area.isActive = false;
         });
+
+        // Clear the selected clear list and status filter
+        this.selectedClearListId = undefined;
+        this.queryParams.statusFilter = undefined;
+        this.defaultJobCategory = undefined; // Reset job list UI category
 
         // Reset to show all jobs (not filtered by clear list)
         try {

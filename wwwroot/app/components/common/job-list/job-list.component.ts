@@ -39,6 +39,7 @@ class JobsListController extends BaseController {
     jobs?: IDispatchJob[];
     selectedJob?: IDispatchJob;
     onSearchChange?: (data: { searchText: string, jobType: JobListType }) => void;
+    onCategoryChange?: (data: { category: string }) => Promise<void>;
     onJobSelect?: (data: { job: IDispatchJob }) => Promise<void>;
     onJobDispatch?: (data: { job: IDispatchJob, courierId: number }) => Promise<void>;
     onJobAction?: (data: { action: string, job: IDispatchJob, params?: any }) => Promise<void>;
@@ -50,6 +51,7 @@ class JobsListController extends BaseController {
         hasMore: boolean
     }>;
     setBackendFilter?: (data: { column: string, direction: string }) => Promise<void>;
+    defaultCategory?: JobCategory; // Allow parent to set initial category
     isUsCustomer?: boolean;
     timeZone: string;
     jobListType: JobListType = JobListType.DispatchJobList;
@@ -240,6 +242,12 @@ class JobsListController extends BaseController {
             this.selectedJob = changes['selectedJob'].currentValue;
         }
 
+        // Update selected category when defaultCategory changes
+        if (changes['defaultCategory'] && changes['defaultCategory'].currentValue) {
+            this.selectedCategory = changes['defaultCategory'].currentValue;
+            this.applyFilters();
+        }
+
         // Add these:
         if (changes['jobListType'] && !changes['jobListType'].isFirstChange()) {
             this.setupJobListVariables();
@@ -280,8 +288,14 @@ class JobsListController extends BaseController {
         };
     }
 
-    filterByCategory(category: JobCategory): void {
+    async filterByCategory(category: JobCategory): Promise<void> {
         this.selectedCategory = category;
+
+        // Notify parent of category change (for backend filtering when ClearListArea is active)
+        if (this.onCategoryChange) {
+            await this.onCategoryChange({ category: category });
+        }
+
         this.applyFilters();
         this.updateSelectAllState();
     }
@@ -1426,7 +1440,9 @@ const JobsListComponent: angular.IComponentOptions = {
         enableVirtualScrolling: '<?',
         totalJobsCount: '<?',
         onSearchChange: '&?',
-        setBackendFilter: '&?'
+        onCategoryChange: '&?',
+        setBackendFilter: '&?',
+        defaultCategory: '<?'
     }
 };
 
