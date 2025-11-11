@@ -343,15 +343,16 @@
           }
 
           &:hover {
-            background: #f8fafc;
+            background: #cbd5e1;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
           }
 
           &.multi-selected {
-            background: #f3f4f6 !important;
-            border-left: 3px solid #6b7280;
+            background: #e3f2fd !important;
+            border-left: 3px solid #2196f3;
 
             &:hover {
-              background: #e5e7eb !important;
+              background: #bbdefb !important;
             }
           }
 
@@ -387,12 +388,12 @@
           }
 
           &.related-job {
-            background: #e3f2fd !important;
+            background: #bbdefb !important;
             border-left: 3px solid #3b82f6;
             position: relative;
 
             &:hover {
-              background: #bbdefb !important;
+              background: #90caf9 !important;
               box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
             }
 
@@ -418,8 +419,14 @@
           }
 
           &.selected {
-            background: #eff6ff;
-            border-left: 3px solid #3b82f6;
+            background: #bbdefb !important;
+            border-left: 4px solid #2563eb !important;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.15) !important;
+
+            &:hover {
+              background: #90caf9 !important;
+              box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25) !important;
+            }
           }
 
           &.unread {
@@ -481,13 +488,8 @@
             }
 
             &:hover {
-              background: #f8fafc;
-              box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-            }
-
-            &:hover {
-              background: #f8fafc;
-              box-shadow: none;
+              background: #cbd5e1;
+              box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
             }
 
             .priority {
@@ -500,14 +502,19 @@
               border-left: 3px solid #ef4444;
 
               &:hover {
-                background: #fee2e2;
-                box-shadow: none;
+                background: #fca5a5;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
               }
             }
 
             &.child-job {
               background: #f8fafc;
               border-left: 3px solid #64748b;
+
+              &:hover {
+                background: #cbd5e1;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+              }
             }
           }
 
@@ -516,7 +523,8 @@
             border-left: 3px solid #64748b;
 
             &:hover {
-              background: #f1f5f9;
+              background: #cbd5e1;
+              box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
             }
           }
 
@@ -815,6 +823,21 @@
                   cursor: not-allowed !important;
                 }
               }
+            }
+          }
+
+          // Ensure selected always wins even when combined with other states
+          // These must come LAST in the .job-row block to override other states
+          &.selected.related-job,
+          &.selected.warning,
+          &.selected.multi-selected {
+            background: #bbdefb !important;
+            border-left: 4px solid #2563eb !important;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.15) !important;
+
+            &:hover {
+              background: #90caf9 !important;
+              box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25) !important;
             }
           }
         }

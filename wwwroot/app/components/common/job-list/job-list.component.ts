@@ -411,8 +411,6 @@ class JobsListController extends BaseController {
                 addr.addressLine3,
                 addr.addressLine4,
                 addr.addressLine5,
-                addr.addressLine6,
-                addr.addressLine7,
                 addr.addressLine8
             ].filter(line => line && line.trim());
 
