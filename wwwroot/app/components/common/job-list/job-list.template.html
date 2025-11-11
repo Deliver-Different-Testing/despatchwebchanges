@@ -285,7 +285,7 @@
 
                     <!-- Pickup Column -->
                     <div class="job-cell route-cell pickup-cell">
-                        <div class="address">{{ctrl.getPickupAddress(job)}}</div>
+                        <div class="address">{{job.pickupAddress && job.pickupAddress.addressLine5 || ''}}</div>
                         <div class="city-state">{{job.pickupAddress && job.pickupAddress.addressLine1 || ''}}</div>
                     </div>
 
@@ -433,7 +433,7 @@
 
                     <!-- Pickup Column -->
                     <div class="job-cell route-cell pickup-cell">
-                        <div class="address">{{ctrl.getPickupAddress(childJob)}}</div>
+                        <div class="address">{{childJob.pickupAddress && childJob.pickupAddress.addressLine5 || ''}}</div>
                         <div class="city-state">{{childJob.pickupAddress && childJob.pickupAddress.addressLine1 || ''}}</div>
                     </div>
 

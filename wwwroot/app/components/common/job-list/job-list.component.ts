@@ -82,8 +82,8 @@ class JobsListController extends BaseController {
         isArchived: 80,
         vehicle: 100,
         jobNo: 100,
-        pickup: 250,
-        delivery: 250,
+        pickup: 120,
+        delivery: 380,
         courier: 150,
         remaining: 90,
         status: 100
