@@ -1219,9 +1219,18 @@ class HomeController extends BaseController {
         try {
             await this.dispatchJobService.assignSingleJobById(courierId, jobId);
 
-            // Inform the user
-            if (this.currentCourier) {
-                this.toastrService.showSuccessToast("Dispatched to " + this.currentCourier?.text);
+            // Inform the user - get the actual courier name for the courier we dispatched to
+            try {
+                const courier = await this.DispatchData.getCourierById(courierId);
+                if (courier) {
+                    const courierDisplay = (courier.id && courier.id !== 'undefined' && courier.id.trim() !== '')
+                        ? `${courier.id}: ${courier.name}`
+                        : courier.name;
+                    this.toastrService.showSuccessToast("Dispatched to " + courierDisplay);
+                }
+            } catch (error) {
+                console.warn("Could not fetch courier name for toast:", error);
+                this.toastrService.showSuccessToast("Job dispatched successfully");
             }
 
             // getData() now automatically handles courier context and refreshes courier jobs if needed
@@ -1551,7 +1560,9 @@ class HomeController extends BaseController {
                 const mapJobItem = this.mapToDispatchMapItem(job);
                 this.mapJobList = [mapJobItem]
 
-                await this.handleUndispatchedJob(job);
+                // Get potential couriers for this job, but preserve current courier context if one exists
+                await this.getPotentialCouriers(job.id);
+                // Note: We don't clear currentCourier here to preserve the courier's current work list
             } else {
                 // Scenario 3: Job has a courier assigned - show this courier's jobs
                 console.log("Selected job has courier assigned - loading courier's jobs");
