@@ -1097,7 +1097,10 @@ class HomeController extends BaseController {
                 }
             }
 
-            this.jobsCurrentList = undefined;
+            // Only clear jobsCurrentList if we're not viewing a specific courier's jobs
+            if (!this.currentCourier) {
+                this.jobsCurrentList = undefined;
+            }
             this.totalJobCount = result.totalCount;
 
         } catch (error) {
@@ -1218,14 +1221,13 @@ class HomeController extends BaseController {
         try {
             await this.dispatchJobService.assignSingleJobById(courierId, jobId);
 
-            // If we have a current courier, update their job list
+            // Inform the user
             if (this.currentCourier) {
-                await this.getCurrentJobs(this.currentCourier.id);
+                this.toastrService.showSuccessToast("Dispatched to " + this.currentCourier?.text);
             }
 
-            // Inform the user
-            this.toastrService.showSuccessToast("Dispatched to " + this.currentCourier?.text);
-            await this.getJobList();
+            // getData() now automatically handles courier context and refreshes courier jobs if needed
+            await this.getData();
         } catch (error) {
             console.error("Error dispatching jobs:", error);
             throw error;
@@ -1292,8 +1294,12 @@ class HomeController extends BaseController {
         }
     }
 
-    async updateCourierData(courierId: number, courierName: string): Promise<void> {
-        this.currentWorkSelection = ` for Courier ${courierName}`;
+    async updateCourierData(courierId: number, courierName: string, courierCode?: string): Promise<void> {
+        if (courierCode) {
+            this.currentWorkSelection = ` for Courier ${courierCode}: ${courierName}`;
+        } else {
+            this.currentWorkSelection = ` for Courier ${courierName}`;
+        }
         this.currentCourier = {id: courierId, text: courierName};
 
         // Get current jobs for the courier
@@ -1323,9 +1329,21 @@ class HomeController extends BaseController {
             return;
         }
 
+        // Fetch full courier details to get courier code
+        const foundCourier = await this.DispatchData.getCourierById(courierId);
+
         // Update courier data and get their jobs
-        this.currentWorkSelection = ` for Courier ${courierName}`;
-        this.currentCourier = {id: courierId, text: courierName};
+        if (foundCourier) {
+            // Use courier code (id field) if available, otherwise use courierName
+            const courierDisplay = (foundCourier.id && foundCourier.id !== 'undefined' && foundCourier.id.trim() !== '')
+                ? `${foundCourier.id}: ${foundCourier.name}`
+                : (foundCourier.text || foundCourier.label || courierName);
+            this.currentWorkSelection = ` for Courier ${courierDisplay}`;
+            this.currentCourier = {id: courierId, text: courierName};
+        } else {
+            this.currentWorkSelection = ` for Courier ${courierName}`;
+            this.currentCourier = {id: courierId, text: courierName};
+        }
 
         // Get current jobs for the courier
         await this.getCurrentJobs(courierId);
@@ -1351,7 +1369,7 @@ class HomeController extends BaseController {
             }
 
             // Set courier
-            await this.updateCourierData(foundCourier.courierId, foundCourier.name);
+            await this.updateCourierData(foundCourier.courierId, foundCourier.name, foundCourier.id);
         } catch (error: any) {
             console.error("Error searching courier:", error);
         }
@@ -1370,7 +1388,11 @@ class HomeController extends BaseController {
                     text: foundCourier.label || `${foundCourier.label} ${foundCourier.name}`,
                 };
 
-                this.currentWorkSelection = ` for Courier ${this.currentCourier.text}`;
+                // Use courier code (id field) if available, otherwise use text/label
+                const courierDisplay = (foundCourier.id && foundCourier.id !== 'undefined' && foundCourier.id.trim() !== '')
+                    ? `${foundCourier.id}: ${foundCourier.name}`
+                    : (foundCourier.text || foundCourier.label);
+                this.currentWorkSelection = ` for Courier ${courierDisplay}`;
                 await this.getCurrentJobs(foundCourier.courierId);
 
                 try {
@@ -1427,7 +1449,7 @@ class HomeController extends BaseController {
 
     async updateUIForPotentialCourier(courier: ICourierData): Promise<void> {
         if (!courier || !courier.courierId || !courier.courierName) return;
-        this.currentWorkSelection = ` for Courier ${courier.courier}`;
+        this.currentWorkSelection = ` for Courier ${courier.courier}: ${courier.courierName}`;
         this.currentCourier = {id: courier.courierId, text: courier.courierName};
     }
 
@@ -1545,7 +1567,7 @@ class HomeController extends BaseController {
                     };
 
                     if (!this.currentCourier) return;
-                    this.currentWorkSelection = ` for Courier ${this.currentCourier.id}`;
+                    this.currentWorkSelection = ` for Courier ${job.courierData.courier}: ${job.courierData.courierName}`;
 
                     // Get all jobs for this courier
                     await this.getCurrentJobs(job.courierData.courierId);
@@ -1738,7 +1760,10 @@ class HomeController extends BaseController {
                 }
             }
 
-            this.jobsCurrentList = undefined;
+            // Only clear jobsCurrentList if we're not viewing a specific courier's jobs
+            if (!this.currentCourier) {
+                this.jobsCurrentList = undefined;
+            }
             this.totalJobCount = result.totalCount;
         } catch (error: any) {
             console.error("Error getting job list:", error);
@@ -1759,10 +1784,23 @@ class HomeController extends BaseController {
         try {
             this.currentJob = undefined;
             this.potentialCouriers = undefined;
-            this.currentCourier = undefined;
+
+            // If there's a current courier, preserve it and refresh their jobs
+            const hasCourier = !!this.currentCourier;
+            const courierId = this.currentCourier?.id;
+
+            // Only clear currentCourier if no courier is selected
+            if (!hasCourier) {
+                this.currentCourier = undefined;
+            }
 
             this.loadSupportsInBackground();
             await this.getJobList();
+
+            // If we had a courier selected, refresh their current work list
+            if (hasCourier && courierId) {
+                await this.getCurrentJobs(courierId);
+            }
         } catch (error: any) {
             console.error("Error in getData:", error);
             this.toastrService.showErrorToast("An error occurred while loading data. Please refresh the page.");
@@ -1990,7 +2028,21 @@ class HomeController extends BaseController {
         if (!job) return [];
 
         const callbacks = {
-            onRefresh: () => this.getData(),
+            onRefresh: async () => {
+                // getData() now automatically handles courier context and refreshes courier jobs if needed
+                if (this.currentCourier) {
+                    this.currentListLoading = true;
+                    this.applyScope();
+                    try {
+                        await this.getData();
+                    } finally {
+                        this.currentListLoading = false;
+                        this.applyScope();
+                    }
+                } else {
+                    return this.getData();
+                }
+            },
             onSplitJob: (params: { job: IDispatchJob }) => this.handleSplitJob(params.job),
             onRefreshCourierJobs: (params: { courierId: number }) => {
                 if (this.currentCourier) {
@@ -2541,8 +2593,19 @@ class HomeController extends BaseController {
             return;
         }
 
+        // Fetch full courier details to get courier code and name
+        const foundCourier = await this.DispatchData.getCourierById(courierMatch.id);
+
         this.currentCourier = courierMatch;
-        this.currentWorkSelection = ` for Courier ${courierMatch.text}`;
+        if (foundCourier) {
+            // Use courier code (id field) if available, otherwise use text/label
+            const courierDisplay = (foundCourier.id && foundCourier.id !== 'undefined' && foundCourier.id.trim() !== '')
+                ? `${foundCourier.id}: ${foundCourier.name}`
+                : (foundCourier.text || foundCourier.label || courierMatch.text);
+            this.currentWorkSelection = ` for Courier ${courierDisplay}`;
+        } else {
+            this.currentWorkSelection = ` for Courier ${courierMatch.text}`;
+        }
 
         await this.getCurrentJobs(courierMatch.id);
 
