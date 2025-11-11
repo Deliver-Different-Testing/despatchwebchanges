@@ -1045,6 +1045,15 @@ public partial class JobRepository(
             .Select(JobMappings.JobDispatchMapping(isUsCustomer))
             .ToListAsync();
 
+        // Calculate remaining time for each job
+        var (economySpeedId, ecoDeliveryTime) = await GetEconomySpeedAndDeliveryTimeAsync();
+        var now = _infoService.GetCurrentTenantTime();
+        foreach (var job in jobs)
+        {
+            job.AngularId = Guid.NewGuid();
+            job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
+        }
+
         var hasMore = (page + 1) * pageSize < totalCount;
 
         return new JobSearchResult

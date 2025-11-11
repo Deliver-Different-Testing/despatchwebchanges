@@ -1574,6 +1574,7 @@ public class CourierRepository(
             "MotorBike" => "M",
             "Pushbike" => "B",
             "Station Wagon" => "W",
+            "StationWagon" => "W",
             "Truck" => "T",
             "Utility" or "Van" => "V",
             _ => vehicleType // Return original if no match

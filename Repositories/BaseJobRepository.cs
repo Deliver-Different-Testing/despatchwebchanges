@@ -735,7 +735,7 @@ public class BaseJobRepository(
         };
     }
 
-    private static double? CalculateRemainTime(DispatchJobViewModel job, DateTime currentTenantTime,
+    protected static double? CalculateRemainTime(DispatchJobViewModel job, DateTime currentTenantTime,
         int? economySpeedId, DateTime? ecoDeliveryTime)
     {
         try
@@ -828,7 +828,7 @@ public class BaseJobRepository(
         }
     }
 
-    private async Task<(int? economySpeedId, DateTime? ecoDeliveryTime)> GetEconomySpeedAndDeliveryTimeAsync()
+    protected async Task<(int? economySpeedId, DateTime? ecoDeliveryTime)> GetEconomySpeedAndDeliveryTimeAsync()
     {
         // Calculate remain times
         var economySpeedId = await Context.TucJobTypes
