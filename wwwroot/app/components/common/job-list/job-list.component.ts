@@ -230,7 +230,12 @@ class JobsListController extends BaseController {
         if (changes['jobs'] && changes['jobs'].currentValue) {
             if (this.enableVirtualScrolling && changes['jobs'].previousValue !== changes['jobs'].currentValue) {
                 this.currentPage = 0;
-                this.allJobsLoaded = false;
+                // Check if all jobs are already loaded in the initial batch
+                if (this.totalJobsCount > 0 && this.jobs && this.jobs.length >= this.totalJobsCount) {
+                    this.allJobsLoaded = true;
+                } else {
+                    this.allJobsLoaded = false;
+                }
             }
 
             this.calculateStats();
@@ -739,6 +744,7 @@ class JobsListController extends BaseController {
             }
 
             // If no item is highlighted but there are search results, select the first one
+            // (performCourierSearch already filters for exact matches when numeric code is entered)
             if (job.searchText) {
                 try {
                     const results = await this.performCourierSearch(job.searchText);
@@ -839,7 +845,24 @@ class JobsListController extends BaseController {
 
         try {
             const url = this.COURIER_URL;
-            return this.DispatchData.autocompleteSearch(searchText, url);
+            const results = await this.DispatchData.autocompleteSearch(searchText, url);
+
+            // If search text is purely numeric (courier code), filter for exact matches only
+            const trimmedSearch = searchText.trim();
+            if (/^\d+$/.test(trimmedSearch)) {
+                // Filter results to only show exact courier code matches
+                const exactMatches = results.filter(r => {
+                    if (!r.text) return false;
+                    // Extract the courier code (before space or parenthesis)
+                    const courierCode = r.text.split(/[\s(]/)[0];
+                    return courierCode === trimmedSearch;
+                });
+
+                // Return exact matches if found, otherwise return all results
+                return exactMatches.length > 0 ? exactMatches : results;
+            }
+
+            return results;
         } catch (error: any) {
             console.error("Error in courier search:", error.message);
             return [];
