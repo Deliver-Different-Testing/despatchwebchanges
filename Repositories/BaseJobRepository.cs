@@ -45,15 +45,27 @@ public class BaseJobRepository(
                 };
 
             ClearListEnvelopeViewModel clearListEnvelope = null;
+            var isNeedsDispatchFilter = false;
+
             if (selectedClearListId.HasValue)
             {
                 Log.Debug("ClearListId {ClearListID} provided. Getting ClearListEnvelope", selectedClearListId);
+
                 var country = isUsTenant ? Country.Us : Country.Nz;
                 clearListEnvelope =
                     await clearListEnvelopeService.GetClearListAreaEnvelopeAsync(selectedClearListId.Value, country);
+
+                // Check if needs-dispatch filter is active
+                isNeedsDispatchFilter = queryParams.StatusFilter?.ToLower() == "needs-dispatch";
+
+                if (isNeedsDispatchFilter)
+                {
+                    // Apply "needs dispatch" filter for ClearListArea: Status = New and no courier assigned
+                    query = query.Where(j => j.UcjbStatus == (int)JobStatus.New && j.UcjbCourierId == null);
+                }
             }
 
-            query = ApplyGeographicFilters(query, clearListEnvelope);
+            query = ApplyGeographicFilters(query, clearListEnvelope, isNeedsDispatchFilter);
 
             switch (page)
             {
@@ -186,13 +198,24 @@ public class BaseJobRepository(
 
     private static IQueryable<TucJob> ApplyGeographicFilters(
         IQueryable<TucJob> query,
-        ClearListEnvelopeViewModel clearListEnvelope
+        ClearListEnvelopeViewModel clearListEnvelope,
+        bool pickupOnlyFilter = false
     )
     {
         if (clearListEnvelope == null) return query;
-        Log.Debug("Applying geographic filters");
-        Log.Debug("Clear list envelope: {ClearListEnvelope}", clearListEnvelope);
 
+        if (pickupOnlyFilter)
+        {
+            // Filter by pickup location only (jobs FROM this area) - for needs-dispatch
+            return query.Where(j =>
+                j.PickUpLatitude >= clearListEnvelope.MinimumLatitude
+                && j.PickUpLatitude <= clearListEnvelope.MaximumLatitude
+                && j.PickUpLongitude >= clearListEnvelope.MinimumLongitude
+                && j.PickUpLongitude <= clearListEnvelope.MaximumLongitude
+            );
+        }
+
+        // Filter by pickup OR delivery location (jobs FROM or TO this area) - for all other categories
         return query.Where(j =>
             // Either pickup is within the envelope
             (j.PickUpLatitude >= clearListEnvelope.MinimumLatitude

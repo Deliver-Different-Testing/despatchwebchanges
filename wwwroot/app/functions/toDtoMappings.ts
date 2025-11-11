@@ -23,5 +23,5 @@ export function transformJobQueryParamsToDTO(model: IJobQueryParams) : IJobQuery
         ...model,
         startDate: model.startDate ? formatDateForApiWithTzs(model.startDate) : undefined,
         endDate: model.endDate ? formatDateForApiWithTzs(model.endDate) : undefined,
-    }   
+    };
 }
