@@ -1887,6 +1887,39 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
+        public virtual async Task<List<UTL_stpJob_tblBulkJob_ReleaseByJobNumberResult>> UTL_stpJob_tblBulkJob_ReleaseByJobNumberAsync(string jobNumber, DateTime? dateTime, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "JobNumber",
+                    Size = 100,
+                    Value = jobNumber ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DateTime",
+                    Value = dateTime ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.DateTime,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.SqlQueryAsync<UTL_stpJob_tblBulkJob_ReleaseByJobNumberResult>("EXEC @returnValue = [dbo].[UTL_stpJob_tblBulkJob_ReleaseByJobNumber] @JobNumber = @JobNumber, @DateTime = @DateTime", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
         public virtual async Task<int> UTL_stpPPD_ExclusiveAmountAsync(int? clientID, decimal? amount, OutputParameter<decimal?> pPD, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterPPD = new SqlParameter

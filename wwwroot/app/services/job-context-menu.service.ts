@@ -159,6 +159,17 @@ class JobContextMenuService implements angular.IServiceProvider {
             children: this.getEventGroupsMenuItems(job.id, callbacks.onRefresh),
         });
 
+        // Send to Live - only for bulk jobs that are not done and are parent/single jobs (not child jobs)
+        if (job.isBulkJob && !job.done && job.isParentOrSingle) {
+            menuOptions.push({
+                text: "Send to Live",
+                icon: "send",
+                click: (_$itemScope: any, $event: MouseEvent) =>
+                    this.sendBulkJobToLive($event, job, callbacks.onRefresh),
+                hasBottomDivider: true,
+            });
+        }
+
         menuOptions.push({
             text: "Void Job",
             icon: "cancel",
@@ -555,6 +566,34 @@ class JobContextMenuService implements angular.IServiceProvider {
             console.log(`Late ${operationType} call completed successfully`);
         } catch (error) {
             console.error(`Error in late ${operationType} call:`, error);
+        }
+    }
+
+    private async sendBulkJobToLive($event: MouseEvent, job: IDispatchJob, onRefresh: () => void): Promise<void> {
+        if (!job || !job.isBulkJob) return;
+
+        try {
+            await this.$mdDialog.show(
+                this.$mdDialog
+                    .confirm()
+                    .title("Send to Live?")
+                    .textContent(`Are you sure you want to send bulk job ${job.jobNo} to the live dispatch screen?`)
+                    .ariaLabel("Confirm")
+                    .targetEvent($event)
+                    .ok("Yes")
+                    .cancel("No")
+            );
+
+            await this.DispatchData.releaseBulkJob(job.jobNo, job.booked);
+            this.toastrService.showSuccessToast(`Bulk job ${job.jobNo} sent to live successfully`);
+
+            if (onRefresh) {
+                onRefresh();
+            }
+        } catch (error) {
+            if (!error) return; // User cancelled
+            console.error("Error sending bulk job to live:", error);
+            this.toastrService.showErrorToast("Failed to send bulk job to live");
         }
     }
 }

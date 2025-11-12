@@ -2007,6 +2007,26 @@ public partial class JobRepository(
         );
     }
 
+    public async Task ReleaseBulkJobAsync(string jobNumber, DateTime bookDate)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(jobNumber, nameof(jobNumber));
+
+            Log.Information("Executing stored procedure to release bulk job {JobNumber} with booking date {BookDate}", jobNumber, bookDate);
+
+            await Context.Procedures.UTL_stpJob_tblBulkJob_ReleaseByJobNumberAsync(jobNumber, bookDate);
+
+            Log.Information("Successfully executed stored procedure for bulk job {JobNumber}", jobNumber);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository), nameof(ReleaseBulkJobAsync)));
+            throw;
+        }
+    }
+
     public async Task<int> QuickAddJobAsync(JobCreateViewModel request)
     {
         try

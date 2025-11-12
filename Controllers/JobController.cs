@@ -1304,6 +1304,28 @@ public class JobController(
     }
 
     [HttpPost]
+    public async Task<IActionResult> ReleaseBulkJob(string jobNumber, DateTime bookDate)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(jobNumber, nameof(jobNumber));
+
+            Log.Information("Releasing bulk job {JobNumber} with booking date {BookDate}", jobNumber, bookDate);
+
+            await jobRepository.ReleaseBulkJobAsync(jobNumber, bookDate);
+
+            Log.Information("Successfully released bulk job {JobNumber}", jobNumber);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(ReleaseBulkJob)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
+    [HttpPost]
     public async Task<IActionResult> QuickCreateJob([FromBody] JobCreateViewModel request)
     {
         try
