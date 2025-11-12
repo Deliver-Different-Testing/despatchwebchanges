@@ -283,13 +283,14 @@ class JobsListController extends BaseController {
     private calculateStats() {
         if (!this.jobs) return;
 
+        // Active now includes urgent and issues, so we calculate it using isActive which merges all three
         this.stats = {
             total: this.jobs.length,
-            urgent: this.jobs.filter(job => this.isUrgent(job)).length,
+            urgent: 0, // No longer used separately
             active: this.jobs.filter(job => this.isActive(job)).length,
             transit: this.jobs.filter(job => this.isInTransit(job)).length,
             done: this.jobs.filter(job => this.isDelivered(job)).length,
-            issues: this.jobs.filter(job => this.hasIssues(job)).length
+            issues: 0 // No longer used separately
         };
     }
 
@@ -490,14 +491,10 @@ class JobsListController extends BaseController {
 
     private matchesCategory(job: IDispatchJob, category: JobCategory): boolean {
         switch (category) {
-            case JobCategory.Urgent:
-                return this.isUrgent(job);
             case JobCategory.NeedsDispatch:
                 return this.needsDispatch(job);
             case JobCategory.InProgress:
                 return this.isActive(job);
-            case JobCategory.Issues:
-                return this.hasIssues(job);
             case JobCategory.Delivered:
                 return this.isDelivered(job);
             default:
@@ -607,12 +604,18 @@ class JobsListController extends BaseController {
     }
 
     isActive(job: IDispatchJob): boolean {
-        return [
+        // Active includes: dispatched/in-progress jobs, urgent jobs, and jobs with issues
+        const hasActiveStatus = [
             JobStatus.Dispatched,
             JobStatus.Accepted,
             JobStatus.PickedUp,
             JobStatus.InTransit
         ].includes(job.statusId || JobStatus.New);
+
+        const isUrgentJob = this.isUrgent(job);
+        const hasIssuesJob = this.hasIssues(job);
+
+        return hasActiveStatus || isUrgentJob || hasIssuesJob;
     }
 
     isInTransit(job: IDispatchJob): boolean {
@@ -667,6 +670,17 @@ class JobsListController extends BaseController {
     }
 
     async selectJob(job: IDispatchJob, event?: MouseEvent): Promise<void> {
+        // Mark job as read when clicked
+        if (!job.hasBeenRead) {
+            job.hasBeenRead = true;
+            // Update backend asynchronously without blocking UI
+            this.DispatchData.bulkUpdateReadStatus([job.id], true).catch(error => {
+                console.error('Error updating read status:', error);
+                // Revert on error
+                job.hasBeenRead = false;
+            });
+        }
+
         if (event && (event.ctrlKey || event.metaKey)) {
             if (this.selectedJobs.length === 0 && this.selectedJob && !this.selectedJob.selected) {
                 this.selectedJob.selected = true;
@@ -1334,6 +1348,9 @@ class JobsListController extends BaseController {
         const minIndex = Math.min(startIndex, endIndex);
         const maxIndex = Math.max(startIndex, endIndex);
 
+        // Collect unread jobs for batch update
+        const unreadJobIds: number[] = [];
+
         // Select all jobs in the range
         for (let i = minIndex; i <= maxIndex; i++) {
             const job = visibleJobs[i];
@@ -1341,6 +1358,25 @@ class JobsListController extends BaseController {
                 job.selected = true;
                 this.selectedJobs.push(job);
             }
+            // Mark job as read
+            if (!job.hasBeenRead) {
+                job.hasBeenRead = true;
+                unreadJobIds.push(job.id);
+            }
+        }
+
+        // Update backend for all unread jobs in range
+        if (unreadJobIds.length > 0) {
+            this.DispatchData.bulkUpdateReadStatus(unreadJobIds, true).catch(error => {
+                console.error('Error updating read status for range:', error);
+                // Revert on error
+                for (let i = minIndex; i <= maxIndex; i++) {
+                    const job = visibleJobs[i];
+                    if (unreadJobIds.includes(job.id)) {
+                        job.hasBeenRead = false;
+                    }
+                }
+            });
         }
 
         // Set the end job as the primary selection
