@@ -6,10 +6,6 @@
         <div class="stats">
             <span class="total-jobs">{{ctrl.stats.total}} total</span>
             <div class="stat-item">
-                <div class="stat-dot urgent"></div>
-                <span>{{ctrl.stats.urgent}} Urgent</span>
-            </div>
-            <div class="stat-item">
                 <div class="stat-dot active"></div>
                 <span>{{ctrl.stats.active}} Active</span>
             </div>
@@ -20,10 +16,6 @@
             <div class="stat-item">
                 <div class="stat-dot done"></div>
                 <span>{{ctrl.stats.done}} Done</span>
-            </div>
-            <div class="stat-item">
-                <div class="stat-dot issues"></div>
-                <span>{{ctrl.stats.issues}} Issues</span>
             </div>
         </div>
     </div>
@@ -37,20 +29,12 @@
                         ng-click="ctrl.filterByCategory('all')">ALL
                 </button>
                 <button class="tab"
-                        ng-class="{'active': ctrl.selectedCategory === 'urgent'}"
-                        ng-click="ctrl.filterByCategory('urgent')">URGENT
-                </button>
-                <button class="tab"
                         ng-class="{'active': ctrl.selectedCategory === 'needs-dispatch'}"
                         ng-click="ctrl.filterByCategory('needs-dispatch')">UNASSIGNED
                 </button>
                 <button class="tab"
                         ng-class="{'active': ctrl.selectedCategory === 'in-progress'}"
                         ng-click="ctrl.filterByCategory('in-progress')">ACTIVE
-                </button>
-                <button class="tab"
-                        ng-class="{'active': ctrl.selectedCategory === 'issues'}"
-                        ng-click="ctrl.filterByCategory('issues')">ISSUES
                 </button>
             </div>
 
