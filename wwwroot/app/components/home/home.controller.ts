@@ -1084,7 +1084,8 @@ class HomeController extends BaseController {
                 this.jobList = this.initializeJobSearchFields(result.jobs);
 
                 if (!this.currentCourier) {
-                    this.mapJobList = result.mapItems;
+                    // Only show undispatched jobs on map for performance
+                    this.mapJobList = this.getUndispatchedMapItems(result.jobs);
                     this.mapJobListFull = angular.copy(this.mapJobList);
                 }
             } else {
@@ -1474,7 +1475,8 @@ class HomeController extends BaseController {
 
             if (this.jobsCurrentList && this.jobsCurrentList.length > 0) {
                 console.log(`Setting mapJobList for courier ${courierId} with ${this.jobsCurrentList.length} jobs`);
-                this.mapJobList = result.mapItems;
+                // Only show undispatched jobs on map for performance
+                this.mapJobList = this.getUndispatchedMapItems(result.jobs);
             } else {
                 console.log(`No jobs found for courier ${courierId}`);
             }
@@ -1610,8 +1612,21 @@ class HomeController extends BaseController {
             jobId: job.id,
             jobNo: job.jobNo,
             pickupAddress: job.pickupAddress,
-            deliveryAddress: job.deliveryAddress
+            deliveryAddress: job.deliveryAddress,
+            statusId: job.statusId
         }
+    }
+
+    /**
+     * Filters jobs to only undispatched (statusId = 0) and converts to map items
+     * This improves map performance by only showing jobs that need dispatching
+     */
+    private getUndispatchedMapItems(jobs: IDispatchJob[]): IDispatchMapItem[] {
+        if (!jobs || jobs.length === 0) return [];
+
+        return jobs
+            .filter(job => job.statusId === 0) // Only New/Undispatched jobs
+            .map(job => this.mapToDispatchMapItem(job));
     }
 
     private loadSupportsInBackground(filterType: string = this.supportsFilter, jobId?: number): void {
@@ -1772,8 +1787,10 @@ class HomeController extends BaseController {
                 this.jobList = this.initializeJobSearchFields(result.jobs);
 
                 if (!this.currentCourier) {
-                    this.mapJobListFull = angular.copy(result.mapItems);
-                    this.mapJobList = result.mapItems;
+                    // Only show undispatched jobs on map for performance
+                    const undispatchedMapItems = this.getUndispatchedMapItems(result.jobs);
+                    this.mapJobListFull = angular.copy(undispatchedMapItems);
+                    this.mapJobList = undispatchedMapItems;
                 }
             } else {
                 this.jobList = [];

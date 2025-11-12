@@ -915,6 +915,7 @@ export interface IDispatchMapItem {
     pickupAddress: IAddressViewModel;
     deliveryAddress: IAddressViewModel;
     assignedCourier?: ISuggestion;
+    statusId?: number; // Job status: 0 = New/Undispatched, 1 = Dispatched, etc.
 }
 
 export interface IDeletePriceComponentRequest {
