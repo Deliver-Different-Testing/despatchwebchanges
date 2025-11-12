@@ -4,6 +4,7 @@
    "ContextNamespace": null,
    "FilterSchemas": false,
    "IncludeConnectionString": false,
+   "MinimumProductVersion": "2.6.1166",
    "ModelNamespace": null,
    "OutputContextPath": null,
    "OutputPath": "EntityClasses",
@@ -504,6 +505,10 @@
       },
       {
          "Name": "[dbo].[uspRestoreJob]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[UTL_stpJob_tblBulkJob_ReleaseByJobNumber]",
          "ObjectType": 1
       },
       {

@@ -47,6 +47,10 @@ public partial class TucInvoiceNo
 
     public int? InvoiceTemplateId { get; set; }
 
+    public DateTime? Printed { get; set; }
+
+    public int ReportId { get; set; }
+
     public DateTime? Sent { get; set; }
 
     public DateTime? DueDate { get; set; }

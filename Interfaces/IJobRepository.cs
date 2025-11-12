@@ -123,6 +123,8 @@ public interface IJobRepository
         decimal? rate
     );
 
+    Task ReleaseBulkJobAsync(string jobNumber, DateTime bookDate);
+
     Task<int> QuickAddJobAsync(JobCreateViewModel request);
     Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel);
     Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId);

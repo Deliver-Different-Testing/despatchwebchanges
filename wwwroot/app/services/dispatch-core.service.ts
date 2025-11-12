@@ -226,6 +226,17 @@ class DispatchCoreService implements angular.IServiceProvider {
         await this.$http.post(`job/VoidBulkJob`, data);
     }
 
+    async releaseBulkJob(jobNumber: string, bookDate: Date): Promise<void> {
+        const formattedDate = dayjs(bookDate).format("YYYY-MM-DD");
+
+        await this.$http.post(`job/ReleaseBulkJob`, null, {
+            params: {
+                jobNumber,
+                bookDate: formattedDate
+            }
+        });
+    }
+
     async restoreJobs(jobIds: number[]): Promise<void> {
         await this.$http.post(`job/RestoreJobs`, {jobIds});
     }

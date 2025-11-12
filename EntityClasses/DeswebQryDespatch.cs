@@ -7,6 +7,8 @@ namespace DespatchWeb.EntityClasses;
 
 public partial class DeswebQryDespatch
 {
+    public int? UcjbClientId { get; set; }
+
     public int? UcclId { get; set; }
 
     public string UcjbNumber { get; set; }
@@ -32,6 +34,8 @@ public partial class DeswebQryDespatch
     public string SuburbFrom { get; set; }
 
     public string SuburbTo { get; set; }
+
+    public int? UcjbSpeed { get; set; }
 
     public int? UcjtId { get; set; }
 
@@ -109,7 +113,11 @@ public partial class DeswebQryDespatch
 
     public DateTime? UcjbDispDate { get; set; }
 
+    public int? UcjbSize { get; set; }
+
     public int? VehicleSizeId { get; set; }
+
+    public int? UcjbStatus { get; set; }
 
     public int? UcjsId { get; set; }
 
@@ -356,4 +364,8 @@ public partial class DeswebQryDespatch
     public int? BulkRegionId { get; set; }
 
     public int? ClearListAreaId { get; set; }
+
+    public int? FromClearListAreaId { get; set; }
+
+    public int? ToClearListAreaId { get; set; }
 }
