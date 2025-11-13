@@ -604,6 +604,11 @@ class JobsListController extends BaseController {
     }
 
     isActive(job: IDispatchJob): boolean {
+        // Unassigned jobs should only show in UNASSIGNED filter, not ACTIVE
+        if (this.needsDispatch(job)) {
+            return false;
+        }
+
         // Active includes: dispatched/in-progress jobs, urgent jobs, and jobs with issues
         const hasActiveStatus = [
             JobStatus.Dispatched,
@@ -627,7 +632,30 @@ class JobsListController extends BaseController {
     }
 
     needsDispatch(job: IDispatchJob): boolean {
-        return job.statusId === JobStatus.New && !job.assignedCourier;
+        // Unassigned filter should show all jobs without a courier, including those with warnings/issues
+        // Exclude only completed jobs and jobs that are actively in progress
+        if (job.assignedCourier) {
+            return false; // Has a courier, not unassigned
+        }
+
+        // Exclude completed/delivered jobs
+        if (this.isDelivered(job)) {
+            return false;
+        }
+
+        // Exclude jobs that are actively in progress (should have a courier)
+        const activeStatuses = [
+            JobStatus.Dispatched,
+            JobStatus.Accepted,
+            JobStatus.PickedUp,
+            JobStatus.InTransit
+        ];
+        if (activeStatuses.includes(job.statusId || JobStatus.New)) {
+            return false;
+        }
+
+        // Include: New jobs, Warning jobs, and other issue jobs without courier
+        return true;
     }
 
     hasIssues(job: IDispatchJob): boolean {
