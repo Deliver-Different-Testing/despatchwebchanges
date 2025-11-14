@@ -346,3 +346,10 @@ healthchecksdb
 /wwwroot/dist/**
 /wwwroot/dist/homeControl.js
 /.vscode
+/CROSSROADS_LOGGING_SUMMARY.md
+/CROSSROADS_NEXT_STEPS.md
+/CROSSROADS_REDIS_INVESTIGATION.md
+/CROSSROADS_ROOT_CAUSE_ANALYSIS.md
+/CROSSROADS_SOLUTION.md
+/logs-insights-results (1).csv
+/logs-insights-results.csv

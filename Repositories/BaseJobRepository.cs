@@ -157,7 +157,23 @@ public class BaseJobRepository(
     private async Task<IQueryable<TucJob>> BuildBaseQuery(List<int> selectedViews, bool isUsTenant)
     {
         var jobIds = await GetFilteredJobIds(selectedViews, isUsTenant);
-        return jobIds.Count == 0 ? null : Context.TucJobs.Where(j => jobIds.Contains(j.UcjbId));
+        if (jobIds.Count == 0) return null;
+
+        return Context.TucJobs
+            .Where(j => jobIds.Contains(j.UcjbId))
+            .Include(j => j.UcjbCourier)                    // Courier data
+            .Include(j => j.UcjbStatusNavigation)           // Job status
+            .Include(j => j.UcjbSpeedNavigation)            // Speed/type
+            .Include(j => j.UcjbSizeNavigation)             // Vehicle size
+            .Include(j => j.UcjbClient)                     // Client
+            .Include(j => j.UcjbFromNavigation)             // From suburb
+            .Include(j => j.Parent)                         // Parent job
+                .ThenInclude(p => p.InverseParent)          // Child jobs
+            .Include(j => j.TucJobNationwides)              // Flight/nationwide data
+            .Include(j => j.Agent)                          // Agent
+            .Include(j => j.PickupTimeZone)                 // Pickup timezone
+            .Include(j => j.DeliverByTimeZone)              // Delivery timezone
+            .Include(j => j.TucJobReadTracker);             // Read tracker
     }
 
     private async Task<List<int>> GetFilteredJobIds(List<int> selectedViewIds, bool isUsTenant)

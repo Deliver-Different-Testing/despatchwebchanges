@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -48,6 +49,7 @@ public class JobController(
         [FromQuery] List<int> despatchViewIds
     )
     {
+        var sw = Stopwatch.StartNew();
         try
         {
             var isUsTenant = infoService.IsUsTenant();
@@ -61,10 +63,21 @@ public class JobController(
                 despatchViewIds
             );
 
+            sw.Stop();
+            Log.Information("Job list query completed in {ElapsedMs}ms - returned {JobCount} jobs, {TotalCount} total (Views: {ViewIds}, DateRange: {StartDate} to {EndDate})",
+                sw.ElapsedMilliseconds,
+                result.Jobs?.Count ?? 0,
+                result.TotalCount,
+                string.Join(",", despatchViewIds ?? new List<int>()),
+                queryParams.StartDate?.ToString("yyyy-MM-dd") ?? "none",
+                queryParams.EndDate?.ToString("yyyy-MM-dd") ?? "none");
+
             return Json(result);
         }
         catch (UnauthorizedAccessException)
         {
+            sw.Stop();
+            Log.Warning("Unauthorized job list access attempt for client {ClientId} after {ElapsedMs}ms", cid, sw.ElapsedMilliseconds);
             return StatusCode(
                 StatusCodes.Status401Unauthorized,
                 $"Unauthorized access attempt for client {cid}"
@@ -72,7 +85,12 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error processing job list request");
+            sw.Stop();
+            Log.Error(ex, "Error processing job list request after {ElapsedMs}ms (Views: {ViewIds}, DateRange: {StartDate} to {EndDate})",
+                sw.ElapsedMilliseconds,
+                string.Join(",", despatchViewIds ?? new List<int>()),
+                queryParams.StartDate?.ToString("yyyy-MM-dd") ?? "none",
+                queryParams.EndDate?.ToString("yyyy-MM-dd") ?? "none");
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
