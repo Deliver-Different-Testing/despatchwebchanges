@@ -78,12 +78,13 @@ class JobsListController extends BaseController {
 
     // Column resizing
     private defaultColumnWidths = {
-        priority: 80,
+        priority: 50,
         time: 120,
         speed: 80,
         isArchived: 80,
         vehicle: 100,
-        jobNo: 100,
+        jobNo: 130,
+        client: 85,
         pickup: 120,
         delivery: 380,
         courier: 150,
@@ -419,6 +420,26 @@ class JobsListController extends BaseController {
         }
 
         // For non-structured addresses, parse the 'toAddress' field and start from line 2
+        const toLines = (job.toAddress || '').split(',').map(line => line.trim());
+        return toLines.join(', ');
+    }
+
+    getDeliveryAddressWithoutSuburb(job: IDispatchJob): string {
+        // For NZ tenants, exclude addressLine5 (suburb) as it's displayed separately
+        if (job.deliveryAddress) {
+            const addr = job.deliveryAddress;
+            const addressParts = [
+                addr.addressLine5,
+                addr.addressLine2,
+                addr.addressLine3,
+                addr.addressLine4,
+                addr.addressLine8
+            ].filter(line => line && line.trim());
+
+            return addressParts.join(', ');
+        }
+
+        // For non-structured addresses, parse the 'toAddress' field
         const toLines = (job.toAddress || '').split(',').map(line => line.trim());
         return toLines.join(', ');
     }
@@ -787,7 +808,7 @@ class JobsListController extends BaseController {
             // (performCourierSearch already filters for exact matches when numeric code is entered)
             if (job.searchText) {
                 try {
-                    const results = await this.performCourierSearch(job.searchText);
+                    const results = await this.performCourierSearch(job.searchText, job);
                     if (results && results.length > 0) {
                         await this.handleDispatchSelection(results[0], job);
 
@@ -880,11 +901,18 @@ class JobsListController extends BaseController {
         return `Last updated: ${dayjs().format('h:mm A')}`;
     }
 
-    async performCourierSearch(searchText: string): Promise<ISuggestion[]> {
+    async performCourierSearch(searchText: string, job?: IDispatchJob): Promise<ISuggestion[]> {
         if (!searchText || searchText.length < 2) return [];
 
         try {
-            const url = this.COURIER_URL;
+            // Check if this is a DG job
+            const isDgJob = job && job.dgClass !== null && job.dgClass !== undefined && job.dgClass > 0;
+
+            // Add dgOnly parameter if it's a DG job
+            const url = isDgJob
+                ? `${this.COURIER_URL}?dgOnly=true`
+                : this.COURIER_URL;
+
             const results = await this.DispatchData.autocompleteSearch(searchText, url);
 
             // If search text is purely numeric (courier code), filter for exact matches only
@@ -985,10 +1013,16 @@ class JobsListController extends BaseController {
 
     getGridTemplateColumns(): string {
         if (this.isJobSearchPage()) {
-            return `${this.columnWidths.priority}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.isArchived}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
+            if (this.isUsCustomer) {
+                return `${this.columnWidths.priority}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.isArchived}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
+            }
+            return `${this.columnWidths.priority}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.isArchived}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.client}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
         }
 
-        return `${this.columnWidths.priority}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
+        if (this.isUsCustomer) {
+            return `${this.columnWidths.priority}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
+        }
+        return `${this.columnWidths.priority}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.client}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
     }
 
     startResize(event: MouseEvent, column: string): void {
@@ -1111,6 +1145,8 @@ class JobsListController extends BaseController {
                 return job.vehicle?.text || '';
             case 'jobNo':
                 return job.jobNo || '';
+            case 'client':
+                return job.client || '';
             case 'pickup':
                 return this.getPickupAddress(job) || '';
             case 'delivery':

@@ -140,7 +140,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async addFollowupEvent(jobId: number): Promise<any> {
-        const response = await this.$http.post("job/AddFollowupEvent", null, {
+        const response = await this.$http.post("courier/AddFollowupEvent", null, {
             params: {
                 jobId
             },

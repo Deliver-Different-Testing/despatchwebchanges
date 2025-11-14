@@ -19,7 +19,7 @@ public interface ICourierRepository
 
     Task<List<ActiveCouriersViewModel>> ActiveCouriersAsync();
 
-    Task<List<Suggestion>> AllActiveCouriersAsync(string searchTerm);
+    Task<List<Suggestion>> AllActiveCouriersAsync(string searchTerm, bool dgOnly = false);
 
     Task<List<ActiveCouriersViewModel>> AllActiveCouriersAsync();
 

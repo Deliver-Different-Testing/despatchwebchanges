@@ -269,18 +269,20 @@ public class CourierRepository(
         }
     }
 
-    public async Task<List<Suggestion>> AllActiveCouriersAsync(string searchTerm)
+    public async Task<List<Suggestion>> AllActiveCouriersAsync(string searchTerm, bool dgOnly = false)
     {
         var isUsTenant = infoService.IsUsTenant();
+        var now = infoService.GetCurrentTenantTime();
 
         try
         {
             Log.Information(
-                "Starting AllActiveCouriersAsync search with term: {SearchTerm}",
-                searchTerm
+                "Starting AllActiveCouriersAsync search with term: {SearchTerm}, DG Only: {DgOnly}",
+                searchTerm,
+                dgOnly
             );
 
-            var results = await Context.TucCouriers
+            var query = Context.TucCouriers
                 .AsNoTracking()
                 .Where(c =>
                     c.Active == true
@@ -288,7 +290,19 @@ public class CourierRepository(
                         c.Code + " " + c.UccrName + " " + c.UccrSurname,
                         $"%{searchTerm}%"
                     )
-                )
+                );
+
+            // Filter for DG-certified couriers if dgOnly is true
+            if (dgOnly)
+            {
+                query = query.Where(c =>
+                    c.UccrDangerousGoods == 1
+                    && c.DglicenseExpiry != null
+                    && c.DglicenseExpiry >= now.AddDays(-1)
+                );
+            }
+
+            var results = await query
                 .OrderBy(c => c.Code)
                 .Select(c => new Suggestion
                 {

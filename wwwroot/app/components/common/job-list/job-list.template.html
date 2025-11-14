@@ -1,5 +1,5 @@
 ﻿<div class="job-list-component job-list-{{::ctrl.jobListType}}"
-     ng-class="ctrl.getDensityClass()">
+     ng-class="[ctrl.getDensityClass(), {'nz-tenant': !ctrl.isUsCustomer}]">
 
     <!-- Stats Header -->
     <div class="stats-header">
@@ -144,6 +144,17 @@
                                 ng-mousedown="ctrl.startResize($event, 'jobNo'); $event.stopPropagation()"></button>
                     </div>
 
+                    <div class="header-cell" ng-class="ctrl.getSortClass('client')" ng-click="ctrl.sortBy('client')" ng-if="!ctrl.isUsCustomer">
+                        <div class="header-content">
+                            <span class="header-text">CLIENT</span>
+                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">
+                                {{ctrl.getSortIcon('client')}}
+                            </md-icon>
+                        </div>
+                        <button class="resize-handle"
+                                ng-mousedown="ctrl.startResize($event, 'client'); $event.stopPropagation()"></button>
+                    </div>
+
                     <div class="header-cell" ng-class="ctrl.getSortClass('pickup')" ng-click="ctrl.sortBy('pickup')">
                         <div class="header-content">
                             <span class="header-text">PICKUP</span>
@@ -242,8 +253,13 @@
 
                     <!-- Time Column -->
                     <div class="job-cell time-cell">
-                        <div class="date">{{ctrl.formatDeliveryTime(job)}} ({{::ctrl.timeZone | timezoneShort}})</div>
-                        <div class="time">{{ctrl.formatDeliveryDate(job)}}</div>
+                        <!-- NZ tenant: Single line format -->
+                        <div ng-if="!ctrl.isUsCustomer" class="date">{{ctrl.formatDeliveryDate(job)}} {{ctrl.formatDeliveryTime(job)}}</div>
+                        <!-- US tenant: Original two-line format -->
+                        <div ng-if="ctrl.isUsCustomer">
+                            <div class="date">{{ctrl.formatDeliveryTime(job)}} ({{::ctrl.timeZone | timezoneShort}})</div>
+                            <div class="time">{{ctrl.formatDeliveryDate(job)}}</div>
+                        </div>
                     </div>
 
                     <!-- IS ARCHIVED Column -->
@@ -264,7 +280,12 @@
                     <!-- Job ID Column -->
                     <div class="job-cell job-id-cell">
                         <div class="job-id">{{job.jobNo}}</div>
-                        <div class="client-name">{{job.clientName}}</div>
+                        <div class="client-name" ng-if="ctrl.isUsCustomer">{{job.clientName}}</div>
+                    </div>
+
+                    <!-- Client Column (NZ tenants only) -->
+                    <div class="job-cell client-cell" ng-if="!ctrl.isUsCustomer">
+                        <span class="client-code">{{job.client || '-'}}</span>
                     </div>
 
                     <!-- Pickup Column -->
@@ -275,8 +296,15 @@
 
                     <!-- Delivery Column -->
                     <div class="job-cell route-cell delivery-cell">
-                        <div class="address">{{ctrl.getDeliveryAddress(job)}}</div>
-                        <div class="city-state">{{job.deliveryAddress && job.deliveryAddress.addressLine1 || ''}}</div>
+                        <!-- NZ tenant: Just address without suburb -->
+                        <div ng-if="!ctrl.isUsCustomer" class="address">
+                            {{ctrl.getDeliveryAddressWithoutSuburb(job)}}
+                        </div>
+                        <!-- US tenant: Original format with city-state -->
+                        <div ng-if="ctrl.isUsCustomer">
+                            <div class="address">{{ctrl.getDeliveryAddress(job)}}</div>
+                            <div class="city-state">{{job.deliveryAddress && job.deliveryAddress.addressLine1 || ''}}</div>
+                        </div>
                     </div>
 
                     <!-- Courier Column -->
@@ -329,7 +357,7 @@
                                     md-selected-item="job.assignedCourier"
                                     md-search-text="job.searchText"
                                     md-selected-item-change="ctrl.handleDispatchSelection(item, job)"
-                                    md-items="item in ctrl.performCourierSearch(job.searchText)"
+                                    md-items="item in ctrl.performCourierSearch(job.searchText, job)"
                                     md-item-text="item.text"
                                     md-min-length="1"
                                     placeholder="Search Courier..."
@@ -391,8 +419,13 @@
 
                     <!-- Time Column -->
                     <div class="job-cell time-cell">
-                        <div class="date">{{ctrl.formatDeliveryDate(childJob)}}</div>
-                        <div class="time">{{ctrl.formatDeliveryTime(childJob)}}</div>
+                        <!-- NZ tenant: Single line format -->
+                        <div ng-if="!ctrl.isUsCustomer" class="date">{{ctrl.formatDeliveryDate(childJob)}} {{ctrl.formatDeliveryTime(childJob)}}</div>
+                        <!-- US tenant: Original two-line format -->
+                        <div ng-if="ctrl.isUsCustomer">
+                            <div class="date">{{ctrl.formatDeliveryTime(childJob)}} ({{::ctrl.timeZone | timezoneShort}})</div>
+                            <div class="time">{{ctrl.formatDeliveryDate(childJob)}}</div>
+                        </div>
                     </div>
 
                     <div class="job-cell isarchived-cell" ng-if="::ctrl.isJobSearchPage()">
@@ -412,7 +445,12 @@
                     <!-- Job ID Column -->
                     <div class="job-cell job-id-cell">
                         <div class="job-id">{{::childJob.jobNo}}</div>
-                        <div class="client-name">{{::childJob.client}}</div>
+                        <div class="client-name" ng-if="ctrl.isUsCustomer">{{::childJob.client}}</div>
+                    </div>
+
+                    <!-- Client Column (NZ tenants only) -->
+                    <div class="job-cell client-cell" ng-if="!ctrl.isUsCustomer">
+                        <span class="client-code">{{::childJob.client || '-'}}</span>
                     </div>
 
                     <!-- Pickup Column -->
@@ -423,8 +461,15 @@
 
                     <!-- Delivery Column -->
                     <div class="job-cell route-cell delivery-cell">
-                        <div class="address">{{ctrl.getDeliveryAddress(childJob)}}</div>
-                        <div class="city-state">{{childJob.deliveryAddress && childJob.deliveryAddress.addressLine1 || ''}}</div>
+                        <!-- NZ tenant: Just address without suburb -->
+                        <div ng-if="!ctrl.isUsCustomer" class="address">
+                            {{ctrl.getDeliveryAddressWithoutSuburb(childJob)}}
+                        </div>
+                        <!-- US tenant: Original format with city-state -->
+                        <div ng-if="ctrl.isUsCustomer">
+                            <div class="address">{{ctrl.getDeliveryAddress(childJob)}}</div>
+                            <div class="city-state">{{childJob.deliveryAddress && childJob.deliveryAddress.addressLine1 || ''}}</div>
+                        </div>
                     </div>
 
                     <!-- Courier Column -->
@@ -458,7 +503,7 @@
                                     md-selected-item="childJob.assignedCourier"
                                     md-search-text="childJob.searchText"
                                     md-selected-item-change="ctrl.handleDispatchSelection(item, childJob)"
-                                    md-items="item in ctrl.performCourierSearch(childJob.searchText)"
+                                    md-items="item in ctrl.performCourierSearch(childJob.searchText, childJob)"
                                     md-item-text="item.text"
                                     md-min-length="1"
                                     placeholder="Search Courier..."

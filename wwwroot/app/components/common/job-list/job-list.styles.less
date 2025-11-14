@@ -1314,4 +1314,24 @@
     color: #666;
     font-size: 14px;
   }
+
+  // NZ Tenant only: Remove column layout for cells that now have single-line content
+  &.nz-tenant {
+    .job-row {
+      padding: 6px 0 !important;
+      min-height: 28px !important;
+
+      .job-cell {
+        min-height: 28px !important;
+      }
+
+      .time-cell,
+      .job-id-cell,
+      .route-cell.pickup-cell,
+      .route-cell.delivery-cell {
+        flex-direction: row !important;
+        align-items: center !important;
+      }
+    }
+  }
 }

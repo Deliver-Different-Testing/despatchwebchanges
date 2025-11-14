@@ -255,16 +255,22 @@ class DispatchExecutorService implements angular.IServiceProvider {
         }
 
         // Courier is offline - ask for confirmation
-        const shouldDispatchToOfflineCourier = await this.$mdDialog.show(
-            this.$mdDialog.confirm()
-                .title("Courier Offline")
-                .textContent("Dispatch anyway?")
-                .ok("Yes")
-                .cancel("No")
-        );
+        try {
+            const shouldDispatchToOfflineCourier = await this.$mdDialog.show(
+                this.$mdDialog.confirm()
+                    .title("Courier Offline")
+                    .textContent("Dispatch anyway?")
+                    .ok("Yes")
+                    .cancel("No")
+            );
 
-        if (shouldDispatchToOfflineCourier) {
-            return findById(this.allCouriers, courierNumber);
+            if (shouldDispatchToOfflineCourier) {
+                return findById(this.allCouriers, courierNumber);
+            }
+        } catch (error) {
+            // User clicked "No" or cancelled - dialog rejection is expected
+            console.log("Courier offline dispatch cancelled by user");
+            return null;
         }
 
         return null;
