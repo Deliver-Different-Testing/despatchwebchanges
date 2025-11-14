@@ -91,11 +91,11 @@ public class CourierController(
         }
     }
 
-    public async Task<IActionResult> AllActiveSearch(string searchTerm)
+    public async Task<IActionResult> AllActiveSearch(string searchTerm, bool dgOnly = false)
     {
         try
         {
-            var result = await courierRepository.AllActiveCouriersAsync(searchTerm);
+            var result = await courierRepository.AllActiveCouriersAsync(searchTerm, dgOnly);
             return Json(result);
         }
         catch (Exception ex)
