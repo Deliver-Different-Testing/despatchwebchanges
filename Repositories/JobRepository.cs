@@ -464,10 +464,29 @@ public partial class JobRepository(
                         Longitude = j.DeliveryLongitude
                     },
                     Courier = co != null ? co.Code : null,
+                    CourierData = co != null
+                        ? new CourierData
+                        {
+                            Courier = co.Code,
+                            CourierNumber = co.Code,
+                            CourierId = co.UccrId,
+                            CourierMobile = co.UccrMobile,
+                            CourierName = co.UccrName + " " + co.UccrSurname
+                        }
+                        : null,
+                    AssignedCourier = co != null
+                        ? new Suggestion
+                        {
+                            Id = co.UccrId,
+                            Text = co.UccrName + " " + co.UccrSurname
+                        }
+                        : null,
                     StatusId = j.Status,
                     Status = status != null ? status.UcjsCode : null,
+                    StatusName = status != null ? status.UcjsName : null,
                     Speed = speed != null ? speed.ShortName : null,
                     SpeedId = j.Speed,
+                    JobTypeMins = speed != null ? speed.Minutes : null,
                     PreBook = false,
                     PickUpLatitude = j.PickUpLatitude,
                     PickUpLongitude = j.PickUpLongitude,
@@ -510,7 +529,14 @@ public partial class JobRepository(
                 .Take(pageSize)
                 .ToList();
 
-            foreach (var job in jobSearchResults) job.AngularId = Guid.NewGuid();
+            // Calculate remaining time for each job
+            var (economySpeedId, ecoDeliveryTime) = await GetEconomySpeedAndDeliveryTimeAsync();
+            var now = _infoService.GetCurrentTenantTime();
+            foreach (var job in jobSearchResults)
+            {
+                job.AngularId = Guid.NewGuid();
+                job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
+            }
 
             return new JobSearchResult
             {

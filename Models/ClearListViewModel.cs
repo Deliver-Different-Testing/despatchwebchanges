@@ -36,6 +36,7 @@ public class ClearListSection
 public class CourierData
 {
     public string Courier { get; set; }
+    public string CourierNumber { get; set; }
     public string Location { get; set; }
     public string Pu { get; set; }
     public string Del { get; set; }

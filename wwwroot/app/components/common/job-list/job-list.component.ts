@@ -79,7 +79,8 @@ class JobsListController extends BaseController {
     // Column resizing
     private defaultColumnWidths = {
         priority: 50,
-        time: 120,
+        date: 80,
+        time: 80,
         speed: 80,
         isArchived: 80,
         vehicle: 100,
@@ -1014,15 +1015,15 @@ class JobsListController extends BaseController {
     getGridTemplateColumns(): string {
         if (this.isJobSearchPage()) {
             if (this.isUsCustomer) {
-                return `${this.columnWidths.priority}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.isArchived}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
+                return `${this.columnWidths.priority}px ${this.columnWidths.date}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.isArchived}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
             }
-            return `${this.columnWidths.priority}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.isArchived}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.client}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
+            return `${this.columnWidths.priority}px ${this.columnWidths.date}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.isArchived}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.client}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
         }
 
         if (this.isUsCustomer) {
-            return `${this.columnWidths.priority}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
+            return `${this.columnWidths.priority}px ${this.columnWidths.date}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
         }
-        return `${this.columnWidths.priority}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.client}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
+        return `${this.columnWidths.priority}px ${this.columnWidths.date}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.client}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
     }
 
     startResize(event: MouseEvent, column: string): void {
