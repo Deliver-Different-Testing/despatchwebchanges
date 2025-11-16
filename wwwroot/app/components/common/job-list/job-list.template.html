@@ -88,6 +88,17 @@
                                 ng-mousedown="ctrl.startResize($event, 'priority'); $event.stopPropagation()"></button>
                     </div>
 
+                    <div class="header-cell" ng-class="ctrl.getSortClass('date')" ng-click="ctrl.sortBy('date')">
+                        <div class="header-content">
+                            <span class="header-text">DATE</span>
+                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">
+                                {{ctrl.getSortIcon('date')}}
+                            </md-icon>
+                        </div>
+                        <button class="resize-handle"
+                                ng-mousedown="ctrl.startResize($event, 'date'); $event.stopPropagation()"></button>
+                    </div>
+
                     <div class="header-cell" ng-class="ctrl.getSortClass('time')" ng-click="ctrl.sortBy('time')">
                         <div class="header-content">
                             <span class="header-text">TIME</span>
@@ -251,15 +262,15 @@
                         </md-icon>
                     </div>
 
+                    <!-- Date Column -->
+                    <div class="job-cell date-cell">
+                        <div class="date">{{ctrl.formatDeliveryDate(job)}}</div>
+                    </div>
+
                     <!-- Time Column -->
                     <div class="job-cell time-cell">
-                        <!-- NZ tenant: Single line format -->
-                        <div ng-if="!ctrl.isUsCustomer" class="date">{{ctrl.formatDeliveryDate(job)}} {{ctrl.formatDeliveryTime(job)}}</div>
-                        <!-- US tenant: Original two-line format -->
-                        <div ng-if="ctrl.isUsCustomer">
-                            <div class="date">{{ctrl.formatDeliveryTime(job)}} ({{::ctrl.timeZone | timezoneShort}})</div>
-                            <div class="time">{{ctrl.formatDeliveryDate(job)}}</div>
-                        </div>
+                        <div ng-if="!ctrl.isUsCustomer" class="time">{{ctrl.formatDeliveryTime(job)}}</div>
+                        <div ng-if="ctrl.isUsCustomer" class="time">{{ctrl.formatDeliveryTime(job)}} ({{::ctrl.timeZone | timezoneShort}})</div>
                     </div>
 
                     <!-- IS ARCHIVED Column -->
@@ -333,8 +344,13 @@
                                 {{ctrl.getCourierInitials(job)}}
                             </div>
                             <div class="courier-info">
-                                <div class="courier-name">{{ctrl.getCourierName(job)}}</div>
-                                <div class="courier-id">{{ctrl.getCourierCode(job)}}</div>
+                                <!-- NZ tenant: Show courier code and name on one line -->
+                                <div ng-if="!ctrl.isUsCustomer" class="courier-name">{{ctrl.getCourierCode(job)}} - {{ctrl.getCourierName(job)}}</div>
+                                <!-- US tenant: Show courier name and code on separate lines -->
+                                <div ng-if="ctrl.isUsCustomer">
+                                    <div class="courier-name">{{ctrl.getCourierName(job)}}</div>
+                                    <div class="courier-id">{{ctrl.getCourierCode(job)}}</div>
+                                </div>
                             </div>
                         </div>
 
@@ -417,15 +433,15 @@
                         <!-- Nothing is needed here -->
                     </div>
 
+                    <!-- Date Column -->
+                    <div class="job-cell date-cell">
+                        <div class="date">{{ctrl.formatDeliveryDate(childJob)}}</div>
+                    </div>
+
                     <!-- Time Column -->
                     <div class="job-cell time-cell">
-                        <!-- NZ tenant: Single line format -->
-                        <div ng-if="!ctrl.isUsCustomer" class="date">{{ctrl.formatDeliveryDate(childJob)}} {{ctrl.formatDeliveryTime(childJob)}}</div>
-                        <!-- US tenant: Original two-line format -->
-                        <div ng-if="ctrl.isUsCustomer">
-                            <div class="date">{{ctrl.formatDeliveryTime(childJob)}} ({{::ctrl.timeZone | timezoneShort}})</div>
-                            <div class="time">{{ctrl.formatDeliveryDate(childJob)}}</div>
-                        </div>
+                        <div ng-if="!ctrl.isUsCustomer" class="time">{{ctrl.formatDeliveryTime(childJob)}}</div>
+                        <div ng-if="ctrl.isUsCustomer" class="time">{{ctrl.formatDeliveryTime(childJob)}} ({{::ctrl.timeZone | timezoneShort}})</div>
                     </div>
 
                     <div class="job-cell isarchived-cell" ng-if="::ctrl.isJobSearchPage()">
@@ -480,8 +496,13 @@
                                 {{ctrl.getCourierInitials(childJob)}}
                             </div>
                             <div class="courier-info">
-                                <div class="courier-name">{{ctrl.getCourierName(childJob)}}</div>
-                                <div class="courier-id">{{ctrl.getCourierCode(childJob)}}</div>
+                                <!-- NZ tenant: Show courier code and name on one line -->
+                                <div ng-if="!ctrl.isUsCustomer" class="courier-name">{{ctrl.getCourierCode(childJob)}} - {{ctrl.getCourierName(childJob)}}</div>
+                                <!-- US tenant: Show courier name and code on separate lines -->
+                                <div ng-if="ctrl.isUsCustomer">
+                                    <div class="courier-name">{{ctrl.getCourierName(childJob)}}</div>
+                                    <div class="courier-id">{{ctrl.getCourierCode(childJob)}}</div>
+                                </div>
                             </div>
                         </div>
 

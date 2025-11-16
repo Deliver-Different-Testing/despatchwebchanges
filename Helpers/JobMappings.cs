@@ -44,6 +44,7 @@ public static class JobMappings
                     ? new CourierData
                     {
                         Courier = j.UcjbCourier.Code,
+                        CourierNumber = j.UcjbCourier.Code,
                         CourierId = j.UcjbCourierId,
                         CourierMobile = j.UcjbCourier.UccrMobile,
                         CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
@@ -208,6 +209,7 @@ public static class JobMappings
             ? new CourierData
             {
                 Courier = j.UcjbCourier.Code,
+                CourierNumber = j.UcjbCourier.Code,
                 CourierId = j.UcjbCourierId,
                 CourierMobile = j.UcjbCourier.UccrMobile,
                 CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
@@ -436,6 +438,7 @@ public static class JobMappings
                 ? new CourierData
                 {
                     Courier = j.Courier.Code,
+                    CourierNumber = j.Courier.Code,
                     CourierId = j.Courier.UccrId,
                     CourierMobile = j.Courier.UccrMobile,
                     CourierName = j.Courier.UccrName + " " + j.Courier.UccrSurname
@@ -787,7 +790,7 @@ public static class JobMappings
 
             Courier = null,
             CourierData = j.Courier != null
-                ? new CourierData { CourierId = j.Courier.UccrId, CourierName = j.Courier.UccrName }
+                ? new CourierData { CourierId = j.Courier.UccrId, CourierNumber = j.Courier.Code, CourierName = j.Courier.UccrName }
                 : null,
             AssignedCourier = j.Courier != null
                 ? new Suggestion { Id = j.Courier.UccrId, Text = j.Courier.UccrName }

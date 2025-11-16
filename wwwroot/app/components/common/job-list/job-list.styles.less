@@ -340,6 +340,29 @@
             &:last-child {
               border-right: none;
             }
+
+            &.isarchived-cell {
+              justify-content: center;
+              align-items: center;
+              min-height: auto;
+              padding: 0;
+
+              md-checkbox {
+                margin: 0 !important;
+                padding: 0 !important;
+                height: auto !important;
+                min-height: auto !important;
+
+                .md-container {
+                  margin: 0 !important;
+                  top: 50% !important;
+                }
+
+                .md-icon {
+                  top: 0 !important;
+                }
+              }
+            }
           }
 
           &:hover {
@@ -590,19 +613,23 @@
             }
           }
 
-          .time-cell {
+          .date-cell {
             font-size: 12px;
             line-height: 1.3;
-            flex-direction: column;
-            align-items: flex-start;
 
             .date {
               font-weight: 600;
               color: #1e293b;
             }
+          }
+
+          .time-cell {
+            font-size: 12px;
+            line-height: 1.3;
 
             .time {
-              color: #64748b;
+              font-weight: 600;
+              color: #1e293b;
             }
 
             .overdue {
@@ -960,6 +987,10 @@
               font-size: 11px;
             }
 
+            .date-cell {
+              font-size: 11px;
+            }
+
             .time-cell {
               font-size: 11px;
 
@@ -1119,6 +1150,10 @@
                   font-size: 8px;
                 }
               }
+            }
+
+            .date-cell {
+              font-size: 10px;
             }
 
             .time-cell {
@@ -1318,13 +1353,15 @@
   // NZ Tenant only: Remove column layout for cells that now have single-line content
   &.nz-tenant {
     .job-row {
-      padding: 6px 0 !important;
+      padding: 2px 0 !important;
       min-height: 28px !important;
+      border-bottom: 1px solid #b5b5b5 !important;
 
       .job-cell {
         min-height: 28px !important;
       }
 
+      .date-cell,
       .time-cell,
       .job-id-cell,
       .route-cell.pickup-cell,
