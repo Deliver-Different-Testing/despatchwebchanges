@@ -1124,6 +1124,9 @@ class JobsListController extends BaseController {
 
     private getSortValue(job: IDispatchJob, column: string): any {
         switch (column) {
+            case 'date':
+                // Sort by the date portion only
+                return job.booked ? dayjs(job.booked).startOf('day').valueOf() : 0;
             case 'time':
                 if (job.booked && job.time) {
                     const bookedDate = dayjs(job.booked);
@@ -1166,6 +1169,8 @@ class JobsListController extends BaseController {
                 return remainValue;
             case 'status':
                 return job.status || job.statusName || '';
+            case 'isArchived':
+                return job.isArchived ? 1 : 0;
             case 'priority':
                 // Priority sort: urgent first, then by delivery time
                 if (this.isUrgent(job)) return 0;

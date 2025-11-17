@@ -1182,8 +1182,32 @@ class JobSearchController extends BaseController {
         await this.refreshAllData();
     }
 
-    courierQuerySearch(searchText: string) {
-        return this.jobSearchService.getActiveCouriersSearch(searchText);
+    async courierQuerySearch(searchText: string) {
+        if (!searchText || searchText.length < 2) return [];
+
+        try {
+            const results = await this.jobSearchService.getActiveCouriersSearch(searchText);
+
+            // If search text is purely numeric (courier code), filter for exact matches only
+            const trimmedSearch = searchText.trim();
+            if (/^\d+$/.test(trimmedSearch)) {
+                // Filter results to only show exact courier code matches
+                const exactMatches = results.filter((r: any) => {
+                    if (!r.text) return false;
+                    // Extract the courier code (before space or parenthesis)
+                    const courierCode = r.text.split(/[\s(]/)[0];
+                    return courierCode === trimmedSearch;
+                });
+
+                // Return exact matches if found, otherwise return all results
+                return exactMatches.length > 0 ? exactMatches : results;
+            }
+
+            return results;
+        } catch (error) {
+            console.error('Error in courierQuerySearch:', error);
+            return [];
+        }
     }
 
     async selectedCourierChange(item: ISuggestion) {

@@ -635,6 +635,9 @@ public partial class JobRepository(
         // Update job status
         await UpdateJobStatusesAsync(data, dbData, dbDataArchive);
 
+        // Update job couriers
+        await UpdateJobCouriersAsync(data, dbData, dbDataArchive);
+
         // Log counts for diagnostics
         Log.Information("Processing {DbDataCount} active jobs and {Count} archived jobs", dbData.Count,
             dbDataArchive.Count);
@@ -853,6 +856,52 @@ public partial class JobRepository(
         }
     }
 
+    private async Task UpdateJobCouriersAsync(List<JobManualPriceModel> data, List<TucJob> dbData,
+        List<TucJobArchive> dbDataArchive)
+    {
+        var courierCodes = data.Where(d => !string.IsNullOrWhiteSpace(d.CourierCode))
+            .Select(d => d.CourierCode.Trim())
+            .Distinct()
+            .ToList();
+
+        if (courierCodes.Count == 0)
+        {
+            Log.Information("No courier updates requested");
+            return;
+        }
+
+        var courierLookup = await Context.TucCouriers
+            .AsNoTracking()
+            .Where(c => courierCodes.Contains(c.Code))
+            .ToDictionaryAsync(c => c.Code, c => c.UccrId);
+
+        // Update couriers for each job
+        foreach (var d in data.Where(d => !string.IsNullOrWhiteSpace(d.CourierCode)))
+        {
+            var match = (dynamic)dbData.FirstOrDefault(j => j.UcjbId == d.Id)
+                        ?? dbDataArchive.FirstOrDefault(j => j.UcjbId == d.Id);
+
+            if (match == null)
+            {
+                Log.Warning("Job with ID {DId} not found for courier update", d.Id);
+                continue;
+            }
+
+            var trimmedCode = d.CourierCode.Trim();
+            if (courierLookup.TryGetValue(trimmedCode, out var courierId))
+            {
+                match.UcjbCourierId = courierId;
+                Log.Information("Job {DId} courier updated to {CourierCode} (ID: {CourierId})",
+                    d.Id, trimmedCode, courierId);
+            }
+            else
+            {
+                Log.Warning("Courier code '{CourierCode}' not found in database for job {DId}",
+                    trimmedCode, d.Id);
+            }
+        }
+    }
+
     private async Task UpdateJobStatusesAsync(List<JobManualPriceModel> data, List<TucJob> dbData,
         List<TucJobArchive> dbDataArchive)
     {
@@ -985,6 +1034,8 @@ public partial class JobRepository(
             from invoice in invoiceJoin.DefaultIfEmpty()
             join lic in Context.TucClientContacts on j.LoggedInContactId equals lic.UcctId into licJoin
             from lic in licJoin.DefaultIfEmpty()
+            join co in Context.TucCouriers on j.CourierId equals co.UccrId into courierJoin
+            from courier in courierJoin.DefaultIfEmpty()
             where ids.Contains(j.JobId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value))
             orderby j.Number
             select new JobDownloadModel
@@ -1033,7 +1084,8 @@ public partial class JobRepository(
                 InvoiceDate = invoice.Created,
                 IsArchived = j.Archived ?? false,
                 LoggedInContact = lic.UcctFirstname + Space + lic.UcctSurname,
-                RawBaseAmount = j.RawBaseAmount
+                RawBaseAmount = j.RawBaseAmount,
+                CourierCode = courier.Code
             };
 
         var result = await query.ToListAsync();
