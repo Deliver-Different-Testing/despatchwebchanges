@@ -3039,19 +3039,29 @@ public partial class JobRepository(
 
         var newJobIds = jobIds.Except(existingJobIds).ToList();
 
-        // Bulk insert new records if any
+        // Filter out job IDs that don't exist in TucJobs (e.g., archived jobs from TblJobs)
+        // to prevent FK constraint violations
         if (newJobIds.Count != 0)
         {
-            var newTrackers = newJobIds.Select(jobId => new TucJobReadTracker
-            {
-                JobId = jobId,
-                HasBeenRead = true,
-                ReadTimestamp = currentTenantTime,
-                ReadByStaffId = staffId
-            });
+            var validJobIds = await Context.TucJobs
+                .Where(j => newJobIds.Contains(j.UcjbId))
+                .Select(j => j.UcjbId)
+                .ToListAsync();
 
-            Context.AddRange(newTrackers);
-            await Context.SaveChangesAsync();
+            // Only insert trackers for jobs that actually exist in TucJobs
+            if (validJobIds.Count != 0)
+            {
+                var newTrackers = validJobIds.Select(jobId => new TucJobReadTracker
+                {
+                    JobId = jobId,
+                    HasBeenRead = true,
+                    ReadTimestamp = currentTenantTime,
+                    ReadByStaffId = staffId
+                });
+
+                Context.AddRange(newTrackers);
+                await Context.SaveChangesAsync();
+            }
         }
     }
 
@@ -3080,11 +3090,152 @@ public partial class JobRepository(
     {
         var isUsCustomer = _infoService.IsUsTenant();
 
-        return await Context.TucJobs
+        // First try to get from active jobs (TucJobs)
+        var activeJob = await Context.TucJobs
             .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(JobMappings.JobDispatchMapping(isUsCustomer))
             .FirstOrDefaultAsync();
+
+        if (activeJob != null)
+        {
+            // TucJob doesn't have an Archived field, so check tblJobs view for the actual archived status
+            var archivedStatus = await Context.TblJobs
+                .AsNoTracking()
+                .Where(j => j.JobId == jobId)
+                .Select(j => j.Archived ?? false)
+                .FirstOrDefaultAsync();
+
+            activeJob.IsArchived = archivedStatus;
+            return activeJob;
+        }
+
+        // If not found in active jobs, try archived jobs (TblJobs)
+        var archivedJobQuery =
+            from j in Context.TblJobs
+            join c in Context.TucCouriers on j.CourierId equals c.UccrId into courierJoin
+            from co in courierJoin.DefaultIfEmpty()
+            join y in Context.TucSuburbs on j.FromSuburbId equals y.UcsuId into fromJoin
+            from fs in fromJoin.DefaultIfEmpty()
+            join z in Context.TucSuburbs on j.ToSuburbId equals z.UcsuId into toJoin
+            from ts in toJoin.DefaultIfEmpty()
+            join t in Context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
+            from speed in speedJoin.DefaultIfEmpty()
+            join s in Context.TucJobStatuses on j.Status equals s.UcjsId into statusJoin
+            from status in statusJoin.DefaultIfEmpty()
+            join rt in Context.TucJobReadTrackers on j.JobId equals rt.JobId into rtJoin
+            from readTracker in rtJoin.DefaultIfEmpty()
+            join vs in Context.VehicleSizes on j.Size equals vs.VehicleSizeId into vsJoin
+            from vehicleSize in vsJoin.DefaultIfEmpty()
+            join cl in Context.TucClients on j.ClientId equals cl.UcclId into clientJoin
+            from client in clientJoin.DefaultIfEmpty()
+            where j.JobId == jobId
+            select new DispatchJobViewModel
+            {
+                Id = j.JobId,
+                HasBeenRead = readTracker != null && readTracker.HasBeenRead,
+                IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.JobId,
+                ParentId = j.ParentId,
+
+                IsFlightJob = speed != null
+                              && speed.GroupingId == (isUsCustomer
+                                  ? (int)SpeedGrouping.Flight
+                                  : (int)UrgentSpeedGrouping.Flight),
+                IsAgentJob = speed != null
+                             && speed.GroupingId == (isUsCustomer
+                                 ? (int)SpeedGrouping.Agent
+                                 : (int)UrgentSpeedGrouping.NationwideAgent),
+
+                Vehicle = vehicleSize != null
+                    ? new Suggestion
+                    {
+                        Id = vehicleSize.VehicleSizeId,
+                        Text = vehicleSize.VehicleName
+                    }
+                    : null,
+                Time = j.Time,
+                ClientId = j.ClientId,
+                Client = j.ClientCode,
+                ClientName = client != null ? client.UcclName : string.Empty,
+
+                From = fs != null ? fs.UcsuName : null,
+                ToSuburbId = j.ToSuburbId,
+                JobNo = j.Number,
+                ToAddress = j.ToAddress,
+                PickupAddress = new AddressViewModel
+                {
+                    AddressLine1 = j.PickupAddressLine1,
+                    AddressLine2 = j.PickupAddressLine2,
+                    AddressLine3 = j.PickupAddressLine3,
+                    AddressLine4 = j.PickupAddressLine4,
+                    AddressLine5 = j.PickupAddressLine5,
+                    AddressLine6 = j.PickupAddressLine6,
+                    AddressLine7 = j.PickupAddressLine7,
+                    AddressLine8 = j.PickupAddressLine8,
+                    Latitude = j.PickUpLatitude,
+                    Longitude = j.PickUpLongitude
+                },
+                DeliveryAddress = new AddressViewModel
+                {
+                    AddressLine1 = j.DeliveryAddressLine1,
+                    AddressLine2 = j.DeliveryAddressLine2,
+                    AddressLine3 = j.DeliveryAddressLine3,
+                    AddressLine4 = j.DeliveryAddressLine4,
+                    AddressLine5 = j.DeliveryAddressLine5,
+                    AddressLine6 = j.DeliveryAddressLine6,
+                    AddressLine7 = j.DeliveryAddressLine7,
+                    AddressLine8 = j.DeliveryAddressLine8,
+                    Latitude = j.DeliveryLatitude,
+                    Longitude = j.DeliveryLongitude
+                },
+                Courier = co != null ? co.Code : null,
+                CourierData = co != null
+                    ? new CourierData
+                    {
+                        Courier = co.Code,
+                        CourierNumber = co.Code,
+                        CourierId = co.UccrId,
+                        CourierMobile = co.UccrMobile,
+                        CourierName = co.UccrName + " " + co.UccrSurname
+                    }
+                    : null,
+                AssignedCourier = co != null
+                    ? new Suggestion
+                    {
+                        Id = co.UccrId,
+                        Text = co.UccrName + " " + co.UccrSurname
+                    }
+                    : null,
+                StatusId = j.Status,
+                Status = status != null ? status.UcjsCode : null,
+                StatusName = status != null ? status.UcjsName : null,
+                Speed = speed != null ? speed.ShortName : null,
+                SpeedId = j.Speed,
+                JobTypeMins = speed != null ? speed.Minutes : null,
+                PreBook = false,
+                PickUpLatitude = j.PickUpLatitude,
+                PickUpLongitude = j.PickUpLongitude,
+                DeliveryLatitude = j.DeliveryLatitude,
+                DeliveryLongitude = j.DeliveryLongitude,
+                Booked = j.Date.HasValue
+                    ? new DateTime(
+                        j.Date.Value.Year,
+                        j.Date.Value.Month,
+                        j.Date.Value.Day,
+                        j.Time.HasValue ? j.Time.Value.Hour : 0,
+                        j.Time.HasValue ? j.Time.Value.Minute : 0,
+                        j.Time.HasValue ? j.Time.Value.Second : 0
+                    )
+                    : null,
+                IsArchived = j.Archived ?? false, // Use the actual Archived field from TblJobs view
+                Locked = j.Locked.HasValue ? j.Locked != 0 : null,
+                ToAirportId = j.ToAirportId,
+                FromAirportId = j.FromAirportId,
+                PickupContact = j.PickupFromContact,
+                DeliveryContact = j.DeliverToContact
+            };
+
+        return await archivedJobQuery.AsNoTracking().FirstOrDefaultAsync();
     }
 
     public async Task AddNewTucNoteTypeAsync(NoteTypeViewModel noteType)

@@ -120,6 +120,7 @@ public static class JobMappings
 
             Done = j.UcjbJobDone,
             PreBook = true,
+            IsArchived = false,
 
             PickupFrom = j.UcjbPickUpFrom,
             RootParentId = j.RootParentId,
