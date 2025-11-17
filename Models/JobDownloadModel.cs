@@ -46,5 +46,6 @@ public class JobDownloadModel
     public DateTime? InvoiceDate { get; set; }
     public bool IsArchived { get; set; }
     public string LoggedInContact { get; set; }
-    public decimal? RawBaseAmount { get; set; } 
+    public decimal? RawBaseAmount { get; set; }
+    public string CourierCode { get; set; }
 }

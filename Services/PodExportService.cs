@@ -67,6 +67,7 @@ public class PodExportService(
         ["Id"] = x => x.Id?.ToString(),
         ["JobNumber"] = x => FormatField(x.JobNumber),
         ["CustomerName"] = x => x.CustomerName?.ToString(),
+        ["CourierCode"] = x => FormatField(x.CourierCode),
         ["BookDate"] = x => ((DateTime?)x.BookDate)?.ToString("yyyy-MM-dd HH:mm:ss"),
         ["PickedUpDate"] = x => x.PickedUpDate?.ToString(),
         ["DeliveredDate"] = x => x.DeliveredDate?.ToString(),
