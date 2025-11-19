@@ -143,7 +143,8 @@ public class PodExportService(
         {
             var putRequest = new PutObjectRequest
             {
-                BucketName = Environment.GetEnvironmentVariable("S3Bucket"),
+                //BucketName = Environment.GetEnvironmentVariable("S3Bucket"),
+                BucketName = Environment.GetEnvironmentVariable("S3BucketMars"),
                 Key = key,
                 ContentType = "text/csv",
                 InputStream = ms
