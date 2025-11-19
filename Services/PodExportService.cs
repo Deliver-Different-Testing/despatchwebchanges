@@ -38,7 +38,7 @@ public class PodExportService(
 
         // Upload to S3
         var filename = $"Jobs {currentDate:yyyyMMddHHmmssfff}.csv";
-        //await UploadToS3Async(csvBytes, currentDate);
+        await UploadToS3Async(csvBytes, currentDate);
 
         return new JobsReportResult
         {
