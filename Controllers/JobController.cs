@@ -529,8 +529,8 @@ public class JobController(
             var putRequest = new PutObjectRequest
             {
                 BucketName = Environment
-                    //.GetEnvironmentVariable("S3Bucket")
-                    .GetEnvironmentVariable("S3BucketMars")
+                    .GetEnvironmentVariable("S3Bucket")
+                    //.GetEnvironmentVariable("S3BucketMars")
                     ?.Replace("downloads", "uploads"),
                 Key = key,
                 ContentType = file.ContentType,
