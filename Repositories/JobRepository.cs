@@ -961,67 +961,77 @@ public partial class JobRepository(
         var jobParam = $"%{job}%";
         var wildParam = $"%{wild}%";
 
-        var jobsQuery =
-            from x in Context.TblJobs
-            join y in Context.TucSuburbs on x.FromSuburbId equals y.UcsuId into fromJoin
-            from yo in fromJoin.DefaultIfEmpty()
-            join z in Context.TucSuburbs on x.ToSuburbId equals z.UcsuId into toJoin
-            from zo in toJoin.DefaultIfEmpty()
-            join nw in Context.TucJobNationwides on x.JobId equals nw.UcnwJobId into nationwideJoin
-            from nationwide in nationwideJoin.DefaultIfEmpty()
+        // Single query approach - directly fetch all job data with filters
+        // This avoids the OPENJSON issue from using Contains() with large ID lists
+        // Search logic matches PodSearchAsync for consistent results
+        var matchingJobs =
+            from j in Context.TblJobs.AsNoTracking()
+            join fromSuburb in Context.TucSuburbs on j.FromSuburbId equals fromSuburb.UcsuId into fromJoin
+            from fs in fromJoin.DefaultIfEmpty()
+            join toSuburb in Context.TucSuburbs on j.ToSuburbId equals toSuburb.UcsuId into toJoin
+            from ts in toJoin.DefaultIfEmpty()
             where
-                x.Date >= fromDate
-                && x.Date <= toDate
-                && (!clientSet || x.ClientId == clientId)
-                && (!courierSet || x.CourierId == courierId)
-                && (job == string.Empty || EF.Functions.Like(x.Number.ToLower(), jobParam))
+                j.Date >= fromDate
+                && j.Date <= toDate
+                && (!clientSet || j.ClientId == clientId)
+                && (!courierSet || j.CourierId == courierId)
+                && (job == string.Empty || EF.Functions.Like(j.Number.ToLower(), jobParam))
                 && (
                     wild == string.Empty
-                    || EF.Functions.Like(nationwide.UcnwConNote, wildParam)
+                    || Context.TucJobNationwides
+                        .Where(nw => nw.UcnwJobId == j.JobId)
+                        .Any(nw => EF.Functions.Like(
+                            (nw.UcnwFlightNo ?? string.Empty)
+                            + Space
+                            + (nw.AircraftName ?? string.Empty)
+                            + Space
+                            + (nw.CarrierFsCode ?? string.Empty)
+                            + Space
+                            + (nw.DepartureAirportName ?? string.Empty)
+                            + Space
+                            + (nw.ArrivalAirportName ?? string.Empty),
+                            wildParam))
                     || EF.Functions.Like(
-                        x.FromAddress
+                        (j.FromAddress ?? string.Empty)
                         + Space
-                        + x.PickupFromContact
+                        + (j.PickupFromContact ?? string.Empty)
                         + Space
-                        + yo.UcsuName
+                        + (fs.UcsuName ?? string.Empty)
                         + Space
-                        + x.ToAddress
+                        + (j.ToAddress ?? string.Empty)
                         + Space
-                        + x.DeliverToContact
+                        + (j.DeliverToContact ?? string.Empty)
                         + Space
-                        + zo.UcsuName
+                        + (ts.UcsuName ?? string.Empty)
                         + Space
-                        + (x.ClientReferenceA ?? string.Empty)
+                        + (j.ClientReferenceA ?? string.Empty)
                         + Space
-                        + (x.ClientReferenceB ?? string.Empty)
+                        + (j.ClientReferenceB ?? string.Empty)
                         + Space
-                        + (x.OurRef ?? string.Empty)
+                        + (j.OurRef ?? string.Empty)
                         + Space
-                        + x.Number.ToLower(),
+                        + (j.Number ?? string.Empty).ToLower()
+                        + Space
+                        + (j.Barcode ?? string.Empty).ToLower(),
                         wildParam
                     )
                 )
-            select new { x.JobId, x.ParentId };
+            select new { j.JobId, j.ParentId };
 
-        var jobIds = await jobsQuery.ToListAsync();
+        // Get parent jobs for matched child jobs
+        var parentJobs =
+            from matched in matchingJobs
+            join parent in Context.TblJobs.AsNoTracking() on matched.ParentId equals parent.JobId
+            where matched.ParentId.HasValue
+            select new { parent.JobId, parent.ParentId };
 
-        var ids = jobIds.Select(j => j.JobId).ToList();
+        // Union matched jobs with their parents
+        var allJobIds = matchingJobs.Union(parentJobs);
 
-        var parentIds = jobIds
-            .Where(j => j.ParentId.HasValue)
-            .Select(j => j.ParentId.Value)
-            .ToList();
-
-        if (parentIds.Count != 0)
-            ids.AddRange(parentIds);
-
-        ids = ids.Distinct().ToList();
-
-        if (ids.Count == 0)
-            return [];
-
+        // Main query to fetch complete job details
         var query =
-            from j in Context.TblJobs
+            from jobRef in allJobIds
+            join j in Context.TblJobs.AsNoTracking() on jobRef.JobId equals j.JobId
             join c in Context.TucClients on j.ClientId equals c.UcclId into clientJoin
             from client in clientJoin.DefaultIfEmpty()
             join s in Context.TucJobStatuses on j.Status equals s.UcjsId into statusJoin
@@ -1036,7 +1046,6 @@ public partial class JobRepository(
             from lic in licJoin.DefaultIfEmpty()
             join co in Context.TucCouriers on j.CourierId equals co.UccrId into courierJoin
             from courier in courierJoin.DefaultIfEmpty()
-            where ids.Contains(j.JobId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value))
             orderby j.Number
             select new JobDownloadModel
             {
@@ -1044,9 +1053,9 @@ public partial class JobRepository(
                 ParentId = j.ParentId,
                 JobNumber = j.Number,
                 CustomerName = client.UcclName,
-                BookDate = DateTime.Parse(
-                    $"{j.Date.Value:yyyy-MM-dd} {j.Time.Value:HH:mm:ss}"
-                ),
+                BookDate = j.Date.HasValue && j.Time.HasValue
+                    ? DateTime.Parse($"{j.Date.Value:yyyy-MM-dd} {j.Time.Value:HH:mm:ss}")
+                    : default,
                 PickedUpDate = j.PickUpTime,
                 DeliveredDate = j.CompletedTime,
                 Amount = j.Amount,
@@ -1083,14 +1092,14 @@ public partial class JobRepository(
                 InvoiceNumber = j.InvoiceNo,
                 InvoiceDate = invoice.Created,
                 IsArchived = j.Archived ?? false,
-                LoggedInContact = lic.UcctFirstname + Space + lic.UcctSurname,
+                LoggedInContact = lic != null ? lic.UcctFirstname + Space + lic.UcctSurname : null,
                 RawBaseAmount = j.RawBaseAmount,
                 CourierCode = courier.Code
             };
 
         var result = await query.ToListAsync();
 
-        //Return single jobs and child jobs only, ignore parent of child jobs
+        // Return single jobs and child jobs only, ignore parent of child jobs
         return result
             .Where(j =>
                 j.Id != (j.ParentId ?? j.Id) || !result.Any(x => x.Id != j.Id && x.ParentId == j.Id)
