@@ -38,7 +38,7 @@ public class PodExportService(
 
         // Upload to S3
         var filename = $"Jobs {currentDate:yyyyMMddHHmmssfff}.csv";
-        await UploadToS3Async(csvBytes, currentDate);
+        //await UploadToS3Async(csvBytes, currentDate);
 
         return new JobsReportResult
         {
@@ -143,8 +143,8 @@ public class PodExportService(
         {
             var putRequest = new PutObjectRequest
             {
-                //BucketName = Environment.GetEnvironmentVariable("S3Bucket"),
-                BucketName = Environment.GetEnvironmentVariable("S3BucketMars"),
+                BucketName = Environment.GetEnvironmentVariable("S3Bucket"),
+                //BucketName = Environment.GetEnvironmentVariable("S3BucketMars"),
                 Key = key,
                 ContentType = "text/csv",
                 InputStream = ms
