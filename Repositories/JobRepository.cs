@@ -872,7 +872,7 @@ public partial class JobRepository(
 
         var courierLookup = await Context.TucCouriers
             .AsNoTracking()
-            .Where(c => courierCodes.Contains(c.Code))
+            .Where(c => courierCodes.Contains(c.Code) && c.Active)
             .ToDictionaryAsync(c => c.Code, c => c.UccrId);
 
         // Update couriers for each job
