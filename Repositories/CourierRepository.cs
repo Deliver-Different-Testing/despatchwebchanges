@@ -1007,9 +1007,9 @@ public class CourierRepository(
         if (!string.IsNullOrWhiteSpace(request.Day)
             && !request.Day.Equals("all", StringComparison.CurrentCultureIgnoreCase))
         {
-            if (Enum.TryParse<DayOfWeek>(request.Day, true, out var dayOfWeek))
+            var dayValue = GetDayOfWeekAsInt(request.Day);
+            if (dayValue != 0)
             {
-                var dayValue = (int)dayOfWeek;
                 query = query.Where(c => c.WeekDay == dayValue);
             }
         }
@@ -1090,6 +1090,7 @@ public class CourierRepository(
                     4 => "Thursday",
                     5 => "Friday",
                     6 => "Saturday",
+                    7 => "Sunday",
                     _ => "Unknown"
                 }).OrderBy(day =>
                     Array.IndexOf(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], day))
