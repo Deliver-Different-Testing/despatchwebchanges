@@ -159,8 +159,8 @@ class JobContextMenuService implements angular.IServiceProvider {
             children: this.getEventGroupsMenuItems(job.id, callbacks.onRefresh),
         });
 
-        // Send to Live - only for bulk jobs that are not done and are parent/single jobs (not child jobs)
-        if (job.isBulkJob && !job.done && job.isParentOrSingle) {
+        // Send to Live - for all bulk jobs that are not done (including child jobs)
+        if (job.isBulkJob && !job.done) {
             menuOptions.push({
                 text: "Send to Live",
                 icon: "send",
