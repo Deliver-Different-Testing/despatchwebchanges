@@ -38,7 +38,8 @@ public class JobController(
     ITenantInfoService infoService,
     IAddStopJobService addStopJobService,
     IPodExportService podExportService,
-    IJobPhotoService jobPhotoService
+    IJobPhotoService jobPhotoService,
+    IClientJobsReportService clientJobsReportService
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -492,6 +493,21 @@ public class JobController(
         {
             Log.Error(ex, "Error generating jobs report download");
             return StatusCode(500, "An error occurred while generating the report");
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ClientJobsReportDownload([FromQuery] ClientJobsReportRequest request)
+    {
+        try
+        {
+            var (fileBytes, fileName) = await clientJobsReportService.GenerateClientJobsReportCsvAsync(request);
+            return File(fileBytes, "text/csv", fileName);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error generating client jobs report download: {@Request}", request);
+            return StatusCode(500, "An error occurred while generating the client jobs report");
         }
     }
 

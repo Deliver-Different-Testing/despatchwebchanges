@@ -1659,6 +1659,44 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
+        public virtual async Task<int> REP_qryPerformance_Summary_PerformanceSpendAsync(int? clientID, DateTime? startDate, DateTime? endDate, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "ClientID",
+                    Value = clientID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "StartDate",
+                    Value = startDate ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.DateTime,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "EndDate",
+                    Value = endDate ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.DateTime,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[REP_qryPerformance_Summary_PerformanceSpend] @ClientID = @ClientID, @StartDate = @StartDate, @EndDate = @EndDate", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
         public virtual async Task<int> sp_RateJob2Async(int? intClientID, int? intFromID, int? intToID, int? intSpeed, bool? bolPedal, bool? bolVan, bool? bolReturn, int? intWeight, int? size, bool? includeFuelSurcharge, string ourRef, string clientRefA, string clientRefB, int? quantity, DateTime? booked, OutputParameter<decimal?> curAmount, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parametercurAmount = new SqlParameter

@@ -30,6 +30,8 @@ public interface IJobRepository
         int? clientId
     );
 
+    Task<List<PerformanceSpendReportModel>> GetClientJobsReportDataAsync(ClientJobsReportRequest request);
+
     Task<JobSearchResult> CurrentJobListAsync(int courierId, bool done, int page, int pageSize);
 
     Task<JobSearchResult> JobListAsync(

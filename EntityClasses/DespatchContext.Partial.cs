@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using DespatchWeb.Models.Dto;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 

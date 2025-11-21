@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Dapper;
 using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -12,6 +14,7 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using CourierLocation = DespatchWeb.Models.Response.CourierLocation;
@@ -1107,6 +1110,50 @@ public partial class JobRepository(
             .ToList();
     }
 
+    public async Task<List<PerformanceSpendReportModel>> GetClientJobsReportDataAsync(ClientJobsReportRequest request)
+    {
+        try
+        {
+            // Configure Dapper to use ColumnAttribute for mapping
+            Dapper.SqlMapper.SetTypeMap(
+                typeof(PerformanceSpendReportModel),
+                new Dapper.CustomPropertyTypeMap(
+                    typeof(PerformanceSpendReportModel),
+                    (type, columnName) =>
+                        type.GetProperties().FirstOrDefault(prop =>
+                            prop.GetCustomAttributes(false)
+                                .OfType<System.ComponentModel.DataAnnotations.Schema.ColumnAttribute>()
+                                .Any(attr => attr.Name == columnName)
+                            || prop.Name == columnName
+                        )
+                )
+            );
+
+            // Call the stored procedure using Dapper (handles type conversions flexibly)
+            // Pass only the date part (without time component)
+            using var connection = Context.Database.GetDbConnection();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@ClientID", request.ClientId ?? 0, DbType.Int32);
+            parameters.Add("@StartDate", request.StartDate.Date, DbType.Date);
+            parameters.Add("@EndDate", request.EndDate.Date, DbType.Date);
+
+            var results = await connection.QueryAsync<PerformanceSpendReportModel>(
+                "REP_qryPerformance_Summary_PerformanceSpend",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            return results.ToList();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository),
+                    nameof(GetClientJobsReportDataAsync)));
+            throw;
+        }
+    }
 
     public async Task<JobSearchResult> CurrentJobListAsync(int courierId, bool done, int page, int pageSize)
     {

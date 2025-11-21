@@ -1077,6 +1077,60 @@ class JobSearchController extends BaseController {
         }
     }
 
+    isClientJobsReportEnabled(): boolean {
+        return !!(
+            this.searchCriteria.client &&
+            this.searchCriteria.from_date &&
+            this.searchCriteria.to_date
+        );
+    }
+
+    async downloadClientJobsReport() {
+        try {
+            const response: any = await this.jobSearchService.clientJobsReportDownload(
+                this.searchCriteria.from_date,
+                this.searchCriteria.to_date,
+                this.searchCriteria.courier,
+                this.searchCriteria.client,
+                this.searchCriteria.wild,
+                this.searchCriteria.job
+            );
+
+            if (response.status === 200) {
+                let filename = "client-jobs-report.csv";  // default filename
+                const contentDisposition = response.headers()["content-disposition"];
+
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.split(';')
+                        .find((part: string) => part.trim().startsWith('filename='));
+                    if (filenameMatch) {
+                        filename = filenameMatch.split('=')[1].trim().replace(/"/g, '');
+                    }
+                }
+
+                const blob = new Blob([response.data], {type: 'text/csv'});
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+
+                this.toastrService.showSuccessToast("Client jobs report downloaded successfully.");
+            } else {
+                console.error("Error downloading client jobs report");
+                this.toastrService.showErrorToast("Failed to download client jobs report.");
+            }
+        } catch (error) {
+            console.error("Failed to download client jobs report:", error);
+            this.toastrService.showErrorToast("Failed to download client jobs report.");
+        } finally {
+            this.applyScope();
+        }
+    }
+
     uploadJobList() {
         const element: any = angular.element("#jobListUpload");
         element.trigger('click');

@@ -70,6 +70,30 @@ class JobSearchService implements angular.IServiceProvider {
         );
     }
 
+    async clientJobsReportDownload(
+        fromDate: Dayjs,
+        toDate: Dayjs,
+        courierId?: number,
+        clientId?: number,
+        wild?: string,
+        job?: string
+    ) {
+        return this.$http.get(
+            `/Job/ClientJobsReportDownload`,
+            {
+                params: {
+                    startDate: formatDateForApiWithTzs(fromDate),
+                    endDate: formatDateForApiWithTzs(toDate),
+                    courierId,
+                    clientId,
+                    wild,
+                    job
+                },
+                responseType: "blob"
+            }
+        );
+    }
+
     async uploadJobList(file: File) {
         let fd = new FormData();
         fd.append("file", file);

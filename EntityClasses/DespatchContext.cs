@@ -2952,6 +2952,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.OperatorId).HasColumnName("OperatorID");
             entity.Property(e => e.OriginalSpeedId).HasColumnName("OriginalSpeedID");
             entity.Property(e => e.OurRef).HasMaxLength(20);
+            entity.Property(e => e.OutForDelivery).HasColumnType("datetime");
             entity.Property(e => e.ParentId).HasColumnName("ParentID");
             entity.Property(e => e.PickUpLatitude).HasColumnType("decimal(18, 9)");
             entity.Property(e => e.PickUpLongitude).HasColumnType("decimal(18, 9)");
@@ -6430,6 +6431,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.NationwideEntry).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobType_NationwideEntry");
             entity.Property(e => e.Notes).HasColumnType("ntext");
             entity.Property(e => e.ShortName).HasMaxLength(50);
+            entity.Property(e => e.ShowPhotosWhenChild).HasDefaultValue(true);
             entity.Property(e => e.SuccessRate).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.SystemName).HasMaxLength(50);
             entity.Property(e => e.UcjtBaseRate)
