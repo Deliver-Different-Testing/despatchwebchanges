@@ -384,4 +384,6 @@ public partial class TblJob
     public bool? Archived { get; set; }
 
     public int? DimensionsType { get; set; }
+
+    public DateTime? OutForDelivery { get; set; }
 }

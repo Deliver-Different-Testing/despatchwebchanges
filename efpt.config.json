@@ -488,6 +488,10 @@
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[REP_qryPerformance_Summary_PerformanceSpend]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[sp_RateJob2]",
          "ObjectType": 1
       },
