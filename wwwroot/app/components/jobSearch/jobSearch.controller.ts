@@ -1123,9 +1123,47 @@ class JobSearchController extends BaseController {
                 console.error("Error downloading client jobs report");
                 this.toastrService.showErrorToast("Failed to download client jobs report.");
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to download client jobs report:", error);
-            this.toastrService.showErrorToast("Failed to download client jobs report.");
+
+            // Extract error message from response
+            let errorMessage = "Failed to download client jobs report.";
+
+            // Try to parse error response
+            if (error?.data) {
+                try {
+                    // If data is a Blob (binary), convert to text first
+                    if (error.data instanceof Blob) {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                            try {
+                                const jsonResponse = JSON.parse(reader.result as string);
+                                const message = jsonResponse?.error || "Failed to download client jobs report.";
+                                this.toastrService.showErrorToast(message);
+                                this.applyScope();
+                            } catch {
+                                this.toastrService.showErrorToast(errorMessage);
+                                this.applyScope();
+                            }
+                        };
+                        reader.readAsText(error.data);
+                        return; // Exit early, reader.onload will handle the toast
+                    }
+                    // If data is already an object
+                    else if (typeof error.data === 'object' && error.data.error) {
+                        errorMessage = error.data.error;
+                    }
+                    // If data is a string, try to parse it
+                    else if (typeof error.data === 'string') {
+                        const parsed = JSON.parse(error.data);
+                        errorMessage = parsed?.error || errorMessage;
+                    }
+                } catch (parseError) {
+                    console.error("Error parsing error response:", parseError);
+                }
+            }
+
+            this.toastrService.showErrorToast(errorMessage);
         } finally {
             this.applyScope();
         }
