@@ -504,10 +504,11 @@ public class JobController(
             var (fileBytes, fileName) = await clientJobsReportService.GenerateClientJobsReportCsvAsync(request);
             return File(fileBytes, "text/csv", fileName);
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
-            Log.Error(ex, "Error generating client jobs report download: {@Request}", request);
-            return StatusCode(500, "An error occurred while generating the client jobs report");
+            // Return 404 Not Found when no data matches the criteria
+            Log.Warning(ex, "Client jobs report - no data found: {@Request}", request);
+            return NotFound(new { error = ex.Message });
         }
     }
 
