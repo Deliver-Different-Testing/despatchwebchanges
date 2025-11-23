@@ -73,7 +73,20 @@
                                     </span>
 
                                     <div flex></div>
-                                    
+
+                                    <!-- Search Box-->
+                                    <md-input-container class="md-block search-input-container" md-no-float
+                                                        ng-if="::ctrl.boxes[box.name].showSearch">
+                                        <md-icon md-font-set="material-symbols-outlined">search</md-icon>
+                                        <input class="search-input"
+                                               ng-change="ctrl.searchJobs(ctrl.jobQuery.searchText)"
+                                               ng-model="ctrl.jobQuery.searchText"
+                                               placeholder="Search..."
+                                               type="text"
+                                               style="color: black;">
+                                    </md-input-container>
+
+
                                     <!--Refresh-->
                                     <md-button class="md-icon-button"
                                                ng-click="ctrl.refreshData()"
@@ -105,7 +118,7 @@
                                             </md-menu-item>
                                         </md-menu-content>
                                     </md-menu>
-                                    
+
                                 </div>
                             </md-toolbar>
 
