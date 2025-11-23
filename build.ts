@@ -9,10 +9,15 @@ type EntryPointName = 'vendor' | 'app' | 'home' | 'nationwide' | 'overview' | 'j
 type EntryPoints = Record<EntryPointName, string>;
 
 // Configuration
-const isDev = process.argv.includes("--dev") 
-    || process.env.NODE_ENV === "development" 
-    || process.env.NODE_ENV == "staging"
-    || process.env.NODE_ENV == "testing";
+const nodeEnv = process.env.NODE_ENV || "development";
+const isDev = process.argv.includes("--dev") || nodeEnv === "development";
+const isStaging = nodeEnv === "staging" || nodeEnv === "testing";
+const isProd = nodeEnv === "production";
+
+const enableVerboseLogging = isDev || isStaging;
+const shouldOptimize = isStaging || isProd;
+const shouldWatch = process.argv.includes("--dev"); 
+
 const rootDir = __dirname;
 const distPath = path.join(rootDir, "wwwroot/dist");
 
@@ -71,7 +76,7 @@ function createHtmlMinifierPlugin(): esbuild.Plugin {
                 const html = await fs.promises.readFile(args.path, 'utf8');
 
                 let minified = html;
-                if (!isDev) {
+                if (!shouldOptimize) {
                     try {
                         const { minify } = require('html-minifier-terser');
                         minified = await minify(html, {
@@ -85,7 +90,7 @@ function createHtmlMinifierPlugin(): esbuild.Plugin {
                             conservativeCollapse: true,
                             preserveLineBreaks: false,
                             preventAttributesEscaping: true,
-                            ignoreCustomFragments: [/\{\{[\s\S]*?\}\}/] 
+                            ignoreCustomFragments: [/\{\{[\s\S]*?}}/] 
                         });
                     } catch (error) {
                         console.error(`Error minifying HTML in ${args.path}:`, error);
@@ -127,18 +132,18 @@ function getBuildConfig(): esbuild.BuildOptions {
     return {
         entryPoints,
         bundle: true,
-        sourcemap: isDev,
-        minify: !isDev,
-        minifyWhitespace: !isDev,
-        minifyIdentifiers: !isDev,
-        minifySyntax: !isDev,
+        sourcemap: enableVerboseLogging,
+        minify: shouldOptimize,
+        minifyWhitespace: shouldOptimize,
+        minifyIdentifiers: shouldOptimize,
+        minifySyntax: shouldOptimize,
         target: ["es2015"],
-        metafile: !isDev,
-        treeShaking: !isDev,
-        legalComments: isDev ? "inline" : "none",
+        metafile: shouldOptimize,
+        treeShaking: shouldOptimize,
+        legalComments: enableVerboseLogging ? "inline" : "none",
         format: "iife",
         mainFields: ["browser", "module", "main"],
-        logLevel: isDev ? "info" : "error",
+        logLevel: enableVerboseLogging ? "info" : "error",
         plugins: [
             lessLoader({
                 math: "always",
@@ -147,7 +152,7 @@ function getBuildConfig(): esbuild.BuildOptions {
             createErrorReportingPlugin(),
         ],
         define: {
-            "process.env.NODE_ENV": isDev ? '"development"' : '"production"',
+            "process.env.NODE_ENV": shouldOptimize ? '"development"' : '"production"',
             global: "window",
             jQuery: "window.jQuery",
             $: "window.$",
@@ -238,7 +243,7 @@ function renameFilesWithHashes(): void {
             const newJsMapPath = path.join(distPath, newJsMapName);
             fs.renameSync(jsMapPath, newJsMapPath);
 
-            // Update source map reference in JS file
+            // Update source map reference in a JS file
             const jsFilePath = path.join(distPath, `${entryName}.${hash}.js`);
             const jsContent = fs.readFileSync(jsFilePath, 'utf8');
             const updatedJsContent = jsContent.replace(
@@ -252,16 +257,30 @@ function renameFilesWithHashes(): void {
 
 // Build functions
 async function buildDev(): Promise<void> {
-    console.log("[DEV] Building development bundles with file watching...");
+    console.log("[DEV] Building development bundles...");
 
     const config: esbuild.BuildOptions = {
         ...getBuildConfig(),
         outdir: distPath,
     };
 
-    // Create context for watching
-    const ctx = await esbuild.context(config);
-    await ctx.watch();
+    if (shouldWatch) {
+        // Only watch when --dev flag is passed
+        console.log("[DEV] Starting file watcher...");
+        const ctx = await esbuild.context(config);
+        await ctx.watch();
+
+        console.log(`[DEV] Build complete. Watching for changes...`);
+        console.log(`Files are being output to ${distPath}`);
+        console.log("[DEV] Serve these files with IIS for debugging");
+
+        // Keep the process running for watching
+        await new Promise(() => {});
+    } else {
+        // Just build once without watching
+        await esbuild.build(config);
+        console.log("[DEV] Build complete (no watching)");
+    }
 
     // Create a simple manifest (no hashing in dev mode)
     const manifest = generateSimpleManifest();
@@ -269,13 +288,6 @@ async function buildDev(): Promise<void> {
         path.join(distPath, "manifest.json"),
         JSON.stringify(manifest, null, 2)
     );
-
-    console.log(`[DEV] Build complete. Watching for changes...`);
-    console.log(`Files are being output to ${distPath}`);
-    console.log("[DEV] Serve these files with IIS for debugging");
-
-    // Keep the process running for watching
-    await new Promise(() => {});
 }
 
 async function buildProd(): Promise<void> {
@@ -301,7 +313,7 @@ async function buildProd(): Promise<void> {
     console.log("[PROD] Adding hash keys to filenames...");
     renameFilesWithHashes();
 
-    // Create manifest with hashed filenames
+    // Create a manifest with hashed filenames
     const manifest = generateHashedManifest();
     fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 

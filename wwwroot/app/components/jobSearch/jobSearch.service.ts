@@ -1,4 +1,4 @@
-import {IJobSearchResult, IDispatchJob} from "../../interfaces/job.interface";
+import {IJobSearchResult, IDispatchJob, ISuggestion} from "../../interfaces/job.interface";
 import dayjs, {Dayjs} from "dayjs";
 import {formatDateForApi, formatDateForApiWithTzs} from "../../functions/formatDates";
 import IScanDetailResult from "./interfaces/IScanDetailResult";
@@ -218,8 +218,8 @@ class JobSearchService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getActiveCouriersSearch(searchTerm: string) {
-        const response = await this.$http.get(`/courier/AllActiveSearch`,
+    async getActiveCouriersSearch(searchTerm: string): Promise<ISuggestion[]> {
+        const response = await this.$http.get<ISuggestion[]>(`/courier/AllActiveSearch`,
             {
                 params: {
                     searchTerm

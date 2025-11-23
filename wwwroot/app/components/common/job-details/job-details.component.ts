@@ -61,7 +61,7 @@ class JobDetailController extends BaseController {
     private readonly VIEW_DENSITY_KEY = `jobDetail_viewDensity_${ContactID}`;
 
     private isTabSwitch: boolean = false;
-    
+
     onJobUpdate?: () => Promise<void>;
 
     readonly isRecurringJob: boolean = false;
@@ -125,7 +125,7 @@ class JobDetailController extends BaseController {
 
         this.isUsCustomer = appConfig.US_Customer;
         this.timeZone = getIanaTimezone(TimeZone);
-        
+
         this.trackingOptions = [
             {id: 1, text: "Email"},
             {id: 2, text: "Mobile"},
@@ -1864,6 +1864,7 @@ class JobDetailController extends BaseController {
             const newAmount = await this.priceBreakdownDialogService.openPriceBreakdownDialog(
                 $event,
                 job.id,
+                job.charge,
                 job.preBook
             );
 

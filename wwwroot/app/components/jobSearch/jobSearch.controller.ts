@@ -1280,7 +1280,7 @@ class JobSearchController extends BaseController {
         try {
             const results = await this.jobSearchService.getActiveCouriersSearch(searchText);
 
-            // If search text is purely numeric (courier code), filter for exact matches only
+            // If the search text is purely numeric (courier code), filter for exact matches only
             const trimmedSearch = searchText.trim();
             if (/^\d+$/.test(trimmedSearch)) {
                 // Filter results to only show exact courier code matches
@@ -1362,17 +1362,26 @@ class JobSearchController extends BaseController {
         await this.messagingDialogService.openMessagingDialog($event);
     }
 
-    async onRefreshButtonClicked(boxName: string) {
+    async onRefreshButtonClicked(boxName: string): Promise<void> {
+        console.log('🔄 Refresh clicked for:', boxName);
+        console.log('🔄 Current job ID:', this.currentJobId);
+        console.log('🔄 Is bulk job list?:', this.bulkJobList);
+        
         switch (boxName) {
             case JobSearchBoxes.JobList:
+                console.log('🔄 Refreshing JobList');
                 await this.refreshData();
                 break;
             case JobSearchBoxes.BulkJobList:
+                console.log('🔄 Refreshing BulkJobList');
                 await this.refreshBulkData();
                 break;
             case JobSearchBoxes.JobDetail:
-                if (!this.currentJobId) return;
-
+                console.log('🔄 Refreshing JobDetail');
+                if (!this.currentJobId) {
+                    console.log('❌ No current job ID');
+                    return;
+                }
                 // Store the job ID and determine if it's a bulk job
                 const jobIdToRefresh = this.currentJobId;
                 const isBulkJob = this.bulkJobList?.some((job: IDispatchJob) => job.id === jobIdToRefresh) ?? false;

@@ -21,7 +21,10 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
         return this;
     }
 
-    async openPriceBreakdownDialog($event: MouseEvent, jobId: number, isPrebook: boolean = false): Promise<number | undefined> {
+    async openPriceBreakdownDialog($event: MouseEvent, 
+                                   jobId: number,
+                                   tucJobAmount: number,
+                                   isPrebook: boolean = false): Promise<number | undefined> {
         try {
             const priceBreakdowns: PriceBreakdown[] = await this.DispatchData.getPriceBreakdown(jobId, isPrebook);
 
@@ -36,7 +39,8 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
                 locals: {
                     priceBreakdowns,
                     jobId,
-                    isPrebook
+                    isPrebook,
+                    tucJobAmount
                 },
                 bindToController: true,
             });

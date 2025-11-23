@@ -13,7 +13,8 @@ export class PriceBreakdownDialogController extends BaseController {
         'DispatchData',
         'priceBreakdowns',
         'jobId',
-        'isPrebook'
+        'isPrebook',
+        'tucJobAmount'
     ];
 
     selectedPriceBreakdown?: PriceBreakdown;
@@ -49,7 +50,8 @@ export class PriceBreakdownDialogController extends BaseController {
         private DispatchData: DispatchCoreService,
         priceBreakdowns: PriceBreakdown[],
         private jobId: number,
-        private isPrebook: boolean
+        private isPrebook: boolean,
+        private tucJobAmount: number,
     ) {
         super();
         this.initServices($timeout, $interval);
@@ -67,9 +69,15 @@ export class PriceBreakdownDialogController extends BaseController {
     }
 
     $onInit() {
-        this.DispatchData.isJobParent(this.jobId).then(isParentJob => {
+        this.DispatchData.isJobParent(this.jobId).then((isParentJob: boolean) => {
             this.isParentJob = isParentJob;
         })
+    }
+    
+    isUsingOldAmountMethod(): boolean {
+        const isUsingOldMethod = this.tucJobAmount != null && this.tucJobAmount > 0 && this.priceBreakdown.length === 0;
+        console.log('PriceBreakdownDialogController: isUsingOldAmountMethod', isUsingOldMethod);
+        return isUsingOldMethod;
     }
     
     isJobsItem(item: PriceBreakdown): boolean {
