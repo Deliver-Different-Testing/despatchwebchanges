@@ -1,5 +1,4 @@
 <jobs-list
-        ng-if="ctrl.bulkJobList || ctrl.bulkJobList.length > 0"
         jobs="ctrl.bulkJobList"
         selected-job="ctrl.currentJob"
         on-job-select="ctrl.onBulkJobSelect(job)"
@@ -9,11 +8,3 @@
         on-refresh="ctrl.refreshBulkData()"
         job-list-type="ctrl.bulkJobListType">
 </jobs-list>
-
-<no-data
-        ng-if="!ctrl.bulkJobList || ctrl.bulkJobList.length === 0"
-        title="No Bulk Jobs Available"
-        message="There are currently no bulk jobs that match your criteria."
-        icon="list_alt"
-        show-action="false">
-</no-data>

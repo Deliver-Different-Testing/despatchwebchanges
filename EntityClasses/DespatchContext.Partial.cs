@@ -48,6 +48,12 @@ public partial class DespatchContext
                 .WithMany(p => p.InverseParent)
                 .HasForeignKey(d => d.ParentId)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+            entity.HasOne(d => d.LoggedInContact)
+                .WithMany()
+                .HasForeignKey(d => d.LoggedInContactId)
+                .HasPrincipalKey(cc => cc.UcctId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
         
         // Tuc Job Archive 
