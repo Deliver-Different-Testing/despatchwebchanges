@@ -220,14 +220,14 @@
                                         </md-button>
 
                                         <md-button aria-label="Unlock Job" class="md-fab md-raised md-mini"
-                                                   ng-click="ctrl.unlockJob()"
+                                                   ng-click="ctrl.unlockJob(ctrl.currentJob)"
                                                    ng-if="ctrl.currentJob && !ctrl.currentJob.preBook && (ctrl.currentJob.locked && !ctrl.currentJob.invoiced)">
                                             <md-tooltip md-direction="bottom">Unlock Job</md-tooltip>
                                             <md-icon md-font-set="material-symbols-outlined">lock</md-icon>
                                         </md-button>
 
                                         <md-button aria-label="Lock Job" class="md-fab md-raised md-mini"
-                                                   ng-click="ctrl.lockJob()"
+                                                   ng-click="ctrl.lockJob(ctrl.currentJob)"
                                                    ng-if="ctrl.currentJob && !ctrl.currentJob.preBook && !ctrl.currentJob.bulkJob && (!ctrl.currentJob.locked && !ctrl.currentJob.invoiced)">
                                             <md-tooltip md-direction="bottom">Lock Job</md-tooltip>
                                             <md-icon md-font-set="material-symbols-outlined">lock_open</md-icon>
