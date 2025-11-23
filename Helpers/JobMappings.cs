@@ -195,8 +195,10 @@ public static class JobMappings
         FollowupTime = j.FollowupTime,
         Void = j.UcjbVoid,
 
-        // Simple navigation properties (no collections)
-        LoggedInContactName = j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname,
+        // Simple navigation properties
+        LoggedInContactName = j.LoggedInContact != null
+            ? j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname
+            : string.Empty,
         BookingSource = j.Source != null
             ? new Suggestion { Id = j.Source.SourceId, Text = j.Source.Name }
             : null,
@@ -403,7 +405,7 @@ public static class JobMappings
         DeliverToPrivateRes = false, // Will be set from separate query
         ParcelDimensions = null, // Will be loaded separately
         PalletInfo = null, // Will be loaded separately
-        AssignedFlight = null, // Will be loaded separately
+        AssignedFlight = null // Will be loaded separately
     };
 
 
@@ -421,6 +423,10 @@ public static class JobMappings
         CreatedDate = j.BookDate,
         ScheduleName = j.ScheduleName,
         Void = j.Void,
+        
+        LoggedInContactName = j.LoggedInContact != null
+            ? j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname
+            : string.Empty,
         BookingSource = j.Source != null
             ? new Suggestion
             {
@@ -555,7 +561,7 @@ public static class JobMappings
                 : null,
 
         ParcelDimensions = GetPackagesForBulkJob(j, j.Parent,
-            j.TblBulkJobItems, j.Parent.TblBulkJobItems),
+            j.TblBulkJobItems, j.Parent.TblBulkJobItems)
     };
 
     public static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping = j => new JobViewModel
