@@ -38,7 +38,13 @@ public class RateJobService(
             ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
 
             var rateResult = await RateUrgentJobAsync(jobDetails);
-            await jobRepository.UpdateUrgentJobRateAsync(jobDetails.JobId, rateResult.Rate, jobDetails.JobType);
+            if (rateResult != null && rateResult.Rate > 0) {
+                await jobRepository.UpdateUrgentJobRateAsync(jobDetails.JobId, rateResult.Rate, jobDetails.JobType);
+            } else {
+                Log.Warning("Job rating failed or returned invalid rate for JobId: {JobId}. Rate: {Rate}",
+                    jobDetails.JobId,
+                    rateResult?.Rate ?? 0);
+            }
         }
         catch (Exception ex)
         {
