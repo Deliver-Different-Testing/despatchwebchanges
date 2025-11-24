@@ -19,56 +19,53 @@ public enum Frequency
 public static class FrequencyExtensions
 {
     // Convert to readable string
-    extension(Frequency frequency)
+    public static string ToDisplayString(this Frequency frequency)
     {
-        public string ToDisplayString()
+        return frequency switch
         {
-            return frequency switch
-            {
-                Frequency.None => "None",
-                Frequency.Weekly => "Weekly",
-                Frequency.Fortnightly => "Fortnightly",
-                Frequency.FirstOfMonth => "First of the Month",
-                Frequency.SecondOfMonth => "Second of the Month",
-                Frequency.ThirdOfMonth => "Third of the Month",
-                Frequency.FirstWorkdayOfMonth => "First Workday of the Month",
-                Frequency.LastWorkdayOfMonth => "Last Workday of the Month",
-                _ => string.Join(", ", GetSelectedFrequencies(frequency).Select(ToDisplayString))
-            };
-        }
+            Frequency.None => "None",
+            Frequency.Weekly => "Weekly",
+            Frequency.Fortnightly => "Fortnightly",
+            Frequency.FirstOfMonth => "First of the Month",
+            Frequency.SecondOfMonth => "Second of the Month",
+            Frequency.ThirdOfMonth => "Third of the Month",
+            Frequency.FirstWorkdayOfMonth => "First Workday of the Month",
+            Frequency.LastWorkdayOfMonth => "Last Workday of the Month",
+            _ => string.Join(", ", frequency.GetSelectedFrequencies().Select(f => f.ToDisplayString()))
+        };
+    }
 
-        public Frequency[] GetSelectedFrequencies()
-        {
-            return Enum.GetValues(typeof(Frequency))
-                .Cast<Frequency>()
-                .Where(f => f != Frequency.None)
-                .Where(f => frequency.HasFlag(f))
-                .ToArray();
-        }
+    public static Frequency[] GetSelectedFrequencies(this Frequency frequency)
+    {
+        return Enum.GetValues(typeof(Frequency))
+            .Cast<Frequency>()
+            .Where(f => f != Frequency.None)
+            .Where(f => frequency.HasFlag(f))
+            .ToArray();
+    }
 
-        public bool MatchesDate(DateTime date, DateTime? referenceDate = null)
-        {
-            referenceDate ??= DateTime.Today;
+    public static bool MatchesDate(this Frequency frequency, DateTime date, DateTime? referenceDate = null)
+    {
+        referenceDate ??= DateTime.Today;
 
-            // For any frequency, check each flag
-            var matches = false;
+        // For any frequency, check each flag
+        var matches = false;
 
-            if (frequency.HasFlag(Frequency.Weekly)) matches |= IsWeeklyMatch(date, referenceDate.Value);
+        if (frequency.HasFlag(Frequency.Weekly)) matches |= IsWeeklyMatch(date, referenceDate.Value);
 
-            if (frequency.HasFlag(Frequency.Fortnightly)) matches |= IsFortnightlyMatch(date, referenceDate.Value);
+        if (frequency.HasFlag(Frequency.Fortnightly)) matches |= IsFortnightlyMatch(date, referenceDate.Value);
 
-            if (frequency.HasFlag(Frequency.FirstOfMonth)) matches |= date.Day == 1;
+        if (frequency.HasFlag(Frequency.FirstOfMonth)) matches |= date.Day == 1;
 
-            if (frequency.HasFlag(Frequency.SecondOfMonth)) matches |= date.Day == 2;
+        if (frequency.HasFlag(Frequency.SecondOfMonth)) matches |= date.Day == 2;
 
-            if (frequency.HasFlag(Frequency.ThirdOfMonth)) matches |= date.Day == 3;
+        if (frequency.HasFlag(Frequency.ThirdOfMonth)) matches |= date.Day == 3;
 
-            if (frequency.HasFlag(Frequency.FirstWorkdayOfMonth)) matches |= IsFirstWorkdayOfMonth(date);
+        if (frequency.HasFlag(Frequency.FirstWorkdayOfMonth)) matches |= IsFirstWorkdayOfMonth(date);
 
-            if (frequency.HasFlag(Frequency.LastWorkdayOfMonth)) matches |= IsLastWorkdayOfMonth(date);
+        if (frequency.HasFlag(Frequency.LastWorkdayOfMonth)) matches |= IsLastWorkdayOfMonth(date);
 
-            return matches;
-        }
+        return matches;
     }
 
     // Helper methods
@@ -142,7 +139,7 @@ public static class FrequencyExtensions
         // Look ahead a reasonable amount (max 100 days to prevent infinite loops)
         for (var i = 0; i < 100; i++)
         {
-            if (MatchesDate(frequency, current))
+            if (frequency.MatchesDate(current))
                 return current;
 
             current = current.AddDays(1);
