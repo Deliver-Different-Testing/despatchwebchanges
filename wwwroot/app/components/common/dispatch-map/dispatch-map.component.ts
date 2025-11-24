@@ -62,6 +62,7 @@ class DispatchMapController extends BaseController {
     showAvailableCouriers: boolean = false;
     autoZoomEnabled: boolean = true;
     couriersOnlyEnabled: boolean = false;
+    urgentArmyOnlyEnabled: boolean = false; 
     markers: google.maps.Marker[] = [];
     flags: any[] = [];
     labels: google.maps.Marker[] = [];
@@ -90,6 +91,7 @@ class DispatchMapController extends BaseController {
     $onInit() {
         this.loadAutoZoomPreference();
         this.loadCouriersOnlyPreference();
+        this.loadUrgentArmyOnlyPreference();
 
         this.configService.getGoogleMapsKey()
             .then((apiKey: string) => {
@@ -502,7 +504,12 @@ class DispatchMapController extends BaseController {
         this.clearCourierMarkers();
         this.courierPositions = couriers;
 
-        couriers.forEach((courier: IAvailableCourierPosition) => {
+        // Apply urgent army filter if enabled
+        const filteredCouriers = this.urgentArmyOnlyEnabled
+            ? couriers.filter(c => c.isUrgentArmyDriver)
+            : couriers;
+
+        filteredCouriers.forEach((courier: IAvailableCourierPosition) => {
             if (this.isValidCoordinates(courier.latitude ?? 0, courier.longitude ?? 0)) {
                 this.addCourierMarker(courier);
             }
@@ -689,7 +696,7 @@ class DispatchMapController extends BaseController {
             const content = `
         <div style="padding: 8px;">
             <strong>${courier.courierName}</strong><br>
-            ${courier.fleetCode ? `Fleet: ${courier.fleetCode}<br>` : ''}
+            ${courier.isUrgentArmyDriver ? `Fleet: UA'}<br>` : ''}
             ${courier.vehicleType ? `Vehicle: ${courier.vehicleType}<br>` : ''}
             <strong>Total Jobs: ${courier.totalJobs}</strong><br>
             ${overdueJobsText}
@@ -835,6 +842,10 @@ class DispatchMapController extends BaseController {
         const couriersOnlyButton = this.createCouriersOnlyButton();
         mapControlsDiv.appendChild(couriersOnlyButton);
 
+        // Urgent Army button
+        const urgentArmyButton = this.createUrgentArmyButton();
+        mapControlsDiv.appendChild(urgentArmyButton);
+
         // Add the Material Icons font if not already loaded
         if (!document.getElementById('material-icons-font')) {
             const link = document.createElement('link');
@@ -846,7 +857,7 @@ class DispatchMapController extends BaseController {
 
         this.mapInstance!.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(mapControlsDiv);
     }
-
+    
     private createAutoZoomButton(): HTMLElement {
         const buttonDiv = document.createElement('div');
         buttonDiv.innerHTML = `
@@ -920,6 +931,45 @@ class DispatchMapController extends BaseController {
             iconSpan.textContent = this.couriersOnlyEnabled ? 'local_shipping' : 'map';
             const tooltip = button.querySelector('.md-tooltip')!;
             tooltip.textContent = this.couriersOnlyEnabled ? 'Couriers Only' : 'Show All';
+        });
+
+        return buttonDiv;
+    }
+
+    private createUrgentArmyButton(): HTMLElement {
+        const buttonDiv = document.createElement('div');
+        buttonDiv.innerHTML = `
+        <button class="md-fab md-mini ${this.urgentArmyOnlyEnabled ? 'md-primary' : 'md-warn'}" 
+                aria-label="Toggle Urgent Army Filter"
+                style="width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer; 
+                       box-shadow: 0 2px 5px rgba(0,0,0,0.3); outline: none; display: flex; 
+                       justify-content: center; align-items: center;
+                       background-color: ${this.urgentArmyOnlyEnabled ? '#3f51b5' : '#f44336'};">
+            <span class="material-symbols-outlined" 
+                  style="color: white; font-size: 20px;">
+                ${this.urgentArmyOnlyEnabled ? 'emergency' : 'visibility_off'}
+            </span>
+            <div class="md-tooltip" 
+                 style="position: absolute; left: 45px; 
+                        background-color: rgba(97,97,97,0.9); color: white;
+                        padding: 4px 8px; border-radius: 2px; font-size: 10px;
+                        white-space: nowrap; opacity: 0; transition: opacity 0.3s;
+                        pointer-events: none;">
+                ${this.urgentArmyOnlyEnabled ? 'Urgent Army Only' : 'Show All Couriers'}
+            </div>
+        </button>
+    `;
+
+        const button = buttonDiv.querySelector('button')!;
+        this.setupButtonHoverEffect(button);
+
+        button.addEventListener('click', async () => {
+            await this.toggleUrgentArmyOnly();
+            button.style.backgroundColor = this.urgentArmyOnlyEnabled ? '#3f51b5' : '#f44336';
+            const iconSpan = button.querySelector('.material-symbols-outlined')!;
+            iconSpan.textContent = this.urgentArmyOnlyEnabled ? 'emergency' : 'visibility_off';
+            const tooltip = button.querySelector('.md-tooltip')!;
+            tooltip.textContent = this.urgentArmyOnlyEnabled ? 'Urgent Army Only' : 'Show All Couriers';
         });
 
         return buttonDiv;
@@ -1030,6 +1080,43 @@ class DispatchMapController extends BaseController {
             } catch (e) {
                 console.error("Error loading couriers only preference:", e);
                 this.couriersOnlyEnabled = false;
+            }
+        }
+    }
+
+    async toggleUrgentArmyOnly(): Promise<void> {
+        this.urgentArmyOnlyEnabled = !this.urgentArmyOnlyEnabled;
+        this.saveUrgentArmyOnlyPreference();
+
+        // Refresh courier markers to apply the filter
+        if (this.showAvailableCouriers) {
+            await this.fetchCourierPositions();
+        }
+    }
+
+    private saveUrgentArmyOnlyPreference(): void {
+        const contactId = ContactID;
+        if (contactId && typeof window !== 'undefined' && window.localStorage) {
+            try {
+                window.localStorage.setItem(`mapUrgentArmyOnly-${contactId}`, JSON.stringify({display: this.urgentArmyOnlyEnabled}));
+            } catch (e) {
+                console.error("Error saving urgent army only preference:", e);
+            }
+        }
+    }
+
+    private loadUrgentArmyOnlyPreference(): void {
+        const contactId = ContactID;
+        if (contactId && typeof window !== 'undefined' && window.localStorage) {
+            try {
+                const savedPreference = window.localStorage.getItem(`mapUrgentArmyOnly-${contactId}`);
+                if (savedPreference) {
+                    const parsed = JSON.parse(savedPreference);
+                    this.urgentArmyOnlyEnabled = parsed.display;
+                }
+            } catch (e) {
+                console.error("Error loading urgent army only preference:", e);
+                this.urgentArmyOnlyEnabled = false;
             }
         }
     }

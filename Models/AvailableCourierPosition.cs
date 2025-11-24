@@ -9,7 +9,7 @@ public class AvailableCourierPosition
     public int ChannelId { get; set; }
     public string VehicleType { get; set; }
     public string Code { get; set; }
-    public string FleetCode { get; set; }
+    public bool IsUrgentArmyDriver { get; set; }
     public List<int> ClearListAreaIDs { get; set; }
     public decimal? Longitude { get; set; }
     public decimal? Latitude { get; set; }
