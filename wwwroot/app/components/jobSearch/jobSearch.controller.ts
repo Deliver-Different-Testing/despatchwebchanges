@@ -82,7 +82,7 @@ class JobSearchController extends BaseController {
     oldLayouts: ILayout[] = [];
     oldDefaultLayout?: ILayout;
     layout?: { columns: IColumn[] };
-    
+
     isUsCustomer: boolean;
     mapCenter: Coordinates;
     mapZoom: number;
@@ -143,7 +143,7 @@ class JobSearchController extends BaseController {
         this.isAdmin = ClientInternal;
 
         // Init layouts
-        if(!this.isUsCustomer) {
+        if (!this.isUsCustomer) {
             this.initializeGridster();
             this.initializeBoxes();
             this.loadGridsterLayoutsFromStorage();
@@ -176,7 +176,7 @@ class JobSearchController extends BaseController {
         this.courierSelectedItem = this.searchCriteria.client;
         this.clientSearchText = '';
         this.courierSearchText = '';
-        
+
         this.deliveryHistoryConfig = {
             showSummaryStats: true,
             densityMode: DensityMode.Normal
@@ -185,7 +185,7 @@ class JobSearchController extends BaseController {
         // Default to a fortnight
         this.onSearchRangeChange(this.dateSearchRange);
     }
-    
+
     // Old layout system
     private initializeOldLayoutSystem(): void {
         // Set up layout watchers
@@ -538,7 +538,7 @@ class JobSearchController extends BaseController {
         const layoutToLoad = this.layouts.find(l => l.name === lastActiveLayoutName) || this.defaultLayout;
         this.loadGridsterLayout(this.layouts.indexOf(layoutToLoad));
     }
-    
+
     private createDefaultGridsterLayout(): IGridsterLayout {
         return {
             name: 'Default',
@@ -1366,7 +1366,7 @@ class JobSearchController extends BaseController {
         console.log('🔄 Refresh clicked for:', boxName);
         console.log('🔄 Current job ID:', this.currentJobId);
         console.log('🔄 Is bulk job list?:', this.bulkJobList);
-        
+
         switch (boxName) {
             case JobSearchBoxes.JobList:
                 console.log('🔄 Refreshing JobList');
@@ -1501,6 +1501,23 @@ class JobSearchController extends BaseController {
     private syncVisibilityToBoxes(): void {
         if (!this.boxes) return;
         this.gridsterLayoutService.syncVisibilityToBoxes(this.gridsterItems, this.boxes);
+    }
+
+    updateFromDatePicker(dateTime: Dayjs): void {
+        this.updateDateField(dateTime, 'from_date');
+    }
+
+    updateToDatePicker(dateTime: Dayjs): void {
+        this.updateDateField(dateTime, 'to_date');
+    }
+
+    private updateDateField(dateTime: Dayjs, field: 'from_date' | 'to_date'): void {
+        if (!dateTime.isValid()) {
+            console.error("Returned datetime is invalid!");
+            return;
+        }
+
+        this.searchCriteria[field] = dateTime.startOf('day');
     }
 }
 

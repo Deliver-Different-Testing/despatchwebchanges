@@ -17,14 +17,16 @@
         <md-divider style="margin: 10px;"></md-divider>
 
         <div class="space" layout="column" layout-align="center end" ng-if="ctrl.dateSearchRange == 'custom'">
+
+
             <div>
                 <label id="from-datepicker-header">From: </label>
-                <md-datepicker
-                        md-date-locale="{ firstDayOfWeek: 1 }"
-                        input-aria-describedby="from-datepicker-description"
-                        input-aria-labelledby="from-datepicker-header "
-                        md-placeholder="Enter date"
-                        ng-model="ctrl.searchCriteria.from_date"></md-datepicker>
+                <custom-date-picker
+                        date-time="ctrl.searchCriteria.from_date"
+                        show-date="true"
+                        show-time="false"
+                        on-change="ctrl.updateFromDatePicker(dateTime)">
+                </custom-date-picker>
                 <p id="from-datepicker-description" style="display: none">
                     Start date search
                 </p>
@@ -32,12 +34,12 @@
 
             <div>
                 <label id="datepicker-header">To: </label>
-                <md-datepicker
-                        md-date-locale="{ firstDayOfWeek: 1 }"
-                        input-aria-describedby="to-datepicker-description"
-                        input-aria-labelledby="to-datepicker-header "
-                        md-placeholder="Enter date"
-                        ng-model="ctrl.searchCriteria.to_date"></md-datepicker>
+                <custom-date-picker
+                        date-time="ctrl.searchCriteria.to_date"
+                        show-date="true"
+                        show-time="false"
+                        on-change="ctrl.updateToDatePicker(dateTime)">
+                </custom-date-picker>
                 <p id="to-datepicker-description" style="display: none">
                     End date search
                 </p>
