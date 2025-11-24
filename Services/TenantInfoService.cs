@@ -18,8 +18,7 @@ public class TenantInfoService(
     IDbContextFactory<DespatchContext> contextFactory,
     IMemoryCache cache) : ITenantInfoService
 {
-    private DespatchContext _context;
-    private DespatchContext Context => _context ??= contextFactory.CreateDbContext();
+    private DespatchContext Context => field ??= contextFactory.CreateDbContext();
 
     private string _cachedTimeZone;
     private string _cachedCountryCode;

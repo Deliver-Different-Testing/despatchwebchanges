@@ -20,7 +20,7 @@ public class TucNoteViewModel
 
     public bool IsImportant { get; set; }
 
-    public DateTimeOffset CreatedDate { get; set; }
+    public DateTimeOffset? CreatedDate { get; set; }
 
     public int? CreatedBy { get; set; }
     public string CreatedByName { get; set; }
@@ -69,9 +69,7 @@ public class TucNoteViewModel
             JobBookingId = JobBookingId,
             NoteText = NoteText,
             IsImportant = IsImportant,
-            CreatedDate = CreatedDate.DateTime,
             CreatedBy = CreatedBy,
-            UpdatedDate = UpdatedDate?.DateTime ?? DateTime.Now,
             UpdatedBy = UpdatedBy
         };
     }
@@ -86,9 +84,7 @@ public class TucNoteViewModel
             JobBookingId = JobBookingId,
             NoteText = NoteText,
             IsImportant = IsImportant,
-            CreatedDate = CreatedDate.DateTime,
             CreatedBy = CreatedBy ?? 0,
-            UpdatedDate = UpdatedDate?.DateTime ?? DateTime.Now,
             UpdatedBy = UpdatedBy
         };
     }
