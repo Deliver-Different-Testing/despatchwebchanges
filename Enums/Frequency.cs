@@ -37,7 +37,7 @@ public static class FrequencyExtensions
             };
         }
 
-        private Frequency[] GetSelectedFrequencies()
+        public Frequency[] GetSelectedFrequencies()
         {
             return Enum.GetValues(typeof(Frequency))
                 .Cast<Frequency>()
@@ -46,7 +46,7 @@ public static class FrequencyExtensions
                 .ToArray();
         }
 
-        private bool MatchesDate(DateTime date, DateTime? referenceDate = null)
+        public bool MatchesDate(DateTime date, DateTime? referenceDate = null)
         {
             referenceDate ??= DateTime.Today;
 
@@ -72,16 +72,16 @@ public static class FrequencyExtensions
     }
 
     // Helper methods
-    private static bool IsWeeklyMatch(DateTime date, DateTime reference) => date.DayOfWeek == reference.DayOfWeek;
+    public static bool IsWeeklyMatch(DateTime date, DateTime reference) => date.DayOfWeek == reference.DayOfWeek;
 
-    private static bool IsFortnightlyMatch(DateTime date, DateTime reference)
+    public static bool IsFortnightlyMatch(DateTime date, DateTime reference)
     {
         // For fortnightly, check if the days are exactly 14 days apart from reference
         var diff = date.Date - reference.Date;
         return Math.Abs(diff.Days) % 14 == 0;
     }
 
-    private static bool IsFirstWorkdayOfMonth(DateTime date)
+    public static bool IsFirstWorkdayOfMonth(DateTime date)
     {
         // Check if the date is a weekday (not Saturday or Sunday)
         var isWeekday = date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday;
@@ -106,7 +106,7 @@ public static class FrequencyExtensions
         return true;
     }
 
-    private static bool IsLastWorkdayOfMonth(DateTime date)
+    public static bool IsLastWorkdayOfMonth(DateTime date)
     {
         // Check if the date is a weekday (not Saturday or Sunday)
         var isWeekday = date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday;
@@ -134,7 +134,7 @@ public static class FrequencyExtensions
         return true;
     }
 
-    private static DateTime? GetNextOccurrenceForSingleFrequency(Frequency frequency, DateTime after)
+    public static DateTime? GetNextOccurrenceForSingleFrequency(Frequency frequency, DateTime after)
     {
         // Start checking from the day after
         var current = after.AddDays(1);

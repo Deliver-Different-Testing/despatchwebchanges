@@ -27,7 +27,7 @@ public static class DaysOfWeekExtensions
             ? "None"
             : string.Join(", ", GetSelectedDays(days).Select(d => d.ToString()));
 
-        private DaysOfWeek[] GetSelectedDays()
+        public DaysOfWeek[] GetSelectedDays()
         {
             return Enum.GetValues(typeof(DaysOfWeek))
                 .Cast<DaysOfWeek>()
