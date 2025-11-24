@@ -1848,4 +1848,20 @@ public class JobController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
+
+    [HttpPost]
+    public async Task<IActionResult> SimpleRepriceJobManual([FromBody] SimpleRepriceJobModel data)
+    {
+        try
+        {
+            await jobRepository.SimpleRepriceJobManualAsync(data);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(SimpleRepriceJobManual)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
 }

@@ -14,7 +14,6 @@ export class PriceBreakdownDialogController extends BaseController {
         'priceBreakdowns',
         'jobId',
         'isPrebook',
-        'tucJobAmount'
     ];
 
     selectedPriceBreakdown?: PriceBreakdown;
@@ -73,12 +72,7 @@ export class PriceBreakdownDialogController extends BaseController {
             this.isParentJob = isParentJob;
         })
     }
-    
-    isUsingOldAmountMethod(): boolean {
-        const isUsingOldMethod = this.tucJobAmount != null && this.tucJobAmount > 0 && this.priceBreakdown.length === 0;
-        console.log('PriceBreakdownDialogController: isUsingOldAmountMethod', isUsingOldMethod);
-        return isUsingOldMethod;
-    }
+
     
     isJobsItem(item: PriceBreakdown): boolean {
         return item.childJobId === this.jobId;

@@ -14,7 +14,7 @@ import {
     IJobSearchResultDto,
     ILateCallRequest,
     InternalStatus,
-    IParcelDimensions,
+    IParcelDimensions, ISimpleRepriceJobModel,
     ISuggestion,
     ITimeZoneSuggestion,
     JobCreateViewModelDto,
@@ -1095,6 +1095,12 @@ class DispatchCoreService implements angular.IServiceProvider {
             }
         });
         return response.data;
+    }
+    
+    async simpleRepriceJobManual(jobId: number, isPrebook: boolean, newPrice: number) {
+        const data: ISimpleRepriceJobModel = {jobId, isPrebook, newPrice};
+        console.log("SimpleRepriceJobManual", data);
+        await this.$http.post("job/SimpleRepriceJobManual", data);
     }
 }
 

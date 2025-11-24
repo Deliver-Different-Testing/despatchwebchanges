@@ -4261,4 +4261,37 @@ public partial class JobRepository(
             throw;
         }
     }
+
+    public async Task SimpleRepriceJobManualAsync(SimpleRepriceJobModel data)
+    {
+        try
+        {
+            int rowsChanged;
+            if (data.IsPrebook)
+            {
+               rowsChanged = await Context.TucJobBookings
+                    .Where(j => j.UcbkId == data.JobId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(j => j.RatedManually, true)
+                        .SetProperty(j => j.UcbkAmount, data.NewPrice));
+            
+               if (rowsChanged == 0) throw new NullReferenceException($"No record found for prebook job {data.JobId}");
+                return;
+            }
+        
+            rowsChanged = await Context.TucJobs
+                .Where(j => j.UcjbId == data.JobId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.RatedManually, true)
+                    .SetProperty(j => j.UcjbAmount, data.NewPrice));
+            
+            if (rowsChanged == 0) throw new NullReferenceException($"No record found for job {data.JobId}");
+        }
+        catch (Exception e)
+        {
+          Log.Error(e, "{Message}", 
+              ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(SimpleRepriceJobManualAsync)));
+            throw;
+        }
+    }
 }
