@@ -45,7 +45,7 @@ export interface IAvailableCourierPosition {
     channelId: number;
     vehicleType: string;
     code: string;
-    fleetCode: string;
+    isUrgentArmyDriver: boolean;
     clearListAreaIDs: number[];
     longitude: number | null;
     latitude: number | null;

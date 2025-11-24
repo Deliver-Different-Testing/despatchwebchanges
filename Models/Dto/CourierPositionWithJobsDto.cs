@@ -13,7 +13,7 @@ public class CourierPositionWithJobsDto
     public string VehicleType { get; set; }
     public List<int> ClearListAreaIDs { get; set; } = [];
     public string Code { get; set; }
-    public string FleetCode { get; set; }
+    public int? FleetId { get; set; }
     public int TotalJobs { get; set; }
     public List<JobTimingDto> Jobs { get; set; } = [];
     public int? DisplayOrder { get; set; }

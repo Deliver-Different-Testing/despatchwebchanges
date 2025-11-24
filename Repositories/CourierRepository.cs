@@ -116,7 +116,6 @@ public class CourierRepository(
     private async Task<List<AvailableCourierPosition>> GetUsAvailableCourierPositionsAsync(CourierLocationRequest data)
     {
         var currentDate = infoService.GetCurrentTenantTime();
-        var uaFleetIds = new[] { 32, 33, 34, 35, 36, 37, 38, 64 };
 
         var courierData = await Context.TucCouriers
             .AsNoTracking()
@@ -139,7 +138,7 @@ public class CourierRepository(
                 ClearListAreaIDs = c.CourierGps.ZipPolygon.TblClearListAreaPolygons
                     .Select(x => x.ClearListArea.ClearListAreaId).ToList(),
                 Code = c.Code,
-                FleetCode = uaFleetIds.Contains(c.CourierFleetId ?? 0) ? "UA" : string.Empty,
+                FleetId = c.CourierFleetId,
                 DisplayOrder = c.TblClearListAreaOrder != null ? c.TblClearListAreaOrder.Status : null,
                 TotalJobs = c.TucJobUcjbCouriers.Count(j => !j.UcjbVoid && !j.UcjbJobDone),
                 Jobs = c.TucJobUcjbCouriers
@@ -164,7 +163,7 @@ public class CourierRepository(
             VehicleType = MapVehicleTypeToAbbreviation(c.VehicleType),
             ClearListAreaIDs = c.ClearListAreaIDs,
             Code = c.Code,
-            FleetCode = c.FleetCode,
+            IsUrgentArmyDriver = c.FleetId != null && ((CourierFleet)c.FleetId.Value).IsUrgentArmy(),
             TotalJobs = c.TotalJobs,
             OverDueJobs = c.Jobs.Count(j =>
                 j.UcjbTime != null &&
@@ -182,7 +181,7 @@ public class CourierRepository(
             .Where(c => c.CourierLogInOut.LogOutTime == null &&
                         c.CourierGps.Longitude >= data.MinLng && c.CourierGps.Longitude <= data.MaxLng &&
                         c.CourierGps.Latitude >= data.MinLat && c.CourierGps.Latitude <= data.MaxLat &&
-                        c.CourierFleetId != 29)
+                        c.CourierFleetId != (int)CourierFleet.ClientDriver)
             .Select(c => new CourierDto
             {
                 CourierId = c.UccrId,
@@ -210,7 +209,6 @@ public class CourierRepository(
             .ToListAsync();
 
         var now = infoService.GetCurrentTenantTime();
-        var uaFleetIds = new[] { 32, 33, 34, 35, 36, 37, 38, 64 };
 
         return couriers.Select(dto => new AvailableCourierPosition
         {
@@ -222,7 +220,7 @@ public class CourierRepository(
             VehicleType = MapVehicleTypeToAbbreviation(dto.VehicleType),
             ClearListAreaIDs = dto.ClearListAreaIDs,
             Code = dto.Code,
-            FleetCode = uaFleetIds.Contains(dto.FleetId ?? 0) ? "UA" : string.Empty,
+            IsUrgentArmyDriver = dto.FleetId != null && ((CourierFleet)dto.FleetId.Value).IsUrgentArmy(),
             TotalJobs = dto.TotalJobs,
             OverDueJobs = dto.Jobs.Count(j =>
                 j.UcjbTime != null && j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes ?? 0) < now),

@@ -19,83 +19,60 @@ public enum Frequency
 public static class FrequencyExtensions
 {
     // Convert to readable string
-    public static string ToDisplayString(this Frequency frequency)
+    extension(Frequency frequency)
     {
-        return frequency switch
+        public string ToDisplayString()
         {
-            Frequency.None => "None",
-            Frequency.Weekly => "Weekly",
-            Frequency.Fortnightly => "Fortnightly",
-            Frequency.FirstOfMonth => "First of the Month",
-            Frequency.SecondOfMonth => "Second of the Month",
-            Frequency.ThirdOfMonth => "Third of the Month",
-            Frequency.FirstWorkdayOfMonth => "First Workday of the Month",
-            Frequency.LastWorkdayOfMonth => "Last Workday of the Month",
-            _ => string.Join(", ", GetSelectedFrequencies(frequency).Select(ToDisplayString))
-        };
-    }
+            return frequency switch
+            {
+                Frequency.None => "None",
+                Frequency.Weekly => "Weekly",
+                Frequency.Fortnightly => "Fortnightly",
+                Frequency.FirstOfMonth => "First of the Month",
+                Frequency.SecondOfMonth => "Second of the Month",
+                Frequency.ThirdOfMonth => "Third of the Month",
+                Frequency.FirstWorkdayOfMonth => "First Workday of the Month",
+                Frequency.LastWorkdayOfMonth => "Last Workday of the Month",
+                _ => string.Join(", ", GetSelectedFrequencies(frequency).Select(ToDisplayString))
+            };
+        }
 
-    // Get an array of selected Frequency values
-    private static Frequency[] GetSelectedFrequencies(this Frequency frequency)
-    {
-        return Enum.GetValues(typeof(Frequency))
-            .Cast<Frequency>()
-            .Where(f => f != Frequency.None)
-            .Where(f => frequency.HasFlag(f))
-            .ToArray();
-    }
+        private Frequency[] GetSelectedFrequencies()
+        {
+            return Enum.GetValues(typeof(Frequency))
+                .Cast<Frequency>()
+                .Where(f => f != Frequency.None)
+                .Where(f => frequency.HasFlag(f))
+                .ToArray();
+        }
 
-    // Check if a specific frequency is included
-    
+        private bool MatchesDate(DateTime date, DateTime? referenceDate = null)
+        {
+            referenceDate ??= DateTime.Today;
 
-    // Check if a specific date matches this frequency
-    public static bool MatchesDate(this Frequency frequency, DateTime date, DateTime? referenceDate = null)
-    {
-        referenceDate ??= DateTime.Today;
+            // For any frequency, check each flag
+            var matches = false;
 
-        // For any frequency, check each flag
-        var matches = false;
+            if (frequency.HasFlag(Frequency.Weekly)) matches |= IsWeeklyMatch(date, referenceDate.Value);
 
-        if (frequency.HasFlag(Frequency.Weekly)) matches |= IsWeeklyMatch(date, referenceDate.Value);
+            if (frequency.HasFlag(Frequency.Fortnightly)) matches |= IsFortnightlyMatch(date, referenceDate.Value);
 
-        if (frequency.HasFlag(Frequency.Fortnightly)) matches |= IsFortnightlyMatch(date, referenceDate.Value);
+            if (frequency.HasFlag(Frequency.FirstOfMonth)) matches |= date.Day == 1;
 
-        if (frequency.HasFlag(Frequency.FirstOfMonth)) matches |= date.Day == 1;
+            if (frequency.HasFlag(Frequency.SecondOfMonth)) matches |= date.Day == 2;
 
-        if (frequency.HasFlag(Frequency.SecondOfMonth)) matches |= date.Day == 2;
+            if (frequency.HasFlag(Frequency.ThirdOfMonth)) matches |= date.Day == 3;
 
-        if (frequency.HasFlag(Frequency.ThirdOfMonth)) matches |= date.Day == 3;
+            if (frequency.HasFlag(Frequency.FirstWorkdayOfMonth)) matches |= IsFirstWorkdayOfMonth(date);
 
-        if (frequency.HasFlag(Frequency.FirstWorkdayOfMonth)) matches |= IsFirstWorkdayOfMonth(date);
+            if (frequency.HasFlag(Frequency.LastWorkdayOfMonth)) matches |= IsLastWorkdayOfMonth(date);
 
-        if (frequency.HasFlag(Frequency.LastWorkdayOfMonth)) matches |= IsLastWorkdayOfMonth(date);
-
-        return matches;
-    }
-
-    // Get the next occurrence of this frequency after the specified date
-    public static DateTime? GetNextOccurrence(this Frequency frequency, DateTime after)
-    {
-        var selectedFrequencies = GetSelectedFrequencies(frequency);
-        if (selectedFrequencies.Length == 0)
-            return null;
-
-        // Find the next occurrence for each selected frequency
-        var nextDates = selectedFrequencies.Select(f => GetNextOccurrenceForSingleFrequency(f, after))
-            .Where(d => d.HasValue)
-            .Select(d => d.Value);
-
-        // Return the earliest one
-        var dateTimes = nextDates as DateTime[] ?? nextDates.ToArray();
-        return dateTimes.Length != 0 ? dateTimes.Min() : null;
+            return matches;
+        }
     }
 
     // Helper methods
-    private static bool IsWeeklyMatch(DateTime date, DateTime reference)
-    {
-        // For weekly, just check if the day of week matches the reference
-        return date.DayOfWeek == reference.DayOfWeek;
-    }
+    private static bool IsWeeklyMatch(DateTime date, DateTime reference) => date.DayOfWeek == reference.DayOfWeek;
 
     private static bool IsFortnightlyMatch(DateTime date, DateTime reference)
     {
