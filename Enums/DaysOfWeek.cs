@@ -21,20 +21,20 @@ public enum DaysOfWeek
 
 public static class DaysOfWeekExtensions
 {
-    extension(DaysOfWeek days)
+    public static string ToDisplayString(this DaysOfWeek days)
     {
-        public string ToDisplayString() => days == DaysOfWeek.None
+        return days == DaysOfWeek.None
             ? "None"
-            : string.Join(", ", GetSelectedDays(days).Select(d => d.ToString()));
+            : string.Join(", ", days.GetSelectedDays().Select(d => d.ToString()));
+    }
 
-        public DaysOfWeek[] GetSelectedDays()
-        {
-            return Enum.GetValues(typeof(DaysOfWeek))
-                .Cast<DaysOfWeek>()
-                .Where(d => d != DaysOfWeek.None && d != DaysOfWeek.Weekdays && d != DaysOfWeek.Weekend &&
-                            d != DaysOfWeek.All)
-                .Where(d => days.HasFlag(d))
-                .ToArray();
-        }
+    public static DaysOfWeek[] GetSelectedDays(this DaysOfWeek days)
+    {
+        return Enum.GetValues(typeof(DaysOfWeek))
+            .Cast<DaysOfWeek>()
+            .Where(d => d != DaysOfWeek.None && d != DaysOfWeek.Weekdays && d != DaysOfWeek.Weekend &&
+                        d != DaysOfWeek.All)
+            .Where(d => days.HasFlag(d))
+            .ToArray();
     }
 }
