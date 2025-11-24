@@ -46,6 +46,7 @@ import JobAddStopService from "./services/job-add-stop.service";
 import AddressLookupService from "./services/address-lookup.service";
 import dayjs from "dayjs";
 import 'dayjs/locale/en';
+import 'dayjs/locale/en-nz';
 import NoDataComponent from "./components/common/no-data/no-data.component";
 import TruckCourierStatusDialogController
     from "./components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.controller";
@@ -108,7 +109,7 @@ app.config(["$qProvider", ($qProvider: angular.IQProvider) => {
         $mdDateLocaleProvider: angular.material.IDateLocaleProvider,
         appConfig: IAppConfig) => {
         if (!appConfig.US_Customer) {
-            dayjs().locale("en-nz");
+            dayjs.locale("en-nz");
 
             $mdDateLocaleProvider.formatDate = (date: Date) => dayjs(date).format("DD/MM/YYYY");
 

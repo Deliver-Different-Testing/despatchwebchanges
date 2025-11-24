@@ -9,15 +9,7 @@ type EntryPointName = 'vendor' | 'app' | 'home' | 'nationwide' | 'overview' | 'j
 type EntryPoints = Record<EntryPointName, string>;
 
 // Configuration
-const nodeEnv = process.env.NODE_ENV || "development";
-const isDev = process.argv.includes("--dev") || nodeEnv === "development";
-const isStaging = nodeEnv === "staging" || nodeEnv === "testing";
-const isProd = nodeEnv === "production";
-
-const enableVerboseLogging = isDev || isStaging;
-const shouldOptimize = isStaging || isProd;
-const shouldWatch = process.argv.includes("--dev"); 
-
+const isDev = process.argv.includes("--dev");
 const rootDir = __dirname;
 const distPath = path.join(rootDir, "wwwroot/dist");
 
@@ -76,7 +68,7 @@ function createHtmlMinifierPlugin(): esbuild.Plugin {
                 const html = await fs.promises.readFile(args.path, 'utf8');
 
                 let minified = html;
-                if (!shouldOptimize) {
+                if (!isDev) {
                     try {
                         const { minify } = require('html-minifier-terser');
                         minified = await minify(html, {
@@ -132,18 +124,18 @@ function getBuildConfig(): esbuild.BuildOptions {
     return {
         entryPoints,
         bundle: true,
-        sourcemap: enableVerboseLogging,
-        minify: shouldOptimize,
-        minifyWhitespace: shouldOptimize,
-        minifyIdentifiers: shouldOptimize,
-        minifySyntax: shouldOptimize,
+        sourcemap: isDev,
+        minify: !isDev,
+        minifyWhitespace: !isDev,
+        minifyIdentifiers: !isDev,
+        minifySyntax: !isDev,
         target: ["es2015"],
-        metafile: shouldOptimize,
-        treeShaking: shouldOptimize,
-        legalComments: enableVerboseLogging ? "inline" : "none",
+        metafile: !isDev,
+        treeShaking: !isDev,
+        legalComments: isDev ? "inline" : "none",
         format: "iife",
         mainFields: ["browser", "module", "main"],
-        logLevel: enableVerboseLogging ? "info" : "error",
+        logLevel: isDev ? "info" : "error",
         plugins: [
             lessLoader({
                 math: "always",
@@ -152,7 +144,7 @@ function getBuildConfig(): esbuild.BuildOptions {
             createErrorReportingPlugin(),
         ],
         define: {
-            "process.env.NODE_ENV": shouldOptimize ? '"development"' : '"production"',
+            "process.env.NODE_ENV": isDev ? '"development"' : '"production"',
             global: "window",
             jQuery: "window.jQuery",
             $: "window.$",
@@ -264,23 +256,9 @@ async function buildDev(): Promise<void> {
         outdir: distPath,
     };
 
-    if (shouldWatch) {
-        // Only watch when --dev flag is passed
-        console.log("[DEV] Starting file watcher...");
-        const ctx = await esbuild.context(config);
-        await ctx.watch();
-
-        console.log(`[DEV] Build complete. Watching for changes...`);
-        console.log(`Files are being output to ${distPath}`);
-        console.log("[DEV] Serve these files with IIS for debugging");
-
-        // Keep the process running for watching
-        await new Promise(() => {});
-    } else {
-        // Just build once without watching
-        await esbuild.build(config);
-        console.log("[DEV] Build complete (no watching)");
-    }
+    // Create context for watching
+    const ctx = await esbuild.context(config);
+    await ctx.watch();
 
     // Create a simple manifest (no hashing in dev mode)
     const manifest = generateSimpleManifest();
@@ -288,6 +266,13 @@ async function buildDev(): Promise<void> {
         path.join(distPath, "manifest.json"),
         JSON.stringify(manifest, null, 2)
     );
+
+    console.log(`[DEV] Build complete. Watching for changes...`);
+    console.log(`Files are being output to ${distPath}`);
+    console.log("[DEV] Serve these files with IIS for debugging");
+
+    // Keep the process running for watching
+    await new Promise(() => {});
 }
 
 async function buildProd(): Promise<void> {
