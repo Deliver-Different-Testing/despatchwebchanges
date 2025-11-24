@@ -922,3 +922,9 @@ export interface IDeletePriceComponentRequest {
     jobId: number;
     chargeId: number;
 }
+
+export interface ISimpleRepriceJobModel {
+    jobId: number;
+    isPrebook: boolean;
+    newPrice: number
+}

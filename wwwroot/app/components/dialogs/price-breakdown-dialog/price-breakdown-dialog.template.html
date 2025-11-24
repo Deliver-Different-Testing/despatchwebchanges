@@ -138,17 +138,9 @@
                                 </tr>
                                 </tbody>
                             </table>
-
-                            <!-- Empty State -->
-                            <no-data ng-if="ctrl.priceBreakdown.length === 0 && ctrl.isUsingOldAmountMethod()"
-                                     title="No price items yet"
-                                     message="Detailed pricing breakdowns are not available for this job as it was created using our previous pricing method."
-                                     icon="receipt_long"
-                                     show-action="false">
-                            </no-data>
                             
                             <!-- Empty State -->
-                            <no-data ng-if="ctrl.priceBreakdown.length === 0 && !ctrl.isUsingOldAmountMethod()"
+                            <no-data ng-if="ctrl.priceBreakdown.length === 0"
                                      title="No price items yet"
                                      message="Start by adding your first price breakdown item"
                                      icon="receipt_long"

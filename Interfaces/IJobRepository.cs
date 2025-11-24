@@ -203,4 +203,5 @@ public interface IJobRepository
     Task<bool> ValidatePodSwapAsync(string jobNumber);
     Task<string> GetStaffNameAsync(int staffId);
     Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType);
+    Task SimpleRepriceJobManualAsync(SimpleRepriceJobModel data);
 }
