@@ -30,8 +30,7 @@ class DispatchMapController extends BaseController {
     private locationRefreshInterval?: angular.IPromise<void>;
     private readonly LOCATION_REFRESH_INTERVAL = 15000;
     private readonly MAX_JOBS_TO_DISPLAY = 1000; // Limit jobs to prevent performance issues
-    private readonly BATCH_SIZE = 200; // Process 200 jobs at a time for faster rendering
-    private readonly BATCH_DELAY = 0; // No delay between batches for instant rendering
+    private readonly BATCH_SIZE = 200; // Process 200 jobs at a time for faster rendering// No delay between batches for instant rendering
     private refreshCouriersMarkerListener?: Function;
     private boundsChangedListener?: Function;
     private pendingChanges: {
@@ -62,6 +61,7 @@ class DispatchMapController extends BaseController {
     onMarkerClick?: (params: { job: IDispatchMapItem }) => void;
     showAvailableCouriers: boolean = false;
     autoZoomEnabled: boolean = true;
+    couriersOnlyEnabled: boolean = false;
     markers: google.maps.Marker[] = [];
     flags: any[] = [];
     labels: google.maps.Marker[] = [];
@@ -69,7 +69,7 @@ class DispatchMapController extends BaseController {
     map?: google.maps.Map;
     tooltip?: google.maps.InfoWindow;
     clearListId?: number;
-    
+
     constructor(
         private NgMap: angular.map.INgMap,
         private configService: ConfigService,
@@ -83,12 +83,13 @@ class DispatchMapController extends BaseController {
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
-        
+
         this.bindFunctions();
     }
 
     $onInit() {
         this.loadAutoZoomPreference();
+        this.loadCouriersOnlyPreference();
 
         this.configService.getGoogleMapsKey()
             .then((apiKey: string) => {
@@ -123,7 +124,7 @@ class DispatchMapController extends BaseController {
                 console.error("[DispatchMapController] Error initializing map:", error);
             });
     }
-    
+
     private bindFunctions() {
         this.onBoundsChanged = this.onBoundsChanged.bind(this);
         this.toggleAutoZoom = this.toggleAutoZoom.bind(this);
@@ -235,11 +236,11 @@ class DispatchMapController extends BaseController {
             && changes['mapZoom'].currentValue) {
             this.initialMapZoom = changes['mapZoom'].currentValue;
         }
-        
-        if(changes['clearListId'] && changes['clearListId'].currentValue) {
+
+        if (changes['clearListId'] && changes['clearListId'].currentValue) {
             this.clearListId = changes['clearListId'].currentValue;
 
-            if(!this.clearListId) return;
+            if (!this.clearListId) return;
             this.updateMapWithClearListEnvelope(this.clearListId);
         }
     }
@@ -329,7 +330,7 @@ class DispatchMapController extends BaseController {
 
         try {
             const coordinates = await this.getSearchCoordinates();
-            const couriers =  await this.DispatchData.getAvailableCourierLocation(
+            const couriers = await this.DispatchData.getAvailableCourierLocation(
                 coordinates.west,
                 coordinates.south,
                 coordinates.east,
@@ -371,8 +372,13 @@ class DispatchMapController extends BaseController {
             north: Number(center.lat) + offset
         };
     }
-    
+
     private async updateDisplayedJobs() {
+        if (this.couriersOnlyEnabled) {
+            // Don't add job markers when couriers-only mode is active
+            return;
+        }
+
         if (this.isUpdating) {
             if (this.markers.length === 0) {
             } else {
@@ -484,16 +490,8 @@ class DispatchMapController extends BaseController {
             });
 
             totalMarkersAdded += batchMarkersAdded;
-
-            // No delay needed - batching alone prevents UI blocking
-            // if (i + batchSize < jobs.length) {
-            //     await new Promise<void>(resolve => {
-            //         this.registerTimeout(() => resolve(), this.BATCH_DELAY);
-            //     });
-            // }
         }
 
-        // Removed 500ms delay - markers can render immediately
         this.isUpdating = false;
         return totalMarkersAdded;
     }
@@ -578,7 +576,11 @@ class DispatchMapController extends BaseController {
     }
 
 
-    private setupMarkerListeners(marker: google.maps.Marker, job: IDispatchMapItem, normalIcon: google.maps.Symbol, hoverIcon: google.maps.Symbol, locationType: string) {
+    private setupMarkerListeners(marker: google.maps.Marker,
+                                 job: IDispatchMapItem,
+                                 normalIcon: google.maps.Symbol,
+                                 hoverIcon: google.maps.Symbol,
+                                 locationType: string) {
         const isCurrentJob = job.jobId === this.currentJob?.jobId;
 
         marker.addListener("mouseover", () => {
@@ -600,20 +602,11 @@ class DispatchMapController extends BaseController {
         });
 
         marker.addListener("click", () => {
-             if (this.isUpdating) {
+            if (this.isUpdating) {
                 return;
             }
 
             const currentZoom = this.mapInstance!.getZoom();
-
-            // Disabled bounce animation for performance
-            // if (locationType === "Delivery") {
-            //     marker.setAnimation(this.$window.google.maps.Animation.BOUNCE);
-            //     this.registerTimeout(() => {
-            //         marker.setAnimation(null);
-            //     }, 750);
-            // }
-
             this.mapInstance!.setCenter(marker.getPosition() as google.maps.LatLng);
 
             if (!this.autoZoomEnabled && currentZoom) {
@@ -626,16 +619,6 @@ class DispatchMapController extends BaseController {
                 }
             }, 100);
         });
-    }
-
-    private getFlagColor(courier: IAvailableCourierPosition): string {
-        if (courier.overDueJobs > 0) {
-            return '#FF1493';
-        } else if (courier.totalJobs === 0) {
-            return '#00FFFF';
-        } else {
-            return '#000000';
-        }
     }
 
     private getFlagTextColor(courier: IAvailableCourierPosition): string {
@@ -652,7 +635,7 @@ class DispatchMapController extends BaseController {
 
         const flagTextColor = this.getFlagTextColor(courier);
 
-        // Determine CSS class based on courier status
+        // Determine a CSS class based on courier status
         let className = "courier courierMarker";
         if (courier.totalJobs === 0) {
             className = "courier courierCream courierMarker";
@@ -668,7 +651,7 @@ class DispatchMapController extends BaseController {
             cssClass: className
         });
 
-        // Create the display text - backend returns abbreviated vehicle type
+        // Create the display text - backend returns an abbreviated vehicle type
         const displayText = courier.overDueJobs > 0
             ? `${courier.code}-${courier.vehicleType}${courier.totalJobs}/${courier.overDueJobs}`
             : `${courier.code}-${courier.vehicleType}${courier.totalJobs}`;
@@ -771,14 +754,12 @@ class DispatchMapController extends BaseController {
     }
 
     private isValidCoordinates(lat?: number, lng?: number): boolean {
-        const isValid = Boolean(
+        return Boolean(
             lat && lng && !isNaN(lat) && !isNaN(lng) &&
             lat !== 0 && lng !== 0 &&
             lat >= -90 && lat <= 90 &&
             lng >= -180 && lng <= 180
         );
-
-        return isValid;
     }
 
     private startLocationRefreshInterval() {
@@ -840,11 +821,35 @@ class DispatchMapController extends BaseController {
     private addAutoZoomButton() {
         const mapControlsDiv = document.createElement('div');
         mapControlsDiv.className = 'map-controls';
-        mapControlsDiv.style.margin = '10px'; 
+        mapControlsDiv.style.margin = '10px';
         mapControlsDiv.style.zIndex = '1';
+        mapControlsDiv.style.display = 'flex';
+        mapControlsDiv.style.flexDirection = 'column';
+        mapControlsDiv.style.gap = '10px';
 
-        // Create the button HTML content 
-        mapControlsDiv.innerHTML = `
+        // Auto Zoom button
+        const autoZoomButton = this.createAutoZoomButton();
+        mapControlsDiv.appendChild(autoZoomButton);
+
+        // Couriers-Only button
+        const couriersOnlyButton = this.createCouriersOnlyButton();
+        mapControlsDiv.appendChild(couriersOnlyButton);
+
+        // Add the Material Icons font if not already loaded
+        if (!document.getElementById('material-icons-font')) {
+            const link = document.createElement('link');
+            link.id = 'material-icons-font';
+            link.rel = 'stylesheet';
+            link.href = 'https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined';
+            document.head.appendChild(link);
+        }
+
+        this.mapInstance!.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(mapControlsDiv);
+    }
+
+    private createAutoZoomButton(): HTMLElement {
+        const buttonDiv = document.createElement('div');
+        buttonDiv.innerHTML = `
         <button class="md-fab md-mini ${this.autoZoomEnabled ? 'md-primary' : 'md-warn'}" 
                 aria-label="Toggle Auto Zoom"
                 style="width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer; 
@@ -866,57 +871,74 @@ class DispatchMapController extends BaseController {
         </button>
     `;
 
-        // Get the button element
-        const button = mapControlsDiv.querySelector('button');
+        const button = buttonDiv.querySelector('button')!;
+        this.setupButtonHoverEffect(button);
 
-        // Add hover effect for the tooltip
-        if (button) {
-            button.addEventListener('mouseenter', () => {
-                const tooltip: any = button.querySelector('.md-tooltip');
-                if (tooltip) {
-                    tooltip.style.opacity = '1';
-                }
-            });
+        button.addEventListener('click', () => {
+            this.toggleAutoZoom();
+            button.style.backgroundColor = this.autoZoomEnabled ? '#3f51b5' : '#f44336';
+            const iconSpan = button.querySelector('.material-symbols-outlined')!;
+            iconSpan.textContent = this.autoZoomEnabled ? 'fit_screen' : 'zoom_out_map';
+            const tooltip = button.querySelector('.md-tooltip')!;
+            tooltip.textContent = this.autoZoomEnabled ? 'Auto Zoom Enabled' : 'Auto Zoom Disabled';
+        });
 
-            button.addEventListener('mouseleave', () => {
-                const tooltip: any = button.querySelector('.md-tooltip');
-                if (tooltip) {
-                    tooltip.style.opacity = '0';
-                }
-            });
+        return buttonDiv;
+    }
 
-            // Add click event listener
-            button.addEventListener('click', () => {
-                this.toggleAutoZoom();
+    private createCouriersOnlyButton(): HTMLElement {
+        const buttonDiv = document.createElement('div');
+        buttonDiv.innerHTML = `
+        <button class="md-fab md-mini ${this.couriersOnlyEnabled ? 'md-primary' : 'md-warn'}" 
+                aria-label="Toggle Couriers Only"
+                style="width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer; 
+                       box-shadow: 0 2px 5px rgba(0,0,0,0.3); outline: none; display: flex; 
+                       justify-content: center; align-items: center;
+                       background-color: ${this.couriersOnlyEnabled ? '#3f51b5' : '#f44336'};">
+            <span class="material-symbols-outlined" 
+                  style="color: white; font-size: 20px;">
+                ${this.couriersOnlyEnabled ? 'local_shipping' : 'map'}
+            </span>
+            <div class="md-tooltip" 
+                 style="position: absolute; left: 45px; 
+                        background-color: rgba(97,97,97,0.9); color: white;
+                        padding: 4px 8px; border-radius: 2px; font-size: 10px;
+                        white-space: nowrap; opacity: 0; transition: opacity 0.3s;
+                        pointer-events: none;">
+                ${this.couriersOnlyEnabled ? 'Couriers Only' : 'Show All'}
+            </div>
+        </button>
+    `;
 
-                // Update button appearance
-                button.style.backgroundColor = this.autoZoomEnabled ? '#3f51b5' : '#f44336';
+        const button = buttonDiv.querySelector('button')!;
+        this.setupButtonHoverEffect(button);
 
-                // Update the icon
-                const iconSpan = button.querySelector('.material-symbols-outlined');
-                if (iconSpan) {
-                    iconSpan.textContent = this.autoZoomEnabled ? 'fit_screen' : 'zoom_out_map';
-                }
+        button.addEventListener('click', async () => {
+            await this.toggleCouriersOnly();
+            button.style.backgroundColor = this.couriersOnlyEnabled ? '#3f51b5' : '#f44336';
+            const iconSpan = button.querySelector('.material-symbols-outlined')!;
+            iconSpan.textContent = this.couriersOnlyEnabled ? 'local_shipping' : 'map';
+            const tooltip = button.querySelector('.md-tooltip')!;
+            tooltip.textContent = this.couriersOnlyEnabled ? 'Couriers Only' : 'Show All';
+        });
 
-                // Update the tooltip text
-                const tooltip = button.querySelector('.md-tooltip');
-                if (tooltip) {
-                    tooltip.textContent = this.autoZoomEnabled ? 'Auto Zoom Enabled' : 'Auto Zoom Disabled';
-                }
-            });
-        }
+        return buttonDiv;
+    }
 
-        // Add the Material Icons font if not already loaded
-        if (!document.getElementById('material-icons-font')) {
-            const link = document.createElement('link');
-            link.id = 'material-icons-font';
-            link.rel = 'stylesheet';
-            link.href = 'https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined';
-            document.head.appendChild(link);
-        }
+    private setupButtonHoverEffect(button: HTMLButtonElement): void {
+        button.addEventListener('mouseenter', () => {
+            const tooltip = button.querySelector('.md-tooltip') as HTMLElement;
+            if (tooltip) {
+                tooltip.style.opacity = '1';
+            }
+        });
 
-        // Add the control to the map
-        this.mapInstance!.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(mapControlsDiv);
+        button.addEventListener('mouseleave', () => {
+            const tooltip = button.querySelector('.md-tooltip') as HTMLElement;
+            if (tooltip) {
+                tooltip.style.opacity = '0';
+            }
+        });
     }
 
     async updateMapWithClearListEnvelope(clearListId: number): Promise<any> {
@@ -938,7 +960,7 @@ class DispatchMapController extends BaseController {
             throw error;
         }
     }
-    
+
     fitMapToEnvelope(envelopeData: ClearListEnvelopeViewModel, zoomLevel?: number): void {
         if (!this.mapInstance || !envelopeData) {
             return;
@@ -964,6 +986,51 @@ class DispatchMapController extends BaseController {
             }
         } catch (error) {
             console.error('[DispatchMapController] Error fitting map to envelope:', error);
+        }
+    }
+
+    async toggleCouriersOnly(): Promise<void> {
+        this.couriersOnlyEnabled = !this.couriersOnlyEnabled;
+        this.saveCouriersOnlyPreference();
+
+        if (this.couriersOnlyEnabled) {
+            // Hide all job markers
+            this.clearJobMarkers();
+            // Show only couriers
+            if (this.showAvailableCouriers) {
+                this.fetchCourierPositions()
+                    .catch(error => console.error('[DispatchMapController] Error fetching couriers:', error));
+            }
+        } else {
+            // Restore job markers
+            await this.updateDisplayedJobs();
+        }
+    }
+
+    private saveCouriersOnlyPreference(): void {
+        const contactId = ContactID;
+        if (contactId && typeof window !== 'undefined' && window.localStorage) {
+            try {
+                window.localStorage.setItem(`mapCouriersOnly-${contactId}`, JSON.stringify({display: this.couriersOnlyEnabled}));
+            } catch (e) {
+                console.error("Error saving couriers only preference:", e);
+            }
+        }
+    }
+
+    private loadCouriersOnlyPreference(): void {
+        const contactId = ContactID;
+        if (contactId && typeof window !== 'undefined' && window.localStorage) {
+            try {
+                const savedPreference = window.localStorage.getItem(`mapCouriersOnly-${contactId}`);
+                if (savedPreference) {
+                    const parsed = JSON.parse(savedPreference);
+                    this.couriersOnlyEnabled = parsed.display;
+                }
+            } catch (e) {
+                console.error("Error loading couriers only preference:", e);
+                this.couriersOnlyEnabled = false;
+            }
         }
     }
 }
