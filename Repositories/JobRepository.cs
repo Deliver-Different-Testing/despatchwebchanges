@@ -1115,9 +1115,9 @@ public partial class JobRepository(
         try
         {
             // Configure Dapper to use ColumnAttribute for mapping
-            Dapper.SqlMapper.SetTypeMap(
+            SqlMapper.SetTypeMap(
                 typeof(PerformanceSpendReportModel),
-                new Dapper.CustomPropertyTypeMap(
+                new CustomPropertyTypeMap(
                     typeof(PerformanceSpendReportModel),
                     (type, columnName) =>
                         type.GetProperties().FirstOrDefault(prop =>
@@ -1130,8 +1130,8 @@ public partial class JobRepository(
             );
 
             // Call the stored procedure using Dapper (handles type conversions flexibly)
-            // Pass only the date part (without time component)
-            using var connection = Context.Database.GetDbConnection();
+            // Pass only the date part (without a time component)
+            await using var connection = Context.Database.GetDbConnection();
 
             var parameters = new DynamicParameters();
             parameters.Add("@ClientID", request.ClientId ?? 0, DbType.Int32);
@@ -2035,11 +2035,32 @@ public partial class JobRepository(
         await Context.Procedures.DESWEB_stpVoidPrebookJobAsync(jobId, staffInfo.Text, staffInfo.Id);
     }
 
+
     public async Task UpdateDeliveryAddressAsync(UpdateAddressRequest request)
     {
         try
         {
             var address = request.Address;
+            var isArchived = await IsJobArchived(request.JobId);
+
+            // Update archive record if JobId is found
+            if (isArchived)
+            {
+                await Context.TucJobArchives
+                    .Where(j => j.UcjbId == request.JobId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(j => j.DeliveryLatitude, address.Latitude)
+                        .SetProperty(j => j.DeliveryLongitude, address.Longitude)
+                        .SetProperty(j => j.DeliveryAddressLine1, address.AddressLine1)
+                        .SetProperty(j => j.DeliveryAddressLine2, address.AddressLine2)
+                        .SetProperty(j => j.DeliveryAddressLine3, address.AddressLine3)
+                        .SetProperty(j => j.DeliveryAddressLine4, address.AddressLine4)
+                        .SetProperty(j => j.DeliveryAddressLine5, address.AddressLine5)
+                        .SetProperty(j => j.DeliveryAddressLine6, address.AddressLine6)
+                        .SetProperty(j => j.DeliveryAddressLine7, address.AddressLine7));
+
+                return;
+            }
 
             var rowsAffected = await Context.TucJobs
                 .Where(j => j.UcjbId == request.JobId)
@@ -2071,6 +2092,25 @@ public partial class JobRepository(
         try
         {
             var address = request.Address;
+            var isArchived = await IsJobArchived(request.JobId);
+
+            if (isArchived)
+            {
+                await Context.TucJobArchives
+                    .Where(j => j.UcjbId == request.JobId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(j => j.PickUpLatitude, address.Latitude)
+                        .SetProperty(j => j.PickUpLongitude, address.Longitude)
+                        .SetProperty(j => j.PickupAddressLine1, address.AddressLine1)
+                        .SetProperty(j => j.PickupAddressLine2, address.AddressLine2)
+                        .SetProperty(j => j.PickupAddressLine3, address.AddressLine3)
+                        .SetProperty(j => j.PickupAddressLine4, address.AddressLine4)
+                        .SetProperty(j => j.PickupAddressLine5, address.AddressLine5)
+                        .SetProperty(j => j.PickupAddressLine6, address.AddressLine6)
+                        .SetProperty(j => j.PickupAddressLine7, address.AddressLine7));
+
+                return;
+            }
 
             var rowsAffected = await Context.TucJobs
                 .Where(j => j.UcjbId == request.JobId)
@@ -2105,16 +2145,15 @@ public partial class JobRepository(
     {
         try
         {
-            // Update either active or archived job
-            var isActiveJob = Context.TucJobs.Any(j => j.UcjbId == jobId);
-            if (isActiveJob)
+            var isArchived = await IsJobArchived(jobId);
+            if (isArchived)
             {
-                await UpdateTucJobAsync(jobId, field, value);
+                await UpdateTucJobArchiveAsync(jobId, field, value);
                 return;
             }
 
-            // Job will be archived
-            await UpdateTucJobArchiveAsync(jobId, field, value);
+            // Job will be active
+            await UpdateTucJobAsync(jobId, field, value);
         }
         catch (Exception e)
         {
@@ -2145,9 +2184,10 @@ public partial class JobRepository(
     {
         try
         {
-            ArgumentNullException.ThrowIfNull(jobNumber, nameof(jobNumber));
+            ArgumentNullException.ThrowIfNull(jobNumber);
 
-            Log.Information("Executing stored procedure to release bulk job {JobNumber} with booking date {BookDate}", jobNumber, bookDate);
+            Log.Information("Executing stored procedure to release bulk job {JobNumber} with booking date {BookDate}",
+                jobNumber, bookDate);
 
             await Context.Procedures.UTL_stpJob_tblBulkJob_ReleaseByJobNumberAsync(jobNumber, bookDate);
 
@@ -4269,28 +4309,29 @@ public partial class JobRepository(
             int rowsChanged;
             if (data.IsPrebook)
             {
-               rowsChanged = await Context.TucJobBookings
+                rowsChanged = await Context.TucJobBookings
                     .Where(j => j.UcbkId == data.JobId)
                     .ExecuteUpdateAsync(setters => setters
                         .SetProperty(j => j.RatedManually, true)
                         .SetProperty(j => j.UcbkAmount, data.NewPrice));
-            
-               if (rowsChanged == 0) throw new NullReferenceException($"No record found for prebook job {data.JobId}");
+
+                if (rowsChanged == 0) throw new NullReferenceException($"No record found for prebook job {data.JobId}");
                 return;
             }
-        
+
             rowsChanged = await Context.TucJobs
                 .Where(j => j.UcjbId == data.JobId)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(j => j.RatedManually, true)
                     .SetProperty(j => j.UcjbAmount, data.NewPrice));
-            
+
             if (rowsChanged == 0) throw new NullReferenceException($"No record found for job {data.JobId}");
         }
         catch (Exception e)
         {
-          Log.Error(e, "{Message}", 
-              ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(SimpleRepriceJobManualAsync)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository),
+                    nameof(SimpleRepriceJobManualAsync)));
             throw;
         }
     }

@@ -517,7 +517,7 @@ public class BaseJobRepository(
     }
 
     // Helper Methods
-    private async Task<bool> IsJobArchived(int jobId) =>
+    protected async Task<bool> IsJobArchived(int jobId) =>
         await Context.TucJobArchives.AnyAsync(j => j.UcjbId == jobId);
 
     private async Task<int> GetEffectiveJobId(int jobId, bool isArchived)

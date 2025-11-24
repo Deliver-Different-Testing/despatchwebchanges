@@ -1002,11 +1002,19 @@ class JobDetailController extends BaseController {
         try {
             console.log(`isDeliveryAddress: ${isDeliveryAddress}`);
 
-            await this.updateJobRateAndAddress(
-                job,
-                newAddress,
-                isDeliveryAddress
-            );
+            if (isDeliveryAddress) {
+                await this.DispatchData.updateDeliveryAddress(
+                    job.id,
+                    job.preBook,
+                    newAddress
+                );
+            } else {
+                await this.DispatchData.updatePickupAddress(
+                    job.id,
+                    job.preBook,
+                    newAddress
+                );
+            }
 
             this.toastrService.showSuccessToast(`${job.jobNo} updated`);
             await this.refreshJobDetails(job.id);
@@ -1014,32 +1022,7 @@ class JobDetailController extends BaseController {
             this.handleError(error);
         }
     }
-
-    private async updateJobRateAndAddress(
-        job: IJob,
-        addressResult: IEditAddressDialogViewModel,
-        isDeliveryAddress: boolean
-    ): Promise<void> {
-        try {
-            if (isDeliveryAddress) {
-                await this.DispatchData.updateDeliveryAddress(
-                    job.id,
-                    job.preBook,
-                    addressResult
-                );
-            } else {
-                await this.DispatchData.updatePickupAddress(
-                    job.id,
-                    job.preBook,
-                    addressResult
-                );
-            }
-        } catch (error) {
-            console.error("Error updating job rate and address:", error);
-            throw error;
-        }
-    }
-
+    
     async editJobContact(
         $event: MouseEvent,
         job: IJob,
