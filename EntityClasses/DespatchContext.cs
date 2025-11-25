@@ -149,6 +149,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TucInvoiceNo> TucInvoiceNos { get; set; }
 
+    public virtual DbSet<TucInvoiceProcess> TucInvoiceProcesses { get; set; }
+
     public virtual DbSet<TucJob> TucJobs { get; set; }
 
     public virtual DbSet<TucJobArchive> TucJobArchives { get; set; }
@@ -220,13 +222,11 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.AirportId).HasColumnName("AirportID");
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__AgentVehi__Creat__6BBAB2B6")
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.DistanceRateId).HasColumnName("DistanceRateID");
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__AgentVehi__LastM__6CAED6EF")
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
             entity.Property(e => e.VehicleSizeId).HasColumnName("VehicleSizeID");
@@ -249,9 +249,7 @@ public partial class DespatchContext : DbContext
             entity.HasKey(e => e.AirFreightRateId).HasName("PK__AirFreig__19F7CB686B1AD212");
 
             entity.Property(e => e.AirFreightRateId).HasColumnName("AirFreightRateID");
-            entity.Property(e => e.Active)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__AirFreigh__Activ__641990EE");
+            entity.Property(e => e.Active).HasDefaultValue(true);
             entity.Property(e => e.AirFreightFuelSurcharge).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.AirFreightRateName).HasMaxLength(255);
             entity.Property(e => e.AirlineSecuritySurcharge).HasColumnType("decimal(18, 4)");
@@ -261,7 +259,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ClientId).HasColumnName("ClientID");
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__AirFreigh__Creat__650DB527")
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.CriticalServiceSurcharge).HasColumnType("decimal(18, 4)");
@@ -270,7 +267,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.GroundDistanceRateId).HasColumnName("GroundDistanceRateID");
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__AirFreigh__LastM__6601D960")
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
             entity.Property(e => e.RateCardId).HasColumnName("RateCardID");
@@ -292,12 +288,12 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.WeightBreakGroup).WithMany(p => p.AirFreightRates)
                 .HasForeignKey(d => d.WeightBreakGroupId)
-                .HasConstraintName("FK__AirFreigh__Weigh__277A9702");
+                .HasConstraintName("FK__AirFreigh__Weigh__2962DF74");
         });
 
         modelBuilder.Entity<CargoFacility>(entity =>
         {
-            entity.HasKey(e => e.CargoFacilityId).HasName("PK__CargoFac__309D83507FB6C1E3");
+            entity.HasKey(e => e.CargoFacilityId).HasName("PK__CargoFac__309D8350B0257389");
 
             entity.Property(e => e.CargoFacilityId).HasColumnName("CargoFacilityID");
             entity.Property(e => e.AirportId).HasColumnName("AirportID");
@@ -316,12 +312,12 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.Airport).WithMany(p => p.CargoFacilities)
                 .HasForeignKey(d => d.AirportId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__CargoFaci__Airpo__22A0D34C");
+                .HasConstraintName("FK__CargoFaci__Airpo__2E678BB3");
 
             entity.HasOne(d => d.Carrier).WithMany(p => p.CargoFacilities)
                 .HasForeignKey(d => d.CarrierId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__CargoFaci__Carri__2394F785");
+                .HasConstraintName("FK__CargoFaci__Carri__2F5BAFEC");
         });
 
         modelBuilder.Entity<DesQryAllJobType>(entity =>
@@ -636,14 +632,11 @@ public partial class DespatchContext : DbContext
 
             entity.Property(e => e.PageId).HasColumnName("PageID");
             entity.Property(e => e.ViewId).HasColumnName("ViewID");
-            entity.Property(e => e.Created)
-                .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__DFRNTPage__Creat__4377B732");
+            entity.Property(e => e.Created).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.CreatedBy)
                 .IsRequired()
                 .HasMaxLength(50)
-                .HasDefaultValue("System")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__DFRNTPage__Creat__428392F9");
+                .HasDefaultValue("System");
             entity.Property(e => e.ModifiedBy).HasMaxLength(50);
 
             entity.HasOne(d => d.View).WithMany(p => p.DfrntpageViews)
@@ -664,7 +657,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ClientId).HasColumnName("ClientID");
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__ExtraChar__Creat__7B9C14C4")
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.CubicExcess).HasColumnType("decimal(18, 4)");
@@ -697,7 +689,6 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("ItemsExcessDP");
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__ExtraChar__LastM__7C9038FD")
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
             entity.Property(e => e.PalletExcess).HasColumnType("decimal(18, 4)");
@@ -776,9 +767,9 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<FlightWebhookEventType>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__FlightWe__3214EC07C9B483C0");
+            entity.HasKey(e => e.Id).HasName("PK__FlightWe__3214EC079BC35BAC");
 
-            entity.HasIndex(e => e.EventCode, "UQ__FlightWe__640F6716E813B3F1").IsUnique();
+            entity.HasIndex(e => e.EventCode, "UQ__FlightWe__640F67164EC148F8").IsUnique();
 
             entity.Property(e => e.Category)
                 .HasMaxLength(20)
@@ -856,7 +847,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<JobDeliveryJourney>(entity =>
         {
-            entity.HasKey(e => e.JourneyId).HasName("PK__JobDeliv__4159B9CF7A520701");
+            entity.HasKey(e => e.JourneyId).HasName("PK__JobDeliv__4159B9CFA99F08CB");
 
             entity.ToTable("JobDeliveryJourney");
 
@@ -945,7 +936,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<JobDeliveryJourneyArchive>(entity =>
         {
-            entity.HasKey(e => e.JourneyId).HasName("PK__JobDeliv__4159B9CF37BD79EC");
+            entity.HasKey(e => e.JourneyId).HasName("PK__JobDeliv__4159B9CF15F138C3");
 
             entity.ToTable("JobDeliveryJourneyArchive");
 
@@ -987,7 +978,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<JobRecoveryAgent>(entity =>
         {
-            entity.HasKey(e => e.RecoveryId).HasName("PK__JobRecov__EE4C84ACAA36A485");
+            entity.HasKey(e => e.RecoveryId).HasName("PK__JobRecov__EE4C84AC989929EC");
 
             entity.Property(e => e.CreatedOn)
                 .HasDefaultValueSql("(getdate())")
@@ -1051,7 +1042,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.ChildPrebookJob).WithMany(p => p.PricingBreakdownChildPrebookJobs)
                 .HasForeignKey(d => d.ChildPrebookJobId)
-                .HasConstraintName("FK__PricingBr__Child__6DC2F6B9");
+                .HasConstraintName("FK__PricingBr__Child__265C5597");
 
             entity.HasOne(d => d.Job).WithMany(p => p.PricingBreakdownJobs)
                 .HasForeignKey(d => d.JobId)
@@ -1096,16 +1087,10 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.SiteId, "SiteID");
 
             entity.Property(e => e.AfterHoursId).HasColumnName("AfterHoursID");
-            entity.Property(e => e.Active)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblAfterHours_Active");
+            entity.Property(e => e.Active).HasDefaultValue(true);
             entity.Property(e => e.AgentId).HasColumnName("AgentID");
-            entity.Property(e => e.AllAgents).HasAnnotation("Relational:DefaultConstraintName", "DF__tblAfterH__AllAg__224B023A");
-            entity.Property(e => e.AllSpeeds).HasAnnotation("Relational:DefaultConstraintName", "DF_tblAfterHours_AllSpeeds");
             entity.Property(e => e.Amount).HasColumnType("money");
-            entity.Property(e => e.CanBook)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblAfterHours_CanBook");
+            entity.Property(e => e.CanBook).HasDefaultValue(true);
             entity.Property(e => e.ClientId).HasColumnName("ClientID");
             entity.Property(e => e.CourierId).HasColumnName("CourierID");
             entity.Property(e => e.Created).HasColumnType("datetime");
@@ -1114,7 +1099,6 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(50);
             entity.Property(e => e.DayName).HasMaxLength(50);
             entity.Property(e => e.EndTime).HasColumnType("datetime");
-            entity.Property(e => e.EveryDay).HasAnnotation("Relational:DefaultConstraintName", "DF_tblAfterHours_EveryDay");
             entity.Property(e => e.JobEntryType)
                 .IsRequired()
                 .HasMaxLength(20);
@@ -1186,14 +1170,12 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CargoFacilityFee).HasColumnType("money");
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tblAirpor__Creat__233F2673")
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy).HasMaxLength(50);
             entity.Property(e => e.ExtraInfo).HasMaxLength(550);
             entity.Property(e => e.FlightBufferMinutes).HasDefaultValue(120);
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tblAirpor__LastM__24334AAC")
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy).HasMaxLength(50);
             entity.Property(e => e.Latitude).HasColumnType("decimal(18, 9)");
@@ -1298,7 +1280,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.DeliveryAddressLine8).HasMaxLength(255);
             entity.Property(e => e.DeliveryLatitude).HasMaxLength(50);
             entity.Property(e => e.DeliveryLongitude).HasMaxLength(50);
-            entity.Property(e => e.Done).HasAnnotation("Relational:DefaultConstraintName", "DF__tblBulkJob__Done__30992191");
             entity.Property(e => e.DropOffLocationId).HasColumnName("DropOffLocationID");
             entity.Property(e => e.FromAddress).HasMaxLength(150);
             entity.Property(e => e.FromCompany).HasMaxLength(150);
@@ -1308,7 +1289,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.JobId).HasColumnName("JobID");
             entity.Property(e => e.JobNumber).HasMaxLength(50);
             entity.Property(e => e.JobRelationshipTypeId).HasColumnName("JobRelationshipTypeID");
-            entity.Property(e => e.JobStatus).HasAnnotation("Relational:DefaultConstraintName", "DF__tblBulkJo__JobSt__2EB0D91F");
             entity.Property(e => e.LabelPrinted).HasPrecision(3);
             entity.Property(e => e.Length).HasColumnType("numeric(18, 0)");
             entity.Property(e => e.LinehaulRunId).HasColumnName("LinehaulRunID");
@@ -1317,7 +1297,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.MultiboxParentId).HasColumnName("MultiboxParentID");
             entity.Property(e => e.Notes).HasMaxLength(4000);
             entity.Property(e => e.NwdocJob).HasColumnName("NWDocJob");
-            entity.Property(e => e.OnHold).HasAnnotation("Relational:DefaultConstraintName", "DF__tblBulkJo__OnHol__2FA4FD58");
             entity.Property(e => e.OrderRef).HasMaxLength(50);
             entity.Property(e => e.OurRef).HasMaxLength(20);
             entity.Property(e => e.ParentId).HasColumnName("ParentID");
@@ -1357,7 +1336,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.TotalDistance).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.TrackingEmail).HasMaxLength(500);
             entity.Property(e => e.TrackingMobile).HasMaxLength(500);
-            entity.Property(e => e.Void).HasAnnotation("Relational:DefaultConstraintName", "DF__tblBulkJob__Void__318D45CA");
             entity.Property(e => e.Weight).HasColumnType("decimal(6, 2)");
             entity.Property(e => e.Width).HasColumnType("numeric(18, 0)");
 
@@ -1385,7 +1363,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TblBulkJobPickupTimeZones)
                 .HasForeignKey(d => d.PickupTimeZoneId)
-                .HasConstraintName("FK__tblBulkJo__Picku__4B82ED4E");
+                .HasConstraintName("FK__tblBulkJo__Picku__3652C63E");
 
             entity.HasOne(d => d.Region).WithMany(p => p.TblBulkJobs)
                 .HasForeignKey(d => d.RegionId)
@@ -1421,12 +1399,12 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.ChildJob).WithMany(p => p.TblBulkJobItems)
                 .HasForeignKey(d => d.ChildJobId)
-                .HasConstraintName("FK_tblBulkJobItems_ChildJobID");
+                .HasConstraintName("FK__tblBulkJo__Child__1B1FAD15");
         });
 
         modelBuilder.Entity<TblBulkJobNote>(entity =>
         {
-            entity.HasKey(e => e.NoteId).HasName("PK__tblBulkJ__EACE357FF165E07A");
+            entity.HasKey(e => e.NoteId).HasName("PK__tblBulkJ__EACE357F685011A3");
 
             entity.ToTable("tblBulkJobNotes");
 
@@ -1443,20 +1421,20 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.BulkJob).WithMany(p => p.TblBulkJobNotes)
                 .HasForeignKey(d => d.BulkJobId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__tblBulkJo__BulkJ__24541194");
+                .HasConstraintName("FK__tblBulkJo__BulkJ__5734971C");
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.TblBulkJobNoteCreatedByNavigations)
                 .HasForeignKey(d => d.CreatedBy)
-                .HasConstraintName("FK__tblBulkJo__Creat__27307E3F");
+                .HasConstraintName("FK__tblBulkJo__Creat__5A1103C7");
 
             entity.HasOne(d => d.NoteType).WithMany(p => p.TblBulkJobNotes)
                 .HasForeignKey(d => d.NoteTypeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__tblBulkJo__NoteT__235FED5B");
+                .HasConstraintName("FK__tblBulkJo__NoteT__564072E3");
 
             entity.HasOne(d => d.UpdatedByNavigation).WithMany(p => p.TblBulkJobNoteUpdatedByNavigations)
                 .HasForeignKey(d => d.UpdatedBy)
-                .HasConstraintName("FK__tblBulkJo__Updat__2824A278");
+                .HasConstraintName("FK__tblBulkJo__Updat__5B052800");
         });
 
         modelBuilder.Entity<TblBulkRegion>(entity =>
@@ -1468,9 +1446,7 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.AccountsCode, "IX_AccountsCode");
 
             entity.Property(e => e.AccountsCode).HasMaxLength(50);
-            entity.Property(e => e.Active)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tblBulkRe__Activ__32816A03");
+            entity.Property(e => e.Active).HasDefaultValue(true);
             entity.Property(e => e.AddressLine1).HasMaxLength(255);
             entity.Property(e => e.AddressLine2).HasMaxLength(255);
             entity.Property(e => e.AddressLine3).HasMaxLength(255);
@@ -1582,14 +1558,12 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(50);
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblClearListArea_Created")
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy)
                 .IsRequired()
                 .HasMaxLength(50);
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblClearListArea_LastModified")
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy)
                 .IsRequired()
@@ -1597,9 +1571,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(100);
-            entity.Property(e => e.Order)
-                .HasDefaultValue(1)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblClearListArea_Order");
+            entity.Property(e => e.Order).HasDefaultValue(1);
         });
 
         modelBuilder.Entity<TblClearListAreaOrder>(entity =>
@@ -1619,14 +1591,12 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CourierId).HasColumnName("CourierID");
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblClearListAreaOrder_Created")
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy)
                 .IsRequired()
                 .HasMaxLength(50);
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblClearListAreaOrder_LastModified")
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy)
                 .IsRequired()
@@ -1659,14 +1629,12 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ClearListAreaId).HasColumnName("ClearListAreaID");
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblClearListAreaPolygon_Created")
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy)
                 .IsRequired()
                 .HasMaxLength(50);
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblClearListAreaPolygon_LastModified")
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy)
                 .IsRequired()
@@ -2089,55 +2057,40 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => new { e.ClientId, e.Active, e.SpeedId, e.Apivisible, e.WebVisible, e.InternalVisible }, "idx_tblClientAvailableSpeed_ClientID_Active_Visibility_SpeedID");
 
             entity.Property(e => e.Id).HasColumnName("ID");
-            entity.Property(e => e.Active)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tblClient__Activ__41C3AD93");
+            entity.Property(e => e.Active).HasDefaultValue(true);
             entity.Property(e => e.AddonPercentage).HasColumnType("decimal(5, 4)");
             entity.Property(e => e.Apivisible)
                 .HasDefaultValue(false)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tblClient__APIVi__44A01A3E")
                 .HasColumnName("APIVisible");
-            entity.Property(e => e.BookImmediate)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tblClient__BookI__45943E77");
+            entity.Property(e => e.BookImmediate).HasDefaultValue(true);
             entity.Property(e => e.ClientId).HasColumnName("ClientID");
             entity.Property(e => e.CourierPercentage).HasColumnType("decimal(5, 4)");
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tblClient__Creat__477C86E9")
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy)
                 .HasMaxLength(50)
-                .HasDefaultValue("dbo")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tblClient__Creat__4870AB22");
+                .HasDefaultValue("dbo");
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.DisplayName).HasMaxLength(200);
             entity.Property(e => e.EndTime).HasColumnType("datetime");
             entity.Property(e => e.Faf).HasColumnName("FAF");
             entity.Property(e => e.FuelPercentage).HasColumnType("decimal(5, 4)");
-            entity.Property(e => e.InternalVisible)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tblClient__Inter__42B7D1CC");
+            entity.Property(e => e.InternalVisible).HasDefaultValue(true);
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tblClient__LastM__4964CF5B")
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy)
                 .HasMaxLength(50)
-                .HasDefaultValue("dbo")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tblClient__LastM__4A58F394");
+                .HasDefaultValue("dbo");
             entity.Property(e => e.Markup).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.Mfv).HasColumnName("MFV");
             entity.Property(e => e.NoSdailyLimit).HasColumnName("NoSDailyLimit");
-            entity.Property(e => e.ProcessingTime)
-                .HasDefaultValue(0)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tblClient__Proce__468862B0");
+            entity.Property(e => e.ProcessingTime).HasDefaultValue(0);
             entity.Property(e => e.SalePrice).HasColumnType("money");
             entity.Property(e => e.SpeedId).HasColumnName("SpeedID");
             entity.Property(e => e.StartTime).HasColumnType("datetime");
-            entity.Property(e => e.WebVisible)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tblClient__WebVi__43ABF605");
+            entity.Property(e => e.WebVisible).HasDefaultValue(true);
             entity.Property(e => e.Weekday)
                 .HasMaxLength(7)
                 .IsUnicode(false);
@@ -2158,7 +2111,6 @@ public partial class DespatchContext : DbContext
             entity.ToTable("tblClientAvailableSpeedItems");
 
             entity.Property(e => e.Id).HasColumnName("ID");
-            entity.Property(e => e.Active).HasAnnotation("Relational:DefaultConstraintName", "DF__tblClient__Activ__4B4D17CD");
             entity.Property(e => e.ClientAvailableSpeedId).HasColumnName("ClientAvailableSpeedID");
             entity.Property(e => e.ClientItemId).HasColumnName("ClientItemID");
             entity.Property(e => e.Created).HasColumnType("datetime");
@@ -2194,12 +2146,10 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => new { e.ClientId, e.ContactId }, "UC_tblClientContact").IsUnique();
 
             entity.Property(e => e.ClientContactId).HasColumnName("ClientContactID");
-            entity.Property(e => e.AddOnCharge).HasAnnotation("Relational:DefaultConstraintName", "DF_tblClientContact_AddOnCharge");
             entity.Property(e => e.ClientId).HasColumnName("ClientID");
             entity.Property(e => e.ContactId).HasColumnName("ContactID");
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblClientContact_Created")
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy)
                 .IsRequired()
@@ -2219,27 +2169,19 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("DefaultPODPhone");
             entity.Property(e => e.DefaultPrinter)
                 .HasMaxLength(50)
-                .HasDefaultValueSql("((0))")
-                .HasAnnotation("Relational:DefaultConstraintName", "Constraint_DefaultPrinter");
-            entity.Property(e => e.DefaultRotate180)
-                .HasDefaultValue(false)
-                .HasAnnotation("Relational:DefaultConstraintName", "Rotate180DefaultValue");
+                .HasDefaultValueSql("((0))");
+            entity.Property(e => e.DefaultRotate180).HasDefaultValue(false);
             entity.Property(e => e.DefaultSendTrackAndTraceToPodemail)
                 .HasDefaultValue(false)
-                .HasAnnotation("Relational:DefaultConstraintName", "SendTrackAndTraceToPODEmailDefaultValue")
                 .HasColumnName("DefaultSendTrackAndTraceToPODEmail");
             entity.Property(e => e.DefaultTrackingEmail).HasMaxLength(500);
             entity.Property(e => e.DefaultTrackingMobile).HasMaxLength(500);
-            entity.Property(e => e.HoldJobs).HasAnnotation("Relational:DefaultConstraintName", "DF_tblClientContact_HoldJobs");
-            entity.Property(e => e.IsDefaultAccount).HasAnnotation("Relational:DefaultConstraintName", "DF_tblClientContact_IsDefaultAccount");
             entity.Property(e => e.LastModified).HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy)
                 .IsRequired()
                 .HasMaxLength(50);
             entity.Property(e => e.MaxJobSpend).HasColumnType("money");
             entity.Property(e => e.Notes).HasColumnType("ntext");
-            entity.Property(e => e.RotateLabel).HasAnnotation("Relational:DefaultConstraintName", "DF__tblClient__Rotat__5105F123");
-            entity.Property(e => e.UseDefaultOnNewBooking).HasAnnotation("Relational:DefaultConstraintName", "df_UseDefaultOnNewBooking");
 
             entity.HasOne(d => d.Client).WithMany(p => p.TblClientContacts)
                 .HasForeignKey(d => d.ClientId)
@@ -2651,11 +2593,8 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CourierId).HasColumnName("CourierID");
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblCourierGPS_Created")
                 .HasColumnType("datetime");
-            entity.Property(e => e.GpswasEstimated)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblCourierGPS_GPSWasEstimated")
-                .HasColumnName("GPSWasEstimated");
+            entity.Property(e => e.GpswasEstimated).HasColumnName("GPSWasEstimated");
             entity.Property(e => e.JobId).HasColumnName("JobID");
             entity.Property(e => e.Latitude).HasColumnType("decimal(18, 9)");
             entity.Property(e => e.Longitude).HasColumnType("decimal(18, 9)");
@@ -2690,7 +2629,6 @@ public partial class DespatchContext : DbContext
 
             entity.Property(e => e.CourierLogInOutId).HasColumnName("CourierLogInOutID");
             entity.Property(e => e.AppVersion).HasMaxLength(10);
-            entity.Property(e => e.AutoLogOut).HasAnnotation("Relational:DefaultConstraintName", "DF_tblCourierLogInOut_AutoLogOut");
             entity.Property(e => e.CourierId).HasColumnName("CourierID");
             entity.Property(e => e.Created).HasColumnType("datetime");
             entity.Property(e => e.CreatedBy)
@@ -2731,12 +2669,8 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(50);
-            entity.Property(e => e.ShowOnAssistDespatch)
-                .HasDefaultValue(false)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblDespatchView_ShowOnAssistDespatch");
-            entity.Property(e => e.ShowOnDespatch)
-                .HasDefaultValue(false)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblDespatchView_ShowOnDespatch");
+            entity.Property(e => e.ShowOnAssistDespatch).HasDefaultValue(false);
+            entity.Property(e => e.ShowOnDespatch).HasDefaultValue(false);
             entity.Property(e => e.WhereCondition)
                 .HasMaxLength(1000)
                 .IsUnicode(false);
@@ -2781,11 +2715,8 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.SiteId, "SiteID");
 
             entity.Property(e => e.HolidayId).HasColumnName("HolidayID");
-            entity.Property(e => e.AllSpeeds).HasAnnotation("Relational:DefaultConstraintName", "DF_tblHoliday_AllSpeeds");
             entity.Property(e => e.Amount).HasColumnType("money");
-            entity.Property(e => e.CanBook)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblHoliday_CanBook");
+            entity.Property(e => e.CanBook).HasDefaultValue(true);
             entity.Property(e => e.ClientId).HasColumnName("ClientID");
             entity.Property(e => e.CourierId).HasColumnName("CourierID");
             entity.Property(e => e.Created).HasColumnType("datetime");
@@ -2805,8 +2736,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(50)
-                .HasDefaultValue("TBA")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblHoliday_Name");
+                .HasDefaultValue("TBA");
             entity.Property(e => e.Notes).HasColumnType("ntext");
             entity.Property(e => e.SiteId).HasColumnName("SiteID");
             entity.Property(e => e.SpeedId).HasColumnName("SpeedID");
@@ -2826,18 +2756,14 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.Name, "UX_InternetPermission_Name").IsUnique();
 
             entity.Property(e => e.InternetPermissionId).HasColumnName("InternetPermissionID");
-            entity.Property(e => e.AssignToNewContacts).HasAnnotation("Relational:DefaultConstraintName", "DF_tblInternetPermission_AssignToNewContacts");
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblInternetPermission_Created")
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy)
                 .IsRequired()
                 .HasMaxLength(50);
-            entity.Property(e => e.HideWhenInactive).HasAnnotation("Relational:DefaultConstraintName", "DF_tblInternetPermission_HideWhenInactive");
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblInternetPermission_LastModified")
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy)
                 .IsRequired()
@@ -3040,9 +2966,7 @@ public partial class DespatchContext : DbContext
             entity.ToTable("tblJobLeaveNotHome");
 
             entity.Property(e => e.LeaveNotHomeId).HasColumnName("LeaveNotHomeID");
-            entity.Property(e => e.AllowLeave)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblJobLeaveNotHome_AllowLeave");
+            entity.Property(e => e.AllowLeave).HasDefaultValue(true);
             entity.Property(e => e.Category).HasMaxLength(100);
             entity.Property(e => e.Created).HasColumnType("datetime");
             entity.Property(e => e.CreatedBy)
@@ -3056,8 +2980,6 @@ public partial class DespatchContext : DbContext
                 .IsRequired()
                 .HasMaxLength(100);
             entity.Property(e => e.Notes).HasColumnType("ntext");
-            entity.Property(e => e.RequireCourierNotes).HasAnnotation("Relational:DefaultConstraintName", "DF_tblJobLeaveNotHome_RequireCourierNotes");
-            entity.Property(e => e.Sequence).HasAnnotation("Relational:DefaultConstraintName", "DF_tblJobLeaveNotHome_Sequence");
             entity.Property(e => e.Smsname)
                 .IsRequired()
                 .HasMaxLength(100)
@@ -3073,21 +2995,14 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.SystemName, "SystemName").IsUnique();
 
             entity.Property(e => e.JobRelationshipTypeId).HasColumnName("JobRelationshipTypeID");
-            entity.Property(e => e.AutoDespatchToOtherChildJobs).HasAnnotation("Relational:DefaultConstraintName", "DF_tblJobRelationshipType_AutoDespatchToOtherChildJobs");
-            entity.Property(e => e.AutoVoid).HasAnnotation("Relational:DefaultConstraintName", "DF_tblJobRelationshipType_AutoVoid");
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblJobRelationshipType_Created")
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy)
                 .IsRequired()
                 .HasMaxLength(50);
-            entity.Property(e => e.DisplayDespatch).HasAnnotation("Relational:DefaultConstraintName", "DF_tblJobRelationshipType_DisplayDespatch");
-            entity.Property(e => e.DisplayStatement).HasAnnotation("Relational:DefaultConstraintName", "DF_tblJobRelationshipType_DisplayStatement");
-            entity.Property(e => e.DisplayWeb).HasAnnotation("Relational:DefaultConstraintName", "DF_tblJobRelationshipType_DisplayWeb");
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblJobRelationshipType_LastModified")
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy)
                 .IsRequired()
@@ -3095,18 +3010,11 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(50);
-            entity.Property(e => e.PostAmountToClient).HasAnnotation("Relational:DefaultConstraintName", "DF_tblJobRelationshipType_PostAmountToClient");
-            entity.Property(e => e.RecalculateAutomaticSpeedCalculation).HasAnnotation("Relational:DefaultConstraintName", "DF_tblJobRelationshipType_RecalculateAutomaticSpeedCalculation");
-            entity.Property(e => e.SendJobPodtoClient)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblJobRelationshipType_SendJobPODToClient")
-                .HasColumnName("SendJobPODToClient");
-            entity.Property(e => e.SendJobToCourier).HasAnnotation("Relational:DefaultConstraintName", "DF_tblJobRelationshipType_SendJobToCourier");
-            entity.Property(e => e.SendJobUpdatesToClient).HasAnnotation("Relational:DefaultConstraintName", "DF_tblJobRelationshipType_SendJobUpdatesToClient");
+            entity.Property(e => e.SendJobPodtoClient).HasColumnName("SendJobPODToClient");
             entity.Property(e => e.ShortName).HasMaxLength(50);
             entity.Property(e => e.SystemName)
                 .IsRequired()
                 .HasMaxLength(50);
-            entity.Property(e => e.UpdateJobInformationParentFromDevice).HasAnnotation("Relational:DefaultConstraintName", "DF_tblJobRelationshipType_UpdateParentJobInformation");
         });
 
         modelBuilder.Entity<TblPolygon>(entity =>
@@ -3125,7 +3033,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.AreaId).HasColumnName("AreaID");
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblPolygon_Created")
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy)
                 .IsRequired()
@@ -3133,7 +3040,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ExternalId).HasColumnName("ExternalID");
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblPolygon_LastModified")
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy)
                 .IsRequired()
@@ -3155,14 +3061,12 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PolygonGpsid).HasColumnName("PolygonGPSID");
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblSuburbGPS_Created")
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy)
                 .IsRequired()
                 .HasMaxLength(50);
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblSuburbGPS_LastModified")
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy)
                 .IsRequired()
@@ -3263,7 +3167,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ContactValidateEmailValidatedSubject)
                 .IsRequired()
                 .HasMaxLength(500);
-            entity.Property(e => e.Development).HasAnnotation("Relational:DefaultConstraintName", "DF_tblSMPPSettings_Development");
             entity.Property(e => e.ErrorEmail)
                 .IsRequired()
                 .HasMaxLength(100)
@@ -3389,8 +3292,6 @@ public partial class DespatchContext : DbContext
                 .IsRequired()
                 .HasColumnType("ntext")
                 .HasColumnName("PODSMSMessage");
-            entity.Property(e => e.ProcessMsg).HasAnnotation("Relational:DefaultConstraintName", "DF_tblSMPPSettings_ProcessMsg");
-            entity.Property(e => e.SendContactAdhocEmails).HasAnnotation("Relational:DefaultConstraintName", "DF_tblSMPPSettings_SendContactAdhocEmails");
             entity.Property(e => e.Smscaddress)
                 .IsRequired()
                 .HasMaxLength(50)
@@ -3437,7 +3338,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UndeliverableLocationId).HasColumnName("UndeliverableLocationID");
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblUndeliverableLocation_Created")
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy)
                 .IsRequired()
@@ -3445,7 +3345,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.JobTypeId).HasColumnName("JobTypeID");
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tblUndeliverableLocation_LastModified")
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy)
                 .IsRequired()
@@ -3473,7 +3372,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TimeZone>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__TimeZone__3214EC07FB74C3A0");
+            entity.HasKey(e => e.Id).HasName("PK__TimeZone__3214EC072CB4AFDD");
 
             entity.ToTable("TimeZone");
 
@@ -3639,20 +3538,12 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.AddressLine7).HasMaxLength(255);
             entity.Property(e => e.AddressLine8).HasMaxLength(255);
             entity.Property(e => e.AddressStreetName).HasMaxLength(200);
-            entity.Property(e => e.AirNzknownShipper)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_AirNZKnownShipper")
-                .HasColumnName("AirNZKnownShipper");
+            entity.Property(e => e.AirNzknownShipper).HasColumnName("AirNZKnownShipper");
             entity.Property(e => e.AirNzmargin)
                 .HasDefaultValue(0.57m)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_AirNZMargin")
                 .HasColumnType("decimal(18, 2)")
                 .HasColumnName("AirNZMargin");
-            entity.Property(e => e.AlertLateDelivery).HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_AlertLateDelivery");
-            entity.Property(e => e.AlertLatePickUp).HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_AlertLatePickUp");
-            entity.Property(e => e.ApplyCitySurcharge)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ApplyCitySurcharge");
-            entity.Property(e => e.BaggageActive).HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_BaggageActive");
+            entity.Property(e => e.ApplyCitySurcharge).HasDefaultValue(true);
             entity.Property(e => e.BaggageRateCodeId).HasColumnName("BaggageRateCodeID");
             entity.Property(e => e.BulkAternoonHomePickupTime).HasColumnType("datetime");
             entity.Property(e => e.BulkHomeDeliveryPickupRateId).HasColumnName("BulkHomeDeliveryPickupRateID");
@@ -3663,33 +3554,24 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ChilledVanHireRateCodeId).HasColumnName("ChilledVanHireRateCodeID");
             entity.Property(e => e.CitySurchargeRate)
                 .HasDefaultValue(1.75m)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_CitySurchargeRate")
                 .HasColumnType("money");
             entity.Property(e => e.CommissionDate).HasColumnType("datetime");
             entity.Property(e => e.CourierPercentage).HasColumnType("decimal(18, 6)");
-            entity.Property(e => e.CreateBulkHomeDeliveryPickup)
-                .HasDefaultValue(false)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tucClient__Creat__163A3110");
+            entity.Property(e => e.CreateBulkHomeDeliveryPickup).HasDefaultValue(false);
             entity.Property(e => e.Created).HasColumnType("datetime");
             entity.Property(e => e.CreatedBy)
                 .IsRequired()
                 .HasMaxLength(50);
             entity.Property(e => e.DangerousServiceRateCodeId).HasColumnName("DangerousServiceRateCodeID");
-            entity.Property(e => e.DeliverDifferent)
-                .HasDefaultValue(false)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tucClient__Deliv__1AFEE62D");
+            entity.Property(e => e.DeliverDifferent).HasDefaultValue(false);
             entity.Property(e => e.DgdryIce)
                 .HasColumnType("decimal(18, 2)")
                 .HasColumnName("DGDryIce");
             entity.Property(e => e.Dgfee)
                 .HasColumnType("decimal(18, 2)")
                 .HasColumnName("DGFee");
-            entity.Property(e => e.Discount)
-                .HasAnnotation("Relational:DefaultConstraintName", "default_Discount")
-                .HasColumnType("decimal(5, 4)");
-            entity.Property(e => e.DisplayRateRef).HasAnnotation("Relational:DefaultConstraintName", "DF__tucClient__Displ__0DA4EB0F");
+            entity.Property(e => e.Discount).HasColumnType("decimal(5, 4)");
             entity.Property(e => e.DropoffReport).HasMaxLength(10);
-            entity.Property(e => e.EconomyActive).HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_EconomyActive");
             entity.Property(e => e.EconomyFlightMarkup).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.EconomyFlightOffPeak1RateId).HasColumnName("EconomyFlightOffPeak1RateID");
             entity.Property(e => e.EconomyFlightOffPeak2RateId).HasColumnName("EconomyFlightOffPeak2RateID");
@@ -3719,8 +3601,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.EconomyRun8).HasColumnType("datetime");
             entity.Property(e => e.EconomyRunItemsExcessRateCodeId).HasColumnName("EconomyRunItemsExcessRateCodeID");
             entity.Property(e => e.EconomyRunRateCodeId).HasColumnName("EconomyRunRateCodeID");
-            entity.Property(e => e.EconomyRuns).HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_EconomyRuns");
-            entity.Property(e => e.EconomyZones).HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_EconomyZones");
             entity.Property(e => e.ExpressRateCodeId).HasColumnName("ExpressRateCodeID");
             entity.Property(e => e.FastPalletExpressRateCodeId).HasColumnName("FastPalletExpressRateCodeID");
             entity.Property(e => e.FastPalletStandardRateCodeId).HasColumnName("FastPalletStandardRateCodeID");
@@ -3731,7 +3611,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.FrozenTruckRateCodeId).HasColumnName("FrozenTruckRateCodeID");
             entity.Property(e => e.GssregularPickupClient)
                 .HasDefaultValue(false)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tucClient__GSSRe__108157BA")
                 .HasColumnName("GSSRegularPickupClient");
             entity.Property(e => e.GssregularPickupTime)
                 .HasColumnType("datetime")
@@ -3742,24 +3621,14 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.HamiltonNextDayPurateCodeId).HasColumnName("HamiltonNextDayPURateCodeID");
             entity.Property(e => e.HamiltonRunAdditionalItemsRateCodeId).HasColumnName("HamiltonRunAdditionalItemsRateCodeID");
             entity.Property(e => e.HiabHourRateCodeId).HasColumnName("HiabHourRateCodeID");
-            entity.Property(e => e.IfPickupClientRateUsingZones).HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_IfPickupClientRateUsingZones");
-            entity.Property(e => e.InternetDisplaySavedJobsAsCombo)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_InternetDisplaySavedJobsAsCombo");
-            entity.Property(e => e.InternetRebate)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_InternetRebate")
-                .HasColumnType("money");
-            entity.Property(e => e.InternetShowPickUpLocation)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_InternetShowPickUpLocation");
-            entity.Property(e => e.Invoice)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_Invoice");
+            entity.Property(e => e.InternetDisplaySavedJobsAsCombo).HasDefaultValue(true);
+            entity.Property(e => e.InternetRebate).HasColumnType("money");
+            entity.Property(e => e.InternetShowPickUpLocation).HasDefaultValue(true);
+            entity.Property(e => e.Invoice).HasDefaultValue(true);
             entity.Property(e => e.InvoiceEmail).HasMaxLength(500);
             entity.Property(e => e.InvoiceGroupBy).HasMaxLength(50);
             entity.Property(e => e.InvoiceMemo).HasMaxLength(100);
             entity.Property(e => e.InvoiceMethod).HasMaxLength(50);
-            entity.Property(e => e.IsFeaturedClient).HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_IsFeaturedClient");
             entity.Property(e => e.JobPrefix).HasMaxLength(3);
             entity.Property(e => e.LastModified).HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy)
@@ -3768,9 +3637,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Latitude).HasColumnType("decimal(18, 9)");
             entity.Property(e => e.Longitude).HasColumnType("decimal(18, 9)");
             entity.Property(e => e.MarkUp).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.MedicalActive)
-                .HasDefaultValue(false)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_MedicalActive");
+            entity.Property(e => e.MedicalActive).HasDefaultValue(false);
             entity.Property(e => e.MedicalRunAdditionalItemsRateId).HasColumnName("MedicalRunAdditionalItemsRateID");
             entity.Property(e => e.MedicalRunFirstItemRateId).HasColumnName("MedicalRunFirstItemRateID");
             entity.Property(e => e.NextFlight1KgrateId).HasColumnName("NextFlight1KGRateID");
@@ -3782,79 +3649,50 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.NextFlight4KgrateId).HasColumnName("NextFlight4KGRateID");
             entity.Property(e => e.NextFlight4RateId).HasColumnName("NextFlight4RateID");
             entity.Property(e => e.NextFlightMarkup).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.NoUtpickUp)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tucClient__NoUTP__15460CD7")
-                .HasColumnName("NoUTPickUp");
+            entity.Property(e => e.NoUtpickUp).HasColumnName("NoUTPickUp");
             entity.Property(e => e.NzPostSiteCode)
                 .HasMaxLength(50)
                 .IsUnicode(false);
-            entity.Property(e => e.OvernightPickupNotRequired)
-                .HasDefaultValue(false)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_OvernightPickupNotRequired");
+            entity.Property(e => e.OvernightPickupNotRequired).HasDefaultValue(false);
             entity.Property(e => e.OversizeRateCodeId).HasColumnName("OversizeRateCodeID");
-            entity.Property(e => e.PpdgraceDays)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_PPDGraceDays")
-                .HasColumnName("PPDGraceDays");
+            entity.Property(e => e.PpdgraceDays).HasColumnName("PPDGraceDays");
             entity.Property(e => e.Ppdrate)
                 .HasDefaultValue(0.05m)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_PPDRate")
                 .HasColumnType("decimal(18, 4)")
                 .HasColumnName("PPDRate");
             entity.Property(e => e.PrivateAddressSurchargeRateCodeId).HasColumnName("PrivateAddressSurchargeRateCodeID");
             entity.Property(e => e.PromoCode).HasMaxLength(50);
-            entity.Property(e => e.PromptForEmailAddress)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_PromptForEmailAddress");
+            entity.Property(e => e.PromptForEmailAddress).HasDefaultValue(true);
             entity.Property(e => e.PurchaseOrderNumber).HasMaxLength(100);
             entity.Property(e => e.RateRr).HasColumnName("RateRR");
             entity.Property(e => e.RateShortRr)
                 .HasDefaultValue(52)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_RateShortRR")
                 .HasColumnName("RateShortRR");
-            entity.Property(e => e.ReferenceAdefineList)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ReferenceADefineList")
-                .HasColumnName("ReferenceADefineList");
-            entity.Property(e => e.ReferenceAmandatory)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ReferenceAMandatory")
-                .HasColumnName("ReferenceAMandatory");
+            entity.Property(e => e.ReferenceAdefineList).HasColumnName("ReferenceADefineList");
+            entity.Property(e => e.ReferenceAmandatory).HasColumnName("ReferenceAMandatory");
             entity.Property(e => e.ReferenceAmessage)
                 .HasMaxLength(500)
                 .HasColumnName("ReferenceAMessage");
-            entity.Property(e => e.ReferenceBdefineList)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ReferenceBDefineList")
-                .HasColumnName("ReferenceBDefineList");
-            entity.Property(e => e.ReferenceBmandatory)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ReferenceBMandatory")
-                .HasColumnName("ReferenceBMandatory");
+            entity.Property(e => e.ReferenceBdefineList).HasColumnName("ReferenceBDefineList");
+            entity.Property(e => e.ReferenceBmandatory).HasColumnName("ReferenceBMandatory");
             entity.Property(e => e.ReferenceBmessage)
                 .HasMaxLength(500)
                 .HasColumnName("ReferenceBMessage");
-            entity.Property(e => e.ReferenceCdefineList)
-                .HasAnnotation("Relational:DefaultConstraintName", "ReferenceCDefineList")
-                .HasColumnName("ReferenceCDefineList");
-            entity.Property(e => e.ReferenceCmandatory)
-                .HasAnnotation("Relational:DefaultConstraintName", "ReferenceCMandatory")
-                .HasColumnName("ReferenceCMandatory");
+            entity.Property(e => e.ReferenceCdefineList).HasColumnName("ReferenceCDefineList");
+            entity.Property(e => e.ReferenceCmandatory).HasColumnName("ReferenceCMandatory");
             entity.Property(e => e.ReferenceCmessage)
                 .HasMaxLength(500)
                 .HasColumnName("ReferenceCMessage");
-            entity.Property(e => e.RemoteJobs).HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_RemoteJobs");
-            entity.Property(e => e.RerateJobs)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "RerateJobs");
+            entity.Property(e => e.RerateJobs).HasDefaultValue(true);
             entity.Property(e => e.RuralDeliveryRateCodeId).HasColumnName("RuralDeliveryRateCodeID");
             entity.Property(e => e.Sddenabled)
                 .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tucClient__SDDEn__6EEF5278")
                 .HasColumnName("SDDEnabled");
             entity.Property(e => e.Sdrenabled)
                 .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tucClient__SDREn__6FE376B1")
                 .HasColumnName("SDREnabled");
-            entity.Property(e => e.ShowMap).HasAnnotation("Relational:DefaultConstraintName", "DF__tucClient__ShowM__0AC87E64");
             entity.Property(e => e.ShowNwflight)
                 .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tucClient__ShowN__1A0AC1F4")
                 .HasColumnName("ShowNWFlight");
             entity.Property(e => e.SigRequiredDefault).HasMaxLength(500);
             entity.Property(e => e.SiteId).HasColumnName("SiteID");
@@ -3865,10 +3703,7 @@ public partial class DespatchContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50)
                 .HasColumnName("SMSName");
-            entity.Property(e => e.StartingWeightExcess)
-                .HasDefaultValue(30)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_StartingWeightExcess");
-            entity.Property(e => e.StripeClient).HasAnnotation("Relational:DefaultConstraintName", "DF__tucClient__Strip__172E5549");
+            entity.Property(e => e.StartingWeightExcess).HasDefaultValue(30);
             entity.Property(e => e.StripeClientId)
                 .HasMaxLength(50)
                 .HasColumnName("StripeClientID");
@@ -3877,7 +3712,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.TruckBulkRateCodeId).HasColumnName("TruckBulkRateCodeID");
             entity.Property(e => e.TruckCitySurchargeRate)
                 .HasDefaultValue(10m)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_TruckCitySurchargeRate")
                 .HasColumnType("money");
             entity.Property(e => e.TruckEconomyExcessZoneRateCodeId).HasColumnName("TruckEconomyExcessZoneRateCodeID");
             entity.Property(e => e.TruckEconomyRateCodeId).HasColumnName("TruckEconomyRateCodeID");
@@ -3896,19 +3730,15 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcclAccountStatus).HasColumnName("ucclAccountStatus");
             entity.Property(e => e.UcclActive)
                 .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ucclActive")
                 .HasColumnName("ucclActive");
             entity.Property(e => e.UcclAddress)
                 .HasMaxLength(150)
                 .HasColumnName("ucclAddress");
             entity.Property(e => e.UcclAverageDaily)
                 .HasDefaultValue(0m)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ucclAverageDaily")
                 .HasColumnType("money")
                 .HasColumnName("ucclAverageDaily");
-            entity.Property(e => e.UcclAverageDailyGroup)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ucclAverageDailyGroup")
-                .HasColumnName("ucclAverageDailyGroup");
+            entity.Property(e => e.UcclAverageDailyGroup).HasColumnName("ucclAverageDailyGroup");
             entity.Property(e => e.UcclAwesome).HasColumnName("ucclAwesome");
             entity.Property(e => e.UcclBillingType).HasColumnName("ucclBillingType");
             entity.Property(e => e.UcclCash).HasColumnName("ucclCash");
@@ -3933,7 +3763,6 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("ucclFax");
             entity.Property(e => e.UcclGroupId)
                 .HasDefaultValue(0)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ucclGroupID")
                 .HasColumnName("ucclGroupID");
             entity.Property(e => e.UcclGstinc).HasColumnName("ucclGSTInc");
             entity.Property(e => e.UcclInActiveDate)
@@ -3990,47 +3819,36 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcclRate).HasColumnName("ucclRate");
             entity.Property(e => e.UcclRateDoc)
                 .HasDefaultValue(69)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ucclRateDoc")
                 .HasColumnName("ucclRateDoc");
             entity.Property(e => e.UcclRateMainTrunk)
                 .HasDefaultValue(70)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ucclRateMainTrunk")
                 .HasColumnName("ucclRateMainTrunk");
             entity.Property(e => e.UcclRateMainTrunkKg)
                 .HasDefaultValue(71)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ucclRateMainTrunkKG")
                 .HasColumnName("ucclRateMainTrunkKG");
             entity.Property(e => e.UcclRateNi)
                 .HasDefaultValue(67)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ucclRateNI")
                 .HasColumnName("ucclRateNI");
             entity.Property(e => e.UcclRateNiweight)
                 .HasDefaultValue(74)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ucclRateNIWeight")
                 .HasColumnName("ucclRateNIWeight");
             entity.Property(e => e.UcclRateOther)
                 .HasDefaultValue(72)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ucclRateOther")
                 .HasColumnName("ucclRateOther");
             entity.Property(e => e.UcclRateOtherKg)
                 .HasDefaultValue(73)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ucclRateOtherKG")
                 .HasColumnName("ucclRateOtherKG");
             entity.Property(e => e.UcclRateShorthaul)
                 .HasDefaultValue(76)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ucclRateShorhaul")
                 .HasColumnName("ucclRateShorthaul");
             entity.Property(e => e.UcclRateShorthaulKg)
                 .HasDefaultValue(77)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ucclRateShorthaulKG")
                 .HasColumnName("ucclRateShorthaulKG");
             entity.Property(e => e.UcclRateSi)
                 .HasDefaultValue(68)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ucclRateSI")
                 .HasColumnName("ucclRateSI");
             entity.Property(e => e.UcclRateSiweight)
                 .HasDefaultValue(75)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ucclRateSIWeight")
                 .HasColumnName("ucclRateSIWeight");
             entity.Property(e => e.UcclReferralNotes)
                 .HasColumnType("ntext")
@@ -4042,17 +3860,13 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcclType)
                 .HasMaxLength(50)
                 .HasColumnName("ucclType");
-            entity.Property(e => e.UcclUseGroup)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_ucclUseGroup")
-                .HasColumnName("ucclUseGroup");
+            entity.Property(e => e.UcclUseGroup).HasColumnName("ucclUseGroup");
             entity.Property(e => e.Ucclemail)
                 .HasMaxLength(100)
                 .HasColumnName("ucclemail");
-            entity.Property(e => e.UrgentTonightActive).HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_UrgentTonightActive");
             entity.Property(e => e.UrgentTonightCategoryId).HasColumnName("UrgentTonightCategoryID");
             entity.Property(e => e.UrgentTonightLogo).HasMaxLength(500);
             entity.Property(e => e.UrgentTonightSequence).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.UrgentTonightShow).HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_UrgentTonightShow");
             entity.Property(e => e.UrgentTonightStyleSheet).HasMaxLength(500);
             entity.Property(e => e.UtaddtionalItemRateCodeId).HasColumnName("UTAddtionalItemRateCodeID");
             entity.Property(e => e.UtcutOff)
@@ -4067,7 +3881,6 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("UTPickupTime");
             entity.Property(e => e.UtrateCodeId).HasColumnName("UTRateCodeID");
             entity.Property(e => e.WebServicePassword).HasMaxLength(100);
-            entity.Property(e => e.WhenBookingJobDisplayFullName).HasAnnotation("Relational:DefaultConstraintName", "DF_tucClient_WhenBookingJobDisplayFullName");
             entity.Property(e => e.XeroId).HasMaxLength(50);
 
             entity.HasOne(d => d.UcclSuburb).WithMany(p => p.TucClients)
@@ -4096,35 +3909,24 @@ public partial class DespatchContext : DbContext
 
             entity.Property(e => e.UcctId).HasColumnName("ucctID");
             entity.Property(e => e.AccessCode).HasMaxLength(50);
-            entity.Property(e => e.Active).HasAnnotation("Relational:DefaultConstraintName", "DF_tucClientContact_Active");
-            entity.Property(e => e.AllowCookieLogin).HasAnnotation("Relational:DefaultConstraintName", "DF_tucClientContact_AllowCookieLogin");
             entity.Property(e => e.ContactRoleId).HasColumnName("ContactRoleID");
             entity.Property(e => e.Created).HasColumnType("datetime");
             entity.Property(e => e.CreatedBy)
                 .IsRequired()
                 .HasMaxLength(50);
-            entity.Property(e => e.EmailNotificationHasBeenSent).HasAnnotation("Relational:DefaultConstraintName", "DF_tucClientContact_EmailNotificationHasBeenSent");
             entity.Property(e => e.Fax).HasMaxLength(50);
-            entity.Property(e => e.HasEmail)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClientContact_HasEmail");
+            entity.Property(e => e.HasEmail).HasDefaultValue(true);
             entity.Property(e => e.LastAccessed).HasColumnType("datetime");
             entity.Property(e => e.LastModified).HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy)
                 .IsRequired()
                 .HasMaxLength(50);
-            entity.Property(e => e.MustSelectChildForJob).HasAnnotation("Relational:DefaultConstraintName", "DF_tucClientContact_MustSelectChildForJob");
-            entity.Property(e => e.NumberOfEmailNotificationReminderSent).HasAnnotation("Relational:DefaultConstraintName", "DF_tucClientContact_NumberOfEmailNotificationSent");
             entity.Property(e => e.ParentContactId).HasColumnName("ParentContactID");
             entity.Property(e => e.Password).HasMaxLength(50);
             entity.Property(e => e.Password2).HasMaxLength(200);
-            entity.Property(e => e.PromptForEmailAddress)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucClientContact_PromptForEmailAddress");
+            entity.Property(e => e.PromptForEmailAddress).HasDefaultValue(true);
             entity.Property(e => e.ResetKey).HasMaxLength(50);
             entity.Property(e => e.Salt).HasMaxLength(64);
-            entity.Property(e => e.SendAdhocEmail).HasAnnotation("Relational:DefaultConstraintName", "DF_tucClientContact_SendAdhocEmail");
-            entity.Property(e => e.SharedComputer).HasAnnotation("Relational:DefaultConstraintName", "DF_tucClientContact_SharedComputer");
             entity.Property(e => e.StaffId).HasColumnName("StaffID");
             entity.Property(e => e.UcctClientId).HasColumnName("ucctClientID");
             entity.Property(e => e.UcctDirectDial)
@@ -4149,7 +3951,6 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(50)
                 .HasColumnName("ucctSurname");
             entity.Property(e => e.UserName).HasMaxLength(200);
-            entity.Property(e => e.ValidatedEmail).HasAnnotation("Relational:DefaultConstraintName", "DF_tucClientContact_ValidatedEmail");
             entity.Property(e => e.WhenEmailNotificationSent).HasColumnType("datetime");
             entity.Property(e => e.WhenEmailValidated).HasColumnType("datetime");
             entity.Property(e => e.WhenEmailValidatedSent).HasColumnType("datetime");
@@ -4180,7 +3981,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(100);
-            entity.Property(e => e.PerItem).HasAnnotation("Relational:DefaultConstraintName", "DF__tucClient__PerIt__257C74A0");
             entity.Property(e => e.Rate).HasColumnType("money");
             entity.Property(e => e.VehicleSizeId).HasColumnName("VehicleSizeID");
 
@@ -4191,7 +3991,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.VehicleSize).WithMany(p => p.TucClientItems)
                 .HasForeignKey(d => d.VehicleSizeId)
-                .HasConstraintName("FK__tucClient__Vehic__7B51FC01");
+                .HasConstraintName("FK__tucClient__Vehic__2D3E5D50");
         });
 
         modelBuilder.Entity<TucContact>(entity =>
@@ -4262,9 +4062,7 @@ public partial class DespatchContext : DbContext
 
             entity.Property(e => e.UccrId).HasColumnName("uccrID");
             entity.Property(e => e.AccountProfileId).HasColumnName("AccountProfileID");
-            entity.Property(e => e.Active)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucCourier_Active");
+            entity.Property(e => e.Active).HasDefaultValue(true);
             entity.Property(e => e.AddressLine1).HasMaxLength(255);
             entity.Property(e => e.AddressLine2).HasMaxLength(255);
             entity.Property(e => e.AddressLine3).HasMaxLength(255);
@@ -4273,16 +4071,10 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.AddressLine6).HasMaxLength(255);
             entity.Property(e => e.AddressLine7).HasMaxLength(255);
             entity.Property(e => e.AddressLine8).HasMaxLength(255);
-            entity.Property(e => e.AfterHoursWeb)
-                .HasDefaultValue(false)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucCourier_AfterHoursWeb");
-            entity.Property(e => e.AutoDespatch)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucCourier_AutoDespatch");
+            entity.Property(e => e.AfterHoursWeb).HasDefaultValue(false);
+            entity.Property(e => e.AutoDespatch).HasDefaultValue(true);
             entity.Property(e => e.BankRoutingNumber).HasMaxLength(9);
-            entity.Property(e => e.BaseVehicle)
-                .HasDefaultValue(false)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tucCourie__BaseV__3E48226A");
+            entity.Property(e => e.BaseVehicle).HasDefaultValue(false);
             entity.Property(e => e.Blurb).HasMaxLength(1000);
             entity.Property(e => e.BonusPercentage).HasColumnType("numeric(5, 4)");
             entity.Property(e => e.CarSavingsAmount).HasColumnType("money");
@@ -4300,64 +4092,44 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(50);
             entity.Property(e => e.DeviceTypeId)
                 .HasDefaultValue(1)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucCourier_DeviceType")
                 .HasColumnName("DeviceTypeID");
             entity.Property(e => e.DglicenseExpiry)
                 .HasColumnType("datetime")
                 .HasColumnName("DGLicenseExpiry");
-            entity.Property(e => e.DisplayWeb).HasAnnotation("Relational:DefaultConstraintName", "DF_tucCourier_DisplayWeb");
             entity.Property(e => e.DriversLicenseExpiry).HasColumnType("datetime");
             entity.Property(e => e.ExpectedEndTime).HasColumnType("datetime");
             entity.Property(e => e.ExpectedStartTime).HasColumnType("datetime");
-            entity.Property(e => e.JobPaperPrintOut)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucCourier_JobPaperPrintOut");
+            entity.Property(e => e.JobPaperPrintOut).HasDefaultValue(true);
             entity.Property(e => e.LastModified).HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy)
                 .IsRequired()
                 .HasMaxLength(50);
-            entity.Property(e => e.Macourier)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucCourier_MACourier")
-                .HasColumnName("MACourier");
-            entity.Property(e => e.MaxPallets)
-                .HasDefaultValue(1)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucCourier_MaxPallets");
-            entity.Property(e => e.MaxPayload)
-                .HasDefaultValue(1000.0)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucCourier_MaxPayload");
+            entity.Property(e => e.Macourier).HasColumnName("MACourier");
+            entity.Property(e => e.MaxPallets).HasDefaultValue(1);
+            entity.Property(e => e.MaxPayload).HasDefaultValue(1000.0);
             entity.Property(e => e.MobileAdAmount).HasColumnType("money");
             entity.Property(e => e.MobileAdEnd).HasColumnType("datetime");
             entity.Property(e => e.MobileAdStart).HasColumnType("datetime");
             entity.Property(e => e.MobileInsurance)
                 .HasDefaultValue(0.00m)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucCourier_MobileInsurance")
                 .HasColumnType("money");
             entity.Property(e => e.MobileRental)
                 .HasDefaultValue(0.00m)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucCourier_MobileRental")
                 .HasColumnType("money");
             entity.Property(e => e.OpenForceNumber).HasMaxLength(50);
-            entity.Property(e => e.PaydayFileRegistration)
-                .HasDefaultValue(false)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tucCourie__Payda__3D53FE31");
+            entity.Property(e => e.PaydayFileRegistration).HasDefaultValue(false);
             entity.Property(e => e.PersonalMobile).HasMaxLength(50);
             entity.Property(e => e.Podreqd)
                 .HasDefaultValue(false)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucCourier_PODreqd")
                 .HasColumnName("PODreqd");
             entity.Property(e => e.RegistrationExpiry).HasColumnType("datetime");
             entity.Property(e => e.Ruckms).HasColumnName("RUCKms");
             entity.Property(e => e.Rucpayload).HasColumnName("RUCPayload");
             entity.Property(e => e.Rucweight).HasColumnName("RUCWeight");
-            entity.Property(e => e.SendAlertSms)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tucCourie__SendA__3B6BB5BF")
-                .HasColumnName("SendAlertSMS");
-            entity.Property(e => e.SendJobsViaSms)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucCourier_SendJobsViaSMS")
-                .HasColumnName("SendJobsViaSMS");
+            entity.Property(e => e.SendAlertSms).HasColumnName("SendAlertSMS");
+            entity.Property(e => e.SendJobsViaSms).HasColumnName("SendJobsViaSMS");
             entity.Property(e => e.SiteId)
                 .HasDefaultValue(1)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucCourier_SiteID")
                 .HasColumnName("SiteID");
             entity.Property(e => e.SubContractorBonusPercentage).HasColumnType("numeric(5, 4)");
             entity.Property(e => e.SubContractorFuelPercentage).HasColumnType("numeric(5, 4)");
@@ -4392,9 +4164,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UccrCustomField3)
                 .HasMaxLength(50)
                 .HasColumnName("uccrCustomField3");
-            entity.Property(e => e.UccrDangerousGoods)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucCourier_uccrDangerousGoods")
-                .HasColumnName("uccrDangerousGoods");
+            entity.Property(e => e.UccrDangerousGoods).HasColumnName("uccrDangerousGoods");
             entity.Property(e => e.UccrDlno)
                 .HasMaxLength(50)
                 .HasColumnName("uccrDLNo");
@@ -4474,9 +4244,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UccrSecurityDate)
                 .HasColumnType("datetime")
                 .HasColumnName("uccrSecurityDate");
-            entity.Property(e => e.UccrShowClientPh)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucCourier_uccrShowClientPh")
-                .HasColumnName("uccrShowClientPh");
+            entity.Property(e => e.UccrShowClientPh).HasColumnName("uccrShowClientPh");
             entity.Property(e => e.UccrStartDate)
                 .HasColumnType("datetime")
                 .HasColumnName("uccrStartDate");
@@ -4496,19 +4264,15 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(50)
                 .HasColumnName("uccrVehicleModel");
             entity.Property(e => e.UccrVehicleYear).HasColumnName("uccrVehicleYear");
-            entity.Property(e => e.UccrWebEnabled)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucCourier_uccrWebEnabled")
-                .HasColumnName("uccrWebEnabled");
+            entity.Property(e => e.UccrWebEnabled).HasColumnName("uccrWebEnabled");
             entity.Property(e => e.VehiclePlateNnumber)
                 .HasMaxLength(50)
                 .HasColumnName("VehiclePlateNNumber");
             entity.Property(e => e.VehicleVinnumber)
                 .HasMaxLength(255)
                 .HasColumnName("VehicleVINNumber");
-            entity.Property(e => e.VodafoneNetwork).HasAnnotation("Relational:DefaultConstraintName", "VodafonenetWork");
             entity.Property(e => e.WithholdingTaxPercentage)
                 .HasDefaultValue(0m)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tucCourie__Withh__3C5FD9F8")
                 .HasColumnType("decimal(8, 2)");
             entity.Property(e => e.Wofexpiry)
                 .HasColumnType("datetime")
@@ -4558,8 +4322,6 @@ public partial class DespatchContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50);
             entity.Property(e => e.DirectCostAccountCode).HasMaxLength(50);
-            entity.Property(e => e.DisplayOnClearlistsDespatch).HasAnnotation("Relational:DefaultConstraintName", "DF_tucCourierFleet_DisplayOnClearlists");
-            entity.Property(e => e.DisplayOnClearlistsDevice).HasAnnotation("Relational:DefaultConstraintName", "DF_tucCourierFleet_DisplayOnClearlistsDevice");
             entity.Property(e => e.LastModified).HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy)
                 .IsRequired()
@@ -4622,7 +4384,6 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("ucevDespatcher");
             entity.Property(e => e.UcevDueTime)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucEvent_ucevDueTime")
                 .HasColumnType("datetime")
                 .HasColumnName("ucevDueTime");
             entity.Property(e => e.UcevEtatime)
@@ -4713,7 +4474,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucEventTypeEventTypeGroup>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__TucEvent__3214EC0771D171D9");
+            entity.HasKey(e => e.Id).HasName("PK__TucEvent__3214EC07566A90D1");
 
             entity.ToTable("TucEventType_EventTypeGroups");
 
@@ -4739,7 +4500,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucEventTypeGroup>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__TucEvent__3214EC07ADA95062");
+            entity.HasKey(e => e.Id).HasName("PK__TucEvent__3214EC07D5CBF0B4");
 
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
@@ -4827,9 +4588,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PpdCode).HasMaxLength(50);
             entity.Property(e => e.PpdItemCode).HasMaxLength(50);
             entity.Property(e => e.PpdTax).HasColumnType("numeric(18, 2)");
-            entity.Property(e => e.Printed).HasColumnType("datetime");
             entity.Property(e => e.ProcessId).HasColumnName("ProcessID");
-            entity.Property(e => e.ReportId).HasColumnName("ReportID");
             entity.Property(e => e.Sent).HasPrecision(3);
             entity.Property(e => e.StatementId).HasColumnName("StatementID");
             entity.Property(e => e.Subtotal).HasColumnType("numeric(18, 2)");
@@ -4841,19 +4600,65 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("ucinDate");
             entity.Property(e => e.UcinDateGenerated)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucInvoiceNo_ucinDateGenerated")
                 .HasColumnType("datetime")
                 .HasColumnName("ucinDateGenerated");
-            entity.Property(e => e.UcinLocked)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucInvoiceNo_ucinLocked")
-                .HasColumnName("ucinLocked");
+            entity.Property(e => e.UcinLocked).HasColumnName("ucinLocked");
             entity.Property(e => e.XeroId).HasMaxLength(50);
             entity.Property(e => e.XeroIdPpdCancellation).HasMaxLength(50);
+
+            entity.HasOne(d => d.Process).WithMany(p => p.TucInvoiceNos)
+                .HasForeignKey(d => d.ProcessId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_tucInvoiceNo_tucInvoiceProcess");
 
             entity.HasOne(d => d.UcinClient).WithMany(p => p.TucInvoiceNos)
                 .HasForeignKey(d => d.UcinClientId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_tucInvoiceNo_tucClient");
+        });
+
+        modelBuilder.Entity<TucInvoiceProcess>(entity =>
+        {
+            entity.HasKey(e => e.UcipId)
+                .IsClustered(false)
+                .HasAnnotation("SqlServer:FillFactor", 80);
+
+            entity.ToTable("tucInvoiceProcess");
+
+            entity.HasIndex(e => e.UcipDateTo, "ucipDateTo");
+
+            entity.HasIndex(e => e.UcipInvoiceType, "ucipInvoiceType");
+
+            entity.Property(e => e.UcipId).HasColumnName("ucipID");
+            entity.Property(e => e.CodeBonus).HasMaxLength(50);
+            entity.Property(e => e.CompletedStripe).HasPrecision(3);
+            entity.Property(e => e.CompletedXero).HasPrecision(3);
+            entity.Property(e => e.ExternalJournalHeaderId).HasColumnName("ExternalJournalHeaderID");
+            entity.Property(e => e.ItemCodeBonus).HasMaxLength(50);
+            entity.Property(e => e.OarunReference).HasColumnName("OARunReference");
+            entity.Property(e => e.PostedOa)
+                .HasColumnType("datetime")
+                .HasColumnName("PostedOA");
+            entity.Property(e => e.PostedXero).HasPrecision(3);
+            entity.Property(e => e.StatementCompletedXero).HasPrecision(3);
+            entity.Property(e => e.StatementStartedXero).HasPrecision(3);
+            entity.Property(e => e.StatementsCreated).HasColumnType("datetime");
+            entity.Property(e => e.UcipDateDone)
+                .HasColumnType("datetime")
+                .HasColumnName("ucipDateDone");
+            entity.Property(e => e.UcipDateTo)
+                .HasColumnType("datetime")
+                .HasColumnName("ucipDateTo");
+            entity.Property(e => e.UcipDone).HasColumnName("ucipDone");
+            entity.Property(e => e.UcipInvoiceType).HasColumnName("ucipInvoiceType");
+            entity.Property(e => e.UcipPrinted).HasColumnName("ucipPrinted");
+            entity.Property(e => e.UcipPrintedBy)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("ucipPrintedBy");
+            entity.Property(e => e.UcipPrintedDate)
+                .HasColumnType("datetime")
+                .HasColumnName("ucipPrintedDate");
         });
 
         modelBuilder.Entity<TucJob>(entity =>
@@ -4919,6 +4724,16 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.UcjbSpeed, "IX_TucJob_Speed");
 
+            entity.HasIndex(e => e.UcjbCourierId, "IX_TucJobs_CourierId");
+
+            entity.HasIndex(e => new { e.UcjbDate, e.UcjbTime }, "IX_TucJobs_Date_Time");
+
+            entity.HasIndex(e => e.UcjbId, "IX_TucJobs_Lookup");
+
+            entity.HasIndex(e => new { e.ParentId, e.UcjbId }, "IX_TucJobs_ParentRelationship").HasFilter("([ParentId] IS NOT NULL)");
+
+            entity.HasIndex(e => new { e.UcjbStatus, e.UcjbDate }, "IX_TucJobs_Status_Date");
+
             entity.HasIndex(e => e.AgentId, "IX_tucJob_AgentID");
 
             entity.HasIndex(e => new { e.UcjbStatus, e.UcjbJobDone, e.UcjbVoid }, "IX_tucJob_Archive_Status");
@@ -4977,16 +4792,13 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcjbId).HasColumnName("ucjbID");
             entity.Property(e => e.AcceptedJobTypeId).HasColumnName("AcceptedJobTypeID");
             entity.Property(e => e.AgentId).HasColumnName("AgentID");
-            entity.Property(e => e.AutoDespatch)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJob_AutoDespatch");
+            entity.Property(e => e.AutoDespatch).HasDefaultValue(true);
             entity.Property(e => e.Barcode).HasMaxLength(300);
             entity.Property(e => e.BookingParentId).HasColumnName("BookingParentID");
             entity.Property(e => e.BulkParentId).HasColumnName("BulkParentID");
             entity.Property(e => e.ClientItemIds).HasMaxLength(100);
             entity.Property(e => e.ClientNotes).HasMaxLength(4000);
             entity.Property(e => e.ClosestCourierId).HasColumnName("ClosestCourierID");
-            entity.Property(e => e.ColsolidateMarsInformation).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJob_ColsolidateMarsInformation");
             entity.Property(e => e.Connote).IsUnicode(false);
             entity.Property(e => e.ContactId).HasColumnName("ContactID");
             entity.Property(e => e.CourierBonus).HasColumnType("money");
@@ -5012,24 +4824,18 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.DeliveryLongitude).HasColumnType("decimal(18, 9)");
             entity.Property(e => e.DeliveryPhoto).HasColumnType("image");
             entity.Property(e => e.DeliverySignature).HasColumnType("image");
-            entity.Property(e => e.DesCheck).HasAnnotation("Relational:DefaultConstraintName", "DF__tucJob__DesCheck__5807F46D");
             entity.Property(e => e.DesiredJobTypeId).HasColumnName("DesiredJobTypeID");
             entity.Property(e => e.Dgclass).HasColumnName("DGClass");
             entity.Property(e => e.Dgdocument).HasColumnName("DGDocument");
-            entity.Property(e => e.Direct).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJob_Direct");
-            entity.Property(e => e.DisplayInDespatch)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJob_DisplayInDespatch");
+            entity.Property(e => e.DisplayInDespatch).HasDefaultValue(true);
             entity.Property(e => e.DropOffLocationId).HasColumnName("DropOffLocationID");
             entity.Property(e => e.DropoffAmount).HasColumnType("money");
             entity.Property(e => e.DropoffRawAmount).HasColumnType("money");
             entity.Property(e => e.DryIceWeight).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.EmailForJobFu)
                 .HasDefaultValue(false)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tucJob__EmailFor__5713D034")
                 .HasColumnName("EmailForJobFU");
             entity.Property(e => e.FdcourierId).HasColumnName("FDCourierID");
-            entity.Property(e => e.FirstJob).HasAnnotation("Relational:DefaultConstraintName", "DF__tucJob__FirstJob__59F03CDF");
             entity.Property(e => e.FollowupTime).HasColumnType("datetime");
             entity.Property(e => e.FromAddressExtras)
                 .HasMaxLength(200)
@@ -5040,9 +4846,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.FromAddressStreetName)
                 .HasMaxLength(200)
                 .HasColumnName("fromAddressStreetName");
-            entity.Property(e => e.FuelSurchargeAmount)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJob_FuelSurchargeAmount")
-                .HasColumnType("money");
+            entity.Property(e => e.FuelSurchargeAmount).HasColumnType("money");
             entity.Property(e => e.GssTrackingUrl)
                 .HasMaxLength(400)
                 .HasColumnName("GssTrackingURL");
@@ -5058,13 +4862,8 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.InformationParentId).HasColumnName("InformationParentID");
             entity.Property(e => e.InternalNotes).HasMaxLength(4000);
             entity.Property(e => e.IsRecurringJob).HasDefaultValue(false);
-            entity.Property(e => e.ItemNotReadyNotification).HasAnnotation("Relational:DefaultConstraintName", "DF__tucJob__ItemNotR__561FABFB");
-            entity.Property(e => e.ItemNotReadyNotificationHasBeenSent).HasAnnotation("Relational:DefaultConstraintName", "DF__tucJob__ItemNotR__552B87C2");
             entity.Property(e => e.ItemNotReadyNotificationNotes).HasMaxLength(4000);
             entity.Property(e => e.JobRelationshipTypeId).HasColumnName("JobRelationshipTypeID");
-            entity.Property(e => e.JobTrackingNotificationHasBeenSent).HasAnnotation("Relational:DefaultConstraintName", "DF__tucJob__JobTrack__58FC18A6");
-            entity.Property(e => e.LateDeliveryNotificationHasBeenSent).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJob_LateDeliveryNotificationSent");
-            entity.Property(e => e.LatePickupNotificationHasBeenSent).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJob_LatePickNotificationSent");
             entity.Property(e => e.LoggedInContactId).HasColumnName("LoggedInContactID");
             entity.Property(e => e.NotifiedJobTypeId).HasColumnName("NotifiedJobTypeID");
             entity.Property(e => e.Nwamount)
@@ -5097,9 +4896,7 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("PickupGPS");
             entity.Property(e => e.PickupRawAmount).HasColumnType("money");
             entity.Property(e => e.PickupTimeZoneId).HasColumnName("PickupTimeZoneID");
-            entity.Property(e => e.PodnotificationHasBeenSent)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJob_PODNotificationHasBeenSent")
-                .HasColumnName("PODNotificationHasBeenSent");
+            entity.Property(e => e.PodnotificationHasBeenSent).HasColumnName("PODNotificationHasBeenSent");
             entity.Property(e => e.Ppdamount)
                 .HasColumnType("money")
                 .HasColumnName("PPDAmount");
@@ -5108,18 +4905,12 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("PPDExclusiveAmount");
             entity.Property(e => e.ProofOfDeliveryEmail).HasMaxLength(100);
             entity.Property(e => e.ProofOfDeliveryMobile).HasMaxLength(100);
-            entity.Property(e => e.RatedManually).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJob_RatedManually");
             entity.Property(e => e.RawAmount).HasColumnType("money");
             entity.Property(e => e.RawBaseAmount).HasColumnType("money");
-            entity.Property(e => e.RebateAmt)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJob_RebateAmt")
-                .HasColumnType("money");
-            entity.Property(e => e.RemoteJob).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJob_RemoteJob");
+            entity.Property(e => e.RebateAmt).HasColumnType("money");
             entity.Property(e => e.RequiredDeliveryTime).HasColumnType("datetime");
             entity.Property(e => e.RootParentId).HasColumnName("RootParentID");
             entity.Property(e => e.RunName).HasMaxLength(50);
-            entity.Property(e => e.RuralDelivery).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJob_RuralDelivery");
-            entity.Property(e => e.SaturdayDelivery).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJob_SaturdayDelivery");
             entity.Property(e => e.ScheduleName).HasMaxLength(200);
             entity.Property(e => e.ShopRef1).HasMaxLength(50);
             entity.Property(e => e.ShopRef2).HasMaxLength(50);
@@ -5127,9 +4918,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ShopRef4).HasMaxLength(50);
             entity.Property(e => e.ShopRef5).HasMaxLength(50);
             entity.Property(e => e.SourceId).HasColumnName("SourceID");
-            entity.Property(e => e.SpeedChangeNotificationHasBeenSent)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJob_SpeedChangeNotificationHasBeenSent");
+            entity.Property(e => e.SpeedChangeNotificationHasBeenSent).HasDefaultValue(true);
             entity.Property(e => e.StripeChargeId)
                 .HasMaxLength(50)
                 .HasColumnName("StripeChargeID");
@@ -5218,9 +5007,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcjbLateDel).HasColumnName("ucjbLateDel");
             entity.Property(e => e.UcjbLatePick).HasColumnName("ucjbLatePick");
             entity.Property(e => e.UcjbLocked).HasColumnName("ucjbLocked");
-            entity.Property(e => e.UcjbMobileSend)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJob_ucjbMobileSend")
-                .HasColumnName("ucjbMobileSend");
+            entity.Property(e => e.UcjbMobileSend).HasColumnName("ucjbMobileSend");
             entity.Property(e => e.UcjbNotes)
                 .HasMaxLength(4000)
                 .HasColumnName("ucjbNotes");
@@ -5245,7 +5032,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcjbQty).HasColumnName("ucjbQty");
             entity.Property(e => e.UcjbRefJobId)
                 .HasDefaultValue(0)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJob_ucjbJobRefID")
                 .HasColumnName("ucjbRefJobID");
             entity.Property(e => e.UcjbReturn).HasColumnName("ucjbReturn");
             entity.Property(e => e.UcjbSendTime)
@@ -5294,7 +5080,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.DeliverByTimeZone).WithMany(p => p.TucJobDeliverByTimeZones)
                 .HasForeignKey(d => d.DeliverByTimeZoneId)
-                .HasConstraintName("FK__tucJob__DeliverB__224BCD91");
+                .HasConstraintName("FK_tucJob_TimeZone");
 
             entity.HasOne(d => d.DeliverToLeave).WithMany(p => p.TucJobs)
                 .HasForeignKey(d => d.DeliverToLeaveId)
@@ -5320,13 +5106,13 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.MasterCourier).WithMany(p => p.TucJobMasterCouriers)
                 .HasForeignKey(d => d.MasterCourierId)
-                .HasConstraintName("FK__tucJob__MasterCo__69135035");
+                .HasConstraintName("FK_tucJob_tucCourierMaster");
 
             entity.HasOne(d => d.NotifiedJobType).WithMany(p => p.TucJobNotifiedJobTypes).HasForeignKey(d => d.NotifiedJobTypeId);
 
             entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TucJobPickupTimeZones)
                 .HasForeignKey(d => d.PickupTimeZoneId)
-                .HasConstraintName("FK__tucJob__PickupTi__48A680A3");
+                .HasConstraintName("FK__tucJob__PickupTi__33765993");
 
             entity.HasOne(d => d.Source).WithMany(p => p.TucJobs)
                 .HasForeignKey(d => d.SourceId)
@@ -5474,9 +5260,7 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("ucjbID");
             entity.Property(e => e.AcceptedJobTypeId).HasColumnName("AcceptedJobTypeID");
             entity.Property(e => e.AgentId).HasColumnName("AgentID");
-            entity.Property(e => e.AutoDespatch)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobArchive_AutoDespatch");
+            entity.Property(e => e.AutoDespatch).HasDefaultValue(true);
             entity.Property(e => e.Barcode).HasMaxLength(300);
             entity.Property(e => e.BookingParentId).HasColumnName("BookingParentID");
             entity.Property(e => e.BulkParentId).HasColumnName("BulkParentID");
@@ -5511,7 +5295,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.DesiredJobTypeId).HasColumnName("DesiredJobTypeID");
             entity.Property(e => e.Dgclass).HasColumnName("DGClass");
             entity.Property(e => e.Dgdocument).HasColumnName("DGDocument");
-            entity.Property(e => e.Direct).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobArchive_Direct");
             entity.Property(e => e.DropOffLocationId).HasColumnName("DropOffLocationID");
             entity.Property(e => e.DropoffAmount).HasColumnType("money");
             entity.Property(e => e.DropoffRawAmount).HasColumnType("money");
@@ -5529,9 +5312,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.FromAddressStreetName)
                 .HasMaxLength(200)
                 .HasColumnName("fromAddressStreetName");
-            entity.Property(e => e.FuelSurchargeAmount)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobArchive_FuelSurchargeAmount")
-                .HasColumnType("money");
+            entity.Property(e => e.FuelSurchargeAmount).HasColumnType("money");
             entity.Property(e => e.FuelSurchargeGst)
                 .HasColumnType("money")
                 .HasColumnName("FuelSurchargeGST");
@@ -5559,13 +5340,9 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.IsRecurringJob).HasDefaultValue(false);
             entity.Property(e => e.ItemNotReadyNotificationNotes).HasMaxLength(4000);
             entity.Property(e => e.JobRelationshipTypeId).HasColumnName("JobRelationshipTypeID");
-            entity.Property(e => e.JobTrackingNotificationHasBeenSent)
-                .HasDefaultValue(false)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__tucJobArc__JobTr__665613C4");
+            entity.Property(e => e.JobTrackingNotificationHasBeenSent).HasDefaultValue(false);
             entity.Property(e => e.JournalCodingId).HasColumnName("JournalCodingID");
             entity.Property(e => e.JournalHeaderId).HasColumnName("JournalHeaderID");
-            entity.Property(e => e.LateDeliveryNotificationHasBeenSent).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobArchive_LateDeliveryNotificationHasBeenSent");
-            entity.Property(e => e.LatePickupNotificationHasBeenSent).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobArchive_LatePickupNotificationHasBeenSent");
             entity.Property(e => e.LoggedInContactId).HasColumnName("LoggedInContactID");
             entity.Property(e => e.NotifiedJobTypeId).HasColumnName("NotifiedJobTypeID");
             entity.Property(e => e.Nwamount)
@@ -5598,9 +5375,7 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("PickupGPS");
             entity.Property(e => e.PickupRawAmount).HasColumnType("money");
             entity.Property(e => e.PickupTimeZoneId).HasColumnName("PickupTimeZoneID");
-            entity.Property(e => e.PodnotificationHasBeenSent)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobArchive_PodNotificationHasBeenSent")
-                .HasColumnName("PODNotificationHasBeenSent");
+            entity.Property(e => e.PodnotificationHasBeenSent).HasColumnName("PODNotificationHasBeenSent");
             entity.Property(e => e.Ppdamount)
                 .HasColumnType("money")
                 .HasColumnName("PPDAmount");
@@ -5609,23 +5384,18 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("PPDExclusiveAmount");
             entity.Property(e => e.ProofOfDeliveryEmail).HasMaxLength(100);
             entity.Property(e => e.ProofOfDeliveryMobile).HasMaxLength(100);
-            entity.Property(e => e.RatedManually).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobArchive_RatedManually");
             entity.Property(e => e.RawAmount).HasColumnType("money");
             entity.Property(e => e.RawBaseAmount).HasColumnType("money");
             entity.Property(e => e.RebateAmt)
                 .HasDefaultValue(0m)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobArchive_RebateAmt")
                 .HasColumnType("money");
             entity.Property(e => e.RebateAmtGst)
                 .HasColumnType("money")
                 .HasColumnName("RebateAmtGST");
             entity.Property(e => e.RebateAmtInclusive).HasColumnType("money");
-            entity.Property(e => e.RemoteJob).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobArchive_RemoteJob");
             entity.Property(e => e.RequiredDeliveryTime).HasColumnType("datetime");
             entity.Property(e => e.RootParentId).HasColumnName("RootParentID");
             entity.Property(e => e.RunName).HasMaxLength(50);
-            entity.Property(e => e.RuralDelivery).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobArchive_RuralDelivery");
-            entity.Property(e => e.SaturdayDelivery).HasAnnotation("Relational:DefaultConstraintName", "DF__tucJobArc__Satur__483BA0F8");
             entity.Property(e => e.ScheduleName).HasMaxLength(200);
             entity.Property(e => e.ShopRef1).HasMaxLength(50);
             entity.Property(e => e.ShopRef2).HasMaxLength(50);
@@ -5746,7 +5516,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcjbQty).HasColumnName("ucjbQty");
             entity.Property(e => e.UcjbRefJobId)
                 .HasDefaultValue(0)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobArchive_ucjbJobRefID")
                 .HasColumnName("ucjbRefJobID");
             entity.Property(e => e.UcjbReturn).HasColumnName("ucjbReturn");
             entity.Property(e => e.UcjbSize).HasColumnName("ucjbSize");
@@ -5795,11 +5564,11 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.MasterCourier).WithMany(p => p.TucJobArchives)
                 .HasForeignKey(d => d.MasterCourierId)
-                .HasConstraintName("FK__tucJobArc__Maste__6A07746E");
+                .HasConstraintName("FK_tucJobArchive_tucCourierMaster");
 
             entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TucJobArchivePickupTimeZones)
                 .HasForeignKey(d => d.PickupTimeZoneId)
-                .HasConstraintName("FK__tucJobArc__Picku__499AA4DC");
+                .HasConstraintName("FK__tucJobArc__Picku__346A7DCC");
 
             entity.HasOne(d => d.ToAirport).WithMany(p => p.TucJobArchiveToAirports)
                 .HasForeignKey(d => d.ToAirportId)
@@ -5843,9 +5612,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcbkId).HasColumnName("ucbkID");
             entity.Property(e => e.AcceptedJobTypeId).HasColumnName("AcceptedJobTypeID");
             entity.Property(e => e.AgentAmount).HasColumnType("money");
-            entity.Property(e => e.AutoDespatch)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobBooking_AutoDespatch");
+            entity.Property(e => e.AutoDespatch).HasDefaultValue(true);
             entity.Property(e => e.Barcode).HasMaxLength(300);
             entity.Property(e => e.BookingInformationParentId).HasColumnName("BookingInformationParentID");
             entity.Property(e => e.BookingParentId).HasColumnName("BookingParentID");
@@ -5877,14 +5644,11 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.DesiredJobTypeId).HasColumnName("DesiredJobTypeID");
             entity.Property(e => e.Dgclass).HasColumnName("DGClass");
             entity.Property(e => e.Dgdocument).HasColumnName("DGDocument");
-            entity.Property(e => e.Direct).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobBooking_Direct");
             entity.Property(e => e.DropOffLocationId).HasColumnName("DropOffLocationID");
             entity.Property(e => e.DropoffAmount).HasColumnType("money");
             entity.Property(e => e.DropoffRawAmount).HasColumnType("money");
             entity.Property(e => e.DryIceWeight).HasColumnType("decimal(18, 4)");
-            entity.Property(e => e.FixedPrice)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobBooking_FixedPrice");
+            entity.Property(e => e.FixedPrice).HasDefaultValue(true);
             entity.Property(e => e.FromAddressExtras)
                 .HasMaxLength(200)
                 .HasColumnName("fromAddressExtras");
@@ -5935,15 +5699,12 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PickupTimeZoneId).HasColumnName("PickupTimeZoneID");
             entity.Property(e => e.ProofOfDeliveryEmail).HasMaxLength(100);
             entity.Property(e => e.ProofOfDeliveryMobile).HasMaxLength(100);
-            entity.Property(e => e.RatedManually).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobBooking_RatedManually");
             entity.Property(e => e.RawAmount).HasColumnType("money");
             entity.Property(e => e.RefJobId).HasColumnName("RefJobID");
             entity.Property(e => e.RequiredDeliveryTime).HasColumnType("datetime");
             entity.Property(e => e.RestartDate).HasColumnType("datetime");
             entity.Property(e => e.RootParentId).HasColumnName("RootParentID");
             entity.Property(e => e.RunName).HasMaxLength(50);
-            entity.Property(e => e.RuralDelivery).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobBooking_RuralDelivery");
-            entity.Property(e => e.SaturdayDelivery).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobBooking_SaturdayDelivery");
             entity.Property(e => e.ScheduleId).HasColumnName("ScheduleID");
             entity.Property(e => e.ScheduleName).HasMaxLength(200);
             entity.Property(e => e.ShopRef1).HasMaxLength(50);
@@ -5984,17 +5745,13 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.TruckStartTime).HasColumnType("datetime");
             entity.Property(e => e.UcbkActive)
                 .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobBooking_ucbkActive")
                 .HasColumnName("ucbkActive");
             entity.Property(e => e.UcbkAmount)
                 .HasColumnType("money")
                 .HasColumnName("ucbkAmount");
-            entity.Property(e => e.UcbkAttention)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobBooking_ucbkAttention")
-                .HasColumnName("ucbkAttention");
+            entity.Property(e => e.UcbkAttention).HasColumnName("ucbkAttention");
             entity.Property(e => e.UcbkCbd)
                 .HasDefaultValue(false)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobBooking_ucbkCBD")
                 .HasColumnName("ucbkCBD");
             entity.Property(e => e.UcbkChargeType).HasColumnName("ucbkChargeType");
             entity.Property(e => e.UcbkClientCode)
@@ -6027,22 +5784,17 @@ public partial class DespatchContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("ucbkDateDone");
             entity.Property(e => e.UcbkDay).HasColumnName("ucbkDay");
-            entity.Property(e => e.UcbkDays)
-                .HasMaxLength(9)
-                .IsUnicode(false)
-                .HasDefaultValueSql("((0))")
-                .IsFixedLength()
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobBooking_ucbkDays")
-                .HasColumnName("ucbkDays");
+            entity.Property(e => e.UcbkDays).HasDefaultValueSql("((0))");
             entity.Property(e => e.UcbkDone)
                 .HasDefaultValue(false)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobBooking_ucbkDone")
                 .HasColumnName("ucbkDone");
             entity.Property(e => e.UcbkFirstDue)
                 .HasColumnType("datetime")
                 .HasColumnName("ucbkFirstDue");
             entity.Property(e => e.UcbkFortnight).HasColumnName("ucbkFortnight");
-            entity.Property(e => e.UcbkFrequency).HasComment("Frequency of job recurrence (Weekly=1, Fortnightly=2, FirstOfMonth=4, etc.)");
+            entity.Property(e => e.UcbkFrequency)
+                .HasDefaultValue(0)
+                .HasComment("Frequency of job recurrence (Weekly=1, Fortnightly=2, FirstOfMonth=4, etc.)");
             entity.Property(e => e.UcbkFrom).HasColumnName("ucbkFrom");
             entity.Property(e => e.UcbkFromAddr)
                 .HasMaxLength(150)
@@ -6068,7 +5820,6 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("ucbkNotes");
             entity.Property(e => e.UcbkOneOff)
                 .HasDefaultValue(false)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobBooking_ucbkOneOff")
                 .HasColumnName("ucbkOneOff");
             entity.Property(e => e.UcbkOperator).HasColumnName("ucbkOperator");
             entity.Property(e => e.UcbkOurRef)
@@ -6077,14 +5828,9 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("ucbkOurRef");
             entity.Property(e => e.UcbkPickUpFrom)
                 .HasDefaultValue(0)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobBooking_ucbkPickUpFrom")
                 .HasColumnName("ucbkPickUpFrom");
-            entity.Property(e => e.UcbkRefClientId)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobBooking_ucbkRefClientID")
-                .HasColumnName("ucbkRefClientID");
-            entity.Property(e => e.UcbkReturn)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobBooking_ucbkReturn")
-                .HasColumnName("ucbkReturn");
+            entity.Property(e => e.UcbkRefClientId).HasColumnName("ucbkRefClientID");
+            entity.Property(e => e.UcbkReturn).HasColumnName("ucbkReturn");
             entity.Property(e => e.UcbkScreen).HasColumnName("ucbkScreen");
             entity.Property(e => e.UcbkSize).HasColumnName("ucbkSize");
             entity.Property(e => e.UcbkSpeed).HasColumnName("ucbkSpeed");
@@ -6104,12 +5850,9 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(5)
                 .IsUnicode(false)
                 .HasColumnName("ucbkUpdateBy");
-            entity.Property(e => e.UcbkVan)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobBooking_ucbkVan")
-                .HasColumnName("ucbkVan");
+            entity.Property(e => e.UcbkVan).HasColumnName("ucbkVan");
             entity.Property(e => e.UcbkWeight)
                 .HasDefaultValue(0)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobBooking_ucbkWeight")
                 .HasColumnName("ucbkWeight");
             entity.Property(e => e.VanOk).HasColumnName("VanOK");
 
@@ -6139,7 +5882,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TucJobBookingPickupTimeZones)
                 .HasForeignKey(d => d.PickupTimeZoneId)
-                .HasConstraintName("FK__tucJobBoo__Picku__4A8EC915");
+                .HasConstraintName("FK__tucJobBoo__Picku__355EA205");
 
             entity.HasOne(d => d.Source).WithMany(p => p.TucJobBookings)
                 .HasForeignKey(d => d.SourceId)
@@ -6252,6 +5995,8 @@ public partial class DespatchContext : DbContext
 
             entity.ToTable("tucJobNationwide");
 
+            entity.HasIndex(e => e.UcnwJobId, "IX_TucJobNationwides_Job");
+
             entity.HasIndex(e => e.UcnwJobId, "IX_tucJobNationwide_ucnwJobID").HasFillFactor(80);
 
             entity.HasIndex(e => e.JobBookingId, "JobBookingID");
@@ -6282,9 +6027,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcnwAirlineName)
                 .HasMaxLength(100)
                 .HasColumnName("ucnwAirlineName");
-            entity.Property(e => e.UcnwAirportOnly)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucNationwide_NEW_ucnwAiportOnly")
-                .HasColumnName("ucnwAirportOnly");
+            entity.Property(e => e.UcnwAirportOnly).HasColumnName("ucnwAirportOnly");
             entity.Property(e => e.UcnwClientId).HasColumnName("ucnwClientID");
             entity.Property(e => e.UcnwConNote)
                 .HasMaxLength(50)
@@ -6292,9 +6035,7 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("ucnwConNote");
             entity.Property(e => e.UcnwCpsignature).HasColumnName("ucnwCPSignature");
             entity.Property(e => e.UcnwDeliveryAgentId).HasColumnName("ucnwDeliveryAgentID");
-            entity.Property(e => e.UcnwDeliveryJobId)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobNationwide_ucnwDeliveryJobID")
-                .HasColumnName("ucnwDeliveryJobID");
+            entity.Property(e => e.UcnwDeliveryJobId).HasColumnName("ucnwDeliveryJobID");
             entity.Property(e => e.UcnwDestinationId).HasColumnName("ucnwDestinationID");
             entity.Property(e => e.UcnwEta)
                 .HasColumnType("datetime")
@@ -6306,9 +6047,7 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(10)
                 .IsUnicode(false)
                 .HasColumnName("ucnwFlightNo");
-            entity.Property(e => e.UcnwItb)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobNationwide_ucnwITB")
-                .HasColumnName("ucnwITB");
+            entity.Property(e => e.UcnwItb).HasColumnName("ucnwITB");
             entity.Property(e => e.UcnwJobId).HasColumnName("ucnwJobID");
             entity.Property(e => e.UcnwJobNumber)
                 .HasMaxLength(50)
@@ -6320,12 +6059,9 @@ public partial class DespatchContext : DbContext
                 .HasColumnType("text")
                 .HasColumnName("ucnwNotes");
             entity.Property(e => e.UcnwPickUpAgentId).HasColumnName("ucnwPickUpAgentID");
-            entity.Property(e => e.UcnwPickUpJobId)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobNationwide_ucnwPickUpJobID")
-                .HasColumnName("ucnwPickUpJobID");
+            entity.Property(e => e.UcnwPickUpJobId).HasColumnName("ucnwPickUpJobID");
             entity.Property(e => e.UcnwSystemDate)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobNationwide_ucnwSystemDate")
                 .HasColumnType("datetime")
                 .HasColumnName("ucnwSystemDate");
             entity.Property(e => e.WebhookAlertId).HasMaxLength(36);
@@ -6352,6 +6088,8 @@ public partial class DespatchContext : DbContext
             entity.HasKey(e => e.JobId);
 
             entity.ToTable("tucJobReadTracker");
+
+            entity.HasIndex(e => new { e.JobId, e.HasBeenRead }, "IX_TucJobs_ReadTracker");
 
             entity.Property(e => e.JobId).ValueGeneratedNever();
             entity.Property(e => e.ReadTimestamp).HasColumnType("datetime");
@@ -6418,24 +6156,20 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CreatedBy)
                 .IsRequired()
                 .HasMaxLength(50);
-            entity.Property(e => e.DatacomEntry).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobType_DatacomEntry");
             entity.Property(e => e.ExtraName).HasMaxLength(50);
             entity.Property(e => e.Faf).HasColumnName("FAF");
-            entity.Property(e => e.JobEntry).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobType_JobEntry");
             entity.Property(e => e.JobLetter).HasMaxLength(5);
             entity.Property(e => e.LastModified).HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy)
                 .IsRequired()
                 .HasMaxLength(50);
             entity.Property(e => e.Mfv).HasColumnName("MFV");
-            entity.Property(e => e.NationwideEntry).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobType_NationwideEntry");
             entity.Property(e => e.Notes).HasColumnType("ntext");
             entity.Property(e => e.ShortName).HasMaxLength(50);
             entity.Property(e => e.ShowPhotosWhenChild).HasDefaultValue(true);
             entity.Property(e => e.SuccessRate).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.SystemName).HasMaxLength(50);
             entity.Property(e => e.UcjtBaseRate)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobType_ucjtBaseRate")
                 .HasColumnType("money")
                 .HasColumnName("ucjtBaseRate");
             entity.Property(e => e.UcjtClientId).HasColumnName("ucjtClientID");
@@ -6451,11 +6185,8 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(50)
                 .HasColumnName("ucjtName");
             entity.Property(e => e.UcjtUnitRate)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobType_ucjtUnitRate")
                 .HasColumnType("money")
                 .HasColumnName("ucjtUnitRate");
-            entity.Property(e => e.WebJobEntry).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobType_WebJobEntry");
-            entity.Property(e => e.WebServiceEntry).HasAnnotation("Relational:DefaultConstraintName", "DF_tucJobType_WebServiceEntry");
 
             entity.HasOne(d => d.Grouping).WithMany(p => p.TucJobTypes)
                 .HasForeignKey(d => d.GroupingId)
@@ -6494,7 +6225,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.FilePath).HasMaxLength(1000);
             entity.Property(e => e.FileType).HasMaxLength(100);
             entity.Property(e => e.JobId).HasColumnName("JobID");
-            entity.Property(e => e.Read).HasAnnotation("Relational:DefaultConstraintName", "DF_tucManualMessage_Read");
             entity.Property(e => e.ReplyToEmailAddress).HasMaxLength(500);
             entity.Property(e => e.SendToEmailAddress).HasMaxLength(500);
             entity.Property(e => e.SendToMobile).HasMaxLength(500);
@@ -6502,11 +6232,9 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.TimeRead).HasColumnType("datetime");
             entity.Property(e => e.UcmmAttempts)
                 .HasDefaultValue(0)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucManualMessage_ucmmAttempts")
                 .HasColumnName("ucmmAttempts");
             entity.Property(e => e.UcmmDate)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucManualMessage_ucmmDate")
                 .HasColumnType("datetime")
                 .HasColumnName("ucmmDate");
             entity.Property(e => e.UcmmMessage)
@@ -6518,12 +6246,9 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcmmSendTo).HasColumnName("ucmmSendTo");
             entity.Property(e => e.UcmmSendToCourierId).HasColumnName("ucmmSendToCourierID");
             entity.Property(e => e.UcmmSendToStaffId).HasColumnName("ucmmSendToStaffID");
-            entity.Property(e => e.UcmmSent)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucManualMessage_ucmmSent")
-                .HasColumnName("ucmmSent");
+            entity.Property(e => e.UcmmSent).HasColumnName("ucmmSent");
             entity.Property(e => e.UcmmStaffId)
                 .HasDefaultValue(0)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucManualMessage_ucmmStaffID")
                 .HasColumnName("ucmmStaffID");
             entity.Property(e => e.UcmmTimeSent)
                 .HasColumnType("datetime")
@@ -6562,7 +6287,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcmpCourier).HasColumnName("ucmpCourier");
             entity.Property(e => e.UcmpDate)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucMessage_ucmpDate")
                 .HasColumnType("datetime")
                 .HasColumnName("ucmpDate");
             entity.Property(e => e.UcmpMessage)
@@ -6578,7 +6302,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucNote>(entity =>
         {
-            entity.HasKey(e => e.NoteId).HasName("PK__tucNote__EACE357FAA284A1B");
+            entity.HasKey(e => e.NoteId).HasName("PK__tucNote__EACE357FF13C671E");
 
             entity.ToTable("tucNote");
 
@@ -6627,7 +6351,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucNoteArchive>(entity =>
         {
-            entity.HasKey(e => e.NoteId).HasName("PK__tucNoteA__EACE357FFEC2152E");
+            entity.HasKey(e => e.NoteId).HasName("PK__tucNoteA__EACE357F9C2F0B4B");
 
             entity.ToTable("tucNoteArchive");
 
@@ -6646,7 +6370,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucNoteType>(entity =>
         {
-            entity.HasKey(e => e.NoteTypeId).HasName("PK__tucNoteT__28ABD5CF9386AF41");
+            entity.HasKey(e => e.NoteTypeId).HasName("PK__tucNoteT__28ABD5CFC7BB1CD0");
 
             entity.ToTable("tucNoteType");
 
@@ -6718,9 +6442,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.StaffBlurb).HasMaxLength(1000);
             entity.Property(e => e.StaffDegree).HasMaxLength(100);
             entity.Property(e => e.StaffTitleId).HasColumnName("StaffTitleID");
-            entity.Property(e => e.UcstActive)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucStaff_ucstActive")
-                .HasColumnName("ucstActive");
+            entity.Property(e => e.UcstActive).HasColumnName("ucstActive");
             entity.Property(e => e.UcstAddress)
                 .HasMaxLength(150)
                 .HasColumnName("ucstAddress");
@@ -6729,7 +6451,6 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("ucstCode");
             entity.Property(e => e.UcstDepartment)
                 .HasDefaultValue(0)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucStaff_ucstDepartment")
                 .HasColumnName("ucstDepartment");
             entity.Property(e => e.UcstDob)
                 .HasColumnType("datetime")
@@ -6875,7 +6596,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<UserQuickResponse>(entity =>
         {
-            entity.HasKey(e => e.ResponseId).HasName("PK__UserQuic__1AAA640C02BCA7AD");
+            entity.HasKey(e => e.ResponseId).HasName("PK__UserQuic__1AAA640CA2077CE3");
 
             entity.HasIndex(e => e.CourierId, "IX_UserQuickResponses_CourierID");
 
@@ -7023,7 +6744,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ClientId).HasColumnName("ClientID");
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__VehicleSi__Creat__17793963")
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.CubicCapacity).HasColumnType("decimal(18, 4)");
@@ -7032,7 +6752,6 @@ public partial class DespatchContext : DbContext
                 .HasColumnType("decimal(18, 4)");
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__VehicleSi__LastM__186D5D9C")
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
             entity.Property(e => e.VehicleName).HasMaxLength(255);
@@ -7042,7 +6761,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<WeightBreak>(entity =>
         {
-            entity.HasKey(e => e.WeightBreakId).HasName("PK__WeightBr__51EB3B552C5B79C9");
+            entity.HasKey(e => e.WeightBreakId).HasName("PK__WeightBr__51EB3B5534D8700A");
 
             entity.Property(e => e.WeightBreakId).HasColumnName("WeightBreakID");
             entity.Property(e => e.BaseCharge).HasColumnType("decimal(18, 4)");
@@ -7057,7 +6776,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<WeightBreakGroup>(entity =>
         {
-            entity.HasKey(e => e.WeightBreakGroupId).HasName("PK__WeightBr__34F02BA431882C1B");
+            entity.HasKey(e => e.WeightBreakGroupId).HasName("PK__WeightBr__34F02BA4C7CF6726");
 
             entity.Property(e => e.WeightBreakGroupId).HasColumnName("WeightBreakGroupID");
             entity.Property(e => e.Created).HasColumnType("datetime");
@@ -7068,27 +6787,27 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.FifthWeightBreakNavigation).WithMany(p => p.WeightBreakGroupFifthWeightBreakNavigations)
                 .HasForeignKey(d => d.FifthWeightBreak)
-                .HasConstraintName("FK__WeightBre__Fifth__268672C9");
+                .HasConstraintName("FK__WeightBre__Fifth__286EBB3B");
 
             entity.HasOne(d => d.FirstWeightBreakNavigation).WithMany(p => p.WeightBreakGroupFirstWeightBreakNavigations)
                 .HasForeignKey(d => d.FirstWeightBreak)
-                .HasConstraintName("FK__WeightBre__First__22B5E1E5");
+                .HasConstraintName("FK__WeightBre__First__249E2A57");
 
             entity.HasOne(d => d.FourthWeightBreakNavigation).WithMany(p => p.WeightBreakGroupFourthWeightBreakNavigations)
                 .HasForeignKey(d => d.FourthWeightBreak)
-                .HasConstraintName("FK__WeightBre__Fourt__25924E90");
+                .HasConstraintName("FK__WeightBre__Fourt__277A9702");
 
             entity.HasOne(d => d.SecondWeightBreakNavigation).WithMany(p => p.WeightBreakGroupSecondWeightBreakNavigations)
                 .HasForeignKey(d => d.SecondWeightBreak)
-                .HasConstraintName("FK__WeightBre__Secon__23AA061E");
+                .HasConstraintName("FK__WeightBre__Secon__25924E90");
 
             entity.HasOne(d => d.SixthWeightBreakNavigation).WithMany(p => p.WeightBreakGroupSixthWeightBreakNavigations)
                 .HasForeignKey(d => d.SixthWeightBreak)
-                .HasConstraintName("FK__WeightBre__Sixth__760336FF");
+                .HasConstraintName("FK__WeightBre__Sixth__3084DE4F");
 
             entity.HasOne(d => d.ThirdWeightBreakNavigation).WithMany(p => p.WeightBreakGroupThirdWeightBreakNavigations)
                 .HasForeignKey(d => d.ThirdWeightBreak)
-                .HasConstraintName("FK__WeightBre__Third__249E2A57");
+                .HasConstraintName("FK__WeightBre__Third__268672C9");
         });
 
         modelBuilder.Entity<ZipPolygon>(entity =>
@@ -7117,12 +6836,10 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ZoneGroupId).HasColumnName("ZoneGroupID");
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__ZoneGroup__Creat__037240B6")
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__ZoneGroup__LastM__046664EF")
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
             entity.Property(e => e.Name).HasMaxLength(255);
@@ -7141,13 +6858,11 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ZoneNameId).HasColumnName("ZoneNameID");
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__ZoneName__Create__092B1A0C")
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.GeoPolygonId).HasColumnName("GeoPolygonID");
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__ZoneName__LastMo__0A1F3E45")
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
             entity.Property(e => e.LocationId).HasColumnName("LocationID");
@@ -7175,12 +6890,10 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ClientId).HasColumnName("ClientID");
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__ZoneZip__Created__0FD8179B")
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__ZoneZip__LastMod__10CC3BD4")
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
             entity.Property(e => e.Zip)

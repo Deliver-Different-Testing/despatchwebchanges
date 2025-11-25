@@ -21,4 +21,6 @@ public partial class TucJobArchive
     public virtual ICollection<TucNoteArchive> NoteArchives { get; set; } = new List<TucNoteArchive>();
     
     public virtual TucClientContact LoggedInContact { get; set; }
+    
+    public virtual TucInvoiceProcess InvoiceProcess { get; set; }
 }

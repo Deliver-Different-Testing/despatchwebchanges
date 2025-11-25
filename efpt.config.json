@@ -4,7 +4,6 @@
    "ContextNamespace": null,
    "FilterSchemas": false,
    "IncludeConnectionString": false,
-   "MinimumProductVersion": "2.6.1166",
    "ModelNamespace": null,
    "OutputContextPath": null,
    "OutputPath": "EntityClasses",
@@ -257,6 +256,10 @@
       },
       {
          "Name": "[dbo].[tucInvoiceNo]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucInvoiceProcess]",
          "ObjectType": 0
       },
       {
