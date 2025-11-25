@@ -1843,6 +1843,11 @@ class JobDetailController extends BaseController {
                 this.toastrService.showWarningToast("Price breakdown is not currently available for scheduled jobs.");
                 return;
             }
+            
+            if(job.isInvoiced) {
+                this.toastrService.showWarningToast("Job already invoiced to the customer. Cannot edit price.");
+                return;
+            }
 
             const newAmount = await this.priceBreakdownDialogService.openPriceBreakdownDialog(
                 $event,

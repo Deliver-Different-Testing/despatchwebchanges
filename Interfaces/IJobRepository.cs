@@ -185,7 +185,7 @@ public interface IJobRepository
     Task<JobRatingDetailsDtoNz> GetJobBookingDetailsForRatingNzAsync(int jobId);
     Task<List<TimeZoneSuggestion>> GetTimeZoneOptions();
     Task<JobRatingDetailsDto> GetJobBookingDetailsForRatingAsync(int jobId);
-
+    Task<bool> IsJobArchived(int jobId);
     Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId);
     Task<bool> JobNumberExistsAsync(string jobNumber);
 
