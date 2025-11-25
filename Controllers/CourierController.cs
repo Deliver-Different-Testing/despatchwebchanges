@@ -392,7 +392,7 @@ public class CourierController(
     {
         try
         {
-            ArgumentNullException.ThrowIfNull(courierCode, nameof(courierCode));
+            ArgumentNullException.ThrowIfNull(courierCode);
             var courier = await courierRepository.GetExactCourierByCodeAsync(courierCode);
             return Json(courier);
         }

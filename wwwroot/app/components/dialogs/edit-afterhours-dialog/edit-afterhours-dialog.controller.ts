@@ -76,6 +76,17 @@ class EditAfterhoursDialogController extends BaseController {
         });
 
         this.editableAfterHoursSchedule = angular.copy(afterHourScheduleItem);
+
+        // Initialize a selected courier for existing schedules
+        if (!this.isNewSchedule && this.editableAfterHoursSchedule.courierId) {
+            this.selectedCourier = {
+                id: this.editableAfterHoursSchedule.courierId,
+                text: this.editableAfterHoursSchedule.courierName || '',
+            };
+            // Set the search text to show the current courier
+            this.courierSearchText = this.editableAfterHoursSchedule.courierName;
+        }
+
         this.validateForm();
     }
 
@@ -89,7 +100,6 @@ class EditAfterhoursDialogController extends BaseController {
         }
     }
 
-    // Update the validateForm method
     validateForm(): boolean {
         this.isFormValid = true;
         this.validationErrors = {};
@@ -206,16 +216,33 @@ class EditAfterhoursDialogController extends BaseController {
     }
 
     courierSelected(courier: ISuggestion) {
-        if (!courier) return;
+        if (!courier) {
+            // Handle clearing the selection
+            this.editableAfterHoursSchedule.courierId = 0;
+            this.editableAfterHoursSchedule.courierName = '';
+            this.editableAfterHoursSchedule.courierCode = '';
+            this.validateForm();
+            return;
+        }
 
         this.editableAfterHoursSchedule.courierId = courier.id;
         this.editableAfterHoursSchedule.courierName = courier.text;
 
-        // Extract courier code if present
+        // Extract courier code if present (format is typically "Code (Name)" or just "Code")
         const parts = courier.text.split('(');
-        if (parts.length > 0) {
-            this.editableAfterHoursSchedule.courierCode = parts[0];
+        if (parts.length > 1) {
+            // Format: "Code (Name)"
+            this.editableAfterHoursSchedule.courierCode = parts[0].trim();
+        } else {
+            // Use the full text as the code if no parentheses
+            this.editableAfterHoursSchedule.courierCode = courier.text;
         }
+
+        console.log('EditAfterhoursDialogController: Courier selected:', {
+            id: courier.id,
+            name: this.editableAfterHoursSchedule.courierName,
+            code: this.editableAfterHoursSchedule.courierCode
+        });
 
         this.validateForm();
     }
@@ -236,7 +263,6 @@ class EditAfterhoursDialogController extends BaseController {
 
     save(): void {
         if (this.validateForm()) {
-
             console.log('EditAfterhoursDialogController: Saving schedule:', this.editableAfterHoursSchedule);
             this.editableAfterHoursSchedule.timezone = this.selectedTimeZone?.timeZoneIana;
             this.$mdDialog.hide(this.editableAfterHoursSchedule);

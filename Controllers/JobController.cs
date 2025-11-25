@@ -1348,7 +1348,7 @@ public class JobController(
     {
         try
         {
-            ArgumentNullException.ThrowIfNull(jobNumber, nameof(jobNumber));
+            ArgumentNullException.ThrowIfNull(jobNumber);
 
             Log.Information("Releasing bulk job {JobNumber} with booking date {BookDate}", jobNumber, bookDate);
 

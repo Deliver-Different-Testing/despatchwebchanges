@@ -19,11 +19,11 @@
         <md-dialog-content class="dialog-content">
             <div class="content-container">
 
-                <!-- Courier Selection (New Schedule) -->
-                <div class="selection-panel" ng-if="ctrl.isNewSchedule">
+                <!-- Courier Selection -->
+                <div class="selection-panel">
                     <h3 class="driver-section-title">
                         <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">person</md-icon>
-                        Select Driver
+                        {{ctrl.isNewSchedule ? 'Select' : 'Change'}} Driver
                     </h3>
                     <md-autocomplete
                             md-autofocus="ctrl.isNewSchedule"
@@ -50,23 +50,11 @@
                         <md-icon md-font-set="material-symbols-outlined">error</md-icon>
                         <span>{{ctrl.validationErrors.courierSelection}}</span>
                     </div>
-                </div>
-
-                <!-- Courier Information (Existing Schedule) -->
-                <div class="info-panel" ng-if="!ctrl.isNewSchedule">
-                    <h3 class="driver-section-title">
-                        <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">badge</md-icon>
-                        Driver Information
-                    </h3>
-                    <div class="info-row">
-                        <div class="info-item">
-                            <label>Name</label>
-                            <div class="value">{{ctrl.editableAfterHoursSchedule.courierName}}</div>
-                        </div>
-                        <div class="info-item">
-                            <label>Code</label>
-                            <div class="value code-value">{{ctrl.editableAfterHoursSchedule.courierCode}}</div>
-                        </div>
+                    <!-- Show current selection for existing schedules -->
+                    <div class="current-selection-info" ng-if="!ctrl.isNewSchedule && ctrl.editableAfterHoursSchedule.courierName">
+                        <span class="info-label">Current driver:</span>
+                        <span class="info-value">{{ctrl.editableAfterHoursSchedule.courierName}}</span>
+                        <span class="info-code" ng-if="ctrl.editableAfterHoursSchedule.courierCode">({{ctrl.editableAfterHoursSchedule.courierCode}})</span>
                     </div>
                 </div>
 
@@ -96,7 +84,7 @@
                             <span class="hint-text">{{ctrl.getSelectedDaysText()}}</span>
                         </div>
                     </md-input-container>
-                    
+
                     <!-- Custom timepicker Component-->
                     <div class="time-picker-wrapper">
                         <custom-date-picker
