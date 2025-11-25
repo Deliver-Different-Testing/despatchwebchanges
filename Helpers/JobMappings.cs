@@ -194,6 +194,7 @@ public static class JobMappings
         ScheduleName = j.ScheduleName,
         FollowupTime = j.FollowupTime,
         Void = j.UcjbVoid,
+        IsInvoiced = false,
 
         // Simple navigation properties
         LoggedInContactName = j.LoggedInContact != null
@@ -423,7 +424,8 @@ public static class JobMappings
         CreatedDate = j.BookDate,
         ScheduleName = j.ScheduleName,
         Void = j.Void,
-        
+        IsInvoiced = false,
+
         LoggedInContactName = j.LoggedInContact != null
             ? j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname
             : string.Empty,
@@ -581,6 +583,7 @@ public static class JobMappings
         ScheduleName = j.ScheduleName,
         FollowupTime = j.FollowupTime,
         Void = j.UcjbVoid,
+        IsInvoiced = j.UcjbInvoiceNo != null,
         LoggedInContactName = j.LoggedInContact != null
             ? j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname
             : string.Empty,

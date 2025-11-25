@@ -1261,7 +1261,11 @@ public class JobController(
         {
             await jobRepository.UpdateJobAsync(jobId, field, value);
 
-            // Recalculate job
+            // Skip rating if a job is archived
+            var isArchived = await jobRepository.IsJobArchived(jobId);
+            if (isArchived) return Ok();
+            
+            // Recalculate a job
             var shouldRecalculateRate = ShouldRecalculateRate(field);
             if (!shouldRecalculateRate) return Ok();
 
@@ -1740,6 +1744,10 @@ public class JobController(
 
     private async Task RecalculateJobRateAsync(int jobId, bool isBooking)
     {
+        // Skip if a job is archived
+        var isArchived = !isBooking && await jobRepository.IsJobArchived(jobId);
+        if(isArchived) return;
+        
         var isUsCustomer = infoService.IsUsTenant();
 
         if (isUsCustomer)

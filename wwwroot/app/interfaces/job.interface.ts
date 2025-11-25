@@ -182,6 +182,7 @@ export interface IJob {
     deliverToPrivateRes: boolean;
     deliverToPrivateResString: string;
     bookingSource?: ISuggestion;
+    isInvoiced: boolean;
 }
 
 export interface IJobDto {
@@ -348,6 +349,7 @@ export interface IJobDto {
     tailLiftDo: boolean;
     deliverToPrivateRes: boolean;
     bookingSource?: ISuggestion;
+    isInvoiced: boolean;
 }
 
 export interface UpdateBulkJobPackagesRequest extends UpdateJobPackagesBase {
