@@ -852,36 +852,6 @@ class JobsListController extends BaseController {
     }
 
     // Delegated action methods
-    async restoreJob(job: IDispatchJob) {
-        if (this.onJobAction) {
-            await this.onJobAction({action: 'restore', job, params: {}});
-        }
-    }
-
-    async reAllocateJob(job: IDispatchJob) {
-        if (this.onJobAction) {
-            await this.onJobAction({action: 'reallocate', job, params: {}});
-        }
-    }
-
-    async splitJob($event: MouseEvent, job: IDispatchJob) {
-        if (this.onJobAction) {
-            await this.onJobAction({action: 'split', job, params: {$event}});
-        }
-    }
-
-    async latePickup(minsAway: number, job: IDispatchJob, obj: any) {
-        if (this.onJobAction) {
-            await this.onJobAction({action: 'latePickup', job, params: {minsAway, obj}});
-        }
-    }
-
-    async lateDelivery(minsAway: number, job: IDispatchJob, obj: any) {
-        if (this.onJobAction) {
-            await this.onJobAction({action: 'lateDelivery', job, params: {minsAway, obj}});
-        }
-    }
-
     getDisplayedJobsText(): string {
         const displayed = this.filteredJobs?.length || 0;
         const multiPart = this.filteredJobs?.filter(j => this.isMultiPartJob(j)).length || 0;
@@ -916,7 +886,7 @@ class JobsListController extends BaseController {
 
             const results = await this.DispatchData.autocompleteSearch(searchText, url);
 
-            // If search text is purely numeric (courier code), filter for exact matches only
+            // If the search text is purely numeric (courier code), filter for exact matches only
             const trimmedSearch = searchText.trim();
             if (/^\d+$/.test(trimmedSearch)) {
                 // Filter results to only show exact courier code matches
@@ -1360,6 +1330,48 @@ class JobsListController extends BaseController {
         }
     }
 
+    async bulkRedispatch(): Promise<void> {
+        try {
+            const selectedJobIds = this.selectedJobs.map(job => job.id);
+
+            const confirm = this.$mdDialog.confirm()
+                .title('Bulk Re-Dispatch')
+                .textContent(`Are you sure you want to redispatch all ${this.selectedJobs.length} jobs?`)
+                .ok('Re-Dispatch Jobs')
+                .cancel('Cancel');
+
+            await this.$mdDialog.show(confirm);
+
+            // Group jobs by courier ID, filtering out jobs without assigned couriers
+            const jobsByCourier = this.selectedJobs.reduce((acc, job) => {
+                const courierId = job.assignedCourier?.id;
+                if (courierId !== undefined) {
+                    if (!acc[courierId]) {
+                        acc[courierId] = [];
+                    }
+                    acc[courierId].push(job.id);
+                }
+                return acc;
+            }, {} as { [courierId: number]: number[] });
+
+            // Loop through each courier and reallocate their jobs
+            for (const courierId in jobsByCourier) {
+                const jobIds = jobsByCourier[courierId];
+                await this.DispatchData.reAllocateJobs(Number(courierId), jobIds);
+            }
+
+            if (this.onRefresh) {
+                await this.onRefresh();
+            }
+
+            this.toastrService.showSuccessToast(`${selectedJobIds.length} jobs redispatched successfully`);
+        } catch (error) {
+            if (!error) return;
+            console.error("Error in bulk redispatch:", error);
+            this.toastrService.showErrorToast('Error occurred while redispatching jobs');
+        }
+    }
+    
     async bulkMarkAsRead(): Promise<void> {
         try {
             if (this.selectedJobs.length === 0) return;

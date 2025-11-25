@@ -145,6 +145,14 @@ class JobContextMenuService implements angular.IServiceProvider {
         }
 
         menuOptions.push({
+            text: "Re-Dispatch",
+            icon: "redo",
+            click: (_$itemScope: any, $event: MouseEvent) =>
+                this.addEventOtherAction($event, job, callbacks.onRefresh),
+            hasBottomDivider: true,
+        });
+
+        menuOptions.push({
             text: "Add Task - Other",
             icon: "add",
             click: (_$itemScope: any, $event: MouseEvent) =>
@@ -375,6 +383,22 @@ class JobContextMenuService implements angular.IServiceProvider {
             if (error) {
                 console.error("Job void error:", error);
             }
+        }
+    }
+
+    private async redispatchJobAction(
+        $event: MouseEvent,
+        job: IDispatchJob,
+        onRefresh: () => void
+    ) {
+        if (!job || !job.assignedCourier?.id) return;
+
+        await this.DispatchData.reAllocateJobs(job.assignedCourier?.id, [job.id]);
+        this.toastrService.showSuccessToast(
+            `Job ${job.jobNo} re-dispatched successfully`)
+
+        if (onRefresh) {
+            onRefresh();
         }
     }
 
