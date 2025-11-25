@@ -3,7 +3,7 @@
 .edit-afterhours-dialog {
   @dialog-max-width: 700px;
   @dialog-padding: 24px;
-  
+
   width: 500px !important;
   max-width: @dialog-max-width;
   border-radius: @dialog-border-radius;
@@ -43,12 +43,12 @@
       font-weight: 500;
       color: @text-dark;
     }
-    
+
     .driver-section-title {
       .section-title;
       margin: 0 0 10px 0;
     }
-    
+
     .schedule-section-title {
       .section-title;
       margin: 0 0 40px 0;
@@ -279,6 +279,33 @@
 
       .validation-error {
         margin-top: 12px;
+      }
+
+      // Current Selection Info Display
+      .current-selection-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        background-color: #f5f5f5;
+        border-radius: 6px;
+        margin-top: 12px;
+        font-size: 13px;
+
+        .info-label {
+          color: @text-muted;
+          font-weight: 500;
+        }
+
+        .info-value {
+          color: @text-dark;
+          font-weight: 600;
+        }
+
+        .info-code {
+          color: @text-muted;
+          font-style: italic;
+        }
       }
     }
   }

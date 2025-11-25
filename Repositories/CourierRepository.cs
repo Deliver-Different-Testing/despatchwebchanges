@@ -1470,21 +1470,55 @@ public class CourierRepository(
         await Context.TucManualMessages.AddRangeAsync(manualMessages);
         await Context.SaveChangesAsync();
     }
+    
+    private static int GetDayOfWeekAsInt(string dayOfWeek)
+    {
+        return dayOfWeek switch
+        {
+            "Monday" => 1,
+            "Tuesday" => 2,
+            "Wednesday" => 3,
+            "Thursday" => 4,
+            "Friday" => 5,
+            "Saturday" => 6,
+            "Sunday" => 7,
+            _ => 0
+        };
+    }
 
     public async Task UpdateAfterHoursCourierScheduleAsync(AfterHoursCourierScheduleViewModel request)
     {
-        ArgumentNullException.ThrowIfNull(request.StartTime);
-        ArgumentNullException.ThrowIfNull(request.EndTime);
-
-        foreach (var dayOfWeek in request.Days.Select(GetDayOfWeekAsInt))
+        try
         {
+            ArgumentNullException.ThrowIfNull(request.StartTime);
+            ArgumentNullException.ThrowIfNull(request.EndTime);
+
+            // Delete the original schedule group in a single query
             await Context.TblAfterhoursCouriers
-                .Where(c => c.Id == request.AfterHoursScheduleId)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(e => e.StartTime, request.StartTime.Value.DateTime)
-                    .SetProperty(e => e.EndTime, request.EndTime.Value.DateTime)
-                    .SetProperty(e => e.WeekDay, dayOfWeek)
-                );
+                .Where(s => Context.TblAfterhoursCouriers
+                    .Where(c => c.Id == request.AfterHoursScheduleId)
+                    .Any(c => c.CourierId == s.CourierId && 
+                              c.StartTime == s.StartTime && 
+                              c.EndTime == s.EndTime))
+                .ExecuteDeleteAsync();
+
+            // Create new schedules with the updated data (new days, new times)
+            foreach (var schedule in request.Days.Select(GetDayOfWeekAsInt).Select(dayOfWeek => new TblAfterhoursCourier
+                     {
+                         CourierId = request.CourierId,
+                         WeekDay = dayOfWeek,
+                         StartTime = request.StartTime.Value.DateTime,
+                         EndTime = request.EndTime.Value.DateTime
+                     })) await Context.TblAfterhoursCouriers.AddAsync(schedule);
+
+            await Context.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierRepository),
+                    nameof(UpdateAfterHoursCourierScheduleAsync)));
+            throw;
         }
     }
 
@@ -1515,27 +1549,16 @@ public class CourierRepository(
         }
     }
 
-    private static int GetDayOfWeekAsInt(string dayOfWeek)
-    {
-        return dayOfWeek switch
-        {
-            "Monday" => 1,
-            "Tuesday" => 2,
-            "Wednesday" => 3,
-            "Thursday" => 4,
-            "Friday" => 5,
-            "Saturday" => 6,
-            "Sunday" => 7,
-            _ => 0
-        };
-    }
-
     public async Task DeleteAfterHoursCourierScheduleAsync(int afterHoursScheduleId)
     {
         try
         {
             await Context.TblAfterhoursCouriers
-                .Where(s => s.Id == afterHoursScheduleId)
+                .Where(s => Context.TblAfterhoursCouriers
+                    .Where(c => c.Id == afterHoursScheduleId)
+                    .Any(c => c.CourierId == s.CourierId && 
+                              c.StartTime == s.StartTime && 
+                              c.EndTime == s.EndTime))
                 .ExecuteDeleteAsync();
         }
         catch (Exception e)
@@ -1546,12 +1569,12 @@ public class CourierRepository(
             throw;
         }
     }
-
+    
     public async Task<Suggestion> GetExactCourierByCodeAsync(string courierCode)
     {
         try
         {
-            ArgumentNullException.ThrowIfNull(courierCode, nameof(courierCode));
+            ArgumentNullException.ThrowIfNull(courierCode);
 
             return await Context.TucCouriers
                 .AsNoTracking()

@@ -20,7 +20,8 @@ class EditAfterhoursDialogService implements angular.IServiceProvider {
         return this;
     }
 
-    async openEditAfterhoursDialog($event: MouseEvent, afterHourScheduleItem: IAfterHoursCourierSchedule): Promise<IAfterHoursCourierSchedule | undefined> {
+    async openEditAfterhoursDialog($event: MouseEvent,
+                                   afterHourScheduleItem: IAfterHoursCourierSchedule): Promise<IAfterHoursCourierSchedule | undefined> {
         try {
             console.log('EditAfterhoursDialogService: Opening dialog for schedule:', afterHourScheduleItem);
 
@@ -39,7 +40,7 @@ class EditAfterhoursDialogService implements angular.IServiceProvider {
                 bindToController: true,
             };
 
-            const result = await this.$mdDialog.show(dialogConfig);
+            const result: IAfterHoursCourierSchedule = await this.$mdDialog.show(dialogConfig);
             console.log('EditAfterhoursDialogService: Dialog resolved with:', result);
             return result;
         } catch (error) {
