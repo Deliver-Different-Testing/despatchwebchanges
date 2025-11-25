@@ -1221,22 +1221,51 @@ public partial class JobRepository(
 
     public async Task DispatchSelectedJobsAsync(int courierId, List<int> jobIds)
     {
-        var staffId = _infoService.GetStaffId();
-        var jobIdsString = string.Join(",", jobIds);
-        await Context.Procedures.DESWEB_stpJob_AutoDespatchSelectedJobsAsync(jobIdsString, courierId, staffId,
-            (int)InternalJobStatus.AwaitingPod);
+        try
+        {
+            var staffId = _infoService.GetStaffId();
+            var jobIdsString = string.Join(",", jobIds);
+            await Context.Procedures.DESWEB_stpJob_AutoDespatchSelectedJobsAsync(jobIdsString, courierId, staffId,
+                (int)InternalJobStatus.AwaitingPod);
 
-        foreach (var jobId in jobIds)
-            await Context.Procedures.DES_stpJob_AutoDespatchChildJobsAsync(jobId, (int)InternalJobStatus.AwaitingPod);
+            foreach (var jobId in jobIds)
+                await Context.Procedures.DES_stpJob_AutoDespatchChildJobsAsync(jobId, (int)InternalJobStatus.AwaitingPod);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(DispatchSelectedJobsAsync)));
+            throw;
+        }
     }
 
-    public async Task SwapPodAsync(string job1, string job2) =>
-        await Context.Procedures.DESWEB_qdfSwapPODAsync(job1, job2);
+    public async Task SwapPodAsync(string job1, string job2)
+    {
+        try
+        {
+            await Context.Procedures.DESWEB_qdfSwapPODAsync(job1, job2);
+        }
+        catch (Exception e)
+        {
+          Log.Error(e, "{Message}", 
+              ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(SwapPodAsync)));
+            throw;
+        }
+    }
 
     public async Task ReDispatchSelectedJobsAsync(int courierId, List<int> jobIds)
     {
-        foreach (var jobId in jobIds) await Context.Procedures.uspRestoreJobAsync(jobId);
-        await DispatchSelectedJobsAsync(courierId, jobIds);
+        try
+        {
+            foreach (var jobId in jobIds) await Context.Procedures.uspRestoreJobAsync(jobId);
+            await DispatchSelectedJobsAsync(courierId, jobIds);
+        }
+        catch (Exception e)
+        {
+           Log.Error(e, "{Message}",
+               ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(ReDispatchSelectedJobsAsync)));
+            throw;
+        }
     }
 
     public async Task ReSendSelectedJobsAsync(string jobIds)

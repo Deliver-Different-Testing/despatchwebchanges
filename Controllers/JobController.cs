@@ -872,7 +872,8 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error reallocating jobs");
+            Log.Error(ex, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(ReAllocate)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
