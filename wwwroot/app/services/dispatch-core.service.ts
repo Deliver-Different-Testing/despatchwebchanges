@@ -153,12 +153,27 @@ class DispatchCoreService implements angular.IServiceProvider {
         courierId: number,
         jobIds: number[]
     ): Promise<void> {
+        await this.allocateJobsInternal("job/Allocate", courierId, jobIds);
+    }
+
+    async reAllocateJobs(
+        courierId: number,
+        jobIds: number[]
+    ): Promise<void> {
+        await this.allocateJobsInternal("job/ReAllocate", courierId, jobIds);
+    }
+
+    private async allocateJobsInternal(
+        endpoint: string,
+        courierId: number,
+        jobIds: number[]
+    ): Promise<void> {
         const data: IAllocateJobsToCourierRequest = {
             courierId,
             jobIds,
         };
 
-        await this.$http.post("job/Allocate", data);
+        await this.$http.post(endpoint, data);
     }
 
     async setFirstJob(jobId: number, courierId: number): Promise<void> {
