@@ -1659,7 +1659,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> REP_qryPerformance_Summary_PerformanceSpendAsync(int? clientID, DateTime? startDate, DateTime? endDate, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<REP_qryPerformance_Summary_PerformanceSpendResult>> REP_qryPerformance_Summary_PerformanceSpendAsync(int? clientID, DateTime? startDate, DateTime? endDate, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -1690,7 +1690,7 @@ namespace DespatchWeb.EntityClasses
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[REP_qryPerformance_Summary_PerformanceSpend] @ClientID = @ClientID, @StartDate = @StartDate, @EndDate = @EndDate", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<REP_qryPerformance_Summary_PerformanceSpendResult>("EXEC @returnValue = [dbo].[REP_qryPerformance_Summary_PerformanceSpend] @ClientID = @ClientID, @StartDate = @StartDate, @EndDate = @EndDate", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 

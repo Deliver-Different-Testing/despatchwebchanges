@@ -122,6 +122,12 @@ public partial class DespatchContext
                 .HasForeignKey(d => d.LoggedInContactId)
                 .HasPrincipalKey(cc => cc.UcctId)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+            entity.HasOne(d => d.InvoiceProcess)
+                .WithMany()
+                .HasForeignKey(d => d.InvoiceProcessId)
+                .HasPrincipalKey(cc => cc.UcipId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<TucNoteArchive>(entity =>

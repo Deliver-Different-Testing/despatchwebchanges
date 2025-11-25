@@ -427,15 +427,13 @@ public partial class TucJob
 
     public string Connote { get; set; }
 
-    public int? PickupTimeZoneId { get; set; }
-
-    public decimal? TotalDistance { get; set; }
-
-    public int? DeliverByTimeZoneId { get; set; }
-
     public int? PickUpWindowMins { get; set; }
 
     public int? DeliverByWindowMins { get; set; }
+
+    public int? PickupTimeZoneId { get; set; }
+
+    public decimal? TotalDistance { get; set; }
 
     public int? MasterCourierId { get; set; }
 
@@ -445,15 +443,17 @@ public partial class TucJob
 
     public decimal? SubContractorPercentage { get; set; }
 
+    public int? DeliverByTimeZoneId { get; set; }
+
     public bool? IsRecurringJob { get; set; }
 
     public int? BookingParentId { get; set; }
 
+    public int? DimensionsType { get; set; }
+
     public string PickupGps { get; set; }
 
     public string PickupCondition { get; set; }
-
-    public int? DimensionsType { get; set; }
 
     public virtual TucJobType AcceptedJobType { get; set; }
 

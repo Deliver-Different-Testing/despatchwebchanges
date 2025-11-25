@@ -582,7 +582,7 @@ public static class JobMappings
         ScheduleName = j.ScheduleName,
         FollowupTime = j.FollowupTime,
         Void = j.UcjbVoid,
-        IsInvoiced = j.UcjbInvoiceNo != null,
+        IsInvoiced = j.InvoiceProcess != null && j.InvoiceProcess.UcipDone,
         LoggedInContactName = j.LoggedInContact != null
             ? j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname
             : string.Empty,
