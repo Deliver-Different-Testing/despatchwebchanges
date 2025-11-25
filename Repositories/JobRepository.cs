@@ -4330,6 +4330,17 @@ public partial class JobRepository(
                 return;
             }
 
+            if (await IsJobArchived(data.JobId))
+            {
+                await Context.TucJobArchives
+                    .Where(j => j.UcjbId == data.JobId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(j => j.RatedManually, true)
+                        .SetProperty(j => j.UcjbAmount, data.NewPrice));
+
+                return;
+            }
+
             rowsChanged = await Context.TucJobs
                 .Where(j => j.UcjbId == data.JobId)
                 .ExecuteUpdateAsync(setters => setters
