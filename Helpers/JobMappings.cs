@@ -168,8 +168,7 @@ public static class JobMappings
             Van = j.UcjbVan,
             Truck = j.Truck ?? false,
             DgClass = j.Dgclass,
-            AllowSplit = (j.ParentId == j.UcjbId && (j.InverseParent == null || !j.InverseParent.Any()))
-                         || j.ParentId == null,
+            AllowSplit = (j.ParentId == j.UcjbId || j.ParentId.HasValue) && j.InverseParent.Count == 0,
             PickUpTimeZone = j.PickupTimeZone != null
                 ? new Suggestion { Id = j.PickupTimeZone.Id, Text = j.PickupTimeZone.Name }
                 : null,

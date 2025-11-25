@@ -1725,8 +1725,19 @@ public partial class JobRepository(
         return relatedBulkJobIds;
     }
 
-    public async Task SplitJobAsync(int jobId, string user) =>
-        await Context.Procedures.DES_stpJob_SplitJobAsync(jobId, false, user);
+    public async Task SplitJobAsync(int jobId, string user)
+    {
+        try
+        {
+            Log.Information("Splitting job {JobId} by user {User}", jobId, user);
+            await Context.Procedures.DES_stpJob_SplitJobAsync(jobId, false, user);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error splitting job {JobId}", jobId);
+            throw;
+        }
+    }
 
     public async Task<string> UnSplitJobAsync(int jobId)
     {
@@ -3186,7 +3197,7 @@ public partial class JobRepository(
     {
         var isUsCustomer = _infoService.IsUsTenant();
 
-        // First try to get from active jobs (TucJobs)
+        // First, try to get from active jobs (TucJobs)
         var activeJob = await Context.TucJobs
             .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
