@@ -1273,6 +1273,10 @@ class JobsListController extends BaseController {
     canBulkRestoreStatus(): boolean {
         return this.selectedJobs.length > 0;
     }
+    
+    canBulkRedispatch(): boolean {
+        return this.selectedJobs.length > 0 && this.selectedJobs.every(job => job.assignedCourier?.id);
+    }
 
     async bulkAssignCourier($event: MouseEvent): Promise<void> {
         try {
@@ -1332,6 +1336,11 @@ class JobsListController extends BaseController {
 
     async bulkRedispatch(): Promise<void> {
         try {
+            if(!this.canBulkRedispatch()) {
+                this.toastrService.showWarningToast('Not all jobs selected have a courier assigned for re-dispatch. Unable to re-dispatch.');
+                return;
+            }
+            
             const selectedJobIds = this.selectedJobs.map(job => job.id);
 
             const confirm = this.$mdDialog.confirm()

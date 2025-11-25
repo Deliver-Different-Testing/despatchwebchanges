@@ -144,13 +144,16 @@ class JobContextMenuService implements angular.IServiceProvider {
             });
         }
 
-        menuOptions.push({
-            text: "Re-Dispatch",
-            icon: "redo",
-            click: (_$itemScope: any, $event: MouseEvent) =>
-                this.addEventOtherAction($event, job, callbacks.onRefresh),
-            hasBottomDivider: true,
-        });
+        // If job is assigned to a courier, allow re-dispatching
+        if(job.assignedCourier) {
+            menuOptions.push({
+                text: "Re-Dispatch",
+                icon: "redo",
+                click: (_$itemScope: any, $event: MouseEvent) =>
+                    this.addEventOtherAction($event, job, callbacks.onRefresh),
+                hasBottomDivider: true,
+            });
+        }
 
         menuOptions.push({
             text: "Add Task - Other",
