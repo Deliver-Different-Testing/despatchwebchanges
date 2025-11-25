@@ -149,8 +149,8 @@ class JobContextMenuService implements angular.IServiceProvider {
             menuOptions.push({
                 text: "Re-Dispatch",
                 icon: "redo",
-                click: (_$itemScope: any, $event: MouseEvent) =>
-                    this.addEventOtherAction($event, job, callbacks.onRefresh),
+                click: (_$itemScope: any) =>
+                    this.redispatchJobAction(job, callbacks.onRefresh),
                 hasBottomDivider: true,
             });
         }
@@ -390,18 +390,22 @@ class JobContextMenuService implements angular.IServiceProvider {
     }
 
     private async redispatchJobAction(
-        $event: MouseEvent,
         job: IDispatchJob,
         onRefresh: () => void
     ) {
         if (!job || !job.assignedCourier?.id) return;
 
-        await this.DispatchData.reAllocateJobs(job.assignedCourier?.id, [job.id]);
-        this.toastrService.showSuccessToast(
-            `Job ${job.jobNo} re-dispatched successfully`)
+        try {
+            await this.DispatchData.reAllocateJobs(job.assignedCourier?.id, [job.id]);
+            this.toastrService.showSuccessToast(
+                `Job ${job.jobNo} re-dispatched successfully`)
 
-        if (onRefresh) {
-            onRefresh();
+            if (onRefresh) {
+                onRefresh();
+            }
+        } catch (error) {
+            console.error("Error re-dispatching job:", error);
+            this.toastrService.showErrorToast("Error re-dispatching job");
         }
     }
 
@@ -480,6 +484,7 @@ class JobContextMenuService implements angular.IServiceProvider {
             }
         } catch (error) {
             console.error("Splitting job failed:", error);
+            this.toastrService.showErrorToast("Error splitting job");
         }
     }
 
@@ -511,16 +516,22 @@ class JobContextMenuService implements angular.IServiceProvider {
             }
         } catch (error) {
             console.error("Action cancelled or error occurred:", error);
+            this.toastrService.showErrorToast("Error setting first job");
         }
     }
 
     private async restoreJob(
         job: IDispatchJob,
         onRefresh?: () => void) {
-        await this.DispatchData.restoreJobs([job.id]);
+        try {
+            await this.DispatchData.restoreJobs([job.id]);
 
-        if (onRefresh) {
-            onRefresh();
+            if (onRefresh) {
+                onRefresh();
+            }
+        } catch(error) {
+            console.error("Error restoring job:", error);
+            this.toastrService.showErrorToast("Error restoring job");
         }
     }
 
@@ -544,6 +555,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         } catch (error) {
             if (!error) return;
             console.error('Error in late pickup:', error);
+            this.toastrService.showErrorToast("Error applying late pickup");
         }
     }
 
@@ -567,6 +579,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         } catch (error) {
             if (!error) return;
             console.error('Error in late pickup:', error);
+            this.toastrService.showErrorToast("Error applying late delivery");
         }
     }
 
