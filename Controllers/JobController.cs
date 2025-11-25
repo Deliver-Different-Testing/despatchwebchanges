@@ -65,7 +65,8 @@ public class JobController(
             );
 
             sw.Stop();
-            Log.Information("Job list query completed in {ElapsedMs}ms - returned {JobCount} jobs, {TotalCount} total (Views: {ViewIds}, DateRange: {StartDate} to {EndDate})",
+            Log.Information(
+                "Job list query completed in {ElapsedMs}ms - returned {JobCount} jobs, {TotalCount} total (Views: {ViewIds}, DateRange: {StartDate} to {EndDate})",
                 sw.ElapsedMilliseconds,
                 result.Jobs?.Count ?? 0,
                 result.TotalCount,
@@ -78,7 +79,8 @@ public class JobController(
         catch (UnauthorizedAccessException)
         {
             sw.Stop();
-            Log.Warning("Unauthorized job list access attempt for client {ClientId} after {ElapsedMs}ms", cid, sw.ElapsedMilliseconds);
+            Log.Warning("Unauthorized job list access attempt for client {ClientId} after {ElapsedMs}ms", cid,
+                sw.ElapsedMilliseconds);
             return StatusCode(
                 StatusCodes.Status401Unauthorized,
                 $"Unauthorized access attempt for client {cid}"
@@ -87,7 +89,8 @@ public class JobController(
         catch (Exception ex)
         {
             sw.Stop();
-            Log.Error(ex, "Error processing job list request after {ElapsedMs}ms (Views: {ViewIds}, DateRange: {StartDate} to {EndDate})",
+            Log.Error(ex,
+                "Error processing job list request after {ElapsedMs}ms (Views: {ViewIds}, DateRange: {StartDate} to {EndDate})",
                 sw.ElapsedMilliseconds,
                 string.Join(",", despatchViewIds ?? new List<int>()),
                 queryParams.StartDate?.ToString("yyyy-MM-dd") ?? "none",
@@ -316,8 +319,9 @@ public class JobController(
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(UploadJobDeliveryPhotoOrSignature)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController),
+                    nameof(UploadJobDeliveryPhotoOrSignature)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -334,8 +338,9 @@ public class JobController(
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(DeleteJobDeliveryPhotoOrSignature)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController),
+                    nameof(DeleteJobDeliveryPhotoOrSignature)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -347,17 +352,18 @@ public class JobController(
         {
             var success = await jobPhotoService.DeleteJobPhotoOrSignatureAsync(jobId, key);
             if (!success) return BadRequest("Failed to delete file or file key is required");
-            
+
             return Json(new { success = true, message = "File deleted successfully" });
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(DeleteJobPickupPhotoOrSignature)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController),
+                    nameof(DeleteJobPickupPhotoOrSignature)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
-    
+
     public async Task<IActionResult> GetJobDeliveryPhotosAndSignature(int jobId, int year, int month)
     {
         try
@@ -367,8 +373,9 @@ public class JobController(
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(GetJobDeliveryPhotosAndSignature)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController),
+                    nameof(GetJobDeliveryPhotosAndSignature)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -382,7 +389,7 @@ public class JobController(
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
+            Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(GetJobPickupPhotos)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
@@ -411,7 +418,7 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "{Message}", 
+            Log.Error(ex, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(Detail)));
             return StatusCode(500, ex.Message);
         }
@@ -456,14 +463,15 @@ public class JobController(
     public async Task<IActionResult> PreBookJobs([FromBody] RecurringJobQueryRequest request)
     {
         try
-        { 
+        {
             var result = await recurringJobRepository.GetRecurringJobsListAsync(request);
             return Json(result);
         }
         catch (Exception e)
         {
-           Log.Error(e, "{Message}", ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(PreBookJobs)));
-           return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(PreBookJobs)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -673,8 +681,9 @@ public class JobController(
         }
         catch (Exception e)
         {
-          Log.Error(e, "{Message}", ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(ValidateSwapPod)));
-          return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(ValidateSwapPod)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -908,8 +917,8 @@ public class JobController(
             );
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
-    }  
-    
+    }
+
     [HttpPost]
     public async Task<IActionResult> VoidBulkJob([FromBody] VoidBulkJobRequest request)
     {
@@ -994,9 +1003,17 @@ public class JobController(
     [HttpPost]
     public async Task<IActionResult> SplitJob([FromBody] JobUpdateBaseRequest request)
     {
-        var staffInfo = await infoService.GetStaffInfoAsync();
-        await jobRepository.SplitJobAsync(request.JobId, staffInfo.Text);
-        return Ok();
+        try
+        {
+            var staffInfo = await infoService.GetStaffInfoAsync();
+            await jobRepository.SplitJobAsync(request.JobId, staffInfo.Text);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}", ErrorMessageStringFormatter.Format(e));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
     }
 
     [HttpPost]
@@ -1264,7 +1281,7 @@ public class JobController(
             // Skip rating if a job is archived
             var isArchived = await jobRepository.IsJobArchived(jobId);
             if (isArchived) return Ok();
-            
+
             // Recalculate a job
             var shouldRecalculateRate = ShouldRecalculateRate(field);
             if (!shouldRecalculateRate) return Ok();
@@ -1320,7 +1337,7 @@ public class JobController(
             JobProperty.DGDocumentation => true,
             JobProperty.Direct => true,
             JobProperty.BookedTime => true,
-            JobProperty.TailLiftPu => true, 
+            JobProperty.TailLiftPu => true,
             JobProperty.TailLiftDo => true,
             JobProperty.DeliverToPrivateRes => true,
             _ => false
@@ -1371,7 +1388,7 @@ public class JobController(
         try
         {
             ArgumentNullException.ThrowIfNull(request);
-            
+
             var jobId = await jobRepository.QuickAddJobAsync(request);
 
             //Check if jobId is valid before continuing
@@ -1380,17 +1397,17 @@ public class JobController(
                     StatusCodes.Status500InternalServerError,
                     "Created Job Id is null"
                 );
-            
+
             return Json(jobId);
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
+            Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(QuickCreateJob)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
-    
+
     [HttpPost]
     public async Task<IActionResult> InterCourierCharge([FromBody] InterCourierChargeViewModel viewModel)
     {
@@ -1403,7 +1420,7 @@ public class JobController(
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
+            Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(InterCourierCharge)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
@@ -1492,7 +1509,7 @@ public class JobController(
         smtp.Port = int.Parse(Environment.GetEnvironmentVariable("SMTP_Port") ?? string.Empty);
         smtp.Send(message);
     }
-    
+
     public async Task<IActionResult> GetAttachedFiles(int jobId)
     {
         try
@@ -1502,7 +1519,7 @@ public class JobController(
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
+            Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(GetAttachedFiles)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
@@ -1520,9 +1537,9 @@ public class JobController(
 
             if (!result.Success) return BadRequest(result.ErrorMessage);
 
-            return Ok(new 
-            { 
-                message = "File uploaded successfully", 
+            return Ok(new
+            {
+                message = "File uploaded successfully",
                 fileName = result.FileName,
                 s3Key = result.S3Key,
                 size = result.Size,
@@ -1544,7 +1561,10 @@ public class JobController(
         {
             var result = await jobPhotoService.DownloadFileAsync(key);
 
-            if (!result.Success) return result.ErrorMessage.Contains("not found") ? NotFound(result.ErrorMessage) : StatusCode(500, result.ErrorMessage);
+            if (!result.Success)
+                return result.ErrorMessage.Contains("not found")
+                    ? NotFound(result.ErrorMessage)
+                    : StatusCode(500, result.ErrorMessage);
 
             return File(result.FileBytes, result.ContentType, result.FileName);
         }
@@ -1561,7 +1581,7 @@ public class JobController(
         try
         {
             var success = await jobPhotoService.DeleteFileAsync(key);
-        
+
             if (!success)
             {
                 return BadRequest("Failed to delete file or file key is required");
@@ -1629,12 +1649,12 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "{Message}", 
+            Log.Error(ex, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(UpdateJobPackages)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
-    
+
     [HttpPost]
     public async Task<IActionResult> UpdateBulkJobPackages([FromBody] UpdateBulkJobPackagesRequest request)
     {
@@ -1645,7 +1665,7 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "{Message}", 
+            Log.Error(ex, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(UpdateBulkJobPackages)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
@@ -1655,8 +1675,8 @@ public class JobController(
     {
         var isParent = await jobRepository.IsJobParentAsync(jobId);
         return Json(isParent);
-    }  
-    
+    }
+
     public async Task<IActionResult> IsBulkJobParent(int bulkJobId)
     {
         var isParent = await jobRepository.IsBulkJobParent(bulkJobId);
@@ -1746,8 +1766,8 @@ public class JobController(
     {
         // Skip if a job is archived
         var isArchived = !isBooking && await jobRepository.IsJobArchived(jobId);
-        if(isArchived) return;
-        
+        if (isArchived) return;
+
         var isUsCustomer = infoService.IsUsTenant();
 
         if (isUsCustomer)

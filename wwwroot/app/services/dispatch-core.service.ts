@@ -42,10 +42,10 @@ import {
 } from "../interfaces/requests.interfaces";
 import {JobEventData} from "../components/dialogs/add-event-dialog/add-event-dialog.interfaces";
 import {IDeliveryJourney, IDeliveryJourneyDto} from "../components/common/task-history/task-history.interfaces";
-import {formatDateForApiWithTzs} from "../functions/formatDates";
+import {formatDateForApi, formatDateForApiWithTzs} from "../functions/formatDates";
 import IInterCourierData from "../components/dialogs/inter-courier-charge-dialog/interfaces/IInterCourierData";
 import {Is3PhotoInfo} from "../interfaces/aws.interfaces";
-import dayjs from "dayjs";
+import dayjs, {Dayjs} from "dayjs";
 import {
     transformDeliveryJourneyDTO,
     transformDispatchJobDTO,
@@ -226,8 +226,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         await this.$http.post(`job/VoidBulkJob`, data);
     }
 
-    async releaseBulkJob(jobNumber: string, bookDate: Date): Promise<void> {
-        const formattedDate = dayjs(bookDate).format("YYYY-MM-DD");
+    async releaseBulkJob(jobNumber: string, bookDate: Dayjs): Promise<void> {
+        const formattedDate = formatDateForApi(bookDate);
 
         await this.$http.post(`job/ReleaseBulkJob`, null, {
             params: {

@@ -223,7 +223,7 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         return s3Files;
     }
 
-    private static readonly string[] AllowedTypes = { "image/jpeg", "image/png", "image/gif", "application/pdf" };
+    private static readonly string[] AllowedTypes = ["image/jpeg", "image/png", "image/gif", "application/pdf"];
     
     public async Task<AwsUploadResult> UploadJobAttachmentAsync(int jobId, IFormFile file)
     {
