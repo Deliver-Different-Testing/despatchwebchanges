@@ -40,7 +40,7 @@ public class MessageRepository(
             .IncludeParticipants()
             .ToListAsync();
 
-        // Group by other party and build result using helper service
+        // Group by other party and build a result using helper service
         var result = allMessages
             .Select(m => new
             {
@@ -132,9 +132,7 @@ public class MessageRepository(
 
         // Validate that exactly one recipient is specified
         if ((request.SendToStaffId.HasValue ? 1 : 0) + (request.SendToCourierId.HasValue ? 1 : 0) != 1)
-        {
             throw new ArgumentException("Must specify exactly one recipient (either SendToStaffId or SendToCourierId)");
-        }
 
         ArgumentException.ThrowIfNullOrEmpty(request.Message);
 
@@ -221,13 +219,13 @@ public class MessageRepository(
         var staffId = infoService.GetStaffId();
 
         var quickResponses = await Context.UserQuickResponses
+            .AsNoTracking()
             .Where(r => r.StaffId == staffId && r.IsActive == true)
             .Select(r => new Suggestion
             {
                 Id = r.ResponseId,
                 Text = r.Message
             })
-            .AsNoTracking()
             .ToListAsync();
 
         return quickResponses;

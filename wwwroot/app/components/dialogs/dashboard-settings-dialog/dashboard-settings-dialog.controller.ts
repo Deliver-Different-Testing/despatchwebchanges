@@ -17,27 +17,23 @@ class DashboardSettingsDialogController extends BaseController {
 
     refreshIntervalOptions: ISuggestion[];
     driverLocationRefreshIntervalOptions: ISuggestion[];
-    boxes: Record<string, IBox>;
     selectedRefreshInterval: ISuggestion;
     selectedDriverLocationRefreshInterval: ISuggestion;
-    config: IDashboardSettingsConfig;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         selectedRefreshInterval: ISuggestion,
         selectedDriverLocationRefreshInterval: ISuggestion,
-        boxes: Record<string, IBox>,
-        config: IDashboardSettingsConfig,
+        public boxes: Record<string, IBox>,
+        public config: IDashboardSettingsConfig,
     ) {
         super();
         this.refreshIntervalOptions = this.initRefreshIntervalOptions();
         this.driverLocationRefreshIntervalOptions = this.initRefreshIntervalOptions();
         this.selectedRefreshInterval = angular.copy(selectedRefreshInterval) ?? this.createDisabledOption();
         this.selectedDriverLocationRefreshInterval = angular.copy(selectedDriverLocationRefreshInterval) ?? this.createDisabledOption();
-        this.boxes = angular.copy(boxes);
-        this.config = angular.copy(config);
     }
-    
+
     initRefreshIntervalOptions(): ISuggestion[] {
         return [
             this.createDisabledOption(),

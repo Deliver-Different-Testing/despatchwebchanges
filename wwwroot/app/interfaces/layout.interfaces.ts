@@ -24,13 +24,3 @@ export interface ILayout {
         columns: IColumn[];
     };
 }
-
-export interface IGridsterLayout {
-    name: string;
-    items: IGridsterItem[];
-}
-
-export interface IGridsterItem extends angular.gridster.StandardGridsterItem {
-    name: string;
-    visible: boolean;
-}

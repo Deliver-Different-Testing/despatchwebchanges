@@ -16,7 +16,7 @@ import {
     ISuggestion,
 } from "../../interfaces/job.interface";
 import {IPotentialCouriers, ITruckCourierStatus} from "../../interfaces/courier.interface";
-import {IBox, IColumn, IGridsterItem, IGridsterLayout, ILayout} from "../../interfaces/layout.interfaces";
+import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import BaseController from "../base-controller";
 import {ExtendedTask, ITask} from "../task-dashboard/task-dashboard.interfaces";
@@ -55,7 +55,6 @@ import {getIanaTimezone} from "../../functions/formatDates";
 import DispatchBoxes from "./enums/DispatchBoxes";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 import ITaskItemConfig from "../../enums/task-item-config";
-import GridsterLayoutService from "../../services/gridster-layout.service";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -84,7 +83,6 @@ class HomeController extends BaseController {
         'tasksService',
         'createJobDialogService',
         'dashboardSettingsDialogService',
-        'gridsterLayoutService',
         '$scope',
         '$timeout',
         '$interval',
@@ -105,20 +103,14 @@ class HomeController extends BaseController {
     private readonly currentAppPage: AppPage = AppPage.Dispatch;
     private readonly COURIER_URL: string = "/courier/AllActiveSearch";
 
-    // Gridster layout
+    // Layout
     boxes?: Record<string, IBox>;
-    layouts: IGridsterLayout[] = [];
-    defaultLayout?: IGridsterLayout;
     currentLayoutName?: string;
-    gridsterOpts?: angular.gridster.GridsterConfig;
-    gridsterItems: IGridsterItem[] = [];
-    
-    // Old layout 
     boxSortableOptions?: angular.ui.SortableOptions<any>;
-    oldLayouts: ILayout[] = [];
-    oldDefaultLayout?: ILayout;
+    layouts: ILayout[] = [];
+    defaultLayout?: ILayout;
     layout?: { columns: IColumn[] };
-    
+
     dateFilterData: IDateFilterData;
     isLoadingData: boolean = false;
     showDriverLocationsNoData: boolean = false;
@@ -165,7 +157,7 @@ class HomeController extends BaseController {
     clearListId?: number;
     isDataLoading: boolean = false;
     unReadMessageCount: number = 0;
-    defaultJobCategory?: string; // Track default category for job list
+    defaultJobCategory?: string; // Track the default category for a job list
 
     // supportFilters
     staffList?: ISuggestion[];
@@ -216,7 +208,6 @@ class HomeController extends BaseController {
         private tasksService: TasksService,
         private createJobDialog: CreateJobDialogService,
         private dashboardSettingsDialog: DashboardSettingsDialogService,
-        private gridsterLayoutService: GridsterLayoutService,
         $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
@@ -228,17 +219,10 @@ class HomeController extends BaseController {
         this.timeZone = getIanaTimezone(TimeZone);
         this.browserTimeZone = dayjs.tz.guess();
         this.isUsCustomer = this.APP_CONFIG.US_Customer;
-        
-        // Only initialize gridster for non-US customers
-        if (!this.isUsCustomer) {
-            this.initializeGridster();
-            this.initializeBoxes();
-            this.loadGridsterLayoutsFromStorage();
-        } else {
-            this.initializeBoxes();
-            this.initializeOldLayoutSystem();
-        }
-        
+
+        this.initializeBoxes();
+        this.initializeLayout();
+
         // Date filter
         this.dateFilterData = setDateFilterDefaults();
         this.loadDateFilterFromStorage();
@@ -277,7 +261,7 @@ class HomeController extends BaseController {
             page: 0,
             pageSize: 50
         };
-        
+
         this.views = [];
         this.selectedViews = [];
 
@@ -385,10 +369,10 @@ class HomeController extends BaseController {
             }
         }
     }
-    
-    // Old layout
-    initializeOldLayoutSystem(): void {
-        this.oldDefaultLayout = {
+
+    // Layout
+    initializeLayout(): void {
+        this.defaultLayout = {
             name: "Default",
             layout: {
                 columns: [
@@ -426,18 +410,18 @@ class HomeController extends BaseController {
                 const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(this.LayoutKey) ?? '');
                 const lastActiveLayout = localStorage.getItem(this.LastActiveLayoutKey);
 
-                this.oldLayouts = storedLayouts || [this.oldDefaultLayout];
-                this.oldLayouts[0] = this.oldDefaultLayout; // Ensure default is always up to date
+                this.layouts = storedLayouts || [this.defaultLayout];
+                this.layouts[0] = this.defaultLayout; // Ensure default is always up to date
 
                 // Load last active layout or default
-                const layoutToLoad = lastActiveLayout ? this.oldLayouts.findIndex((l: ILayout) => l.name === lastActiveLayout) : 0;
+                const layoutToLoad = lastActiveLayout ? this.layouts.findIndex((l: ILayout) => l.name === lastActiveLayout) : 0;
                 this.loadLayout(layoutToLoad >= 0 ? layoutToLoad : 0);
             } catch (error: any) {
-                this.oldLayouts = [this.oldDefaultLayout];
+                this.layouts = [this.defaultLayout];
                 this.loadLayout(0);
             }
         } else {
-            this.oldLayouts = [this.oldDefaultLayout];
+            this.layouts = [this.defaultLayout];
             this.loadLayout(0);
         }
 
@@ -446,11 +430,11 @@ class HomeController extends BaseController {
             columns: IColumn[]
         }) => {
             if (newValue !== oldValue && this.currentLayoutName) {
-                const index = this.oldLayouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
+                const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
                 if (index !== -1) {
-                    this.oldLayouts[index].layout = angular.copy(newValue);
+                    this.layouts[index].layout = angular.copy(newValue);
                     if (Modernizr.localstorage) {
-                        localStorage.setItem(this.LayoutKey, JSON.stringify(this.oldLayouts));
+                        localStorage.setItem(this.LayoutKey, JSON.stringify(this.layouts));
                     }
                 }
             }
@@ -508,9 +492,9 @@ class HomeController extends BaseController {
             }
         };
     }
-    
+
     loadLayout(index: number): void {
-        const layout: ILayout = this.oldLayouts[index] || this.oldLayouts[0];
+        const layout: ILayout = this.layouts[index] || this.layouts[0];
         this.currentLayoutName = layout.name;
         this.layout = angular.copy(layout.layout);
 
@@ -550,15 +534,15 @@ class HomeController extends BaseController {
                     },
                 };
 
-                this.oldLayouts.push(currentLayout);
+                this.layouts.push(currentLayout);
 
                 if (Modernizr.localstorage) {
-                    localStorage.setItem(this.LayoutKey, JSON.stringify(this.oldLayouts));
+                    localStorage.setItem(this.LayoutKey, JSON.stringify(this.layouts));
                     localStorage.setItem(this.LastActiveLayoutKey, name);
                 }
             });
     }
-    
+
     deleteLayout(index: number): void {
         if (index === 0) return; // Prevent deleting default layout
 
@@ -570,9 +554,9 @@ class HomeController extends BaseController {
                 .ok("Delete")
                 .cancel("Cancel"))
             .then(() => {
-                this.oldLayouts.splice(index, 1);
+                this.layouts.splice(index, 1);
                 if (Modernizr.localstorage) {
-                    localStorage.setItem(this.LayoutKey, JSON.stringify(this.oldLayouts));
+                    localStorage.setItem(this.LayoutKey, JSON.stringify(this.layouts));
                 }
                 this.loadLayout(0);
                 this.toastrService.showSuccessToast("Layout deleted successfully");
@@ -604,14 +588,14 @@ class HomeController extends BaseController {
 
         this.updateBoxMetrics();
 
-        const index = this.oldLayouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
+        const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
         if (index !== -1) {
             if (this.layout) {
-                this.oldLayouts[index].layout = angular.copy(this.layout);
+                this.layouts[index].layout = angular.copy(this.layout);
             }
 
             if (Modernizr.localstorage) {
-                localStorage.setItem(this.LayoutKey, JSON.stringify(this.oldLayouts));
+                localStorage.setItem(this.LayoutKey, JSON.stringify(this.layouts));
             }
         }
     }
@@ -632,15 +616,6 @@ class HomeController extends BaseController {
                 });
             }
         });
-    }
-    
-    // Gridster layouts
-    private initializeGridster(): void {
-        this.gridsterOpts = this.gridsterLayoutService.createGridsterConfig(
-            this.currentLayoutName,
-            () => this.updateCurrentLayout(),
-            this.$scopeService
-        );
     }
 
     private initializeBoxes(): void {
@@ -703,157 +678,6 @@ class HomeController extends BaseController {
         };
     }
 
-    private loadGridsterLayoutsFromStorage(): void {
-        this.layouts = this.gridsterLayoutService.loadLayoutsFromStorage(AppPage.Dispatch);
-
-        // Always recreate the default layout
-        this.defaultLayout = this.createDefaultGridsterLayout();
-        this.layouts.unshift(this.defaultLayout);
-
-        // Load last active layout or default
-        const lastActiveLayoutName = this.gridsterLayoutService.getLastActiveLayoutName(AppPage.Dispatch);
-        const layoutToLoad = this.layouts.find(l => l.name === lastActiveLayoutName) || this.defaultLayout;
-        this.loadGridsterLayout(this.layouts.indexOf(layoutToLoad));
-    }
-
-    private createDefaultGridsterLayout(): IGridsterLayout {
-        return {
-            name: 'Default',
-            items: [
-                // Column 1 (50% width = 6 cols out of 12)
-                {sizeX: 6, sizeY: 4, row: 0, col: 0, name: DispatchBoxes.JobsList, visible: true},
-                {sizeX: 6, sizeY: 3, row: 4, col: 0, name: DispatchBoxes.JobDetail, visible: true},
-
-                // Column 2 (25% width = 3 cols out of 12)
-                {sizeX: 3, sizeY: 4, row: 0, col: 6, name: DispatchBoxes.CurrentWork, visible: true},
-                {sizeX: 3, sizeY: 3, row: 4, col: 6, name: DispatchBoxes.Supports, visible: true},
-
-                // Column 3 (25% width = 3 cols out of 12)
-                {sizeX: 3, sizeY: 4, row: 0, col: 9, name: DispatchBoxes.DriverLocations, visible: true},
-                {sizeX: 3, sizeY: 3, row: 4, col: 9, name: DispatchBoxes.Map, visible: true},
-            ]
-        };
-    }
-    
-    loadGridsterLayout(index: number): void {
-        const success = this.gridsterLayoutService.loadLayout(
-            this.layouts,
-            index,
-            AppPage.Dispatch,
-            (layoutName, items) => {
-                this.currentLayoutName = layoutName;
-                this.gridsterItems = items;
-                this.initializeGridster();
-            }
-        );
-
-        if (success) {
-            this.registerTimeout(() => {
-                this.$scopeService?.$broadcast('gridster-resized');
-            }, 50);
-            this.applyScope();
-        }
-    }
-
-    async saveGridsterLayout(): Promise<void> {
-        try {
-            const layoutName: string = await this.$mdDialog
-                .show(this.$mdDialog
-                    .prompt()
-                    .title("Save Layout")
-                    .textContent("Please enter a name for this layout.")
-                    .required(true)
-                    .ok("Save")
-                    .cancel("Cancel"));
-
-            const result = this.gridsterLayoutService.saveNewLayout(
-                this.layouts,
-                layoutName,
-                this.gridsterItems,
-                AppPage.Dispatch,
-            );
-
-            if (result.success) {
-                this.currentLayoutName = layoutName.trim();
-                this.toastrService.showSuccessToast(result.message);
-            } else {
-                this.toastrService.showErrorToast(result.message);
-            }
-
-            this.applyScope();
-        } catch (error) {
-            if (!error) return;
-            console.error('Error saving gridster layout:', error);
-            this.toastrService.showErrorToast('Error saving layout');
-        }
-    }
-
-    updateCurrentLayout(): void {
-        const result = this.gridsterLayoutService.updateLayout(
-            AppPage.Dispatch, 
-            this.layouts,
-            this.currentLayoutName,
-            this.gridsterItems,
-        );
-
-        if (result.success) {
-            this.toastrService.showSuccessToast(result.message);
-        } else {
-            this.toastrService.showWarningToast(result.message);
-        }
-
-        this.applyScope();
-    }
-
-    async deleteGridsterLayout(index: number): Promise<void> {
-        try {
-            if (index < 0 || index >= this.layouts.length) {
-                console.error('Invalid layout index:', index);
-                return;
-            }
-
-            const layout = this.layouts[index];
-
-            if (layout.name === 'Default') {
-                this.toastrService.showErrorToast('Cannot delete the Default layout');
-                return;
-            }
-
-            const confirmed: boolean = await this.$mdDialog
-                .show(this.$mdDialog
-                    .confirm()
-                    .title("Delete Layout?")
-                    .textContent(`Are you sure you want to delete the layout "${layout.name}"?`)
-                    .ok("Delete")
-                    .cancel("Cancel"));
-
-            if (!confirmed) return;
-
-            const result = this.gridsterLayoutService.deleteLayout(
-                AppPage.Dispatch, 
-                this.layouts,
-                index,
-                this.currentLayoutName,
-            );
-
-            if (result.success) {
-                if (result.shouldLoadDefault) {
-                    const defaultIndex = this.layouts.findIndex(l => l.name === 'Default');
-                    this.loadGridsterLayout(defaultIndex);
-                }
-                this.toastrService.showSuccessToast(result.message);
-            } else {
-                this.toastrService.showErrorToast(result.message);
-            }
-
-            this.applyScope();
-        } catch (error) {
-            if (!error) return;
-            console.error('Error deleting gridster layout:', error);
-            this.toastrService.showErrorToast('Error deleting layout');
-        }
-    }
-    
     saveViewsToStorage(views: any): void {
         if (Modernizr.localstorage) {
             localStorage.setItem(this.SelectedViewsKey, JSON.stringify(views));
@@ -1963,7 +1787,7 @@ class HomeController extends BaseController {
     async createEvent($event: MouseEvent, job: IDispatchJob): Promise<void> {
         await this.addEventDialog.openAddEventDialog($event, job);
     }
-    
+
     async openFileAttachmentDialog($event: MouseEvent, job: IDispatchJob): Promise<void> {
         await this.jobFileUploadDialog.openJobFileUploadDialog($event, job);
     }
@@ -2221,7 +2045,7 @@ class HomeController extends BaseController {
             this.eventTypesList
         );
     }
-    
+
     async handleJobDispatch(job: IDispatchJob, courierId: number): Promise<boolean> {
         try {
             await this.dispatchJob(courierId, job.id);
@@ -2593,9 +2417,6 @@ class HomeController extends BaseController {
         if (!this.boxes) return;
 
         try {
-            // Sync boxes with items
-            this.syncVisibilityToBoxes();
-
             const result = await this.dashboardSettingsDialog.openSettingsDialog(
                 $event,
                 AppPage.Dispatch,
@@ -2606,9 +2427,6 @@ class HomeController extends BaseController {
             );
 
             if (!result) return;
-
-            // Update gridsterItems visibility based on boxes visibility
-            this.syncVisibilityToGridsterItems();
 
             // Handle refresh interval changes
             if (result.selectedRefreshInterval && result.selectedRefreshInterval.id !== this.selectedRefreshInterval?.id) {
@@ -2621,7 +2439,9 @@ class HomeController extends BaseController {
                 this.onDriverLocationRefreshIntervalChange(result.selectedDriverLocationRefreshInterval);
             }
 
-            this.updateCurrentLayout();
+            if(result.boxes) this.boxes = result.boxes;
+            
+            this.saveCurrentLayout();
             this.applyScope();
             this.toastrService.showSuccessToast('Settings saved and applied successfully');
         } catch (error) {
@@ -2631,21 +2451,11 @@ class HomeController extends BaseController {
         }
     }
 
-    private syncVisibilityToGridsterItems(): void {
-        if (!this.boxes) return;
-        this.gridsterLayoutService.syncVisibilityToGridsterItems(this.gridsterItems, this.boxes);
-    }
-
-    private syncVisibilityToBoxes(): void {
-        if (!this.boxes) return;
-        this.gridsterLayoutService.syncVisibilityToBoxes(this.gridsterItems, this.boxes);
-    }
-
     async onExactCourierMatchSearch(exactCourierMatchSearchText: string): Promise<void> {
-        if(!exactCourierMatchSearchText) return;
+        if (!exactCourierMatchSearchText) return;
 
         const courierMatch = await this.DispatchData.getExactCourierMatch(exactCourierMatchSearchText);
-        if(!courierMatch) {
+        if (!courierMatch) {
             this.toastrService.showWarningToast(`No courier found with code: ${exactCourierMatchSearchText}. Please try again.`);
             return;
         }
