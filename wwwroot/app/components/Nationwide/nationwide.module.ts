@@ -16,7 +16,8 @@ import {TaskItemComponent} from "../common/task-item-component/task-item.compone
 import {
     FeatureInDevelopmentDialogService
 } from "../dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
-import AdditionalServicesDialogController from "../dialogs/additional-services-dialog/additional-services-dialog.controller";
+import AdditionalServicesDialogController
+    from "../dialogs/additional-services-dialog/additional-services-dialog.controller";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import JobHighlightService from "../common/job-list/job-highlight.service";
 import RecoveryAgentManagementController
@@ -26,7 +27,6 @@ import RecoveryAgentManagementService
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 import DashboardSettingsDialogController
     from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.controller";
-import GridsterLayoutService from "../../services/gridster-layout.service";
 
 const nationwideModule = angular.module('uDispatch.nationwide', [
     'ngMap',
@@ -45,7 +45,7 @@ const nationwideModule = angular.module('uDispatch.nationwide', [
 // Register components
 nationwideModule
     .component("nationwideComponent", NationwideComponent)
-    .component("jobsList", JobsListComponent)  
+    .component("jobsList", JobsListComponent)
     .component("taskItemComponent", TaskItemComponent);
 
 // Register services
@@ -61,8 +61,7 @@ nationwideModule
     .service("jobContextMenuService", JobContextMenuService)
     .service("jobHighlightService", JobHighlightService)
     .service("recoveryAgentManagementService", RecoveryAgentManagementService)
-    .service("dashboardSettingsDialogService", DashboardSettingsDialogService)
-    .service("gridsterLayoutService", GridsterLayoutService);
+    .service("dashboardSettingsDialogService", DashboardSettingsDialogService);
 
 // Register controllers
 nationwideModule
@@ -72,5 +71,5 @@ nationwideModule
     .controller("AdditionalServicesDialogController", AdditionalServicesDialogController)
     .controller("recoveryAgentManagementController", RecoveryAgentManagementController)
     .controller("DashboardSettingsDialogController", DashboardSettingsDialogController);
- 
+
 export default nationwideModule;

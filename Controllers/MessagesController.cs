@@ -73,9 +73,7 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
         {
             // Validate that exactly one recipient is specified
             if ((request.SendToCourierId.HasValue ? 1 : 0) + (request.SendToStaffId.HasValue ? 1 : 0) != 1)
-            {
                 return BadRequest("Must specify exactly one recipient (either SendToCourierId or SendToStaffId)");
-            }
 
             await messageRepository.SendMessageAsync(request);
             return Ok();

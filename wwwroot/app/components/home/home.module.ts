@@ -21,7 +21,6 @@ import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dial
 import DashboardSettingsDialogController
     from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.controller";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
-import GridsterLayoutService from "../../services/gridster-layout.service";
 
 const homeModule = angular.module('uDispatch.home', [
     'ngMap',
@@ -64,9 +63,7 @@ homeModule
     .service("jobHighlightService", JobHighlightService)
     .service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService)
     .service("createJobDialogService", CreateJobDialogService)
-    .service("dashboardSettingsDialogService", DashboardSettingsDialogService)
-    .service("gridsterLayoutService", GridsterLayoutService);
-
+    .service("dashboardSettingsDialogService", DashboardSettingsDialogService);
 homeModule
     .controller("InterCourierChargeDialog", InterCourierChargeDialogController)
     .controller("AdditionalServicesDialogController", AdditionalServicesDialogController)

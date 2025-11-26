@@ -7,7 +7,6 @@ import "angular-resizable/angular-resizable.min.css";
 import "ng-material-datetimepicker/css/material-datetimepicker.css";
 import "angular-material-data-table/dist/md-data-table.css";
 import "angular-hotkeys/build/hotkeys.css";
-import 'angular-gridster/dist/angular-gridster.min.css';
 
 // Angular core imports
 import "angular";
@@ -33,7 +32,6 @@ import "angular-material-data-table";
 import "angular-hotkeys/build/hotkeys";
 import "angular-bootstrap-contextmenu/contextMenu";
 import "angular-heremaps/dist/angular-heremaps";
-import 'angular-gridster/dist/angular-gridster.min';
 
 // Local libs
 import "../lib/ModernizerLocalStorage";
@@ -50,7 +48,6 @@ import "../lib/here-map-tracking/here-map-tracking.component";
 const app = angular.module("uDispatch", [
     "ui.router",
     "oc.lazyLoad",
-    "gridster",
     "angularResizable",
     "ui.sortable",
     "ui.bootstrap",
