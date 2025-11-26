@@ -778,59 +778,85 @@ public partial class JobRepository(
         // Only update pricing breakdowns for jobs with changed prices
         if (jobsWithChangedPrices.Count != 0)
         {
-            // Get existing pricing breakdowns just for jobs with changed prices
-            var existingBreakdowns = await Context.PricingBreakdowns
-                .Where(pb =>
-                    jobsWithChangedPrices.Contains(pb.JobId ?? 0) ||
-                    jobsWithChangedPrices.Contains(pb.PrebookJobId ?? 0))
-                .ToListAsync();
+            // Separate jobs by their source table (active vs archived)
+            var activeJobIds = jobsWithChangedPrices.Where(id => dbData.Any(j => j.UcjbId == id)).ToList();
+            var archivedJobIds = jobsWithChangedPrices.Where(id => dbDataArchive.Any(j => j.UcjbId == id) && !dbData.Any(j => j.UcjbId == id)).ToList();
 
-            if (existingBreakdowns.Count != 0)
+            // Handle active jobs - use PricingBreakdowns table
+            if (activeJobIds.Count != 0)
             {
-                Log.Information(
-                    "Removing {ExistingBreakdownsCount} existing pricing breakdowns for {Count} jobs with changed prices",
-                    existingBreakdowns.Count, jobsWithChangedPrices.Count);
-                Context.PricingBreakdowns.RemoveRange(existingBreakdowns);
+                var existingBreakdowns = await Context.PricingBreakdowns
+                    .Where(pb =>
+                        activeJobIds.Contains(pb.JobId ?? 0) ||
+                        activeJobIds.Contains(pb.PrebookJobId ?? 0))
+                    .ToListAsync();
+
+                if (existingBreakdowns.Count != 0)
+                {
+                    Log.Information(
+                        "Removing {ExistingBreakdownsCount} existing pricing breakdowns for {Count} active jobs with changed prices",
+                        existingBreakdowns.Count, activeJobIds.Count);
+                    Context.PricingBreakdowns.RemoveRange(existingBreakdowns);
+                }
+
+                foreach (var jobId in activeJobIds)
+                {
+                    var jobFromDb = dbData.FirstOrDefault(j => j.UcjbId == jobId);
+                    if (jobFromDb == null) continue;
+
+                    var newBreakdown = new PricingBreakdown
+                    {
+                        JobId = jobId,
+                        PrebookJobId = null,
+                        ChildJobId = jobFromDb.ParentId,
+                        ChargeName = "Manually Rated",
+                        ChargeAmount = jobFromDb.UcjbAmount ?? 0,
+                        Total = null,
+                        Included = null,
+                        Charged = null
+                    };
+
+                    await Context.PricingBreakdowns.AddAsync(newBreakdown);
+                    Log.Information("Added new pricing breakdown for active job {JobId} with amount {Amount}", jobId, jobFromDb.UcjbAmount ?? 0);
+                }
             }
 
-            // Create new pricing breakdowns for jobs with changed prices
-            foreach (var jobId in jobsWithChangedPrices)
+            // Handle archived jobs - use PricingBreakdownArchives table
+            if (archivedJobIds.Count != 0)
             {
-                var jobFromDb = dbData.FirstOrDefault(j => j.UcjbId == jobId);
-                var jobFromArchive = dbDataArchive.FirstOrDefault(j => j.UcjbId == jobId);
+                var existingArchiveBreakdowns = await Context.PricingBreakdownArchives
+                    .Where(pb =>
+                        archivedJobIds.Contains(pb.JobId ?? 0) ||
+                        archivedJobIds.Contains(pb.PrebookJobId ?? 0))
+                    .ToListAsync();
 
-                decimal amount;
-                int? childId;
-
-                if (jobFromDb != null)
+                if (existingArchiveBreakdowns.Count != 0)
                 {
-                    amount = jobFromDb.UcjbAmount ?? 0;
-                    childId = jobFromDb.ParentId; // Get the ParentId as ChildId
-                }
-                else if (jobFromArchive != null)
-                {
-                    amount = jobFromArchive.UcjbAmount ?? 0;
-                    childId = jobFromArchive.ParentId; // Get the ParentId as ChildId
-                }
-                else
-                {
-                    continue; // Skip if job not found
+                    Log.Information(
+                        "Removing {ExistingBreakdownsCount} existing pricing breakdown archives for {Count} archived jobs with changed prices",
+                        existingArchiveBreakdowns.Count, archivedJobIds.Count);
+                    Context.PricingBreakdownArchives.RemoveRange(existingArchiveBreakdowns);
                 }
 
-                var newBreakdown = new PricingBreakdown
+                foreach (var jobId in archivedJobIds)
                 {
-                    JobId = jobId,
-                    PrebookJobId = null,
-                    ChildJobId = childId,
-                    ChargeName = "Manually Rated",
-                    ChargeAmount = amount,
-                    Total = null,
-                    Included = null,
-                    Charged = null
-                };
+                    var jobFromArchive = dbDataArchive.FirstOrDefault(j => j.UcjbId == jobId);
+                    if (jobFromArchive == null) continue;
 
-                await Context.PricingBreakdowns.AddAsync(newBreakdown);
-                Log.Information("Added new pricing breakdown for job {JobId} with amount {Amount}", jobId, amount);
+                    var newArchiveBreakdown = new PricingBreakdownArchive
+                    {
+                        JobId = jobId,
+                        PrebookJobId = null,
+                        ChargeName = "Manually Rated",
+                        ChargeAmount = jobFromArchive.UcjbAmount ?? 0,
+                        Total = null,
+                        Included = null,
+                        Charged = null
+                    };
+
+                    await Context.PricingBreakdownArchives.AddAsync(newArchiveBreakdown);
+                    Log.Information("Added new pricing breakdown archive for archived job {JobId} with amount {Amount}", jobId, jobFromArchive.UcjbAmount ?? 0);
+                }
             }
         }
         else
