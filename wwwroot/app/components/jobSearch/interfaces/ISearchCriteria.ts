@@ -10,6 +10,7 @@ interface ISearchCriteria {
     includeClosed: boolean;
     wild?: string;
     job?: string;
+    speedId?: number;
 }
 
 export default ISearchCriteria;

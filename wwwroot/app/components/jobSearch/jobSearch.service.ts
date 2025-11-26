@@ -25,6 +25,7 @@ class JobSearchService implements angular.IServiceProvider {
         pageSize: number,
         courierId?: number,
         clientId?: number,
+        speedId?: number,
         wild?: string,
         job?: string,
     ): Promise<IJobSearchResult> {
@@ -33,6 +34,7 @@ class JobSearchService implements angular.IServiceProvider {
                 params: {
                     courierId,
                     clientId,
+                    speedId,
                     wild,
                     job,
                     page,
@@ -51,6 +53,7 @@ class JobSearchService implements angular.IServiceProvider {
         toDate: Dayjs,
         courierId?: number,
         clientId?: number,
+        speedId?: number,
         wild?: string,
         job?: string
     ) {
@@ -60,6 +63,7 @@ class JobSearchService implements angular.IServiceProvider {
                 params: {
                     courierId,
                     clientId,
+                    speedId,
                     wild,
                     job,
                     fromDate: formatDateForApiWithTzs(fromDate),
@@ -75,6 +79,7 @@ class JobSearchService implements angular.IServiceProvider {
         toDate: Dayjs,
         courierId?: number,
         clientId?: number,
+        speedId?: number,
         wild?: string,
         job?: string
     ) {
@@ -86,6 +91,7 @@ class JobSearchService implements angular.IServiceProvider {
                     endDate: formatDateForApiWithTzs(toDate),
                     courierId,
                     clientId,
+                    speedId,
                     wild,
                     job
                 },
@@ -110,6 +116,7 @@ class JobSearchService implements angular.IServiceProvider {
         pageSize: number,
         courierId?: number,
         clientId?: number,
+        speedId?: number,
         job?: string,
         wild?: string,
     ): Promise<IJobSearchResult> {
@@ -117,6 +124,7 @@ class JobSearchService implements angular.IServiceProvider {
                 params: {
                     courierId,
                     clientId,
+                    speedId,
                     job,
                     wild,
                     page,
