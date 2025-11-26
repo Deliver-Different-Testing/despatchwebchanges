@@ -875,7 +875,7 @@ class HomeController extends BaseController {
                 return;
             }
 
-            // Set status filter to 'needs-dispatch' when ClearListArea is clicked
+            // Set the status filter to 'needs-dispatch' when ClearListArea is clicked
             this.queryParams.statusFilter = 'needs-dispatch';
 
             await this.processClearListJobs(selectedClearList.id);
@@ -1144,49 +1144,6 @@ class HomeController extends BaseController {
         }
     }
 
-    async selectedCourierChange(courier: any): Promise<void> {
-        if (!courier) {
-            // When the courier is cleared, show all jobs
-            this.currentCourier = undefined;
-            this.mapJobList = this.mapJobListFull;
-            return;
-        }
-
-        // Handle both the old Suggestion format and the new typeahead format
-        const courierId = courier.id;
-        const courierName = courier.text || courier.label || courier.name;
-
-        if (!courierId || !courierName) {
-            console.error("Invalid courier data structure:", courier);
-            return;
-        }
-
-        // Fetch full courier details to get courier code
-        const foundCourier = await this.DispatchData.getCourierById(courierId);
-
-        // Update courier data and get their jobs
-        if (foundCourier) {
-            // Use courier code (id field) if available, otherwise use courierName
-            const courierDisplay = (foundCourier.id && foundCourier.id !== 'undefined' && foundCourier.id.trim() !== '')
-                ? `${foundCourier.id}: ${foundCourier.name}`
-                : (foundCourier.text || foundCourier.label || courierName);
-            this.currentWorkSelection = ` for Courier ${courierDisplay}`;
-            this.currentCourier = {id: courierId, text: courierName};
-        } else {
-            this.currentWorkSelection = ` for Courier ${courierName}`;
-            this.currentCourier = {id: courierId, text: courierName};
-        }
-
-        // Get current jobs for the courier
-        await this.getCurrentJobs(courierId);
-
-        try {
-            this.truckCourierStatus = await this.DispatchData.truckCourierStatus(courierId);
-        } catch (error: any) {
-            console.error("Error fetching truck courier status:", error);
-        }
-    }
-
     async getCourierOptions(searchTerm: string): Promise<ISuggestion[]> {
         return await this.DispatchData.autocompleteSearch(searchTerm, this.COURIER_URL);
     }
@@ -1244,17 +1201,7 @@ class HomeController extends BaseController {
             this.applyScope();
         }
     }
-
-    async selectPotentialCourier(courier: ICourierData): Promise<void> {
-        try {
-            this.updateCourierInfo(courier);
-            await this.displayJobsForCourier(courier);
-            await this.updateUIForPotentialCourier(courier);
-        } catch (error: any) {
-            console.error("Error in selectPotentialCourier:", error);
-        }
-    }
-
+    
     updateCourierInfo(courier: ICourierData): void {
         if (!courier.courier) {
             courier.courier = `${courier.courier} ${courier.courierName}`;
@@ -1278,13 +1225,7 @@ class HomeController extends BaseController {
         this.jobsCurrentList = data.jobs;
         this.currentJobListTotalCount = data.totalCount;
     }
-
-    async updateUIForPotentialCourier(courier: ICourierData): Promise<void> {
-        if (!courier || !courier.courierId || !courier.courierName) return;
-        this.currentWorkSelection = ` for Courier ${courier.courier}: ${courier.courierName}`;
-        this.currentCourier = {id: courier.courierId, text: courier.courierName};
-    }
-
+    
     async getCurrentJobs(courierId: number): Promise<void> {
         if (!courierId) {
             console.warn("No courier ID provided");
@@ -1549,7 +1490,7 @@ class HomeController extends BaseController {
     }
 
     handleCategoryChange = async (category: string): Promise<void> => {
-        // Only update backend filter if a ClearListArea is active
+        // Only update the backend filter if a ClearListArea is active
         if (!this.selectedClearListId) {
             return;
         }
@@ -1784,10 +1725,6 @@ class HomeController extends BaseController {
         await this.interCourierChargeDialog.showInterCourierCharge($event);
     }
 
-    async createEvent($event: MouseEvent, job: IDispatchJob): Promise<void> {
-        await this.addEventDialog.openAddEventDialog($event, job);
-    }
-
     async openFileAttachmentDialog($event: MouseEvent, job: IDispatchJob): Promise<void> {
         await this.jobFileUploadDialog.openJobFileUploadDialog($event, job);
     }
@@ -1795,43 +1732,7 @@ class HomeController extends BaseController {
     async showAdditionalServicesMenu($event: MouseEvent, job: IDispatchJob): Promise<void> {
         await this.additionalServicesDialog.showAdditionalServicesDialog($event, job);
     }
-
-    updateCallData(callData: any, job: IDispatchJob, jobIdElement: any): void {
-        if (!callData.courierId) {
-            callData.courierId = job.courierData?.courierId ?? 0;
-        }
-
-        if (job.displaySplitJobDetail) {
-            callData.splitJobs.push(jobIdElement.data("jobid"));
-        } else {
-            callData.jobs.push(jobIdElement.attr("data-jobid"));
-        }
-    }
-
-    async filterByStatus(statusGroup: string): Promise<void> {
-        console.log('filterByStatus called with:', statusGroup);
-        this.queryParams.order = statusGroup;
-        await this.getJobList();
-        console.log(`Jobs ordered by status group: ${statusGroup}`);
-    }
-
-    getSupportsFilterLabel(): string {
-        switch (this.supportsFilter) {
-            case 'all':
-                return 'All Supports';
-            case 'mine':
-                return 'My Supports';
-            case 'unassigned':
-                return 'Unassigned';
-            case 'newest':
-                return 'Newest First';
-            case 'oldest':
-                return 'Oldest First';
-            default:
-                return 'All Supports';
-        }
-    }
-
+    
     async loadSupports(filterType: string = this.supportsFilter): Promise<void> {
         try {
             this.supportsLoading = true;
@@ -1860,34 +1761,7 @@ class HomeController extends BaseController {
             this.applyScope();
         }
     }
-
-    async filterSupports(filterType: string): Promise<void> {
-        this.supportsFilter = filterType;
-
-        this.tasksService.loadTasksWithDebounce(
-            this.tasksService.buildFilterRequest(
-                filterType,
-                this.currentJobId,
-                this.staffFilter,
-                this.eventTypeFilter,
-                this.currentAppPage
-            ),
-            (tasks, error) => {
-                if (error) {
-                    console.error("Error filtering supports:", error);
-                    this.toastrService.showErrorToast("Error filtering support tasks");
-                    this.supports = [];
-                    this.filteredSupports = [];
-                } else {
-                    this.supports = tasks;
-                    this.filteredSupports = tasks;
-                }
-                this.applyScope();
-            },
-            this.currentAppPage
-        );
-    }
-
+    
     getContextMenuOptions(job: IDispatchJob): any[] | IContextMenuOption[] {
         if (!job) return [];
 
@@ -2148,12 +2022,6 @@ class HomeController extends BaseController {
         return `Auto refresh: ${this.selectedRefreshInterval.text}`;
     }
 
-    isAutoRefreshActive(): boolean {
-        return this.isAutoRefreshEnabled &&
-            !!this.selectedRefreshInterval &&
-            this.selectedRefreshInterval.id > 0;
-    }
-
     // Driver Location Auto-Refresh Methods
     initDriverLocationRefreshIntervalOptions(): void {
         const disabledOption: ISuggestion = {id: 0, text: "Disabled"};
@@ -2250,12 +2118,6 @@ class HomeController extends BaseController {
             return 'Driver location auto refresh disabled';
         }
         return `Driver location auto refresh: ${this.selectedDriverLocationRefreshInterval.text}`;
-    }
-
-    isDriverLocationAutoRefreshActive(): boolean {
-        return this.isDriverLocationAutoRefreshEnabled &&
-            !!this.selectedDriverLocationRefreshInterval &&
-            this.selectedDriverLocationRefreshInterval.id > 0;
     }
 
     async onCourierSearchSelect(selectedCourier: ISuggestion): Promise<void> {
@@ -2449,42 +2311,6 @@ class HomeController extends BaseController {
             console.error('Error opening settings dialog:', error);
             this.toastrService.showErrorToast('Failed to open settings dialog');
         }
-    }
-
-    async onExactCourierMatchSearch(exactCourierMatchSearchText: string): Promise<void> {
-        if (!exactCourierMatchSearchText) return;
-
-        const courierMatch = await this.DispatchData.getExactCourierMatch(exactCourierMatchSearchText);
-        if (!courierMatch) {
-            this.toastrService.showWarningToast(`No courier found with code: ${exactCourierMatchSearchText}. Please try again.`);
-            return;
-        }
-
-        // Fetch full courier details to get courier code and name
-        const foundCourier = await this.DispatchData.getCourierById(courierMatch.id);
-
-        this.currentCourier = courierMatch;
-        if (foundCourier) {
-            // Use courier code (id field) if available, otherwise use text/label
-            const courierDisplay = (foundCourier.id && foundCourier.id !== 'undefined' && foundCourier.id.trim() !== '')
-                ? `${foundCourier.id}: ${foundCourier.name}`
-                : (foundCourier.text || foundCourier.label || courierMatch.text);
-            this.currentWorkSelection = ` for Courier ${courierDisplay}`;
-        } else {
-            this.currentWorkSelection = ` for Courier ${courierMatch.text}`;
-        }
-
-        await this.getCurrentJobs(courierMatch.id);
-
-        try {
-            this.truckCourierStatus = await this.DispatchData.truckCourierStatus(courierMatch.id);
-        } catch (error: any) {
-            console.warn("Error fetching truck courier status:", error);
-        }
-
-        // Clear the search text after a successful search
-        this.exactCourierMatchSearchText = '';
-        this.applyScope();
     }
 }
 

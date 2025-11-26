@@ -23,6 +23,7 @@ public interface IJobRepository
 
     Task<List<JobDownloadModel>> PodSearchDownloadAsync(
         int? courierId,
+        int? speedId,
         string wild,
         string job,
         DateTime fromDate,
@@ -93,6 +94,7 @@ public interface IJobRepository
     Task FinishSplitJobProcessAsync(int jobId, string despatcher);
     Task<List<SuburbLookup>> GetSuburbsAsync();
     Task<List<Suggestion>> GetSpeedsAsync();
+    Task<List<Suggestion>> GetSpeedsBySearchTermAsync(string searchTerm);
     Task<List<Suggestion>> GetContactsByClientIdAsync(int clientId);
     Task<List<Lookup>> LeaveParcelLocationsAsync();
     Task<List<UndeliverableLocation>> UndeliverableLocationsAsync();

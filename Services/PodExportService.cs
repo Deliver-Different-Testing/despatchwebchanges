@@ -26,6 +26,7 @@ public class PodExportService(
         // Fetch data
         var data = await jobRepository.PodSearchDownloadAsync(
             request.CourierId,
+            request.SpeedId,
             request.Wild ?? string.Empty,
             request.Job ?? string.Empty,
             request.FromDate.ResetTimeToStartOfDay(),

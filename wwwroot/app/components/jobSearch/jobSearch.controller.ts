@@ -4,7 +4,7 @@ import DispatchExecutorService from "../../services/dispatch-executor.service";
 import ToastrService from "../../services/toastr.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import {IAppConfig} from "../../interfaces/app-config.interface";
-import {IJobSearchResult, IDispatchJob, ISuggestion} from "../../interfaces/job.interface";
+import {IDispatchJob, IJobSearchResult, ISuggestion} from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
 import BaseController from "../base-controller";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
@@ -64,11 +64,8 @@ class JobSearchController extends BaseController {
 
     readonly isAdmin: boolean;
 
-    // Gridster layout
     boxes?: Record<string, IBox>;
     currentLayoutName?: string;
-
-    // Old layout 
     boxSortableOptions?: angular.ui.SortableOptions<any>;
     layouts: ILayout[] = [];
     defaultLayout?: ILayout;
@@ -82,8 +79,10 @@ class JobSearchController extends BaseController {
     searchCriteria: ISearchCriteria;
     clientSelectedItem?: number;
     courierSelectedItem?: number;
+    speedSelectedItem?: number;
     clientSearchText: string;
     courierSearchText: string;
+    speedSearchText: string;
 
     scanPromise?: Promise<IScanDetailResult[]>;
     scanList: IScanDetailResult[];
@@ -159,6 +158,7 @@ class JobSearchController extends BaseController {
         this.courierSelectedItem = this.searchCriteria.client;
         this.clientSearchText = '';
         this.courierSearchText = '';
+        this.speedSearchText = '';
 
         this.deliveryHistoryConfig = {
             showSummaryStats: true,
@@ -254,7 +254,7 @@ class JobSearchController extends BaseController {
             }
         }, true);
 
-        // Initialize box sortable options
+        // Initialize box-sortable options
         this.boxSortableOptions = {
             handle: '.box-handle',
             connectWith: '.column-sortable',
@@ -813,6 +813,7 @@ class JobSearchController extends BaseController {
                 this.searchCriteria.to_date,
                 this.searchCriteria.courier,
                 this.searchCriteria.client,
+                this.searchCriteria.speedId,
                 this.searchCriteria.wild,
                 this.searchCriteria.job
             );
@@ -863,6 +864,7 @@ class JobSearchController extends BaseController {
                 this.searchCriteria.to_date,
                 this.searchCriteria.courier,
                 this.searchCriteria.client,
+                this.searchCriteria.speedId,
                 this.searchCriteria.wild,
                 this.searchCriteria.job
             );
@@ -1044,6 +1046,17 @@ class JobSearchController extends BaseController {
         this.searchCriteria.client = item.id;
         await this.refreshAllData();
     }
+    
+    async speedQuerySearch(searchText: string) {
+        if (!searchText || searchText.length < 2) return [];
+
+        try {
+            return await this.DispatchData.searchSpeedOptions(searchText);
+        } catch(error) {
+            console.error('Error in speedQuerySearch:', error);
+            return [];
+        }
+    }
 
     async courierQuerySearch(searchText: string) {
         if (!searchText || searchText.length < 2) return [];
@@ -1080,6 +1093,16 @@ class JobSearchController extends BaseController {
         }
 
         this.searchCriteria.courier = item.id;
+        await this.refreshAllData();
+    }   
+    
+    async selectedSpeedChange(item: ISuggestion) {
+        if (!item) {
+            this.searchCriteria.speedId = undefined;
+            return;
+        }
+
+        this.searchCriteria.speedId = item.id;
         await this.refreshAllData();
     }
 
@@ -1208,6 +1231,7 @@ class JobSearchController extends BaseController {
                 pageSize,
                 this.searchCriteria.courier,
                 this.searchCriteria.client,
+                this.searchCriteria.speedId,
                 this.searchCriteria.job,
                 this.searchCriteria.wild,
             );
@@ -1226,6 +1250,7 @@ class JobSearchController extends BaseController {
                 pageSize,
                 this.searchCriteria.courier,
                 this.searchCriteria.client,
+                this.searchCriteria.speedId,
                 this.searchCriteria.wild,
                 this.searchCriteria.job,
             );

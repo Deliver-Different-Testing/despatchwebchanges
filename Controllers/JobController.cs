@@ -1183,6 +1183,21 @@ public class JobController(
         return Json(data);
     }
 
+    public async Task<IActionResult> SearchSpeedOptions(string searchTerm)
+    {
+        try
+        {
+            var speedOptions = await jobRepository.GetSpeedsBySearchTermAsync(searchTerm);
+            return Json(speedOptions);
+        }
+        catch (Exception e)
+        {
+          Log.Error(e, "{Message}", 
+              ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(SearchSpeedOptions)));
+          return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
     public async Task<IActionResult> ContactList(int clientId)
     {
         var data = await jobRepository.GetContactsByClientIdAsync(clientId);

@@ -14,7 +14,6 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using CourierLocation = DespatchWeb.Models.Response.CourierLocation;
@@ -192,6 +191,7 @@ public partial class JobRepository(
                 && j.BookDate.Date <= data.ToDate.Date
                 && (!data.ClientSet || j.ClientId == data.ClientId)
                 && (!data.CourierSet || j.CourierId == data.CourierId)
+                && (!data.SpeedSet || j.Speed == data.SpeedId)
                 && (!data.JobSet || EF.Functions.Like(j.JobNumber.ToLower(), $"%{jobSearch}%"))
                 && (
                     !data.WildSet
@@ -366,6 +366,7 @@ public partial class JobRepository(
                                     && j.Date.HasValue && j.Date.Value.Date <= data.ToDate.Date
                                     && (!data.ClientSet || j.ClientId == data.ClientId)
                                     && (!data.CourierSet || j.CourierId == data.CourierId)
+                                    && (!data.SpeedSet || j.Speed == data.SpeedId)
                                     && (!data.JobSet || EF.Functions.Like(j.Number.ToLower(), jobSearch))
                                     && (
                                         !data.WildSet
@@ -978,6 +979,7 @@ public partial class JobRepository(
 
     public async Task<List<JobDownloadModel>> PodSearchDownloadAsync(
         int? courierId,
+        int? speedId,
         string wild,
         string job,
         DateTime fromDate,
@@ -987,6 +989,7 @@ public partial class JobRepository(
     {
         var clientSet = clientId.HasValue;
         var courierSet = courierId.HasValue;
+        var speedSet = speedId.HasValue;
         var jobParam = $"%{job}%";
         var wildParam = $"%{wild}%";
 
@@ -1004,6 +1007,7 @@ public partial class JobRepository(
                 && j.Date <= toDate
                 && (!clientSet || j.ClientId == clientId)
                 && (!courierSet || j.CourierId == courierId)
+                && (!speedSet || j.Speed == speedId)
                 && (job == string.Empty || EF.Functions.Like(j.Number.ToLower(), jobParam))
                 && (
                     wild == string.Empty
@@ -1847,11 +1851,11 @@ public partial class JobRepository(
     {
         return await Context.TucSuburbs
             .AsNoTracking()
-            .Select(x => new SuburbLookup
+            .Select(s => new SuburbLookup
             {
-                Id = x.UcsuId,
-                Text = x.UcsuName,
-                Alias = x.GoogleSuburbAlias
+                Id = s.UcsuId,
+                Text = s.UcsuName,
+                Alias = s.GoogleSuburbAlias
             })
             .ToListAsync();
     }
@@ -1862,8 +1866,17 @@ public partial class JobRepository(
             .AsNoTracking()
             .Select(x => new Suggestion { Id = x.JobTypeId, Text = x.Name })
             .ToListAsync();
+    }    
+    
+    public async Task<List<Suggestion>> GetSpeedsBySearchTermAsync(string searchTerm)
+    {
+        return await Context.DesQryAllJobTypes
+            .AsNoTracking()
+            .Where(jt => EF.Functions.Like(jt.Name, $"%{searchTerm}%"))
+            .Select(jt => new Suggestion { Id = jt.JobTypeId, Text = jt.Name })
+            .ToListAsync();
     }
-
+    
     public async Task<List<Suggestion>> GetContactsByClientIdAsync(int clientId)
     {
         var contacts = await Context.UtlQryContactLookups

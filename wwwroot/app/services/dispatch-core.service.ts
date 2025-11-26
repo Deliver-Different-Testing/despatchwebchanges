@@ -1117,6 +1117,15 @@ class DispatchCoreService implements angular.IServiceProvider {
         console.log("SimpleRepriceJobManual", data);
         await this.$http.post("job/SimpleRepriceJobManual", data);
     }
+    
+    async searchSpeedOptions(searchTerm: string): Promise<ISuggestion[]> {
+        const response = await this.$http.get<ISuggestion[]>('job/SearchSpeedOptions', {
+            params: {
+                searchTerm
+            }
+        });
+        return response.data;
+    }
 }
 
 export default DispatchCoreService;
