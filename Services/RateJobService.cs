@@ -38,7 +38,7 @@ public class RateJobService(
             ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
 
             var rateResult = await RateUrgentJobAsync(jobDetails);
-            if (rateResult != null && rateResult.Rate > 0) {
+            if (rateResult is { Rate: > 0 }) {
                 await jobRepository.UpdateUrgentJobRateAsync(jobDetails.JobId, rateResult.Rate, jobDetails.JobType);
             } else {
                 Log.Warning("Job rating failed or returned invalid rate for JobId: {JobId}. Rate: {Rate}",
@@ -289,6 +289,98 @@ public class RateJobService(
             throw;
         }
     }
+    
+    public async Task<decimal> GetJobRateNzAsync(JobRatingDetailsDtoNz jobDetails)
+{
+    try
+    {
+        ArgumentNullException.ThrowIfNull(jobDetails);
+        ArgumentNullException.ThrowIfNull(jobDetails.ClientId);
+        ArgumentNullException.ThrowIfNull(jobDetails.FromId);
+        ArgumentNullException.ThrowIfNull(jobDetails.ToId);
+        ArgumentNullException.ThrowIfNull(jobDetails.SpeedId);
+        ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
+
+        var rateResult = await RateUrgentJobAsync(jobDetails);
+        if (rateResult is { Rate: > 0 })
+        {
+            return rateResult.Rate;
+        }
+        
+        Log.Warning("Job rating failed or returned invalid rate for JobId: {JobId}. Rate: {Rate}",
+            jobDetails.JobId,
+            rateResult?.Rate ?? 0);
+        
+        return 0;
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "{ErrorMessage}",
+            ErrorMessageStringFormatter.FormatForLogging(ex, nameof(RateJobService), nameof(GetJobRateNzAsync)));
+        throw;
+    }
+}
+
+public async Task<decimal> GetJobRateUsAsync(JobRatingDetailsDto jobDetails)
+{
+    try
+    {
+        ArgumentNullException.ThrowIfNull(jobDetails);
+        ArgumentNullException.ThrowIfNull(jobDetails.SpeedId);
+        ArgumentNullException.ThrowIfNull(jobDetails.ClientId);
+        ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
+
+        // Get distances and airport info
+        var distanceResult = await CalculateJobRateUsAsync(
+            new JobRateRequest
+            {
+                SpeedId = jobDetails.SpeedId.Value,
+                PickupLat = jobDetails.PickupLat,
+                PickupLong = jobDetails.PickupLong,
+                DeliveryLat = jobDetails.DeliveryLat,
+                DeliveryLong = jobDetails.DeliveryLong
+            }
+        );
+
+        // Get the rate without saving
+        var rate = await jobRepository.GetJobRateUsAsync(new RateJobUsDto
+        {
+            JobId = jobDetails.JobId,
+            ClientId = jobDetails.ClientId.Value,
+            Speed = jobDetails.SpeedId.Value,
+            FromZip = jobDetails.FromZip,
+            ToZip = jobDetails.ToZip,
+            TotalMiles = (decimal)distanceResult.TotalMiles,
+            FromMiles = (decimal)distanceResult.FromMiles,
+            ToMiles = (decimal)distanceResult.ToMiles,
+            Weight = jobDetails.Weight.HasValue ? (int)jobDetails.Weight : 0,
+            Booked = jobDetails.BookedDate,
+            Size = jobDetails.SizeId.Value,
+            DangerousGoods = jobDetails.DangerousGoods,
+            TotalPallets = jobDetails.TotalPallets,
+            ExtraStopOffs = jobDetails.ExtraStopOffs,
+            DryIceWeight = (int)jobDetails.DryIceWeight,
+            WaitTime = jobDetails.WaitTime,
+            FromAgentId = distanceResult.FromAirport?.AgentId ?? jobDetails.FromAgentId,
+            FromAirportId = distanceResult.FromAirport?.AirportId ?? jobDetails.FromAirportId,
+            ToAgentId = distanceResult.ToAirport?.AgentId ?? jobDetails.ToAgentId,
+            ToAirportId = distanceResult.ToAirport?.AirportId ?? jobDetails.ToAirportId,
+            Quantity = jobDetails.Quantity,
+            Cubic = jobDetails.Cubic,
+            IsPrebook = jobDetails.IsPrebook ?? false,
+            CalculateDimsOncePerJob = jobDetails.CalculateDimsOncePerJob,
+            PreviousRate = jobDetails.PreviousRate
+        });
+
+        return rate;
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "{ErrorMessage}",
+            ErrorMessageStringFormatter.FormatForLogging(ex, nameof(RateJobService), nameof(GetJobRateUsAsync)));
+        throw;
+    }
+}
 
     private static UrgentRerateObject MapToUrgentRerateObject(JobRatingDetailsDtoNz dto)
     {

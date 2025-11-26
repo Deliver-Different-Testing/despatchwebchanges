@@ -1,0 +1,56 @@
+﻿<md-dialog class="price-edit-dialog" aria-label="Edit Price">
+
+    <md-toolbar class="md-hue-1">
+        <div class="md-toolbar-tools">
+            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">price_change</md-icon>
+            <h2>Edit Job Price</h2>
+            <span flex></span>
+            <md-button class="md-icon-button close-dialog-button" ng-click="ctrl.cancel()">
+                <md-tooltip md-direction="bottom">Cancel</md-tooltip>
+                <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
+                    close
+                </md-icon>
+            </md-button>
+        </div>
+    </md-toolbar>
+
+    <md-dialog-content>
+        <div class="md-dialog-content">
+            <div class="price-section">
+                <p class="job-reference">Job: <strong>{{ctrl.job.jobNo}}</strong></p>
+
+                <md-input-container class="md-block price-input">
+                    <md-icon md-font-set="material-symbols-outlined">attach_money</md-icon>
+                    <label for="priceInput">Price</label>
+                    <input id="priceInput"
+                           type="number"
+                           ng-model="ctrl.amount"
+                           step="0.01"
+                           min="0"
+                           required>
+                    <div class="hint">Enter the price for this job</div>
+                </md-input-container>
+
+                <div class="recalculate-section">
+                    <md-button class="md-raised" ng-click="ctrl.recalculatePrice()">
+                        <md-icon md-font-set="material-symbols-outlined">calculate</md-icon>
+                        Recalculate Price
+                    </md-button>
+                    <p class="recalculate-hint">Use automatic pricing calculation based on job details</p>
+                </div>
+            </div>
+        </div>
+    </md-dialog-content>
+
+    <md-dialog-actions layout="row">
+        <span flex></span>
+        <md-button ng-click="ctrl.cancel()" class="md-button">
+            Cancel
+        </md-button>
+        <md-button ng-click="ctrl.submit()"
+                   class="md-raised md-primary"
+                   ng-disabled="!ctrl.amount || ctrl.amount <= 0">
+            Save Price
+        </md-button>
+    </md-dialog-actions>
+</md-dialog>

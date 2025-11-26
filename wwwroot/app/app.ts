@@ -64,6 +64,10 @@ import VoidJobConfirmationDialogService
 import DateFilterMenuComponent from "./components/common/date-filter-menu/date-filter-menu.component";
 import DayJsDatePickerComponent from "./components/common/dayjs-date-picker/dayjs-date-picker.component";
 import {minutesToTimeFilter} from "./components/Nationwide/filters/minutesToTimeFilter";
+import SimplePriceEditDialogService
+    from "./components/dialogs/simple-price-edit-dialog/simple-price-edit-dialog.service";
+import SimplePriceEditDialogController
+    from "./components/dialogs/simple-price-edit-dialog/simple-price-edit-dialog.controller";
 
 const app = (window as any).uDispatchApp;
 
@@ -191,6 +195,7 @@ app.controller("jobNoteEditorDialogController", NoteManagementDialogController);
 app.controller("TruckCourierStatusDialogController", TruckCourierStatusDialogController);
 app.controller("messagingDialogController", MessagingDialogController);
 app.controller("voidJobConfirmationDialogController", VoidJobConfirmationDialogController);
+app.controller("simplePriceEditDialogController", SimplePriceEditDialogController);
 
 // Services
 app.service("configService", ConfigService);
@@ -216,6 +221,7 @@ app.service("messagingDialogService", MessagingDialogService);
 app.service('resolutionWarningService', ResolutionWarningService);
 app.service('customUrlService', CustomUrlService);
 app.service('voidJobConfirmationDialogService', VoidJobConfirmationDialogService);
+app.service('simplePriceEditDialogService', SimplePriceEditDialogService);
 
 app.run(['resolutionWarningService', (resolutionWarningService: ResolutionWarningService) => {
     resolutionWarningService.checkAndShowResolutionWarning();

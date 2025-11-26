@@ -206,4 +206,5 @@ public interface IJobRepository
     Task<string> GetStaffNameAsync(int staffId);
     Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType);
     Task SimpleRepriceJobManualAsync(SimpleRepriceJobModel data);
+    Task<decimal> GetJobRateUsAsync(RateJobUsDto dto);
 }

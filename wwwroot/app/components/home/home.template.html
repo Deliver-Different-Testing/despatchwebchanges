@@ -262,43 +262,19 @@
                                 </div>
 
                                 <div class="row-overflow" ng-if="::box.name === 'currentWork'">
-                                    <md-autocomplete
-                                            md-autoselect
-                                            md-escape-options="clear"
-                                            md-input-name="courierSearch"
-                                            md-item-text="item.text"
-                                            md-items="item in ctrl.getCourierOptions(ctrl.courierSearchText)"
-                                            md-min-length="2"
-                                            md-search-text="ctrl.courierSearchText"
-                                            md-select-on-focus
-                                            md-selected-item-change="ctrl.onCourierSearchSelect(item)"
-                                            ng-if="ctrl.courierSearchOpen"
-                                            placeholder="Search Courier...">
-                                        <md-item-template>
-                                            <md-icon
-                                                    md-font-set="material-symbols-outlined"
-                                                    style="margin-right: 5px;">
-                                                assignment_ind
-                                            </md-icon>
-                                            <span md-highlight-flags="^i"
-                                                  md-highlight-text="ctrl.courierSearchText">
-                                                {{item.text}}
-                                            </span>
-                                        </md-item-template>
-                                        <md-not-found>
-                                            No couriers matching "{{ctrl.courierSearchText}}" were found.
-                                        </md-not-found>
-                                    </md-autocomplete>
-
-                                    <md-button class="md-icon-button"
-                                               ng-click="ctrl.controlCourierSearchBox()">
-                                        <md-icon md-font-set="material-symbols-outlined">
-                                            {{ ctrl.courierSearchOpen ? 'close' : 'person_search' }}
-                                        </md-icon>
-                                        <md-tooltip md-direction="bottom">
-                                            {{ ctrl.courierSearchOpen ? 'Close Courier Search' : 'Open Courier Search'}}
-                                        </md-tooltip>
-                                    </md-button>
+                                    <div class="courier-match-search">
+                                        <md-input-container class="md-icon-float md-block">
+                                            <label for="courierExactMatch">Courier Match</label>
+                                            <md-icon md-font-set="material-symbols-outlined">delivery_truck_speed</md-icon>
+                                            <input id="courierExactMatch"
+                                                   ng-model="ctrl.exactCourierMatchSearchText"
+                                                   ng-keypress="$event.keyCode === 13 && ctrl.onExactCourierMatchSearch(ctrl.exactCourierMatchSearchText)"
+                                                   type="number"
+                                                   aria-label="Search for courier by code"
+                                                   placeholder="Enter courier code"
+                                                   class="no-spinner">
+                                        </md-input-container>
+                                    </div>
 
                                     <div ng-if="ctrl.jobsCurrentList.length > 0">
                                         <md-button class="md-icon-button"
@@ -307,7 +283,6 @@
                                             <md-tooltip md-direction="bottom">Truck Loading Status</md-tooltip>
                                         </md-button>
                                     </div>
-
                                 </div>
 
                                 <div class="row-overflow" ng-if="::box.name === 'driverLocations'">
