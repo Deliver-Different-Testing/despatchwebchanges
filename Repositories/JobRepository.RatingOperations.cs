@@ -500,4 +500,49 @@ public partial class JobRepository
             throw;
         }
     }
+    
+    public async Task<decimal> GetJobRateUsAsync(RateJobUsDto dto)
+    {
+        var rate = new OutputParameter<decimal?>();
+        var description = new OutputParameter<string>();
+        var returnValue = new OutputParameter<int>();
+
+        await Context.Procedures.DD_stpJob_Rate_DescribedAsync(
+            clientID: dto.ClientId,
+            speedID: dto.Speed,
+            fromZipCode: string.IsNullOrEmpty(dto.FromZip) ? null : int.Parse(dto.FromZip),
+            fromState: null,
+            toZipCode: string.IsNullOrEmpty(dto.ToZip) ? null : int.Parse(dto.ToZip),
+            toState: null,
+            totalDistance: dto.TotalMiles,
+            fromMiles: dto.FromMiles,
+            toMiles: dto.ToMiles,
+            totalWeight: dto.Weight,
+            quantity: dto.Quantity,
+            cubic: dto.Cubic,
+            totalPallets: dto.TotalPallets,
+            extraStopOffs: dto.ExtraStopOffs,
+            booked: dto.Booked,
+            vehicleSizeID: dto.Size,
+            dangerousGoods: dto.DangerousGoods,
+            dryIceWeight: dto.DryIceWeight,
+            waitTime: dto.WaitTime,
+            fromAgentId: dto.FromAgentId,
+            fromAirportId: dto.FromAirportId,
+            toAgentId: dto.ToAgentId,
+            toAirportId: dto.ToAirportId,
+            isFromAddressAirport: await DoesAddressMatchAirportAsync(dto.JobId, true),
+            isToAddressAirport: await DoesAddressMatchAirportAsync(dto.JobId, false),
+            dimensionsType: dto.CalculateDimsOncePerJob ? 1 : 0,
+            description: description,
+            rate: rate,
+            returnValue: returnValue
+        );
+
+        Log.Information("Calculated price: {Rate}. Pricing breakdown: {DescriptionValue}", 
+            rate.Value ?? 0, 
+            description.Value);
+
+        return rate.Value ?? 0;
+    }
 }

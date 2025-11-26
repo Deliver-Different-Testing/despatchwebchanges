@@ -1793,15 +1793,14 @@ public class JobController(
                 : await jobRepository.GetJobDetailsForRatingAsync(jobId);
 
             await rateJobService.RateJobUsAsync(jobDetailsUs);
+            return;
         }
-        else
-        {
-            var jobDetailsNz = isBooking
-                ? await jobRepository.GetJobBookingDetailsForRatingNzAsync(jobId)
-                : await jobRepository.GetJobDetailsForRatingNzAsync(jobId);
 
-            await rateJobService.RateJobNzAsync(jobDetailsNz);
-        }
+        var jobDetailsNz = isBooking
+            ? await jobRepository.GetJobBookingDetailsForRatingNzAsync(jobId)
+            : await jobRepository.GetJobDetailsForRatingNzAsync(jobId);
+
+        await rateJobService.RateJobNzAsync(jobDetailsNz);
     }
 
     public async Task<IActionResult> GetTimeZoneOptions()
@@ -1907,5 +1906,44 @@ public class JobController(
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(SimpleRepriceJobManual)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
+    }
+    
+    public async Task<IActionResult> RecalculateJobRate(int jobId)
+    {
+        try
+        {
+            var newRate = await GetJobRateAsync(jobId, false);
+            return Ok(newRate);
+        }
+        catch (Exception e)
+        {
+           Log.Error(e, "{Message}", 
+               ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(RecalculateJobRate)));
+           return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+    
+    private async Task<decimal> GetJobRateAsync(int jobId, bool isBooking)
+    {
+        // Skip if a job is archived
+        var isArchived = !isBooking && await jobRepository.IsJobArchived(jobId);
+        if (isArchived) return 0;
+
+        var isUsCustomer = infoService.IsUsTenant();
+
+        if (isUsCustomer)
+        {
+            var jobDetailsUs = isBooking
+                ? await jobRepository.GetJobBookingDetailsForRatingAsync(jobId)
+                : await jobRepository.GetJobDetailsForRatingAsync(jobId);
+
+            return await rateJobService.GetJobRateUsAsync(jobDetailsUs);
+        }
+
+        var jobDetailsNz = isBooking
+            ? await jobRepository.GetJobBookingDetailsForRatingNzAsync(jobId)
+            : await jobRepository.GetJobDetailsForRatingNzAsync(jobId);
+
+        return await rateJobService.GetJobRateNzAsync(jobDetailsNz);
     }
 }

@@ -118,7 +118,7 @@ class JobDetailController extends BaseController {
         $scope: angular.IScope,
         private autoCompleteDialogService: AutoCompleteDialogService,
         private jobFileUploadDialogService: JobFileUploadDialogService,
-        private voidJobConfirmationDialogService: VoidJobConfirmationDialogService
+        private voidJobConfirmationDialogService: VoidJobConfirmationDialogService,
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
@@ -1849,14 +1849,9 @@ class JobDetailController extends BaseController {
                 return;
             }
 
-            const newAmount = await this.priceBreakdownDialogService.openPriceBreakdownDialog(
-                $event,
-                job.id,
-                job.charge,
-                job.preBook
-            );
-
+            const newAmount = await this.priceBreakdownDialogService.openPriceBreakdownDialog($event, job);
             if (!newAmount || !this.job) return;
+          
             this.job.charge = newAmount;
             await this.refreshJobDetails(job.id);
         } catch (error) {

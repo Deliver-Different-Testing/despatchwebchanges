@@ -5,7 +5,16 @@ import {JobProperty} from "../../../enums/job-property.enum";
 import BaseController from "../../base-controller";
 
 export class SelectDialogController extends BaseController {
-    static $inject = ["$mdDialog", "toastrService", "id", "fieldName", "title", "options", "initialValue", "showCheckbox", "checkboxLabel"];
+    static $inject = ["$mdDialog",
+        "toastrService",
+        "id",
+        "fieldName",
+        "title",
+        "options",
+        "initialValue",
+        "showCheckbox",
+        "checkboxLabel"
+    ];
 
     isLoading: boolean;
     selectedOption: any;

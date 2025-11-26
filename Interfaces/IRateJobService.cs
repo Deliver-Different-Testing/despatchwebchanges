@@ -8,4 +8,6 @@ public interface IRateJobService
 {
     Task RateJobNzAsync(JobRatingDetailsDtoNz jobDetails);
     Task RateJobUsAsync(JobRatingDetailsDto jobDetails);
+    Task<decimal> GetJobRateNzAsync(JobRatingDetailsDtoNz jobDetails);
+    Task<decimal> GetJobRateUsAsync(JobRatingDetailsDto jobDetails);
 }

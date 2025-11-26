@@ -144,17 +144,6 @@ class JobContextMenuService implements angular.IServiceProvider {
             });
         }
 
-        // If job is assigned to a courier, allow re-dispatching
-        if(job.assignedCourier) {
-            menuOptions.push({
-                text: "Re-Dispatch",
-                icon: "redo",
-                click: (_$itemScope: any) =>
-                    this.redispatchJobAction(job, callbacks.onRefresh),
-                hasBottomDivider: true,
-            });
-        }
-
         menuOptions.push({
             text: "Add Task - Other",
             icon: "add",
@@ -206,6 +195,17 @@ class JobContextMenuService implements angular.IServiceProvider {
             click: () => this.setFirstJobAction(job, callbacks.onRefreshCourierJobs),
             hasBottomDivider: true,
         });
+
+        // If a job is assigned to a courier, allow re-dispatching
+        if(job.assignedCourier) {
+            menuOptions.push({
+                text: "Re-Dispatch",
+                icon: "redo",
+                click: (_$itemScope: any) =>
+                    this.redispatchJobAction(job, callbacks.onRefresh),
+                hasBottomDivider: true,
+            });
+        }
 
         // Restore
         menuOptions.push({

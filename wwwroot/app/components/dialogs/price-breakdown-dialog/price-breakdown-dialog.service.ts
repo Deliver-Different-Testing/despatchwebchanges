@@ -1,7 +1,8 @@
 import {PriceBreakdownDialogController} from "./price-breakdown-dialog.controller";
 import DispatchCoreService from "../../../services/dispatch-core.service";
-import {PriceBreakdown} from "../../../interfaces/job.interface";
+import {IJob, PriceBreakdown} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
+import SimplePriceEditDialogService from "../simple-price-edit-dialog/simple-price-edit-dialog.service";
 
 class PriceBreakdownDialogService implements angular.IServiceProvider {
     static $inject = [
@@ -9,6 +10,7 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
         'DispatchData',
         '$document',
         'toastrService',
+        "simplePriceEditDialogService",
     ];
 
     constructor(
@@ -16,6 +18,7 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
         private DispatchData: DispatchCoreService,
         private $document: angular.IDocumentService,
         private toastrService: ToastrService,
+        private simplePriceEditDialogService: SimplePriceEditDialogService
     ) {
         console.debug('PriceBreakdownDialogService: Service instantiated');
     }
@@ -31,46 +34,16 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
     }
 
     async openPriceBreakdownDialog($event: MouseEvent,
-                                   jobId: number,
-                                   jobAmount: number,
-                                   isPrebook: boolean = false): Promise<number | undefined> {
+                                   job: IJob): Promise<number | undefined> {
         try {
-            const priceBreakdowns: PriceBreakdown[] = await this.DispatchData.getPriceBreakdown(jobId, isPrebook);
+            const priceBreakdowns: PriceBreakdown[] = await this.DispatchData.getPriceBreakdown(job.id, job.preBook);
 
             // Check if using the old amount method and just show text
-            if(this.isUsingOldAmountMethod(jobAmount, priceBreakdowns)) {
-                const prompt = this.$mdDialog
-                    .prompt()
-                    .title("Edit Job Amount")
-                    .textContent('This will manually reprice the job. Enter the new total amount.')
-                    .initialValue(jobAmount.toString())
-                    .targetEvent($event)
-                    .required(true)
-                    .ok("Reprice")
-                    .cancel("Cancel");
-
+            if(this.isUsingOldAmountMethod(job.charge, priceBreakdowns)) {
                 try {
-                    let isValid = false;
-                    let numericValue: number = -1;
-
-                    // Loop until we get a valid number or user cancels
-                    while (!isValid) {
-                        const result: string = await this.$mdDialog.show(prompt);
-                        numericValue = parseFloat(result);
-
-                        if (isNaN(numericValue) || numericValue < 0) {
-                            // Show error and continue loop
-                            this.toastrService.showErrorToast('Please enter a valid number.');
-                            console.error('Invalid input. Please enter a valid number.');
-                        } else {
-                            isValid = true;
-                        }
-                    }
-
-                    if(!numericValue || numericValue == jobAmount) return;
-                    await this.DispatchData.simpleRepriceJobManual(jobId, isPrebook, numericValue);
-                    this.toastrService.showSuccessToast('Job amount updated successfully.');
-                    return numericValue;
+                    const newAmount = await this.simplePriceEditDialogService.openSimplePriceEditDialog($event, job);
+                    await this.DispatchData.simpleRepriceJobManual(job.id, job.preBook, newAmount);
+                    return newAmount;
                 } catch (error) {
                     if(!error) return;
 
@@ -90,8 +63,8 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
                 escapeToClose: true,
                 locals: {
                     priceBreakdowns,
-                    jobId,
-                    isPrebook,
+                    jobId: job.id,
+                    isPrebook: job.preBook,
                 },
                 bindToController: true,
             });

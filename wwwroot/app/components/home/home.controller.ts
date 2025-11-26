@@ -1327,9 +1327,9 @@ class HomeController extends BaseController {
                 const mapJobItem = this.mapToDispatchMapItem(job);
                 this.mapJobList = [mapJobItem]
 
-                // Get potential couriers for this job, but preserve current courier context if one exists
+                // Get potential couriers for this job but preserve the current courier context if one exists
                 await this.getPotentialCouriers(job.id);
-                // Note: We don't clear currentCourier here to preserve the courier's current work list
+                // Note: We don't clear the currentCourier here to preserve the courier's current work list
             } else {
                 // Scenario 3: Job has a courier assigned - show this courier's jobs
                 console.log("Selected job has courier assigned - loading courier's jobs");
@@ -2311,6 +2311,31 @@ class HomeController extends BaseController {
             console.error('Error opening settings dialog:', error);
             this.toastrService.showErrorToast('Failed to open settings dialog');
         }
+    }
+
+    async onExactCourierMatchSearch(exactCourierMatchSearchText: string): Promise<void> {
+        if(!exactCourierMatchSearchText) return;
+
+        const courierMatch = await this.DispatchData.getExactCourierMatch(exactCourierMatchSearchText);
+        if(!courierMatch) {
+            this.toastrService.showWarningToast(`No courier found with code: ${exactCourierMatchSearchText}. Please try again.`);
+            return;
+        }
+
+        this.currentCourier = courierMatch;
+        this.currentWorkSelection = ` for Courier ${courierMatch.text}`;
+
+        await this.getCurrentJobs(courierMatch.id);
+
+        try {
+            this.truckCourierStatus = await this.DispatchData.truckCourierStatus(courierMatch.id);
+        } catch (error: any) {
+            console.warn("Error fetching truck courier status:", error);
+        }
+
+        // Clear the search text after a successful search
+        this.exactCourierMatchSearchText = '';
+        this.applyScope();
     }
 }
 

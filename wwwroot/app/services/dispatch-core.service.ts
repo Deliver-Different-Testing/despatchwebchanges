@@ -331,7 +331,7 @@ class DispatchCoreService implements angular.IServiceProvider {
 
         return transformJobGroupDTO(response.data);
     }
-    
+
     async getJobsCurrent(courierId: number, page: number, pageSize: number): Promise<IJobSearchResult> {
         const response = await this.$http.get<IJobSearchResultDto>(
             `job/current`, {
@@ -754,7 +754,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             ...additionalParams
         };
     }
-    
+
     async autocompleteSearch(
         searchTerm: string,
         url: string
@@ -1101,8 +1101,21 @@ class DispatchCoreService implements angular.IServiceProvider {
     async getTimeZoneOptions(): Promise<ITimeZoneSuggestion[]> {
         const response = await this.$http.get<ITimeZoneSuggestion[]>('job/GetTimeZoneOptions');
         return response.data;
-    }  
-    
+    }
+
+    async recalculateJobRate(jobId: number, isBooking: boolean): Promise<number> {
+        const response = await this.$http.get<number>('job/RecalculateJobRate', {
+            params: {jobId, isBooking}
+        });
+        return response.data;
+    }
+
+    async simpleRepriceJobManual(jobId: number, isPrebook: boolean, newPrice: number) {
+        const data: ISimpleRepriceJobModel = {jobId, isPrebook, newPrice};
+        console.log("SimpleRepriceJobManual", data);
+        await this.$http.post("job/SimpleRepriceJobManual", data);
+    }
+
     async getExactCourierMatch(courierCode: string): Promise<ISuggestion> {
         const response = await this.$http.get<ISuggestion>('courier/GetExactCourierByCode', {
             params: {
@@ -1111,13 +1124,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         });
         return response.data;
     }
-    
-    async simpleRepriceJobManual(jobId: number, isPrebook: boolean, newPrice: number) {
-        const data: ISimpleRepriceJobModel = {jobId, isPrebook, newPrice};
-        console.log("SimpleRepriceJobManual", data);
-        await this.$http.post("job/SimpleRepriceJobManual", data);
-    }
-    
+
     async searchSpeedOptions(searchTerm: string): Promise<ISuggestion[]> {
         const response = await this.$http.get<ISuggestion[]>('job/SearchSpeedOptions', {
             params: {
