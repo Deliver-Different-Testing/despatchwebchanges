@@ -1198,7 +1198,9 @@ public partial class JobRepository(
         var query = Context.TucJobs
             .AsNoTracking()
             .Where(j => j.UcjbCourierId != null && j.UcjbCourierId == courierId
-                                                && !j.UcjbJobDone && !j.UcjbVoid);
+                                                && !j.UcjbJobDone && !j.UcjbVoid 
+                                                && j.UcjbStatusNavigation.UcjsId != (int)JobStatus.Void 
+                                                && j.UcjbStatusNavigation.UcjsId != (int)JobStatus.Completed);
 
         if (startDate.HasValue) query = query.Where(j => j.UcjbDate.Date >= startDate.Value.Date.Date);
         if(endDate.HasValue) query = query.Where(j => j.UcjbDate.Date <= endDate.Value.Date.Date);
