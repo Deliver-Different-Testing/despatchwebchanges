@@ -31,6 +31,7 @@ public class UrgentRerateAddressObject
     public string City { get; set; }
     public string State { get; set; }
     public string Suburb { get; set; }
+    public int? SuburbId { get; set; }
     public string ZipCode { get; set; }
     public string PostCode { get; set; }
     public string CountryCode { get; set; }
