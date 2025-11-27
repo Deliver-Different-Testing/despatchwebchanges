@@ -278,11 +278,11 @@ public class JobController(
         return Ok();
     }
 
-    public async Task<IActionResult> Current(int courierId, bool done, int page, int pageSize)
+    public async Task<IActionResult> Current(int courierId, int page, int pageSize)
     {
         try
         {
-            var result = await jobRepository.CurrentJobListAsync(courierId, done, page, pageSize);
+            var result = await jobRepository.CurrentJobListAsync(courierId, page, pageSize);
             return Json(result);
         }
         catch (Exception e)

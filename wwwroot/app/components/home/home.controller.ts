@@ -908,7 +908,7 @@ class HomeController extends BaseController {
                 this.jobList = this.initializeJobSearchFields(result.jobs);
 
                 if (!this.currentCourier) {
-                    // Only show undispatched jobs on map for performance
+                    // Only show undispatched jobs on the map for performance
                     this.mapJobList = this.getUndispatchedMapItems(result.jobs);
                     this.mapJobListFull = angular.copy(this.mapJobList);
                 }

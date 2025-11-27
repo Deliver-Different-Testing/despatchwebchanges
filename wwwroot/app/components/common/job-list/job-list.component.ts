@@ -299,7 +299,7 @@ class JobsListController extends BaseController {
     async filterByCategory(category: JobCategory): Promise<void> {
         this.selectedCategory = category;
 
-        // Notify parent of category change (for backend filtering when ClearListArea is active)
+        // Notify parent of the category change (for backend filtering when ClearListArea is active)
         if (this.onCategoryChange) {
             await this.onCategoryChange({ category: category });
         }

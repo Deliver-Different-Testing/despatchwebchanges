@@ -337,7 +337,6 @@ class DispatchCoreService implements angular.IServiceProvider {
             `job/current`, {
                 params: {
                     courierId,
-                    done: false,
                     page,
                     pageSize,
                 },

@@ -55,12 +55,12 @@ public class BaseJobRepository(
                 clearListEnvelope =
                     await clearListEnvelopeService.GetClearListAreaEnvelopeAsync(selectedClearListId.Value, country);
 
-                // Check if needs-dispatch filter is active
+                // Check if the needs-dispatch filter is active
                 isNeedsDispatchFilter = queryParams.StatusFilter?.ToLower() == "needs-dispatch";
 
                 if (isNeedsDispatchFilter)
                 {
-                    // Apply "needs dispatch" filter for ClearListArea: Status = New and no courier assigned
+                    // Apply the "needs dispatch" filter for ClearListArea: Status = New and no courier assigned
                     query = query.Where(j => j.UcjbStatus == (int)JobStatus.New && j.UcjbCourierId == null);
                 }
             }
@@ -77,6 +77,8 @@ public class BaseJobRepository(
 
                     if (queryParams.StartDate.HasValue)
                         query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
+
+                    if (queryParams.StatusFilter == "done") query = query.Where(j => j.UcjbJobDone || j.UcjbVoid);
 
                     query = ApplyEndDateFilter(query, queryParams.EndDate, queryParams.UseTime);
 
