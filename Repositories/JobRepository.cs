@@ -1185,14 +1185,14 @@ public partial class JobRepository(
         }
     }
 
-    public async Task<JobSearchResult> CurrentJobListAsync(int courierId, bool done, int page, int pageSize)
+    public async Task<JobSearchResult> CurrentJobListAsync(int courierId, int page, int pageSize)
     {
         var isUsCustomer = _infoService.IsUsTenant();
 
         var query = Context.TucJobs
             .AsNoTracking()
             .Where(j => j.UcjbCourierId != null && j.UcjbCourierId == courierId
-                                                && j.UcjbJobDone == done);
+                                                && !j.UcjbJobDone && !j.UcjbVoid);
 
         // Get a total count before pagination
         var totalCount = await query.CountAsync();

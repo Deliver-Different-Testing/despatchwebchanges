@@ -13,7 +13,5 @@ public class JobQueryParams
     public int? PageSize { get; set; }
 
     public string SearchText { get; set; }
-    public string Order { get; set; }
-    public string OrderDirection { get; set; }
     public string StatusFilter { get; set; } // 'needs-dispatch', 'all', 'active', etc.
 }

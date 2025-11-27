@@ -35,6 +35,10 @@
                 <button class="tab"
                         ng-class="{'active': ctrl.selectedCategory === 'in-progress'}"
                         ng-click="ctrl.filterByCategory('in-progress')">ACTIVE
+                </button>  
+                <button class="tab"
+                        ng-class="{'active': ctrl.selectedCategory === 'done'}"
+                        ng-click="ctrl.filterByCategory('done')">DONE
                 </button>
             </div>
 
