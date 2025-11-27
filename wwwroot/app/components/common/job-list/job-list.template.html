@@ -578,13 +578,6 @@
             <span class="selected-count">{{ctrl.selectedJobs.length}} selected</span>
 
             <md-button class="md-fab md-primary md-mini"
-                       ng-click="ctrl.toggleSelectAll()"
-                       aria-label="select all">
-                <md-icon md-font-set="material-symbols-outlined">select_all</md-icon>
-                <md-tooltip md-direction="bottom">Select All {{ ctrl.filteredJobs.length }} Jobs</md-tooltip>
-            </md-button>
-
-            <md-button class="md-fab md-primary md-mini"
                        ng-click="ctrl.clearSelection()"
                        aria-label="clear selection">
                 <md-icon md-font-set="material-symbols-outlined">clear_all</md-icon>

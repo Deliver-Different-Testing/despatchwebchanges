@@ -2,11 +2,13 @@ import {IPaginatedResponse} from "../../interfaces/paginated-response.interface"
 import {ISuggestion} from "../../interfaces/job.interface";
 import {
     MapConfig,
-    MegaMapResponse, OpenJobResponse,
+    MegaMapResponse, IOpenJobResponse,
     OverviewQueryParams,
-    OverviewStatsViewModel, OverviewTableParentJob
+    OverviewStatsViewModel, OverviewTableParentJob, IOpenJobResponseDto
 } from "./overview.interfaces";
 import dayjs from "dayjs";
+import {formatDateForApiWithTzs} from "../../functions/formatDates";
+import {transformOpenJobResponseDto} from "../../functions/dtoMappings";
 
 class OverviewService implements angular.IServiceProvider {
     static $inject = [
@@ -37,7 +39,8 @@ class OverviewService implements angular.IServiceProvider {
                 orderBy: params.orderBy || "jobName",
                 orderDirection: params.orderDirection,
                 regions: params.regions,
-                speeds: params.regions
+                speeds: params.regions,
+                couriers: params.couriers,
             }
         });
 
@@ -74,17 +77,17 @@ class OverviewService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getOpenJobs(params: Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds'>): Promise<OpenJobResponse[]> {
-        const response = await this.$http.get<OpenJobResponse[]>("/overview/GetOpenJobs", {
+    async getOpenJobs(params: Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds'>): Promise<IOpenJobResponse[]> {
+        const response = await this.$http.get<IOpenJobResponseDto[]>("/overview/GetOpenJobs", {
             params: {
-                startDate: params.startDate ? params.startDate.format() : null,
-                endDate: params.endDate ? params.endDate.format() : null,
+                startDate: params.startDate ? formatDateForApiWithTzs(params.startDate): null,
+                endDate: params.endDate ? formatDateForApiWithTzs(params.endDate) : null,
                 regions: params.regions,
                 speeds: params.speeds
             }
         });
 
-        return response.data;
+        return response.data.map(transformOpenJobResponseDto);
     }
 
     async saveCollapseState(cardName: string, isCollapsed: boolean): Promise<Record<string, boolean> | null> {

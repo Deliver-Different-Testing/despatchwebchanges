@@ -82,19 +82,19 @@
                             <td md-cell>{{::job.reference}}</td>
                             <td md-cell>{{::job.driverName || 'Unassigned'}}</td>
                             <td md-cell>
-                                <md-chip class="status-chip {{::job.status | lowercase}}">
-                                    {{::job.statusName}}
+                                <md-chip class="status-chip {{::job.status}}">
+                                    {{::job.status}}
                                 </md-chip>
                             </td>
                             <td md-cell>
-                                    {{::ctrl.formatRegionalTime(job.pickup.time)}}
+                                    {{::job.pickup.time | momentFormat:(ctrl.isUsCustomer ? "MM/DD/YYYY hh:mm A" : "DD/MM/YYYY HH:mm") }}
                             </td>
                             <td md-cell>
                                 <div class="location-name">{{::job.pickup.name}}</div>
                                 <div class="location-address">{{::job.pickup.address}}</div>
                             </td>
                             <td md-cell>
-                                    {{::ctrl.formatRegionalTime(job.delivery.time)}}
+                                    {{::job.delivery.time | momentFormat:(ctrl.isUsCustomer ? "MM/DD/YYYY hh:mm A" : "DD/MM/YYYY HH:mm")}}
                             </td>
                             <td md-cell>
                                 <div class="location-name">{{::job.delivery.name}}</div>

@@ -4,12 +4,14 @@ import {IOverViewDateSearchRange} from "../overview.interfaces";
 class OverviewFiltersService implements angular.IServiceProvider {
     selectedRegions: ISuggestion[];
     selectedSpeeds: ISuggestion[];
+    selectedCouriers: ISuggestion[];
     dateRange: IOverViewDateSearchRange;
     filterChangeCallbacks: Array<() => void>;
 
     constructor() {
         this.selectedRegions = [];
         this.selectedSpeeds = [];
+        this.selectedCouriers = [];
 
         this.dateRange = {};
         this.filterChangeCallbacks = [];
@@ -26,6 +28,7 @@ class OverviewFiltersService implements angular.IServiceProvider {
     updateFilters(filters: {
         selectedRegions?: ISuggestion[],
         selectedSpeeds?: ISuggestion[],
+        selectedCouriers?: ISuggestion[],
         dateRange?: IOverViewDateSearchRange,
     }): void {
         Object.assign(this, filters);

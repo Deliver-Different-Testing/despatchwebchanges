@@ -10,7 +10,6 @@ import {getIanaTimezone} from "../../../functions/formatDates";
 class StickyNoteController extends BaseController {
     private previousJobId?: number;
     private previousBulkJobId?: number;
-    private timezone: string = getIanaTimezone(TimeZone);
     private readonly isRecurringJob: boolean = false;
 
     notes?: IJobNote[] = [];

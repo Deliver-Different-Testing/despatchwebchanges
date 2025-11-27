@@ -16,13 +16,14 @@ import {Dayjs} from "dayjs";
 import {DateRangeDialogController} from "../dialogs/date-range-dialog/date-range-dialog.controller";
 import MapDialogService from "../dialogs/map-dialog/map-dialog.service";
 import {IPaginatedResponse} from "../../interfaces/paginated-response.interface";
+import DispatchCoreService from "../../services/dispatch-core.service";
 
 class OverviewController extends BaseController {
     static $inject = [
         "$mdDialog",
-        "$log",
         "$mdSidenav",
         "overviewService",
+        "DispatchData",
         "toastrService",
         "navigationService",
         "overviewFiltersService",
@@ -57,13 +58,18 @@ class OverviewController extends BaseController {
     selectedSpeeds: ISuggestion[];
     allSpeedsSelected: boolean;
 
+    couriersLoading: boolean;
+    selectedCouriers: ISuggestion[];
+    selectedCourier: ISuggestion | null;
+    courierSearchText: string;
+
     activeTab: number;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private $log: angular.ILogService,
         private $mdSidenav: angular.material.ISidenavService,
         private overviewService: OverviewService,
+        private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
         private navigationService: NavigationService,
         private overviewFiltersService: OverviewFiltersService,
@@ -109,6 +115,12 @@ class OverviewController extends BaseController {
         this.allRegionsSelected = false;
         this.selectedSpeeds = [];
         this.allSpeedsSelected = false;
+
+        // Courier filter
+        this.couriersLoading = false;
+        this.selectedCouriers = [];
+        this.selectedCourier = null;
+        this.courierSearchText = '';
 
         this.activeTab = 0;
 
@@ -161,7 +173,7 @@ class OverviewController extends BaseController {
 
     private loadSavedLimit(): void {
         const savedLimit = localStorage.getItem(this.OverviewJobLimitDisplay);
-        this.$log.debug(`Saved limit is: ${savedLimit}`);
+        console.log(`Saved limit is: ${savedLimit}`);
         if (savedLimit) {
             this.query.limit = parseInt(savedLimit);
         }
@@ -175,10 +187,10 @@ class OverviewController extends BaseController {
             this.refreshData(),
         ])
             .then(() => {
-                this.$log.debug("All data loaded successfully");
+                console.log("All data loaded successfully");
             })
             .catch((error) => {
-                this.$log.error("Error loading data:", error);
+                console.error("Error loading data:", error);
             });
     }
 
@@ -204,7 +216,7 @@ class OverviewController extends BaseController {
                 completed: stats.completed || 0,
             };
         } catch (error) {
-            this.$log.error("Error loading statistics:", error);
+            console.error("Error loading statistics:", error);
             this.statistics = {active: 0, inactive: 0, completed: 0};
         }
     }
@@ -232,7 +244,7 @@ class OverviewController extends BaseController {
             this.regionsLoading = true;
             this.regions = await this.overviewService.getAllRegions();
         } catch (error) {
-            this.$log.error("An error occured getting regions.");
+            console.error("An error occured getting regions.");
         } finally {
             this.regionsLoading = false;
         }
@@ -280,7 +292,7 @@ class OverviewController extends BaseController {
             this.speedsLoading = true;
             this.speeds = await this.overviewService.getAllSpeeds();
         } catch (error) {
-            this.$log.error("An error occured getting speeds.");
+            console.error("An error occured getting speeds.");
         } finally {
             this.speedsLoading = false;
         }
@@ -329,7 +341,7 @@ class OverviewController extends BaseController {
                 try {
                     this.$mdSidenav("right").toggle();
                 } catch (retryError) {
-                    this.$log.error('Sidenav still not available:', retryError);
+                    console.error('Sidenav still not available:', retryError);
                 }
             }, 100);
         }
@@ -381,7 +393,7 @@ class OverviewController extends BaseController {
             await this.refreshData();
         } catch (error) {
             if (error !== undefined) {
-                this.$log.error("Error selecting date range:", error);
+                console.error("Error selecting date range:", error);
             }
         }
     }
@@ -455,6 +467,7 @@ class OverviewController extends BaseController {
 
             const regions = this.selectedRegions.map(region => region.id);
             const speeds = this.selectedSpeeds.map(speed => speed.id);
+            const couriers = this.selectedCouriers.map(courier => courier.id);
 
             const params: OverviewQueryParams = {
                 statusGroup,
@@ -467,6 +480,7 @@ class OverviewController extends BaseController {
                 orderDirection,
                 regions: regions.length > 0 ? regions : undefined,
                 speeds: speeds.length > 0 ? speeds : undefined,
+                couriers: couriers.length > 0 ? couriers : undefined,
             }
 
             // Set promise to trigger loading state in md-table
@@ -491,12 +505,52 @@ class OverviewController extends BaseController {
             // Refresh statistics after a data load
             await this.loadStats();
         } catch (error) {
-            this.$log.error("Error loading deliveries:", error);
+            console.error("Error loading deliveries:", error);
             this.toastrService.showErrorToast(
                 "An unexpected error occurred. Please try again."
             );
         } finally {
             this.isLoading = false;
+        }
+    }
+    
+    async searchCouriers(searchText: string): Promise<ISuggestion[] | undefined> {
+        try {
+            const results = await this.DispatchData.autocompleteSearch(searchText, 'courier/AllActiveSearch');
+            console.log('Courier Search Results: ', results);
+            return results;
+        } catch(error) {
+            this.toastrService.showErrorToast();
+            console.log(error);
+        }
+    }
+
+   async addCourier(courier: ISuggestion | null): Promise<void> {
+        if (courier && !this.selectedCouriers.some(c => c.id === courier.id)) {
+            this.selectedCouriers.push(courier);
+            this.selectedCourier = null;
+            this.courierSearchText = '';
+            this.query.page = 1;
+
+            this.overviewFiltersService.updateFilters({
+                selectedCouriers: this.selectedCouriers,
+            });
+
+            await this.refreshData();
+        }
+    }
+
+    async removeCourier(courier: ISuggestion): Promise<void> {
+        const index = this.selectedCouriers.findIndex(c => c.id === courier.id);
+        if (index !== -1) {
+            this.selectedCouriers.splice(index, 1);
+            this.query.page = 1;
+
+            this.overviewFiltersService.updateFilters({
+                selectedCouriers: this.selectedCouriers,
+            });
+
+            await this.refreshData();
         }
     }
 }

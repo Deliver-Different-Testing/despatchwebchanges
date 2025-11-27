@@ -355,7 +355,6 @@ class JobDetailController extends BaseController {
         }
     }
 
-
     async switchToRelatedJob(index: number): Promise<void> {
         if (!this.sortedRelatedJobs || index < 0 || index >= this.sortedRelatedJobs.length) return;
 

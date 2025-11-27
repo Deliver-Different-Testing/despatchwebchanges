@@ -1,25 +1,30 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 namespace DespatchWeb.Repositories;
 
 public partial class JobRepository
 {
-      public async Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(
+    public async Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(
         JobStatusGroup statusGroup,
         OverviewJobsRequest parameters
     )
     {
         // Base query
-        var query = Context.TucJobs.Where(j => j.InverseParent.Count != 0);
+        // Get just parent jobs to start with
+        var query = Context.TucJobs.Where(j => j.ParentId == j.UcjbId || !j.ParentId.HasValue);
 
         // Apply a status group
         query = statusGroup switch
@@ -43,17 +48,17 @@ public partial class JobRepository
 
         // Apply region filter if provided
         if (parameters.Regions.Count > 0)
-        {
             query = query.Where(j =>
                 j.TblBulkJobs.Any(b => parameters.Regions.Contains(b.Region.BulkRegionId))
             );
-        }
 
         // Apply speed filter if provided
         if (parameters.Speeds.Count > 0)
-        {
             query = query.Where(j => parameters.Speeds.Contains(j.UcjbSpeedNavigation.UcjtId));
-        }
+        
+        // Apply courier filter if provided
+        if (parameters.Couriers.Count > 0)
+            query = query.Where(j => parameters.Couriers.Contains(j.UcjbCourier.UccrId));
 
         // Apply search filter if provided
         if (!string.IsNullOrWhiteSpace(parameters.Search))
@@ -226,11 +231,11 @@ public partial class JobRepository
 
         return query;
     }
-    
+
     public async Task<OverviewDeliveryMapResponse> GetOverviewLocationDataAsync(int jobId)
     {
         var isUsCustomer = _infoService.IsUsTenant();
-        
+
         var locations = await Context
             .TucJobs.Where(j => j.UcjbId == jobId)
             .Select(j => new OverviewDeliveryMapResponse
@@ -266,7 +271,9 @@ public partial class JobRepository
                                 Lng = c.DeliveryLongitude ?? 0
                             },
                             Flight =
-                                j.UcjbSpeedNavigation.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight) 
+                                j.UcjbSpeedNavigation.GroupingId == (isUsCustomer
+                                    ? (int)SpeedGrouping.Flight
+                                    : (int)UrgentSpeedGrouping.Flight)
                         })
                         .ToList()
                 }
@@ -275,5 +282,166 @@ public partial class JobRepository
             .FirstOrDefaultAsync();
 
         return locations;
+    }
+
+    public async Task<IList<OpenJobResponse>> GetOpenJobsAsync(OpenJobsRequest parameters)
+    {
+        try
+        {
+            var now = _infoService.GetCurrentTenantTime();
+            var tenantTimeZone = _infoService.GetTenantTimeZone();
+
+            var query = Context.TucJobs.Where(j =>
+                j.UcjbStatus != (int)JobStatus.Completed && j.UcjbStatus != (int)JobStatus.Rejected &&
+                j.UcjbStatus != (int)JobStatus.Void
+            );
+
+            // Apply date range filter
+            if (parameters.StartDate.HasValue)
+                query = query.Where(j => j.UcjbDate.Date >= parameters.StartDate.Value.Date);
+            if (parameters.EndDate.HasValue)
+                query = query.Where(j => j.UcjbDate.Date <= parameters.EndDate.Value.Date);
+
+            // Apply region filter if provided
+            if (parameters.Regions.Count > 0)
+                query = query.Where(j =>
+                    j.TblBulkJobs.Any(b => parameters.Regions.Contains(b.Region.BulkRegionId))
+                );
+
+            // Apply speed filter if provided
+            if (parameters.Speeds.Count > 0)
+                query = query.Where(j => parameters.Speeds.Contains(j.UcjbSpeedNavigation.UcjtId));
+
+            // Order
+            query = query.OrderBy(j => j.PickUpTime.Value);
+
+            // Query to DTO
+            var jobDtos = await query
+                .AsNoTracking()
+                .Select(j => new OpenJobDto
+                {
+                    JobId = j.UcjbId,
+                    Reference = j.UcjbNumber,
+                    StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : "Unknown",
+                    PickupTime = j.PickUpTime,
+                    PickupFromContact = j.PickupFromContact,
+                    PickupAddressLine1 = j.PickupAddressLine1,
+                    PickupAddressLine2 = j.PickupAddressLine2,
+                    PickupAddressLine3 = j.PickupAddressLine3,
+                    PickupAddressLine4 = j.PickupAddressLine4,
+                    PickupAddressLine5 = j.PickupAddressLine5,
+                    PickupAddressLine6 = j.PickupAddressLine6,
+                    PickupAddressLine7 = j.PickupAddressLine7,
+                    PickupAddressLine8 = j.PickupAddressLine8,
+                    PickupTimeZone = j.PickupTimeZone != null ? j.PickupTimeZone.Name : null,
+                    DeliverToContact = j.DeliverToContact,
+                    DeliveryAddressLine1 = j.DeliveryAddressLine1,
+                    DeliveryAddressLine2 = j.DeliveryAddressLine2,
+                    DeliveryAddressLine3 = j.DeliveryAddressLine3,
+                    DeliveryAddressLine4 = j.DeliveryAddressLine4,
+                    DeliveryAddressLine5 = j.DeliveryAddressLine5,
+                    DeliveryAddressLine6 = j.DeliveryAddressLine6,
+                    DeliveryAddressLine7 = j.DeliveryAddressLine7,
+                    DeliveryAddressLine8 = j.DeliveryAddressLine8,
+                    DeliveryTimeZone = j.DeliverByTimeZone != null ? j.DeliverByTimeZone.Name : null,
+                    CourierName = j.UcjbCourier != null ? j.UcjbCourier.UccrName : null,
+                    CourierSurname = j.UcjbCourier != null ? j.UcjbCourier.UccrSurname : null,
+                    CourierCompletedJobs = j.UcjbCourier != null
+                        ? j.UcjbCourier.TucJobUcjbCouriers
+                            .Where(dj => dj.UcjbStatus == (int)JobStatus.Completed
+                                         && dj.UcjbComplTime.HasValue
+                                         && dj.UcjbComplTime.Value.Date == now.Date)
+                            .Select(dj => dj.UcjbComplTime.Value)
+                            .ToList()
+                        : new List<DateTime>(),
+                    CourierLastCompleted = j.UcjbCourier != null
+                        ? j.UcjbCourier.TucJobUcjbCouriers
+                            .Where(dj => dj.UcjbStatus == (int)JobStatus.Completed && dj.UcjbComplTime.HasValue)
+                            .OrderByDescending(dj => dj.UcjbComplTime)
+                            .Select(dj => dj.UcjbComplTime)
+                            .FirstOrDefault()
+                        : null,
+                    Quantity = j.UcjbQty ?? 0,
+                    PackageTypeName = j.AcceptedJobType != null ? j.AcceptedJobType.UcjtName : null,
+                    TotalDistance = j.TotalDistance ?? 0,
+                    // Fields needed for delivery time calculation
+                    DeliveryTime = j.DeliverByTime,
+                    SpeedMinutes = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.Minutes : null
+                })
+                .ToListAsync();
+
+            // Map DTOs to ViewModels
+            var openJobs = jobDtos.Select(dto => MapToOpenJobResponse(dto, tenantTimeZone)).ToList();
+
+            return openJobs;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error getting open jobs");
+            throw;
+        }
+    }
+
+    private static OpenJobResponse MapToOpenJobResponse(OpenJobDto dto, string tenantTimeZone)
+    {
+        return new OpenJobResponse
+        {
+            JobId = dto.JobId,
+            Reference = dto.Reference,
+            Status = dto.StatusName,
+            PickupTime = dto.PickupTime.HasValue
+                ? TimeZoneHelper.SetDateTimeWithTimeZone(dto.PickupTime.Value, dto.PickupTimeZone ?? tenantTimeZone) 
+                : null,
+            PickupName = dto.PickupFromContact,
+            PickupAddress = AddressFormatter.FormatWithCityStateZip(
+                new AddressFormatter.Address(
+                    dto.PickupAddressLine1,
+                    dto.PickupAddressLine2,
+                    dto.PickupAddressLine3,
+                    dto.PickupAddressLine4,
+                    dto.PickupAddressLine5,
+                    dto.PickupAddressLine6,
+                    dto.PickupAddressLine7,
+                    dto.PickupAddressLine8
+                )
+            ),
+            DeliveryTime = CalculateDeliveryTime(dto, tenantTimeZone),
+            DeliveryName = dto.DeliverToContact,
+            DeliveryAddress = AddressFormatter.FormatWithCityStateZip(
+                new AddressFormatter.Address(
+                    dto.DeliveryAddressLine1,
+                    dto.DeliveryAddressLine2,
+                    dto.DeliveryAddressLine3,
+                    dto.DeliveryAddressLine4,
+                    dto.DeliveryAddressLine5,
+                    dto.DeliveryAddressLine6,
+                    dto.DeliveryAddressLine7,
+                    dto.DeliveryAddressLine8
+                )
+            ),
+            DriverName = !string.IsNullOrEmpty(dto.CourierName)
+                ? $"{dto.CourierName} {dto.CourierSurname}".Trim()
+                : null,
+            CompletedToday = dto.CourierCompletedJobs.Count,
+            LastCompleted = dto.CourierLastCompleted.HasValue
+                ? TimeZoneHelper.SetDateTimeWithTimeZone(dto.CourierLastCompleted.Value, tenantTimeZone)
+                : null,
+            Quantity = dto.Quantity,
+            PackageType = dto.PackageTypeName,
+            Mileage = dto.TotalDistance
+        };
+    }
+
+    private static DateTimeOffset? CalculateDeliveryTime(OpenJobDto dto, string tenantTimeZone)
+    {
+        if (dto.DeliveryTime.HasValue)
+            return TimeZoneHelper.SetDateTimeWithTimeZone(dto.DeliveryTime.Value, dto.DeliveryTimeZone ?? tenantTimeZone);
+        if (dto.PickupTime.HasValue && dto.SpeedMinutes.HasValue)
+            return TimeZoneHelper.SetDateTimeWithTimeZone(dto.PickupTime.Value.AddMinutes(dto.SpeedMinutes.Value),
+                dto.PickupTimeZone ?? tenantTimeZone);
+
+        return dto.PickupTime.HasValue
+            ? TimeZoneHelper.SetDateTimeWithTimeZone(dto.PickupTime.Value, dto.PickupTimeZone ?? tenantTimeZone)
+            : null;
     }
 }
