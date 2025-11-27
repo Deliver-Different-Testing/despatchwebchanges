@@ -1,6 +1,6 @@
 import "./recurringJobs.styles.less";
 import {IAppConfig} from "../../interfaces/app-config.interface";
-import {IJob} from "../../interfaces/job.interface";
+import {IAddressViewModel, IJob} from "../../interfaces/job.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import {ClientInternal, ContactID, TimeZone} from "../../contants";
@@ -472,6 +472,96 @@ class RecurringJobsController extends BaseController {
     async onPaginate() {
         console.log("Paginating!")
         await this.refreshData();
+    }
+    
+    exportToCSV(jobList: IPrebookListModel[] = this.jobList): void {
+        if (!jobList || jobList.length === 0) {
+            this.toastrService.showWarningToast("No jobs to export");
+            return;
+        }
+        
+        // Define CSV headers
+        const headers = [
+            "Job Number",
+            "Client",
+            "Booked",
+            "Next Due",
+            "Courier",
+            "Speed",
+            "Pickup Address",
+            "Delivery Address"
+        ];
+
+        // Convert jobs to CSV rows
+        const rows = jobList.map(job => {
+            const formatAddress = (addr: IAddressViewModel) => {
+                if (!addr) return "";
+
+                // Use fullAddress if available, otherwise build from address lines
+                if (addr.fullAddress) {
+                    return addr.fullAddress;
+                }
+
+                // Concatenate non-empty address lines
+                const addressLines = [
+                    addr.addressLine1,
+                    addr.addressLine2,
+                    addr.addressLine3,
+                    addr.addressLine4,
+                    addr.addressLine5,
+                    addr.addressLine6,
+                    addr.addressLine7,
+                    addr.addressLine8
+                ].filter(line => line && line.trim() !== "");
+
+                return addressLines.join(", ");
+            };
+
+            return [
+                job.jobNo || "",
+                job.client || "",
+                job.booked ? dayjs(job.booked).tz(this.timeZone).format("DD/MM/YYYY HH:mm") : "",
+                job.nextDueTime ? dayjs(job.nextDueTime).tz(this.timeZone).format("DD/MM/YYYY HH:mm") : "",
+                job.courier || "",
+                job.speed || "",
+                formatAddress(job.pickupAddress),
+                formatAddress(job.deliveryAddress)
+            ];
+        });
+
+
+        // Escape CSV values
+        const escapeCsvValue = (value: string): string => {
+            if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+                return `"${value.replace(/"/g, '""')}"`;
+            }
+            return value;
+        };
+
+        // Build CSV content
+        const csvContent = [
+            headers.map(escapeCsvValue).join(','),
+            ...rows.map(row => row.map(escapeCsvValue).join(','))
+        ].join('\n');
+
+        // Create and trigger download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+
+        const defaultFilename = `recurring-jobs-${dayjs().format('YYYY-MM-DD-HHmm')}.csv`;
+
+        link.setAttribute('href', url);
+        link.setAttribute('download', defaultFilename);
+        link.style.visibility = 'hidden';
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        URL.revokeObjectURL(url);
+
+        this.toastrService.showSuccessToast(`Exported ${jobList.length} recurring job(s) to CSV`);
     }
 }
 
