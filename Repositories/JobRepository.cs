@@ -886,7 +886,8 @@ public partial class JobRepository(
         }
     }
 
-    private async Task UpdateJobCouriersAsync(List<JobManualPriceModel> data, List<TucJob> dbData,
+    private async Task UpdateJobCouriersAsync(List<JobManualPriceModel> data,
+        List<TucJob> dbData,
         List<TucJobArchive> dbDataArchive)
     {
         var courierCodes = data.Where(d => !string.IsNullOrWhiteSpace(d.CourierCode))
@@ -932,7 +933,8 @@ public partial class JobRepository(
         }
     }
 
-    private async Task UpdateJobStatusesAsync(List<JobManualPriceModel> data, List<TucJob> dbData,
+    private async Task UpdateJobStatusesAsync(List<JobManualPriceModel> data,
+        List<TucJob> dbData,
         List<TucJobArchive> dbDataArchive)
     {
         var statusNames = data.Where(d => !string.IsNullOrWhiteSpace(d.StatusName))
@@ -1185,7 +1187,11 @@ public partial class JobRepository(
         }
     }
 
-    public async Task<JobSearchResult> CurrentJobListAsync(int courierId, int page, int pageSize)
+    public async Task<JobSearchResult> CurrentJobListAsync(int courierId,
+        DateTimeOffset? startDate,
+        DateTimeOffset? endDate,
+        int page,
+        int pageSize)
     {
         var isUsCustomer = _infoService.IsUsTenant();
 
@@ -1193,6 +1199,9 @@ public partial class JobRepository(
             .AsNoTracking()
             .Where(j => j.UcjbCourierId != null && j.UcjbCourierId == courierId
                                                 && !j.UcjbJobDone && !j.UcjbVoid);
+
+        if (startDate.HasValue) query = query.Where(j => j.UcjbDate.Date >= startDate.Value.Date.Date);
+        if(endDate.HasValue) query = query.Where(j => j.UcjbDate.Date <= endDate.Value.Date.Date);
 
         // Get a total count before pagination
         var totalCount = await query.CountAsync();
@@ -1249,7 +1258,8 @@ public partial class JobRepository(
         );
     }
 
-    public async Task DispatchSelectedJobsAsync(int courierId, List<int> jobIds)
+    public async Task DispatchSelectedJobsAsync(int courierId,
+        List<int> jobIds)
     {
         var staffId = _infoService.GetStaffId();
         var jobIdsString = string.Join(",", jobIds);
@@ -1260,10 +1270,12 @@ public partial class JobRepository(
             await Context.Procedures.DES_stpJob_AutoDespatchChildJobsAsync(jobId, (int)InternalJobStatus.AwaitingPod);
     }
 
-    public async Task SwapPodAsync(string job1, string job2) =>
+    public async Task SwapPodAsync(string job1,
+        string job2) =>
         await Context.Procedures.DESWEB_qdfSwapPODAsync(job1, job2);
 
-    public async Task ReDispatchSelectedJobsAsync(int courierId, List<int> jobIds)
+    public async Task ReDispatchSelectedJobsAsync(int courierId,
+        List<int> jobIds)
     {
         try
         {
@@ -1308,7 +1320,8 @@ public partial class JobRepository(
         }
     }
 
-    public async Task SetFirstJobAsync(int jobId, int courierId) =>
+    public async Task SetFirstJobAsync(int jobId,
+        int courierId) =>
         await Context.Procedures.DES_stpJob_AutoDespatchSelectedJobs_FSCourierIDAsync(jobId, courierId);
 
     public async Task UpdatePodDetailsAsync(UpdatePodDetailsRequest data)
@@ -1458,10 +1471,12 @@ public partial class JobRepository(
         return maxAutoLateDeliveryAlert.Value ?? 0;
     }
 
-    public async Task<decimal> PpdExclusiveAmountAsync(int clientId, decimal amount) =>
+    public async Task<decimal> PpdExclusiveAmountAsync(int clientId,
+        decimal amount) =>
         await CalculateAmountAsync(clientId, amount);
 
-    public async Task ResetLateEventAsync(int jobId, int lateEventType)
+    public async Task ResetLateEventAsync(int jobId,
+        int lateEventType)
     {
         switch (lateEventType)
         {
@@ -1764,7 +1779,8 @@ public partial class JobRepository(
         return relatedBulkJobIds;
     }
 
-    public async Task SplitJobAsync(int jobId, string user)
+    public async Task SplitJobAsync(int jobId,
+        string user)
     {
         try
         {
@@ -1807,7 +1823,8 @@ public partial class JobRepository(
     public async Task ReRateSplitJobAsync(int jobId) =>
         await Context.Procedures.DES_stpJob_SplitJob_ReRateAsync(jobId, false);
 
-    public async Task FinishSplitJobProcessAsync(int jobId, string despatcher)
+    public async Task FinishSplitJobProcessAsync(int jobId,
+        string despatcher)
     {
         await Context.Procedures.DES_stpJob_ColsolidateMarsInformationAsync(
             jobId,
@@ -1935,7 +1952,8 @@ public partial class JobRepository(
             .ToListAsync();
     }
 
-    public async Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId, bool isPrebook)
+    public async Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId,
+        bool isPrebook)
     {
         int effectivePrebookId;
         if (isPrebook)
@@ -2068,7 +2086,8 @@ public partial class JobRepository(
         await Context.SaveChangesAsync();
     }
 
-    private async Task SetJobAsManuallyPriceAsync(int jobId, string note)
+    private async Task SetJobAsManuallyPriceAsync(int jobId,
+        string note)
     {
         await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
@@ -2078,7 +2097,8 @@ public partial class JobRepository(
         await SaveNoteAsync(jobId, note);
     }
 
-    private async Task SetPrebookJobAsManuallyPriceAsync(int prebookJobId, string note)
+    private async Task SetPrebookJobAsManuallyPriceAsync(int prebookJobId,
+        string note)
     {
         await Context.TucJobBookings
             .Where(j => j.UcbkId == prebookJobId)
@@ -2239,7 +2259,8 @@ public partial class JobRepository(
         );
     }
 
-    public async Task ReleaseBulkJobAsync(string jobNumber, DateTime bookDate)
+    public async Task ReleaseBulkJobAsync(string jobNumber,
+        DateTime bookDate)
     {
         try
         {
@@ -2554,7 +2575,8 @@ public partial class JobRepository(
         }
     }
 
-    public async Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId)
+    public async Task<bool> HasClientItemsAvailableAsync(int clientId,
+        int speedId)
     {
         return await Context
             .TblClientAvailableSpeeds.Where(cas =>
@@ -2778,7 +2800,8 @@ public partial class JobRepository(
         return new PaginatedResponse<ClientItemsViewModel> { Items = items, Total = count };
     }
 
-    private async Task<decimal> CalculateAmountAsync(int clientId, decimal amount)
+    private async Task<decimal> CalculateAmountAsync(int clientId,
+        decimal amount)
     {
         var outputParam = new OutputParameter<decimal?>();
         await Context.Procedures.UTL_stpPPD_ExclusiveAmountAsync(clientId, amount, outputParam);
@@ -2883,7 +2906,8 @@ public partial class JobRepository(
         return events;
     }
 
-    private async Task<List<DeliveryJourneyViewModel>> GetNotesForDeliveryJourneyAsync(int jobId, bool isLiveJob)
+    private async Task<List<DeliveryJourneyViewModel>> GetNotesForDeliveryJourneyAsync(int jobId,
+        bool isLiveJob)
     {
         var timezone = _infoService.GetTenantTimeZone();
         var isUsCustomer = _infoService.IsUsTenant();
@@ -3136,7 +3160,8 @@ public partial class JobRepository(
         return statusUpdates;
     }
 
-    private async Task CloseTasksByJobIdAsync(int jobId, bool closeSingleJobTasksOnly = false)
+    private async Task CloseTasksByJobIdAsync(int jobId,
+        bool closeSingleJobTasksOnly = false)
     {
         List<int> jobIds;
 
@@ -3150,7 +3175,8 @@ public partial class JobRepository(
             .ExecuteUpdateAsync(setters => setters.SetProperty(e => e.UcevClosed, true));
     }
 
-    private async Task CloseBulkTasksByBulkJobIdAsync(int bulkJobId, bool closeSingleJobTasksOnly = false)
+    private async Task CloseBulkTasksByBulkJobIdAsync(int bulkJobId,
+        bool closeSingleJobTasksOnly = false)
     {
         var now = _infoService.GetCurrentTenantTime();
         var staffId = _infoService.GetStaffId();
@@ -3223,8 +3249,14 @@ public partial class JobRepository(
     public async Task<bool> JobNumberExistsAsync(string jobNumber) =>
         await Context.TucJobs.AnyAsync(j => j.UcjbNumber == jobNumber);
 
-    public async Task<decimal> GetNationwideServiceRawPriceAsync(int? clientId, int? fromSuburbId,
-        int? toSuburbId, int? speed, int? size, float? weight, int? quantity, int? type)
+    public async Task<decimal> GetNationwideServiceRawPriceAsync(int? clientId,
+        int? fromSuburbId,
+        int? toSuburbId,
+        int? speed,
+        int? size,
+        float? weight,
+        int? quantity,
+        int? type)
     {
         var result = await Context.TucJobs
             .Select(j => DespatchContext.UTL_fncS_GetNationwideService_RawPrice(
@@ -3453,7 +3485,8 @@ public partial class JobRepository(
         return noteTypes;
     }
 
-    public async Task UpdatePackagesForJobAsync(int jobId, List<ParcelDimensions> parcels)
+    public async Task UpdatePackagesForJobAsync(int jobId,
+        List<ParcelDimensions> parcels)
     {
         if (parcels == null || parcels.Count == 0) return;
 
@@ -3527,7 +3560,8 @@ public partial class JobRepository(
         }
     }
 
-    public async Task UpdatePackagesForBulkJobAsync(int bulkJobId, List<ParcelDimensions> parcels)
+    public async Task UpdatePackagesForBulkJobAsync(int bulkJobId,
+        List<ParcelDimensions> parcels)
     {
         if (parcels == null || parcels.Count == 0) return;
 
@@ -3613,7 +3647,8 @@ public partial class JobRepository(
     }
 
 
-    public async Task AddPackagesToJobAsync(int effectiveJobId, List<TucJobItem> items)
+    public async Task AddPackagesToJobAsync(int effectiveJobId,
+        List<TucJobItem> items)
     {
         var existingCount = await GetJobItemCount(effectiveJobId);
 
@@ -3735,7 +3770,8 @@ public partial class JobRepository(
         await Context.SaveChangesAsync();
     }
 
-    public async Task UpdateJobNoteAsync(int jobId, string note)
+    public async Task UpdateJobNoteAsync(int jobId,
+        string note)
     {
         try
         {
@@ -3868,7 +3904,8 @@ public partial class JobRepository(
         };
     }
 
-    private async Task LoadFlightInfoAsync(int effectiveJobId, JobViewModel job)
+    private async Task LoadFlightInfoAsync(int effectiveJobId,
+        JobViewModel job)
     {
         // Check if this is a flight job
         if (job.SpeedId == null)
@@ -3952,7 +3989,8 @@ public partial class JobRepository(
         }
     }
 
-    private async Task LoadPricingBreakdownAsync(int effectiveJobId, JobViewModel job)
+    private async Task LoadPricingBreakdownAsync(int effectiveJobId,
+        JobViewModel job)
     {
         var pricingTotal = await Context.PricingBreakdowns
             .AsNoTracking()
@@ -3962,7 +4000,9 @@ public partial class JobRepository(
         if (pricingTotal is > 0) job.Charge = pricingTotal.Value;
     }
 
-    private async Task LoadParcelDimensionsAsync(int jobId, int effectiveJobId, JobViewModel job)
+    private async Task LoadParcelDimensionsAsync(int jobId,
+        int effectiveJobId,
+        JobViewModel job)
     {
         // First try to load items for this specific job (child items)
         var childItems = await Context.TucJobItems
@@ -4028,7 +4068,8 @@ public partial class JobRepository(
         }
     }
 
-    private async Task LoadJobItemFlagsAsync(int jobId, JobViewModel job)
+    private async Task LoadJobItemFlagsAsync(int jobId,
+        JobViewModel job)
     {
         var flags = await Context.TucJobItems
             .AsNoTracking()
@@ -4170,7 +4211,8 @@ public partial class JobRepository(
                };
     }
 
-    public async Task UpdateJobReadStatusAsync(int jobId, bool hasBeenRead)
+    public async Task UpdateJobReadStatusAsync(int jobId,
+        bool hasBeenRead)
     {
         try
         {
@@ -4208,7 +4250,8 @@ public partial class JobRepository(
         }
     }
 
-    public async Task<List<ScanDetailResult>> ScanList(DateTimeOffset? runDate, string scan)
+    public async Task<List<ScanDetailResult>> ScanList(DateTimeOffset? runDate,
+        string scan)
     {
         runDate ??= _infoService.GetCurrentTenantTime();
         var cutoffDate = runDate.Value.AddDays(-3);
@@ -4263,8 +4306,10 @@ public partial class JobRepository(
     }
 
     private static string GetCourierDescription(int scanType,
-        TucCourier courier, TucCourier transferTo,
-        TucCourier runViewerTransferTo, string runName)
+        TucCourier courier,
+        TucCourier transferTo,
+        TucCourier runViewerTransferTo,
+        string runName)
     {
         return scanType switch
         {
