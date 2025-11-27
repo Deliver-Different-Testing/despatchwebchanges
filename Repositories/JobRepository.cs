@@ -1251,37 +1251,17 @@ public partial class JobRepository(
 
     public async Task DispatchSelectedJobsAsync(int courierId, List<int> jobIds)
     {
-        try
-        {
-            var staffId = _infoService.GetStaffId();
-            var jobIdsString = string.Join(",", jobIds);
-            await Context.Procedures.DESWEB_stpJob_AutoDespatchSelectedJobsAsync(jobIdsString, courierId, staffId,
-                (int)InternalJobStatus.AwaitingPod);
+        var staffId = _infoService.GetStaffId();
+        var jobIdsString = string.Join(",", jobIds);
+        await Context.Procedures.DESWEB_stpJob_AutoDespatchSelectedJobsAsync(jobIdsString, courierId, staffId,
+            (int)InternalJobStatus.AwaitingPod);
 
-            foreach (var jobId in jobIds)
-                await Context.Procedures.DES_stpJob_AutoDespatchChildJobsAsync(jobId, (int)InternalJobStatus.AwaitingPod);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(DispatchSelectedJobsAsync)));
-            throw;
-        }
+        foreach (var jobId in jobIds)
+            await Context.Procedures.DES_stpJob_AutoDespatchChildJobsAsync(jobId, (int)InternalJobStatus.AwaitingPod);
     }
 
-    public async Task SwapPodAsync(string job1, string job2)
-    {
-        try
-        {
-            await Context.Procedures.DESWEB_qdfSwapPODAsync(job1, job2);
-        }
-        catch (Exception e)
-        {
-          Log.Error(e, "{Message}", 
-              ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(SwapPodAsync)));
-            throw;
-        }
-    }
+    public async Task SwapPodAsync(string job1, string job2) =>
+        await Context.Procedures.DESWEB_qdfSwapPODAsync(job1, job2);
 
     public async Task ReDispatchSelectedJobsAsync(int courierId, List<int> jobIds)
     {

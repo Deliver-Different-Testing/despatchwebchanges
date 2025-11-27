@@ -27,6 +27,7 @@ class SimplePriceEditDialogController implements angular.IController {
     async recalculatePrice(): Promise<void> {
         try {
             this.amount = await this.DispatchData.recalculateJobRate(this.job.id, this.job.preBook);
+            this.toastrService.showSuccessToast('Price recalculated successfully! New price: ' + this.amount.toFixed(2));
         } catch (error) {
             this.toastrService.showErrorToast('An error occurred while recalculating price. Please try again later.');
             console.error(error);
