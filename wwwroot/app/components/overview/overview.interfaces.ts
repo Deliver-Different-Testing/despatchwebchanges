@@ -12,6 +12,7 @@ export interface OverviewQueryParams {
     orderDirection?: string;
     regions?: number[];
     speeds?: number[];
+    couriers?: number[];
 }
 
 export interface OverviewStatsViewModel {
@@ -65,19 +66,37 @@ export interface CourierLocation {
     coordinates: Coordinates;
 }
 
-export interface OpenJobResponse {
+export interface IOpenJobResponse {
     jobId: number;
     reference: string;
     status: string;
-    pickupTime: Date;
+    pickupTime?: Dayjs;
     pickupName: string;
     pickupAddress: string;
-    deliveryTime: Date;
+    deliveryTime?: Dayjs;
     deliveryName: string;
     deliveryAddress: string;
     driverName: string;
     completedToday: number;
-    lastCompleted?: Date;
+    lastCompleted?: Dayjs;
+    quantity: number;
+    packageType: string;
+    mileage: number;
+}
+
+export interface IOpenJobResponseDto {
+    jobId: number;
+    reference: string;
+    status: string;
+    pickupTime?: string;
+    pickupName: string;
+    pickupAddress: string;
+    deliveryTime?: string;
+    deliveryName: string;
+    deliveryAddress: string;
+    driverName: string;
+    completedToday: number;
+    lastCompleted?: string;
     quantity: number;
     packageType: string;
     mileage: number;
@@ -119,12 +138,12 @@ export interface ViewJob {
     reference: string;
     status: string;
     pickup: {
-        time: Date;
+        time?: Dayjs;
         name: string;
         address: string;
     };
     delivery: {
-        time: Date;
+        time?: Dayjs;
         name: string;
         address: string;
     };

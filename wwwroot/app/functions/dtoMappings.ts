@@ -23,6 +23,7 @@ import {
     ICourierCompliance,
     ICourierComplianceDto
 } from "../components/driver-management-dashboard/interfaces/ICourierCompliance";
+import {IOpenJobResponse, IOpenJobResponseDto} from "../components/overview/overview.interfaces";
 
 export function transformFlightDTO(dto: IFlightViewModelDto): IFlightViewModel {
     return {
@@ -144,5 +145,14 @@ export function transformCourierComplianceDto(dto: ICourierComplianceDto): ICour
     return {
         ...dto,
         expiryDate: dto.expiryDate ? formatDateFromApi(dto.expiryDate) : undefined,
+    }
+}
+
+export function transformOpenJobResponseDto(dto: IOpenJobResponseDto): IOpenJobResponse {
+    return {
+        ...dto,
+        deliveryTime: dto.deliveryTime ? formatDateFromApi(dto.deliveryTime) : undefined,
+        pickupTime: dto.pickupTime ? formatDateFromApi(dto.pickupTime) : undefined,
+        lastCompleted: dto.lastCompleted ? formatDateFromApi(dto.lastCompleted) : undefined
     }
 }

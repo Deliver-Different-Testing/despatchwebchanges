@@ -21,4 +21,5 @@ public class BaseOverviewRequest
     public DateTime? EndDate { get; set; }
     public List<int> Regions { get; set; } = [];
     public List<int> Speeds { get; set; } = [];
+    public List<int> Couriers { get; set; } = [];
 }

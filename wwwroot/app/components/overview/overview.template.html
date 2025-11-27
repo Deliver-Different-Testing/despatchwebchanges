@@ -148,6 +148,45 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="filter-section">
+                        <md-toolbar class="md-primary">
+                            <div class="md-toolbar-tools">
+                                <span class="material-symbols-outlined">local_shipping</span>
+                                <span class="md-headline-title" flex style="margin-left: 8px;">Couriers</span>
+                            </div>
+                        </md-toolbar>
+
+                        <div class="md-padding">
+                            <md-autocomplete
+                                    md-input-name="courierSearch"
+                                    md-selected-item="ctrl.selectedCourier"
+                                    md-search-text="ctrl.courierSearchText"
+                                    md-items="courier in ctrl.searchCouriers(ctrl.courierSearchText)"
+                                    md-item-text="courier.text"
+                                    md-min-length="0"
+                                    md-floating-label="Search couriers..."
+                                    md-select-on-match="true"
+                                    md-clear-button="true"
+                                    md-selected-item-change="ctrl.addCourier(courier)">
+                                <md-item-template>
+                                    <span md-highlight-text="ctrl.courierSearchText">{{courier.text}}</span>
+                                </md-item-template>
+                                <md-not-found>
+                                    No couriers found matching "{{ctrl.courierSearchText}}".
+                                </md-not-found>
+                            </md-autocomplete>
+
+                            <div class="selected-couriers-chips" ng-if="ctrl.selectedCouriers.length">
+                                <md-chips ng-model="ctrl.selectedCouriers" md-removable="true" md-on-remove="ctrl.removeCourier($chip)">
+                                    <md-chip-template>
+                                        {{$chip.text}}
+                                    </md-chip-template>
+                                </md-chips>
+                            </div>
+                        </div>
+                    </div>
+                    
                 </div>
             </md-card>
 

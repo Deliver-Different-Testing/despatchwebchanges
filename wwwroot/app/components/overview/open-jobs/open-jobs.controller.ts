@@ -1,18 +1,15 @@
 import OverviewService from "../overview.service";
 import OverviewFiltersService from "../services/overview-filters.service";
-import {IAppConfig} from "../../../interfaces/app-config.interface";
-import {DriverViewModel, OpenJobResponse, OverviewQueryParams, ViewJob} from "../overview.interfaces";
+import {DriverViewModel, IOpenJobResponse, OverviewQueryParams, ViewJob} from "../overview.interfaces";
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
 import duration from 'dayjs/plugin/duration';
-import {formatMins, formatShortDateTime} from "../../../functions/formatDates";
+import {formatMins} from "../../../functions/formatDates";
 
 class OpenJobsWidgetController extends BaseController {
     static $inject = [
         "overviewService",
         "overviewFiltersService",
-        "$filter",
-        "APP_CONFIG",
         "$scope",
         "$timeout",
         "$interval",
@@ -20,7 +17,6 @@ class OpenJobsWidgetController extends BaseController {
 
     private static readonly OpenJobsViewModeKey = `openJobsViewMode_${ContactID}`;
     private static readonly LimitNameKey = `openJobsTableViewLimit${ContactID}`;
-    private readonly isUsCustomer: boolean;
     private readonly sortBy: string;
 
     private isCardCollapsed?: boolean;
@@ -37,8 +33,6 @@ class OpenJobsWidgetController extends BaseController {
     constructor(
         private overviewService: OverviewService,
         private overviewFiltersService: OverviewFiltersService,
-        private $filter: angular.IFilterService,
-        APP_CONFIG: IAppConfig,
         $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
@@ -48,7 +42,6 @@ class OpenJobsWidgetController extends BaseController {
 
         dayjs.extend(duration);
 
-        this.isUsCustomer = APP_CONFIG.US_Customer;
         this.sortBy = "jobId";
 
         this.watchScope(
@@ -92,7 +85,7 @@ class OpenJobsWidgetController extends BaseController {
         };
         
         this.overviewService.getOpenJobs(params)
-            .then((jobs: OpenJobResponse[]) => {
+            .then((jobs: IOpenJobResponse[]) => {
                 // Group jobs by driver
                 const groupedJobs: Record<string, DriverViewModel> = {};
                 this.tableJobs = []; // Reset table jobs
@@ -236,37 +229,14 @@ class OpenJobsWidgetController extends BaseController {
         }
     }
 
-    formatRegionalTime(timestamp: string | Date): string {
-        if (!timestamp) return "";
-        
-        // Get the formatted timezone using the filter
-        const timezoneShort = this.$filter<(timezone: string) => string>('timezoneShort')(TimeZone);
-        const timezoneDisplay = timezoneShort ? ` (${timezoneShort})` : '';
-        
-        const formattedShortDate = formatShortDateTime(timestamp, this.isUsCustomer);
-        return formattedShortDate + timezoneDisplay;
-    }
-
     getTimeSinceLastCompleted(lastCompletedTime: string): number {
         if (lastCompletedTime === "N/A") return 0;
 
         const lastCompleted = dayjs(lastCompletedTime, "HH:mm");
-        const now = dayjs();
-        const duration = dayjs.duration(dayjs(now).diff(lastCompleted));
+        const now = dayjs().tz(TimeZone);
+        const duration = dayjs.duration(now.diff(lastCompleted));
 
         return Math.round(duration.asMinutes());
-    }
-
-    getStatusClass(status: string): string {
-        const statusClasses: { [key: string]: string } = {
-            'NEW': 'status-new',
-            'DISPATCHED': 'status-dispatched',
-            'ACCEPTED': 'status-accepted',
-            'PICKEDUP': 'status-pickedup',
-            'DELIVERED': 'status-delivered'
-        };
-
-        return statusClasses[status] || 'status-default';
     }
 
     onPaginate(page: number, limit: number) {

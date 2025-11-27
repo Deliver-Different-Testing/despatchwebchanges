@@ -1218,26 +1218,6 @@ class JobsListController extends BaseController {
         this.updateSelectAllState();
     }
 
-    toggleSelectAll(): void {
-        // Select all visible jobs
-        this.filteredJobs?.forEach(job => {
-            job.selected = true;
-            if (this.selectedJobs.indexOf(job) === -1) {
-                this.selectedJobs.push(job);
-            }
-
-            // Also select child jobs if expanded
-            if (job._isExpanded && job._groupChildren) {
-                job._groupChildren.forEach(childJob => {
-                    childJob.selected = true;
-                    if (this.selectedJobs.indexOf(childJob) === -1) {
-                        this.selectedJobs.push(childJob);
-                    }
-                });
-            }
-        });
-    }
-
     clearSelection(): void {
         this.selectedJobs.forEach(job => {
             job.selected = false;
