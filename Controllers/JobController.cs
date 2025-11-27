@@ -22,6 +22,7 @@ using DespatchWeb.Models.RequestModels;
 using ExcelDataReader;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Serilog;
 using EventType = DespatchWeb.Enums.EventType;
 
@@ -278,11 +279,15 @@ public class JobController(
         return Ok();
     }
 
-    public async Task<IActionResult> Current(int courierId, int page, int pageSize)
+    public async Task<IActionResult> Current(int courierId,
+        DateTimeOffset? startDate,
+        DateTimeOffset? endDate,
+        int page,
+        int pageSize)
     {
         try
         {
-            var result = await jobRepository.CurrentJobListAsync(courierId, page, pageSize);
+            var result = await jobRepository.CurrentJobListAsync(courierId, startDate, endDate, page, pageSize);
             return Json(result);
         }
         catch (Exception e)
