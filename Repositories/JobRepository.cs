@@ -2735,12 +2735,12 @@ public partial class JobRepository(
     {
         var isLiveJob = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
 
-        var events = await GetEventsForDeliveryJourneyAsync(jobId);
+        var tasks = await GetTasksForDeliveryJourneyAsync(jobId);
         var messages = await GetMessagesForDeliveryJourneyAsync(jobId);
         var notes = await GetNotesForDeliveryJourneyAsync(jobId, isLiveJob);
         var statusUpdates = await GetStatusUpdatesForDeliveryJourneyAsync(jobId, isLiveJob);
 
-        return events
+        return tasks
             .Concat(messages)
             .Concat(notes)
             .Concat(statusUpdates)
@@ -2748,7 +2748,7 @@ public partial class JobRepository(
             .ToList();
     }
 
-    private async Task<List<DeliveryJourneyViewModel>> GetEventsForDeliveryJourneyAsync(int jobId)
+    private async Task<List<DeliveryJourneyViewModel>> GetTasksForDeliveryJourneyAsync(int jobId)
     {
         var timezone = _infoService.GetTenantTimeZone();
         var eventsTempList = await Context.TucEvents
@@ -2764,7 +2764,7 @@ public partial class JobRepository(
             JobId = jobId,
             Title = e.UcevDescription,
             Icon = "task",
-            Date = TimeZoneHelper.SetDateTimeWithTimeZone(e.UcevDate ?? DateTime.MinValue, timezone),
+            Date = TimeZoneHelper.SetDateTimeWithTimeZone(DateExtension.CombineDateAndTime(e.UcevDate ?? DateTime.MinValue, e.UcevTime), timezone),
             Tags = new[]
             {
                 "Task",
@@ -2776,7 +2776,7 @@ public partial class JobRepository(
                 e.UcevStaffIdoutNavigation != null
                     ? $"Completed by {e.UcevStaffIdoutNavigation.UcstFirstName} {e.UcevStaffIdoutNavigation.UcstLastName}"
                     : null
-            }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList(),
+            }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList()
         }).ToList();
 
         return events;
@@ -3024,7 +3024,7 @@ public partial class JobRepository(
                                 : null,
                             s.FieldName != null ? $"Field {s.FieldName} updated" : null,
                             s.FieldName != null && s.OldValue != null ? $"Old value: {s.OldValue}" : null,
-                            s.FieldName != null && s.NewValue != null ? $"New value: {s.NewValue}" : null,
+                            s.FieldName != null && s.NewValue != null ? $"New value: {s.NewValue}" : null
                         })
                         .Where(tag => !string.IsNullOrWhiteSpace(tag))
                         .Distinct()

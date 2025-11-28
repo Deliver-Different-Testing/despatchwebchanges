@@ -518,6 +518,7 @@ public class NationwideJobRepository(
         {
             JobId = jobId,
             NewAgentId = agentId,
+            UpdatedAt = DateTime.UtcNow,
             ChangeType = nameof(DeliveryJourneyChangeType.AgentAssignment),
             StaffId = _infoService.GetStaffId(),
             UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
