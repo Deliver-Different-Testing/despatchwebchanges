@@ -194,6 +194,7 @@ public static class JobMappings
         FollowupTime = j.FollowupTime,
         Void = j.UcjbVoid,
         IsInvoiced = false,
+        Barcode = j.Barcode,
 
         // Simple navigation properties
         LoggedInContactName = j.LoggedInContact != null
@@ -424,6 +425,7 @@ public static class JobMappings
         ScheduleName = j.ScheduleName,
         Void = j.Void,
         IsInvoiced = false,
+        Barcode = j.Barcode,
 
         LoggedInContactName = j.LoggedInContact != null
             ? j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname
@@ -586,6 +588,7 @@ public static class JobMappings
         LoggedInContactName = j.LoggedInContact != null
             ? j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname
             : string.Empty,
+        Barcode = j.Barcode,
 
         PickupTime = null,
         DeliveryTime = null,
@@ -793,6 +796,7 @@ public static class JobMappings
                     Text = j.Source.Name
                 }
                 : null,
+            Barcode = j.Barcode,
 
             PickupTime = null,
             DeliveryTime = null,

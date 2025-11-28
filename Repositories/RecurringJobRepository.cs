@@ -39,6 +39,7 @@ public class RecurringJobRepository(
             query = query.Where(j =>
                 EF.Functions.Like(j.UcbkJobNumber, searchPattern) ||
                 EF.Functions.Like(j.CustomJobName, searchPattern) ||
+                EF.Functions.Like(j.Barcode, searchPattern) ||
                 EF.Functions.Like(j.DeliveryAddressLine1, searchPattern) ||
                 EF.Functions.Like(j.DeliveryAddressLine2, searchPattern) ||
                 EF.Functions.Like(j.DeliveryAddressLine3, searchPattern) ||
