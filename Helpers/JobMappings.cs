@@ -30,7 +30,7 @@ public static class JobMappings
             Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsCode : null,
             StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
             Time = j.UcjbTime,
-            Booked = CombineDateAndTime(j.UcjbDate, j.UcjbTime),
+            Booked = DateExtension.CombineDateAndTime(j.UcjbDate, j.UcjbTime),
             IsFlightJob = j.UcjbSpeedNavigation != null
                           && j.UcjbSpeedNavigation.GroupingId ==
                           (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
@@ -187,7 +187,7 @@ public static class JobMappings
         ParentId = j.ParentId,
         RootParentId = j.RootParentId,
         Date = FormatDate(j.UcjbDate),
-        Booked = CombineDateAndTime(j.UcjbDate, j.UcjbTime),
+        Booked = DateExtension.CombineDateAndTime(j.UcjbDate, j.UcjbTime),
         DispatchTime = j.UcjbDispTime,
         CreatedDate = j.UcjbDate,
         ScheduleName = j.ScheduleName,
@@ -420,7 +420,7 @@ public static class JobMappings
         ParentId = j.ParentId,
         RootParentId = j.RootParentId,
         Date = FormatDate(j.BookDate),
-        Booked = CombineDateAndTime(j.BookDate, j.BookTime),
+        Booked = DateExtension.CombineDateAndTime(j.BookDate, j.BookTime),
         CreatedDate = j.BookDate,
         ScheduleName = j.ScheduleName,
         Void = j.Void,
@@ -577,7 +577,7 @@ public static class JobMappings
         RootParentId = j.RootParentId,
         Date = FormatDate(j.UcjbDate),
         Booked = j.UcjbDate.HasValue
-            ? CombineDateAndTime(j.UcjbDate.Value, j.UcjbTime)
+            ? DateExtension.CombineDateAndTime(j.UcjbDate.Value, j.UcjbTime)
             : SqlMinDateTime,
         DispatchTime = j.UcjbDispTime,
         CreatedDate = j.UcjbDate,
@@ -782,7 +782,7 @@ public static class JobMappings
                 : null,
             Date = FormatDate(j.UcbkDate),
             Booked = j.UcbkDate.HasValue
-                ? CombineDateAndTime(j.UcbkDate.Value, j.UcbkTime)
+                ? DateExtension.CombineDateAndTime(j.UcbkDate.Value, j.UcbkTime)
                 : SqlMinDateTime,
             CreatedDate = j.UcbkDate,
             ScheduleName = j.ScheduleName,
@@ -1001,7 +1001,7 @@ public static class JobMappings
             DeliveryTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime ?? 0 : 0,
             AlertLatePickup = j.UcjbClient != null ? j.UcjbClient.AlertLatePickUp : 0,
             AlertLateDelivery = j.UcjbClient != null ? j.UcjbClient.AlertLateDelivery : 0,
-            JobTime = CombineDateAndTime(j.UcjbDate, j.UcjbTime),
+            JobTime = DateExtension.CombineDateAndTime(j.UcjbDate, j.UcjbTime),
             BookedSpeed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : string.Empty,
             NotifiedSpeed = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName
                 : j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName
@@ -1013,16 +1013,6 @@ public static class JobMappings
         var dateToUse = date ?? SqlMinDateTime;
         return dateToUse.ToString("MM/dd/yyyy");
     }
-
-    private static DateTime CombineDateAndTime(DateTime date, DateTime? time) =>
-        new(
-            date.Year,
-            date.Month,
-            date.Day,
-            time?.Hour ?? 0,
-            time?.Minute ?? 0,
-            time?.Second ?? 0
-        );
 
     private static string FormatFullName(TucStaff staff) =>
         staff.UcstFirstName + " " + staff.UcstLastName;
@@ -1038,42 +1028,6 @@ public static class JobMappings
             _ => "Pickup"
         };
     }
-
-    private static List<ParcelDimensions> GetPackagesForJob(
-        TucJob job,
-        TucJob parent,
-        ICollection<TucJobItem> jobItems,
-        ICollection<TucJobItem> parentJobItems,
-        ICollection<TucJobItem> childJobItems)
-    {
-        // Priority 1: Child items if available
-        if (HasItems(childJobItems))
-            return ConvertToParcelDimensions(childJobItems);
-
-        // Priority 2: Job items if this is a root job or self-referencing job
-        if ((parent == null || job.ParentId == job.UcjbId) && HasItems(jobItems))
-            return ConvertToParcelDimensions(jobItems);
-
-        // Priority 3: Parent items as fallback
-        return ConvertToParcelDimensions(parentJobItems);
-    }
-
-    private static bool HasItems(ICollection<TucJobItem> items) =>
-        items is { Count: > 0 };
-
-    private static List<ParcelDimensions> ConvertToParcelDimensions(ICollection<TucJobItem> items) =>
-        items?.Select(CreateParcelDimensions).ToList() ?? [];
-
-    private static ParcelDimensions CreateParcelDimensions(TucJobItem item) =>
-        new()
-        {
-            ItemId = item.ItemId,
-            ItemName = item.Notes,
-            Height = item.Height,
-            Depth = item.Depth,
-            Length = item.Length,
-            Barcode = item.Barcode
-        };
 
     private static List<ParcelDimensions> GetPackagesForBulkJob(
         TblBulkJob job,
