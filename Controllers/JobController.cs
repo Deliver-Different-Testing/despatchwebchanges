@@ -1254,9 +1254,9 @@ public class JobController(
     {
         try
         {
-            await recurringJobRepository.UpdateTucJobRecurringAsync(jobId, field, value);
+            await recurringJobRepository.UpdateRecurringJobAsync(jobId, field, value);
 
-            // Recalculate job
+            // Recalculate the job
             var shouldRecalculateRate = ShouldRecalculateRate(field);
             if (!shouldRecalculateRate) return Ok();
 

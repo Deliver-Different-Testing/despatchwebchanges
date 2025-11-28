@@ -46,7 +46,7 @@ export enum JobProperty {
     DaysOfWeek = 'DaysOfWeek',
     Frequency = 'Frequency',
     HolidayDelivery = 'HolidayDelivery',
-    CourierID = 'CourierID',
+    CourierID = 'CourierId',
     Active = 'Active',
     DueDate = 'DueDate',
     CustomJobName = 'CustomJobName',
