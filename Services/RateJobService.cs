@@ -266,7 +266,7 @@ public class RateJobService(
             var baseUrl = Environment.GetEnvironmentVariable("WebAPIUrl");
 
             var request = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/rates/getRerateAmount");
-            request.Headers.Add("Authorization", $"Bearer {requestToken}");
+            request.Headers.Add("Authorization", $"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoia2VycmFuQHVyZ2VudC5jby5ueiIsIlNDIjoiWlJvMGlBWWJ1YkNQck50QkNnZi9GM2NMSHppVytaTE5senltVXhrK0tWT2UyTkk2cTVvdXpkemlnakZna0NqRUtsc2F4Ri9GRmFhOUM1UTQvMldHVjF5bUtVYllFaWo2S1BGV2RWcTltWlJ2Z3I4WWtBN1VpSFZUZW1WZElmVTJHMGR2VGJoNXJDSnNFYUFvUkI4dVhlNTd4RlBzaUExam1INXVCc0hPRkJIYVdqQWErT2hzQmtMQ0c0a1RCWEtibFRPYVRwalFaNklXbTlnREV0VS9wNUNVRGo3MTRCb3NaaGxKSndiR0EvdXJmZnpWVk1HQ0dPdlFBS1FXdkVGaGhJTHIzQTBxKzJieG1GcW1JNTJoVC96MGRaTGdSUVBPTjRjVnZBZzgvdXlsOVc1NGY4SDlTR3BubjNRMXlod1UiLCJleHAiOjE3NjQ4OTM5NTcsImlzcyI6Imh0dHBzOi8vYXBpLmxvY2FsLmRlbGl2ZXJkaWZmZXJlbnQuY29tLyIsImF1ZCI6IkRlbGl2ZXJEaWZmZXJlbnQuY29tIn0.viDDgkG17cPjKcGGqDxKpzup3YWWE5v0pOoybw30hPo");
             request.Content = JsonContent.Create(jobObject);
 
             var response = await httpClient.SendAsync(request);

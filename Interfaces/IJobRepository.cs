@@ -187,7 +187,7 @@ public interface IJobRepository
     Task UpdateJobReadStatusAsync(int jobId, bool hasBeenRead);
     Task AddNewTucNoteTypeAsync(NoteTypeViewModel noteType);
     Task<JobRatingDetailsDto> GetJobDetailsForRatingAsync(int jobId);
-    Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId);
+    Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId, bool isArchived);
     Task<JobRatingDetailsDtoNz> GetJobBookingDetailsForRatingNzAsync(int jobId);
     Task<List<TimeZoneSuggestion>> GetTimeZoneOptions();
     Task<JobRatingDetailsDto> GetJobBookingDetailsForRatingAsync(int jobId);

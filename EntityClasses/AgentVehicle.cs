@@ -25,6 +25,8 @@ public partial class AgentVehicle
 
     public int? AirportId { get; set; }
 
+    public int? ZoneRateCardId { get; set; }
+
     public virtual TucAgent Agent { get; set; }
 
     public virtual TblAirport Airport { get; set; }
