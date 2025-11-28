@@ -149,13 +149,13 @@
                                 <span ng-if="::box.name == 'supports'">{{ctrl.getActiveSupportFilterNames()}}</span>
                             </span>
 
-                                <!-- Job List View Tabs (Old Layout) -->
+                                <!-- Job List View Tabs -->
                                 <div class="view-tabs-header"
                                      ng-if="box.name === 'list' && ctrl.views && ctrl.views.length > 0">
                                     <button class="view-control-btn"
-                                            ng-click="ctrl.toggleAllViews()"
-                                            title="{{ctrl.getToggleAllButtonText()}}">
-                                        {{ctrl.getToggleAllButtonText()}}
+                                            ng-click="ctrl.clearAllViews()"
+                                            title="UNSELECT ALL">
+                                        UNSELECT ALL
                                     </button>
                                     <div class="view-tabs-scroll">
                                         <button class="view-tab-btn"
