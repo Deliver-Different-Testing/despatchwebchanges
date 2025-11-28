@@ -481,6 +481,7 @@
     <TypeScriptCompile Include="wwwroot\app\interfaces\dfrnt-page-view-model.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\DfrntStateParams.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\dialog-result.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\dispatch-executor-service.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\event-group-view-model.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\event-interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\hereMapCredentials.interfaces.ts" />

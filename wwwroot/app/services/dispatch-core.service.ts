@@ -700,7 +700,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     async getJobsWithFilters(
         queryParams: IJobQueryParams,
         internal: boolean,
-        selectedAreas: ISuggestion[]
+        selectedAreas: DfrntPageViewModel[]
     ): Promise<IJobSearchResult> {
         const params = this.buildJobParams(
             queryParams,
