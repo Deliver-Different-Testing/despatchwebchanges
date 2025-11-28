@@ -14,6 +14,7 @@ public class JobViewModel : DispatchJobViewModel
     public bool? Attention { get; set; }
     public string SpeedName { get; set; }
     public string RunName { get; set; }
+    public string Barcode { get; set; }
 
     public bool IsInvoiced { get; set; }
     public string NotifiedName { get; set; }
