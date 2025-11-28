@@ -64,5 +64,6 @@ public enum JobProperty
     TailLiftPu,
     TailLiftDo,
     DeliverToPrivateRes,
-    Barcode
+    Barcode,
+    CourierId
 }

@@ -159,7 +159,7 @@ public class RecurringJobRepository(
             .ToListAsync();
     }
 
-    public async Task UpdateTucJobRecurringAsync(int jobId, JobProperty property, string value)
+    public async Task UpdateRecurringJobAsync(int jobId, JobProperty property, string value)
     {
         var job = await Context.TucJobBookings
             .Where(j => j.UcbkId == jobId)
@@ -348,6 +348,9 @@ public class RecurringJobRepository(
                 break;
             case JobProperty.StopDate:
                 job.StopDate = DateTimeOffset.Parse(value).DateTime;
+                break;
+            case JobProperty.CourierId:
+                job.CourierId = int.Parse(value);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
