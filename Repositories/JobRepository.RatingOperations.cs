@@ -83,115 +83,225 @@ public partial class JobRepository
         }
     }
 
-    public async Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId)
+    public async Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId, bool isArchived)
     {
         try
         {
-            var jobDetailsForRating = await Context.TucJobs
-                .AsNoTracking()
-                .Where(j => j.UcjbId == jobId)
-                .Include(j => j.UcjbClient)
-                .Include(j => j.UcjbSpeedNavigation)
-                .Include(j => j.TucJobItemJobs)
-                .Select(job => new JobRatingDetailsDtoNz
-                {
-                    JobId = job.UcjbId,
-                    ClientId = job.UcjbClientId,
-                    FromId = job.UcjbFrom,
-                    ToId = job.UcjbTo,
-                    SpeedId = job.UcjbSpeed,
-                    IsPedal = job.UcjbCbd,
-                    IsVan = job.UcjbVan,
-                    IsReturnJob = job.UcjbReturn,
-                    Weight = job.UcjbWeight,
-                    SizeId = job.UcjbSize,
-                    IncludeFuelSurcharge = false,
-                    IsDirect = job.Direct,
-                    AcceptedJobTypeId = job.AcceptedJobTypeId,
-                    OurRef = job.UcjbOurRef,
-                    RefA = job.UcjbClientRefa,
-                    RefB = job.UcjbClientRefb,
-                    Quantity = job.UcjbQty ?? 1,
-                    BookedDate = new DateTime(
-                        job.UcjbDate.Year,
-                        job.UcjbDate.Month,
-                        job.UcjbDate.Day,
-                        job.UcjbTime.HasValue ? job.UcjbTime.Value.Hour : 0,
-                        job.UcjbTime.HasValue ? job.UcjbTime.Value.Minute : 0,
-                        job.UcjbTime.HasValue ? job.UcjbTime.Value.Second : 0
-                    ),
+            if (isArchived)
+            {
+                var jobDetailsForRating = await Context.TucJobArchives
+                    .AsNoTracking()
+                    .Where(j => j.UcjbId == jobId)
+                    .Include(j => j.UcjbClient)
+                    .Include(j => j.TucJobItemsArchives)
+                    .Select(job => new JobRatingDetailsDtoNz
+                    {
+                        JobId = job.UcjbId,
+                        ClientId = job.UcjbClientId,
+                        FromId = job.UcjbFrom,
+                        ToId = job.UcjbTo,
+                        SpeedId = job.UcjbSpeed,
+                        IsPedal = job.UcjbCbd,
+                        IsVan = job.UcjbVan,
+                        IsReturnJob = job.UcjbReturn,
+                        Weight = job.UcjbWeight,
+                        SizeId = job.UcjbSize,
+                        IncludeFuelSurcharge = false,
+                        IsDirect = job.Direct,
+                        AcceptedJobTypeId = job.AcceptedJobTypeId,
+                        OurRef = job.UcjbOurRef,
+                        RefA = job.UcjbClientRefa,
+                        RefB = job.UcjbClientRefb,
+                        Quantity = job.UcjbQty ?? 1,
+                        BookedDate = new DateTime(
+                            job.UcjbDate.HasValue ? job.UcjbDate.Value.Year : 0,
+                            job.UcjbDate.HasValue ? job.UcjbDate.Value.Month : 0,
+                            job.UcjbDate.HasValue ? job.UcjbDate.Value.Day : 0,
+                            job.UcjbTime.HasValue ? job.UcjbTime.Value.Hour : 0,
+                            job.UcjbTime.HasValue ? job.UcjbTime.Value.Minute : 0,
+                            job.UcjbTime.HasValue ? job.UcjbTime.Value.Second : 0
+                        ),
 
-                    // Coordinates
-                    PickupLat = job.PickUpLatitude ?? 0,
-                    PickupLong = job.PickUpLongitude ?? 0,
-                    DeliveryLat = job.DeliveryLatitude ?? 0,
-                    DeliveryLong = job.DeliveryLongitude ?? 0,
+                        // Coordinates
+                        PickupLat = job.PickUpLatitude ?? 0,
+                        PickupLong = job.PickUpLongitude ?? 0,
+                        DeliveryLat = job.DeliveryLatitude ?? 0,
+                        DeliveryLong = job.DeliveryLongitude ?? 0,
 
-                    DangerousGoods = job.Dgdocument ?? false,
-                    TotalPallets = job.TucJobItemJobs != null ? job.TucJobItemJobs.Count : 0,
-                    ExtraStopOffs = 0,
-                    DryIceWeight = job.DryIceWeight ?? 0,
-                    WaitTime = job.WaitedPickUp ?? 0,
+                        DangerousGoods = job.Dgdocument ?? false,
+                        TotalPallets = 0,
+                        ExtraStopOffs = 0,
+                        DryIceWeight = job.DryIceWeight ?? 0,
+                        WaitTime = job.WaitedPickUp ?? 0,
 
-                    // Flight-specific properties
-                    FromAirportId = job.FromAirportId,
-                    ToAirportId = job.ToAirportId,
-                    FromAgentId = job.FromAirport != null ? job.FromAirport.AgentId : null,
-                    ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
+                        // Flight-specific properties
+                        FromAirportId = job.FromAirportId,
+                        ToAirportId = job.ToAirportId,
+                        FromAgentId = job.FromAirport != null ? job.FromAirport.AgentId : null,
+                        ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
 
-                    // Client-specific rate information
-                    ClientDiscount = job.UcjbClient != null ? job.UcjbClient.Discount : 0,
-                    Cubic = job.TucJobItemJobs != null ? job.TucJobItemJobs.Sum(i => i.Cubic) : null,
-                    IsManuallyRated = job.RatedManually,
-                    IsPrebook = job.IsRecurringJob,
+                        // Client-specific rate information
+                        ClientDiscount = job.UcjbClient != null ? job.UcjbClient.Discount : 0,
+                        Cubic = job.TucJobItemsArchives != null ? job.TucJobItemsArchives.Sum(i => i.Cubic) : null,
+                        IsManuallyRated = job.RatedManually,
+                        IsPrebook = job.IsRecurringJob,
 
-                    FromCompanyName = job.PickupAddressLine1,
-                    FromBuildingName = job.PickupAddressLine2,
-                    FromStreetAddress = job.PickupAddressLine3 + " " + job.PickupAddressLine4,
-                    FromSuburb = job.PickupAddressLine5,
-                    FromCity = job.PickupAddressLine6,
-                    FromState = null,
-                    FromPostCode = job.PickupAddressLine7,
-                    FromCountryCode = job.PickupAddressLine8,
+                        FromCompanyName = job.PickupAddressLine1,
+                        FromBuildingName = job.PickupAddressLine2,
+                        FromStreetAddress = job.PickupAddressLine3 + " " + job.PickupAddressLine4,
+                        FromSuburb = job.PickupAddressLine5,
+                        FromCity = job.PickupAddressLine6,
+                        FromState = null,
+                        FromPostCode = job.PickupAddressLine7,
+                        FromCountryCode = job.PickupAddressLine8,
 
-                    ToCompanyName = job.DeliveryAddressLine1,
-                    ToBuildingName = job.DeliveryAddressLine2,
-                    ToStreetAddress = job.DeliveryAddressLine3 + " " + job.DeliveryAddressLine4,
-                    ToSuburb = job.DeliveryAddressLine5,
-                    ToCity = job.DeliveryAddressLine6,
-                    ToState = null,
-                    ToPostCode = job.DeliveryAddressLine7,
-                    ToCountryCode = job.DeliveryAddressLine8,
+                        ToCompanyName = job.DeliveryAddressLine1,
+                        ToBuildingName = job.DeliveryAddressLine2,
+                        ToStreetAddress = job.DeliveryAddressLine3 + " " + job.DeliveryAddressLine4,
+                        ToSuburb = job.DeliveryAddressLine5,
+                        ToCity = job.DeliveryAddressLine6,
+                        ToState = null,
+                        ToPostCode = job.DeliveryAddressLine7,
+                        ToCountryCode = job.DeliveryAddressLine8,
 
-                    Packages = job.TucJobItemJobs != null
-                        ? job.TucJobItemJobs.Select(item => new PackageDetailsDto
-                        {
-                            Name = item.Notes,
-                            Length = item.Length,
-                            Width = item.Depth,
-                            Height = item.Height,
-                            Cubic = item.Cubic.HasValue ? (double)item.Cubic : 0,
-                            Kg = item.Weight,
-                            Type = null,
-                            PackageCode = null,
-                            Units = item.Items
-                        }).ToList()
-                        : null,
+                        Packages = job.TucJobItemsArchives != null
+                            ? job.TucJobItemsArchives.Select(item => new PackageDetailsDto
+                            {
+                                Name = item.Notes,
+                                Length = item.Length,
+                                Width = item.Depth,
+                                Height = item.Height,
+                                Cubic = item.Cubic.HasValue ? (double)item.Cubic : 0,
+                                Kg = item.Weight,
+                                Type = null,
+                                PackageCode = null,
+                                Units = item.Items
+                            }).ToList()
+                            : null,
 
-                    PickupTailLift = job.TucJobItemJobs != null && job.TucJobItemJobs.Any(i => i.Pu == true),
-                    DropoffTailLift = job.TucJobItemJobs != null && job.TucJobItemJobs.Any(i => i.Do == true),
-                    PrivateRes = job.TucJobItemJobs != null & job.TucJobItemJobs.Any(i => i.PrivateRes == true),
-                    HasDgDocuments = job.Dgdocument,
-                    TruckStartTime = job.TruckStartTime.HasValue ? job.TruckStartTime.ToString() : null,
-                    TruckHours = job.TruckHours.HasValue ? (int)job.TruckHours : null,
-                    JobType = JobType.Active,
-                    IsTruck = job.Truck ?? false
-                })
-                .FirstOrDefaultAsync();
+                        PickupTailLift = job.TucJobItemsArchives != null && job.TucJobItemsArchives.Any(i => i.Pu == true),
+                        DropoffTailLift = job.TucJobItemsArchives != null && job.TucJobItemsArchives.Any(i => i.Do == true),
+                        PrivateRes = job.TucJobItemsArchives != null & job.TucJobItemsArchives.Any(i => i.PrivateRes == true),
+                        HasDgDocuments = job.Dgdocument,
+                        TruckStartTime = job.TruckStartTime.HasValue ? job.TruckStartTime.ToString() : null,
+                        TruckHours = job.TruckHours.HasValue ? (int)job.TruckHours : null,
+                        JobType = JobType.Archived,
+                        IsTruck = job.Truck ?? false
+                    })
+                    .FirstOrDefaultAsync();
 
-            ArgumentNullException.ThrowIfNull(jobDetailsForRating);
+                ArgumentNullException.ThrowIfNull(jobDetailsForRating);
 
-            return jobDetailsForRating;
+                return jobDetailsForRating;
+            }
+            else
+            {
+                var jobDetailsForRating = await Context.TucJobs
+                    .AsNoTracking()
+                    .Where(j => j.UcjbId == jobId)
+                    .Include(j => j.UcjbClient)
+                    .Include(j => j.UcjbSpeedNavigation)
+                    .Include(j => j.TucJobItemJobs)
+                    .Select(job => new JobRatingDetailsDtoNz
+                    {
+                        JobId = job.UcjbId,
+                        ClientId = job.UcjbClientId,
+                        FromId = job.UcjbFrom,
+                        ToId = job.UcjbTo,
+                        SpeedId = job.UcjbSpeed,
+                        IsPedal = job.UcjbCbd,
+                        IsVan = job.UcjbVan,
+                        IsReturnJob = job.UcjbReturn,
+                        Weight = job.UcjbWeight,
+                        SizeId = job.UcjbSize,
+                        IncludeFuelSurcharge = false,
+                        IsDirect = job.Direct,
+                        AcceptedJobTypeId = job.AcceptedJobTypeId,
+                        OurRef = job.UcjbOurRef,
+                        RefA = job.UcjbClientRefa,
+                        RefB = job.UcjbClientRefb,
+                        Quantity = job.UcjbQty ?? 1,
+                        BookedDate = new DateTime(
+                            job.UcjbDate.Year,
+                            job.UcjbDate.Month,
+                            job.UcjbDate.Day,
+                            job.UcjbTime.HasValue ? job.UcjbTime.Value.Hour : 0,
+                            job.UcjbTime.HasValue ? job.UcjbTime.Value.Minute : 0,
+                            job.UcjbTime.HasValue ? job.UcjbTime.Value.Second : 0
+                        ),
+
+                        // Coordinates
+                        PickupLat = job.PickUpLatitude ?? 0,
+                        PickupLong = job.PickUpLongitude ?? 0,
+                        DeliveryLat = job.DeliveryLatitude ?? 0,
+                        DeliveryLong = job.DeliveryLongitude ?? 0,
+
+                        DangerousGoods = job.Dgdocument ?? false,
+                        TotalPallets = job.TucJobItemJobs != null ? job.TucJobItemJobs.Count : 0,
+                        ExtraStopOffs = 0,
+                        DryIceWeight = job.DryIceWeight ?? 0,
+                        WaitTime = job.WaitedPickUp ?? 0,
+
+                        // Flight-specific properties
+                        FromAirportId = job.FromAirportId,
+                        ToAirportId = job.ToAirportId,
+                        FromAgentId = job.FromAirport != null ? job.FromAirport.AgentId : null,
+                        ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
+
+                        // Client-specific rate information
+                        ClientDiscount = job.UcjbClient != null ? job.UcjbClient.Discount : 0,
+                        Cubic = job.TucJobItemJobs != null ? job.TucJobItemJobs.Sum(i => i.Cubic) : null,
+                        IsManuallyRated = job.RatedManually,
+                        IsPrebook = job.IsRecurringJob,
+
+                        FromCompanyName = job.PickupAddressLine1,
+                        FromBuildingName = job.PickupAddressLine2,
+                        FromStreetAddress = job.PickupAddressLine3 + " " + job.PickupAddressLine4,
+                        FromSuburb = job.PickupAddressLine5,
+                        FromCity = job.PickupAddressLine6,
+                        FromState = null,
+                        FromPostCode = job.PickupAddressLine7,
+                        FromCountryCode = job.PickupAddressLine8,
+
+                        ToCompanyName = job.DeliveryAddressLine1,
+                        ToBuildingName = job.DeliveryAddressLine2,
+                        ToStreetAddress = job.DeliveryAddressLine3 + " " + job.DeliveryAddressLine4,
+                        ToSuburb = job.DeliveryAddressLine5,
+                        ToCity = job.DeliveryAddressLine6,
+                        ToState = null,
+                        ToPostCode = job.DeliveryAddressLine7,
+                        ToCountryCode = job.DeliveryAddressLine8,
+
+                        Packages = job.TucJobItemJobs != null
+                            ? job.TucJobItemJobs.Select(item => new PackageDetailsDto
+                            {
+                                Name = item.Notes,
+                                Length = item.Length,
+                                Width = item.Depth,
+                                Height = item.Height,
+                                Cubic = item.Cubic.HasValue ? (double)item.Cubic : 0,
+                                Kg = item.Weight,
+                                Type = null,
+                                PackageCode = null,
+                                Units = item.Items
+                            }).ToList()
+                            : null,
+
+                        PickupTailLift = job.TucJobItemJobs != null && job.TucJobItemJobs.Any(i => i.Pu == true),
+                        DropoffTailLift = job.TucJobItemJobs != null && job.TucJobItemJobs.Any(i => i.Do == true),
+                        PrivateRes = job.TucJobItemJobs != null & job.TucJobItemJobs.Any(i => i.PrivateRes == true),
+                        HasDgDocuments = job.Dgdocument,
+                        TruckStartTime = job.TruckStartTime.HasValue ? job.TruckStartTime.ToString() : null,
+                        TruckHours = job.TruckHours.HasValue ? (int)job.TruckHours : null,
+                        JobType = JobType.Active,
+                        IsTruck = job.Truck ?? false
+                    })
+                    .FirstOrDefaultAsync();
+
+                ArgumentNullException.ThrowIfNull(jobDetailsForRating);
+
+                return jobDetailsForRating;
+            }
         }
         catch (Exception ex)
         {
@@ -485,6 +595,8 @@ public partial class JobRepository
                     .ExecuteUpdateAsync(setter => setter.SetProperty(x => x.UcjbAmount, rate)),
                 JobType.Recurring => await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
                     .ExecuteUpdateAsync(setter => setter.SetProperty(x => x.UcbkAmount, rate)),
+                JobType.Archived => await Context.TucJobArchives.Where(j => j.UcjbId == jobId)
+                    .ExecuteUpdateAsync(setter => setter.SetProperty(x => x.UcjbAmount, rate)),
                 _ => 0
             };
 

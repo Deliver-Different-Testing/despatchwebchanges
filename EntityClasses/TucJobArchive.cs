@@ -443,13 +443,15 @@ public partial class TucJobArchive
 
     public string Connote { get; set; }
 
-    public int? PickUpWindowMins { get; set; }
-
-    public int? DeliverByWindowMins { get; set; }
-
     public int? PickupTimeZoneId { get; set; }
 
     public decimal? TotalDistance { get; set; }
+
+    public int? DeliverByTimeZoneId { get; set; }
+
+    public int? PickUpWindowMins { get; set; }
+
+    public int? DeliverByWindowMins { get; set; }
 
     public int? MasterCourierId { get; set; }
 
@@ -459,17 +461,15 @@ public partial class TucJobArchive
 
     public decimal? SubContractorPercentage { get; set; }
 
-    public int? DeliverByTimeZoneId { get; set; }
-
     public bool? IsRecurringJob { get; set; }
 
     public int? BookingParentId { get; set; }
 
-    public int? DimensionsType { get; set; }
-
     public string PickupGps { get; set; }
 
     public string PickupCondition { get; set; }
+
+    public int? DimensionsType { get; set; }
 
     public int? CourierSettlementBatchId { get; set; }
 
@@ -486,6 +486,8 @@ public partial class TucJobArchive
     public virtual TimeZone PickupTimeZone { get; set; }
 
     public virtual TblAirport ToAirport { get; set; }
+
+    public virtual ICollection<TucJobItemsArchive> TucJobItemsArchives { get; set; } = new List<TucJobItemsArchive>();
 
     public virtual VehicleSize UcjbSizeNavigation { get; set; }
 }

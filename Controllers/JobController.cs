@@ -1301,7 +1301,7 @@ public class JobController(
 
             // Skip rating if a job is archived
             var isArchived = await jobRepository.IsJobArchived(jobId);
-            if (isArchived) return Ok();
+            //if (isArchived) return Ok();
 
             // Recalculate a job
             var shouldRecalculateRate = ShouldRecalculateRate(field);
@@ -1317,7 +1317,7 @@ public class JobController(
             }
             else
             {
-                var jobDetails = await jobRepository.GetJobDetailsForRatingNzAsync(jobId);
+                var jobDetails = await jobRepository.GetJobDetailsForRatingNzAsync(jobId, isArchived);
                 if (jobDetails.IsManuallyRated) return Ok();
 
                 await rateJobService.RateJobNzAsync(jobDetails);
@@ -1787,7 +1787,7 @@ public class JobController(
     {
         // Skip if a job is archived
         var isArchived = !isBooking && await jobRepository.IsJobArchived(jobId);
-        if (isArchived) return;
+        //if (isArchived) return;
 
         var isUsCustomer = infoService.IsUsTenant();
 
@@ -1803,7 +1803,7 @@ public class JobController(
 
         var jobDetailsNz = isBooking
             ? await jobRepository.GetJobBookingDetailsForRatingNzAsync(jobId)
-            : await jobRepository.GetJobDetailsForRatingNzAsync(jobId);
+            : await jobRepository.GetJobDetailsForRatingNzAsync(jobId, isArchived);
 
         await rateJobService.RateJobNzAsync(jobDetailsNz);
     }
@@ -1930,9 +1930,9 @@ public class JobController(
     
     private async Task<decimal> GetJobRateAsync(int jobId, bool isBooking)
     {
-        // Skip if a job is archived
+        // Don't skip if a job is archived (should skip if invoiced tho)
         var isArchived = !isBooking && await jobRepository.IsJobArchived(jobId);
-        if (isArchived) return 0;
+        //if (isArchived) return 0;
 
         var isUsCustomer = infoService.IsUsTenant();
 
@@ -1947,7 +1947,7 @@ public class JobController(
 
         var jobDetailsNz = isBooking
             ? await jobRepository.GetJobBookingDetailsForRatingNzAsync(jobId)
-            : await jobRepository.GetJobDetailsForRatingNzAsync(jobId);
+            : await jobRepository.GetJobDetailsForRatingNzAsync(jobId, isArchived);
 
         return await rateJobService.GetJobRateNzAsync(jobDetailsNz);
     }
