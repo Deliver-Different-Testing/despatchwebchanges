@@ -52,7 +52,6 @@ class DriverManagementController extends BaseController {
     // Driver Details
     selectedDriver?: ICourierDataDashboard;
     selectedDriverId?: number;
-    driversLoading: boolean = false;
     driverSearchText?: string;
 
     // Compliance

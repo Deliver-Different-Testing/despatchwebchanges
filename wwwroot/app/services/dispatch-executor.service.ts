@@ -183,7 +183,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         );
     }
 
-    private async assignSingleJobToCourier(courierId: number, job: IDispatchJob): Promise<void> {
+    async assignSingleJobToCourier(courierId: number, job: IDispatchJob): Promise<void> {
         const courier = await this.findCourierWithConfirmation(courierId);
 
         if (!courier) {
@@ -277,7 +277,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
             hasExistingCourier: !!job.courierData?.courierId
         });
 
-        // Check if job already has a courier
+        // Check if the job already has a courier
         if (job.courierData?.courierId) {
             const message = `Restore ${job.jobNo} prior to dispatching to another courier`;
             console.warn("Job validation failed:", message);

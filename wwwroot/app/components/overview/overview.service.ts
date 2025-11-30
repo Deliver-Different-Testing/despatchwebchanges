@@ -13,14 +13,12 @@ import {transformOpenJobResponseDto} from "../../functions/dtoMappings";
 class OverviewService implements angular.IServiceProvider {
     static $inject = [
         "$http",
-        "$log"
     ];
 
     constructor(
         private $http: angular.IHttpService,
-        private $log: angular.ILogService
     ) {
-        this.$log.debug('OverviewService: Service instantiated');
+        console.log('OverviewService: Service instantiated');
     }
 
     $get(): any {
@@ -102,7 +100,7 @@ class OverviewService implements angular.IServiceProvider {
                 localStorage.setItem("cardCollapseStates", JSON.stringify(states));
                 return states;
             } catch (error) {
-                this.$log.error("Error saving collapse state:", error);
+                console.error("Error saving collapse state:", error);
                 throw error;
             }
         }
@@ -119,7 +117,7 @@ class OverviewService implements angular.IServiceProvider {
                     return states[cardName] || false;
                 }
             } catch (error) {
-                this.$log.error("Error loading collapse state:", error);
+                console.error("Error loading collapse state:", error);
             }
         }
 
