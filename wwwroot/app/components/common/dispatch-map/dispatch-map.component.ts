@@ -955,7 +955,7 @@ class DispatchMapController extends BaseController {
                         padding: 4px 8px; border-radius: 2px; font-size: 10px;
                         white-space: nowrap; opacity: 0; transition: opacity 0.3s;
                         pointer-events: none;">
-                ${this.urgentArmyOnlyEnabled ? 'Urgent Army Only' : 'Show All Couriers'}
+                ${this.urgentArmyOnlyEnabled ? 'Show Fleet Only' : 'Show All Couriers'}
             </div>
         </button>
     `;
@@ -969,7 +969,7 @@ class DispatchMapController extends BaseController {
             const iconSpan = button.querySelector('.material-symbols-outlined')!;
             iconSpan.textContent = this.urgentArmyOnlyEnabled ? 'emergency' : 'visibility_off';
             const tooltip = button.querySelector('.md-tooltip')!;
-            tooltip.textContent = this.urgentArmyOnlyEnabled ? 'Urgent Army Only' : 'Show All Couriers';
+            tooltip.textContent = this.urgentArmyOnlyEnabled ? 'Show Fleet Only' : 'Show All Couriers';
         });
 
         return buttonDiv;
