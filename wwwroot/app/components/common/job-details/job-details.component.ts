@@ -32,7 +32,13 @@ import dayjs, {Dayjs} from "dayjs";
 import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
 import VoidJobConfirmationDialogService
     from "../../dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
-import {displayLongDate, getIanaTimezone} from "../../../functions/formatDates";
+import {
+    formatLongDateTime,
+    formatMins,
+    formatShortDate,
+    formatShortDateTime,
+    getIanaTimezone
+} from "../../../functions/formatDates";
 import JobPhotoType from "../../../enums/job-photo-type.enum";
 import {IFlightSegment} from "../../Nationwide/nationwide.interfaces";
 import PodPhotoType from "../../../enums/podPhotoType";
@@ -91,6 +97,17 @@ class JobDetailController extends BaseController {
         value: day,
         label: DaysOfWeekHelpers.dayLabels[day]
     }));
+
+    // Formatted dates
+    formattedCreatedDate?: string;
+    formattedStartTime?: string;
+    formattedPuTime?: string;
+    formattedDeliverByTime?: string;
+    formattedDispatchTime?: string;
+    formattedCompletedTime?: string;
+    formattedFollowUpTime?: string;
+    formatedReadTrackerTime?: string;
+    formattedFlightSegments?: any[];
 
     // Photos
     formattedPodPhotos: PodPhoto[] = [];
@@ -455,7 +472,7 @@ class JobDetailController extends BaseController {
                 const podPhoto: PodPhoto = {
                     url: photoData.data ? `data:image/png;base64,${photoData.data}` : '',
                     timestamp: this.job?.completedTime
-                        ? displayLongDate(this.job.completedTime)
+                        ? formatLongDateTime(this.job.completedTime)
                         : undefined,
                     uploadedBy: this.job?.courierData?.courierName ?? "Unknown",
                     coordinates: {
@@ -486,6 +503,9 @@ class JobDetailController extends BaseController {
 
         this.jobAddressIcon = this.job?.assignedFlight ? "flight_takeoff" : "pin_drop";
 
+        // Format dates
+        this.formatJobDates();
+
         if (typeof this.job.daysOfWeek === "number") {
             this.daysOfWeekArray = DaysOfWeekHelpers.bitwiseToArray(this.job.daysOfWeek);
             console.log("Initialized daysOfWeekArray from bitmap:", this.daysOfWeekArray);
@@ -502,6 +522,52 @@ class JobDetailController extends BaseController {
         if (this.job.frequency) {
             this.job.frequency = Number(this.job.frequency);
             console.log("Set frequency to:", this.job.frequency);
+        }
+    }
+
+    private formatJobDates(): void {
+        if (!this.job) return;
+
+        // Format main job dates
+        this.formattedCreatedDate = this.job.createdDate
+            ? formatShortDate(this.job.createdDate, this.isUsCustomer)
+            : undefined;
+
+        this.formattedStartTime = this.job.time
+            ? formatMins(this.job.time)
+            : undefined;
+
+        this.formattedPuTime = this.job.puTime
+            ? formatShortDateTime(this.job.puTime, this.isUsCustomer)
+            : undefined;
+
+        this.formattedDeliverByTime = this.job.deliverByTime
+            ? formatShortDateTime(this.job.deliverByTime, this.isUsCustomer)
+            : undefined;
+
+        this.formattedDispatchTime = this.job.dispatchTime
+            ? formatShortDateTime(this.job.dispatchTime, this.isUsCustomer)
+            : undefined;
+
+        this.formattedCompletedTime = this.job.completedTime
+            ? formatShortDateTime(this.job.completedTime, this.isUsCustomer)
+            : undefined;
+
+        this.formattedFollowUpTime = this.job.followupTime
+            ? formatShortDateTime(this.job.followupTime, this.isUsCustomer)
+            : undefined;
+        
+        this.formatedReadTrackerTime = this.job.readTrackerInfo?.readDate
+            ? formatLongDateTime(this.job.readTrackerInfo.readDate, this.isUsCustomer)
+            : undefined;
+
+        // Format flight segment dates if they exist
+        if (this.job.assignedFlight?.flightSegments) {
+            this.formattedFlightSegments = this.job.assignedFlight.flightSegments.map(segment => ({
+                ...segment,
+                formattedDepartureTime: formatLongDateTime(segment.departureTime, this.isUsCustomer),
+                formattedArrivalTime: formatLongDateTime(segment.arrivalTime, this.isUsCustomer),
+            }));
         }
     }
 
@@ -1021,7 +1087,7 @@ class JobDetailController extends BaseController {
             this.handleError(error);
         }
     }
-    
+
     async editJobContact(
         $event: MouseEvent,
         job: IJob,
@@ -1842,15 +1908,15 @@ class JobDetailController extends BaseController {
                 this.toastrService.showWarningToast("Price breakdown is not currently available for scheduled jobs.");
                 return;
             }
-            
-            if(job.isInvoiced) {
+
+            if (job.isInvoiced) {
                 this.toastrService.showWarningToast("Job already invoiced to the customer. Cannot edit price.");
                 return;
             }
 
             const newAmount = await this.priceBreakdownDialogService.openPriceBreakdownDialog($event, job);
             if (!newAmount || !this.job) return;
-          
+
             this.job.charge = newAmount;
             await this.refreshJobDetails(job.id);
         } catch (error) {

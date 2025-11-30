@@ -82,16 +82,28 @@ export function formatDateForApiWithTzs(date: Date | Dayjs | string, timeZone?: 
     return result;
 }
 
-export function displayLongDate(date: Date | Dayjs | string, isUsCustomer: boolean = true): string {
+export function formatLongDateTime(date: Date | Dayjs | string, isUsCustomer: boolean = true): string {
     return isUsCustomer
-        ? dayjs(date).format('MM/DD/YYYY h:mm A')  // 09/22/2025 9:24 AM
-        : dayjs(date).format('DD/MM/YYYY HH:mm');   // 22/09/2025 09:24
+        ? dayjs(date).format('MMM/DD/YYYY h:mm A')  // 09/22/2025 9:24 AM
+        : dayjs(date).format('DD/MMM/YYYY HH:mm');   // 22/09/2025 09:24
+}
+
+export function formatLongDate(date: Date | Dayjs | string, isUsCustomer: boolean = true): string {
+    return isUsCustomer
+        ? dayjs(date).format('MMM/DD/YYYY')  // 09/22/2025 9:24 AM
+        : dayjs(date).format('DD/MMM/YYYY');   // 22/09/2025 09:24
 }
 
 export function formatShortDateTime(date: Date | Dayjs | string, isUsCustomer: boolean = true): string {
     return isUsCustomer
-        ? dayjs(date).format("MM/DD HH:mm")
-        : dayjs(date).format("DD/MM HH:mm");
+        ? dayjs(date).format("MMM/DD HH:mm")
+        : dayjs(date).format("DD/MMM HH:mm");
+}
+
+export function formatShortDate(date: Date | Dayjs | string, isUsCustomer: boolean = true): string {
+    return isUsCustomer
+        ? dayjs(date).format("MMM/DD")
+        : dayjs(date).format("DD/MMM");
 }
 
 export function formatMins(date: Date | Dayjs | string): string {

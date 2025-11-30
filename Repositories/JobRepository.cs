@@ -781,7 +781,7 @@ public partial class JobRepository(
         {
             // Separate jobs by their source table (active vs archived)
             var activeJobIds = jobsWithChangedPrices.Where(id => dbData.Any(j => j.UcjbId == id)).ToList();
-            var archivedJobIds = jobsWithChangedPrices.Where(id => dbDataArchive.Any(j => j.UcjbId == id) && !dbData.Any(j => j.UcjbId == id)).ToList();
+            var archivedJobIds = jobsWithChangedPrices.Where(id => dbDataArchive.Any(j => j.UcjbId == id) && dbData.All(j => j.UcjbId != id)).ToList();
 
             // Handle active jobs - use PricingBreakdowns table
             if (activeJobIds.Count != 0)

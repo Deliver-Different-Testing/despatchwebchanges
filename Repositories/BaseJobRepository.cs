@@ -77,9 +77,7 @@ public class BaseJobRepository(
 
                     if (queryParams.StartDate.HasValue)
                         query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
-
-                    if (queryParams.StatusFilter == "done") query = query.Where(j => j.UcjbJobDone || j.UcjbVoid);
-
+                    
                     query = ApplyEndDateFilter(query, queryParams.EndDate, queryParams.UseTime);
 
                     break;

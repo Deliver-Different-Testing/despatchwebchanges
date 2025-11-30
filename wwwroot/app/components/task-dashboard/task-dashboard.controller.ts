@@ -303,11 +303,7 @@ class TaskDashboardController extends BaseController {
     formatDate(date: Date | string): string {
         return this.$filter('date')(dayjs(date).toDate(), 'EEEE (d/MM/yy)');
     }
-
-    formatTime(dateString: string): string {
-        return this.$filter('date')(dayjs(dateString).toDate(), 'h:mm a').toLowerCase();
-    }
-
+    
     handleTaskCompletion(task: ExtendedTask): void {
         this.refreshTasks().then(() => {
             if (this.statusFilter === StatusFilter.Done) {
@@ -400,17 +396,7 @@ class TaskDashboardController extends BaseController {
         this.currentJobId = task.jobId;
         this.currentSelection = "for Job " + task.jobNumber;
     }
-
-    handleHistoryStepClick(step: any): void {
-        console.info('History step clicked:', step);
-        // Add logic to handle step clicks if needed
-    }
-
-    handleHistoryAutomationClick(automation: any): void {
-        console.info('History automation clicked:', automation);
-        // Add logic to handle automation clicks if needed
-    }
-
+    
     async refreshDataTimeSpan(dateFilterData: IDateFilterData): Promise<void> {
         console.log('refreshDataTimeSpan called with data ', dateFilterData);
         this.dateFilterData = dateFilterData;
