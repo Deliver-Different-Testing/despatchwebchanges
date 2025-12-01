@@ -4,7 +4,7 @@ import {IDispatchJob} from "../../../interfaces/job.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 
-class VoidJobConfirmationDialogController extends BaseController {
+class VoidJobConfirmationDialogController implements angular.IController {
     static $inject = [
         "$mdDialog",
         "DispatchData",
@@ -21,7 +21,7 @@ class VoidJobConfirmationDialogController extends BaseController {
         private toastrService: ToastrService,
         public job: IDispatchJob
     ) {
-        super();
+        console.log("VoidJobConfirmationDialogController: Controller instantiated");
     }
     
     $onInit() {
@@ -43,12 +43,12 @@ class VoidJobConfirmationDialogController extends BaseController {
             }
 
             this.voidSingleJobOnly
-                ? this.toastrService.showSuccessToast(`Job ${this.job.jobNo} has been voided successfully. Related jobs will not be voided.`)
-                : this.toastrService.showSuccessToast(`Job ${this.job.jobNo} and related jobs have been voided successfully.`);
+                ? this.toastrService.showSuccessToast(`${this.job.jobNo} has been voided successfully. Related jobs will not be voided.`)
+                : this.toastrService.showSuccessToast(`${this.job.jobNo} and related jobs have been voided successfully.`);
 
             this.$mdDialog.hide();
-        } catch (error: any) {
-            this.toastrService.showErrorToast(error.message);
+        } catch (error) {
+            this.toastrService.showErrorToast("An error occurred while voiding the job. Please try again later.");
         }
     }
 

@@ -305,6 +305,7 @@ class JobsListController extends BaseController {
 
         this.applyFilters();
         this.updateSelectAllState();
+        this.applyScope();
     }
 
     searchJobs(query: string): void {

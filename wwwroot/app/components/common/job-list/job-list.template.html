@@ -155,7 +155,7 @@
                                 ng-mousedown="ctrl.startResize($event, 'jobNo'); $event.stopPropagation()"></button>
                     </div>
 
-                    <div class="header-cell" ng-class="ctrl.getSortClass('client')" ng-click="ctrl.sortBy('client')" ng-if="!ctrl.isUsCustomer">
+                    <div class="header-cell" ng-class="ctrl.getSortClass('client')" ng-click="ctrl.sortBy('client')" ng-if="::!ctrl.isUsCustomer">
                         <div class="header-content">
                             <span class="header-text">CLIENT</span>
                             <md-icon class="sort-icon" md-font-set="material-symbols-outlined">
@@ -264,13 +264,12 @@
 
                     <!-- Date Column -->
                     <div class="job-cell date-cell">
-                        <div class="date">{{ctrl.formatDeliveryDate(job)}}</div>
+                        <div class="date">{{job._deliveryDateString}}</div>
                     </div>
 
                     <!-- Time Column -->
                     <div class="job-cell time-cell">
-                        <div ng-if="!ctrl.isUsCustomer" class="time">{{ctrl.formatDeliveryTime(job)}}</div>
-                        <div ng-if="ctrl.isUsCustomer" class="time">{{ctrl.formatDeliveryTime(job)}} ({{::ctrl.timeZone | timezoneShort}})</div>
+                        <div class="time">{{job._deliveryTimeString}} ({{::ctrl.timeZone | timezoneShort}})</div>
                     </div>
 
                     <!-- IS ARCHIVED Column -->
@@ -291,18 +290,17 @@
                     <!-- Job ID Column -->
                     <div class="job-cell job-id-cell">
                         <div class="job-id">{{job.jobNo}}</div>
-                        <div class="client-name" ng-if="ctrl.isUsCustomer">{{job.clientName}}</div>
+                        <div class="client-name" ng-if="::ctrl.isUsCustomer">{{job.clientName}}</div>
                     </div>
 
                     <!-- Client Column (NZ tenants only) -->
-                    <div class="job-cell client-cell" ng-if="!ctrl.isUsCustomer">
+                    <div class="job-cell client-cell" ng-if="::!ctrl.isUsCustomer">
                         <span class="client-code">{{job.client || '-'}}</span>
                     </div>
 
                     <!-- Pickup Column -->
                     <div class="job-cell route-cell pickup-cell">
                         <div class="address">{{job.pickupAddress && job.pickupAddress.addressLine5 || ''}}</div>
-                        <!--<div class="city-state">{{job.pickupAddress && job.pickupAddress.addressLine1 || ''}}</div>-->
                     </div>
 
                     <!-- Delivery Column -->
@@ -312,7 +310,7 @@
                             {{ctrl.getDeliveryAddressWithoutSuburb(job)}}
                         </div>
                         <!-- US tenant: Original format with city-state -->
-                        <div ng-if="ctrl.isUsCustomer">
+                        <div ng-if="::ctrl.isUsCustomer">
                             <div class="address">{{ctrl.getDeliveryAddress(job)}}</div>
                             <div class="city-state">{{job.deliveryAddress && job.deliveryAddress.addressLine1 || ''}}</div>
                         </div>
@@ -345,11 +343,11 @@
                             </div>
                             <div class="courier-info">
                                 <!-- NZ tenant: Show courier code and name on one line -->
-                                <div ng-if="!ctrl.isUsCustomer" class="courier-name">{{ctrl.getCourierCode(job)}} - {{ctrl.getCourierName(job)}}</div>
+                                <div ng-if="!ctrl.isUsCustomer" class="courier-name">{{job.courierData.courier}} - {{job.assignedCourier.text}}</div>
                                 <!-- US tenant: Show courier name and code on separate lines -->
                                 <div ng-if="ctrl.isUsCustomer">
-                                    <div class="courier-name">{{ctrl.getCourierName(job)}}</div>
-                                    <div class="courier-id">{{ctrl.getCourierCode(job)}}</div>
+                                    <div class="courier-name">{{job.assignedCourier.text}}</div>
+                                    <div class="courier-id">{{job.courierData.courier}}</div>
                                 </div>
                             </div>
                         </div>
@@ -435,13 +433,12 @@
 
                     <!-- Date Column -->
                     <div class="job-cell date-cell">
-                        <div class="date">{{ctrl.formatDeliveryDate(childJob)}}</div>
+                        <div class="date">{{ childjob._deliveryDateString }}</div>
                     </div>
 
                     <!-- Time Column -->
                     <div class="job-cell time-cell">
-                        <div ng-if="!ctrl.isUsCustomer" class="time">{{ctrl.formatDeliveryTime(childJob)}}</div>
-                        <div ng-if="ctrl.isUsCustomer" class="time">{{ctrl.formatDeliveryTime(childJob)}} ({{::ctrl.timeZone | timezoneShort}})</div>
+                        <div class="time">{{ childjob._deliveryTimeString}} ({{::ctrl.timeZone | timezoneShort}})</div>
                     </div>
 
                     <div class="job-cell isarchived-cell" ng-if="::ctrl.isJobSearchPage()">
@@ -461,11 +458,11 @@
                     <!-- Job ID Column -->
                     <div class="job-cell job-id-cell">
                         <div class="job-id">{{::childJob.jobNo}}</div>
-                        <div class="client-name" ng-if="ctrl.isUsCustomer">{{::childJob.client}}</div>
+                        <div class="client-name" ng-if="::ctrl.isUsCustomer">{{::childJob.client}}</div>
                     </div>
 
                     <!-- Client Column (NZ tenants only) -->
-                    <div class="job-cell client-cell" ng-if="!ctrl.isUsCustomer">
+                    <div class="job-cell client-cell" ng-if="::!ctrl.isUsCustomer">
                         <span class="client-code">{{::childJob.client || '-'}}</span>
                     </div>
 
@@ -478,11 +475,11 @@
                     <!-- Delivery Column -->
                     <div class="job-cell route-cell delivery-cell">
                         <!-- NZ tenant: Just address without suburb -->
-                        <div ng-if="!ctrl.isUsCustomer" class="address">
+                        <div ng-if="::!ctrl.isUsCustomer" class="address">
                             {{ctrl.getDeliveryAddressWithoutSuburb(childJob)}}
                         </div>
                         <!-- US tenant: Original format with city-state -->
-                        <div ng-if="ctrl.isUsCustomer">
+                        <div ng-if="::ctrl.isUsCustomer">
                             <div class="address">{{ctrl.getDeliveryAddress(childJob)}}</div>
                             <div class="city-state">{{childJob.deliveryAddress && childJob.deliveryAddress.addressLine1 || ''}}</div>
                         </div>
@@ -493,15 +490,15 @@
                         <!-- Show courier info if already assigned -->
                         <div ng-if="ctrl.hasAssignedCourier(childJob)" class="courier-info-container">
                             <div class="courier-avatar" ng-style="{'background': ctrl.getCourierColor(childJob)}">
-                                {{ctrl.getCourierInitials(childJob)}}
+                                {{::ctrl.getCourierInitials(childJob)}}
                             </div>
                             <div class="courier-info">
                                 <!-- NZ tenant: Show courier code and name on one line -->
-                                <div ng-if="!ctrl.isUsCustomer" class="courier-name">{{ctrl.getCourierCode(childJob)}} - {{ctrl.getCourierName(childJob)}}</div>
+                                <div ng-if="::!ctrl.isUsCustomer" class="courier-name">{{childJob.courierData.courier}} - {{childJob.assignedCourier.text}}</div>
                                 <!-- US tenant: Show courier name and code on separate lines -->
-                                <div ng-if="ctrl.isUsCustomer">
-                                    <div class="courier-name">{{ctrl.getCourierName(childJob)}}</div>
-                                    <div class="courier-id">{{ctrl.getCourierCode(childJob)}}</div>
+                                <div ng-if="::ctrl.isUsCustomer">
+                                    <div class="courier-name">{{childJob.assignedCourier.text}}</div>
+                                    <div class="courier-id">{{childJob.courierData.courier}}</div>
                                 </div>
                             </div>
                         </div>
@@ -556,7 +553,7 @@
 
                     <!-- Status Column -->
                     <div class="job-cell">
-                        <div class="status">{{ctrl.getStatusAbbreviation(childJob)}}</div>
+                        <div class="status">{{::ctrl.getStatusAbbreviation(childJob)}}</div>
                     </div>
                 </div>
 
