@@ -668,7 +668,8 @@ public class NationwideJobRepository(
                 AgentId = a.AgentId.Value,
                 AgentName = a.Agent.UcagName,
                 AgentRanking = a.Agent.Ranking.AgentRankingName,
-                DistanceRateId = a.DistanceRateId
+                DistanceRateId = a.DistanceRateId,
+                ZoneRateCardID = a.ZoneRateCardId,
             })
             .ToListAsync();
     }
@@ -724,6 +725,7 @@ public class NationwideJobRepository(
             nationwideJob.DryIceWeight,
             nationwideJob.WaitTime,
             agent.DistanceRateId,
+            agent.ZoneRateCardID,
             cancellationToken: ct
         );
 

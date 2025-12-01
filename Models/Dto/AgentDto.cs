@@ -6,5 +6,6 @@ public class AgentDto
     public string AgentName { get; init; }
     public string AgentRanking { get; init; }
     public int? DistanceRateId { get; init; }
+    public int? ZoneRateCardID { get; init; }
     public string AgentNotes { get; set; }
 }
