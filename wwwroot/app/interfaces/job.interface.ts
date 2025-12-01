@@ -767,9 +767,14 @@ export interface IDispatchJob {
 
     pickUpTimeZone: ISuggestion;
     deliveryTimeZone: ISuggestion;
-
+    
+    
+    // Private
     _isExpanded?: boolean;
     _groupChildren?: IDispatchJob[];
+    _deliveryTimeString?: string;
+    _deliveryDateString?: string;
+    _followupDateString?: string;
 }
 
 export interface IDispatchJobDto {

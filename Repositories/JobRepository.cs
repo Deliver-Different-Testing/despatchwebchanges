@@ -1629,44 +1629,40 @@ public partial class JobRepository(
     {
         try
         {
-            List<int> jobsToVoid;
+            var jobsToVoid = data.VoidSingleJobOnly
+                ? [data.JobId]
+                : await GetAllRelatedJobIdsIncludingParentAsync(data.JobId);
 
-            if (data.VoidSingleJobOnly)
-                jobsToVoid = [data.JobId];
-            else
-                jobsToVoid = await GetAllRelatedJobIdsIncludingParentAsync(data.JobId);
-
-            // Void jobs FIRST before adding notes
-            await Context.TucJobs
+            // Execute void operation and get courier mappings in parallel
+            var voidTask = Context.TucJobs
                 .Where(j => jobsToVoid.Contains(j.UcjbId))
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(j => j.UcjbStatus, (int)JobStatus.Void)
                     .SetProperty(j => j.UcjbVoid, true));
 
-            // Save changes to ensure jobs are voided before adding notes
-            await Context.SaveChangesAsync();
-
-            // Add Notes AFTER voiding to ensure foreign key references are valid
-            foreach (var id in jobsToVoid) await SaveNoteAsync(id, data.VoidReason);
-
-            var courierMapping = await Context.TucJobs
+            var courierMappingTask = Context.TucJobs
                 .Where(jt => jobsToVoid.Contains(jt.UcjbId) && jt.UcjbCourierId.HasValue)
-                .Select(jt => jt.UcjbCourierId)
+                .Select(jt => jt.UcjbCourierId.Value)
                 .Distinct()
                 .ToListAsync();
 
-            foreach (var courierId in courierMapping.Where(courierId => courierId.HasValue))
-                await UpdateClearListAreaOrderStatus(courierId.Value);
+            await Task.WhenAll(voidTask, courierMappingTask);
+            var courierMapping = await courierMappingTask;
 
-            // Close tasks based on the voiding scope
-            await CloseTasksByJobIdAsync(data.JobId, data.VoidSingleJobOnly);
+            // Update courier statuses in parallel
+            var courierUpdateTasks = courierMapping.Select(UpdateClearListAreaOrderStatus);
+            await Task.WhenAll(courierUpdateTasks);
+
+            // Close tasks
+            await CloseTasksByJobIdsAsync(jobsToVoid);
+            await SaveNoteToMultipleJobsAsync(jobsToVoid, data.VoidReason);
 
             await Context.SaveChangesAsync();
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error voiding job {JobId} (SingleOnly: {VoidSingleJobOnly})", data.JobId,
-                data.VoidSingleJobOnly);
+            Log.Error(e, "Error voiding job {JobId} (SingleOnly: {VoidSingleJobOnly})",
+                data.JobId, data.VoidSingleJobOnly);
             throw;
         }
     }
@@ -1675,112 +1671,89 @@ public partial class JobRepository(
     {
         try
         {
-            List<int> jobsToVoid;
+            var jobsToVoid = data.VoidSingleJobOnly
+                ? [data.BulkJobId]
+                : await GetAllRelatedBulkJobIdsIncludingParentAsync(data.BulkJobId);
 
-            if (data.VoidSingleJobOnly)
-                jobsToVoid = [data.BulkJobId];
-            else
-                jobsToVoid = await GetAllRelatedBulkJobIdsIncludingParentAsync(data.BulkJobId);
-
-            // Add Notes
-            foreach (var bulkId in jobsToVoid) await SaveBulkNoteAsync(bulkId, data.VoidReason);
-
-            var courierMapping = await Context.TblBulkJobs
-                .Where(jt => jobsToVoid.Contains(jt.BulkJobId) && jt.CourierId.HasValue)
-                .Select(jt => jt.CourierId)
-                .Distinct()
-                .ToListAsync();
-
-            await Context.TblBulkJobs
+            // Combined query: void jobs and get distinct courier IDs in parallel
+            var voidTask = Context.TblBulkJobs
                 .Where(j => jobsToVoid.Contains(j.BulkJobId))
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(j => j.JobStatus, (int)JobStatus.Void)
                     .SetProperty(j => j.Void, true));
 
-            foreach (var courierId in courierMapping.Where(courierId => courierId.HasValue))
-                await UpdateClearListAreaOrderStatus(courierId.Value);
+            var courierMappingTask = Context.TblBulkJobs
+                .Where(jt => jobsToVoid.Contains(jt.BulkJobId) && jt.CourierId.HasValue)
+                .Select(jt => jt.CourierId.Value) // Remove nulls with .Value since we filtered HasValue
+                .Distinct()
+                .ToListAsync();
 
-            // Close tasks based on the voiding scope
-            await CloseBulkTasksByBulkJobIdAsync(data.BulkJobId, data.VoidSingleJobOnly);
+            await Task.WhenAll(voidTask, courierMappingTask);
+            var courierMapping = await courierMappingTask;
 
-            await Context.SaveChangesAsync();
+            // Update courier statuses in parallel
+            var courierUpdateTasks = courierMapping.Select(UpdateClearListAreaOrderStatus);
+            await Task.WhenAll(courierUpdateTasks);
+
+            // Close tasks and add notes
+            await CloseAllBulkJobTasksAsync(jobsToVoid);
+            await SaveMultipleBulkNotesAsync(jobsToVoid, data.VoidReason);
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error voiding job {JobId} (SingleOnly: {VoidSingleJobOnly})", data.BulkJobId,
-                data.VoidSingleJobOnly);
+            Log.Error(e, "Error voiding job {JobId} (SingleOnly: {VoidSingleJobOnly})",
+                data.BulkJobId, data.VoidSingleJobOnly);
             throw;
         }
     }
 
     private async Task<List<int>> GetAllRelatedJobIdsIncludingParentAsync(int jobId)
     {
-        List<int> relatedJobIds;
-
-        // Close tasks for all related jobs (original behavior)
-        var parentId = await Context.TucJobs
+        // Single query to get both parent ID and all related job IDs
+        var jobWithRelations = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
-            .Select(j => j.ParentId)
+            .Select(j => new
+            {
+                j.ParentId,
+                // If it has parent, get siblings; otherwise get children
+                RelatedJobIds = j.ParentId.HasValue
+                    ? j.Parent.InverseParent.Select(child => child.UcjbId).ToList()
+                    : j.InverseParent.Select(child => child.UcjbId).ToList()
+            })
             .FirstOrDefaultAsync();
 
-        if (parentId.HasValue)
-        {
-            relatedJobIds = await Context.TucJobs
-                .Where(j => j.UcjbId == jobId)
-                .SelectMany(x => x.Parent.InverseParent)
-                .Select(j => j.UcjbId)
-                .ToListAsync();
+        if (jobWithRelations == null)
+            return [];
 
-            // Add parentId
-            relatedJobIds.Add(parentId.Value);
-        }
-        else
-        {
-            relatedJobIds = await Context.TucJobs
-                .Where(j => j.UcjbId == jobId)
-                .SelectMany(x => x.InverseParent)
-                .Select(j => j.UcjbId)
-                .ToListAsync();
+        var relatedJobIds = jobWithRelations.RelatedJobIds;
 
-            // Add this jobId
-            relatedJobIds.Add(jobId);
-        }
+        // Add the appropriate ID (parent or self)
+        relatedJobIds.Add(jobWithRelations.ParentId ?? jobId);
 
         return relatedJobIds;
     }
 
     private async Task<List<int>> GetAllRelatedBulkJobIdsIncludingParentAsync(int bulkJobId)
     {
-        List<int> relatedBulkJobIds;
-
-        // Close tasks for all related jobs (original behavior)
-        var parentId = await Context.TblBulkJobs
+        // Single query to get both parent ID and all related job IDs
+        var jobWithRelations = await Context.TblBulkJobs
             .Where(j => j.BulkJobId == bulkJobId)
-            .Select(j => j.BulkParentId)
+            .Select(j => new
+            {
+                ParentId = j.BulkParentId,
+                // If it has parent, get siblings; otherwise get children
+                RelatedJobIds = j.BulkParentId.HasValue
+                    ? j.Parent.InverseParent.Select(child => child.BulkJobId).ToList()
+                    : j.InverseParent.Select(child => child.BulkJobId).ToList()
+            })
             .FirstOrDefaultAsync();
 
-        if (parentId.HasValue)
-        {
-            relatedBulkJobIds = await Context.TblBulkJobs
-                .Where(j => j.BulkJobId == bulkJobId)
-                .SelectMany(x => x.Parent.InverseParent)
-                .Select(j => j.BulkJobId)
-                .ToListAsync();
+        if (jobWithRelations == null) return [];
 
-            // Add parentId
-            relatedBulkJobIds.Add(parentId.Value);
-        }
-        else
-        {
-            relatedBulkJobIds = await Context.TblBulkJobs
-                .Where(j => j.BulkJobId == bulkJobId)
-                .SelectMany(x => x.InverseParent)
-                .Select(j => j.BulkJobId)
-                .ToListAsync();
+        var relatedBulkJobIds = jobWithRelations.RelatedJobIds;
 
-            // Add this jobId
-            relatedBulkJobIds.Add(bulkJobId);
-        }
+        // Add the appropriate ID (parent or self)
+        relatedBulkJobIds.Add(jobWithRelations.ParentId ?? bulkJobId);
 
         return relatedBulkJobIds;
     }
@@ -2462,7 +2435,7 @@ public partial class JobRepository(
 
             int? SafeParseZipCode(string zipCode)
             {
-                if (string.IsNullOrWhiteSpace(zipCode) || !int.TryParse(zipCode, out int result))
+                if (string.IsNullOrWhiteSpace(zipCode) || !int.TryParse(zipCode, out var result))
                     return null;
                 return result;
             }
@@ -3119,40 +3092,27 @@ public partial class JobRepository(
             .ToList();
     }
 
-    private async Task CloseTasksByJobIdAsync(int jobId,
-        bool closeSingleJobTasksOnly = false)
+    private async Task CloseTasksByJobIdsAsync(List<int> jobIds)
     {
-        List<int> jobIds;
-
-        if (closeSingleJobTasksOnly)
-            jobIds = [jobId];
-        else
-            jobIds = await GetAllRelatedJobIdsIncludingParentAsync(jobId);
-
         await Context.TucEvents
             .Where(t => jobIds.Contains(t.UcevJobId.Value) && !t.UcevClosed)
             .ExecuteUpdateAsync(setters => setters.SetProperty(e => e.UcevClosed, true));
     }
 
-    private async Task CloseBulkTasksByBulkJobIdAsync(int bulkJobId,
-        bool closeSingleJobTasksOnly = false)
+    private async Task CloseAllBulkJobTasksAsync(List<int> bulkJobIds)
     {
         var now = _infoService.GetCurrentTenantTime();
         var staffId = _infoService.GetStaffId();
-        var staffName = await GetStaffNameAsync(staffId);
-
-        List<int> jobIds;
-
-        if (closeSingleJobTasksOnly)
-            jobIds = [bulkJobId];
-        else
-            jobIds = await GetAllRelatedBulkJobIdsIncludingParentAsync(bulkJobId);
 
         await Context.TblBulkEvents
-            .Where(t => jobIds.Contains(t.BulkJobId.Value) && !t.ClosedDate.HasValue)
+            .Where(t => bulkJobIds.Contains(t.BulkJobId.Value) && !t.ClosedDate.HasValue)
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(e => e.ClosedDate, now)
-                .SetProperty(e => e.ClosedByName, staffName));
+                .SetProperty(e => e.ClosedByName,
+                    Context.TucStaffs
+                        .Where(s => s.UcstId == staffId)
+                        .Select(s => s.UcstFirstName + " " + s.UcstLastName)
+                        .FirstOrDefault()));
     }
 
     public async Task BulkUpdateReadStatusAsync(BulkReadUpdateRequestModel data)

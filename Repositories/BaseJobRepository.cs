@@ -461,6 +461,22 @@ public class BaseJobRepository(
         await Context.TblBulkJobNotes.AddAsync(newNote);
         await Context.SaveChangesAsync();
     }
+    
+    protected async Task SaveMultipleBulkNotesAsync(List<int> bulkJobIds, string noteText, bool isImportant = false,
+        NoteType noteType = NoteType.InternalNote)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(noteText);
+
+        // If a note type is not found, default to the internal note
+        var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
+        if (!noteTypeExists) noteType = NoteType.InternalNote;
+
+        var newNotes = bulkJobIds.Select(bulkJobId => new TblBulkJobNote 
+            { BulkJobId = bulkJobId, IsImportant = isImportant, NoteText = noteText, NoteTypeId = (int)noteType }).ToList();
+
+        await Context.TblBulkJobNotes.AddRangeAsync(newNotes);
+        await Context.SaveChangesAsync();
+    }
 
     private async Task<NoteType> ConfirmNoteTypeExists(NoteType noteType)
     {
@@ -468,6 +484,36 @@ public class BaseJobRepository(
         var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
         if (!noteTypeExists) noteType = NoteType.InternalNote;
         return noteType;
+    }
+    
+    protected async Task SaveNoteToMultipleJobsAsync(List<int> jobIds, string noteText, bool isImportant = false,
+        bool isRecurringJobs = false, NoteType noteType = NoteType.InternalNote)
+    {
+        try
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(noteText);
+
+            // If a note type is not found, default to the internal note
+            var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
+            if (!noteTypeExists) noteType = NoteType.InternalNote;
+            
+            var newNotes = jobIds.Select(jobId => new TucNote
+                {
+                    JobId = isRecurringJobs ? null : jobId,
+                    JobBookingId = isRecurringJobs ? jobId : null,
+                    NoteText = noteText,
+                    IsImportant = isImportant,
+                    NoteTypeId = (int)noteType
+                })
+                .ToList();
+
+            await Context.TucNotes.AddRangeAsync(newNotes);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository), nameof(SaveNoteAsync)));
+        }
     }
 
     protected async Task SaveNoteAsync(int jobId, string noteText, bool isImportant = false,
