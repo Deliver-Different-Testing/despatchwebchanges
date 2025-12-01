@@ -12,6 +12,10 @@ export interface IPrebookListModel {
     speed: string;
     pickupAddress: IAddressViewModel;
     deliveryAddress: IAddressViewModel;
+    
+    // private variables
+    _nextDueTimeStr?: string;
+    _bookedStr?: string;
 }
 
 export interface IPrebookListModelDto {

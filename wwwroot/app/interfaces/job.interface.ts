@@ -158,7 +158,7 @@ export interface IJob {
     searchText?: string;
     deliverByTime?: Dayjs;
     distance: number;
-    readTrackerInfo: IReadTrackerInfo;
+    readTrackerInfo?: IReadTrackerInfo;
     inActiveBy?: ISuggestion;
     inActiveDate?: Dayjs;
     firstDue?: Dayjs;
@@ -184,6 +184,18 @@ export interface IJob {
     bookingSource?: ISuggestion;
     isInvoiced: boolean;
     barcode?: string;
+    
+    // Private variables
+    _createdDateStr?: string;
+    _startTimeStr?: string;
+    _puTimeStr?: string;
+    _dispatchTimeStr?: string;
+    _followupTimeStr?: string;
+    _bookedStr?: string;
+    _completedTimeStr?: string;
+    _inActiveDateStr?: string;
+    _deliverByTimeStr?: string;
+    _readTrackerTimeStr?: string;
 }
 
 export interface IJobDto {
@@ -327,7 +339,7 @@ export interface IJobDto {
     searchText?: string;
     deliverByTime?: string;
     distance: number;
-    readTrackerInfo: IReadTrackerInfo;
+    readTrackerInfo?: IReadTrackerInfoDto;
     inActiveBy?: ISuggestion;
     inActiveDate?: string;
     firstDue?: string;
@@ -872,10 +884,19 @@ export interface ILateCallRequest {
     calculationRequired: boolean;
 }
 
+export interface IReadTrackerInfoDto {
+    hasBeenRead: boolean;
+    readBy: string;
+    readDate?: string;
+}
+
 export interface IReadTrackerInfo {
     hasBeenRead: boolean;
     readBy: string;
-    readDate: Date | null;
+    readDate?: Dayjs;
+    
+    // Private
+    _readDateStr?: string
 }
 
 export interface VoidJobRequest extends VoidJobRequestBase {

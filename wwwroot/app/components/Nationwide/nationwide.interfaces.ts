@@ -54,6 +54,38 @@ export interface IFlightSegment {
     aircraftName?: string;
     aircraftType?: string;
     airlineName?: string;
+    
+    // Private
+    _departureTimeStr: string;
+    _arrivalTimeStr: string;
+}
+
+export interface IFlightSegmentDto {
+    segmentOrder: number;
+    carrierFsCode: string;
+    flightNumber: string;
+    departureTime: string;
+    arrivalTime: string;
+    departureAirportFsCode: string;
+    departureTerminal?: string;
+    arrivalAirportFsCode: string;
+    arrivalTerminal?: string;
+    flightEquipmentIataCode: string;
+    elapsedTime: number;
+    stopsInSegment: number;
+    departureAirportName?: string;
+    departureAirportCity?: string;
+    departureAirportCountry?: string;
+    departureAirportTimeZone?: string;
+    departureAirportId?: number;
+    arrivalAirportName?: string;
+    arrivalAirportCity?: string;
+    arrivalAirportCountry?: string;
+    arrivalAirportTimeZone?: string;
+    arrivalAirportId?: number;
+    aircraftName?: string;
+    aircraftType?: string;
+    airlineName?: string;
 }
 
 export interface StatusChangeEvent {
@@ -98,33 +130,6 @@ export interface IFlightViewModelDto {
     flightSegments: IFlightSegmentDto[];
 }
 
-export interface IFlightSegmentDto {
-    segmentOrder: number;
-    carrierFsCode: string;
-    flightNumber: string;
-    departureTime: string;
-    arrivalTime: string;
-    departureAirportFsCode: string;
-    departureTerminal?: string;
-    arrivalAirportFsCode: string;
-    arrivalTerminal?: string;
-    flightEquipmentIataCode: string;
-    elapsedTime: number;
-    stopsInSegment: number;
-    departureAirportName?: string;
-    departureAirportCity?: string;
-    departureAirportCountry?: string;
-    departureAirportTimeZone?: string;
-    departureAirportId?: number;
-    arrivalAirportName?: string;
-    arrivalAirportCity?: string;
-    arrivalAirportCountry?: string;
-    arrivalAirportTimeZone?: string;
-    arrivalAirportId?: number;
-    aircraftName?: string;
-    aircraftType?: string;
-    airlineName?: string;
-}
 
 export interface IGetFlightOptionsResponse {
     flights: IFlightViewModel[];

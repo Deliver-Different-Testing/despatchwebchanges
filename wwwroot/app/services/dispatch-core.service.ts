@@ -53,19 +53,25 @@ import {
     transformTaskDTO
 } from "../functions/dtoMappings";
 import {transformJobQueryParamsToDTO} from "../functions/toDtoMappings";
+import {IAppConfig} from "../interfaces/app-config.interface";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = [
         "$http",
         "$window",
         "$timeout",
+        "APP_CONFIG",
     ];
+
+    private readonly isUsCustomer: boolean;
 
     constructor(
         private $http: angular.IHttpService,
         private $window: angular.IWindowService,
         private $timeout: angular.ITimeoutService,
+        appConfig: IAppConfig,
     ) {
+        this.isUsCustomer = appConfig.US_Customer;
     }
 
     $get() {
@@ -307,7 +313,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             },
         });
 
-        return transformJobGroupDTO(response.data);
+        return transformJobGroupDTO(response.data, this.isUsCustomer);
     }
 
     async getDispatchJobDetail(jobId: number): Promise<IDispatchJob> {
@@ -329,7 +335,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             }
         );
 
-        return transformJobGroupDTO(response.data);
+        return transformJobGroupDTO(response.data, this.isUsCustomer);
     }
 
     async getJobsCurrent(courierId: number,
@@ -337,10 +343,10 @@ class DispatchCoreService implements angular.IServiceProvider {
                          pageSize: number,
                          startDate?: Dayjs,
                          endDate?: Dayjs): Promise<IJobSearchResult> {
-        
-        const startDateString = startDate ? formatDateForApiWithTzs(startDate) :  null;
+
+        const startDateString = startDate ? formatDateForApiWithTzs(startDate) : null;
         const endDateString = endDate ? formatDateForApiWithTzs(endDate) : null;
-        
+
         const response = await this.$http.get<IJobSearchResultDto>(
             `job/current`, {
                 params: {
@@ -1026,7 +1032,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             }
         });
 
-        return transformJobGroupDTO(response.data);
+        return transformJobGroupDTO(response.data, this.isUsCustomer);
     }
 
     async canAssignAgentToJob(agentJobId: number): Promise<boolean> {

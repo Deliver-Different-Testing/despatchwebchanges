@@ -1,14 +1,17 @@
 import {IPrebookListModel, IPrebookListModelDto, IRecurringJobQuery} from "./recurringJobs.interface";
 import {transformPrebookListDTO} from "../../functions/dtoMappings";
 import {IPaginatedResponse} from "../../interfaces/paginated-response.interface";
+import {IAppConfig} from "../../interfaces/app-config.interface";
 
 class RecurringJobsService {
     static $inject = [
-        "$http"
+        "$http",
+        "APP_CONFIG",
     ];
 
     constructor(
-        private $http: angular.IHttpService
+        private $http: angular.IHttpService,
+        private appConfig: IAppConfig,
     ) {
         console.log('RecurringJobsService: Service instantiated');
     }
@@ -18,7 +21,7 @@ class RecurringJobsService {
 
         return {
             ...response.data,
-            items: response.data.items.map(transformPrebookListDTO),
+            items: response.data.items.map(dto => transformPrebookListDTO(dto, this.appConfig.US_Customer)),
         };
     }
     
