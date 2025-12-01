@@ -2807,7 +2807,7 @@ public partial class JobRepository(
                         : null
                 }
                 .Concat(dto.Audits.Select(a =>
-                    $"{a.ChangeType}: {a.ColumnName} changed by {a.StaffFirstName ?? "Unknown"} {a.StaffLastName ?? ""} at {TimeZoneHelper.SetDateTimeWithTimeZone(a.ChangedAt, timezone):g}"))
+                    $"{a.ChangeType}: {a.ColumnName} changed by {a.StaffFirstName ?? "Unknown"} {a.StaffLastName ?? string.Empty} at {_infoService.ConvertUtcToTenantTimeZone(a.ChangedAt):g}"))
                 .Where(tag => !string.IsNullOrWhiteSpace(tag))
                 .ToList()
         }).ToList();
