@@ -32,16 +32,10 @@ import dayjs, {Dayjs} from "dayjs";
 import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
 import VoidJobConfirmationDialogService
     from "../../dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
-import {
-    formatLongDateTime,
-    formatMins,
-    formatShortDate,
-    formatShortDateTime,
-    getIanaTimezone
-} from "../../../functions/formatDates";
 import JobPhotoType from "../../../enums/job-photo-type.enum";
 import {IFlightSegment} from "../../Nationwide/nationwide.interfaces";
 import PodPhotoType from "../../../enums/podPhotoType";
+import {formatLongDateTime, getIanaTimezone} from "../../../functions/formatDates";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -503,9 +497,6 @@ class JobDetailController extends BaseController {
 
         this.jobAddressIcon = this.job?.assignedFlight ? "flight_takeoff" : "pin_drop";
 
-        // Format dates
-        this.formatJobDates();
-
         if (typeof this.job.daysOfWeek === "number") {
             this.daysOfWeekArray = DaysOfWeekHelpers.bitwiseToArray(this.job.daysOfWeek);
             console.log("Initialized daysOfWeekArray from bitmap:", this.daysOfWeekArray);
@@ -524,53 +515,7 @@ class JobDetailController extends BaseController {
             console.log("Set frequency to:", this.job.frequency);
         }
     }
-
-    private formatJobDates(): void {
-        if (!this.job) return;
-
-        // Format main job dates
-        this.formattedCreatedDate = this.job.createdDate
-            ? formatShortDate(this.job.createdDate, this.isUsCustomer)
-            : undefined;
-
-        this.formattedStartTime = this.job.time
-            ? formatMins(this.job.time)
-            : undefined;
-
-        this.formattedPuTime = this.job.puTime
-            ? formatShortDateTime(this.job.puTime, this.isUsCustomer)
-            : undefined;
-
-        this.formattedDeliverByTime = this.job.deliverByTime
-            ? formatShortDateTime(this.job.deliverByTime, this.isUsCustomer)
-            : undefined;
-
-        this.formattedDispatchTime = this.job.dispatchTime
-            ? formatShortDateTime(this.job.dispatchTime, this.isUsCustomer)
-            : undefined;
-
-        this.formattedCompletedTime = this.job.completedTime
-            ? formatShortDateTime(this.job.completedTime, this.isUsCustomer)
-            : undefined;
-
-        this.formattedFollowUpTime = this.job.followupTime
-            ? formatShortDateTime(this.job.followupTime, this.isUsCustomer)
-            : undefined;
-        
-        this.formatedReadTrackerTime = this.job.readTrackerInfo?.readDate
-            ? formatLongDateTime(this.job.readTrackerInfo.readDate, this.isUsCustomer)
-            : undefined;
-
-        // Format flight segment dates if they exist
-        if (this.job.assignedFlight?.flightSegments) {
-            this.formattedFlightSegments = this.job.assignedFlight.flightSegments.map(segment => ({
-                ...segment,
-                formattedDepartureTime: formatLongDateTime(segment.departureTime, this.isUsCustomer),
-                formattedArrivalTime: formatLongDateTime(segment.arrivalTime, this.isUsCustomer),
-            }));
-        }
-    }
-
+    
     async showAutocompleteDialog(
         $event: MouseEvent,
         job: IJob,
@@ -1952,7 +1897,7 @@ class JobDetailController extends BaseController {
                 job.readTrackerInfo = {
                     hasBeenRead: newReadStatus,
                     readBy: newReadStatus ? FirstName : "",
-                    readDate: newReadStatus ? new Date() : null,
+                    readDate: newReadStatus ? dayjs() : undefined,
                 };
             } else {
                 job.readTrackerInfo.hasBeenRead = newReadStatus;
@@ -1960,11 +1905,11 @@ class JobDetailController extends BaseController {
                 if (newReadStatus) {
                     // Update reader info when marking as read
                     job.readTrackerInfo.readBy = FirstName;
-                    job.readTrackerInfo.readDate = new Date();
+                    job.readTrackerInfo.readDate = dayjs();
                 } else {
                     // Clear reader info when marking as unread
                     job.readTrackerInfo.readBy = "";
-                    job.readTrackerInfo.readDate = null;
+                    job.readTrackerInfo.readDate = undefined;
                 }
             }
 
@@ -1979,7 +1924,7 @@ class JobDetailController extends BaseController {
         } finally {
             const data: IJobReadChanged = {
                 jobId: job?.id ?? 0,
-                isRead: job.readTrackerInfo.hasBeenRead,
+                isRead: job.readTrackerInfo?.hasBeenRead ?? false,
             };
 
             this.$rootScope.$broadcast("jobReadChanged", data);

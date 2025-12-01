@@ -91,8 +91,6 @@ class RecurringJobsController extends BaseController {
         super();
         this.initServices($timeout, $interval, $scope);
         
-        this.bindFunctions();
-
         this.isUsCustomer = appConfig.US_Customer;
         this.isAdmin = ClientInternal;
         this.timeZone = getIanaTimezone(TimeZone);
@@ -102,29 +100,6 @@ class RecurringJobsController extends BaseController {
 
     $onInit(): void {
         this.refreshData().then(() => console.log("Recurring Jobs Loaded!"));
-    }
-
-    private bindFunctions(): void {
-        // Bind pagination and sorting functions
-        this.onPaginate = this.onPaginate.bind(this);
-        this.onReorder = this.onReorder.bind(this);
-        this.searchJobs = this.searchJobs.bind(this);
-
-        // Bind job action functions
-        this.selectJobDetail = this.selectJobDetail.bind(this);
-        this.voidPrebookJob = this.voidPrebookJob.bind(this);
-        this.voidAllSelectPrebookJobs = this.voidAllSelectPrebookJobs.bind(this);
-
-        // Bind UI functions
-        this.refreshData = this.refreshData.bind(this);
-        this.switchActiveFilter = this.switchActiveFilter.bind(this);
-        this.getContextMenuOptions = this.getContextMenuOptions.bind(this);
-        this.openSearch = this.openSearch.bind(this);
-
-        // Bind layout functions
-        this.saveLayout = this.saveLayout.bind(this);
-        this.deleteLayout = this.deleteLayout.bind(this);
-        this.loadLayout = this.loadLayout.bind(this);
     }
     
     saveLayout() {
@@ -323,7 +298,7 @@ class RecurringJobsController extends BaseController {
             this.applyScope();
         }
     }
-
+    
     showItems(job: IJob): boolean {
         if (job.client !== "Other") {
             if (this.cancelledSelected) {

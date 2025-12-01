@@ -4,7 +4,7 @@ import IFlightCargoProcessing, {
     IFlightCargoProcessingDto
 } from "../components/dialogs/flight-agent-conformation-dialog/interfaces/IFlightCargoProcessing";
 import {IDispatchJob, IDispatchJobDto, IJob, IJobDto, IJobGroup, IJobGroupDto} from "../interfaces/job.interface";
-import {formatDateFromApi} from "./formatDates";
+import {formatDateFromApi, formatLongDateTime, formatMins, formatShortDate, formatShortDateTime} from "./formatDates";
 import {ITask, ITaskDto} from "../components/task-dashboard/task-dashboard.interfaces";
 import {IPrebookListModel, IPrebookListModelDto} from "../components/recurringJobs/recurringJobs.interface";
 import {
@@ -34,6 +34,8 @@ export function transformFlightDTO(dto: IFlightViewModelDto): IFlightViewModel {
             ...segment,
             departureTime: formatDateFromApi(segment.departureTime),
             arrivalTime: formatDateFromApi(segment.arrivalTime),
+            _departureTimeStr: formatLongDateTime(segment.departureTime),
+            _arrivalTimeStr: formatLongDateTime(segment.arrivalTime),
         })) ?? []
     };
 }
@@ -48,14 +50,14 @@ export function transformCargoHoursDTO(dto: IFlightCargoProcessingDto): IFlightC
     };
 }
 
-export function transformJobGroupDTO(dto: IJobGroupDto): IJobGroup {
+export function transformJobGroupDTO(dto: IJobGroupDto, isUsCustomer: boolean): IJobGroup {
     return {
-        job: transformJobDTO(dto.job),
-        relatedJobs: dto.relatedJobs?.map(transformJobDTO) ?? [],
+        job: transformJobDTO(dto.job, isUsCustomer),
+        relatedJobs: dto.relatedJobs?.map(dto => transformJobDTO(dto, isUsCustomer)) ?? [],
     }
 }
 
-function transformJobDTO(dto: IJobDto): IJob {
+function transformJobDTO(dto: IJobDto, isUsCustomer: boolean): IJob {
     return {
         ...dto,
         time: dto.time ? dayjs(dto.time) : undefined,
@@ -82,15 +84,32 @@ function transformJobDTO(dto: IJobDto): IJob {
                 ...segment,
                 departureTime: formatDateFromApi(segment.departureTime),
                 arrivalTime: formatDateFromApi(segment.arrivalTime),
+                _departureTimeStr: formatLongDateTime(segment.departureTime, isUsCustomer),
+                _arrivalTimeStr: formatLongDateTime(segment.arrivalTime, isUsCustomer),
             })) ?? []
         } : undefined,
-        
+
         deliverToPrivateResString: dto.deliverToPrivateRes ? 'residential' : 'business',
-        
+
         // Prebook-specific options
         daysOfWeek: dto.daysOfWeek,
         frequency: dto.frequency,
         holidayDeliveryOption: dto.holidayDeliveryOption,
+
+        readTrackerInfo: dto.readTrackerInfo ? {
+            ...dto.readTrackerInfo,
+            readDate: dto.readTrackerInfo.readDate ? dayjs(dto.readTrackerInfo.readDate) : undefined,
+        _readDateStr: dto.readTrackerInfo.readDate ? formatLongDateTime(dto.readTrackerInfo.readDate, isUsCustomer) : undefined,
+        } : undefined,
+
+        // Private
+        _createdDateStr: dto.createdDate ? formatShortDate(dto.createdDate, isUsCustomer) : undefined,
+        _startTimeStr: dto.time ? formatMins(dto.time) : undefined,
+        _puTimeStr: dto.puTime ? formatShortDateTime(dto.puTime, isUsCustomer) : undefined,
+        _deliverByTimeStr: dto.deliverByTime ? formatShortDateTime(dto.deliverByTime, isUsCustomer) : undefined,
+        _dispatchTimeStr: dto.dispatchTime ? formatShortDateTime(dto.dispatchTime, isUsCustomer) : undefined,
+        _completedTimeStr: dto.completedTime ? formatShortDateTime(dto.completedTime, isUsCustomer) : undefined,
+        _followupTimeStr: dto.followupTime ? formatShortDateTime(dto.followupTime, isUsCustomer) : undefined,
     };
 }
 
@@ -110,11 +129,13 @@ export function transformTaskDTO(dto: ITaskDto): ITask {
     }
 }
 
-export function transformPrebookListDTO(dto: IPrebookListModelDto): IPrebookListModel {
+export function transformPrebookListDTO(dto: IPrebookListModelDto, isUsCustomer: boolean): IPrebookListModel {
     return {
         ...dto,
         booked: formatDateFromApi(dto.booked),
         nextDueTime: dto.nextDueTime ? formatDateFromApi(dto.nextDueTime) : undefined,
+        _bookedStr: formatMins(dto.booked),
+        _nextDueTimeStr: dto.nextDueTime ? formatLongDateTime(dto.nextDueTime, isUsCustomer) : undefined,
     }
 }
 

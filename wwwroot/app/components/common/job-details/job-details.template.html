@@ -108,14 +108,14 @@
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editBookedDate($event, ctrl.job)">
                 <div class="metric-label">Booked</div>
                 <div class="metric-value">
-                    {{ctrl.formattedCreatedDate || '—'}}
+                    {{ctrl.job._createdDateStr || '—'}}
                     ({{ (ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort}})
                 </div>
             </div>
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editStartTime($event, ctrl.job)">
                 <div class="metric-label">Start Time</div>
                 <div class="metric-value">
-                    {{ctrl.formattedStartTime || '—'}}
+                    {{ctrl.job._startTimeStr || '—'}}
                     ({{ (ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort}})
                 </div>
             </div>
@@ -123,7 +123,7 @@
                 <div class="metric-label">PU Time</div>
                 <div class="metric-value">
                 <span ng-if="ctrl.job.puTime">
-                      {{ctrl.formattedPuTime}} 
+                      {{ctrl.job._puTimeStr}} 
                     ({{ (ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort}})
                     </span>
                     <span ng-if="!ctrl.job.puTime">-</span>
@@ -132,7 +132,7 @@
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editDeliverBy($event, ctrl.job)">
                 <div class="metric-label">Deliver By</div>
                 <div class="metric-value" ng-if="ctrl.job.deliverByTime">
-                    {{ctrl.formattedDeliverByTime}}
+                    {{ctrl.job._deliverByTimeStr}}
                     ({{ (ctrl.job.deliveryTimeZone ? ctrl.job.deliveryTimeZone.text : ctrl.timeZone) | timezoneShort}})
                 </div>
                 <div class="metric-value" ng-if="!ctrl.job.deliverByTime">
@@ -146,7 +146,7 @@
                 <div class="metric-label">Dispatch</div>
                 <div class="metric-value">
                     <span ng-if="ctrl.job.dispatchTime">
-                        {{ctrl.formattedDispatchTime}} ({{:: ctrl.timeZone | timezoneShort }})
+                        {{ctrl.job._dispatchTimeStr}} ({{:: ctrl.timeZone | timezoneShort }})
                     </span>
                     <span ng-if="!ctrl.job.dispatchTime">-</span>
                 </div>
@@ -162,7 +162,7 @@
                 <div class="metric-label">POD Time</div>
                 <div class="metric-value">
                     <span ng-if="ctrl.job.completedTime">
-                     {{ctrl.formattedCompletedTime}}
+                     {{ctrl.job._completedTimeStr}}
                         ({{:: ctrl.job.deliveryTimeZone.text | timezoneShort}})
                     </span>
                     <span ng-if="!ctrl.job.completedTime">-</span>
@@ -173,7 +173,7 @@
                 <div class="metric-label">Follow Up</div>
                 <div class="metric-value">
                     <span ng-if="ctrl.job.followupTime">
-                     {{ctrl.formattedFollowUpTime}}
+                     {{ctrl.job._followupTimeStr}}
                         ({{:: ctrl.timeZone | timezoneShort }})
                     </span>
                     <span ng-if="!ctrl.job.followupTime">-</span>
@@ -424,7 +424,7 @@
                                         <!-- Departure -->
                                         <div class="segment-departure" flex="30">
                                             <div class="time">
-                                                {{segment.formattedDepartureTime}}
+                                                {{segment._departureTimeStr}}
                                                 <span ng-show="segment.departureAirportTimeZone">
                                                     ({{::segment.departureAirportTimeZone | timezoneShort}})
                                                 </span>
@@ -457,7 +457,7 @@
                                         <!-- Arrival -->
                                         <div class="segment-arrival" flex="30">
                                             <div class="time">
-                                                {{segment.formattedArrivalTime}}
+                                                {{segment._arrivalTimeStr}}
                                                 <span ng-show="segment.arrivalAirportTimeZone">
                           ({{::segment.arrivalAirportTimeZone | timezoneShort}})
                         </span>

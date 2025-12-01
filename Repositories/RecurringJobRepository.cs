@@ -106,12 +106,12 @@ public class RecurringJobRepository(
             // Only apply timezone if Booked has a meaningful value
             if (item.Booked != default(DateTime) && item.Booked > DateTime.MinValue)
                 item.Booked = TimeZoneHelper.SetDateTimeWithTimeZone(item.Booked, tenantTimeZone);
-    
+
             // NextDueTime already has null-check but also check for default/MinValue
-            if (item.NextDueTime.HasValue && item.NextDueTime.Value > DateTime.MinValue) 
+            if (item.NextDueTime.HasValue && item.NextDueTime.Value > DateTime.MinValue)
                 item.NextDueTime = TimeZoneHelper.SetDateTimeWithTimeZone(item.NextDueTime.Value, tenantTimeZone);
         }
-        
+
         return new PaginatedResponse<PrebookListViewModel>
         {
             Items = items,
@@ -403,8 +403,14 @@ public class RecurringJobRepository(
         {
             var address = request.Address;
 
+            // Single query that updates parent and last child (if exists)
             var rowsAffected = await Context.TucJobBookings
-                .Where(jb => jb.UcbkId == request.JobId)
+                .Where(jb => jb.UcbkId == request.JobId || 
+                             jb.UcbkId == Context.TucJobBookings
+                                 .Where(child => child.ParentId == request.JobId)
+                                 .OrderByDescending(child => child.UcbkId)
+                                 .Select(child => child.UcbkId)
+                                 .FirstOrDefault())
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(jb => jb.DeliveryLatitude, address.Latitude)
                     .SetProperty(jb => jb.DeliveryLongitude, address.Longitude)
@@ -414,34 +420,11 @@ public class RecurringJobRepository(
                     .SetProperty(jb => jb.DeliveryAddressLine4, address.AddressLine4)
                     .SetProperty(jb => jb.DeliveryAddressLine5, address.AddressLine5)
                     .SetProperty(jb => jb.DeliveryAddressLine6, address.AddressLine6)
-                    .SetProperty(jb => jb.DeliveryAddressLine7, address.AddressLine7));
+                    .SetProperty(jb => jb.DeliveryAddressLine7, address.AddressLine7)
+                    .SetProperty(jb => jb.DeliveryAddressLine8, address.AddressLine8));
 
             if (rowsAffected == 0)
                 throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
-
-            // Get the last child booking ID from InverseBookingParent
-            var lastChildBookingId = await Context.TucJobBookings
-                .Where(jb => jb.UcbkId == request.JobId)
-                .SelectMany(jb => jb.InverseBookingParent)
-                .OrderBy(jb => jb.UcbkDate)
-                .Select(child => child.UcbkId)
-                .LastOrDefaultAsync();
-
-            if (lastChildBookingId != 0)
-            {
-                await Context.TucJobBookings
-                    .Where(jb => jb.UcbkId == lastChildBookingId)
-                    .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(jb => jb.DeliveryLatitude, address.Latitude)
-                        .SetProperty(jb => jb.DeliveryLongitude, address.Longitude)
-                        .SetProperty(jb => jb.DeliveryAddressLine1, address.AddressLine1)
-                        .SetProperty(jb => jb.DeliveryAddressLine2, address.AddressLine2)
-                        .SetProperty(jb => jb.DeliveryAddressLine3, address.AddressLine3)
-                        .SetProperty(jb => jb.DeliveryAddressLine4, address.AddressLine4)
-                        .SetProperty(jb => jb.DeliveryAddressLine5, address.AddressLine5)
-                        .SetProperty(jb => jb.DeliveryAddressLine6, address.AddressLine6)
-                        .SetProperty(jb => jb.DeliveryAddressLine7, address.AddressLine7));
-            }
         }
         catch (Exception ex)
         {
@@ -458,8 +441,14 @@ public class RecurringJobRepository(
         {
             var address = request.Address;
 
+            // Single query that updates parent and first child (if exists)
             var rowsAffected = await Context.TucJobBookings
-                .Where(jb => jb.UcbkId == request.JobId)
+                .Where(jb => jb.UcbkId == request.JobId || 
+                             jb.UcbkId == Context.TucJobBookings
+                                 .Where(child => child.ParentId == request.JobId)
+                                 .OrderBy(child => child.UcbkDate)
+                                 .Select(child => child.UcbkId)
+                                 .FirstOrDefault())
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(jb => jb.PickUpLatitude, address.Latitude)
                     .SetProperty(jb => jb.PickUpLongitude, address.Longitude)
@@ -469,34 +458,11 @@ public class RecurringJobRepository(
                     .SetProperty(jb => jb.PickupAddressLine4, address.AddressLine4)
                     .SetProperty(jb => jb.PickupAddressLine5, address.AddressLine5)
                     .SetProperty(jb => jb.PickupAddressLine6, address.AddressLine6)
-                    .SetProperty(jb => jb.PickupAddressLine7, address.AddressLine7));
+                    .SetProperty(jb => jb.PickupAddressLine7, address.AddressLine7)
+                    .SetProperty(jb => jb.PickupAddressLine8, address.AddressLine8));
 
             if (rowsAffected == 0)
                 throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
-
-            // Get the first child booking ID from InverseBookingParent
-            var firstChildBookingId = await Context.TucJobBookings
-                .Where(jb => jb.UcbkId == request.JobId)
-                .SelectMany(jb => jb.InverseBookingParent)
-                .OrderBy(jb => jb.UcbkDate)
-                .Select(child => child.UcbkId)
-                .FirstOrDefaultAsync();
-
-            if (firstChildBookingId != 0)
-            {
-                await Context.TucJobBookings
-                    .Where(jb => jb.UcbkId == firstChildBookingId)
-                    .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(jb => jb.PickUpLatitude, address.Latitude)
-                        .SetProperty(jb => jb.PickUpLongitude, address.Longitude)
-                        .SetProperty(jb => jb.PickupAddressLine1, address.AddressLine1)
-                        .SetProperty(jb => jb.PickupAddressLine2, address.AddressLine2)
-                        .SetProperty(jb => jb.PickupAddressLine3, address.AddressLine3)
-                        .SetProperty(jb => jb.PickupAddressLine4, address.AddressLine4)
-                        .SetProperty(jb => jb.PickupAddressLine5, address.AddressLine5)
-                        .SetProperty(jb => jb.PickupAddressLine6, address.AddressLine6)
-                        .SetProperty(jb => jb.PickupAddressLine7, address.AddressLine7));
-            }
         }
         catch (Exception ex)
         {
