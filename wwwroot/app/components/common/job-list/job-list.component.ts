@@ -42,7 +42,6 @@ class JobsListController extends BaseController {
     onCategoryChange?: (data: { category: string }) => Promise<void>;
     onJobSelect?: (data: { job: IDispatchJob }) => Promise<void>;
     onJobDispatch?: (data: { job: IDispatchJob, courierId: number }) => Promise<void>;
-    onJobAction?: (data: { action: string, job: IDispatchJob, params?: any }) => Promise<void>;
     getContextMenuOptions?: (data: { job: IDispatchJob }) => any[];
     onRefresh?: () => Promise<void>;
     onLoadMoreJobs?: (data: { page: number, pageSize: number }) => Promise<{
@@ -331,9 +330,9 @@ class JobsListController extends BaseController {
             localStorage.setItem(`${this.DENSE_MODE_SAVE_KEY}_${this.jobListType}`, mode);
         }
 
-        // Apply CSS class to component root
+        // Apply CSS class to THIS component root only
         this.registerTimeout(() => {
-            const componentElement = angular.element('.job-list-component');
+            const componentElement = angular.element(`.job-list-component.job-list-${this.jobListType}`);
             if (componentElement.length > 0) {
                 // Remove existing density classes
                 componentElement.removeClass('normal dense ultra-dense');
@@ -1018,7 +1017,7 @@ class JobsListController extends BaseController {
         const deltaX = event.clientX - this.startX;
         this.columnWidths[this.resizingColumn as keyof typeof this.columnWidths] = Math.max(50, this.startWidth + deltaX);
 
-        const headerElement = angular.element('.jobs-header');
+        const headerElement = angular.element(`.job-list-${this.jobListType} .jobs-header`);
         if (headerElement.length) headerElement.css('grid-template-columns', this.getGridTemplateColumns());
         this.applyScope();
     };
@@ -1040,7 +1039,7 @@ class JobsListController extends BaseController {
         this.columnWidths = {...this.defaultColumnWidths};
         this.saveColumnWidths();
 
-        const headerElement = angular.element('.jobs-header');
+        const headerElement = angular.element(`.job-list-${this.jobListType} .jobs-header`);
         if (headerElement.length) headerElement.css('grid-template-columns', this.getGridTemplateColumns());
         this.applyScope();
     }
@@ -1519,10 +1518,6 @@ class JobsListController extends BaseController {
             if (result && result.jobs && result.jobs.length > 0) {
                 // Append new jobs to the existing jobs array
                 this.jobs = [...(this.jobs || []), ...result.jobs];
-                /*
-                                if (this.shouldGroupJobs()) {
-                                    this.groupJobs();
-                                }*/
 
                 this.totalJobsCount = result.totalCount;
                 this.allJobsLoaded = !result.hasMore;
