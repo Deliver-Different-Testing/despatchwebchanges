@@ -22,6 +22,8 @@ public class BaseJobRepository(
 {
     protected const string Space = " ";
 
+    private (int? economySpeedId, DateTime? ecoDeliveryTime)? _economyCache;
+
     protected async Task<JobSearchResult> DespatchQryWithPagination(
         AppPage page,
         JobQueryParams queryParams,
@@ -34,7 +36,7 @@ public class BaseJobRepository(
     )
     {
         try
-        { 
+        {
             var query = await BuildBaseQuery(selectedViewIds, isUsTenant);
             if (query == null)
                 return new JobSearchResult
@@ -77,7 +79,7 @@ public class BaseJobRepository(
 
                     if (queryParams.StartDate.HasValue)
                         query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
-                    
+
                     query = ApplyEndDateFilter(query, queryParams.EndDate, queryParams.UseTime);
 
                     break;
@@ -106,10 +108,6 @@ public class BaseJobRepository(
 
             var totalCount = await query.CountAsync();
 
-            // Apply pagination
-            var pageNumber = queryParams.Page ?? 0;
-            var pageSize = queryParams.PageSize ?? 50;
-
             // Get All Jobs For Map
             var mapItems = new List<DispatchMapItem>();
             if (page == AppPage.Dispatch)
@@ -120,12 +118,8 @@ public class BaseJobRepository(
                     .ToListAsync();
             }
 
-            //query = ApplySortFilter(query, queryParams.Order, queryParams.OrderDirection);
-
             var jobs = await query
                 .AsNoTracking()
-                //.Skip(pageNumber * pageSize)
-                //.Take(pageSize)
                 .Select(JobMappings.JobDispatchMapping(isUsTenant))
                 .ToListAsync();
 
@@ -137,7 +131,7 @@ public class BaseJobRepository(
                 job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
             }
 
-            var hasMore = false; //(pageNumber + 1) * pageSize < totalCount;
+            const bool hasMore = false;
 
             return new JobSearchResult
             {
@@ -161,55 +155,54 @@ public class BaseJobRepository(
 
         return Context.TucJobs
             .Where(j => jobIds.Contains(j.UcjbId))
-            .Include(j => j.UcjbCourier)                    // Courier data
-            .Include(j => j.UcjbStatusNavigation)           // Job status
-            .Include(j => j.UcjbSpeedNavigation)            // Speed/type
-            .Include(j => j.UcjbSizeNavigation)             // Vehicle size
-            .Include(j => j.UcjbClient)                     // Client
-            .Include(j => j.UcjbFromNavigation)             // From suburb
-            .Include(j => j.Parent)                         // Parent job
-                .ThenInclude(p => p.InverseParent)          // Child jobs
-            .Include(j => j.TucJobNationwides)              // Flight/nationwide data
-            .Include(j => j.Agent)                          // Agent
-            .Include(j => j.PickupTimeZone)                 // Pickup timezone
-            .Include(j => j.DeliverByTimeZone)              // Delivery timezone
-            .Include(j => j.TucJobReadTracker);             // Read tracker
+            .Include(j => j.UcjbCourier) // Courier data
+            .Include(j => j.UcjbStatusNavigation) // Job status
+            .Include(j => j.UcjbSpeedNavigation) // Speed/type
+            .Include(j => j.UcjbSizeNavigation) // Vehicle size
+            .Include(j => j.UcjbClient) // Client
+            .Include(j => j.UcjbFromNavigation) // From suburb
+            .Include(j => j.Parent) // Parent job
+            .ThenInclude(p => p.InverseParent) // Child jobs
+            .Include(j => j.TucJobNationwides) // Flight/nationwide data
+            .Include(j => j.Agent) // Agent
+            .Include(j => j.PickupTimeZone) // Pickup timezone
+            .Include(j => j.DeliverByTimeZone) // Delivery timezone
+            .Include(j => j.TucJobReadTracker); // Read tracker
     }
 
-    private async Task<List<int>> GetFilteredJobIds(List<int> selectedViewIds, bool isUsTenant)
+    private async Task<HashSet<int>> GetFilteredJobIds(List<int> selectedViewIds, bool isUsTenant)
     {
+        List<int> ids;
         if (selectedViewIds == null || selectedViewIds.Count == 0)
         {
-            if (isUsTenant)
-            {
-                // Default to everything for US tenants
-                return await Context
-                    .DeswebQryDespatchJobViewFilters.Select(x => x.UcjbId)
-                    .ToListAsync();
-            }
-
-            return [];
+            if (!isUsTenant) return [];
+            ids = await Context
+                .DeswebQryDespatchJobViewFilters
+                .Select(x => x.UcjbId)
+                .ToListAsync();
+            return [..ids];
         }
 
-        var viewFilters =
-            selectedViewIds.Count != 0
-                ? await Context
-                    .TblDespatchViews.Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
-                    .Select(dv => dv.WhereCondition)
-                    .ToListAsync()
-                : [];
+        var viewFilters = await Context
+            .TblDespatchViews
+            .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
+            .Select(dv => dv.WhereCondition)
+            .ToListAsync();
 
         if (viewFilters.Count == 0) return [];
 
         var combinedFilters = string.Join(" OR ", viewFilters.Select(filter => $"({filter})"));
-        return await Context
-            .DeswebQryDespatchJobViewFilters.FromSqlRaw(
+        ids = await Context
+            .DeswebQryDespatchJobViewFilters
+            .FromSqlRaw(
                 isUsTenant
                     ? $"select * from DESWEB_qry_Despatch_Job_View_Filters WHERE {combinedFilters}"
                     : $"select * from DESWEB_qryDespatch WHERE {combinedFilters}"
             )
             .Select(x => x.UcjbId)
             .ToListAsync();
+
+        return [..ids];
     }
 
     private static IQueryable<TucJob> ApplyGeographicFilters(
@@ -300,7 +293,7 @@ public class BaseJobRepository(
 
         return query;
     }
-    
+
     private static IQueryable<TucJob> ApplyEndDateFilter(
         IQueryable<TucJob> query,
         DateTimeOffset? endDate,
@@ -310,31 +303,28 @@ public class BaseJobRepository(
             return query;
 
         if (!useTime) return query.Where(j => j.UcjbDate.Date <= endDate.Value.Date);
-        
+
         // Compare full datetime by checking date first, then time
         var filterDate = endDate.Value.Date;
         var filterTime = endDate.Value.TimeOfDay;
-        
+
         return query.Where(j =>
             j.UcjbDate.Date < filterDate ||
-            (j.UcjbDate.Date == filterDate && 
+            (j.UcjbDate.Date == filterDate &&
              (!j.UcjbTime.HasValue || j.UcjbTime.Value.TimeOfDay <= filterTime)));
-
-        // Compare date only
     }
 
-    public async Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(
-        List<int> selectedViewIds)
+    public async Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(List<int> selectedViewIds)
     {
         try
         {
             var isUsCustomer = infoService.IsUsTenant();
-            var query = await BuildBaseQuery(selectedViewIds, isUsCustomer);
-            if (query == null) return [];
+            var jobIds = await GetFilteredJobIds(selectedViewIds, isUsCustomer);
+            if (jobIds.Count == 0) return [];
 
-            query = query.Where(j => j.UcjbStatus != 9);
-
-            var jobCoordinates = await query
+            // Direct query without BuildBaseQuery - we don't need includes for coordinates
+            var jobCoordinates = await Context.TucJobs
+                .Where(j => jobIds.Contains(j.UcjbId) && j.UcjbStatus != 9)
                 .AsNoTracking()
                 .Select(j => new JobCoordinateModel
                 {
@@ -525,12 +515,14 @@ public class BaseJobRepository(
         if (isArchived)
         {
             return await Context.TucJobArchives
+                .AsNoTracking()
                 .Where(j => j.UcjbId == jobId)
                 .Select(j => j.ParentId ?? j.UcjbId)
                 .FirstOrDefaultAsync();
         }
 
         return await Context.TucJobs
+            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(j => j.ParentId ?? j.UcjbId)
             .FirstOrDefaultAsync();
@@ -539,6 +531,7 @@ public class BaseJobRepository(
     private async Task<int> GetEffectiveJobBookingIdAsync(int jobBookingId)
     {
         return await Context.TucJobBookings
+            .AsNoTracking()
             .Where(j => j.UcbkId == jobBookingId)
             .Select(j => j.ParentId ?? j.UcbkId)
             .FirstOrDefaultAsync();
@@ -733,34 +726,34 @@ public class BaseJobRepository(
     protected async Task<int> GetJobRelationshipInfoAsync(int jobId)
     {
         if (jobId == 0) return 0;
-        var effectiveJobId = await Context.TucJobs
+
+        return await Context.TucJobs
+            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(j => j.ParentId ?? j.UcjbId)
             .FirstOrDefaultAsync();
-
-        return effectiveJobId;
     }
 
     protected async Task<int> GetBulkJobRelationshipInfoAsync(int bulkJobId)
     {
         if (bulkJobId == 0) return 0;
-        var effectiveJobId = await Context.TblBulkJobs
+
+        return await Context.TblBulkJobs
+            .AsNoTracking()
             .Where(j => j.BulkJobId == bulkJobId)
             .Select(j => j.BulkParentId ?? j.BulkJobId)
             .FirstOrDefaultAsync();
-
-        return effectiveJobId;
     }
 
     protected async Task<int> GetJobBookingRelationshipInfoAsync(int bookingId)
     {
         if (bookingId == 0) return 0;
-        var effectiveJobId = await Context.TucJobBookings
+
+        return await Context.TucJobBookings
+            .AsNoTracking()
             .Where(j => j.UcbkId == bookingId)
             .Select(j => j.ParentId ?? j.UcbkId)
             .FirstOrDefaultAsync();
-
-        return effectiveJobId;
     }
 
     protected static string GetTrackingName(int trackingMethodId)
@@ -866,23 +859,25 @@ public class BaseJobRepository(
             throw;
         }
     }
-
+    
     protected async Task<(int? economySpeedId, DateTime? ecoDeliveryTime)> GetEconomySpeedAndDeliveryTimeAsync()
     {
-        // Calculate remain times
+        if (_economyCache.HasValue)
+            return _economyCache.Value;
+
         var economySpeedId = await Context.TucJobTypes
             .AsNoTracking()
             .Where(s => s.UcjtName == "Economy")
             .Select(s => s.UcjtId)
             .FirstOrDefaultAsync();
-        ArgumentNullException.ThrowIfNull(economySpeedId);
 
         var ecoDeliveryTime = await Context.TblEcoSettings
             .AsNoTracking()
             .Select(x => x.EconomyDeliveryTime)
             .FirstOrDefaultAsync();
 
-        return (economySpeedId, ecoDeliveryTime);
+        _economyCache = (economySpeedId, ecoDeliveryTime);
+        return _economyCache.Value;
     }
 
     private static IQueryable<TucJob> ApplySearchFilter(IQueryable<TucJob> query, string searchText)

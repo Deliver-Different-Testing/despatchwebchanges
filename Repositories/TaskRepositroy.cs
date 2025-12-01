@@ -69,57 +69,176 @@ public class TaskRepository(
 
     public async Task SetEventAsClosedAsync(int eventId, bool closed)
     {
-        var rowsAffected = await Context.TucEvents
-            .Where(e => e.UcevId == eventId)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(e => e.UcevClosed, closed));
+        await using var transaction = await Context.Database.BeginTransactionAsync();
 
-        if (rowsAffected == 0) throw new ArgumentException($"Event with ID {eventId} not found.");
+        try
+        {
+            var existingEvent = await Context.TucEvents
+                .Where(e => e.UcevId == eventId)
+                .Select(e => new { e.UcevClosed })
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+
+            if (existingEvent == null)
+                throw new ArgumentException($"Event with ID {eventId} not found.");
+
+            // Only create audit record if value actually changed
+            if (existingEvent.UcevClosed != closed)
+            {
+                await Context.TucEvents
+                    .Where(e => e.UcevId == eventId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(e => e.UcevClosed, closed));
+
+                await CreateEventAuditRecord(
+                    eventId,
+                    infoService.GetStaffId(),
+                    TucEventChangeType.Update,
+                    "UcevClosed",
+                    existingEvent.UcevClosed.ToString(),
+                    closed.ToString()
+                );
+            }
+
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     public async Task UpdateEventDateAsync(int eventId, DateTimeOffset date)
     {
-        var existingEvent = await Context.TucEvents
-            .Where(e => e.UcevId == eventId)
-            .Select(e => new { e.UcevDueTime })
-            .FirstOrDefaultAsync();
-        ArgumentNullException.ThrowIfNull(existingEvent);
+        await using var transaction = await Context.Database.BeginTransactionAsync();
+    
+        try
+        {
+            var existingEvent = await Context.TucEvents
+                .Where(e => e.UcevId == eventId)
+                .Select(e => new { e.UcevDueTime })
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
         
-        await Context.TucEvents
-            .Where(e => e.UcevId == eventId)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(e => e.UcevDueTime, date.DateTime));
+            ArgumentNullException.ThrowIfNull(existingEvent);
+        
+            // Only update if the value changed
+            if (existingEvent.UcevDueTime != date.DateTime)
+            {
+                await Context.TucEvents
+                    .Where(e => e.UcevId == eventId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(e => e.UcevDueTime, date.DateTime));
+
+                await CreateEventAuditRecord(
+                    eventId,
+                    infoService.GetStaffId(),
+                    TucEventChangeType.Update,
+                    "UcevDueTime",
+                    existingEvent.UcevDueTime.ToString("O"),
+                    date.DateTime.ToString("O")
+                );
+            }
+        
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
+
 
     public async Task UpdateEventTimeAsync(int eventId, DateTimeOffset time)
     {
-        var rowsAffected = await Context.TucEvents
-            .Where(e => e.UcevId == eventId)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(e => e.UcevDueTime, time.DateTime));
+        await using var transaction = await Context.Database.BeginTransactionAsync();
+    
+        try
+        {
+            var existingEvent = await Context.TucEvents
+                .Where(e => e.UcevId == eventId)
+                .Select(e => new { e.UcevDueTime })
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
 
-        if (rowsAffected == 0)
-            throw new ArgumentException($"Event with ID {eventId} not found.");
+            if (existingEvent == null)
+                throw new ArgumentException($"Event with ID {eventId} not found.");
+
+            if (existingEvent.UcevDueTime != time.DateTime)
+            {
+                await Context.TucEvents
+                    .Where(e => e.UcevId == eventId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(e => e.UcevDueTime, time.DateTime));
+
+                await CreateEventAuditRecord(
+                    eventId,
+                    infoService.GetStaffId(),
+                    TucEventChangeType.Update,
+                    "UcevDueTime",
+                    existingEvent.UcevDueTime.ToString("O"),
+                    time.DateTime.ToString("O")
+                );
+            }
+        
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     public async Task ReassignEventToUserAsync(int eventId, int staffId)
     {
-        var rowsAffected = await Context.TucEvents
-            .Where(e => e.UcevId == eventId)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(e => e.UcevStaffIdin, staffId));
+        await using var transaction = await Context.Database.BeginTransactionAsync();
+    
+        try
+        {
+            var existingEvent = await Context.TucEvents
+                .Where(e => e.UcevId == eventId)
+                .Select(e => new { e.UcevStaffIdin })
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
 
-        if (rowsAffected == 0)
-            throw new ArgumentException($"Event with ID {eventId} not found.");
+            if (existingEvent == null)
+                throw new ArgumentException($"Event with ID {eventId} not found.");
+
+            if (existingEvent.UcevStaffIdin != staffId)
+            {
+                await Context.TucEvents
+                    .Where(e => e.UcevId == eventId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(e => e.UcevStaffIdin, staffId));
+
+                await CreateEventAuditRecord(
+                    eventId,
+                    infoService.GetStaffId(),
+                    TucEventChangeType.Update,
+                    "UcevStaffIdin",
+                    existingEvent.UcevStaffIdin?.ToString() ?? "null",
+                    staffId.ToString()
+                );
+            }
+        
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     public async Task<List<Suggestion>> GetEventGroupsAsync()
     {
-        var eventGroups = await Context
-            .TucEventTypeGroups
+        var eventGroups = await Context.TucEventTypeGroups
+            .AsNoTracking()
             .Select(x => new Suggestion { Id = x.Id, Text = x.Name })
             .OrderBy(x => x.Text)
-            .AsNoTracking()
             .ToListAsync();
 
         return eventGroups;
@@ -128,8 +247,9 @@ public class TaskRepository(
     public async Task<List<EventGroupViewModel>> GetEventTypeGroupsAsync(int eventGroupId)
     {
         var now = infoService.GetCurrentTenantTime();
-        var eventGroups = await Context
-            .TucEventTypeEventTypeGroups.Where(x => x.EventTypeGroupId == eventGroupId)
+        var eventGroups = await Context.TucEventTypeEventTypeGroups
+            .AsNoTracking()
+            .Where(x => x.EventTypeGroupId == eventGroupId)
             .Select(x => new EventGroupViewModel
             {
                 EventTypeGroupTypeGroupId = x.Id,
@@ -144,7 +264,6 @@ public class TaskRepository(
                 Group = x.EventTypeGroup.Name
             })
             .OrderBy(x => x.Sequence)
-            .AsNoTracking()
             .ToListAsync();
 
         return eventGroups;
@@ -194,6 +313,7 @@ public class TaskRepository(
     public async Task<List<Suggestion>> GetActiveStaffAsync()
     {
         var staff = await Context.TucStaffs
+            .AsNoTracking()
             .Where(s => s.UcstActive)
             .Select(s => new Suggestion
             {
@@ -201,7 +321,6 @@ public class TaskRepository(
                 Text = s.UcstFirstName + " " + s.UcstLastName
             })
             .OrderBy(s => s.Text)
-            .AsNoTracking()
             .ToListAsync();
 
         return staff;
@@ -448,4 +567,22 @@ public class TaskRepository(
         EventType = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetGroup : string.Empty,
         JobNumber = e.UcevJob.UcjbNumber
     };
+
+    private async Task CreateEventAuditRecord(int eventId, int staffIdId, TucEventChangeType changeType,
+        string columnName, dynamic oldValue, dynamic newValue)
+    {
+        var newAudit = new TucEventAudit
+        {
+            UceaEventId = eventId,
+            UceaStaffId = staffIdId,
+            UceaChangedAt = DateTime.UtcNow,
+            UceaColumnName = columnName,
+            UceaChangeType = changeType.ToDbString(),
+            UceaOldValue = oldValue,
+            UceaNewValue = newValue
+        };
+
+        await Context.TucEventAudits.AddAsync(newAudit);
+        await Context.SaveChangesAsync();
+    }
 }

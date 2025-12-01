@@ -69,6 +69,8 @@ public partial class TucEvent
 
     public virtual TucJobType Speed { get; set; }
 
+    public virtual ICollection<TucEventAudit> TucEventAudits { get; set; } = new List<TucEventAudit>();
+
     public virtual TucClient UcevClient { get; set; }
 
     public virtual TucCourier UcevCourier { get; set; }

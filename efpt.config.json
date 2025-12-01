@@ -239,6 +239,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucEventAudit]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucEventType]",
          "ObjectType": 0
       },
