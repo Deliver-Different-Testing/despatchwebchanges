@@ -2220,24 +2220,6 @@ public partial class JobRepository(
         }
     }
 
-    public async Task UpdateBulkJobAsync(
-        int bulkJobId,
-        string field,
-        string value,
-        decimal? rate)
-    {
-        var staffInfo = await _infoService.GetStaffInfoAsync();
-
-        await Context.Procedures.DESWEB_stpUpdateBulkJobAsync(
-            bulkJobId,
-            field,
-            value,
-            rate,
-            staffInfo.Text,
-            staffInfo.Id
-        );
-    }
-
     public async Task ReleaseBulkJobAsync(string jobNumber,
         DateTime bookDate)
     {

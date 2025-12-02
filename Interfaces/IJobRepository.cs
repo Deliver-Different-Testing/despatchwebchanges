@@ -126,10 +126,8 @@ public interface IJobRepository
 
     Task UpdateBulkJobAsync(
         int bulkJobId,
-        string field,
-        string value,
-        decimal? rate
-    );
+        JobProperty property,
+        string value);
 
     Task ReleaseBulkJobAsync(string jobNumber, DateTime bookDate);
 

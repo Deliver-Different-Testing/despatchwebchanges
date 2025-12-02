@@ -877,7 +877,7 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "{Message}", 
+            Log.Error(ex, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(ReAllocate)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
@@ -1197,9 +1197,9 @@ public class JobController(
         }
         catch (Exception e)
         {
-          Log.Error(e, "{Message}", 
-              ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(SearchSpeedOptions)));
-          return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(SearchSpeedOptions)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -1367,17 +1367,11 @@ public class JobController(
 
     public async Task<IActionResult> UpdateBulkJob(
         int bulkJobId,
-        string field,
-        string value,
-        decimal? rate
+        JobProperty field,
+        string value
     )
     {
-        await jobRepository.UpdateBulkJobAsync(
-            bulkJobId,
-            field,
-            value,
-            rate
-        );
+        await jobRepository.UpdateBulkJobAsync(bulkJobId, field, value);
         return Ok();
     }
 
@@ -1912,7 +1906,7 @@ public class JobController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
-    
+
     public async Task<IActionResult> RecalculateJobRate(int jobId)
     {
         try
@@ -1922,12 +1916,12 @@ public class JobController(
         }
         catch (Exception e)
         {
-           Log.Error(e, "{Message}", 
-               ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(RecalculateJobRate)));
-           return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(RecalculateJobRate)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
-    
+
     private async Task<decimal> GetJobRateAsync(int jobId, bool isBooking)
     {
         // Don't skip if a job is archived (should skip if invoiced tho)
