@@ -59,12 +59,6 @@ public class BaseJobRepository(
 
                 // Check if the needs-dispatch filter is active
                 isNeedsDispatchFilter = queryParams.StatusFilter?.ToLower() == "needs-dispatch";
-
-                if (isNeedsDispatchFilter)
-                {
-                    // Apply the "needs dispatch" filter for ClearListArea: Status = New and no courier assigned
-                    query = query.Where(j => j.UcjbStatus == (int)JobStatus.New && j.UcjbCourierId == null);
-                }
             }
 
             query = ApplyGeographicFilters(query, clearListEnvelope, isNeedsDispatchFilter);
@@ -72,8 +66,6 @@ public class BaseJobRepository(
             switch (page)
             {
                 case AppPage.Dispatch:
-                    query = query.Where(j => j.UcjbStatus != (int)JobStatus.AwaitingPod);
-
                     if (queryParams.DateCutoff.HasValue)
                         query = query.Where(j => j.UcjbDate.Date <= queryParams.DateCutoff.Value.Date);
 
@@ -103,9 +95,6 @@ public class BaseJobRepository(
                     };
             }
 
-            // Search
-            if (!string.IsNullOrEmpty(queryParams.SearchText)) query = ApplySearchFilter(query, queryParams.SearchText);
-
             var totalCount = await query.CountAsync();
 
             // Get All Jobs For Map
@@ -130,14 +119,12 @@ public class BaseJobRepository(
                 job.AngularId = Guid.NewGuid();
                 job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
             }
-
-            const bool hasMore = false;
-
+            
             return new JobSearchResult
             {
                 Jobs = jobs,
                 TotalCount = totalCount,
-                HasMore = hasMore,
+                HasMore = false,
                 MapItems = page == AppPage.Dispatch ? mapItems : null
             };
         }
@@ -154,20 +141,7 @@ public class BaseJobRepository(
         if (jobIds.Count == 0) return null;
 
         return Context.TucJobs
-            .Where(j => jobIds.Contains(j.UcjbId))
-            .Include(j => j.UcjbCourier) // Courier data
-            .Include(j => j.UcjbStatusNavigation) // Job status
-            .Include(j => j.UcjbSpeedNavigation) // Speed/type
-            .Include(j => j.UcjbSizeNavigation) // Vehicle size
-            .Include(j => j.UcjbClient) // Client
-            .Include(j => j.UcjbFromNavigation) // From suburb
-            .Include(j => j.Parent) // Parent job
-            .ThenInclude(p => p.InverseParent) // Child jobs
-            .Include(j => j.TucJobNationwides) // Flight/nationwide data
-            .Include(j => j.Agent) // Agent
-            .Include(j => j.PickupTimeZone) // Pickup timezone
-            .Include(j => j.DeliverByTimeZone) // Delivery timezone
-            .Include(j => j.TucJobReadTracker); // Read tracker
+            .Where(j => jobIds.Contains(j.UcjbId));
     }
 
     private async Task<HashSet<int>> GetFilteredJobIds(List<int> selectedViewIds, bool isUsTenant)
@@ -926,6 +900,7 @@ public class BaseJobRepository(
         return _economyCache.Value;
     }
 
+    /*
     private static IQueryable<TucJob> ApplySearchFilter(IQueryable<TucJob> query, string searchText)
     {
         if (string.IsNullOrWhiteSpace(searchText))
@@ -995,4 +970,5 @@ public class BaseJobRepository(
             EF.Functions.Like(j.Barcode ?? string.Empty, searchPattern)
         );
     }
+*/
 }
