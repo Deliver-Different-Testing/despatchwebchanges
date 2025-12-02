@@ -25,8 +25,6 @@ public class RecurringJobRepository(
     public async Task<PaginatedResponse<PrebookListViewModel>> GetRecurringJobsListAsync(
         RecurringJobQueryRequest request)
     {
-        var isUsTenant = _infoService.IsUsTenant();
-
         var query = Context.TucJobBookings
             .Where(j => j.UcbkActive == request.Active 
                         && !j.UcbkOneOff == false

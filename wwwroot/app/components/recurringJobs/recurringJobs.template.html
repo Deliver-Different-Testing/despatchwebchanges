@@ -120,6 +120,7 @@
                                     </md-menu>
 
                                     <md-button class="md-icon-button"
+                                               ng-if="::ctrl.boxes[box.name].name == 'jobList'"
                                                ng-click="ctrl.exportToCSV()">
                                         <md-icon md-font-set="material-symbols-outlined">file_export</md-icon>
                                         <md-tooltip md-direction="bottom">Export Recurring Jobs</md-tooltip>
