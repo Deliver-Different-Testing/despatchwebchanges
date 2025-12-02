@@ -92,17 +92,6 @@ class JobDetailController extends BaseController {
         label: DaysOfWeekHelpers.dayLabels[day]
     }));
 
-    // Formatted dates
-    formattedCreatedDate?: string;
-    formattedStartTime?: string;
-    formattedPuTime?: string;
-    formattedDeliverByTime?: string;
-    formattedDispatchTime?: string;
-    formattedCompletedTime?: string;
-    formattedFollowUpTime?: string;
-    formatedReadTrackerTime?: string;
-    formattedFlightSegments?: any[];
-
     // Photos
     formattedPodPhotos: PodPhoto[] = [];
     formattedPickupPhotos: PodPhoto[] = [];

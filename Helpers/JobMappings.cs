@@ -772,14 +772,6 @@ public static class JobMappings
             ParentId = j.ParentId,
             Time = j.UcbkTime,
             RootParentId = j.RootParentId,
-            RelatedJobs = j.BookingParent != null && j.BookingParent.InverseBookingParent.Any()
-                ? j.BookingParent.InverseBookingParent.Select(p => new Suggestion
-                    {
-                        Id = p.UcbkId,
-                        Text = p.UcbkJobNumber
-                    })
-                    .ToList()
-                : null,
             Date = FormatDate(j.UcbkDate),
             Booked = j.UcbkDate.HasValue
                 ? DateExtension.CombineDateAndTime(j.UcbkDate.Value, j.UcbkTime)
