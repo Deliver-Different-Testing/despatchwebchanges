@@ -239,6 +239,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucEventAudit]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucEventType]",
          "ObjectType": 0
       },
@@ -464,10 +468,6 @@
       },
       {
          "Name": "[dbo].[DESWEB_stpJob_AutoDespatchSelectedJobs]",
-         "ObjectType": 1
-      },
-      {
-         "Name": "[dbo].[DESWEB_stpUpdateBulkJob]",
          "ObjectType": 1
       },
       {

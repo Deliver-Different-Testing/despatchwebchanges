@@ -680,9 +680,8 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async updateBulkJobDetail(
         bulkJobId: number,
-        field: string,
+        field: JobProperty | string,
         value: any,
-        rate: number | string,
         timezone?: string // For dates
     ): Promise<void> {
         // Handle time fields
@@ -696,8 +695,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 params: {
                     bulkJobId,
                     field,
-                    value,
-                    rate,
+                    value
                 }
             }
         );

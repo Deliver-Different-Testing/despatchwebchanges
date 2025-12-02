@@ -1383,67 +1383,6 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> DESWEB_stpUpdateBulkJobAsync(int? bulkJobID, string propertyName, string value, decimal? rate, string username, int? staffID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
-        {
-            var parameterreturnValue = new SqlParameter
-            {
-                ParameterName = "returnValue",
-                Direction = System.Data.ParameterDirection.Output,
-                SqlDbType = System.Data.SqlDbType.Int,
-            };
-
-            var sqlParameters = new []
-            {
-                new SqlParameter
-                {
-                    ParameterName = "BulkJobID",
-                    Value = bulkJobID ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Int,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "PropertyName",
-                    Size = 100,
-                    Value = propertyName ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "Value",
-                    Size = 300,
-                    Value = value ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "Rate",
-                    Precision = 19,
-                    Scale = 4,
-                    Value = rate ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Money,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "Username",
-                    Size = 200,
-                    Value = username ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "StaffID",
-                    Value = staffID ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Int,
-                },
-                parameterreturnValue,
-            };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpUpdateBulkJob] @BulkJobID = @BulkJobID, @PropertyName = @PropertyName, @Value = @Value, @Rate = @Rate, @Username = @Username, @StaffID = @StaffID", sqlParameters, cancellationToken);
-
-            returnValue?.SetValue(parameterreturnValue.Value);
-
-            return _;
-        }
-
         public virtual async Task<int> DESWEB_stpUpdateSplitJobMeetingAddressAsync(int? jobID, int? suburb, string address, decimal? deliveryLatitude, decimal? deliveryLongitude, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter

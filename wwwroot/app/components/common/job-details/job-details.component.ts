@@ -637,7 +637,6 @@ class JobDetailController extends BaseController {
                     job.id,
                     result.fieldName,
                     result.value,
-                    job.charge,
                     result.timezone
                 );
             } else {
@@ -702,7 +701,6 @@ class JobDetailController extends BaseController {
                             job.id,
                             fieldName,
                             result.value,
-                            job.charge
                         );
                     } else {
                         await this.DispatchData.updateJobDetail(
@@ -1452,7 +1450,6 @@ class JobDetailController extends BaseController {
                     job.id,
                     callData.field,
                     callData.value,
-                    job.charge
                 );
             } else {
                 await this.DispatchData.updateJobDetail(

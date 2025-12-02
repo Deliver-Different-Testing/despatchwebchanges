@@ -15,24 +15,11 @@ public partial class JobRepository
     private async Task UpdateTucJobAsync(int jobId, JobProperty property, string value)
     {
         var isUsCustomer = _infoService.IsUsTenant();
-        
-        var job = await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .Include(j => j.TucJobNationwides)
-            .Include(j => j.UcjbClient)
-            .Include(j => j.Contact)
-            .Include(j => j.InternalStatusNavigation)
-            .Include(j => j.UndeliverableLocation)
-            .Include(j => j.InverseParent)
-            .Include(j => j.Parent)
-            .ThenInclude(j => j.InverseParent)
-            .Include(j => j.NotifiedJobType)
-            .Include(j => j.UcjbSpeedNavigation)
-            .Include(j => j.DeliverToLeave)
-            .Include(j => j.UcjbStatusNavigation)
-            .Include(j => j.PickupTimeZone).Include(tucJob => tucJob.TucJobItemJobs)
-            .FirstOrDefaultAsync();
 
+        var query = Context.TucJobs.Where(j => j.UcjbId == jobId);
+        query = AddRequiredIncludes(query, property);
+      
+        var job = await query.FirstOrDefaultAsync();
         ArgumentNullException.ThrowIfNull(job);
 
         // Internal Status handled separately 
@@ -65,9 +52,9 @@ public partial class JobRepository
             case JobProperty.Items:
                 job.UcjbQty = short.Parse(value);
                 break;
-            case JobProperty.Void: 
+            case JobProperty.Void:
                 var voidJob = bool.Parse(value);
-                if(voidJob) throw new ApplicationException("Voiding a job is not allowed here");
+                if (voidJob) throw new ApplicationException("Voiding a job is not allowed here");
                 job.UcjbVoid = false;
                 break;
             case JobProperty.SpeedID:
@@ -92,6 +79,7 @@ public partial class JobRepository
                         foreach (var childJob in job.InverseParent)
                             childJob.UcjbWeight = weight;
                 }
+
                 break;
             case JobProperty.ClientID:
                 job.UcjbClientId = int.Parse(value);
@@ -130,9 +118,7 @@ public partial class JobRepository
                 job.UcjbStatus = newStatus;
 
                 if (newStatus == (int)JobStatus.PickedUp)
-                {
                     job.PickUpTime = _infoService.GetCurrentTimeFromTimeZone(job.PickupTimeZone);
-                }
 
                 break;
             case JobProperty.RefA:
@@ -252,35 +238,24 @@ public partial class JobRepository
                 job.FollowupTime = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.TailLiftPu:
-                if(job.TucJobItemJobs == null) throw new NullReferenceException("TucJobItemJobs is null");
+                if (job.TucJobItemJobs == null) throw new NullReferenceException("TucJobItemJobs is null");
                 foreach (var item in job.TucJobItemJobs) item.Pu = bool.Parse(value);
                 break;
             case JobProperty.TailLiftDo:
-                if(job.TucJobItemJobs == null) throw new NullReferenceException("TucJobItemJobs is null");
+                if (job.TucJobItemJobs == null) throw new NullReferenceException("TucJobItemJobs is null");
                 foreach (var item in job.TucJobItemJobs) item.Do = bool.Parse(value);
-                break; 
+                break;
             case JobProperty.DeliverToPrivateRes:
-                if(job.TucJobItemJobs == null) throw new NullReferenceException("TucJobItemJobs is null");
+                if (job.TucJobItemJobs == null) throw new NullReferenceException("TucJobItemJobs is null");
                 foreach (var item in job.TucJobItemJobs) item.PrivateRes = bool.Parse(value);
                 break;
             case JobProperty.Barcode:
                 job.Barcode = value[..Math.Min(value.Length, 20)];
                 break;
-            case JobProperty.DeliverToContact:
-            case JobProperty.StopDate:
-            case JobProperty.RestartDate:
-            case JobProperty.InActiveDate:
-            case JobProperty.FirstDue:
-            case JobProperty.LastDone:
-            case JobProperty.NextDue:
-            case JobProperty.DaysOfWeek:
-            case JobProperty.Frequency:
-            case JobProperty.HolidayDelivery:
-            case JobProperty.InternalStatusID:
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
         }
-        
+
         var entries = Context.ChangeTracker.Entries()
             .Where(e => e.State == EntityState.Modified)
             .ToList();
@@ -298,10 +273,10 @@ public partial class JobRepository
         }
 
         Log.Debug("{ChangeTrackerInfo}", string.Join(", ", logMessages));
-        
+
         var changeCount = await Context.SaveChangesAsync();
         Log.Debug("Changes saved: {ChangeCount}", changeCount);
-        
+
         // Add additional notes for undeliverable location
         if (property == JobProperty.UndeliverableLocationID && job.UndeliverableLocation?.Message != null)
             await JobUpdateAddNoteAsync(jobId, true, job.UndeliverableLocation.Message);
@@ -309,20 +284,10 @@ public partial class JobRepository
 
     private async Task UpdateTucJobArchiveAsync(int jobId, JobProperty property, string value)
     {
-        var archive = await Context.TucJobArchives
-            .Include(j => j.UcjbClient)
-            .Include(j => j.Contact)
-            .Include(j => j.InternalStatusNavigation)
-            .Include(j => j.UndeliverableLocation)
-            .Include(j => j.NotifiedJobType)
-            .Include(j => j.SpeedNavigation)
-            .Include(j => j.DeliverToLeave)
-            .Include(j => j.Parent)
-            .Include(j => j.InverseParent)
-            .Include(j => j.Nationwide)
-            .Where(j => j.UcjbId == jobId)
-            .FirstOrDefaultAsync();
+        var query = Context.TucJobArchives.Where(j => j.UcjbId == jobId);
+        query = AddRequiredArchiveIncludes(query, property);
 
+        var archive = await query.FirstOrDefaultAsync();
         ArgumentNullException.ThrowIfNull(archive);
 
         // Update the correct field prop
@@ -347,9 +312,9 @@ public partial class JobRepository
             case JobProperty.Items:
                 archive.UcjbQty = short.Parse(value);
                 break;
-            case JobProperty.Void: 
+            case JobProperty.Void:
                 var voidJob = bool.Parse(value);
-                if(voidJob) throw new ApplicationException("Voiding a job is not allowed here");
+                if (voidJob) throw new ApplicationException("Voiding a job is not allowed here");
                 archive.UcjbVoid = false;
                 break;
             case JobProperty.SpeedID:
@@ -427,9 +392,12 @@ public partial class JobRepository
                 archive.UcjbStatus = internalStatusId switch
                 {
                     // Handle status changes
-                    (int)InternalJobStatus.AwaitingPod when archive.UcjbStatus != (int)JobStatus.AwaitingPod => (int)JobStatus.AwaitingPod,
-                    (int)InternalJobStatus.NewJobs when archive.UcjbStatus != (int)JobStatus.Dispatched => (int)JobStatus.Dispatched,
-                    (int)InternalJobStatus.Reprice when archive.UcjbStatus != (int)JobStatus.Completed => (int)JobStatus.Completed,
+                    (int)InternalJobStatus.AwaitingPod when archive.UcjbStatus != (int)JobStatus.AwaitingPod =>
+                        (int)JobStatus.AwaitingPod,
+                    (int)InternalJobStatus.NewJobs when archive.UcjbStatus != (int)JobStatus.Dispatched =>
+                        (int)JobStatus.Dispatched,
+                    (int)InternalJobStatus.Reprice when archive.UcjbStatus != (int)JobStatus.Completed => (int)JobStatus
+                        .Completed,
                     _ => archive.UcjbStatus
                 };
                 break;
@@ -551,17 +519,6 @@ public partial class JobRepository
             case JobProperty.Barcode:
                 archive.Barcode = value[..Math.Min(value.Length, 20)];
                 break;
-            case JobProperty.FollowupTime:
-            case JobProperty.DeliverToContact:
-            case JobProperty.StopDate:
-            case JobProperty.RestartDate:
-            case JobProperty.InActiveDate:
-            case JobProperty.FirstDue:
-            case JobProperty.LastDone:
-            case JobProperty.NextDue:
-            case JobProperty.DaysOfWeek:
-            case JobProperty.Frequency:
-            case JobProperty.HolidayDelivery:
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
         }
@@ -569,6 +526,92 @@ public partial class JobRepository
         // Add additional notes for undeliverable location
         if (property == JobProperty.UndeliverableLocationID && archive.UndeliverableLocation?.Message != null)
             await JobUpdateAddNoteAsync(jobId, false, archive.UndeliverableLocation.Message);
+
+        await Context.SaveChangesAsync();
+    }
+
+    public async Task UpdateBulkJobAsync(
+        int bulkJobId,
+        JobProperty property,
+        string value)
+    {
+        var query = Context.TblBulkJobs.Where(j => j.BulkJobId == bulkJobId);
+        query = AddRequiredBulkJobIncludes(query, property);
+
+        var bulkJob = await query.FirstOrDefaultAsync();
+        ArgumentNullException.ThrowIfNull(bulkJob);
+
+        switch (property)
+        {
+            case JobProperty.Time:
+                bulkJob.BookTime = DateTimeOffset.Parse(value).DateTime;
+                break;
+            case JobProperty.Date:
+                bulkJob.BookDate = DateTimeOffset.Parse(value).DateTime;
+                break;
+            case JobProperty.Size:
+                bulkJob.Size = short.Parse(value);
+                break;
+            case JobProperty.Items:
+                bulkJob.Qty = short.Parse(value);
+                break;
+            case JobProperty.SpeedID:
+                bulkJob.Speed = int.Parse(value);
+                break;
+            case JobProperty.Weight:
+                bulkJob.Weight = decimal.Parse(value);
+                break;
+            case JobProperty.ClientID:
+                var clientId = int.Parse(value);
+                bulkJob.ClientId = clientId;
+                bulkJob.ClientCode = bulkJob.Client?.UcclCode;
+                break;
+            case JobProperty.ClientCode:
+                bulkJob.ClientCode = value[..Math.Min(value.Length, 5)];
+                bulkJob.Client?.UcclCode = value[..Math.Min(value.Length, 50)];
+                break;
+            case JobProperty.RefA:
+                bulkJob.ClientRefa = value[..Math.Min(value.Length, 20)];
+                break;
+            case JobProperty.RefB:
+                bulkJob.ClientRefb = value[..Math.Min(value.Length, 15)];
+                break;
+            case JobProperty.OurRef:
+                bulkJob.OurRef = value[..Math.Min(value.Length, 20)];
+                break;
+            case JobProperty.FromContactName:
+                bulkJob.Contact = value[..Math.Min(value.Length, 100)];
+                break;
+            case JobProperty.ToContactName:
+                bulkJob.DeliverToContact = value[..Math.Min(value.Length, 100)];
+                break;
+            case JobProperty.ToContactPhone:
+                bulkJob.DeliverToPhone = value[..Math.Min(value.Length, 100)];
+                break;
+            case JobProperty.DeliverToLeaveID:
+                var leaveId = int.Parse(value);
+                bulkJob.DeliverToLeaveId = leaveId;
+                bulkJob.DeliverToPrivateBusiness = leaveId == 1 ? null : false;
+                break;
+            case JobProperty.TrackingMethod:
+                var trackingMethodId = int.Parse(value);
+                bulkJob.TrackingMethod = trackingMethodId;
+                break;
+            case JobProperty.TrackingMobile:
+                bulkJob.TrackingMobile = value[..Math.Min(value.Length, 100)];
+                break;
+            case JobProperty.TrackingEmail:
+                bulkJob.TrackingEmail = value[..Math.Min(value.Length, 100)];
+                break;
+            case JobProperty.Amount:
+                bulkJob.Amount = decimal.Parse(value);
+                break;
+            case JobProperty.Void:
+                bulkJob.Void = bool.Parse(value);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(property), property, null);
+        }
 
         await Context.SaveChangesAsync();
     }
@@ -632,6 +675,61 @@ public partial class JobRepository
         var sizeId = int.Parse(value);
         job.UcjbSize = sizeId;
 
-        if (isUsCustomer && sizeId == (int)VehicleType.Truck || sizeId == (int)UrgentVehicleType.Truck) job.Truck = true;
+        if (isUsCustomer && sizeId == (int)VehicleType.Truck || sizeId == (int)UrgentVehicleType.Truck)
+            job.Truck = true;
+    }
+
+    private static IQueryable<TucJob> AddRequiredIncludes(IQueryable<TucJob> query, JobProperty property)
+    {
+        query = query
+            .Include(j => j.UcjbStatusNavigation)
+            .Include(j => j.PickupTimeZone);
+
+        return property switch
+        {
+            JobProperty.ConNote => query.Include(j => j.Parent),
+            JobProperty.AirportOnly => query.Include(j => j.TucJobNationwides),
+            JobProperty.Weight => query.Include(j => j.Parent)
+                .ThenInclude(p => p.InverseParent)
+                .Include(j => j.InverseParent),
+            JobProperty.ClientID => query.Include(j => j.UcjbClient),
+            JobProperty.ContactID => query.Include(j => j.Contact),
+            JobProperty.DeliverToLeaveID => query.Include(j => j.DeliverToLeave),
+            JobProperty.UndeliverableLocationID => query.Include(j => j.UndeliverableLocation),
+            JobProperty.NotifiedJobTypeID => query.Include(j => j.NotifiedJobType).Include(j => j.Contact),
+            JobProperty.TailLiftPu or JobProperty.TailLiftDo or JobProperty.DeliverToPrivateRes => query.Include(j =>
+                j.TucJobItemJobs),
+            _ => query
+        };
+    }
+
+    private static IQueryable<TucJobArchive> AddRequiredArchiveIncludes(IQueryable<TucJobArchive> query,
+        JobProperty property)
+    {
+        return property switch
+        {
+            JobProperty.AirportOnly => query.Include(j => j.Nationwide),
+            JobProperty.Weight => query.Include(j => j.Parent).Include(j => j.InverseParent),
+            JobProperty.ClientID => query.Include(j => j.UcjbClient),
+            JobProperty.ContactID => query.Include(j => j.Contact),
+            JobProperty.InternalStatusID => query.Include(j => j.InternalStatusNavigation),
+            JobProperty.DeliverToLeaveID => query.Include(j => j.DeliverToLeave),
+            JobProperty.UndeliverableLocationID => query.Include(j => j.UndeliverableLocation),
+            JobProperty.NotifiedJobTypeID => query.Include(j => j.NotifiedJobType).Include(j => j.Contact),
+            _ => query
+        };
+    }
+    
+    private static IQueryable<TblBulkJob> AddRequiredBulkJobIncludes(
+        IQueryable<TblBulkJob> query,
+        JobProperty property)
+    {
+        return property switch
+        {
+            JobProperty.ClientID or JobProperty.ClientCode => query.Include(j => j.Client),
+            JobProperty.SpeedID => query.Include(j => j.SpeedNavigation),
+            JobProperty.DeliverToLeaveID => query.Include(j => j.DeliverToLeave),
+            _ => query
+        };
     }
 }

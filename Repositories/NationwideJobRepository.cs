@@ -669,7 +669,7 @@ public class NationwideJobRepository(
                 AgentName = a.Agent.UcagName,
                 AgentRanking = a.Agent.Ranking.AgentRankingName,
                 DistanceRateId = a.DistanceRateId,
-                ZoneRateCardID = a.ZoneRateCardId,
+                ZoneRateCardID = a.ZoneRateCardId
             })
             .ToListAsync();
     }

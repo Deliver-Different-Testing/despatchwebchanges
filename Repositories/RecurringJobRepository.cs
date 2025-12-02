@@ -214,7 +214,7 @@ public class RecurringJobRepository(
                 break;
             case JobProperty.SpeedID:
             case JobProperty.AcceptedJobTypeID when !job.UcbkDone ?? false:
-                job.UcbkSpeed = short.Parse(value);
+                job.UcbkSpeed = int.Parse(value);
                 break;
             case JobProperty.Weight:
                 var weight = short.Parse(value);
