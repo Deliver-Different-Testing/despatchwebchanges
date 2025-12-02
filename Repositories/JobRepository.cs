@@ -3782,9 +3782,9 @@ public partial class JobRepository(
     private async Task<JobGroupViewModel> GetArchivedJobByIdAsync(int jobId)
     {
         var archivedJob = await Context.TucJobArchives
+            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(JobMappings.JobArchiveMapping)
-            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         if (archivedJob == null)
