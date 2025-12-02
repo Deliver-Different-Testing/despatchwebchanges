@@ -120,30 +120,31 @@ public class RecurringJobRepository(
 
     public async Task<JobGroupViewModel> GetRecurringJobByIdAsync(int jobId)
     {
-        try
-        {
-            var result = await Context.TucJobBookings
-                .AsNoTracking()
-                .Where(j => j.UcbkId == jobId)
-                .Select(j => new JobGroupViewModel
-                {
-                    Job = JobMappings.JobRecurringMapping.Compile()(j),
-                    RelatedJobs = j.InverseBookingParent
-                        .Select(JobMappings.JobRecurringMapping.Compile())
-                        .ToList()
-                })
-                .FirstOrDefaultAsync();
+        var mainJob = await Context.TucJobBookings
+            .AsNoTracking()
+            .Where(j => j.UcbkId == jobId)
+            .Select(JobMappings.JobRecurringMapping)
+            .FirstOrDefaultAsync();
+        
+        var relatedJobs = await GetRelatedJobsAsync(jobId);
 
-            ArgumentNullException.ThrowIfNull(result);
-
-            return result;
-        }
-        catch (Exception e)
+        return new JobGroupViewModel
         {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(GetRecurringJobByIdAsync)));
-            throw;
-        }
+            Job = mainJob,
+            RelatedJobs = relatedJobs
+        };
+    }
+
+    private async Task<List<JobViewModel>> GetRelatedJobsAsync(int jobBookingId)
+    {
+        var relatedBookingJobs = await Context.TucJobBookings
+            .AsNoTracking()
+            .Where(j => j.UcbkId == jobBookingId)
+            .SelectMany(j => j.InverseBookingParent)
+            .Select(JobMappings.JobRecurringMapping)
+            .ToListAsync();
+        
+        return relatedBookingJobs;
     }
 
     public async Task UpdateRecurringJobAsync(int jobId, JobProperty property, string value)
