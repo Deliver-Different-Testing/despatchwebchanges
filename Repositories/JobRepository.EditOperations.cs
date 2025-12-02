@@ -568,7 +568,7 @@ public partial class JobRepository
                 break;
             case JobProperty.ClientCode:
                 bulkJob.ClientCode = value[..Math.Min(value.Length, 5)];
-                bulkJob.Client?.UcclCode = value[..Math.Min(value.Length, 50)];
+                bulkJob.Client.UcclCode = value[..Math.Min(value.Length, 50)];
                 break;
             case JobProperty.RefA:
                 bulkJob.ClientRefa = value[..Math.Min(value.Length, 20)];
