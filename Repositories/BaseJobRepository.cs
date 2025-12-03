@@ -660,36 +660,40 @@ public class BaseJobRepository(
     // Query Methods
     private async Task<TucNoteViewModel> GetActiveNoteByIdAsync(int noteId)
     {
-        return await Context.TucNotes
+        var note = await Context.TucNotes
             .AsNoTracking()
-            .Include(x => x.NoteType)
-            .Include(x => x.CreatedByNavigation)
-            .Include(x => x.UpdatedByNavigation)
             .Where(x => x.NoteId == noteId)
-            .Select(x => new TucNoteViewModel(x))
+            .Select(NoteMappings.ActiveNoteMap)
             .FirstOrDefaultAsync();
+        
+        UpdateNoteDate(note, infoService.GetTenantTimeZone());
+        return note;
     }
 
     private async Task<List<TucNoteViewModel>> GetActiveNotesByJobIdAsync(int jobId)
     {
         var effectiveJobId = await GetEffectiveJobId(jobId, false);
-
-        return await Context.TucNotes
+        var tenantTimeZone = infoService.GetTenantTimeZone();
+        
+        var notes = await Context.TucNotes
             .AsNoTracking()
-            .Include(x => x.NoteType)
-            .Include(x => x.CreatedByNavigation)
-            .Include(x => x.UpdatedByNavigation)
-            .Where(x => x.JobId == effectiveJobId)
-            .Select(x => new TucNoteViewModel(x))
+            .Where(n => n.JobId == effectiveJobId)
+            .Select(NoteMappings.ActiveNoteMap)
             .ToListAsync();
+        
+        UpdateNoteDate(notes, tenantTimeZone);
+        return notes;
     }
 
     private async Task<TucNoteViewModel> GetArchivedNoteByIdAsync(int noteId)
     {
-        var query = CreateArchivedNoteQuery()
-            .Where(note => note.NoteId == noteId);
+        var note = await CreateArchivedNoteQuery()
+            .Where(note => note.NoteId == noteId).FirstOrDefaultAsync();
 
-        return await query.FirstOrDefaultAsync();
+        var tenantTimeZone = infoService.GetTenantTimeZone();
+        UpdateNoteDate(note, tenantTimeZone);
+      
+        return note;
     }
 
     private async Task<List<TucNoteViewModel>> GetArchivedNotesByJobIdAsync(int jobId)
@@ -899,76 +903,14 @@ public class BaseJobRepository(
         _economyCache = (economySpeedId, ecoDeliveryTime);
         return _economyCache.Value;
     }
-
-    /*
-    private static IQueryable<TucJob> ApplySearchFilter(IQueryable<TucJob> query, string searchText)
+    protected static void UpdateNoteDate(List<TucNoteViewModel> notes, string tenantTimeZone)
     {
-        if (string.IsNullOrWhiteSpace(searchText))
-            return query;
-
-        var searchPattern = $"%{searchText.Trim()}%";
-
-        return query.Where(j =>
-            // Core job information
-            EF.Functions.Like(j.UcjbNumber, searchPattern) ||
-            EF.Functions.Like(j.UcjbClient.UcclName ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.UcjbStatusNavigation.UcjsName ?? string.Empty, searchPattern) ||
-
-            // Courier information
-            EF.Functions.Like(j.UcjbCourier.UccrName ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.UcjbCourier.UccrSurname ?? string.Empty, searchPattern) ||
-
-            // Pickup contact
-            EF.Functions.Like(j.Contact.UcctFirstname ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.Contact.UcctSurname ?? string.Empty, searchPattern) ||
-
-            // Pickup address
-            EF.Functions.Like(j.PickupAddressLine1 ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.PickupAddressLine2 ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.PickupAddressLine3 ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.PickupAddressLine4 ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.PickupAddressLine5 ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.PickupAddressLine6 ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.PickupAddressLine7 ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.PickupAddressLine8 ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.UcjbFromAddr ?? string.Empty, searchPattern) ||
-
-            // Delivery contact and address
-            EF.Functions.Like(j.DeliverToContact ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.DeliveryAddressLine1 ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.DeliveryAddressLine2 ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.DeliveryAddressLine3 ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.DeliveryAddressLine4 ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.DeliveryAddressLine5 ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.DeliveryAddressLine6 ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.DeliveryAddressLine7 ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.DeliveryAddressLine8 ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.UcjbToAddr ?? string.Empty, searchPattern) ||
-
-            // Job properties
-            EF.Functions.Like(j.UcjbSpeedNavigation.ShortName ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.NotifiedJobType.UcjtName ?? string.Empty, searchPattern) ||
-            EF.Functions.Like(j.Connote ?? string.Empty, searchPattern) ||
-
-            // Flight information
-            j.TucJobNationwides.Any(nw =>
-                EF.Functions.Like(nw.UcnwFlightNo ?? string.Empty, searchPattern) ||
-                EF.Functions.Like(nw.CarrierFsCode ?? string.Empty, searchPattern) ||
-                EF.Functions.Like(nw.UcnwAirlineName ?? string.Empty, searchPattern) ||
-                EF.Functions.Like(nw.DepartureAirportName ?? string.Empty, searchPattern) ||
-                EF.Functions.Like(nw.DepartureAirportCity ?? string.Empty, searchPattern) ||
-                EF.Functions.Like(nw.DepartureAirportCountry ?? string.Empty, searchPattern) ||
-                EF.Functions.Like(nw.ArrivalAirportName ?? string.Empty, searchPattern) ||
-                EF.Functions.Like(nw.ArrivalAirportCity ?? string.Empty, searchPattern) ||
-                EF.Functions.Like(nw.ArrivalAirportCountry ?? string.Empty, searchPattern)
-            ) ||
-
-            // Agent information
-            EF.Functions.Like(j.Agent.UcagName ?? string.Empty, searchPattern) ||
-
-            // Barcode
-            EF.Functions.Like(j.Barcode ?? string.Empty, searchPattern)
-        );
+        foreach (var note in notes) UpdateNoteDate(note, tenantTimeZone);
     }
-*/
+
+    protected static void UpdateNoteDate(TucNoteViewModel note, string tenantTimeZone)
+    {
+        note.CreatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(note.CreatedDate, tenantTimeZone);
+        if (note.UpdatedDate.HasValue) note.UpdatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(note.UpdatedDate.Value, tenantTimeZone);
+    }
 }

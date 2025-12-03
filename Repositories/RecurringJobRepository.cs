@@ -11,6 +11,7 @@ using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Repositories;
 
@@ -361,15 +362,16 @@ public class RecurringJobRepository(
     public async Task<List<TucNoteViewModel>> GetRecurringNotesByJobIdAsync(int jobId)
     {
         var effectivePrebookId = await GetJobBookingRelationshipInfoAsync(jobId);
-
-        return await Context.TucNotes
-            .Include(n => n.NoteType)
-            .Include(n => n.CreatedByNavigation)
-            .Include(n => n.UpdatedByNavigation)
+        var tenantTimeZone = _infoService.GetTenantTimeZone();
+        
+        var notes = await Context.TucNotes
             .Where(n => n.JobBookingId == effectivePrebookId)
             .AsNoTracking()
-            .Select(n => new TucNoteViewModel(n))
+            .Select(NoteMappings.ActiveNoteMap)
             .ToListAsync();
+        
+        UpdateNoteDate(notes, tenantTimeZone);
+        return notes;
     }
 
     public async Task SaveRecurringJobNote(TucNoteViewModel note)

@@ -1,4 +1,5 @@
-import {IJobNote, INoteType} from "../interfaces/job.interface";
+import {IJobNote, IJobNoteDto, INoteType} from "../interfaces/job.interface";
+import {transformJobNoteDto} from "../functions/dtoMappings";
 
 class NoteService implements angular.IServiceProvider {
     static $inject = [
@@ -75,20 +76,15 @@ class NoteService implements angular.IServiceProvider {
     }
 
     async getJobNotes(jobId: number, isRecurring: boolean): Promise<IJobNote[]> {
-        console.log('NoteService.getJobNotes: Starting', { jobId, isRecurring });
         try {
             const url = isRecurring ? 'note/GetRecurringNotes' : 'note/GetNotes';
-            const response = await this.$http.get<IJobNote[]>(url, {
+            const response = await this.$http.get<IJobNoteDto[]>(url, {
                 params: {
                     jobId,
                 }
             });
-            console.log('NoteService.getJobNotes: Success', {
-                jobId,
-                isRecurring,
-                notesCount: response.data.length
-            });
-            return response.data;
+            
+            return response.data.map(transformJobNoteDto);
         } catch (error) {
             console.error('NoteService.getJobNotes: Failed', { jobId, isRecurring, error });
             return [];
@@ -96,18 +92,14 @@ class NoteService implements angular.IServiceProvider {
     }
 
     async getBulkJobNotes(bulkJobId: number): Promise<IJobNote[]> {
-        console.log('NoteService.getBulkJobNotes: Starting', { bulkJobId });
         try {
-            const response = await this.$http.get<IJobNote[]>('note/GetBulkJobNotes', {
+            const response = await this.$http.get<IJobNoteDto[]>('note/GetBulkJobNotes', {
                 params: {
                     bulkJobId,
                 }
             });
-            console.log('NoteService.getBulkJobNotes: Success', {
-                bulkJobId,
-                notesCount: response.data.length
-            });
-            return response.data;
+       
+            return response.data.map(transformJobNoteDto);
         } catch (error) {
             console.error('NoteService.getBulkJobNotes: Failed', { bulkJobId, error });
             return [];

@@ -3,7 +3,15 @@ import dayjs from "dayjs";
 import IFlightCargoProcessing, {
     IFlightCargoProcessingDto
 } from "../components/dialogs/flight-agent-conformation-dialog/interfaces/IFlightCargoProcessing";
-import {IDispatchJob, IDispatchJobDto, IJob, IJobDto, IJobGroup, IJobGroupDto} from "../interfaces/job.interface";
+import {
+    IDispatchJob,
+    IDispatchJobDto,
+    IJob,
+    IJobDto,
+    IJobGroup,
+    IJobGroupDto, IJobNote,
+    IJobNoteDto
+} from "../interfaces/job.interface";
 import {formatDateFromApi, formatLongDateTime, formatMins, formatShortDate, formatShortDateTime} from "./formatDates";
 import {ITask, ITaskDto} from "../components/task-dashboard/task-dashboard.interfaces";
 import {IPrebookListModel, IPrebookListModelDto} from "../components/recurringJobs/recurringJobs.interface";
@@ -177,5 +185,13 @@ export function transformOpenJobResponseDto(dto: IOpenJobResponseDto): IOpenJobR
         deliveryTime: dto.deliveryTime ? formatDateFromApi(dto.deliveryTime) : undefined,
         pickupTime: dto.pickupTime ? formatDateFromApi(dto.pickupTime) : undefined,
         lastCompleted: dto.lastCompleted ? formatDateFromApi(dto.lastCompleted) : undefined
+    }
+}
+
+export function transformJobNoteDto(dto: IJobNoteDto): IJobNote {
+    return {
+        ...dto,
+        createdDate: formatDateFromApi(dto.createdDate),
+        updatedDate: dto.updatedDate ? formatDateFromApi(dto.updatedDate) : undefined,
     }
 }
