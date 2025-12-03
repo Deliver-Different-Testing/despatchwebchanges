@@ -11,7 +11,6 @@ using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
-using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Repositories;
 
@@ -26,11 +25,14 @@ public class RecurringJobRepository(
     public async Task<PaginatedResponse<PrebookListViewModel>> GetRecurringJobsListAsync(
         RecurringJobQueryRequest request)
     {
+        var isUsTenant = _infoService.IsUsTenant();
+
         var query = Context.TucJobBookings
-            .Where(j => j.UcbkActive == request.Active 
-                        && !j.UcbkOneOff == false
-                        && (j.ParentId == null || j.ParentId == j.UcbkId));
-        
+            .Where(j => j.UcbkActive == request.Active && j.UcbkOneOff == false);
+
+        // US tenants: exclude child jobs (only show jobs where ParentId is null or matches root)
+        if (isUsTenant) query = query.Where(j => j.ParentId == null || j.ParentId == j.UcbkId);
+
         if (!string.IsNullOrWhiteSpace(request.SearchText))
         {
             var searchPattern = $"%{request.SearchText}%";
@@ -126,7 +128,7 @@ public class RecurringJobRepository(
             .Where(j => j.UcbkId == jobId)
             .Select(JobMappings.JobRecurringMapping)
             .FirstOrDefaultAsync();
-        
+
         var relatedJobs = await GetRelatedJobsAsync(jobId);
 
         return new JobGroupViewModel
@@ -144,7 +146,7 @@ public class RecurringJobRepository(
             .SelectMany(j => j.InverseBookingParent)
             .Select(JobMappings.JobRecurringMapping)
             .ToListAsync();
-        
+
         return relatedBookingJobs;
     }
 
@@ -355,21 +357,21 @@ public class RecurringJobRepository(
         DateTime? currentTenantTime = null)
     {
         jobBooked.UcbkActive = isActive;
-        jobBooked.UcbkInActiveBy = isActive ? null : staffId;
-        jobBooked.UcbkInActiveDate = isActive ? null : currentTenantTime;
+        jobBooked.UcbkInActiveBy = staffId;
+        jobBooked.UcbkInActiveDate = currentTenantTime;
     }
 
     public async Task<List<TucNoteViewModel>> GetRecurringNotesByJobIdAsync(int jobId)
     {
         var effectivePrebookId = await GetJobBookingRelationshipInfoAsync(jobId);
         var tenantTimeZone = _infoService.GetTenantTimeZone();
-        
+
         var notes = await Context.TucNotes
             .Where(n => n.JobBookingId == effectivePrebookId)
             .AsNoTracking()
             .Select(NoteMappings.ActiveNoteMap)
             .ToListAsync();
-        
+
         UpdateNoteDate(notes, tenantTimeZone);
         return notes;
     }
@@ -394,7 +396,7 @@ public class RecurringJobRepository(
 
             // Single query that updates parent and last child (if exists)
             var rowsAffected = await Context.TucJobBookings
-                .Where(jb => jb.UcbkId == request.JobId || 
+                .Where(jb => jb.UcbkId == request.JobId ||
                              jb.UcbkId == Context.TucJobBookings
                                  .Where(child => child.ParentId == request.JobId)
                                  .OrderByDescending(child => child.UcbkId)
@@ -432,7 +434,7 @@ public class RecurringJobRepository(
 
             // Single query that updates parent and first child (if exists)
             var rowsAffected = await Context.TucJobBookings
-                .Where(jb => jb.UcbkId == request.JobId || 
+                .Where(jb => jb.UcbkId == request.JobId ||
                              jb.UcbkId == Context.TucJobBookings
                                  .Where(child => child.ParentId == request.JobId)
                                  .OrderBy(child => child.UcbkDate)

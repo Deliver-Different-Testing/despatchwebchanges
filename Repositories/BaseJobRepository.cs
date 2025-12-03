@@ -903,12 +903,13 @@ public class BaseJobRepository(
         _economyCache = (economySpeedId, ecoDeliveryTime);
         return _economyCache.Value;
     }
+    
     protected static void UpdateNoteDate(List<TucNoteViewModel> notes, string tenantTimeZone)
     {
         foreach (var note in notes) UpdateNoteDate(note, tenantTimeZone);
     }
 
-    protected static void UpdateNoteDate(TucNoteViewModel note, string tenantTimeZone)
+    private static void UpdateNoteDate(TucNoteViewModel note, string tenantTimeZone)
     {
         note.CreatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(note.CreatedDate, tenantTimeZone);
         if (note.UpdatedDate.HasValue) note.UpdatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(note.UpdatedDate.Value, tenantTimeZone);

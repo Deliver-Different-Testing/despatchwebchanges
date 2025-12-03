@@ -1059,14 +1059,7 @@ public static class JobMappings
         {
             Id = j.UcbkId,
             Booked = j.UcbkDate.HasValue && j.UcbkTime.HasValue
-                ? new DateTime(
-                    j.UcbkDate.Value.Year,
-                    j.UcbkDate.Value.Month,
-                    j.UcbkDate.Value.Day,
-                    j.UcbkTime.Value.Hour,
-                    j.UcbkTime.Value.Minute,
-                    j.UcbkTime.Value.Second
-                )
+                ? DateExtension.CombineDateAndTime(j.UcbkDate.Value, j.UcbkTime) 
                 : DateTime.MinValue,
             NextDueTime = j.UcbkNextDue,
             Client = j.UcbkClientCode,
