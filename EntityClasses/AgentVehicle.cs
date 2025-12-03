@@ -27,6 +27,10 @@ public partial class AgentVehicle
 
     public int? ZoneRateCardId { get; set; }
 
+    public decimal? ZoneRateCardMarkup { get; set; }
+
+    public bool? MarkupOrMargin { get; set; }
+
     public virtual TucAgent Agent { get; set; }
 
     public virtual TblAirport Airport { get; set; }
