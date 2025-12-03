@@ -152,7 +152,7 @@ export function transformPrebookListDTO(dto: IPrebookListModelDto, isUsCustomer:
 export function transformDeliveryJourneyDTO(dto: IDeliveryJourneyDto): IDeliveryJourney {
     return {
         ...dto,
-        date: dayjs(dto.date),
+        date: formatDateFromApi(dto.date),
     }
 }
 
