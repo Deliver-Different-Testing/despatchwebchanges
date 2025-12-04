@@ -3416,8 +3416,9 @@ public partial class JobRepository(
             // Update existing items using ExecuteUpdateAsync
             foreach (var parcel in existingParcelsToUpdate)
             {
+                ArgumentNullException.ThrowIfNull(parcel.ItemId);
                 await Context.TucJobItems
-                    .Where(i => i.ItemId == parcel.ItemId!.Value)
+                    .Where(i => i.ItemId == parcel.ItemId.Value && i.JobId == effectiveJobId)
                     .ExecuteUpdateAsync(setters => setters
                         .SetProperty(i => i.Height, parcel.Height ?? 0)
                         .SetProperty(i => i.Length, parcel.Length ?? 0)
@@ -3490,8 +3491,9 @@ public partial class JobRepository(
             // Update existing items using ExecuteUpdateAsync
             foreach (var parcel in existingParcelsToUpdate)
             {
+                ArgumentNullException.ThrowIfNull(parcel.ItemId);
                 await Context.TblBulkJobItems
-                    .Where(i => i.ItemId == parcel.ItemId!.Value)
+                    .Where(i => i.ItemId == parcel.ItemId.Value && i.JobId == effectiveJobId)
                     .ExecuteUpdateAsync(setters => setters
                         .SetProperty(i => i.Height, parcel.Height ?? 0)
                         .SetProperty(i => i.Length, parcel.Length ?? 0)

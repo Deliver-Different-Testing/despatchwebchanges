@@ -6005,11 +6005,7 @@ public partial class DespatchContext : DbContext
         {
             entity.HasKey(e => new { e.JobId, e.ItemId });
 
-            entity.ToTable("tucJobItems", tb =>
-                {
-                    tb.HasTrigger("trg_UpdateLiveJobTotals");
-                    tb.HasTrigger("trg_tucJobItems_AutoIncrement");
-                });
+            entity.ToTable("tucJobItems", tb => tb.HasTrigger("trg_UpdateLiveJobTotals"));
 
             entity.HasIndex(e => e.ChildJobId, "IX_TucJobItems_ChildJob");
 
