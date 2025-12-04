@@ -22,7 +22,6 @@ using DespatchWeb.Models.RequestModels;
 using ExcelDataReader;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Serilog;
 using EventType = DespatchWeb.Enums.EventType;
 
@@ -40,7 +39,8 @@ public class JobController(
     IAddStopJobService addStopJobService,
     IPodExportService podExportService,
     IJobPhotoService jobPhotoService,
-    IClientJobsReportService clientJobsReportService
+    IClientJobsReportService clientJobsReportService,
+    IDispatchJobService dispatchJobService
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -203,7 +203,7 @@ public class JobController(
             if (breakdown.JobId.HasValue)
             {
                 await taskRepository.AddEventAsync(
-                    jobId ?? 0,
+                    (int)jobId,
                     "Manually rated price",
                     (int)EventType.ChangePrice);
             }
@@ -855,7 +855,7 @@ public class JobController(
     {
         try
         {
-            await jobRepository.DispatchSelectedJobsAsync(data.CourierId, data.JobIds);
+            await dispatchJobService.DispatchJobsToCourier(data.JobIds, data.CourierId);
             return Ok();
         }
         catch (Exception ex)
@@ -871,6 +871,7 @@ public class JobController(
         try
         {
             await jobRepository.ReDispatchSelectedJobsAsync(data.CourierId, data.JobIds);
+            await dispatchJobService.DispatchJobsToCourier(data.JobIds, data.CourierId);
             return Ok();
         }
         catch (Exception ex)

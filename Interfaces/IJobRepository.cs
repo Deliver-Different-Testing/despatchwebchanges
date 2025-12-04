@@ -45,7 +45,6 @@ public interface IJobRepository
         List<int> selectedViewIds,
         int? selectedClearListId = null);
 
-    Task DispatchSelectedJobsAsync(int courierId, List<int> jobIds);
     Task SwapPodAsync(string job1, string job2);
     Task ReDispatchSelectedJobsAsync(int courierId, List<int> jobIds);
     Task ReSendSelectedJobsAsync(string jobIds);
@@ -207,4 +206,6 @@ public interface IJobRepository
     Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType);
     Task SimpleRepriceJobManualAsync(SimpleRepriceJobModel data);
     Task<decimal> GetJobRateUsAsync(RateJobUsDto dto);
+    Task AssignCourierToJobAsync(List<int> jobIds, int courierId);
+    Task AssignCourierToChildJobsAsync(List<int> jobIds, InternalJobStatus internalStatus);
 }

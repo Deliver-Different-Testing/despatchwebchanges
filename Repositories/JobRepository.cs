@@ -1227,7 +1227,7 @@ public partial class JobRepository(
             job.AngularId = Guid.NewGuid();
             job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
         }
-        
+
         return new JobSearchResult
         {
             Jobs = jobs,
@@ -1257,18 +1257,6 @@ public partial class JobRepository(
         );
     }
 
-    public async Task DispatchSelectedJobsAsync(int courierId,
-        List<int> jobIds)
-    {
-        var staffId = _infoService.GetStaffId();
-        var jobIdsString = string.Join(",", jobIds);
-        await Context.Procedures.DESWEB_stpJob_AutoDespatchSelectedJobsAsync(jobIdsString, courierId, staffId,
-            (int)InternalJobStatus.AwaitingPod);
-
-        foreach (var jobId in jobIds)
-            await Context.Procedures.DES_stpJob_AutoDespatchChildJobsAsync(jobId, (int)InternalJobStatus.AwaitingPod);
-    }
-
     public async Task SwapPodAsync(string job1,
         string job2) =>
         await Context.Procedures.DESWEB_qdfSwapPODAsync(job1, job2);
@@ -1279,7 +1267,6 @@ public partial class JobRepository(
         try
         {
             foreach (var jobId in jobIds) await Context.Procedures.uspRestoreJobAsync(jobId);
-            await DispatchSelectedJobsAsync(courierId, jobIds);
         }
         catch (Exception e)
         {
@@ -4345,4 +4332,81 @@ public partial class JobRepository(
             throw;
         }
     }
+
+    public async Task AssignCourierToJobAsync(int jobId, int courierId)
+    {
+        var rowsChanged = await AssignCourierToJobsAsync([jobId], courierId);
+
+        if (rowsChanged == 0) throw new InvalidOperationException($"No record found for job {jobId}");
+    }
+
+    public async Task AssignCourierToJobAsync(List<int> jobIds, int courierId)
+    {
+        var rowsChanged = await AssignCourierToJobsAsync(jobIds, courierId);
+        if (rowsChanged == 0)
+            throw new InvalidOperationException($"No records found for jobs: {string.Join(", ", jobIds)}");
+    }
+
+    private async Task<int> AssignCourierToJobsAsync(IEnumerable<int> jobIds, int courierId)
+    {
+        var tenantTime = _infoService.GetCurrentTenantTime();
+
+        return await Context.TucJobs
+            .Where(j => jobIds.Contains(j.UcjbId))
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(j => j.UcjbCourierId, courierId)
+                .SetProperty(j => j.DesCheck, false)
+                .SetProperty(j => j.FdcourierId, (int?)null)
+                .SetProperty(j => j.UcjbDispDate, tenantTime)
+                .SetProperty(j => j.UcjbDispTime, tenantTime)
+                .SetProperty(j => j.UcjbStatus, j => j.UcjbStatus < 1 ? (int)JobStatus.Dispatched : j.UcjbStatus)
+                .SetProperty(j => j.InternalStatus, (int)InternalJobStatus.AwaitingPod)
+            );
+    }
+
+    public async Task AssignCourierToChildJobsAsync(List<int> jobIds, InternalJobStatus internalStatus)
+{
+    if (jobIds == null || jobIds.Count == 0) return;
+
+    await using var transaction = await Context.Database.BeginTransactionAsync();
+
+    try
+    {
+        // Get parent IDs for all provided job IDs
+        var parentIds = await Context.TucJobs
+            .Where(j => jobIds.Contains(j.UcjbId) && j.ParentId != null)
+            .Select(j => j.ParentId.Value)
+            .Distinct()
+            .ToListAsync();
+
+        if (parentIds.Count == 0) return;
+        
+        await Context.TucJobs
+            .Where(child => parentIds.Contains(child.ParentId.Value)
+                            && child.UcjbCourierId == null
+                            && child.JobRelationshipType.AutoDespatchToOtherChildJobs == true
+                            && jobIds.Contains(child.Parent.UcjbId) == false) // Don't update the jobs being dispatched
+            .Join(
+                Context.TucJobs.Where(parent => jobIds.Contains(parent.UcjbId)),
+                child => child.ParentId,
+                parent => parent.ParentId,
+                (child, parent) => new { Child = child, Parent = parent })
+            .Where(x => x.Child.UcjbDate.Date <= x.Parent.UcjbDate.Date)
+            .Select(x => x.Child)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(j => j.UcjbCourierId, j => j.Parent.UcjbCourierId)
+                .SetProperty(j => j.UcjbDispId, j => j.Parent.UcjbDispId)
+                .SetProperty(j => j.UcjbDispTime, j => j.Parent.UcjbDispTime)
+                .SetProperty(j => j.UcjbDispDate, j => j.Parent.UcjbDispDate)
+                .SetProperty(j => j.UcjbStatus, j => j.Parent.UcjbStatus)
+                .SetProperty(j => j.InternalStatus, (int)internalStatus));
+
+        await transaction.CommitAsync();
+    }
+    catch
+    {
+        await transaction.RollbackAsync();
+        throw;
+    }
+}
 }
