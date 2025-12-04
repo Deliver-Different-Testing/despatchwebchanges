@@ -77,11 +77,12 @@ class OpenJobsWidgetController extends BaseController {
     }
 
     private loadOpenJobs() {
-        const params: Pick<OverviewQueryParams, "startDate" | "endDate" | "regions" | "speeds"> = {
+        const params: Pick<OverviewQueryParams, "startDate" | "endDate" | "regions" | "speeds" | "couriers"> = {
             startDate: this.overviewFiltersService.dateRange?.start || undefined,
             endDate: this.overviewFiltersService.dateRange?.end || undefined,
             regions: this.overviewFiltersService.selectedRegions?.map(region => region.id) || undefined,
-            speeds: this.overviewFiltersService.selectedSpeeds?.map(speed => speed.id) || undefined
+            speeds: this.overviewFiltersService.selectedSpeeds?.map(speed => speed.id) || undefined,
+            couriers: this.overviewFiltersService.selectedCouriers?.map(courier => courier.id) || undefined
         };
         
         this.overviewService.getOpenJobs(params)

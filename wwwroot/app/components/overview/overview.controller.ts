@@ -449,6 +449,12 @@ class OverviewController extends BaseController {
         await this.refreshData();
     }
 
+    async onPaginate(page: number, limit: number): Promise<void> {
+        this.query.page = page;
+        this.query.limit = limit;
+        await this.refreshData();
+    }
+    
     async refreshData() {
         try {
             const statusGroup = this.getStatusGroup();
@@ -540,18 +546,17 @@ class OverviewController extends BaseController {
         }
     }
 
-    async removeCourier(courier: ISuggestion): Promise<void> {
-        const index = this.selectedCouriers.findIndex(c => c.id === courier.id);
-        if (index !== -1) {
-            this.selectedCouriers.splice(index, 1);
-            this.query.page = 1;
+    onCourierRemoved(): void {
+        this.query.page = 1;
 
-            this.overviewFiltersService.updateFilters({
-                selectedCouriers: this.selectedCouriers,
-            });
+        this.overviewFiltersService.updateFilters({
+            selectedCouriers: this.selectedCouriers,
+        });
 
-            await this.refreshData();
-        }
+        // Use $timeout to ensure the chip removal completes first
+        this.registerTimeout(async () => {
+           await this.refreshData();
+        }, 0);
     }
 }
 
