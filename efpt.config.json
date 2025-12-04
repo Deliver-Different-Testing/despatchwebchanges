@@ -431,10 +431,6 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[DES_stpJob_AutoDespatchChildJobs]",
-         "ObjectType": 1
-      },
-      {
          "Name": "[dbo].[DES_stpJob_AutoDespatchSelectedJobs_FSCourierID]",
          "ObjectType": 1
       },
@@ -464,10 +460,6 @@
       },
       {
          "Name": "[dbo].[DESWEB_qryPotentialCouriers]",
-         "ObjectType": 1
-      },
-      {
-         "Name": "[dbo].[DESWEB_stpJob_AutoDespatchSelectedJobs]",
          "ObjectType": 1
       },
       {

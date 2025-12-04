@@ -55,4 +55,5 @@ public interface ICourierRepository
     Task<Suggestion> GetExactCourierByCodeAsync(string courierCode);
 
     Task<List<DriverWorkOverviewViewModel>> GetDriverWorkOverviewAsync();
+    Task ResetClearListAreaOrderAsync(int courierId);
 }

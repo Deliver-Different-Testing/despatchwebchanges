@@ -121,12 +121,12 @@ builder.Services.Configure<FormOptions>(x =>
 });
 builder.Services.Configure<IISServerOptions>(options =>
 {
-    if (options != null) options.MaxRequestBodySize = int.MaxValue;
+    options?.MaxRequestBodySize = int.MaxValue;
 });
 
 builder.Services.Configure<KestrelServerOptions>(options =>
 {
-    if (options != null) options.Limits.MaxRequestBodySize = int.MaxValue;
+    options?.Limits.MaxRequestBodySize = int.MaxValue;
 });
 
 builder.Services.AddHttpClient();
@@ -154,6 +154,7 @@ builder.Services.AddScoped<IPodExportService, PodExportService>();
 builder.Services.AddScoped<IJobPhotoService, JobPhotoService>();
 builder.Services.AddScoped<IClearListEnvelopeService, ClearListEnvelopeService>();
 builder.Services.AddScoped<IClientJobsReportService, ClientJobsReportService>();
+builder.Services.AddScoped<IDispatchJobService, DispatchJobService>();
 
 // Register DespatchContext with a fake connection string
 builder.Services.AddDbContextFactory<DespatchContext>(options =>

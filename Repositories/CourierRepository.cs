@@ -12,7 +12,6 @@ using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage.Json;
 using Serilog;
 
 namespace DespatchWeb.Repositories;
@@ -1612,6 +1611,55 @@ public class CourierRepository(
             .ToListAsync();
 
         return drivers;
+    }
+    
+    public async Task ResetClearListAreaOrderAsync(int courierId)
+    {
+        var tenantTime = infoService.GetCurrentTenantTime();
+    
+        // Count jobs for the courier that are not void and not done
+        var jobCount = await Context.TucJobs
+            .Where(j => 
+                j.UcjbVoid == false && 
+                j.UcjbJobDone == false && 
+                j.UcjbCourierId == courierId)
+            .CountAsync();
+    
+        switch (jobCount)
+        {
+            case 0:
+                // Update clear list area order - set status to 3 and format OrderTime
+                await Context.TblClearListAreaOrders
+                    .Where(c => c.CourierId == courierId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(c => c.Status, 3)
+                        .SetProperty(c => c.OrderTime, tenantTime));
+                break;
+            case > 0:
+            {
+                // Check if jobs are only status 5 (picked up) or 8 (late delivery)
+                var jobsNotPickedUpOrLate = await Context.TucJobs
+                    .Where(j => 
+                        j.UcjbVoid == false && 
+                        j.UcjbJobDone == false && 
+                        j.UcjbCourierId == courierId &&
+                        j.UcjbStatus != (int)JobStatus.PickedUp && 
+                        j.UcjbStatus != (int)JobStatus.LateDelivery)
+                    .CountAsync();
+        
+                if (jobsNotPickedUpOrLate == 0)
+                {
+                    // All jobs are only picked up or late delivery
+                    await Context.TblClearListAreaOrders
+                        .Where(c => c.CourierId == courierId)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(c => c.Status, 5)
+                            .SetProperty(c => c.OrderTime, tenantTime));
+                }
+
+                break;
+            }
+        }
     }
 
     /// <summary>
