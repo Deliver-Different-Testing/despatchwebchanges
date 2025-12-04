@@ -178,7 +178,7 @@
                             </md-autocomplete>
 
                             <div class="selected-couriers-chips" ng-if="ctrl.selectedCouriers.length">
-                                <md-chips ng-model="ctrl.selectedCouriers" md-removable="true" md-on-remove="ctrl.removeCourier($chip)">
+                                <md-chips ng-model="ctrl.selectedCouriers" md-removable="true" md-on-remove="ctrl.onCourierRemoved()">
                                     <md-chip-template>
                                         {{$chip.text}}
                                     </md-chip-template>
@@ -353,7 +353,7 @@
                         <md-table-pagination
                                 md-limit="ctrl.query.limit"
                                 md-limit-options="[10, 20, 30, 50]"
-                                md-on-paginate="ctrl.refreshData"
+                                md-on-paginate="ctrl.onPaginate"
                                 md-page="ctrl.query.page"
                                 md-page-select
                                 md-total="{{ctrl.query.total}}">
