@@ -15,7 +15,11 @@ import {
     IJobSearchResult,
     ISuggestion,
 } from "../../interfaces/job.interface";
-import {IPotentialCouriers, ITruckCourierStatus} from "../../interfaces/courier.interface";
+import {
+    IDriverWorkOverview,
+    IPotentialCouriers,
+    ITruckCourierStatus
+} from "../../interfaces/courier.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import BaseController from "../base-controller";
@@ -55,6 +59,7 @@ import {getIanaTimezone} from "../../functions/formatDates";
 import DispatchBoxes from "./enums/DispatchBoxes";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 import ITaskItemConfig from "../../enums/task-item-config";
+import CurrentWorkLists from "./enums/CurrentWorkLists";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -185,6 +190,9 @@ class HomeController extends BaseController {
     currentJobListPageSize: number = 50;
     currentJobListTotalCount: number = 0;
 
+    currentWorkViewMode: CurrentWorkLists = CurrentWorkLists.Overview;
+    driversWithJobCounts?: IDriverWorkOverview[];
+
     constructor(
         private $document: angular.IDocumentService,
         private $mdDialog: angular.material.IDialogService,
@@ -293,6 +301,7 @@ class HomeController extends BaseController {
         this.initDriverLocationRefreshIntervalOptions();
         this.loadSavedDriverLocationRefreshInterval();
         this.initializeTaskService();
+        this.loadDriversWithJobCounts();
     }
 
     $onInit(): void {
@@ -807,7 +816,7 @@ class HomeController extends BaseController {
     areAllViewsSelected(): boolean {
         return this.views && this.views.length > 0 && this.views.every((v: DfrntPageViewModel) => v.selected);
     }
-    
+
     updateMapForSelectedViews(): void {
         if (this.initialViewSet) return;
 
@@ -1189,7 +1198,7 @@ class HomeController extends BaseController {
             this.applyScope();
         }
     }
-    
+
     updateCourierInfo(courier: ICourierData): void {
         if (!courier.courier) {
             courier.courier = `${courier.courier} ${courier.courierName}`;
@@ -1205,8 +1214,6 @@ class HomeController extends BaseController {
             throw new Error('Courier ID is required');
         }
         const data = await this.DispatchData.getJobsCurrent(courier.courierId,
-            this.currentJobListPage,
-            this.currentJobListPageSize,
             this.queryParams.startDate,
             this.queryParams.endDate);
 
@@ -1217,7 +1224,7 @@ class HomeController extends BaseController {
         this.jobsCurrentList = data.jobs;
         this.currentJobListTotalCount = data.totalCount;
     }
-    
+
     async getCurrentJobs(courierId: number): Promise<void> {
         if (!courierId) {
             console.warn("No courier ID provided");
@@ -1227,16 +1234,15 @@ class HomeController extends BaseController {
         try {
             this.currentListLoading = true;
 
-            const result = await this.DispatchData.getJobsCurrent(courierId,
-                this.currentJobListPage,
-                this.currentJobListPageSize,
+            const result = await this.DispatchData.getJobsCurrent(
+                courierId,
                 this.queryParams.startDate,
-                this.queryParams.endDate);
+                this.queryParams.endDate
+            );
             this.jobsCurrentList = result.jobs;
 
             if (this.jobsCurrentList && this.jobsCurrentList.length > 0) {
                 console.log(`Setting mapJobList for courier ${courierId} with ${this.jobsCurrentList.length} jobs`);
-                // Only show undispatched jobs on map for performance
                 this.mapJobList = this.getUndispatchedMapItems(result.jobs);
             } else {
                 console.log(`No jobs found for courier ${courierId}`);
@@ -1248,7 +1254,7 @@ class HomeController extends BaseController {
             this.currentListLoading = false;
         }
     }
-
+    
     async selectSupportJobDetail(task: ITask): Promise<void> {
         console.log(' Starting with task:', {
             jobId: task.jobId,
@@ -1301,6 +1307,8 @@ class HomeController extends BaseController {
         if (this.currentJobId && this.currentJobId !== job.id) {
             this.tasksService.cancelJobTaskLoading(this.currentAppPage, this.currentJobId);
         }
+        
+        this.currentWorkViewMode = CurrentWorkLists.SelectedDriver;
 
         await this.markJobReadStatus(job.id, true);
 
@@ -1517,7 +1525,7 @@ class HomeController extends BaseController {
             }
 
             let orderBy = this.queryParams.order || '';
-            let orderDirection = "desc";
+            let orderDirection: string;
 
             if (orderBy && orderBy.startsWith("-")) {
                 orderBy = orderBy.substring(1);
@@ -1728,7 +1736,7 @@ class HomeController extends BaseController {
     async showAdditionalServicesMenu($event: MouseEvent, job: IDispatchJob): Promise<void> {
         await this.additionalServicesDialog.showAdditionalServicesDialog($event, job);
     }
-    
+
     async loadSupports(filterType: string = this.supportsFilter): Promise<void> {
         try {
             this.supportsLoading = true;
@@ -1757,7 +1765,7 @@ class HomeController extends BaseController {
             this.applyScope();
         }
     }
-    
+
     getContextMenuOptions(job: IDispatchJob): any[] | IContextMenuOption[] {
         if (!job) return [];
 
@@ -2261,16 +2269,7 @@ class HomeController extends BaseController {
         this.queryParams.searchText = searchText || '';
         await this.getJobList();
     }
-
-    async handleLoadMoreCurrentJobs(page: number, pageSize: number): Promise<IJobSearchResult> {
-        if (!this.currentCourier) {
-            console.error('Error loading more current jobs: no courier selected');
-            throw new Error('Error loading more current jobs: no courier selected');
-        }
-
-        return await this.DispatchData.getJobsCurrent(this.currentCourier?.id, page, pageSize);
-    }
-
+    
     async openSettingsDialog($event: MouseEvent): Promise<void> {
         if (!this.boxes) return;
 
@@ -2297,8 +2296,8 @@ class HomeController extends BaseController {
                 this.onDriverLocationRefreshIntervalChange(result.selectedDriverLocationRefreshInterval);
             }
 
-            if(result.boxes) this.boxes = result.boxes;
-            
+            if (result.boxes) this.boxes = result.boxes;
+
             this.saveCurrentLayout();
             this.applyScope();
             this.toastrService.showSuccessToast('Settings saved and applied successfully');
@@ -2310,10 +2309,10 @@ class HomeController extends BaseController {
     }
 
     async onExactCourierMatchSearch(exactCourierMatchSearchText: string): Promise<void> {
-        if(!exactCourierMatchSearchText) return;
+        if (!exactCourierMatchSearchText) return;
 
         const courierMatch = await this.DispatchData.getExactCourierMatch(exactCourierMatchSearchText);
-        if(!courierMatch) {
+        if (!courierMatch) {
             this.toastrService.showWarningToast(`No courier found with code: ${exactCourierMatchSearchText}. Please try again.`);
             return;
         }
@@ -2332,6 +2331,34 @@ class HomeController extends BaseController {
         // Clear the search text after a successful search
         this.exactCourierMatchSearchText = '';
         this.applyScope();
+    }
+    
+    private async loadDriversWithJobCounts(): Promise<void> {
+        try {
+            this.driversWithJobCounts = await this.DispatchData.getDriverWorkOverview();
+            this.applyScope();
+        } catch (error) {
+            console.error('Error loading drivers with job counts:', error);
+            this.driversWithJobCounts = [];
+        }
+    }
+
+    async selectDriverFromOverview(driver: IDriverWorkOverview): Promise<void> {
+        this.currentWorkViewMode = CurrentWorkLists.SelectedDriver;
+
+        const selectedCourier: ISuggestion = {
+            id: driver.courierId,
+            text: driver.name
+        };
+
+        await this.onCourierSearchSelect(selectedCourier);
+        this.applyScope();
+    }
+
+    switchCurrentWorkViewMode(): void {
+        if(this.currentWorkViewMode !== CurrentWorkLists.SelectedDriver) {
+            this.currentWorkSelection = '';
+        }
     }
 }
 

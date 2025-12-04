@@ -377,6 +377,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\driver-management-dashboard\interfaces\IDriverEmail.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\driver-management-dashboard\interfaces\IGroupEmailData.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\driver-management-dashboard\interfaces\ITodayActiveDrivers.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\home\enums\CurrentWorkLists.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\home\enums\DispatchBoxes.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\home\home.module.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\enums\jobSearchBoxes.ts" />

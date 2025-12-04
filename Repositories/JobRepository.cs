@@ -1192,9 +1192,7 @@ public partial class JobRepository(
 
     public async Task<JobSearchResult> CurrentJobListAsync(int courierId,
         DateTimeOffset? startDate,
-        DateTimeOffset? endDate,
-        int page,
-        int pageSize)
+        DateTimeOffset? endDate)
     {
         var isUsCustomer = _infoService.IsUsTenant();
 
@@ -1218,8 +1216,6 @@ public partial class JobRepository(
 
         // Apply pagination
         var jobs = await query
-            .Skip(page * pageSize)
-            .Take(pageSize)
             .Select(JobMappings.JobDispatchMapping(isUsCustomer))
             .ToListAsync();
 
@@ -1231,14 +1227,12 @@ public partial class JobRepository(
             job.AngularId = Guid.NewGuid();
             job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
         }
-
-        var hasMore = (page + 1) * pageSize < totalCount;
-
+        
         return new JobSearchResult
         {
             Jobs = jobs,
             TotalCount = totalCount,
-            HasMore = hasMore,
+            HasMore = false,
             MapItems = mapItems
         };
     }

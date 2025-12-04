@@ -1,49 +1,64 @@
 ﻿// Variables
 @hint-text-color: rgba(0, 0, 0, 0.54);
 @hint-font-size: 11px;
-@search-spacing: 8px;
+@search-spacing: 12px;
+@transition-standard: cubic-bezier(0.4, 0.0, 0.2, 1);
 
 // Courier Match Search
 .courier-match-search {
   display: flex;
   align-items: flex-start;
   gap: @search-spacing;
-  padding: 5px;
-  background: rgba(0, 0, 0, 0.02);
-  border-radius: 8px;
-  transition: background-color 0.2s ease;
-  max-width: 600px;
-  width: 80%;
+  padding: 8px 0;
+  transition: all 280ms @transition-standard;
+  max-width: 800px;
+  width: 100%;
+  position: relative;
 
-  &:hover {
-    background: rgba(0, 0, 0, 0.04);
-  }
-
-  // Rest of the styles remain the same...
+  // Input containers
   md-input-container {
     flex: 1;
     margin: 0;
     padding-top: 0;
+    min-width: 0;
 
     label {
       font-weight: 500;
+      font-size: 12px;
+      letter-spacing: 0.4px;
+      color: rgba(0, 0, 0, 0.6);
     }
 
     md-icon {
       color: rgba(0, 0, 0, 0.54);
-      transition: color 0.2s ease;
+      transition: color 200ms @transition-standard;
+      font-size: 20px;
+      min-width: 20px;
+      min-height: 20px;
     }
 
     input {
-      font-size: 14px;
+      font-size: 16px;
+      line-height: 24px;
+      padding: 8px 0;
+      color: rgba(0, 0, 0, 0.87);
+      border: none;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+      transition: border-color 200ms @transition-standard;
 
       &::placeholder {
         color: rgba(0, 0, 0, 0.38);
-        font-style: italic;
+        font-size: 14px;
       }
 
-      &:focus::placeholder {
-        opacity: 0;
+      &:focus {
+        outline: none;
+        border-bottom-color: var(--md-primary-color, #1976d2);
+        border-bottom-width: 2px;
+
+        &::placeholder {
+          opacity: 0;
+        }
       }
 
       // Hide number input spinners
@@ -57,40 +72,131 @@
         }
       }
     }
-  }
 
-  // Focus state
-  &:focus-within {
-    background: rgba(0, 0, 0, 0.06);
-
-    md-input-container {
+    &.md-input-focused {
       md-icon {
         color: var(--md-primary-color, #1976d2);
       }
 
-      .input-hint {
-        opacity: 1;
+      label {
         color: var(--md-primary-color, #1976d2);
       }
+
+      .input-hint {
+        color: var(--md-primary-color, #1976d2);
+        font-size: @hint-font-size;
+      }
+    }
+  }
+
+  // Search button
+  .search-button {
+    margin-top: 16px;
+    min-width: 64px;
+    height: 36px;
+    border-radius: 4px;
+    transition: opacity 200ms @transition-standard;
+
+    &:hover:not([disabled]) {
+      opacity: 0.9;
+    }
+
+    &:active:not([disabled]) {
+      opacity: 0.8;
+    }
+  }
+
+  // Divider (optional - if you want to separate input groups)
+  .search-divider {
+    width: 1px;
+    height: 48px;
+    background: rgba(0, 0, 0, 0.12);
+    margin: 8px 0;
+    align-self: center;
+  }
+}
+
+// Loading state
+.courier-match-search.searching {
+  pointer-events: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--md-primary-color, #1976d2);
+    animation: loading 1.5s ease-in-out infinite;
+    opacity: 0.7;
+  }
+
+  .search-button {
+    opacity: 0.6;
+
+    md-icon {
+      animation: rotate 1s linear infinite;
     }
   }
 }
 
-// Loading state (optional - add if you want a loading indicator)
-.courier-match-search.searching {
-  pointer-events: none;
-  opacity: 0.7;
+// Error state
+.courier-match-search.error {
+  md-input-container {
+    label {
+      color: #f44336;
+    }
 
-  .search-button {
-    animation: pulse 1.5s ease-in-out infinite;
+    input {
+      border-bottom-color: #f44336;
+    }
   }
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
+// Disabled state
+.courier-match-search[disabled],
+.courier-match-search.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+// Animations
+@keyframes loading {
+  0% {
+    transform: translateX(-100%);
   }
-  50% {
-    opacity: 0.5;
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .courier-match-search {
+    flex-direction: column;
+    max-width: 100%;
+
+    md-input-container {
+      width: 100%;
+    }
+
+    .search-button {
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .search-divider {
+      display: none;
+    }
   }
 }

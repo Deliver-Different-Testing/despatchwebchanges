@@ -12,6 +12,7 @@ using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.Json;
 using Serilog;
 
 namespace DespatchWeb.Repositories;
@@ -1589,6 +1590,28 @@ public class CourierRepository(
                     nameof(GetExactCourierByCodeAsync)));
             throw;
         }
+    }
+
+    public async Task<List<DriverWorkOverviewViewModel>> GetDriverWorkOverviewAsync()
+    {
+        var now = infoService.GetCurrentTenantTime();
+        var drivers = await Context.TucCouriers
+            .AsNoTracking()
+            .Where(c => c.Active)
+            .Select(c => new DriverWorkOverviewViewModel
+            {
+                CourierId = c.UccrId,
+                Name = c.UccrName + " " + c.UccrSurname,
+                VehicleType = MapVehicleTypeToAbbreviation(c.UccrVehicle),
+                JobCount = c.TucJobUcjbCouriers.Count(j => !j.UcjbJobDone 
+                                                           && !j.UcjbVoid
+                                                           && j.UcjbDate.Date == now.Date),
+                DriverStatusText = c.CourierLogInOut.LogOutTime == null ? "Active" : "Inactive"
+            })
+            .Distinct()
+            .ToListAsync();
+
+        return drivers;
     }
 
     /// <summary>

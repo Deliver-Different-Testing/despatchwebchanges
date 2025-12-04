@@ -1,28 +1,74 @@
-<md-progress-linear
-        md-mode="indeterminate"
-        ng-show="ctrl.currentListLoading"
-        class="md-primary">
-</md-progress-linear>
+<div class="current-work-widget">
+    <div class="current-work-header">
+        <md-radio-group ng-model="ctrl.currentWorkViewMode" ng-change="ctrl.switchCurrentWorkViewMode()" layout="row">
+            <md-radio-button value="overview" class="md-primary">
+                All Drivers
+            </md-radio-button>
+            <md-radio-button value="selected" class="md-primary" ng-disabled="!ctrl.currentCourier">
+                Selected Driver
+            </md-radio-button>
+        </md-radio-group>
+    </div>
 
-<jobs-list
-        ng-if="ctrl.jobsCurrentList"
-        jobs="ctrl.jobsCurrentList"
-        selected-job="ctrl.selectedJob"
-        on-job-select="ctrl.selectJob(job)"
-        on-job-dispatch="ctrl.handleJobDispatch(job, courierId)"
-        on-job-action="ctrl.handleJobAction(action, job, params)"
-        get-context-menu-options="ctrl.getJobContextMenuOptions()"
-        refresh-interval="30000"
-        job-list-type="ctrl.currentWorkListName"
-        on-load-more-jobs="ctrl.handleLoadMoreCurrentJobs(page, pageSize)"
-        enable-virtual-scrolling="true"
-        total-jobs-count="ctrl.currentJobListTotalCount">
-</jobs-list>
+    <md-progress-linear
+            md-mode="indeterminate"
+            ng-show="ctrl.currentListLoading"
+            class="md-primary">
+    </md-progress-linear>
 
-<no-data
-        ng-if="!ctrl.jobsCurrentList"
-        title="No Courier Selected"
-        message="Please Select a Courier to View Available Work"
-        icon="local_shipping"
-        show-action="false">
-</no-data>
+    <div ng-show="ctrl.currentWorkViewMode === 'overview'" class="driver-overview-container">
+        <md-list flex>
+            <md-list-item
+                    ng-repeat="driver in ctrl.driversWithJobCounts track by driver.courierId"
+                    ng-click="ctrl.selectDriverFromOverview(driver)"
+                    class="driver-overview-item"
+                    ng-class="{'driver-selected': ctrl.currentCourier && ctrl.currentCourier.id === driver.courierId}">
+
+                <div class="md-list-item-text" layout="row" layout-align="start center" flex>
+                    <div flex>
+                        <h3>{{driver.name}}</h3>
+                        <p>{{driver.vehicleType || 'No vehicle'}}</p>
+                    </div>
+                    <div layout="column" layout-align="center end">
+                        <md-chip class="job-count-chip" ng-class="ctrl.getDriverStatusClass(driver.jobCount)">
+                            {{driver.jobCount}} {{driver.jobCount === 1 ? 'job' : 'jobs'}}
+                        </md-chip>
+                        <span class="driver-status-text">{{driver.driverStatusText}}</span>
+                    </div>
+                </div>
+                <md-divider ng-if="!$last"></md-divider>
+            </md-list-item>
+        </md-list>
+
+        <no-data
+                ng-if="!ctrl.driversWithJobCounts || ctrl.driversWithJobCounts.length === 0"
+                title="No Drivers Available"
+                message="No active drivers found"
+                icon="people"
+                show-action="false">
+        </no-data>
+    </div>
+
+    <!-- Selected Driver Mode -->
+    <div ng-show="ctrl.currentWorkViewMode === 'selected'">
+        <jobs-list
+                ng-if="ctrl.jobsCurrentList"
+                jobs="ctrl.jobsCurrentList"
+                selected-job="ctrl.selectedJob"
+                on-job-select="ctrl.selectJob(job)"
+                on-job-dispatch="ctrl.handleJobDispatch(job, courierId)"
+                on-job-action="ctrl.handleJobAction(action, job, params)"
+                get-context-menu-options="ctrl.getJobContextMenuOptions()"
+                refresh-interval="30000"
+                job-list-type="ctrl.currentWorkListName">
+        </jobs-list>
+
+        <no-data
+                ng-if="!ctrl.jobsCurrentList"
+                title="No Courier Selected"
+                message="Please Select a Courier to View Available Work"
+                icon="local_shipping"
+                show-action="false">
+        </no-data>
+    </div>
+</div>

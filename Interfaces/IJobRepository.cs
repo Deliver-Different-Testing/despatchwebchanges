@@ -35,9 +35,7 @@ public interface IJobRepository
 
     Task<JobSearchResult> CurrentJobListAsync(int courierId,
         DateTimeOffset? startDate,
-        DateTimeOffset? endDate,
-        int page,
-        int pageSize);
+        DateTimeOffset? endDate);
     
     Task<JobSearchResult> JobListAsync(
         JobQueryParams queryParams,
