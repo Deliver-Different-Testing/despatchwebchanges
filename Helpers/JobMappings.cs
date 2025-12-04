@@ -30,7 +30,7 @@ public static class JobMappings
             Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsCode : null,
             StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
             Time = j.UcjbTime,
-            Booked = DateExtension.CombineDateAndTime(j.UcjbDate, j.UcjbTime),
+            Booked = j.UcjbDate.CombineWithTime(j.UcjbTime),
             IsFlightJob = j.UcjbSpeedNavigation != null
                           && j.UcjbSpeedNavigation.GroupingId ==
                           (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
@@ -187,7 +187,7 @@ public static class JobMappings
         ParentId = j.ParentId,
         RootParentId = j.RootParentId,
         Date = FormatDate(j.UcjbDate),
-        Booked = DateExtension.CombineDateAndTime(j.UcjbDate, j.UcjbTime),
+        Booked = j.UcjbDate.CombineWithTime(j.UcjbTime),
         DispatchTime = j.UcjbDispTime,
         CreatedDate = j.UcjbDate,
         ScheduleName = j.ScheduleName,
@@ -420,7 +420,7 @@ public static class JobMappings
         ParentId = j.ParentId,
         RootParentId = j.RootParentId,
         Date = FormatDate(j.BookDate),
-        Booked = DateExtension.CombineDateAndTime(j.BookDate, j.BookTime),
+        Booked = j.BookDate.CombineWithTime(j.BookTime),
         CreatedDate = j.BookDate,
         ScheduleName = j.ScheduleName,
         Void = j.Void,
@@ -577,7 +577,7 @@ public static class JobMappings
         RootParentId = j.RootParentId,
         Date = FormatDate(j.UcjbDate),
         Booked = j.UcjbDate.HasValue
-            ? DateExtension.CombineDateAndTime(j.UcjbDate.Value, j.UcjbTime)
+            ? j.UcjbDate.Value.CombineWithTime(j.UcjbTime)
             : SqlMinDateTime,
         DispatchTime = j.UcjbDispTime,
         CreatedDate = j.UcjbDate,
@@ -774,7 +774,7 @@ public static class JobMappings
             RootParentId = j.RootParentId,
             Date = FormatDate(j.UcbkDate),
             Booked = j.UcbkDate.HasValue
-                ? DateExtension.CombineDateAndTime(j.UcbkDate.Value, j.UcbkTime)
+                ? j.UcbkDate.Value.CombineWithTime(j.UcbkTime)
                 : SqlMinDateTime,
             CreatedDate = j.UcbkDate,
             ScheduleName = j.ScheduleName,
@@ -993,7 +993,7 @@ public static class JobMappings
             DeliveryTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime ?? 0 : 0,
             AlertLatePickup = j.UcjbClient != null ? j.UcjbClient.AlertLatePickUp : 0,
             AlertLateDelivery = j.UcjbClient != null ? j.UcjbClient.AlertLateDelivery : 0,
-            JobTime = DateExtension.CombineDateAndTime(j.UcjbDate, j.UcjbTime),
+            JobTime = j.UcjbDate.CombineWithTime(j.UcjbTime),
             BookedSpeed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : string.Empty,
             NotifiedSpeed = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName
                 : j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName
@@ -1059,7 +1059,7 @@ public static class JobMappings
         {
             Id = j.UcbkId,
             Booked = j.UcbkDate.HasValue && j.UcbkTime.HasValue
-                ? DateExtension.CombineDateAndTime(j.UcbkDate.Value, j.UcbkTime) 
+                ? j.UcbkDate.Value.CombineWithTime(j.UcbkTime)
                 : DateTime.MinValue,
             NextDueTime = j.UcbkNextDue,
             Client = j.UcbkClientCode,

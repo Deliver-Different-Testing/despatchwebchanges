@@ -1,7 +1,8 @@
-import {IJobSearchResult, IDispatchJob, ISuggestion} from "../../interfaces/job.interface";
-import dayjs, {Dayjs} from "dayjs";
-import {formatDateForApi, formatDateForApiWithTzs} from "../../functions/formatDates";
+import {IJobSearchResult, IDispatchJob, ISuggestion, IJobSearchResultDto} from "../../interfaces/job.interface";
+import {Dayjs} from "dayjs";
+import {formatDateForApiWithTzs} from "../../functions/formatDates";
 import IScanDetailResult from "./interfaces/IScanDetailResult";
+import {transformDispatchJobDTO} from "../../functions/dtoMappings";
 
 class JobSearchService implements angular.IServiceProvider {
     static $inject = [
@@ -29,7 +30,7 @@ class JobSearchService implements angular.IServiceProvider {
         wild?: string,
         job?: string,
     ): Promise<IJobSearchResult> {
-        const response = await this.$http.get<IJobSearchResult>(
+        const response = await this.$http.get<IJobSearchResultDto>(
             `/Job/PODSearch`, {
                 params: {
                     courierId,
@@ -45,7 +46,10 @@ class JobSearchService implements angular.IServiceProvider {
             }
         );
 
-        return response.data;
+        return {
+            ...response.data,
+            jobs: response.data.jobs.map(transformDispatchJobDTO)
+        }
     }
 
     async podJobsDownload(

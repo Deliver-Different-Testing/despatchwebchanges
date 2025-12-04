@@ -121,12 +121,12 @@ builder.Services.Configure<FormOptions>(x =>
 });
 builder.Services.Configure<IISServerOptions>(options =>
 {
-    options?.MaxRequestBodySize = int.MaxValue;
+    if (options != null) options.MaxRequestBodySize = int.MaxValue;
 });
 
 builder.Services.Configure<KestrelServerOptions>(options =>
 {
-    options?.Limits.MaxRequestBodySize = int.MaxValue;
+    if (options != null) options.Limits.MaxRequestBodySize = int.MaxValue;
 });
 
 builder.Services.AddHttpClient();

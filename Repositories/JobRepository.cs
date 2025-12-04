@@ -497,14 +497,7 @@ public partial class JobRepository(
                     DeliveryLatitude = j.DeliveryLatitude,
                     DeliveryLongitude = j.DeliveryLongitude,
                     Booked = j.Date.HasValue
-                        ? new DateTime(
-                            j.Date.Value.Year,
-                            j.Date.Value.Month,
-                            j.Date.Value.Day,
-                            j.Time.HasValue ? j.Time.Value.Hour : 0,
-                            j.Time.HasValue ? j.Time.Value.Minute : 0,
-                            j.Time.HasValue ? j.Time.Value.Second : 0
-                        )
+                        ? j.Date.Value.CombineWithTime(j.Time)
                         : DateTime.MinValue,
                     IsArchived = j.Archived ?? false,
                     Locked = j.Locked.HasValue ? j.Locked != 0 : null,
@@ -2728,7 +2721,7 @@ public partial class JobRepository(
             Title = dto.Description,
             Icon = "task",
             Date = TimeZoneHelper.SetDateTimeWithTimeZone(
-                DateExtension.CombineDateAndTime(dto.Date ?? DateTime.MinValue, dto.Time),
+                (dto.Date ?? DateTime.MinValue).CombineWithTime(dto.Time),
                 timezone),
             Tags = new[]
                 {
