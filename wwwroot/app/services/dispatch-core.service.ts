@@ -27,7 +27,7 @@ import {
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {
     ActiveCourierViewModel,
-    IAvailableCourierPosition,
+    IAvailableCourierPosition, IDriverWorkOverview,
     IPotentialCouriers,
     ITruckCourierStatus,
 } from "../interfaces/courier.interface";
@@ -339,8 +339,6 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getJobsCurrent(courierId: number,
-                         page: number,
-                         pageSize: number,
                          startDate?: Dayjs,
                          endDate?: Dayjs): Promise<IJobSearchResult> {
 
@@ -353,8 +351,6 @@ class DispatchCoreService implements angular.IServiceProvider {
                     courierId,
                     startDate: startDateString,
                     endDate: endDateString,
-                    page,
-                    pageSize,
                 },
             }
         );
@@ -389,21 +385,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         );
         return response.data;
     }
-
-    async getActiveCouriers(): Promise<ActiveCourierViewModel[]> {
-        const response = await this.$http.get<ActiveCourierViewModel[]>(
-            "courier/active"
-        );
-        return response.data;
-    }
-
-    async getAllCouriers(): Promise<ActiveCourierViewModel[]> {
-        const response = await this.$http.get<ActiveCourierViewModel[]>(
-            "courier/AllActive"
-        );
-        return response.data;
-    }
-
+    
     async getPotentialCouriers(jobId: number): Promise<IPotentialCouriers[]> {
         const response = await this.$http.get<IPotentialCouriers[]>(
             `courier/PotentialCouriers`, {
@@ -1144,6 +1126,11 @@ class DispatchCoreService implements angular.IServiceProvider {
                 searchTerm
             }
         });
+        return response.data;
+    }  
+    
+    async getDriverWorkOverview(): Promise<IDriverWorkOverview[]> {
+        const response = await this.$http.get<IDriverWorkOverview[]>('courier/GetDriverWorkOverview');
         return response.data;
     }
 }

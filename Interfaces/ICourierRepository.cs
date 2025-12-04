@@ -53,4 +53,6 @@ public interface ICourierRepository
     Task CreateAfterHoursCourierScheduleAsync(AfterHoursCourierScheduleViewModel request);
     Task DeleteAfterHoursCourierScheduleAsync(int afterHoursScheduleId);
     Task<Suggestion> GetExactCourierByCodeAsync(string courierCode);
+
+    Task<List<DriverWorkOverviewViewModel>> GetDriverWorkOverviewAsync();
 }

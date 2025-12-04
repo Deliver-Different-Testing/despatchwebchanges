@@ -916,7 +916,7 @@ class DispatchMapController extends BaseController {
                         padding: 4px 8px; border-radius: 2px; font-size: 10px;
                         white-space: nowrap; opacity: 0; transition: opacity 0.3s;
                         pointer-events: none;">
-                ${this.couriersOnlyEnabled ? 'Couriers Only' : 'Show All'}
+                ${this.couriersOnlyEnabled ? 'Couriers Only' : 'Pins and Couriers'}
             </div>
         </button>
     `;

@@ -281,13 +281,11 @@ public class JobController(
 
     public async Task<IActionResult> Current(int courierId,
         DateTimeOffset? startDate,
-        DateTimeOffset? endDate,
-        int page,
-        int pageSize)
+        DateTimeOffset? endDate)
     {
         try
         {
-            var result = await jobRepository.CurrentJobListAsync(courierId, startDate, endDate, page, pageSize);
+            var result = await jobRepository.CurrentJobListAsync(courierId, startDate, endDate);
             return Json(result);
         }
         catch (Exception e)

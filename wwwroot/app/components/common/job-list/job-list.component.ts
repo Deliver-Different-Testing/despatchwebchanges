@@ -50,7 +50,7 @@ class JobsListController extends BaseController {
         hasMore: boolean
     }>;
     setBackendFilter?: (data: { column: string, direction: string }) => Promise<void>;
-    defaultCategory?: JobCategory; // Allow parent to set initial category
+    defaultCategory?: JobCategory; // Allow parent to set an initial category
     isUsCustomer?: boolean;
     timeZone: string;
     jobListType: JobListType = JobListType.DispatchJobList;

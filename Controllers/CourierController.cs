@@ -405,4 +405,19 @@ public class CourierController(
         }
     }
 
+    public async Task<IActionResult> GetDriverWorkOverview()
+    {
+        try
+        {
+            var drivers = await courierRepository.GetDriverWorkOverviewAsync();
+            return Json(drivers);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(GetDriverWorkOverview)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
 }

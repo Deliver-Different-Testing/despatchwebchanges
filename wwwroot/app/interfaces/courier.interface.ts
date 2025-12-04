@@ -61,3 +61,18 @@ export interface IPotentialCouriers {
     ruleNumber: number;
     firstName: string;
 }
+
+export interface ICourierLocationRequest {
+    minLng: number;
+    minLat: number;
+    maxLng: number;
+    maxLat: number;
+}
+
+export interface IDriverWorkOverview {
+    courierId: number;
+    name: string;
+    vehicleType: string;
+    jobCount: number;
+    driverStatusText: string;
+}
