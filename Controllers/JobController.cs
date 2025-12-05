@@ -1300,7 +1300,6 @@ public class JobController(
 
             // Skip rating if a job is archived
             var isArchived = await jobRepository.IsJobArchived(jobId);
-            //if (isArchived) return Ok();
 
             // Recalculate a job
             var shouldRecalculateRate = ShouldRecalculateRate(field);

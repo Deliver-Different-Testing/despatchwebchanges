@@ -274,7 +274,7 @@ public static class JobMappings
         // Tracking info
         TrackingMethod = j.TrackingMethod,
         TrackingMobile = j.TrackingMobile,
-        TrackingEmail = j.TrackingEmail,
+        TrackingEmail = j.TrackingEmail ?? "-",
 
         // Delivery details
         PrivateRes = (j.DeliverToPrivateBusiness ?? 0) == 1,
@@ -499,7 +499,7 @@ public static class JobMappings
         // Tracking info
         TrackingMethod = j.TrackingMethod,
         TrackingMobile = j.TrackingMobile,
-        TrackingEmail = j.TrackingEmail,
+        TrackingEmail = j.TrackingEmail ?? "-",
 
         // Delivery details
         PrivateRes = j.DeliverToPrivateBusiness,
@@ -648,7 +648,7 @@ public static class JobMappings
         // Tracking info
         TrackingMethod = j.TrackingMethod,
         TrackingMobile = j.TrackingMobile,
-        TrackingEmail = j.TrackingEmail,
+        TrackingEmail = j.TrackingEmail ?? "-",
 
         // Delivery details
         PrivateRes = (j.DeliverToPrivateBusiness ?? 0) == 1,
@@ -845,7 +845,7 @@ public static class JobMappings
             // Tracking info
             TrackingMethod = j.TrackingMethod,
             TrackingMobile = j.TrackingMobile,
-            TrackingEmail = j.TrackingEmail,
+            TrackingEmail = j.TrackingEmail ?? "-",
 
             // Delivery details
             PrivateRes = (j.DeliverToPrivateBusiness ?? 0) == 1,

@@ -302,10 +302,7 @@ public class RateJobService(
         ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
 
         var rateResult = await RateUrgentJobAsync(jobDetails);
-        if (rateResult is { Rate: > 0 })
-        {
-            return rateResult.Rate;
-        }
+        if (rateResult is { Rate: > 0 }) return rateResult.Rate;
         
         Log.Warning("Job rating failed or returned invalid rate for JobId: {JobId}. Rate: {Rate}",
             jobDetails.JobId,
@@ -388,8 +385,8 @@ public async Task<decimal> GetJobRateUsAsync(JobRatingDetailsDto jobDetails)
 
         return new UrgentRerateObject
         {
-            SpeedId = dto.SpeedId ?? 0,
-            SizeId = dto.SizeId ?? 0,
+            SpeedId = dto.SpeedId ?? throw new NullReferenceException("'SpeedId' cannot be null"),
+            SizeId = dto.SizeId ?? throw new NullReferenceException("'SizeId' cannot be null"),
             From = new UrgentRerateAddressObject
             {
                 CompanyName = dto.FromCompanyName,
