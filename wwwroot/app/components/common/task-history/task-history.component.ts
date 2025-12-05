@@ -7,7 +7,7 @@ import dayjs, {Dayjs} from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import DensityMode from "../../../enums/densityMode";
-import {getIanaTimezone} from "../../../functions/formatDates";
+import {formatLongDateTime, formatMins, getIanaTimezone} from "../../../functions/formatDates";
 
 dayjs.extend(relativeTime);
 
@@ -22,11 +22,12 @@ class TaskHistoryController extends BaseController {
 
     readonly isUsCustomer: boolean = false;
     readonly DensityMode = DensityMode;
+    private readonly ianaTimeZone: string;
 
     jobId?: number;
     config?: IDeliveryHistoryConfig;
     onDeliveryEventClick?: (params: { deliveryEvent: IDeliveryJourney }) => void;
-    timeZone: string;
+    timeZoneShort: string;
     shouldAnimate: boolean = false;
 
     // Journey data
@@ -48,9 +49,9 @@ class TaskHistoryController extends BaseController {
         super();
 
         this.initServices($timeout, $interval);
-
         this.isUsCustomer = appConfig.US_Customer;
-        this.timeZone = getIanaTimezone(TimeZone);
+        this.timeZoneShort = this.getShortTimeZoneString();
+        this.ianaTimeZone = getIanaTimezone(TimeZone)
     }
 
     $onInit() {
@@ -154,25 +155,25 @@ class TaskHistoryController extends BaseController {
             type: 'delivery-event' as const,
             data: {
                 ...event,
-                date: dayjs(event.date).tz(this.timeZone)
+                _dateStr: this.formatDateTime(event.date),
             },
         }));
     }
 
-    formatDateTime(dateTime: Dayjs): string {
+    private formatDateTime(dateTime: Dayjs): string {
         if (!dateTime) return 'No date';
         if (!dateTime.isValid()) return 'Invalid date';
 
-        const now = dayjs().tz(this.timeZone);
+        const now = dayjs().tz(this.ianaTimeZone);
         const isToday = dateTime.isSame(now, 'day');
         const isTomorrow = dateTime.isSame(now.add(1, 'day'), 'day');
 
         if (isToday) {
-            return dateTime.format('HH:mm');
+            return formatMins(dateTime);
         } else if (isTomorrow) {
-            return `Tomorrow ${dateTime.format('HH:mm')}`;
+            return `Tomorrow ${formatMins(dateTime)}`;
         } else {
-            return dateTime.format('MMM DD, HH:mm');
+            return formatLongDateTime(dateTime);
         }
     }
 

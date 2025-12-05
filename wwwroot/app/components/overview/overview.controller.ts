@@ -134,7 +134,7 @@ class OverviewController extends BaseController {
         this.loadSavedLimit();
         this.initialDataLoad();
     }
-    
+
     private loadSavedLimit(): void {
         const savedLimit = localStorage.getItem(this.OverviewJobLimitDisplay);
         console.log(`Saved limit is: ${savedLimit}`);
@@ -196,14 +196,10 @@ class OverviewController extends BaseController {
     getStatusGroup(): number {
         return this.activeTab + 1; // Maps to JobStatusGroup enum (1-based)
     }
-   
-    private debouncedSearchHandler = this.debounce(async () => {
+
+    async handleSearchChange() {
         this.query.page = 1;
         await this.refreshData();
-    }, 300, 'overview-search');
-
-    handleSearchChange() {
-        this.debouncedSearchHandler();
     }
 
     async getRegions() {
@@ -428,7 +424,7 @@ class OverviewController extends BaseController {
         await this.refreshData();
     }
 
-    
+
     async refreshData() {
         try {
             const statusGroup = this.getStatusGroup();
@@ -493,19 +489,19 @@ class OverviewController extends BaseController {
             this.isLoading = false;
         }
     }
-    
+
     async searchCouriers(searchText: string): Promise<ISuggestion[] | undefined> {
         try {
             const results = await this.DispatchData.autocompleteSearch(searchText, 'courier/AllActiveSearch');
             console.log('Courier Search Results: ', results);
             return results;
-        } catch(error) {
+        } catch (error) {
             this.toastrService.showErrorToast();
             console.log(error);
         }
     }
 
-   async addCourier(courier: ISuggestion | null): Promise<void> {
+    async addCourier(courier: ISuggestion | null): Promise<void> {
         if (courier && !this.selectedCouriers.some(c => c.id === courier.id)) {
             this.selectedCouriers.push(courier);
             this.selectedCourier = null;
@@ -529,7 +525,7 @@ class OverviewController extends BaseController {
 
         // Use $timeout to ensure the chip removal completes first
         this.registerTimeout(async () => {
-           await this.refreshData();
+            await this.refreshData();
         }, 0);
     }
 

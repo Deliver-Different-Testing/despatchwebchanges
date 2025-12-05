@@ -124,7 +124,7 @@ class JobSearchService implements angular.IServiceProvider {
         job?: string,
         wild?: string,
     ): Promise<IJobSearchResult> {
-        const response = await this.$http.get<IJobSearchResult>(`/Job/BulkSearch`, {
+        const response = await this.$http.get<IJobSearchResultDto>(`/Job/BulkSearch`, {
                 params: {
                     courierId,
                     clientId,
@@ -138,7 +138,11 @@ class JobSearchService implements angular.IServiceProvider {
                 }
             }
         );
-        return response.data;
+
+        return {
+            ...response.data,
+            jobs: response.data.jobs.map(transformDispatchJobDTO)
+        }
     }
 
     async getScanDetail(runDate: Dayjs, scan: string): Promise<IScanDetailResult[]> {
