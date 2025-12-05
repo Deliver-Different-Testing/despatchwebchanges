@@ -1787,7 +1787,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<List<UTL_stpJob_tblBulkJob_ReleaseByJobNumberResult>> UTL_stpJob_tblBulkJob_ReleaseByJobNumberAsync(string jobNumber, DateTime? dateTime, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<UTL_stpJob_InsertFromTblBulkJobResult>> UTL_stpJob_InsertFromTblBulkJobAsync(int? bulkJobID, string runName, int? courierID, int? runStatus, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -1800,20 +1800,32 @@ namespace DespatchWeb.EntityClasses
             {
                 new SqlParameter
                 {
-                    ParameterName = "JobNumber",
+                    ParameterName = "BulkJobID",
+                    Value = bulkJobID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "RunName",
                     Size = 100,
-                    Value = jobNumber ?? Convert.DBNull,
+                    Value = runName ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.NVarChar,
                 },
                 new SqlParameter
                 {
-                    ParameterName = "DateTime",
-                    Value = dateTime ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.DateTime,
+                    ParameterName = "CourierID",
+                    Value = courierID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "RunStatus",
+                    Value = runStatus ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.SqlQueryAsync<UTL_stpJob_tblBulkJob_ReleaseByJobNumberResult>("EXEC @returnValue = [dbo].[UTL_stpJob_tblBulkJob_ReleaseByJobNumber] @JobNumber = @JobNumber, @DateTime = @DateTime", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<UTL_stpJob_InsertFromTblBulkJobResult>("EXEC @returnValue = [dbo].[UTL_stpJob_InsertFromTblBulkJob] @BulkJobID = @BulkJobID, @RunName = @RunName, @CourierID = @CourierID, @RunStatus = @RunStatus", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 

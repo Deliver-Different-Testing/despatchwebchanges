@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
@@ -19,6 +20,7 @@ public class TaskRepository(
 {
     public async Task<List<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters)
     {
+        var tenantTimeZone = infoService.GetTenantTimeZone();
         var today = filters?.Date ?? infoService.GetCurrentTenantTime().AddDays(1);
 
         var query = Context.TucEvents.Where(t => t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.CS));
@@ -31,6 +33,8 @@ public class TaskRepository(
             .Select(TaskMapping)
             .AsNoTracking()
             .ToListAsync();
+
+        foreach (var task in tasks) task.DueDate = TimeZoneHelper.SetDateTimeWithTimeZone(task.DueDate, tenantTimeZone);
 
         return tasks;
     }

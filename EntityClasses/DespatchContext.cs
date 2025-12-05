@@ -63,7 +63,11 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TblBulkJobNote> TblBulkJobNotes { get; set; }
 
+    public virtual DbSet<TblBulkJobRun> TblBulkJobRuns { get; set; }
+
     public virtual DbSet<TblBulkRegion> TblBulkRegions { get; set; }
+
+    public virtual DbSet<TblBulkRun> TblBulkRuns { get; set; }
 
     public virtual DbSet<TblBulkRunSchedule> TblBulkRunSchedules { get; set; }
 
@@ -1443,6 +1447,32 @@ public partial class DespatchContext : DbContext
                 .HasConstraintName("FK__tblBulkJo__Updat__5B052800");
         });
 
+        modelBuilder.Entity<TblBulkJobRun>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__tblBulkJ__3214EC2739E294A9");
+
+            entity.ToTable("tblBulkJobRun");
+
+            entity.HasIndex(e => e.BulkJobId, "IX_tblBulkJobRun_BulkJobID");
+
+            entity.HasIndex(e => e.RunId, "RunID-NonClusteredIndex-20190824-171500");
+
+            entity.HasIndex(e => e.BulkJobId, "index_BulkJobID");
+
+            entity.Property(e => e.Id).HasColumnName("ID");
+            entity.Property(e => e.BulkJobId).HasColumnName("BulkJobID");
+            entity.Property(e => e.RunId).HasColumnName("RunID");
+
+            entity.HasOne(d => d.BulkJob).WithMany(p => p.TblBulkJobRuns)
+                .HasForeignKey(d => d.BulkJobId)
+                .HasConstraintName("FK__tblBulkJo__BulkJ__0876219E");
+
+            entity.HasOne(d => d.Run).WithMany(p => p.TblBulkJobRuns)
+                .HasForeignKey(d => d.RunId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK__tblBulkJo__RunID__3F954511");
+        });
+
         modelBuilder.Entity<TblBulkRegion>(entity =>
         {
             entity.HasKey(e => e.BulkRegionId);
@@ -1483,6 +1513,27 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(150);
             entity.Property(e => e.PickupLatitude).HasColumnType("decimal(18, 9)");
             entity.Property(e => e.PickupLongitude).HasColumnType("decimal(18, 9)");
+        });
+
+        modelBuilder.Entity<TblBulkRun>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__tblBulkR__3214EC274CF5691D");
+
+            entity.ToTable("tblBulkRun");
+
+            entity.Property(e => e.Id).HasColumnName("ID");
+            entity.Property(e => e.CourierId).HasColumnName("CourierID");
+            entity.Property(e => e.Created)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.DespatchDateTime).HasColumnType("datetime");
+            entity.Property(e => e.LastModified)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.Name).HasMaxLength(50);
+            entity.Property(e => e.Payout).HasColumnType("money");
+            entity.Property(e => e.Revenue).HasColumnType("money");
+            entity.Property(e => e.Status).HasDefaultValue(0);
         });
 
         modelBuilder.Entity<TblBulkRunSchedule>(entity =>

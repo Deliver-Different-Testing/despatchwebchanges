@@ -10,21 +10,15 @@ public class TaskViewModel
 
     public string Description { get; set; }
 
-    public DateTime DueDate { get; set; }
+    public DateTimeOffset DueDate { get; set; }
 
     public bool Closed { get; set; }
-
-    public string Priority { get; set; }
-
+    
     public Suggestion Assignee { get; set; }
 
     public string EventType { get; set; }
 
     public int JobId { get; set; }
-
-    public string Icon { get; set; }
-
-    public bool IsOverdue { get; set; }
-
+    
     public string JobNumber { get; set; }
 }

@@ -103,7 +103,15 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tblBulkJobRun]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tblBulkRegion]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblBulkRun]",
          "ObjectType": 0
       },
       {
@@ -511,7 +519,7 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[UTL_stpJob_tblBulkJob_ReleaseByJobNumber]",
+         "Name": "[dbo].[UTL_stpJob_InsertFromTblBulkJob]",
          "ObjectType": 1
       },
       {

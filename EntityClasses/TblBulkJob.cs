@@ -256,4 +256,6 @@ public partial class TblBulkJob
     public virtual ICollection<TblBulkJobItem> TblBulkJobItems { get; set; } = new List<TblBulkJobItem>();
 
     public virtual ICollection<TblBulkJobNote> TblBulkJobNotes { get; set; } = new List<TblBulkJobNote>();
+
+    public virtual ICollection<TblBulkJobRun> TblBulkJobRuns { get; set; } = new List<TblBulkJobRun>();
 }

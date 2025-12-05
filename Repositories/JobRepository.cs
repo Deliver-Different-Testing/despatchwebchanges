@@ -1608,18 +1608,18 @@ public partial class JobRepository(
                 : await GetAllRelatedJobIdsIncludingParentAsync(data.JobId);
 
             // Execute a void operation and get courier mappings in parallel
-           await Context.TucJobs
-               .Where(j => jobsToVoid.Contains(j.UcjbId))
-               .ExecuteUpdateAsync(setters => setters
-                   .SetProperty(j => j.UcjbStatus, (int)JobStatus.Void)
-                   .SetProperty(j => j.UcjbVoid, true));
-           
+            await Context.TucJobs
+                .Where(j => jobsToVoid.Contains(j.UcjbId))
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.UcjbStatus, (int)JobStatus.Void)
+                    .SetProperty(j => j.UcjbVoid, true));
+
             var courierIds = await Context.TucJobs
                 .Where(jt => jobsToVoid.Contains(jt.UcjbId) && jt.UcjbCourierId.HasValue)
                 .Select(jt => jt.UcjbCourierId.Value)
                 .Distinct()
                 .ToListAsync();
-            
+
             // Update courier statuses in parallel
             await UpdateClearListAreaOrderStatus(courierIds);
 
@@ -1652,12 +1652,12 @@ public partial class JobRepository(
                     .SetProperty(j => j.JobStatus, (int)JobStatus.Void)
                     .SetProperty(j => j.Void, true));
 
-           var courierIds = await Context.TblBulkJobs
+            var courierIds = await Context.TblBulkJobs
                 .Where(jt => jobsToVoid.Contains(jt.BulkJobId) && jt.CourierId.HasValue)
                 .Select(jt => jt.CourierId.Value)
                 .Distinct()
                 .ToListAsync();
-           
+
             // Update courier statuses in parallel
             await UpdateClearListAreaOrderStatus(courierIds);
 
@@ -2186,24 +2186,121 @@ public partial class JobRepository(
         }
     }
 
-    public async Task ReleaseBulkJobAsync(string jobNumber,
-        DateTime bookDate)
+    public async Task ReleaseBulkJobByIdAsync(int bulkJobId)
     {
+        await using var transaction = await Context.Database.BeginTransactionAsync();
+
         try
         {
-            ArgumentNullException.ThrowIfNull(jobNumber);
+            var currentTenantTime = _infoService.GetCurrentTenantTime();
+            var releaseNote = $"Bulk Job Released Manually at {currentTenantTime:dd/MM/yyyy HH:mm}\r\n";
 
-            Log.Information("Executing stored procedure to release bulk job {JobNumber} with booking date {BookDate}",
-                jobNumber, bookDate);
+            // Update book date and notes in a single query
+            var updatedCount = await Context.TblBulkJobs
+                .Where(b => b.BulkJobId == bulkJobId || b.ParentId == bulkJobId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(b => b.BookDate, currentTenantTime)
+                    .SetProperty(b => b.Notes, b => releaseNote + (b.Notes ?? string.Empty)));
 
-            await Context.Procedures.UTL_stpJob_tblBulkJob_ReleaseByJobNumberAsync(jobNumber, bookDate);
+            if (updatedCount == 0)
+            {
+                await transaction.CommitAsync();
+                return; // No bulk jobs to process
+            }
 
-            Log.Information("Successfully executed stored procedure for bulk job {JobNumber}", jobNumber);
+            // Get bulk job info and existing run name in a single query
+            var bulkJobInfo = await Context.TblBulkJobs
+                .Where(b => (b.BulkJobId == bulkJobId || b.ParentId == bulkJobId) && b.Done == false)
+                .Select(b => new
+                {
+                    b.BulkJobId,
+                    b.ClientCode,
+                    ExistingRunName = Context.TblBulkJobRuns
+                        .Where(jr => jr.BulkJobId == b.BulkJobId)
+                        .Join(Context.TblBulkRuns,
+                            jr => jr.RunId,
+                            r => r.Id,
+                            (jr, r) => r.Name)
+                        .FirstOrDefault()
+                })
+                .FirstOrDefaultAsync();
+
+            if (bulkJobInfo == null)
+            {
+                await transaction.CommitAsync();
+                return;
+            }
+
+            var runName = bulkJobInfo.ExistingRunName;
+
+            // Create a run if it doesn't exist
+            if (string.IsNullOrEmpty(runName))
+            {
+                runName = bulkJobInfo.ClientCode + currentTenantTime.ToString("HHmm");
+
+                var newRun = new TblBulkRun
+                {
+                    Name = runName,
+                    Mins = null,
+                    Kms = null,
+                    CourierId = null,
+                    Status = 0,
+                    Revenue = null,
+                    Payout = null,
+                    CourierPercentage = null,
+                    GoogleRouteResponse = null,
+                    Created = currentTenantTime,
+                    LastModified = currentTenantTime
+                };
+
+                await Context.TblBulkRuns.AddAsync(newRun);
+                await Context.SaveChangesAsync();
+
+                // Get all bulk job IDs in a single query
+                var bulkJobIds = await Context.TblBulkJobs
+                    .Where(b => b.Done == false && (b.BulkJobId == bulkJobId || b.ParentId == bulkJobId))
+                    .Select(b => b.BulkJobId)
+                    .ToListAsync();
+
+                // Bulk insert job-run relationships
+                var jobRuns = bulkJobIds.Select(bjId => new TblBulkJobRun
+                {
+                    RunId = newRun.Id,
+                    BulkJobId = bjId,
+                    PickRunOrder = null
+                }).ToList();
+
+                await Context.TblBulkJobRuns.AddRangeAsync(jobRuns);
+                await Context.SaveChangesAsync();
+            }
+
+            // Get bulk jobs to create
+            var bulkJobsToCreate = await Context.TblBulkJobs
+                .Where(b => b.Done == false && (b.BulkJobId == bulkJobId || b.ParentId == bulkJobId))
+                .OrderBy(b => b.BookDate)
+                .ThenBy(b => b.BookTime)
+                .ThenBy(b => b.BulkJobId)
+                .Select(b => b.BulkJobId)
+                .ToListAsync();
+
+            // Process each bulk job with the run name (either existing or newly created)
+            foreach (var bjId in bulkJobsToCreate)
+            {
+                await Context.Procedures.UTL_stpJob_InsertFromTblBulkJobAsync(
+                    bulkJobID: bjId,
+                    runName: runName,
+                    courierID: null,
+                    runStatus: null,
+                    returnValue: null,
+                    cancellationToken: CancellationToken.None
+                );
+            }
+
+            await transaction.CommitAsync();
         }
-        catch (Exception ex)
+        catch
         {
-            Log.Error(ex, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository), nameof(ReleaseBulkJobAsync)));
+            await transaction.RollbackAsync();
             throw;
         }
     }
@@ -4277,6 +4374,7 @@ public partial class JobRepository(
             throw;
         }
     }
+
     public async Task SimpleRepriceJobManualAsync(SimpleRepriceJobModel data)
     {
         try
@@ -4354,48 +4452,49 @@ public partial class JobRepository(
     }
 
     public async Task AssignCourierToChildJobsAsync(List<int> jobIds, InternalJobStatus internalStatus)
-{
-    if (jobIds == null || jobIds.Count == 0) return;
-
-    await using var transaction = await Context.Database.BeginTransactionAsync();
-
-    try
     {
-        // Get parent IDs for all provided job IDs
-        var parentIds = await Context.TucJobs
-            .Where(j => jobIds.Contains(j.UcjbId) && j.ParentId != null)
-            .Select(j => j.ParentId.Value)
-            .Distinct()
-            .ToListAsync();
+        if (jobIds == null || jobIds.Count == 0) return;
 
-        if (parentIds.Count == 0) return;
-        
-        await Context.TucJobs
-            .Where(child => parentIds.Contains(child.ParentId.Value)
-                            && child.UcjbCourierId == null
-                            && child.JobRelationshipType.AutoDespatchToOtherChildJobs == true
-                            && jobIds.Contains(child.Parent.UcjbId) == false) // Don't update the jobs being dispatched
-            .Join(
-                Context.TucJobs.Where(parent => jobIds.Contains(parent.UcjbId)),
-                child => child.ParentId,
-                parent => parent.ParentId,
-                (child, parent) => new { Child = child, Parent = parent })
-            .Where(x => x.Child.UcjbDate.Date <= x.Parent.UcjbDate.Date)
-            .Select(x => x.Child)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(j => j.UcjbCourierId, j => j.Parent.UcjbCourierId)
-                .SetProperty(j => j.UcjbDispId, j => j.Parent.UcjbDispId)
-                .SetProperty(j => j.UcjbDispTime, j => j.Parent.UcjbDispTime)
-                .SetProperty(j => j.UcjbDispDate, j => j.Parent.UcjbDispDate)
-                .SetProperty(j => j.UcjbStatus, j => j.Parent.UcjbStatus)
-                .SetProperty(j => j.InternalStatus, (int)internalStatus));
+        await using var transaction = await Context.Database.BeginTransactionAsync();
 
-        await transaction.CommitAsync();
+        try
+        {
+            // Get parent IDs for all provided job IDs
+            var parentIds = await Context.TucJobs
+                .Where(j => jobIds.Contains(j.UcjbId) && j.ParentId != null)
+                .Select(j => j.ParentId.Value)
+                .Distinct()
+                .ToListAsync();
+
+            if (parentIds.Count == 0) return;
+
+            await Context.TucJobs
+                .Where(child => parentIds.Contains(child.ParentId.Value)
+                                && child.UcjbCourierId == null
+                                && child.JobRelationshipType.AutoDespatchToOtherChildJobs == true
+                                && jobIds.Contains(child.Parent.UcjbId) ==
+                                false) // Don't update the jobs being dispatched
+                .Join(
+                    Context.TucJobs.Where(parent => jobIds.Contains(parent.UcjbId)),
+                    child => child.ParentId,
+                    parent => parent.ParentId,
+                    (child, parent) => new { Child = child, Parent = parent })
+                .Where(x => x.Child.UcjbDate.Date <= x.Parent.UcjbDate.Date)
+                .Select(x => x.Child)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.UcjbCourierId, j => j.Parent.UcjbCourierId)
+                    .SetProperty(j => j.UcjbDispId, j => j.Parent.UcjbDispId)
+                    .SetProperty(j => j.UcjbDispTime, j => j.Parent.UcjbDispTime)
+                    .SetProperty(j => j.UcjbDispDate, j => j.Parent.UcjbDispDate)
+                    .SetProperty(j => j.UcjbStatus, j => j.Parent.UcjbStatus)
+                    .SetProperty(j => j.InternalStatus, (int)internalStatus));
+
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
-    catch
-    {
-        await transaction.RollbackAsync();
-        throw;
-    }
-}
 }

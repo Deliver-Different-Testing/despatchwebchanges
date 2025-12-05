@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DespatchWeb.EntityClasses
 {
-    public partial class UTL_stpJob_tblBulkJob_ReleaseByJobNumberResult
+    public partial class UTL_stpJob_InsertFromTblBulkJobResult
     {
     }
 }

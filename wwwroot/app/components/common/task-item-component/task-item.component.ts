@@ -29,7 +29,7 @@ class TaskListItemController extends BaseController {
     config?: ITaskListItemConfig;
     onTaskUpdated?: () => void;
     onTaskClick?: (params: { task: ExtendedTask }) => void;
-    timeZone: string;
+    timeZoneShort: string;
 
     constructor(
         private selectDialogService: SelectDialogService,
@@ -47,7 +47,7 @@ class TaskListItemController extends BaseController {
         this.initServices($timeout, $interval);
 
         this.isUsCustomer = appConfig.US_Customer;
-        this.timeZone = TimeZone;
+        this.timeZoneShort = this.getShortTimeZoneString();
 
         // Default configuration
         this.config = {

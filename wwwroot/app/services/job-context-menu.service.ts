@@ -624,7 +624,7 @@ class JobContextMenuService implements angular.IServiceProvider {
                     .cancel("No")
             );
 
-            await this.DispatchData.releaseBulkJob(job.jobNo, job.booked);
+            await this.DispatchData.releaseBulkJob(job.id);
             this.toastrService.showSuccessToast(`Bulk job ${job.jobNo} sent to live successfully`);
 
             if (onRefresh) {

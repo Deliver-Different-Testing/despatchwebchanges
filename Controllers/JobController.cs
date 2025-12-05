@@ -1374,17 +1374,14 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> ReleaseBulkJob(string jobNumber, DateTime bookDate)
+    public async Task<IActionResult> ReleaseBulkJob(int bulkJobId)
     {
         try
         {
-            ArgumentNullException.ThrowIfNull(jobNumber);
+            ArgumentNullException.ThrowIfNull(bulkJobId);
+            await jobRepository.ReleaseBulkJobByIdAsync(bulkJobId);
 
-            Log.Information("Releasing bulk job {JobNumber} with booking date {BookDate}", jobNumber, bookDate);
-
-            await jobRepository.ReleaseBulkJobAsync(jobNumber, bookDate);
-
-            Log.Information("Successfully released bulk job {JobNumber}", jobNumber);
+            Log.Information("Successfully released bulk job {JobNumber}", bulkJobId);
             return Ok();
         }
         catch (Exception ex)

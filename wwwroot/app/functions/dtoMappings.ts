@@ -12,7 +12,14 @@ import {
     IJobGroupDto, IJobNote,
     IJobNoteDto
 } from "../interfaces/job.interface";
-import {formatDateFromApi, formatLongDateTime, formatMins, formatShortDate, formatShortDateTime} from "./formatDates";
+import {
+    formatDateFromApi,
+    formatLongDate,
+    formatLongDateTime,
+    formatMins,
+    formatShortDate,
+    formatShortDateTime
+} from "./formatDates";
 import {ITask, ITaskDto} from "../components/task-dashboard/task-dashboard.interfaces";
 import {IPrebookListModel, IPrebookListModelDto} from "../components/recurringJobs/recurringJobs.interface";
 import {
@@ -144,7 +151,9 @@ export function transformDispatchJobDTO(dto: IDispatchJobDto): IDispatchJob {
 export function transformTaskDTO(dto: ITaskDto): ITask {
     return {
         ...dto,
-        dueDate: dayjs(dto.dueDate)
+        dueDate: formatDateFromApi(dto.dueDate),
+        _dueDateString: formatLongDate(dto.dueDate),
+        _dueTimeString: formatMins(dto.dueDate)
     }
 }
 
