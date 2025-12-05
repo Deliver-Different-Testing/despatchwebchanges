@@ -169,13 +169,8 @@ class JobSearchController extends BaseController {
         this.onSearchRangeChange(this.dateSearchRange);
     }
 
-    // Old layout system
+    // Layout system
     private initializeOldLayoutSystem(): void {
-        // Set up layout watchers
-        this.watchScope(() => this.layout, () => {
-            this.registerTimeout(() => this.applyLayoutDimensions());
-        }, true);
-
         // Ensure draggingItems container exists
         if (angular.element('#draggingItems').length === 0) {
             angular.element('body').append('<div id="draggingItems"></div>');
@@ -240,19 +235,6 @@ class JobSearchController extends BaseController {
             this.layouts = [this.defaultLayout];
             this.loadLayout(0);
         }
-
-        // Auto-save changes
-        this.watchScope("layout", (newValue: { columns: IColumn[] }, oldValue: { columns: IColumn[] }) => {
-            if (newValue !== oldValue && this.currentLayoutName) {
-                const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
-                if (index !== -1) {
-                    this.layouts[index].layout = angular.copy(newValue);
-                    if (Modernizr.localstorage) {
-                        localStorage.setItem(this.LayoutKey, JSON.stringify(this.layouts));
-                    }
-                }
-            }
-        }, true);
 
         // Initialize box-sortable options
         this.boxSortableOptions = {

@@ -44,12 +44,12 @@ export interface IFlightSegment {
     departureAirportName?: string;
     departureAirportCity?: string;
     departureAirportCountry?: string;
-    departureAirportTimeZone?: string;
+    departureAirportTimeZone: string;
     departureAirportId?: number;
     arrivalAirportName?: string;
     arrivalAirportCity?: string;
     arrivalAirportCountry?: string;
-    arrivalAirportTimeZone?: string;
+    arrivalAirportTimeZone: string;
     arrivalAirportId?: number;
     aircraftName?: string;
     aircraftType?: string;
@@ -58,6 +58,8 @@ export interface IFlightSegment {
     // Private
     _departureTimeStr: string;
     _arrivalTimeStr: string;
+    _arrivalTimeZoneStr: string;
+    _departureTimeZoneStr: string;
 }
 
 export interface IFlightSegmentDto {
@@ -76,12 +78,12 @@ export interface IFlightSegmentDto {
     departureAirportName?: string;
     departureAirportCity?: string;
     departureAirportCountry?: string;
-    departureAirportTimeZone?: string;
+    departureAirportTimeZone: string;
     departureAirportId?: number;
     arrivalAirportName?: string;
     arrivalAirportCity?: string;
     arrivalAirportCountry?: string;
-    arrivalAirportTimeZone?: string;
+    arrivalAirportTimeZone: string;
     arrivalAirportId?: number;
     aircraftName?: string;
     aircraftType?: string;

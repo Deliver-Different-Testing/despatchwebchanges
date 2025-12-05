@@ -52,7 +52,7 @@ class JobsListController extends BaseController {
     setBackendFilter?: (data: { column: string, direction: string }) => Promise<void>;
     defaultCategory?: JobCategory; // Allow parent to set an initial category
     isUsCustomer?: boolean;
-    timeZone: string;
+    timeZoneShort: string;
     jobListType: JobListType = JobListType.DispatchJobList;
     allowDispatch: boolean = false;
     allowSearch: boolean = true;
@@ -134,7 +134,8 @@ class JobsListController extends BaseController {
         super();
         this.initServices($timeout, $interval, $scope);
         this.isUsCustomer = appConfig.US_Customer;
-        this.timeZone = getIanaTimezone(TimeZone);
+
+        this.timeZoneShort = this.getShortTimeZoneString();
 
         this.debouncedSearchHandler = this.debounce((searchText: string) => {
             if (this.onSearchChange) {
@@ -300,7 +301,7 @@ class JobsListController extends BaseController {
 
         // Notify parent of the category change (for backend filtering when ClearListArea is active)
         if (this.onCategoryChange) {
-            await this.onCategoryChange({ category: category });
+            await this.onCategoryChange({category: category});
         }
 
         this.applyFilters();
@@ -1253,7 +1254,7 @@ class JobsListController extends BaseController {
     canBulkRestoreStatus(): boolean {
         return this.selectedJobs.length > 0;
     }
-    
+
     canBulkRedispatch(): boolean {
         return this.selectedJobs.length > 0 && this.selectedJobs.every(job => job.assignedCourier?.id);
     }
@@ -1316,11 +1317,11 @@ class JobsListController extends BaseController {
 
     async bulkRedispatch(): Promise<void> {
         try {
-            if(!this.canBulkRedispatch()) {
+            if (!this.canBulkRedispatch()) {
                 this.toastrService.showWarningToast('Not all jobs selected have a courier assigned for re-dispatch. Unable to re-dispatch.');
                 return;
             }
-            
+
             const selectedJobIds = this.selectedJobs.map(job => job.id);
 
             const confirm = this.$mdDialog.confirm()
@@ -1360,7 +1361,7 @@ class JobsListController extends BaseController {
             this.toastrService.showErrorToast('Error occurred while redispatching jobs');
         }
     }
-    
+
     async bulkMarkAsRead(): Promise<void> {
         try {
             if (this.selectedJobs.length === 0) return;
@@ -1467,29 +1468,30 @@ class JobsListController extends BaseController {
     }
 
     private setupScrollListener(): void {
-        // Wait for jobs to be available, then set up a scroll listener
-        const unwatch = this.watchScope(
-            () => this.jobs && this.jobs.length > 0,
-            (hasJobs: boolean) => {
-                if (hasJobs) {
-                    // Give ng-if time to render the DOM
-                    this.registerTimeout(() => {
-                        const selector = this.getScrollContainerSelector();
-                        const scrollContainer = angular.element(selector);
-                        console.log(`Setting up scroll listener for: ${selector}`, scrollContainer.length);
+        // Use a single timeout to set up the listener after the initial render
+        this.registerTimeout(() => {
+            const selector = this.getScrollContainerSelector();
+            const scrollContainer = angular.element(selector);
+            console.log(`Setting up scroll listener for: ${selector}`, scrollContainer.length);
 
-                        if (scrollContainer.length) {
-                            scrollContainer.on('scroll', () => {
-                                this.handleScroll(scrollContainer[0]);
-                            });
-                            unwatch(); // Stop watching once successful
-                        } else {
-                            console.warn(`Scroll container not found: ${selector}`);
-                        }
-                    }, 100);
-                }
+            if (scrollContainer.length) {
+                scrollContainer.on('scroll', () => {
+                    this.handleScroll(scrollContainer[0]);
+                });
+            } else {
+                console.warn(`Scroll container not found: ${selector}. Will retry once.`);
+                // Single retry if the container isn't ready yet
+                this.registerTimeout(() => {
+                    const retryContainer = angular.element(selector);
+                    if (retryContainer.length) {
+                        retryContainer.on('scroll', () => {
+                            this.handleScroll(retryContainer[0]);
+                        });
+                        console.log(`Successfully set up scroll listener on retry`);
+                    }
+                }, 200);
             }
-        );
+        }, 100);
     }
 
     private handleScroll(element: HTMLElement): void {

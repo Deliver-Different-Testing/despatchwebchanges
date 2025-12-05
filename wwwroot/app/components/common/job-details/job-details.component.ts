@@ -76,7 +76,7 @@ class JobDetailController extends BaseController {
     internalStatusList?: InternalStatus[];
     isLoading: boolean = false;
     distance?: number;
-    timeZone: string;
+    timeZoneShort: string;
     jobAddressIcon: string = "pin_drop";
     viewDensity: 'normal' | 'dense' | 'ultradense' = 'normal';
     trackingOptions: ISuggestion[];
@@ -124,7 +124,7 @@ class JobDetailController extends BaseController {
         this.initServices($timeout, $interval, $scope);
 
         this.isUsCustomer = appConfig.US_Customer;
-        this.timeZone = getIanaTimezone(TimeZone);
+        this.timeZoneShort = this.getShortTimeZoneString();
 
         this.trackingOptions = [
             {id: 1, text: "Email"},

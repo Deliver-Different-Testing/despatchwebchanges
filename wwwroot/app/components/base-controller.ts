@@ -1,3 +1,7 @@
+import {getIanaTimezone} from "../functions/formatDates";
+import {TimeZone} from "../contants";
+import {timezoneShortFilter} from "../filters";
+
 class BaseController implements angular.IController {
     protected eventDeregistrations: Array<() => void> = [];
     protected timeouts: Array<angular.IPromise<any>> = [];
@@ -43,7 +47,7 @@ class BaseController implements angular.IController {
             this.$scopeService.$evalAsync();
         }
     }
-    
+
     protected watchEvent<T>(
         eventName: string,
         listener: (event: angular.IAngularEvent, ...args: T[]) => void,
@@ -250,6 +254,12 @@ class BaseController implements angular.IController {
         } catch (error) {
             console.error(`Error broadcasting event "${eventName}":`, error);
         }
+    }
+    
+    // Filters
+    protected getShortTimeZoneString() {
+       const ianaTimeZone = getIanaTimezone(TimeZone)
+        return timezoneShortFilter(ianaTimeZone);
     }
 }
 

@@ -125,52 +125,16 @@ class OverviewController extends BaseController {
         this.activeTab = 0;
 
         this.loadOverviewCardState();
-        this.setupWatchers();
         this.loadSavedLimit();
         this.initialDataLoad();
     }
 
     $onInit() {
         this.loadOverviewCardState();
-        this.setupWatchers();
         this.loadSavedLimit();
         this.initialDataLoad();
     }
-
-    private setupWatchers(): void {
-        // Watch for tab changes
-        this.watchScope(
-            () => this.activeTab,
-            (newValue: number, oldValue: number) => {
-                if (newValue !== oldValue) {
-                    return this.refreshData();
-                }
-            }
-        );
-
-        // Watch for search changes with debouncing
-        this.watchScope(
-            () => this.search,
-            (newValue: string, oldValue: string) => {
-                if (newValue !== oldValue) {
-                    this.handleSearchChange();
-                }
-            }
-        );
-
-        // Watch for changes to the query limit
-        this.watchScope(
-            () => this.query.limit,
-            (newValue: number, oldValue: number) => {
-                if (newValue !== oldValue) {
-                    if (Modernizr.localstorage) {
-                        localStorage.setItem(this.OverviewJobLimitDisplay, `${this.query.limit}`);
-                    }
-                }
-            }
-        );
-    }
-
+    
     private loadSavedLimit(): void {
         const savedLimit = localStorage.getItem(this.OverviewJobLimitDisplay);
         console.log(`Saved limit is: ${savedLimit}`);
@@ -224,6 +188,7 @@ class OverviewController extends BaseController {
     async setTab(tabIndex: number) {
         if (this.activeTab !== tabIndex) {
             this.activeTab = tabIndex;
+            this.query.page = 1; // Reset to the first page when changing tabs
             await this.refreshData();
         }
     }
@@ -231,12 +196,14 @@ class OverviewController extends BaseController {
     getStatusGroup(): number {
         return this.activeTab + 1; // Maps to JobStatusGroup enum (1-based)
     }
+   
+    private debouncedSearchHandler = this.debounce(async () => {
+        this.query.page = 1;
+        await this.refreshData();
+    }, 300, 'overview-search');
 
     handleSearchChange() {
-        this.debounce(async () => {
-            this.query.page = 1;
-            await this.refreshData();
-        }, 300);
+        this.debouncedSearchHandler();
     }
 
     async getRegions() {
@@ -451,9 +418,16 @@ class OverviewController extends BaseController {
 
     async onPaginate(page: number, limit: number): Promise<void> {
         this.query.page = page;
-        this.query.limit = limit;
+
+        // Only save if the limit actually changed
+        if (this.query.limit !== limit) {
+            this.query.limit = limit;
+            this.saveLimit();
+        }
+
         await this.refreshData();
     }
+
     
     async refreshData() {
         try {
@@ -557,6 +531,12 @@ class OverviewController extends BaseController {
         this.registerTimeout(async () => {
            await this.refreshData();
         }, 0);
+    }
+
+    private saveLimit(): void {
+        if (Modernizr.localstorage) {
+            localStorage.setItem(this.OverviewJobLimitDisplay, `${this.query.limit}`);
+        }
     }
 }
 
