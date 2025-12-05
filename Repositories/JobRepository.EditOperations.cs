@@ -47,7 +47,7 @@ public partial class JobRepository
                 job.UcjbDate = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.Size:
-                UpdateJobSize(value, job, isUsCustomer);
+                UpdateJobSize(value, job);
                 break;
             case JobProperty.Items:
                 job.UcjbQty = short.Parse(value);
@@ -101,17 +101,6 @@ public partial class JobRepository
                 break;
             case JobProperty.Reprice:
                 job.Reprice = bool.Parse(value);
-                break;
-            case JobProperty.Truck:
-                job.Truck = bool.Parse(value);
-                job.UcjbVan = false; // Set van to false when truck is selected
-                break;
-            case JobProperty.Van:
-                job.UcjbVan = bool.Parse(value);
-                job.Truck = false; // Set truck to false when a van is selected
-                break;
-            case JobProperty.VanOK:
-                job.VanOk = bool.Parse(value);
                 break;
             case JobProperty.Status:
                 var newStatus = int.Parse(value);
@@ -307,7 +296,7 @@ public partial class JobRepository
                 archive.UcjbDate = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.Size:
-                archive.UcjbSize = short.Parse(value);
+                UpdateArchiveJobSize(value, archive);
                 break;
             case JobProperty.Items:
                 archive.UcjbQty = short.Parse(value);
@@ -670,14 +659,40 @@ public partial class JobRepository
         await Context.SaveChangesAsync();
     }
 
-    private static void UpdateJobSize(string value, TucJob job, bool isUsCustomer)
+    private static void UpdateJobSize(string value, TucJob job)
     {
         var sizeId = int.Parse(value);
         job.UcjbSize = sizeId;
 
-        if (isUsCustomer && sizeId == (int)VehicleType.Truck || sizeId == (int)UrgentVehicleType.Truck)
-            job.Truck = true;
+        switch (sizeId)
+        {
+            case (int)VehicleType.Truck or (int)UrgentVehicleType.Truck:
+                job.Truck = true;
+                job.UcjbVan = false;
+                break;
+            case (int)VehicleType.Van or (int)UrgentVehicleType.Van:
+                job.UcjbVan = true;
+                job.Truck = false;
+                break;
+        }
     }
+    
+    private static void UpdateArchiveJobSize(string value, TucJobArchive job)
+    {
+        var sizeId = int.Parse(value);
+        job.UcjbSize = sizeId;
+
+        switch (sizeId)
+        {
+            case (int)VehicleType.Truck or (int)UrgentVehicleType.Truck:
+                job.Truck = true;
+                break;
+            case (int)VehicleType.Van or (int)UrgentVehicleType.Van:
+                job.UcjbVan = true;
+                break;
+        }
+    }   
+    
 
     private static IQueryable<TucJob> AddRequiredIncludes(IQueryable<TucJob> query, JobProperty property)
     {
