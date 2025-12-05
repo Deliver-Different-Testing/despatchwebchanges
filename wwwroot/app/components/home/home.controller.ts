@@ -123,7 +123,6 @@ class HomeController extends BaseController {
     greeting: string;
     mapJobList?: IDispatchMapItem[] = []
     mapJobListFull?: IDispatchMapItem[] = []
-    initialViewSet: boolean = false;
     currentJob?: IDispatchJob;
     currentJobId?: number;
     jobList: IDispatchJob[];
@@ -133,7 +132,6 @@ class HomeController extends BaseController {
     isUsCustomer: boolean;
     selectedCourier?: ISuggestion;
     views: DfrntPageViewModel[];
-    selectedViews: DfrntPageViewModel[];
     viewsInitialized: boolean = false;
     mapCenter: Coordinates;
     autoZoomEnabled: boolean;
@@ -193,6 +191,21 @@ class HomeController extends BaseController {
     currentWorkViewMode: CurrentWorkLists = CurrentWorkLists.Overview;
     driversWithJobCounts?: IDriverWorkOverview[];
 
+    private _selectedViews: DfrntPageViewModel[] = [];
+    initialViewSet: boolean = false;
+
+    get selectedViews(): DfrntPageViewModel[] {
+        return this._selectedViews;
+    }
+
+    set selectedViews(newViews: DfrntPageViewModel[]) {
+        this._selectedViews = newViews;
+        if (newViews) {
+            this.initialViewSet = false;
+            this.updateMapForSelectedViews();
+        }
+    }
+
     constructor(
         private $document: angular.IDocumentService,
         private $mdDialog: angular.material.IDialogService,
@@ -237,13 +250,6 @@ class HomeController extends BaseController {
 
         // Views and Layout
         this.initialViewSet = false;
-
-        this.watchScope("selectedViews", (newViews) => {
-            if (newViews) {
-                this.initialViewSet = false;
-                this.updateMapForSelectedViews();
-            }
-        }, true);
 
         this.watchEvent('jobChanged', async (_, newJob: IJob) => {
             if (this.currentJobId === newJob.id) {
@@ -433,21 +439,6 @@ class HomeController extends BaseController {
             this.layouts = [this.defaultLayout];
             this.loadLayout(0);
         }
-
-        // Auto-save changes
-        this.watchScope("layout", (newValue: { columns: IColumn[] }, oldValue: {
-            columns: IColumn[]
-        }) => {
-            if (newValue !== oldValue && this.currentLayoutName) {
-                const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
-                if (index !== -1) {
-                    this.layouts[index].layout = angular.copy(newValue);
-                    if (Modernizr.localstorage) {
-                        localStorage.setItem(this.LayoutKey, JSON.stringify(this.layouts));
-                    }
-                }
-            }
-        }, true);
 
         // Initialize boxSortableOptions for an old system
         this.boxSortableOptions = {
@@ -1254,7 +1245,7 @@ class HomeController extends BaseController {
             this.currentListLoading = false;
         }
     }
-    
+
     async selectSupportJobDetail(task: ITask): Promise<void> {
         console.log(' Starting with task:', {
             jobId: task.jobId,
@@ -1307,7 +1298,7 @@ class HomeController extends BaseController {
         if (this.currentJobId && this.currentJobId !== job.id) {
             this.tasksService.cancelJobTaskLoading(this.currentAppPage, this.currentJobId);
         }
-        
+
         this.currentWorkViewMode = CurrentWorkLists.SelectedDriver;
 
         await this.markJobReadStatus(job.id, true);
@@ -2269,7 +2260,7 @@ class HomeController extends BaseController {
         this.queryParams.searchText = searchText || '';
         await this.getJobList();
     }
-    
+
     async openSettingsDialog($event: MouseEvent): Promise<void> {
         if (!this.boxes) return;
 
@@ -2332,7 +2323,7 @@ class HomeController extends BaseController {
         this.exactCourierMatchSearchText = '';
         this.applyScope();
     }
-    
+
     private async loadDriversWithJobCounts(): Promise<void> {
         try {
             this.driversWithJobCounts = await this.DispatchData.getDriverWorkOverview();
@@ -2356,7 +2347,7 @@ class HomeController extends BaseController {
     }
 
     switchCurrentWorkViewMode(): void {
-        if(this.currentWorkViewMode !== CurrentWorkLists.SelectedDriver) {
+        if (this.currentWorkViewMode !== CurrentWorkLists.SelectedDriver) {
             this.currentWorkSelection = '';
         }
     }

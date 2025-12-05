@@ -90,7 +90,7 @@ class ThemeConfig {
 
     /**
      * Configures the default theme based on customer region
-     * US customers receive professional blue theme, others receive urgent yellow theme
+     * US customers receive a professional blue theme, others receive an urgent yellow theme
      */
     private configureDefaultTheme(): void {
         const themeBuilder = this.$mdThemingProvider.theme("default");

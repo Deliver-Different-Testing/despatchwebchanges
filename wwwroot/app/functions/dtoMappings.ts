@@ -32,6 +32,7 @@ import {
     ICourierComplianceDto
 } from "../components/driver-management-dashboard/interfaces/ICourierCompliance";
 import {IOpenJobResponse, IOpenJobResponseDto} from "../components/overview/overview.interfaces";
+import {timezoneShortFilter} from "../filters";
 
 export function transformFlightDTO(dto: IFlightViewModelDto): IFlightViewModel {
     return {
@@ -44,6 +45,8 @@ export function transformFlightDTO(dto: IFlightViewModelDto): IFlightViewModel {
             arrivalTime: formatDateFromApi(segment.arrivalTime),
             _departureTimeStr: formatLongDateTime(segment.departureTime),
             _arrivalTimeStr: formatLongDateTime(segment.arrivalTime),
+            _arrivalTimeZoneStr: timezoneShortFilter(segment.arrivalAirportTimeZone),
+            _departureTimeZoneStr: timezoneShortFilter(segment.departureAirportTimeZone),
         })) ?? []
     };
 }
@@ -94,6 +97,8 @@ function transformJobDTO(dto: IJobDto, isUsCustomer: boolean): IJob {
                 arrivalTime: formatDateFromApi(segment.arrivalTime),
                 _departureTimeStr: formatLongDateTime(segment.departureTime, isUsCustomer),
                 _arrivalTimeStr: formatLongDateTime(segment.arrivalTime, isUsCustomer),
+                _arrivalTimeZoneStr: timezoneShortFilter(segment.arrivalAirportTimeZone),
+                _departureTimeZoneStr: timezoneShortFilter(segment.departureAirportTimeZone),
             })) ?? []
         } : undefined,
 
@@ -107,7 +112,7 @@ function transformJobDTO(dto: IJobDto, isUsCustomer: boolean): IJob {
         readTrackerInfo: dto.readTrackerInfo ? {
             ...dto.readTrackerInfo,
             readDate: dto.readTrackerInfo.readDate ? dayjs(dto.readTrackerInfo.readDate) : undefined,
-        _readDateStr: dto.readTrackerInfo.readDate ? formatLongDateTime(dto.readTrackerInfo.readDate, isUsCustomer) : undefined,
+            _readDateStr: dto.readTrackerInfo.readDate ? formatLongDateTime(dto.readTrackerInfo.readDate, isUsCustomer) : undefined,
         } : undefined,
 
         // Private
@@ -118,6 +123,8 @@ function transformJobDTO(dto: IJobDto, isUsCustomer: boolean): IJob {
         _dispatchTimeStr: dto.dispatchTime ? formatShortDateTime(dto.dispatchTime, isUsCustomer) : undefined,
         _completedTimeStr: dto.completedTime ? formatShortDateTime(dto.completedTime, isUsCustomer) : undefined,
         _followupTimeStr: dto.followupTime ? formatShortDateTime(dto.followupTime, isUsCustomer) : undefined,
+        _pickUpTimeZoneStr: dto.pickUpTimeZone ? timezoneShortFilter(dto.pickUpTimeZone.text) : undefined,
+        _deliveryTimeZoneStr: dto.deliveryTimeZone ? timezoneShortFilter(dto.deliveryTimeZone.text) : undefined
     };
 }
 
@@ -129,6 +136,8 @@ export function transformDispatchJobDTO(dto: IDispatchJobDto): IDispatchJob {
         followupTime: dto.followupTime ? dayjs(dto.followupTime) : undefined,
         _deliveryTimeString: dto.booked ? formatMins(dto.booked) : undefined,
         _deliveryDateString: dto.booked ? formatShortDate(dto.booked) : undefined,
+        _pickUpTimeZoneStr: dto.pickUpTimeZone ? timezoneShortFilter(dto.pickUpTimeZone.text) : undefined,
+        _deliveryTimeZoneStr: dto.deliveryTimeZone ? timezoneShortFilter(dto.deliveryTimeZone.text) : undefined
     };
 }
 

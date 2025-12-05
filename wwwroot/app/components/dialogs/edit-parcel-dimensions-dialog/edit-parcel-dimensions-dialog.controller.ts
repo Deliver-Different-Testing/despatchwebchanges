@@ -3,12 +3,14 @@ import ToastrService from "../../../services/toastr.service";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import {IParcelDimensions} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
+import {IAppConfig} from "../../../interfaces/app-config.interface";
 
 class EditParcelDimensionsDialogController extends BaseController {
     static $inject = [
         "$mdDialog",
         "toastrService",
         "DispatchData",
+        "APP_CONFIG",
         "parcels",
         "jobId",
         "bulkJobId",
@@ -18,6 +20,8 @@ class EditParcelDimensionsDialogController extends BaseController {
     isLoading: boolean = false;
     isParentJob: boolean = false;
     isFormDirty: boolean = false;
+    
+    dimensionsString: string;
 
     // Validation state
     validationErrors: { [key: string]: string } = {};
@@ -30,11 +34,16 @@ class EditParcelDimensionsDialogController extends BaseController {
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
+        appConfig: IAppConfig,
         public parcels: IParcelDimensions[],
         private jobId?: number,
         private bulkJobId?: number,
     ) {
         super();
+        
+        this.dimensionsString = appConfig.US_Customer 
+            ? "inches" 
+            : "cm"
     }
 
     $onInit() {
@@ -122,8 +131,9 @@ class EditParcelDimensionsDialogController extends BaseController {
             case 'length':
             case 'depth':
             case 'height':
+                // Skip validation if value is not provided (optional)
                 if (value === undefined || value === null || value === '') {
-                    return `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} is required`;
+                    return null;
                 }
                 if (typeof value !== 'number' || isNaN(value)) {
                     return `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} must be a number`;
@@ -140,7 +150,7 @@ class EditParcelDimensionsDialogController extends BaseController {
                 return null;
         }
     }
-
+    
     validateCurrentParcel(): boolean {
         const currentParcel = this.getCurrentParcel();
         if (!currentParcel) return false;
@@ -162,15 +172,7 @@ class EditParcelDimensionsDialogController extends BaseController {
     }
 
     isValid(): boolean {
-        const currentIsValid = this.validateCurrentParcel();
-
-        const allParcelsValid = this.parcels.every(parcel => {
-            return typeof parcel.length === 'number' && parcel.length > 0 &&
-                typeof parcel.depth === 'number' && parcel.depth > 0 &&
-                typeof parcel.height === 'number' && parcel.height > 0;
-        });
-
-        return currentIsValid && allParcelsValid;
+        return this.validateCurrentParcel();
     }
 
     getFieldError(fieldName: string): string | null {
@@ -202,8 +204,11 @@ class EditParcelDimensionsDialogController extends BaseController {
 
         try {
             this.parcels.forEach(parcel => {
+                // Only set dimensions string if all three values are provided
                 if (parcel.length && parcel.depth && parcel.height) {
                     parcel.dimensions = `${parcel.length} × ${parcel.depth} × ${parcel.height} in`;
+                } else {
+                    parcel.dimensions = "";
                 }
             });
 

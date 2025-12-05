@@ -43,17 +43,6 @@ class OpenJobsWidgetController extends BaseController {
         dayjs.extend(duration);
 
         this.sortBy = "jobId";
-
-        this.watchScope(
-            () => this.tableQuery.limit,
-            (newValue: number, oldValue: number) => {
-                if (newValue !== oldValue) {
-                    if (Modernizr.localstorage) {
-                        localStorage.setItem(OpenJobsWidgetController.LimitNameKey, `${this.tableQuery.limit}`);
-                    }
-                }
-            }
-        );
     }
 
     $onInit(): void {
@@ -151,7 +140,13 @@ class OpenJobsWidgetController extends BaseController {
             this.isTableView = true;
         }
     }
-
+    
+    private saveLimit(): void {
+        if (Modernizr.localstorage) {
+            localStorage.setItem(OpenJobsWidgetController.LimitNameKey, `${this.tableQuery.limit}`);
+        }
+    }
+    
     toggleViewMode() {
         localStorage.setItem(OpenJobsWidgetController.OpenJobsViewModeKey, this.isTableView ? 'table' : 'card');
     }
@@ -242,7 +237,12 @@ class OpenJobsWidgetController extends BaseController {
 
     onPaginate(page: number, limit: number) {
         this.tableQuery.page = page;
-        this.tableQuery.limit = limit;
+
+        // Only save if the limit actually changed
+        if (this.tableQuery.limit !== limit) {
+            this.tableQuery.limit = limit;
+            this.saveLimit();
+        }
     }
 }
 

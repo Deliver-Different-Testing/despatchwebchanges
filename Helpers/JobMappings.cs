@@ -92,7 +92,7 @@ public static class JobMappings
             DeliveryLatitude = j.DeliveryLatitude,
             DeliveryLongitude = j.DeliveryLongitude,
             PickupContact = j.PickupFromContact,
-            DeliveryContact = j.DeliverToContact,
+            DeliveryContact = j.DeliverToContact ?? "Not specified",
 
             Direct = j.Direct,
             Speed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : null,
@@ -108,7 +108,7 @@ public static class JobMappings
 
             Client = j.UcjbClientCode,
             ClientId = j.UcjbClientId,
-            ClientName = j.UcjbClient != null ? j.UcjbClient.UcclName : string.Empty,
+            ClientName = j.UcjbClient != null ? j.UcjbClient.UcclName : "-",
 
             JobType = (int)(j.UcjbType ?? 0),
             PickupTime = null,
@@ -284,7 +284,7 @@ public static class JobMappings
         UdStatus = j.UndeliverableLocation != null ? j.UndeliverableLocation.Name : string.Empty,
         SigNotRequired = j.DeliverToLeave != null ? j.DeliverToLeave.Name : string.Empty,
         DeliverToLeaveId = j.DeliverToLeaveId,
-        DeliverToContact = j.DeliverToContact,
+        DeliverToContact = j.DeliverToContact ?? "Not specified",
 
         // Location data
         PickUpLatitude = j.PickUpLatitude,
@@ -295,7 +295,7 @@ public static class JobMappings
         // Client information
         Client = j.UcjbClientCode,
         ClientName = j.UcjbClient != null ? j.UcjbClient.UcclName : string.Empty,
-        ToContactPhone = j.DeliverToPhone,
+        ToContactPhone = j.DeliverToPhone ?? "Not specified",
         PodName = j.UcjbPodname,
         PuTime = j.PickUpTime,
 
@@ -324,7 +324,7 @@ public static class JobMappings
         PickupFrom = j.UcjbPickUpFrom,
         Notify = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName : null,
         FromContactName = j.PickupFromContact,
-        FromContactNumber = j.PickupFromPhone,
+        FromContactNumber = j.PickupFromPhone ?? "Not specified",
 
         // Speed and job type information
         Speed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : null,
@@ -505,7 +505,7 @@ public static class JobMappings
         PrivateRes = j.DeliverToPrivateBusiness,
         SigNotRequired = j.DeliverToLeave != null ? j.DeliverToLeave.Name : string.Empty,
         DeliverToLeaveId = j.DeliverToLeaveId,
-        DeliverToContact = j.DeliverToContact,
+        DeliverToContact = j.DeliverToContact ?? "Not specified",
 
         // Location data
         PickUpLatitude = decimal.Parse(j.PickUpLatitude),
@@ -516,7 +516,7 @@ public static class JobMappings
         // Client information
         Client = j.ClientCode,
         ClientName = j.Client != null ? j.Client.UcclName : string.Empty,
-        ToContactPhone = j.DeliverToPhone,
+        ToContactPhone = j.DeliverToPhone ?? "Not specified",
 
         // Job characteristics
         Weight = j.Weight.HasValue ? (double)j.Weight : null,
@@ -530,8 +530,8 @@ public static class JobMappings
         AlertLateDelivery = j.Client != null ? j.Client.AlertLateDelivery : null,
         Items = j.Qty,
 
-        FromContactName = j.PickupFromContact,
-        FromContactNumber = j.PickupFromPhone,
+        FromContactName = j.PickupFromContact ?? "N/A",
+        FromContactNumber = j.PickupFromPhone ?? "Not specified",
 
         // Speed and job type information
         Speed = j.SpeedNavigation != null ? j.SpeedNavigation.ShortName : null,
@@ -656,7 +656,7 @@ public static class JobMappings
         SaturdayDelivery = j.SaturdayDelivery,
         CompletedTime = j.UcjbComplTime,
         DeliverToLeaveId = j.DeliverToLeaveId,
-        DeliverToContact = j.DeliverToContact,
+        DeliverToContact = j.DeliverToContact ?? "Not specified",
 
         // Location data
         PickUpLatitude = j.PickUpLatitude,
@@ -666,7 +666,7 @@ public static class JobMappings
 
         // Client information
         Client = j.UcjbClientCode,
-        ToContactPhone = j.DeliverToPhone,
+        ToContactPhone = j.DeliverToPhone ?? "Not specified",
         PodName = j.UcjbPodname,
         PuTime = j.PickUpTime,
 
@@ -691,7 +691,7 @@ public static class JobMappings
         Items = j.UcjbQty,
 
         PickupFrom = j.UcjbPickUpFrom,
-        FromContactName = j.PickUpFromContact,
+        FromContactName = j.PickUpFromContact ?? "N/A",
 
         // Speed and job type information
         SpeedId = j.UcjbSpeed,
@@ -852,7 +852,7 @@ public static class JobMappings
             Return = j.UcbkReturn,
             SaturdayDelivery = j.SaturdayDelivery,
             DeliverToLeaveId = j.DeliverToLeaveId,
-            DeliverToContact = j.DeliverToContact,
+            DeliverToContact = j.DeliverToContact ?? "Not specified",
 
             // Location data
             PickUpLatitude = j.PickUpLatitude,
@@ -862,7 +862,7 @@ public static class JobMappings
 
             // Client information
             Client = j.UcbkClientCode,
-            ToContactPhone = j.DeliverToPhone,
+            ToContactPhone = j.DeliverToPhone ?? "Not specified",
 
             // Job characteristics
             Weight = j.UcbkWeight,
@@ -883,7 +883,7 @@ public static class JobMappings
             Items = j.Quantity,
 
             PickupFrom = j.UcbkPickUpFrom.HasValue ? (short)j.UcbkPickUpFrom : null,
-            FromContactName = j.PickupFromContact,
+            FromContactName = j.PickupFromContact ?? "N/A",
 
             // Speed and job type information
             SpeedId = j.UcbkSpeed,

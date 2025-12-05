@@ -35,7 +35,9 @@
         </div>
 
         <div class="photo-info">
-            <p class="timestamp">{{::ctrl.photos[ctrl.currentIndex].timestamp | momentFormat:'MM/DD/YYYY HH:mm'}} ({{::ctrl.timeZone | timezoneShort}})</p>
+            <p class="timestamp">{{::ctrl.photos[ctrl.currentIndex].timestamp | momentFormat:'MM/DD/YYYY HH:mm'}}
+                {{::ctrl.timeZone | timezoneShort}}
+            </p>
             <p class="uploader">Delivered by {{::ctrl.photos[ctrl.currentIndex].uploadedBy}}</p>
             <p class="coordinates" ng-if="ctrl.photos[ctrl.currentIndex].coordinates">
                 Location: {{::ctrl.photos[ctrl.currentIndex].coordinates.lat}},

@@ -65,19 +65,19 @@
                                 <md-input-container class="md-block" flex-gt-sm>
                                     <label for="length">Length</label>
                                     <input id="length" min="0" ng-model="ctrl.getCurrentParcel().length" step="0.01" type="number" placeholder="0.00">
-                                    <div class="md-caption dimension-unit">inches</div>
+                                    <div class="md-caption dimension-unit">{{::ctrl.dimensionsString}}</div>
                                 </md-input-container>
 
                                 <md-input-container class="md-block" flex-gt-sm>
                                     <label for="width">Width</label>
                                     <input id="width" min="0" ng-model="ctrl.getCurrentParcel().depth" step="0.01" type="number" placeholder="0.00">
-                                    <div class="md-caption dimension-unit">inches</div>
+                                    <div class="md-caption dimension-unit">{{::ctrl.dimensionsString}}</div>
                                 </md-input-container>
 
                                 <md-input-container class="md-block" flex-gt-sm>
                                     <label for="height">Height</label>
                                     <input id="height" min="0" ng-model="ctrl.getCurrentParcel().height" step="0.01" type="number" placeholder="0.00">
-                                    <div class="md-caption dimension-unit">inches</div>
+                                    <div class="md-caption dimension-unit">{{::ctrl.dimensionsString}}</div>
                                 </md-input-container>
                             </div>
                         </md-card>

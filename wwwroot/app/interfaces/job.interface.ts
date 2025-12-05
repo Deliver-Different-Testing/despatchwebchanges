@@ -196,6 +196,8 @@ export interface IJob {
     _inActiveDateStr?: string;
     _deliverByTimeStr?: string;
     _readTrackerTimeStr?: string;
+    _pickUpTimeZoneStr?: string;
+    _deliveryTimeZoneStr?: string;
 }
 
 export interface IJobDto {
@@ -775,6 +777,8 @@ export interface IDispatchJob {
     _deliveryTimeString?: string;
     _deliveryDateString?: string;
     _followupDateString?: string;
+    _pickUpTimeZoneStr?: string;
+    _deliveryTimeZoneStr?: string;
 }
 
 export interface IDispatchJobDto {

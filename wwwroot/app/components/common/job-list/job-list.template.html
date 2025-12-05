@@ -269,7 +269,7 @@
 
                     <!-- Time Column -->
                     <div class="job-cell time-cell">
-                        <div class="time">{{job._deliveryTimeString}} ({{::ctrl.timeZone | timezoneShort}})</div>
+                        <div class="time">{{job._deliveryTimeString}} {{::ctrl.timeZoneShort}}</div>
                     </div>
 
                     <!-- IS ARCHIVED Column -->
@@ -438,7 +438,7 @@
 
                     <!-- Time Column -->
                     <div class="job-cell time-cell">
-                        <div class="time">{{ childjob._deliveryTimeString}} ({{::ctrl.timeZone | timezoneShort}})</div>
+                        <div class="time">{{ childjob._deliveryTimeString}} {{::ctrl.timeZoneShort}}</div>
                     </div>
 
                     <div class="job-cell isarchived-cell" ng-if="::ctrl.isJobSearchPage()">
