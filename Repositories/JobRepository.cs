@@ -1238,7 +1238,7 @@ public partial class JobRepository(
         List<int> selectedViewIds,
         int? selectedClearListId = null)
     {
-        return await DespatchQryWithPagination(
+        return await DespatchQry(
             AppPage.Dispatch,
             queryParams,
             isInternal,

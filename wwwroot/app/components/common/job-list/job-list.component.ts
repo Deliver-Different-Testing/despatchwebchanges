@@ -369,14 +369,7 @@ class JobsListController extends BaseController {
     shouldShowMinimalDetails(): boolean {
         return this.densityMode === DensityMode.UltraDense;
     }
-
-    formatDeliveryDate(job: IDispatchJob): string {
-        if (!job.booked) return '';
-
-        if (this.isUsCustomer) return dayjs(job.booked).format('MM/DD');
-        return dayjs(job.booked).format('DD/MM');
-    }
-
+    
     isOverdue(job: IDispatchJob): boolean {
         const now = dayjs();
         const deliveryTime = dayjs(job.time || job.booked);

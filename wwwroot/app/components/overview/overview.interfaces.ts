@@ -82,6 +82,10 @@ export interface IOpenJobResponse {
     quantity: number;
     packageType: string;
     mileage: number;
+    
+    // Private
+    _pickUpTimeStr?: string;
+    _deliveryTimeStr?: string;
 }
 
 export interface IOpenJobResponseDto {
@@ -139,11 +143,13 @@ export interface ViewJob {
     status: string;
     pickup: {
         time?: Dayjs;
+        timeString?: string;
         name: string;
         address: string;
     };
     delivery: {
         time?: Dayjs;
+        timeString?: string;
         name: string;
         address: string;
     };

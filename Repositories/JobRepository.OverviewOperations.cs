@@ -312,6 +312,10 @@ public partial class JobRepository
             if (parameters.Speeds.Count > 0)
                 query = query.Where(j => parameters.Speeds.Contains(j.UcjbSpeedNavigation.UcjtId));
 
+            // Apply courier filter if provided
+            if (parameters.Couriers.Count > 0)
+                query = query.Where(j => parameters.Couriers.Contains(j.UcjbCourier.UccrId));
+            
             // Order
             query = query.OrderBy(j => j.PickUpTime.Value);
 

@@ -75,13 +75,14 @@ class OverviewService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getOpenJobs(params: Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds'>): Promise<IOpenJobResponse[]> {
+    async getOpenJobs(params: Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds'| 'couriers'>): Promise<IOpenJobResponse[]> {
         const response = await this.$http.get<IOpenJobResponseDto[]>("/overview/GetOpenJobs", {
             params: {
                 startDate: params.startDate ? formatDateForApiWithTzs(params.startDate): null,
                 endDate: params.endDate ? formatDateForApiWithTzs(params.endDate) : null,
                 regions: params.regions,
-                speeds: params.speeds
+                speeds: params.speeds,
+                couriers: params.couriers,
             }
         });
 

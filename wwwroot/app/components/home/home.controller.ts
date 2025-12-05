@@ -303,8 +303,6 @@ class HomeController extends BaseController {
         this.initDriverLocationRefreshIntervalOptions();
         this.loadSavedDriverLocationRefreshInterval();
         this.initializeTaskService();
-        
-        if(this.isUsCustomer) this.loadDriversWithJobCounts();
     }
 
     $onInit(): void {
@@ -1593,6 +1591,8 @@ class HomeController extends BaseController {
 
             this.loadSupportsInBackground();
             await this.getJobList();
+
+            if(this.isUsCustomer) await this.loadDriversWithJobCounts();
 
             // If we had a courier selected, refresh their current work list
             if (hasCourier && courierId) {

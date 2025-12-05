@@ -9,6 +9,6 @@ public class PodSearchDownloadRequest
     public int? SpeedId { get; set; }
     public string Wild { get; set; }
     public string Job { get; set; }
-    public DateTime FromDate { get; set; }
-    public DateTime ToDate { get; set; }
+    public DateTimeOffset FromDate { get; set; }
+    public DateTimeOffset ToDate { get; set; }
 }

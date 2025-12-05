@@ -202,7 +202,9 @@ export function transformOpenJobResponseDto(dto: IOpenJobResponseDto): IOpenJobR
         ...dto,
         deliveryTime: dto.deliveryTime ? formatDateFromApi(dto.deliveryTime) : undefined,
         pickupTime: dto.pickupTime ? formatDateFromApi(dto.pickupTime) : undefined,
-        lastCompleted: dto.lastCompleted ? formatDateFromApi(dto.lastCompleted) : undefined
+        lastCompleted: dto.lastCompleted ? formatDateFromApi(dto.lastCompleted) : undefined,
+        _pickUpTimeStr: dto.pickupTime ? formatLongDateTime(dto.pickupTime) : undefined,
+        _deliveryTimeStr: dto.deliveryTime ? formatLongDateTime(dto.deliveryTime) : undefined,
     }
 }
 
