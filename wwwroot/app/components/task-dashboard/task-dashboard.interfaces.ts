@@ -11,6 +11,10 @@ export interface ITask {
     jobId: number;
     eventType: string;
     jobNumber: string;
+    
+    // Private 
+    _dueDateString?: string;
+    _dueTimeString?: string;
 }
 
 export interface ITaskDto {

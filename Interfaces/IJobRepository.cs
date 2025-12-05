@@ -126,8 +126,8 @@ public interface IJobRepository
         JobProperty property,
         string value);
 
-    Task ReleaseBulkJobAsync(string jobNumber, DateTime bookDate);
-
+    Task ReleaseBulkJobByIdAsync(int bulkJobId);
+    
     Task<int> QuickAddJobAsync(JobCreateViewModel request);
     Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel);
     Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId);

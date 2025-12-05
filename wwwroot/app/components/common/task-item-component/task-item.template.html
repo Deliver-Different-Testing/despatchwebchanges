@@ -29,7 +29,7 @@
 
         <!-- Task description -->
         <p class="task-description"
-           ng-if="ctrl.config.showDescription !== false"
+           ng-if="::ctrl.config.showDescription !== false"
            ng-class="{'completed-text': ctrl.task.closed}">
             {{::ctrl.task.description}}
         </p>
@@ -42,7 +42,7 @@
                     class="assignee-button"
                     ng-click="$event.stopPropagation(); ctrl.reassignTask($event, ctrl.task)">
                 <md-icon md-font-set="material-symbols-outlined" style="margin-right: 6px; font-size: 16px; color: rgba(0,0,0,0.54);">person</md-icon>
-                <span>{{::ctrl.task.assignee.text || 'Unassigned'}}</span>
+                <span>{{ctrl.task.assignee.text || 'Unassigned'}}</span>
             </button>
 
             <!-- Job ID -->
@@ -61,15 +61,14 @@
     </div>
 
     <!-- Date/time section -->
-    <div ng-if="ctrl.config.showDateTime !== false"
-         class="task-date-compact">
+    <div ng-if="::ctrl.config.showDateTime !== false" class="task-date-compact">
 
         <!-- Date button -->
         <button class="date-time-button date-button"
                 ng-class="{'overdue-button': ctrl.isTaskOverdue(ctrl.task)}"
                 ng-click="$event.stopPropagation(); ctrl.openDateDialog($event, ctrl.task)">
             <md-icon class="icon" md-font-set="material-symbols-outlined">calendar_today</md-icon>
-            <span>{{ctrl.isUsCustomer ? (ctrl.task.dueDate | momentFormat:'MM/DD/YYYY') : (ctrl.task.dueDate | momentFormat:'DD/MM/YYYY')}} ({{::ctrl.timeZone | timezoneShort}})</span>
+            <span>{{ ctrl.task._dueDateString }} {{::ctrl.timeZoneShort}}</span>
         </button>
 
         <!-- Time button -->
@@ -77,7 +76,7 @@
                 ng-class="{'overdue-button': ctrl.isTaskOverdue(ctrl.task)}"
                 ng-click="$event.stopPropagation(); ctrl.openTimeDialog($event, ctrl.task)">
             <md-icon class="icon" md-font-set="material-symbols-outlined">schedule</md-icon>
-            <span>{{ctrl.task.dueDate | momentFormat:'HH:mm'}} ({{::ctrl.timeZone | timezoneShort}})</span>
+            <span>{{ ctrl.task._dueTimeString }} ({{::ctrl.timeZoneShort}})</span>
         </button>
     </div>
 

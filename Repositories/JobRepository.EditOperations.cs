@@ -693,7 +693,6 @@ public partial class JobRepository
         }
     }   
     
-
     private static IQueryable<TucJob> AddRequiredIncludes(IQueryable<TucJob> query, JobProperty property)
     {
         query = query
