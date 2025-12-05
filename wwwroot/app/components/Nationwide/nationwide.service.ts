@@ -2,7 +2,7 @@ import {
     IAgent,
     IAgentInfoDialog, IAirlineSuggestion,
     IAirportSuggestion,
-    IJobQueryParams, IJobSearchResult,
+    IJobQueryParams, IJobSearchResult, IJobSearchResultDto,
     ISuggestion
 } from "../../interfaces/job.interface";
 import {
@@ -22,7 +22,7 @@ import IFlightCargoProcessing, {
 } from "../dialogs/flight-agent-conformation-dialog/interfaces/IFlightCargoProcessing";
 import {formatDateForApiWithTzs} from "../../functions/formatDates";
 import {Dayjs} from "dayjs";
-import {transformCargoHoursDTO, transformFlightDTO} from "../../functions/dtoMappings";
+import {transformCargoHoursDTO, transformDispatchJobDTO, transformFlightDTO} from "../../functions/dtoMappings";
 
 class NationwideService implements angular.IServiceProvider {
     static $inject = [
@@ -48,7 +48,7 @@ class NationwideService implements angular.IServiceProvider {
         const despatchViewIds = selectedAreas.map(area => area.id);
 
         const url = `nationwidejob/${endpoint}`;
-        const response = await this.$http.get<IJobSearchResult>(url, {
+        const response = await this.$http.get<IJobSearchResultDto>(url, {
             params: {
                 order: queryParams.order ?? 'time',
                 orderDirection: queryParams.orderDirection ?? 'asc',
@@ -62,8 +62,11 @@ class NationwideService implements angular.IServiceProvider {
                 useTime: queryParams.useTime ?? false,
             }
         });
-        
-        return response.data;
+
+        return {
+            ...response.data,
+            jobs: response.data.jobs.map(transformDispatchJobDTO)
+        }
     }
     
     async getNationwideJobsNew(
