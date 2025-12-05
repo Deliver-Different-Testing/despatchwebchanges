@@ -76,7 +76,7 @@
                 ng-class="{'overdue-button': ctrl.isTaskOverdue(ctrl.task)}"
                 ng-click="$event.stopPropagation(); ctrl.openTimeDialog($event, ctrl.task)">
             <md-icon class="icon" md-font-set="material-symbols-outlined">schedule</md-icon>
-            <span>{{ ctrl.task._dueTimeString }} ({{::ctrl.timeZoneShort}})</span>
+            <span>{{ ctrl.task._dueTimeString }} {{::ctrl.timeZoneShort}}</span>
         </button>
     </div>
 

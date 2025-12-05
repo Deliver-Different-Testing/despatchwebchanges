@@ -16,6 +16,9 @@ export interface IDeliveryJourney {
     tags: string[];
     status: string;
     notes: string;
+    
+    // Private 
+    _dateStr?: string;
 }
 
 export interface IDeliveryJourneyDto {

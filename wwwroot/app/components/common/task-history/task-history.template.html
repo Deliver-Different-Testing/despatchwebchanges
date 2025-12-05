@@ -49,8 +49,8 @@
                         <div class="step-header">
                             <div class="step-title">{{::item.data.title}}</div>
                             <div class="step-time" ng-if="ctrl.densityMode !== ctrl.DensityMode.UltraDense">
-                                {{::ctrl.formatDateTime(item.data.date)}}
-                                <span ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">({{::ctrl.timeZone | timezoneShort}})</span>
+                                {{::item.data._dateStr}}
+                                <span ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">{{::ctrl.timeZoneShort}}</span>
                             </div>
                         </div>
 

@@ -155,8 +155,6 @@ class HomeController extends BaseController {
         showDelete: true,
         onTaskClick: true
     };
-    timeZone: string;
-    browserTimeZone: string;
     clearListId?: number;
     isDataLoading: boolean = false;
     unReadMessageCount: number = 0;
@@ -237,8 +235,6 @@ class HomeController extends BaseController {
         this.initServices($timeout, $interval, $scope);
 
         this.greeting = greetUser(FirstName);
-        this.timeZone = getIanaTimezone(TimeZone);
-        this.browserTimeZone = dayjs.tz.guess();
         this.isUsCustomer = this.APP_CONFIG.US_Customer;
 
         this.initializeBoxes();
@@ -307,7 +303,8 @@ class HomeController extends BaseController {
         this.initDriverLocationRefreshIntervalOptions();
         this.loadSavedDriverLocationRefreshInterval();
         this.initializeTaskService();
-        this.loadDriversWithJobCounts();
+        
+        if(this.isUsCustomer) this.loadDriversWithJobCounts();
     }
 
     $onInit(): void {
