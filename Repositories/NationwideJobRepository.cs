@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -541,7 +540,7 @@ public class NationwideJobRepository(
                 HasMore = false
             };
 
-        return await DespatchQryWithPagination(
+        return await DespatchQry(
             AppPage.Domestic,
             queryParams,
             isInternal,

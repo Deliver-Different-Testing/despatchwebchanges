@@ -98,11 +98,13 @@ class OpenJobsWidgetController extends BaseController {
                         status: job.status,
                         pickup: {
                             time: job.pickupTime,
+                            timeString: job._pickUpTimeStr,
                             name: job.pickupName,
                             address: job.pickupAddress
                         },
                         delivery: {
                             time: job.deliveryTime,
+                            timeString: job._deliveryTimeStr,
                             name: job.deliveryName,
                             address: job.deliveryAddress
                         },

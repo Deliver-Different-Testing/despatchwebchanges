@@ -29,8 +29,8 @@ public class PodExportService(
             request.SpeedId,
             request.Wild ?? string.Empty,
             request.Job ?? string.Empty,
-            request.FromDate.ResetTimeToStartOfDay(),
-            request.ToDate.ResetTimeToEndOfDay(),
+            request.FromDate.DateTime.ResetTimeToStartOfDay(),
+            request.ToDate.DateTime.ResetTimeToEndOfDay(),
             request.ClientId
         );
 
@@ -51,7 +51,7 @@ public class PodExportService(
      private static async Task<byte[]> GenerateCsvAsync(IEnumerable<dynamic> data)
     {
         using var stream = new MemoryStream();
-        await using var writer = new StreamWriter(stream, Encoding.UTF8);
+        await using var writer = new StreamWriter(stream, new UTF8Encoding(true));
         
         // Write header
         await writer.WriteLineAsync(GetCsvHeader());
@@ -59,6 +59,8 @@ public class PodExportService(
         // Write data rows
         foreach (var item in data) await writer.WriteLineAsync(FormatDataRow(item));
         
+        await writer.FlushAsync();
+        stream.Position = 0;
         return stream.ToArray();
     }
 
@@ -70,8 +72,8 @@ public class PodExportService(
         ["CustomerName"] = x => x.CustomerName?.ToString(),
         ["CourierCode"] = x => FormatField(x.CourierCode),
         ["BookDate"] = x => ((DateTime?)x.BookDate)?.ToString("yyyy-MM-dd HH:mm:ss"),
-        ["PickedUpDate"] = x => x.PickedUpDate?.ToString(),
-        ["DeliveredDate"] = x => x.DeliveredDate?.ToString(),
+        ["PickedUpDate"] = x => ((DateTime?)x.PickedUpDate)?.ToString("yyyy-MM-dd HH:mm:ss"),
+        ["DeliveredDate"] = x => ((DateTime?)x.DeliveredDate)?.ToString("yyyy-MM-dd HH:mm:ss"),
         
         // Financial info
         ["Amount"] = x => x.Amount?.ToString(),
@@ -119,7 +121,7 @@ public class PodExportService(
         
         // Invoice info
         ["InvoiceNumber"] = x => x.InvoiceNumber?.ToString(),
-        ["InvoiceDate"] = x => x.InvoiceDate?.ToString(),
+        ["InvoiceDate"] = x => ((DateTime?)x.InvoiceDate)?.ToString("yyyy-MM-dd HH:mm:ss"),
         ["IsArchived"] = x => x.IsArchived?.ToString(),
         ["LoggedInContact"] = x => FormatField(x.LoggedInContact)
     };
