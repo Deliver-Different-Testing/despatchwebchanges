@@ -29,7 +29,8 @@
                         <label>Select Note Type</label>
                         <md-select ng-model="ctrl.model.noteTypeId" required>
                             <md-option ng-repeat="type in ctrl.noteTypes" ng-value="type.id">
-                                <md-icon md-font-set="material-symbols-outlined" style="margin-right: 5px;">note_alt</md-icon>
+                                <md-icon md-font-set="material-symbols-outlined" style="margin-right: 5px;">note_alt
+                                </md-icon>
                                 {{type.text}}
                             </md-option>
                         </md-select>
@@ -95,7 +96,7 @@
                                         aria-label="Public Note Type">
                                     Is Public Note Type
                                 </md-checkbox>
- 
+
                                 <div ng-if="ctrl.newNoteType.isPublic" class="alert alert-warning">
                                     <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
                                     <span>Public note types are visible to clients</span>
@@ -163,7 +164,8 @@
                             </div>
                             <div class="metadata-content">
                                 <span class="metadata-label">Created on</span>
-                                <span class="metadata-value">{{::ctrl.model.createdDate | momentFormat: 'MMM D, YYYY HH:mm:ss'}} ({{::ctrl.timeZone | timezoneShort}})</span>
+                                <span class="metadata-value">{{::ctrl.model._createdDateStr}} {{::ctrl.timeZoneShort
+                                    }}</span>
                             </div>
                         </div>
 
@@ -173,7 +175,7 @@
                             </div>
                             <div class="metadata-content">
                                 <span class="metadata-label">Last updated</span>
-                                <span class="metadata-value">{{::ctrl.model.updatedByName}} on {{::ctrl.model.updatedDate | momentFormat: 'MMM D, YYYY HH:mm:ss'}} ({{::ctrl.timeZone | timezoneShort}})</span>
+                                <span class="metadata-value">{{::ctrl.model.updatedByName}} on {{::ctrl.model._updatedDateStr}} {{::ctrl.timeZoneShort}}</span>
                             </div>
                         </div>
                     </div>

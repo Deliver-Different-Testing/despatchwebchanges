@@ -21,40 +21,6 @@ public class BaseJobRepository(
     : BaseRepository(contextFactory)
 {
     protected const string Space = " ";
-    private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveJobIdCompiled =
-        EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
-            context.TucJobs
-                .AsNoTracking()
-                .Where(j => j.UcjbId == jobId)
-                .Select(j => j.ParentId ?? j.UcjbId)
-                .FirstOrDefault());
-
-    private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveJobBookingIdCompiled =
-        EF.CompileAsyncQuery((DespatchContext context, int jobBookingId) =>
-            context.TucJobBookings
-                .AsNoTracking()
-                .Where(j => j.UcbkId == jobBookingId)
-                .Select(j => j.ParentId ?? j.UcbkId)
-                .FirstOrDefault());
-
-    private static readonly Func<DespatchContext, int, Task<bool>> IsJobArchivedCompiled =
-        EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
-            context.TucJobArchives.Any(j => j.UcjbId == jobId));
-
-    private static readonly Func<DespatchContext, Task<int?>> GetEconomySpeedIdCompiled =
-        EF.CompileAsyncQuery((DespatchContext context) =>
-            context.TucJobTypes
-                .AsNoTracking()
-                .Where(s => s.UcjtName == "Economy")
-                .Select(s => (int?)s.UcjtId)
-                .FirstOrDefault());
-
-    private static readonly Func<DespatchContext, Task<DateTime?>> GetEcoDeliveryTimeCompiled =
-        EF.CompileAsyncQuery((DespatchContext context) =>
-            context.TblEcoSettings
-                .AsNoTracking()
-                .Select(x => x.EconomyDeliveryTime)
-                .FirstOrDefault());
 
     private (int? economySpeedId, DateTime? ecoDeliveryTime)? _economyCache;
 
@@ -131,17 +97,14 @@ public class BaseJobRepository(
 
             var totalCount = await query.CountAsync();
 
-            // Execute query once
             var jobs = await query
                 .AsNoTracking()
                 .AsSplitQuery()
                 .Select(JobMappings.JobDispatchMapping(isUsTenant))
                 .ToListAsync();
 
-            // Load collections separately
             await EnrichJobsWithCollections(jobs);
-            
-            // Map in memory (inexpensive operation)
+
             var mapItems = page == AppPage.Dispatch
                 ? jobs.Select(j => new DispatchMapItem
                 {
@@ -160,7 +123,7 @@ public class BaseJobRepository(
                 job.AngularId = Guid.NewGuid();
                 job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
             }
-            
+
             return new JobSearchResult
             {
                 Jobs = jobs,
@@ -175,10 +138,10 @@ public class BaseJobRepository(
             throw;
         }
     }
-    
+
     private async Task EnrichJobsWithCollections(List<DispatchJobViewModel> jobs)
     {
-        if (!jobs.Any()) return;
+        if (jobs.Count == 0) return;
 
         var jobIds = jobs.Select(j => j.Id).ToList();
         var parentIds = jobs.Where(j => j.ParentId.HasValue)
@@ -208,7 +171,7 @@ public class BaseJobRepository(
 
         // Load flights
         var flightsDict = await Context.TucJobNationwides
-            .Where(nw => nw.UcnwJobId.HasValue &&  jobIds.Contains(nw.UcnwJobId.Value))
+            .Where(nw => nw.UcnwJobId.HasValue && jobIds.Contains(nw.UcnwJobId.Value))
             .Select(nw => new { nw.UcnwJobId, nw.UcnwFlightNo })
             .GroupBy(x => x.UcnwJobId)
             .ToDictionaryAsync(g => g.Key, g => new AssignedFlight { FlightNumber = g.First().UcnwFlightNo });
@@ -220,24 +183,27 @@ public class BaseJobRepository(
         }
     }
 
-    // Keep everything as IQueryable - no materialization
     private IQueryable<TucJob> BuildBaseQuery(List<int> selectedViewIds, bool isUsTenant)
     {
         var jobIdsQuery = GetFilteredJobIdsQuery(selectedViewIds, isUsTenant);
-    
-        // Use JOIN instead of Contains - much more efficient
-        return from job in Context.TucJobs
+
+        if (!isUsTenant && (selectedViewIds == null || selectedViewIds.Count == 0))
+            return Context.TucJobs.Where(j => false);
+
+        // Use JOIN instead of Contains - much more efficient!
+        var query = from job in Context.TucJobs
             join id in jobIdsQuery on job.UcjbId equals id
             select job;
+
+        return query.TagWith($"BuildBaseQuery - Views: {selectedViewIds?.Count ?? 0}");
     }
 
     private IQueryable<int> GetFilteredJobIdsQuery(List<int> selectedViewIds, bool isUsTenant)
     {
         if (selectedViewIds == null || selectedViewIds.Count == 0)
         {
-            if (!isUsTenant) 
-                return Enumerable.Empty<int>().AsQueryable();
-        
+            if (!isUsTenant) return Context.TucJobs.Where(j => false).Select(j => j.UcjbId);
+
             return Context.DeswebQryDespatchJobViewFilters
                 .Select(x => x.UcjbId);
         }
@@ -245,22 +211,22 @@ public class BaseJobRepository(
         var viewFilters = Context.TblDespatchViews
             .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
             .Select(dv => dv.WhereCondition)
-            .ToList(); // Only materialize filter strings
+            .ToList();
 
-        if (!viewFilters.Any()) 
-            return Enumerable.Empty<int>().AsQueryable();
+        if (viewFilters.Count == 0) return Context.TucJobs.Where(j => false).Select(j => j.UcjbId);
 
+        // Case 3: Build combined filter and return IQueryable
         var combinedFilters = string.Join(" OR ", viewFilters.Select(filter => $"({filter})"));
-    
+
         return Context.DeswebQryDespatchJobViewFilters
             .FromSqlRaw(
                 isUsTenant
-                    ? $"select UcjbId from DESWEB_qry_Despatch_Job_View_Filters WHERE {combinedFilters}" 
-                    : $"select UcjbId from DESWEB_qryDespatch WHERE {combinedFilters}"
+                    ? $"SELECT UcjbId FROM DESWEB_qry_Despatch_Job_View_Filters WHERE {combinedFilters}"
+                    : $"SELECT UcjbId FROM DESWEB_qryDespatch WHERE {combinedFilters}"
             )
             .Select(x => x.UcjbId);
     }
-    
+
     private static IQueryable<TucJob> ApplyGeographicFilters(
         IQueryable<TucJob> query,
         ClearListEnvelopeViewModel clearListEnvelope,
@@ -376,7 +342,7 @@ public class BaseJobRepository(
         {
             var isUsCustomer = infoService.IsUsTenant();
             var jobIdsQuery = GetFilteredJobIdsQuery(selectedViewIds, isUsCustomer);
-        
+
             // Use JOIN instead of Contains
             var jobCoordinates = await (
                     from job in Context.TucJobs
@@ -498,27 +464,6 @@ public class BaseJobRepository(
         await Context.SaveChangesAsync(cancellationToken);
     }
 
-    protected async Task SaveBulkNoteAsync(int bulkJobId, string noteText, bool isImportant = false,
-        NoteType noteType = NoteType.InternalNote)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(noteText);
-
-        // If a note type is not found, default to the internal note
-        var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
-        if (!noteTypeExists) noteType = NoteType.InternalNote;
-
-        var newNote = new TblBulkJobNote
-        {
-            BulkJobId = bulkJobId,
-            IsImportant = isImportant,
-            NoteText = noteText,
-            NoteTypeId = (int)noteType
-        };
-
-        await Context.TblBulkJobNotes.AddAsync(newNote);
-        await Context.SaveChangesAsync();
-    }
-    
     protected async Task SaveMultipleBulkNotesAsync(List<int> bulkJobIds, string noteText, bool isImportant = false,
         NoteType noteType = NoteType.InternalNote)
     {
@@ -528,8 +473,9 @@ public class BaseJobRepository(
         var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
         if (!noteTypeExists) noteType = NoteType.InternalNote;
 
-        var newNotes = bulkJobIds.Select(bulkJobId => new TblBulkJobNote 
-            { BulkJobId = bulkJobId, IsImportant = isImportant, NoteText = noteText, NoteTypeId = (int)noteType }).ToList();
+        var newNotes = bulkJobIds.Select(bulkJobId => new TblBulkJobNote
+                { BulkJobId = bulkJobId, IsImportant = isImportant, NoteText = noteText, NoteTypeId = (int)noteType })
+            .ToList();
 
         await Context.TblBulkJobNotes.AddRangeAsync(newNotes);
         await Context.SaveChangesAsync();
@@ -542,7 +488,7 @@ public class BaseJobRepository(
         if (!noteTypeExists) noteType = NoteType.InternalNote;
         return noteType;
     }
-    
+
     protected async Task SaveNoteToMultipleJobsAsync(List<int> jobIds, string noteText, bool isImportant = false,
         bool isRecurringJobs = false, NoteType noteType = NoteType.InternalNote)
     {
@@ -553,7 +499,7 @@ public class BaseJobRepository(
             // If a note type is not found, default to the internal note
             var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
             if (!noteTypeExists) noteType = NoteType.InternalNote;
-            
+
             var newNotes = jobIds.Select(jobId => new TucNote
                 {
                     JobId = isRecurringJobs ? null : jobId,
@@ -610,7 +556,7 @@ public class BaseJobRepository(
     }
 
     // Helper Methods
-    public async Task<bool> IsJobArchived(int jobId) => await IsJobArchivedCompiled(Context, jobId);
+    public async Task<bool> IsJobArchived(int jobId) => await Context.IsJobArchived(jobId);
 
     private async Task<int> GetEffectiveJobId(int jobId, bool isArchived)
     {
@@ -747,7 +693,7 @@ public class BaseJobRepository(
             .Where(x => x.NoteId == noteId)
             .Select(NoteMappings.ActiveNoteMap)
             .FirstOrDefaultAsync();
-        
+
         UpdateNoteDate(note, infoService.GetTenantTimeZone());
         return note;
     }
@@ -756,13 +702,13 @@ public class BaseJobRepository(
     {
         var effectiveJobId = await GetEffectiveJobId(jobId, false);
         var tenantTimeZone = infoService.GetTenantTimeZone();
-        
+
         var notes = await Context.TucNotes
             .AsNoTracking()
             .Where(n => n.JobId == effectiveJobId)
             .Select(NoteMappings.ActiveNoteMap)
             .ToListAsync();
-        
+
         UpdateNoteDate(notes, tenantTimeZone);
         return notes;
     }
@@ -774,7 +720,7 @@ public class BaseJobRepository(
 
         var tenantTimeZone = infoService.GetTenantTimeZone();
         UpdateNoteDate(note, tenantTimeZone);
-      
+
         return note;
     }
 
@@ -832,7 +778,7 @@ public class BaseJobRepository(
     protected async Task<int> GetJobRelationshipInfoAsync(int jobId)
     {
         if (jobId == 0) return 0;
-        return await GetEffectiveJobIdCompiled(Context, jobId);
+        return await Context.GetEffectiveJobId(jobId);
     }
 
     protected async Task<int> GetBulkJobRelationshipInfoAsync(int bulkJobId)
@@ -846,11 +792,11 @@ public class BaseJobRepository(
             .FirstOrDefaultAsync();
     }
 
- 
+
     protected async Task<int> GetJobBookingRelationshipInfoAsync(int bookingId)
     {
         if (bookingId == 0) return 0;
-        return await GetEffectiveJobBookingIdCompiled(Context, bookingId);
+        return await Context.GetEffectiveJobBookingId(bookingId);
     }
 
     protected static string GetTrackingName(int trackingMethodId)
@@ -956,19 +902,19 @@ public class BaseJobRepository(
             throw;
         }
     }
-    
+
     protected async Task<(int? economySpeedId, DateTime? ecoDeliveryTime)> GetEconomySpeedAndDeliveryTimeAsync()
     {
         if (_economyCache.HasValue)
             return _economyCache.Value;
 
-        var economySpeedId = await GetEconomySpeedIdCompiled(Context);
-        var ecoDeliveryTime = await GetEcoDeliveryTimeCompiled(Context);
+        var economySpeedId = await Context.GetEconomySpeedId();
+        var ecoDeliveryTime = await Context.GetEcoDeliveryTime();
 
         _economyCache = (economySpeedId, ecoDeliveryTime);
         return _economyCache.Value;
     }
-    
+
     protected static void UpdateNoteDate(List<TucNoteViewModel> notes, string tenantTimeZone)
     {
         foreach (var note in notes) UpdateNoteDate(note, tenantTimeZone);
@@ -977,6 +923,7 @@ public class BaseJobRepository(
     private static void UpdateNoteDate(TucNoteViewModel note, string tenantTimeZone)
     {
         note.CreatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(note.CreatedDate, tenantTimeZone);
-        if (note.UpdatedDate.HasValue) note.UpdatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(note.UpdatedDate.Value, tenantTimeZone);
+        if (note.UpdatedDate.HasValue)
+            note.UpdatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(note.UpdatedDate.Value, tenantTimeZone);
     }
 }

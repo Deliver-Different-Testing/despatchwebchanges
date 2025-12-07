@@ -138,7 +138,7 @@
                                 </tr>
                                 </tbody>
                             </table>
-                            
+
                             <!-- Empty State -->
                             <no-data ng-if="ctrl.priceBreakdown.length === 0"
                                      title="No price items yet"
@@ -155,17 +155,17 @@
                             <div class="form-header">
                                 <div class="form-header-content">
                                     <md-icon md-font-set="material-symbols-outlined" class="form-icon">
-                                        {{ctrl.isNew ? 'add_circle' : 'edit'}}
+                                        {{::ctrl.isNew ? 'add_circle' : 'edit'}}
                                     </md-icon>
-                                    <h3>{{ctrl.isNew ? 'Add New Price Item' : 'Edit Price Item'}}</h3>
+                                    <h3>{{::ctrl.isNew ? 'Add New Price Item' : 'Edit Price Item'}}</h3>
                                 </div>
                             </div>
 
                             <div class="form-body">
                                 <md-input-container class="md-block form-input">
-                                    <label>Item Name</label>
+                                    <label for="nameInput">Item Name</label>
                                     <md-icon md-font-set="material-symbols-outlined" class="input-icon">label</md-icon>
-                                    <input name="name" type="text" ng-model="ctrl.selectedPriceBreakdown.name"
+                                    <input id="nameInput" name="name" type="text" ng-model="ctrl.selectedPriceBreakdown.name"
                                            required placeholder="e.g., Installation Services"/>
                                     <div ng-messages="ctrl.priceBreakdownForm.name.$error" class="form-errors">
                                         <div ng-message="required">Item name is required</div>
@@ -174,25 +174,23 @@
 
                                 <div layout="row" layout-xs="column" layout-gap="16px" class="amount-inputs">
                                     <md-input-container flex class="form-input">
-                                        <label>Revenue Amount</label>
+                                        <label for="amountInput">Revenue Amount (Optional)</label>
                                         <md-icon md-font-set="material-symbols-outlined" class="input-icon">payments
                                         </md-icon>
-                                        <input name="amount" type="number" step="0.01" min="0"
+                                        <input id="amountInput" name="amount" type="number" step="0.01" min="0"
                                                ng-model="ctrl.selectedPriceBreakdown.amount"
-                                               required
                                                placeholder="0.00"/>
                                         <div ng-messages="ctrl.priceBreakdownForm.amount.$error" class="form-errors">
-                                            <div ng-message="required">Revenue amount is required</div>
                                             <div ng-message="min">Amount must be positive</div>
                                         </div>
                                     </md-input-container>
 
                                     <md-input-container flex class="form-input">
-                                        <label>Cost Amount</label>
+                                        <label for="costInput">Cost Amount</label>
                                         <md-icon md-font-set="material-symbols-outlined" class="input-icon">
                                             account_balance
                                         </md-icon>
-                                        <input name="cost" type="number" step="0.01" min="0"
+                                        <input id="costInput" name="cost" type="number" step="0.01" min="0"
                                                ng-model="ctrl.selectedPriceBreakdown.costAmount"
                                                required
                                                placeholder="0.00"/>
@@ -242,9 +240,9 @@
                                                           class="md-accent">
                                     </md-progress-circular>
                                     <md-icon ng-if="!ctrl.isSaving" md-font-set="material-symbols-outlined">
-                                        {{ctrl.isNew ? 'add' : 'save'}}
+                                        {{::ctrl.isNew ? 'add' : 'save'}}
                                     </md-icon>
-                                    <span>{{ctrl.isNew ? 'Add Item' : 'Save Changes'}}</span>
+                                    <span>{{::ctrl.isNew ? 'Add Item' : 'Save Changes'}}</span>
                                 </md-button>
                             </div>
                         </div>

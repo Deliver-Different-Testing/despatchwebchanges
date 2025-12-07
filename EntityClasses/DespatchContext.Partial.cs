@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
-using DespatchWeb.Models.Dto;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -18,6 +19,58 @@ public partial class DespatchContext
                 .EnableSensitiveDataLogging();
         }
     }
+
+    // Compiled queries
+    private static readonly Func<DespatchContext, int, Task<bool>> IsLiveJobCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
+            context.TucJobs.Any(j => j.UcjbId == jobId));
+    
+    private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveJobIdCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
+            context.TucJobs
+                .AsNoTracking()
+                .Where(j => j.UcjbId == jobId)
+                .Select(j => j.ParentId ?? j.UcjbId)
+                .FirstOrDefault());
+
+    private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveJobBookingIdCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int jobBookingId) =>
+            context.TucJobBookings
+                .AsNoTracking()
+                .Where(j => j.UcbkId == jobBookingId)
+                .Select(j => j.ParentId ?? j.UcbkId)
+                .FirstOrDefault());
+
+    private static readonly Func<DespatchContext, int, Task<bool>> IsJobArchivedCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
+            context.TucJobArchives.Any(j => j.UcjbId == jobId));
+
+    private static readonly Func<DespatchContext, Task<int?>> GetEconomySpeedIdCompiled =
+        EF.CompileAsyncQuery((DespatchContext context) =>
+            context.TucJobTypes
+                .AsNoTracking()
+                .Where(s => s.UcjtName == "Economy")
+                .Select(s => (int?)s.UcjtId)
+                .FirstOrDefault());
+
+    private static readonly Func<DespatchContext, Task<DateTime?>> GetEcoDeliveryTimeCompiled =
+        EF.CompileAsyncQuery((DespatchContext context) =>
+            context.TblEcoSettings
+                .AsNoTracking()
+                .Select(x => x.EconomyDeliveryTime)
+                .FirstOrDefault());
+    
+    // Access compiled queries
+    public async Task<int> GetEffectiveJobId(int jobId) => await GetEffectiveJobIdCompiled(this, jobId);
+
+    public async Task<int> GetEffectiveJobBookingId(int jobBookingId) =>
+        await GetEffectiveJobBookingIdCompiled(this, jobBookingId);
+
+    public async Task<bool> IsJobArchived(int jobId) => await IsJobArchivedCompiled(this, jobId);
+    public async Task<int?> GetEconomySpeedId() => await GetEconomySpeedIdCompiled(this);
+    public async Task<DateTime?> GetEcoDeliveryTime() => await GetEcoDeliveryTimeCompiled(this);
+
+    public async Task<bool> IsLiveJob(int jobId) => await IsLiveJobCompiled(this, jobId);
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {
@@ -41,21 +94,21 @@ public partial class DespatchContext
                 .HasPrincipalKey(b => b.BulkJobId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
-        
+
         modelBuilder.Entity<TblBulkJob>(entity =>
         {
             entity.HasOne(d => d.Parent)
                 .WithMany(p => p.InverseParent)
                 .HasForeignKey(d => d.ParentId)
                 .OnDelete(DeleteBehavior.Restrict);
-            
+
             entity.HasOne(d => d.LoggedInContact)
                 .WithMany()
                 .HasForeignKey(d => d.LoggedInContactId)
                 .HasPrincipalKey(cc => cc.UcctId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
-        
+
         // Tuc Job Archive 
         modelBuilder.Entity<TucJobArchive>(entity =>
         {
@@ -122,7 +175,7 @@ public partial class DespatchContext
                 .HasForeignKey(d => d.LoggedInContactId)
                 .HasPrincipalKey(cc => cc.UcctId)
                 .OnDelete(DeleteBehavior.Restrict);
-            
+
             entity.HasOne(d => d.InvoiceProcess)
                 .WithMany()
                 .HasForeignKey(d => d.InvoiceProcessId)

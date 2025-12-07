@@ -638,13 +638,17 @@ export interface IJobNote {
     jobBookingId?: number;
     noteText: string;
     isImportant: boolean;
-    createdDate: Dayjs;
+    createdDate?: Dayjs;
     createdBy?: number;
     createdByName?: string;
     updatedDate?: Dayjs;
     updatedBy?: number;
     updatedByName?: string;
     noteTextSummary?: string;
+    
+    // Private 
+    _createdDateStr?: string;
+    _updatedDateStr?: string;
 }
 
 export interface IJobNoteDto {
@@ -657,7 +661,7 @@ export interface IJobNoteDto {
     jobBookingId?: number;
     noteText: string;
     isImportant: boolean;
-    createdDate: string;
+    createdDate?: string;
     createdBy?: number;
     createdByName?: string;
     updatedDate?: string;

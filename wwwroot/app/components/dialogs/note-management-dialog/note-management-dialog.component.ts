@@ -2,8 +2,9 @@ import {IJobNote, INoteType} from "../../../interfaces/job.interface";
 import "./note-management-dialog.styles.less";
 import NoteService from "../../../services/notes.service";
 import ToastrService from "../../../services/toastr.service";
+import BaseController from "../../base-controller";
 
-class NoteManagementDialogController {
+class NoteManagementDialogController extends  BaseController {
     static $inject = [
         '$mdDialog',
         'noteService',
@@ -16,8 +17,8 @@ class NoteManagementDialogController {
     isNew: boolean = false;
     model: IJobNote;
     isSubmitting: boolean = false;
-    timeZone: string = TimeZone;
-
+    timeZoneShort: string;
+    
     // New note type creation
     showNoteTypeCreator: boolean = false;
     newNoteType: INoteType = {
@@ -37,9 +38,11 @@ class NoteManagementDialogController {
         private toastrService: ToastrService,
         model: IJobNote,
     ) {
+        super();
         this.model = angular.copy(model || this.createEmptyNote());
         this.isNew = this.model.noteId === 0;
         this.title = this.isNew ? 'Add Note' : 'Edit Note';
+        this.timeZoneShort = this.getShortTimeZoneString();
 
         this.loadNoteTypes().then(r => console.log("Note Types Loaded!"));
     }

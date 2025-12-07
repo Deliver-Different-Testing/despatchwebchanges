@@ -1,6 +1,6 @@
 import {getIanaTimezone} from "../functions/formatDates";
 import {TimeZone} from "../contants";
-import {timezoneShortFilter} from "../filters";
+import {timezoneLongFilter, timezoneShortFilter} from "../filters";
 
 class BaseController implements angular.IController {
     protected eventDeregistrations: Array<() => void> = [];
@@ -260,6 +260,11 @@ class BaseController implements angular.IController {
     protected getShortTimeZoneString() {
        const ianaTimeZone = getIanaTimezone(TimeZone)
         return timezoneShortFilter(ianaTimeZone);
+    }   
+    
+    protected getLongTimeZoneString(ianaTimeZone?: string) {
+        if(!ianaTimeZone) ianaTimeZone = getIanaTimezone(TimeZone)
+        return timezoneLongFilter(ianaTimeZone);
     }
 }
 
