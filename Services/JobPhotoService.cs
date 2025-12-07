@@ -12,6 +12,7 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Response;
 using Microsoft.AspNetCore.Http;
 using Serilog;
+using System.Linq;
 
 namespace DespatchWeb.Services;
 
@@ -222,7 +223,7 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         return s3Files;
     }
 
-    private static readonly string[] AllowedTypes = ["image/jpeg", "image/png", "image/gif", "application/pdf"];
+    private static readonly HashSet<string> AllowedTypes = ["image/jpeg", "image/png", "image/gif", "application/pdf"];
     
     public async Task<AwsUploadResult> UploadJobAttachmentAsync(int jobId, IFormFile file)
     {
@@ -231,7 +232,7 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
             return new AwsUploadResult { Success = false, ErrorMessage = "No file uploaded" };
         }
 
-        // Validate file type
+        // Validate a file type
         if (!AllowedTypes.Contains(file.ContentType.ToLower()))
         {
             return new AwsUploadResult
