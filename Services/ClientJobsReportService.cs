@@ -10,6 +10,7 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using Serilog;
+using Amazon.S3.Model;
 
 namespace DespatchWeb.Services;
 
@@ -27,14 +28,12 @@ public class ClientJobsReportService(
         {
             var currentDate = infoService.GetCurrentTenantTime();
 
-            // Fetch data from stored procedure
+            // Fetch data from a stored procedure
             var data = await jobRepository.GetClientJobsReportDataAsync(request);
 
             // Validate that data was returned
-            if (data == null || data.Count == 0)
-            {
+            if (data == null || data.Count == 0) 
                 throw new InvalidOperationException("No data found for the selected criteria. Please adjust your search parameters and try again.");
-            }
 
             // Get client code from the first record's ucclLegalName or use "Unknown"
             // The SP returns ucclLegalName which we can use to identify the client

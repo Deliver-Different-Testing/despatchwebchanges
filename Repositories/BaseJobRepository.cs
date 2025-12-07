@@ -150,7 +150,7 @@ public class BaseJobRepository(
             .ToList();
 
         // Load-related jobs
-        if (parentIds.Any())
+        if (parentIds.Count != 0)
         {
             var relatedJobsDict = await Context.TucJobs
                 .Where(j => parentIds.Contains(j.ParentId.Value))
