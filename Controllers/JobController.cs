@@ -855,7 +855,7 @@ public class JobController(
     {
         try
         {
-            await dispatchJobService.DispatchJobsToCourier(data.JobIds, data.CourierId);
+            await dispatchJobService.DispatchJobsToCourierAsync(data.JobIds, data.CourierId);
             return Ok();
         }
         catch (Exception ex)
@@ -871,7 +871,7 @@ public class JobController(
         try
         {
             await jobRepository.ReDispatchSelectedJobsAsync(data.CourierId, data.JobIds);
-            await dispatchJobService.DispatchJobsToCourier(data.JobIds, data.CourierId);
+            await dispatchJobService.DispatchJobsToCourierAsync(data.JobIds, data.CourierId);
             return Ok();
         }
         catch (Exception ex)
@@ -1921,7 +1921,6 @@ public class JobController(
     {
         // Don't skip if a job is archived (should skip if invoiced tho)
         var isArchived = !isBooking && await jobRepository.IsJobArchived(jobId);
-        //if (isArchived) return 0;
 
         var isUsCustomer = infoService.IsUsTenant();
 

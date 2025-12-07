@@ -110,6 +110,27 @@ export function formatMins(date: Date | Dayjs | string): string {
     return dayjs(date).format('HH:mm');
 }
 
+export function formatInfoLogDateTimeString(dateTimeString: string): string {
+    if (!dateTimeString) return 'No date';
+    
+    const dateTime = dayjs(dateTimeString);
+    if (!dateTime.isValid()) return 'Invalid date';
+    
+    const ianaTimeZone = getIanaTimezone();
+
+    const now = dayjs().tz(ianaTimeZone);
+    const isToday = dateTime.isSame(now, 'day');
+    const isTomorrow = dateTime.isSame(now.add(1, 'day'), 'day');
+
+    if (isToday) {
+        return formatMins(dateTime);
+    } else if (isTomorrow) {
+        return `Tomorrow ${formatMins(dateTime)}`;
+    } else {
+        return formatLongDateTime(dateTime);
+    }
+}
+
 export function formatDateFromApi(dateString: string): Dayjs {
     const originalTimezone = dateString.slice(-6);
     const dateFormatted = dayjs(dateString).utcOffset(originalTimezone);
@@ -117,7 +138,7 @@ export function formatDateFromApi(dateString: string): Dayjs {
     return dateFormatted
 }
 
-export function getIanaTimezone(timezone: string): string {
+export function getIanaTimezone(timezone?: string): string {
     if (!timezone) timezone = TimeZone;
 
     // Try to find IANA equivalent using windows-iana

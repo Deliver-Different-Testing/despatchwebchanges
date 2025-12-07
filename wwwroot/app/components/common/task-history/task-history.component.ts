@@ -1,13 +1,12 @@
 ﻿import "./task-history.styles.less";
 import BaseController from "../../base-controller";
-import {IDeliveryHistoryConfig, IDeliveryJourney, ITimelineItem} from "./task-history.interfaces";
+import {IDeliveryHistoryConfig, IDeliveryJourney} from "./task-history.interfaces";
 import ToastrService from "../../../services/toastr.service";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
-import dayjs, {Dayjs} from "dayjs";
+import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import DensityMode from "../../../enums/densityMode";
-import {formatLongDateTime, formatMins, getIanaTimezone} from "../../../functions/formatDates";
 
 dayjs.extend(relativeTime);
 
@@ -22,7 +21,6 @@ class TaskHistoryController extends BaseController {
 
     readonly isUsCustomer: boolean = false;
     readonly DensityMode = DensityMode;
-    private readonly ianaTimeZone: string;
 
     jobId?: number;
     config?: IDeliveryHistoryConfig;
@@ -33,12 +31,9 @@ class TaskHistoryController extends BaseController {
     // Journey data
     deliveryEvents: IDeliveryJourney[] = [];
 
-    // Combined timeline items
-    timelineItems: ITimelineItem[] = [];
-
     historyLoading?: boolean;
     densityMode: DensityMode = DensityMode.Normal;
-    
+
     constructor(
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
@@ -51,7 +46,6 @@ class TaskHistoryController extends BaseController {
         this.initServices($timeout, $interval);
         this.isUsCustomer = appConfig.US_Customer;
         this.timeZoneShort = this.getShortTimeZoneString();
-        this.ianaTimeZone = getIanaTimezone(TimeZone)
     }
 
     $onInit() {
@@ -106,7 +100,7 @@ class TaskHistoryController extends BaseController {
                 return 'view_agenda';
         }
     }
-    
+
     private startAnimation() {
         this.registerTimeout(() => {
             this.shouldAnimate = true;
@@ -128,7 +122,7 @@ class TaskHistoryController extends BaseController {
         this.historyLoading = true;
         this.DispatchData.getDeliveryJourney(this.jobId)
             .then((deliveryJourney) => {
-                this.buildTimelineFromDeliveryJourney(deliveryJourney);
+                this.deliveryEvents = deliveryJourney;
             })
             .catch((error) => {
                 console.error('Error loading delivery journey:', error);
@@ -143,38 +137,6 @@ class TaskHistoryController extends BaseController {
 
     private initializeEmptyData() {
         this.deliveryEvents = [];
-        this.timelineItems = [];
-    }
-
-    private buildTimelineFromDeliveryJourney(deliveryJourney: IDeliveryJourney[]) {
-        // Backend handles all sorting and processing
-        this.deliveryEvents = deliveryJourney;
-
-        // Build timeline items directly from the delivery journey
-        this.timelineItems = deliveryJourney.map((event) => ({
-            type: 'delivery-event' as const,
-            data: {
-                ...event,
-                _dateStr: this.formatDateTime(event.date),
-            },
-        }));
-    }
-
-    private formatDateTime(dateTime: Dayjs): string {
-        if (!dateTime) return 'No date';
-        if (!dateTime.isValid()) return 'Invalid date';
-
-        const now = dayjs().tz(this.ianaTimeZone);
-        const isToday = dateTime.isSame(now, 'day');
-        const isTomorrow = dateTime.isSame(now.add(1, 'day'), 'day');
-
-        if (isToday) {
-            return formatMins(dateTime);
-        } else if (isTomorrow) {
-            return `Tomorrow ${formatMins(dateTime)}`;
-        } else {
-            return formatLongDateTime(dateTime);
-        }
     }
 
     isEventOverdue(event: IDeliveryJourney): boolean {
@@ -186,7 +148,7 @@ class TaskHistoryController extends BaseController {
         const now = dayjs();
         return now.isAfter(eventDate) && event.status !== 'completed';
     }
-    
+
     getIconColorClass(index: number): string {
         const colors = [
             'icon-color-1',
@@ -201,11 +163,11 @@ class TaskHistoryController extends BaseController {
 
         return colors[index % colors.length];
     }
-    
-    getItemClass(item: any): string {
-        return `step-item ${item.data.status}`;
+
+    getItemClass(event: IDeliveryJourney): string {
+        return `step-item ${event.status}`;
     }
-    
+
     handleDeliveryEventClick($event: MouseEvent, deliveryEvent: IDeliveryJourney) {
         $event.preventDefault();
         $event.stopPropagation();
@@ -217,7 +179,7 @@ class TaskHistoryController extends BaseController {
 
     refreshJourney() {
         this.toastrService.showInfoToast('Refreshing delivery journey...');
-        this.timelineItems = [];
+        this.deliveryEvents = [];
 
         // Reset animation
         this.shouldAnimate = false;
@@ -230,42 +192,46 @@ class TaskHistoryController extends BaseController {
     }
 
     getCompletedCount(): number {
-        return this.timelineItems.length;
+        return this.deliveryEvents.filter(event => event.status === 'completed').length;
     }
 
     getEventCompletionRate(): number {
-        const total = this.timelineItems.length;
+        const total = this.deliveryEvents.length;
         const completed = this.getCompletedCount();
         return total > 0 ? Math.round((completed / total) * 100) : 0;
     }
 
     getNextAction(): string {
-        const overdueEvent = this.timelineItems.find(item => item.data.status === 'todo' && this.isEventOverdue(item.data));
+        const overdueEvent = this.deliveryEvents.find(event =>
+            event.status === 'todo' && this.isEventOverdue(event)
+        );
         if (overdueEvent) {
-            return `${overdueEvent.data.title} (overdue)`;
+            return `${overdueEvent.title} (overdue)`;
         }
 
-        const nextTodo = this.timelineItems.find(item => item.data.status === 'todo');
+        const nextTodo = this.deliveryEvents.find(event => event.status === 'todo');
         if (nextTodo) {
-            return nextTodo.data.title;
+            return nextTodo.title;
         }
 
-        const nextPending = this.timelineItems.find(item => item.data.status === 'pending');
+        const nextPending = this.deliveryEvents.find(event => event.status === 'pending');
         if (nextPending) {
-            return nextPending.data.title;
+            return nextPending.title;
         }
 
-        return this.timelineItems.length > 0 ? 'All events completed' : 'No events available';
+        return this.deliveryEvents.length > 0 ? 'All events completed' : 'No events available';
     }
 
     hasOverdueActions(): boolean {
-        return this.timelineItems.some(item => item.data.status === 'todo' && this.isEventOverdue(item.data));
+        return this.deliveryEvents.some(event =>
+            event.status === 'todo' && this.isEventOverdue(event)
+        );
     }
-    
+
     getNextTrigger(): string {
-        const nextPending = this.timelineItems.find(item => item.data.status === 'pending');
+        const nextPending = this.deliveryEvents.find(event => event.status === 'pending');
         if (nextPending) {
-            const eventDate = dayjs(nextPending.data.date);
+            const eventDate = dayjs(nextPending.date);
             const now = dayjs();
             const diff = eventDate.diff(now, 'minute');
 
