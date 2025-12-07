@@ -27,56 +27,56 @@
         </md-progress-linear>
 
         <!-- Widget Content -->
-        <div class="widget-content" ng-if="ctrl.timelineItems.length > 0">
+        <div class="widget-content" ng-if="ctrl.deliveryEvents.length > 0">
             <div class="journey-steps">
                 <div class="journey-line"></div>
 
-                <div ng-repeat="item in ctrl.timelineItems track by item.data.id"
-                     class="{{ctrl.getItemClass(item)}}"
+                <div ng-repeat="event in ctrl.deliveryEvents track by event.id"
+                     class="{{ctrl.getItemClass(event)}}"
                      ng-class="{'animate-in': ctrl.shouldAnimate}"
                      ng-style="{'animation-delay': ($index * 0.1) + 's'}"
-                     ng-click="ctrl.handleDeliveryEventClick($event, item.data)">
+                     ng-click="ctrl.handleDeliveryEventClick($event, event)">
 
                     <!-- Step Icon -->
                     <div class="step-icon {{::ctrl.getIconColorClass($index)}}">
                         <md-icon md-font-set="material-symbols-outlined">
-                            {{::item.data.icon || 'inventory_2' }}
+                            {{::event.icon || 'inventory_2' }}
                         </md-icon>
                     </div>
 
                     <!-- Step Content -->
                     <div class="step-content">
                         <div class="step-header">
-                            <div class="step-title">{{::item.data.title}}</div>
+                            <div class="step-title">{{::event.title}}</div>
                             <div class="step-time" ng-if="ctrl.densityMode !== ctrl.DensityMode.UltraDense">
-                                {{::item.data._dateStr}}
+                                {{::event._dateStr}}
                                 <span ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">{{::ctrl.timeZoneShort}}</span>
                             </div>
                         </div>
 
                         <div class="step-description"
-                             ng-if="item.data.description && ctrl.densityMode === ctrl.DensityMode.Normal">
-                            {{::item.data.description}}
+                             ng-if="event.description && ctrl.densityMode === ctrl.DensityMode.Normal">
+                            {{::event.description}}
                         </div>
 
-                        <div class="step-details" ng-if="::item.data.tags && item.data.tags.length > 0">
-                     <span ng-repeat="tag in ::item.data.tags | limitTo:(ctrl.densityMode === ctrl.DensityMode.UltraDense ? 2 : ctrl.densityMode === ctrl.DensityMode.Dense ? 3 : 10) track by $index"
+                        <div class="step-details" ng-if="::event.tags && event.tags.length > 0">
+                     <span ng-repeat="tag in ::event.tags | limitTo:(ctrl.densityMode === ctrl.DensityMode.UltraDense ? 2 : ctrl.densityMode === ctrl.DensityMode.Dense ? 3 : 10) track by $index"
                            class="step-tag">
                             <md-icon style="font-size: 20px;" md-font-set="material-symbols-outlined"
                                      ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">info</md-icon>
                              {{tag}}
                         </span>
-                            <span ng-if="ctrl.densityMode !== ctrl.DensityMode.Normal && item.data.tags.length > (ctrl.densityMode === ctrl.DensityMode.UltraDense ? 2 : 3)"
+                            <span ng-if="ctrl.densityMode !== ctrl.DensityMode.Normal && event.tags.length > (ctrl.densityMode === ctrl.DensityMode.UltraDense ? 2 : 3)"
                                   class="step-tag">
-                            +{{item.data.tags.length - (ctrl.densityMode === ctrl.DensityMode.UltraDense ? 2 : 3)}} more
+                            +{{event.tags.length - (ctrl.densityMode === ctrl.DensityMode.UltraDense ? 2 : 3)}} more
                         </span>
                         </div>
 
                         <!-- Notes Section -->
                         <div class="step-notes"
-                             ng-if="item.data.notes && item.data.notes.length > 0 && ctrl.densityMode === ctrl.DensityMode.Normal">
+                             ng-if="event.notes && event.notes.length > 0 && ctrl.densityMode === ctrl.DensityMode.Normal">
                             <div class="notes-label">Notes</div>
-                            <div class="notes-content">{{::item.data.notes}}</div>
+                            <div class="notes-content">{{::event.notes}}</div>
                         </div>
                     </div>
                 </div>
@@ -121,7 +121,7 @@
         </div>
 
         <!-- Empty State -->
-        <div class="empty-state" ng-if="ctrl.timelineItems.length === 0 && !ctrl.historyLoading">
+        <div class="empty-state" ng-if="ctrl.deliveryEvents.length === 0 && !ctrl.historyLoading">
             <no-data
                     title="No Journey Events"
                     message="No delivery journey events found for this job. Events will appear here as they are created."

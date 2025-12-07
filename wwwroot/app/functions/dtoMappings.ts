@@ -13,7 +13,7 @@ import {
     IJobNoteDto
 } from "../interfaces/job.interface";
 import {
-    formatDateFromApi,
+    formatDateFromApi, formatInfoLogDateTimeString,
     formatLongDate,
     formatLongDateTime,
     formatMins,
@@ -171,6 +171,7 @@ export function transformDeliveryJourneyDTO(dto: IDeliveryJourneyDto): IDelivery
     return {
         ...dto,
         date: formatDateFromApi(dto.date),
+        _dateStr: formatInfoLogDateTimeString(dto.date)
     }
 }
 

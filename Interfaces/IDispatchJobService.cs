@@ -5,5 +5,5 @@ namespace DespatchWeb.Interfaces;
 
 public interface IDispatchJobService
 {
-    Task DispatchJobsToCourier(List<int> jobIds, int courierId);
+    Task DispatchJobsToCourierAsync(List<int> jobIds, int courierId);
 }

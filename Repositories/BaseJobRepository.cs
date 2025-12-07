@@ -153,6 +153,7 @@ public class BaseJobRepository(
         if (parentIds.Count != 0)
         {
             var relatedJobsDict = await Context.TucJobs
+                .AsNoTracking()
                 .Where(j => parentIds.Contains(j.ParentId.Value))
                 .GroupBy(j => j.ParentId.Value)
                 .Select(g => new
@@ -171,6 +172,7 @@ public class BaseJobRepository(
 
         // Load flights
         var flightsDict = await Context.TucJobNationwides
+            .AsNoTracking()
             .Where(nw => nw.UcnwJobId.HasValue && jobIds.Contains(nw.UcnwJobId.Value))
             .Select(nw => new { nw.UcnwJobId, nw.UcnwFlightNo })
             .GroupBy(x => x.UcnwJobId)

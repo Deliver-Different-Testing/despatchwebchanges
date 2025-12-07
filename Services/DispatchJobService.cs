@@ -11,25 +11,17 @@ namespace DespatchWeb.Services;
 public class DispatchJobService(IJobRepository jobRepository, ICourierRepository courierRepository)
     : IDispatchJobService
 {
-    public async Task DispatchJobToCourier(int jobId, int courierId)
-    {
-        ArgumentNullException.ThrowIfNull(jobId);
-        ArgumentNullException.ThrowIfNull(courierId);
-
-        await DispatchJobsInternal([jobId], courierId);
-    }
-
-    public async Task DispatchJobsToCourier(List<int> jobIds, int courierId)
+    public async Task DispatchJobsToCourierAsync(List<int> jobIds, int courierId)
     {
         ArgumentNullException.ThrowIfNull(jobIds);
         ArgumentOutOfRangeException.ThrowIfZero(courierId);
 
         if (jobIds.Count == 0) throw new ArgumentException("Job list cannot be empty", nameof(jobIds));
 
-        await DispatchJobsInternal(jobIds, courierId);
+        await DispatchJobsInternalAsync(jobIds, courierId);
     }
 
-    private async Task DispatchJobsInternal(List<int> jobIds, int courierId)
+    private async Task DispatchJobsInternalAsync(List<int> jobIds, int courierId)
     {
         try
         {
