@@ -1,5 +1,4 @@
 import ApiConfig from "../interfaces/apiConfig.interface";
-import HereMapsAppConfig from "../interfaces/hereMapsAppConfig";
 
 class ConfigService implements angular.IServiceProvider {
     static $inject = ["$http"];

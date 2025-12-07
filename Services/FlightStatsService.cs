@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using System.Web;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
-using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.FlightStats;
 using Microsoft.AspNetCore.Http;
 using Serilog;

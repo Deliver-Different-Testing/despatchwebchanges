@@ -7,7 +7,7 @@ import DateRangeOption from "./enums/dateRangeOption";
 import {AppPage} from "../../../enums/app-pages.enum";
 import {ISuggestion} from "../../../interfaces/job.interface";
 import {getMinsSelectionOptions} from "../../../functions/MinsSelectionOptions";
-import {getIanaTimezone} from "../../../functions/formatDates";
+import {formatLongDate, getIanaTimezone} from "../../../functions/formatDates";
 import {TimeZone} from "../../../contants";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
@@ -24,7 +24,8 @@ class DateFilterMenuComponent extends BaseController {
     ];
 
     private readonly DateRangeOptionKey: string = `dateRangeOption-${ContactID}`;
-    private readonly timeZone: string;
+    readonly timeZoneLong: string;
+    private readonly ianaTimeZone: string;
 
     private minsUpdateInterval?: angular.IPromise<any>;
     dateFilterData?: IDateFilterData;
@@ -48,11 +49,12 @@ class DateFilterMenuComponent extends BaseController {
         this.minsOptions = getMinsSelectionOptions(5 * 60, 5 * 60, 180);
 
         // Set the default selection
-        this.timeZone = getIanaTimezone(TimeZone);
+        this.ianaTimeZone = getIanaTimezone(TimeZone);
+        this.timeZoneLong = this.getLongTimeZoneString(this.ianaTimeZone);
 
         // Set dates
-        this.startDate = this.dateFilterData?.startDate || dayjs().tz(this.timeZone);
-        this.endDate = this.dateFilterData?.endDate || dayjs().tz(this.timeZone);
+        this.startDate = this.dateFilterData?.startDate || dayjs().tz(this.ianaTimeZone);
+        this.endDate = this.dateFilterData?.endDate || dayjs().tz(this.ianaTimeZone);
     }
 
     $onInit() {
@@ -60,6 +62,11 @@ class DateFilterMenuComponent extends BaseController {
 
         if (!this.dateFilterData) {
             console.warn("DateFilterData is null on init, creating default values");
+        }
+
+        // Load the saved date range option after dateFilterData is set
+        if (this.dateFilterData) {
+            this.loadDateRangeOptionFromStorageOrSetDefault();
         }
     }
 
@@ -80,17 +87,16 @@ class DateFilterMenuComponent extends BaseController {
             this.endDate = this.dateFilterData.endDate;
 
             // Ensure the end date is at least 24 hours from now
-            const minEndDate = dayjs().tz(this.timeZone).add(24, 'hour');
+            const minEndDate = dayjs().tz(this.ianaTimeZone).add(24, 'hour');
 
             if (this.endDate.isBefore(minEndDate)) {
                 this.endDate = minEndDate;
                 this.dateFilterData.endDate = minEndDate;
             }
 
-            // Set the initial search range based on the dates
-            if (this.isNext24Hours()) {
-                this.selectedRangeOption = DateRangeOption.AllTime;
-            } else {
+            // Load saved date range option only on the first initialization 
+            // Don't override the option on later changes
+            if (!changes.dateFilterData.previousValue) {
                 this.loadDateRangeOptionFromStorageOrSetDefault();
             }
         }
@@ -163,11 +169,11 @@ class DateFilterMenuComponent extends BaseController {
             case DateRangeOption.Date:
                 // Custom mode - set reasonable defaults if dates are not set
                 if (!this.dateFilterData.startDate || this.dateFilterData.startDate.valueOf() === 0) {
-                    this.startDate = dayjs().tz(this.timeZone).subtract(7, 'days');
+                    this.startDate = dayjs().tz(this.ianaTimeZone).subtract(7, 'days');
                     this.dateFilterData.startDate = this.startDate;
                 }
                 if (!this.dateFilterData.endDate || this.dateFilterData.endDate.valueOf() === 0) {
-                    this.endDate = dayjs().tz(this.timeZone);
+                    this.endDate = dayjs().tz(this.ianaTimeZone);
                     this.dateFilterData.endDate = this.endDate;
                 }
 
@@ -181,12 +187,12 @@ class DateFilterMenuComponent extends BaseController {
                     this.dateFilterData.startDate = defaults.startDate;
 
                     const seconds = this.selectedMinsOption.id;
-                    this.endDate = dayjs().tz(this.timeZone).add(seconds, 'seconds');
+                    this.endDate = dayjs().tz(this.ianaTimeZone).add(seconds, 'seconds');
                     this.dateFilterData.endDate = this.endDate;
                 } else {
                     // Default to 5 minutes if no option selected
                     this.startDate = defaults.startDate;
-                    this.endDate = dayjs().tz(this.timeZone).add(5, 'minutes');
+                    this.endDate = dayjs().tz(this.ianaTimeZone).add(5, 'minutes');
                     this.dateFilterData.startDate = defaults.startDate;
                     this.dateFilterData.endDate = this.endDate;
 
@@ -209,24 +215,28 @@ class DateFilterMenuComponent extends BaseController {
         await this.refreshData();
     }
 
-    private startMinsUpdate(): void {
-        // Update every minute (60,000 ms)
-        this.minsUpdateInterval = this.registerInterval(async () => {
-            if (this.selectedRangeOption === DateRangeOption.Mins && this.selectedMinsOption && this.dateFilterData) {
-                console.log('Updating mins filter to keep it synchronized');
+    async onMinsOptionChange(option: ISuggestion): Promise<void> {
+        console.log("Mins option changed:", option);
 
-                const defaults = setDateFilterDefaults();
-                this.startDate = defaults.startDate;
-                this.dateFilterData.startDate = defaults.startDate;
+        if (!this.dateFilterData || !option) return;
 
-                const seconds = this.selectedMinsOption.id;
-                this.endDate = dayjs().tz(this.timeZone).add(seconds, 'seconds');
-                this.dateFilterData.endDate = this.endDate;
+        this.selectedMinsOption = option;
 
-                // Refresh the data with the updated times
-                await this.refreshData();
-            }
-        }, 60000); // 1 min
+        // Set the start date now
+        const defaults = setDateFilterDefaults();
+        this.startDate = defaults.startDate;
+        this.dateFilterData.startDate = defaults.startDate;
+
+        // Set the end date to now + selected minutes (id is in seconds)
+        const seconds = option.id;
+        this.endDate = dayjs().tz(this.ianaTimeZone).add(seconds, 'seconds');
+        this.dateFilterData.endDate = this.endDate;
+
+        // Restart the interval with the new mins selection
+        this.stopMinsUpdate();
+        this.startMinsUpdate();
+
+        await this.refreshData();
     }
 
     private stopMinsUpdate(): void {
@@ -264,6 +274,31 @@ class DateFilterMenuComponent extends BaseController {
         await this.validateAndRefresh();
     }
 
+    private startMinsUpdate(): void {
+        // Update every minute (60,000 ms)
+        this.minsUpdateInterval = this.registerInterval(async () => {
+            if (this.selectedRangeOption === DateRangeOption.Mins && this.selectedMinsOption && this.dateFilterData) {
+                console.log('Updating mins filter to keep it synchronized');
+
+                const defaults = setDateFilterDefaults();
+                this.startDate = defaults.startDate;
+                this.dateFilterData.startDate = defaults.startDate;
+
+                const seconds = this.selectedMinsOption.id;
+                this.endDate = dayjs().tz(this.ianaTimeZone).add(seconds, 'seconds');
+                this.dateFilterData.endDate = this.endDate;
+
+                // Refresh the data with the updated times
+                await this.refreshData();
+            }
+        }, 60000); // 1 min
+    }
+
+    async applyButtonClicked(): Promise<void> {
+        console.log("Apply button clicked");
+        await this.validateAndRefresh();
+    }
+
     private async validateAndRefresh(): Promise<void> {
         // Validate that the start date is not after the end date
         const start = this.startDate;
@@ -280,37 +315,8 @@ class DateFilterMenuComponent extends BaseController {
             endDate: end,
         }
 
-        this.toasterService.showSuccessToast(`Dates Applied: ${start.format('MMM DD, YYYY')} - ${end.format('MMM DD, YYYY')}`);
+        this.toasterService.showSuccessToast(`Dates Applied: ${formatLongDate(start)}- ${formatLongDate(end)}`);
         console.log("Date filter data:", this.dateFilterData);
-        await this.refreshData();
-    }
-
-    async applyButtonClicked(): Promise<void> {
-        console.log("Apply button clicked");
-        await this.validateAndRefresh();
-    }
-
-    async onMinsOptionChange(option: ISuggestion): Promise<void> {
-        console.log("Mins option changed:", option);
-
-        if (!this.dateFilterData || !option) return;
-
-        this.selectedMinsOption = option;
-
-        // Set the start date now
-        const defaults = setDateFilterDefaults();
-        this.startDate = defaults.startDate;
-        this.dateFilterData.startDate = defaults.startDate;
-
-        // Set the end date to now + selected minutes (id is in seconds)
-        const seconds = option.id;
-        this.endDate = dayjs().tz(this.timeZone).add(seconds, 'seconds');
-        this.dateFilterData.endDate = this.endDate;
-
-        // Restart the interval with the new mins selection
-        this.stopMinsUpdate();
-        this.startMinsUpdate();
-
         await this.refreshData();
     }
 }

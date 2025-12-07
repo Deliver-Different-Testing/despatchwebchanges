@@ -27,27 +27,41 @@ public partial class JobRepository(
     : BaseJobRepository(contextFactory, infoService, clearListEnvelopeService), IJobRepository
 {
     private readonly ITenantInfoService _infoService = infoService;
+    private readonly IDbContextFactory<DespatchContext> _contextFactory = contextFactory;
     private static readonly DateTime SqlMinDateTime = new(1753, 1, 1);
 
-    /* Bulk Job Detail*/
+
     public async Task<JobGroupViewModel> GetBulkJobDetailAsync(int bulkJobId)
     {
         try
         {
-            var mainBulkJob = await Context.TblBulkJobs
+            // Get the main job's parent ID first
+            var parentIdQuery = await Context.TblBulkJobs
                 .AsNoTracking()
                 .Where(j => j.BulkJobId == bulkJobId)
-                .Select(JobMappings.BulkJobMapping)
+                .Select(j => j.ParentId ?? j.BulkJobId)
                 .FirstOrDefaultAsync();
 
-            var familyRootId = mainBulkJob.ParentId ?? bulkJobId;
+            if (parentIdQuery == 0)
+            {
+                return new JobGroupViewModel
+                {
+                    Job = null,
+                    RelatedJobs = []
+                };
+            }
 
-            var relatedJobs = await Context.TblBulkJobs
+            var familyRootId = parentIdQuery;
+
+            var allJobs = await Context.TblBulkJobs
                 .AsNoTracking()
-                .Where(j => (j.BulkJobId == familyRootId || j.ParentId == familyRootId)
-                            && j.BulkJobId != bulkJobId)
+                .Where(j => j.BulkJobId == familyRootId || j.ParentId == familyRootId)
                 .Select(JobMappings.BulkJobMapping)
+                .TagWith($"GetBulkJobDetail - Family {familyRootId}")
                 .ToListAsync();
+
+            var mainBulkJob = allJobs.FirstOrDefault(j => j.Id == bulkJobId);
+            var relatedJobs = allJobs.Where(j => j.Id != bulkJobId).ToList();
 
             return new JobGroupViewModel
             {
@@ -300,12 +314,10 @@ public partial class JobRepository(
                 IsBulkJob = true
             };
 
-        // Materialize the query first to enable client-side evaluation
         var allResults = await query
             .AsNoTracking()
             .ToListAsync();
 
-        // Apply distinct with custom comparer in memory
         var distinctResults = allResults
             .Distinct(new DispatchJobViewModelComparer())
             .ToList();
@@ -341,195 +353,115 @@ public partial class JobRepository(
             var jobSearch = $"%{(data.Job ?? string.Empty).ToLower()}%";
             var wildSearch = $"%{(data.Wild ?? string.Empty).ToLower()}%";
 
-            var query =
-                from j in Context.TblJobs
-                join c in Context.TucCouriers on j.CourierId equals c.UccrId into courierJoin
-                from co in courierJoin.DefaultIfEmpty()
-                join y in Context.TucSuburbs on j.FromSuburbId equals y.UcsuId into fromJoin
-                from fs in fromJoin.DefaultIfEmpty()
-                join z in Context.TucSuburbs on j.ToSuburbId equals z.UcsuId into toJoin
-                from ts in toJoin.DefaultIfEmpty()
-                join t in Context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
-                from speed in speedJoin.DefaultIfEmpty()
-                join s in Context.TucJobStatuses on j.Status equals s.UcjsId into statusJoin
-                from status in statusJoin.DefaultIfEmpty()
-                join nw in Context.TucJobNationwides on j.JobId equals nw.UcnwJobId into nationwideJoin
-                from nationwide in nationwideJoin.DefaultIfEmpty()
-                join rt in Context.TucJobReadTrackers on j.JobId equals rt.JobId into rtJoin
-                from readTracker in rtJoin.DefaultIfEmpty()
-                join vs in Context.VehicleSizes on j.Size equals vs.VehicleSizeId into vsJoin
-                from vehicleSize in vsJoin.DefaultIfEmpty()
-                join cl in Context.TucClients on j.ClientId equals cl.UcclId into clientJoin
-                from client in clientJoin.DefaultIfEmpty()
-                where
-                    j.Date.HasValue && j.Date.Value.Date >= data.FromDate.Date
-                                    && j.Date.HasValue && j.Date.Value.Date <= data.ToDate.Date
-                                    && (!data.ClientSet || j.ClientId == data.ClientId)
-                                    && (!data.CourierSet || j.CourierId == data.CourierId)
-                                    && (!data.SpeedSet || j.Speed == data.SpeedId)
-                                    && (!data.JobSet || EF.Functions.Like(j.Number.ToLower(), jobSearch))
-                                    && (
-                                        !data.WildSet
-                                        || Context.TucJobNationwides
-                                            .Where(nw => nw.UcnwJobId == j.JobId)
-                                            .Any(nw => EF.Functions.Like(
-                                                (nw.UcnwFlightNo ?? string.Empty)
-                                                + " "
-                                                + (nw.AircraftName ?? string.Empty)
-                                                + " "
-                                                + (nw.CarrierFsCode ?? string.Empty)
-                                                + " "
-                                                + (nw.DepartureAirportName ?? string.Empty)
-                                                + " "
-                                                + (nw.ArrivalAirportName ?? string.Empty),
-                                                wildSearch))
-                                        || EF.Functions.Like(
-                                            (j.FromAddress ?? string.Empty)
-                                            + " "
-                                            + (j.PickupFromContact ?? string.Empty)
-                                            + " "
-                                            + (fs.UcsuName ?? string.Empty)
-                                            + " "
-                                            + (j.ToAddress ?? string.Empty)
-                                            + " "
-                                            + (j.DeliverToContact ?? string.Empty)
-                                            + " "
-                                            + (ts.UcsuName ?? string.Empty)
-                                            + " "
-                                            + (j.ClientReferenceA ?? string.Empty)
-                                            + " "
-                                            + (j.ClientReferenceB ?? string.Empty)
-                                            + " "
-                                            + (j.OurRef ?? string.Empty)
-                                            + " "
-                                            + j.Number.ToLower()
-                                            + " "
-                                            + j.Barcode.ToLower(),
-                                            wildSearch
-                                        )
-                                    )
-                orderby j.Date, j.Time, j.JobId
-                select new DispatchJobViewModel
-                {
-                    Id = j.JobId,
-                    HasBeenRead = readTracker != null && readTracker.HasBeenRead,
-                    IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.JobId,
-                    ParentId = j.ParentId,
-
-                    IsFlightJob = speed != null
-                                  && speed.GroupingId == (isUsCustomer
-                                      ? (int)SpeedGrouping.Flight
-                                      : (int)UrgentSpeedGrouping.Flight),
-                    IsAgentJob = speed != null
-                                 && speed.GroupingId == (isUsCustomer
-                                     ? (int)SpeedGrouping.Agent
-                                     : (int)UrgentSpeedGrouping.NationwideAgent),
-
-                    Vehicle = vehicleSize != null
-                        ? new Suggestion
-                        {
-                            Id = vehicleSize.VehicleSizeId,
-                            Text = vehicleSize.VehicleName
-                        }
-                        : null,
-                    Time = j.Time,
-                    ClientId = j.ClientId,
-                    Client = j.ClientCode,
-                    ClientName = client != null ? client.UcclName : string.Empty,
-
-                    From = fs != null ? fs.UcsuName : null,
-                    ToSuburbId = j.ToSuburbId,
-                    JobNo = j.Number,
-                    ToAddress = j.ToAddress,
-                    PickupAddress = new AddressViewModel
-                    {
-                        AddressLine1 = j.PickupAddressLine1,
-                        AddressLine2 = j.PickupAddressLine2,
-                        AddressLine3 = j.PickupAddressLine3,
-                        AddressLine4 = j.PickupAddressLine4,
-                        AddressLine5 = j.PickupAddressLine5,
-                        AddressLine6 = j.PickupAddressLine6,
-                        AddressLine7 = j.PickupAddressLine7,
-                        AddressLine8 = j.PickupAddressLine8,
-                        Latitude = j.PickUpLatitude,
-                        Longitude = j.PickUpLongitude
-                    },
-                    DeliveryAddress = new AddressViewModel
-                    {
-                        AddressLine1 = j.DeliveryAddressLine1,
-                        AddressLine2 = j.DeliveryAddressLine2,
-                        AddressLine3 = j.DeliveryAddressLine3,
-                        AddressLine4 = j.DeliveryAddressLine4,
-                        AddressLine5 = j.DeliveryAddressLine5,
-                        AddressLine6 = j.DeliveryAddressLine6,
-                        AddressLine7 = j.DeliveryAddressLine7,
-                        AddressLine8 = j.DeliveryAddressLine8,
-                        Latitude = j.DeliveryLatitude,
-                        Longitude = j.DeliveryLongitude
-                    },
-                    Courier = co != null ? co.Code : null,
-                    CourierData = co != null
-                        ? new CourierData
-                        {
-                            Courier = co.Code,
-                            CourierNumber = co.Code,
-                            CourierId = co.UccrId,
-                            CourierMobile = co.UccrMobile,
-                            CourierName = co.UccrName + " " + co.UccrSurname
-                        }
-                        : null,
-                    AssignedCourier = co != null
-                        ? new Suggestion
-                        {
-                            Id = co.UccrId,
-                            Text = co.UccrName + " " + co.UccrSurname
-                        }
-                        : null,
-                    StatusId = j.Status,
-                    Status = status != null ? status.UcjsCode : null,
-                    StatusName = status != null ? status.UcjsName : null,
-                    Speed = speed != null ? speed.ShortName : null,
-                    SpeedId = j.Speed,
-                    JobTypeMins = speed != null ? speed.Minutes : null,
-                    PreBook = false,
-                    PickUpLatitude = j.PickUpLatitude,
-                    PickUpLongitude = j.PickUpLongitude,
-                    DeliveryLatitude = j.DeliveryLatitude,
-                    DeliveryLongitude = j.DeliveryLongitude,
-                    Booked = j.Date.HasValue
-                        ? j.Date.Value.CombineWithTime(j.Time)
-                        : DateTime.MinValue,
-                    IsArchived = j.Archived ?? false,
-                    Locked = j.Locked.HasValue ? j.Locked != 0 : null,
-                    ToAirportId = j.ToAirportId,
-                    FromAirportId = j.FromAirportId
-                };
-
-            // Materialize the query first to enable client-side evaluation
-            var allResults = await query
+            var liveJobsQuery = Context.TucJobs
                 .AsNoTracking()
-                .ToListAsync();
+                .Where(j =>
+                    j.UcjbDate.Date >= data.FromDate.Date
+                    && j.UcjbDate.Date <= data.ToDate.Date
+                    && (!data.ClientSet || j.UcjbClientId == data.ClientId)
+                    && (!data.CourierSet || j.UcjbCourierId == data.CourierId)
+                    && (!data.SpeedSet || j.UcjbSpeed == data.SpeedId)
+                    && (!data.JobSet || EF.Functions.Like(j.UcjbNumber.ToLower(), jobSearch))
+                );
 
-            // Apply distinct with custom comparer in memory
-            var distinctResults = allResults
-                .Distinct(new DispatchJobViewModelComparer())
-                .ToList();
+            var archivedJobsQuery = Context.TucJobArchives
+                .AsNoTracking()
+                .Where(j =>
+                    j.UcjbDate.HasValue
+                    && j.UcjbDate.Value.Date >= data.FromDate.Date
+                    && j.UcjbDate.Value.Date <= data.ToDate.Date
+                    && (!data.ClientSet || j.UcjbClientId == data.ClientId)
+                    && (!data.CourierSet || j.UcjbCourierId == data.CourierId)
+                    && (!data.SpeedSet || j.UcjbSpeed == data.SpeedId)
+                    && (!data.JobSet || EF.Functions.Like(j.UcjbNumber.ToLower(), jobSearch))
+                );
 
-            var totalCount = distinctResults.Count;
+            if (data.WildSet)
+            {
+                liveJobsQuery = liveJobsQuery.Where(j =>
+                    j.TucJobNationwides.Any(nw => EF.Functions.Like(
+                        (nw.UcnwFlightNo ?? string.Empty) + " " +
+                        (nw.AircraftName ?? string.Empty) + " " +
+                        (nw.CarrierFsCode ?? string.Empty) + " " +
+                        (nw.DepartureAirportName ?? string.Empty) + " " +
+                        (nw.ArrivalAirportName ?? string.Empty),
+                        wildSearch))
+                    ||
+                    EF.Functions.Like(
+                        (j.UcjbFromAddr ?? string.Empty) + " " +
+                        (j.PickupFromContact ?? string.Empty) + " " +
+                        (j.UcjbFromNavigation.UcsuName ?? string.Empty) + " " +
+                        (j.UcjbToAddr ?? string.Empty) + " " +
+                        (j.DeliverToContact ?? string.Empty) + " " +
+                        (j.UcjbToNavigation.UcsuName ?? string.Empty) + " " +
+                        (j.UcjbClientRefa ?? string.Empty) + " " +
+                        (j.UcjbClientRefb ?? string.Empty) + " " +
+                        (j.UcjbOurRef ?? string.Empty) + " " +
+                        j.UcjbNumber.ToLower() + " " +
+                        (j.Barcode ?? string.Empty).ToLower(),
+                        wildSearch
+                    )
+                );
 
-            // Apply pagination in memory
+                archivedJobsQuery = archivedJobsQuery.Where(j =>
+                    EF.Functions.Like(
+                        (j.UcjbFromAddr ?? string.Empty) + " " +
+                        (j.PickUpFromContact ?? string.Empty) + " " +
+                        (j.UcjbToAddr ?? string.Empty) + " " +
+                        (j.DeliverToContact ?? string.Empty) + " " +
+                        (j.UcjbClientRefa ?? string.Empty) + " " +
+                        (j.UcjbClientRefb ?? string.Empty) + " " +
+                        (j.UcjbOurRef ?? string.Empty) + " " +
+                        j.UcjbNumber.ToLower() + " " +
+                        (j.Barcode ?? string.Empty).ToLower(),
+                        wildSearch
+                    )
+                );
+            }
+
+            var liveCount = await liveJobsQuery
+                .TagWith("PodSearch - Live Count")
+                .CountAsync();
+
+            var archivedCount = await archivedJobsQuery
+                .TagWith("PodSearch - Archived Count")
+                .CountAsync();
+
+            var totalCount = liveCount + archivedCount;
             var page = data.Page ?? 0;
             var pageSize = data.PageSize ?? 50;
 
-            var jobSearchResults = distinctResults
+            var liveJobs = await liveJobsQuery
+                .OrderBy(j => j.UcjbDate)
+                .ThenBy(j => j.UcjbTime)
+                .ThenBy(j => j.UcjbId)
+                .Take(pageSize * 2)
+                .Select(JobMappings.PodSearchMapping(isUsCustomer))
+                .TagWith("PodSearch - Live Jobs")
+                .ToListAsync();
+
+            var archivedJobs = await archivedJobsQuery
+                .OrderBy(j => j.UcjbDate)
+                .ThenBy(j => j.UcjbTime)
+                .ThenBy(j => j.UcjbId)
+                .Take(pageSize * 2)
+                .Select(JobMappings.PodSearchArchivedMapping(isUsCustomer))
+                .TagWith("PodSearch - Archived Jobs")
+                .ToListAsync();
+
+            var allJobs = liveJobs
+                .Concat(archivedJobs)
+                .OrderBy(j => j.Booked)
+                .ThenBy(j => j.Time)
+                .ThenBy(j => j.Id)
                 .Skip(page * pageSize)
                 .Take(pageSize)
                 .ToList();
 
-            // Calculate remaining time for each job
             var (economySpeedId, ecoDeliveryTime) = await GetEconomySpeedAndDeliveryTimeAsync();
             var now = _infoService.GetCurrentTenantTime();
-            foreach (var job in jobSearchResults)
+
+            foreach (var job in allJobs)
             {
                 job.AngularId = Guid.NewGuid();
                 job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
@@ -537,7 +469,7 @@ public partial class JobRepository(
 
             return new JobSearchResult
             {
-                Jobs = jobSearchResults,
+                Jobs = allJobs,
                 TotalCount = totalCount,
                 HasMore = (page + 1) * pageSize < totalCount
             };
@@ -739,7 +671,7 @@ public partial class JobRepository(
                 var totalFuel = childJobs.Sum(j => j.FuelSurchargeAmount);
                 var totalPpd = childJobs.Sum(j => j.PpdexclusiveAmount);
 
-                // Check if parent job's price is actually changing
+                // Check if a parent job's price is actually changing
                 bool parentPriceChanged = Math.Round(parentJob.UcjbAmount ?? 0, 4) != Math.Round(totalAmount, 4) ||
                                           Math.Round(parentJob.FuelSurchargeAmount ?? 0, 4) !=
                                           Math.Round(totalFuel, 4) ||
@@ -772,12 +704,12 @@ public partial class JobRepository(
         // Only update pricing breakdowns for jobs with changed prices
         if (jobsWithChangedPrices.Count != 0)
         {
-            // Separate jobs by their source table (active vs archived)
+            // Separate jobs by their source table (active vs. archived)
             var activeJobIds = jobsWithChangedPrices.Where(id => dbData.Any(j => j.UcjbId == id)).ToList();
             var archivedJobIds = jobsWithChangedPrices
                 .Where(id => dbDataArchive.Any(j => j.UcjbId == id) && dbData.All(j => j.UcjbId != id)).ToList();
 
-            // Handle active jobs - use PricingBreakdowns table
+            // Handle active jobs - use the PricingBreakdowns table
             if (activeJobIds.Count != 0)
             {
                 var existingBreakdowns = await Context.PricingBreakdowns
@@ -861,7 +793,7 @@ public partial class JobRepository(
             Log.Information("No jobs with changed prices - skipping pricing breakdown updates");
         }
 
-        // Finally, update all jobs to locked state
+        // Finally, update all jobs to the locked state
         foreach (var d in dbData.Where(j => processedJobIds.Contains(j.UcjbId))) d.UcjbLocked = true;
 
         foreach (var d in dbDataArchive.Where(j => processedJobIds.Contains(j.UcjbId))) d.UcjbLocked = 1;
@@ -1328,7 +1260,7 @@ public partial class JobRepository(
             parentId = activeJob.ParentId;
         }
 
-        // Check for uncompleted sibling jobs (child jobs with same parent)
+        // Check for uncompleted sibling jobs (child jobs with the same parent)
         var hasUncompletedSiblings = await Context.TucJobs
             .AnyAsync(j => (j.ParentId == parentId || j.ParentId == null) &&
                            j.UcjbId != data.JobId &&
@@ -2755,12 +2687,24 @@ public partial class JobRepository(
 
     public async Task<List<DeliveryJourneyViewModel>> GetDeliveryJourneyForJobAsync(int jobId)
     {
-        var isLiveJob = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
+        await using var tasksDeliveryContext = await _contextFactory.CreateDbContextAsync();
+        await using var messagesDeliveryContext = await _contextFactory.CreateDbContextAsync();
+        await using var notesDeliveryContext = await _contextFactory.CreateDbContextAsync();
+        await using var statusDeliveryContext = await _contextFactory.CreateDbContextAsync();
 
-        var tasks = await GetTasksForDeliveryJourneyAsync(jobId);
-        var messages = await GetMessagesForDeliveryJourneyAsync(jobId);
-        var notes = await GetNotesForDeliveryJourneyAsync(jobId, isLiveJob);
-        var statusUpdates = await GetStatusUpdatesForDeliveryJourneyAsync(jobId, isLiveJob);
+        var isLiveJob = await Context.IsLiveJob(jobId);
+
+        var tasksTask = GetTasksForDeliveryJourneyAsync(tasksDeliveryContext, jobId);
+        var messagesTask = GetMessagesForDeliveryJourneyAsync(messagesDeliveryContext, jobId);
+        var notesTask = GetNotesForDeliveryJourneyAsync(notesDeliveryContext, jobId, isLiveJob);
+        var statusUpdatesTask = GetStatusUpdatesForDeliveryJourneyAsync(statusDeliveryContext, jobId, isLiveJob);
+
+        await Task.WhenAll(tasksTask, messagesTask, notesTask, statusUpdatesTask);
+
+        var tasks = await tasksTask;
+        var messages = await messagesTask;
+        var notes = await notesTask;
+        var statusUpdates = await statusUpdatesTask;
 
         return tasks
             .Concat(messages)
@@ -2770,11 +2714,13 @@ public partial class JobRepository(
             .ToList();
     }
 
-    private async Task<List<DeliveryJourneyViewModel>> GetTasksForDeliveryJourneyAsync(int jobId)
+    private async Task<List<DeliveryJourneyViewModel>> GetTasksForDeliveryJourneyAsync(
+        DespatchContext context,
+        int jobId)
     {
         var timezone = _infoService.GetTenantTimeZone();
 
-        var eventDtos = await Context.TucEvents
+        var eventDtos = await context.TucEvents
             .AsNoTracking()
             .Where(e => e.UcevJobId == jobId)
             .Select(e => new DeliveryJourneyDto
@@ -2801,9 +2747,10 @@ public partial class JobRepository(
                     })
                     .ToList()
             })
+            .TagWith("DeliveryJourney - Tasks")
             .ToListAsync();
 
-        var events = eventDtos.Select(dto => new DeliveryJourneyViewModel
+        return eventDtos.Select(dto => new DeliveryJourneyViewModel
         {
             Id = Guid.NewGuid(),
             JobId = jobId,
@@ -2829,11 +2776,12 @@ public partial class JobRepository(
                 .Where(tag => !string.IsNullOrWhiteSpace(tag))
                 .ToList()
         }).ToList();
-
-        return events;
     }
 
-    private async Task<List<DeliveryJourneyViewModel>> GetNotesForDeliveryJourneyAsync(int jobId, bool isLiveJob)
+    private async Task<List<DeliveryJourneyViewModel>> GetNotesForDeliveryJourneyAsync(
+        DespatchContext context,
+        int jobId,
+        bool isLiveJob)
     {
         var timezone = _infoService.GetTenantTimeZone();
         var isUsCustomer = _infoService.IsUsTenant();
@@ -2841,7 +2789,7 @@ public partial class JobRepository(
 
         if (isLiveJob)
         {
-            var noteDtos = await Context.TucNotes
+            var noteDtos = await context.TucNotes
                 .AsNoTracking()
                 .Where(n => n.JobId == jobId)
                 .Select(n => new NoteDto
@@ -2855,6 +2803,7 @@ public partial class JobRepository(
                     UpdatedByFirstName = n.UpdatedByNavigation.UcstFirstName,
                     UpdatedByLastName = n.UpdatedByNavigation.UcstLastName
                 })
+                .TagWith("DeliveryJourney - Live Notes")
                 .ToListAsync();
 
             return noteDtos.Select(n => new DeliveryJourneyViewModel
@@ -2880,7 +2829,7 @@ public partial class JobRepository(
             }).ToList();
         }
 
-        var archivedNoteDtos = await Context.TucNoteArchives
+        var archivedNoteDtos = await context.TucNoteArchives
             .AsNoTracking()
             .Where(n => n.JobId == jobId)
             .Select(n => new ArchivedNoteDto
@@ -2890,6 +2839,7 @@ public partial class JobRepository(
                 CreatedDate = n.CreatedDate,
                 UpdatedDate = n.UpdatedDate
             })
+            .TagWith("DeliveryJourney - Archived Notes")
             .ToListAsync();
 
         return archivedNoteDtos.Select(n => new DeliveryJourneyViewModel
@@ -2915,11 +2865,13 @@ public partial class JobRepository(
         }).ToList();
     }
 
-    private async Task<List<DeliveryJourneyViewModel>> GetMessagesForDeliveryJourneyAsync(int jobId)
+    private async Task<List<DeliveryJourneyViewModel>> GetMessagesForDeliveryJourneyAsync(
+        DespatchContext context,
+        int jobId)
     {
         var timezone = _infoService.GetTenantTimeZone();
 
-        var messageDtos = await Context.TucManualMessages
+        var messageDtos = await context.TucManualMessages
             .AsNoTracking()
             .Where(m => m.JobId == jobId)
             .Select(m => new ManualMessageDto
@@ -2942,9 +2894,10 @@ public partial class JobRepository(
                 SendFromStaffFirstName = m.UcmmSendFromStaff.UcstFirstName,
                 SendFromStaffLastName = m.UcmmSendFromStaff.UcstLastName
             })
+            .TagWith("DeliveryJourney - Messages")
             .ToListAsync();
 
-        var messages = messageDtos.Select(m => new DeliveryJourneyViewModel
+        return messageDtos.Select(m => new DeliveryJourneyViewModel
         {
             Id = Guid.NewGuid(),
             JobId = jobId,
@@ -3001,11 +2954,11 @@ public partial class JobRepository(
                 .Where(tag => !string.IsNullOrWhiteSpace(tag))
                 .ToList()
         }).ToList();
-
-        return messages;
     }
 
-    private async Task<List<DeliveryJourneyViewModel>> GetStatusUpdatesForDeliveryJourneyAsync(int jobId,
+    private async Task<List<DeliveryJourneyViewModel>> GetStatusUpdatesForDeliveryJourneyAsync(
+        DespatchContext context,
+        int jobId,
         bool isLiveJob)
     {
         var isUsCustomer = _infoService.IsUsTenant();
@@ -3013,7 +2966,7 @@ public partial class JobRepository(
 
         if (isLiveJob)
         {
-            var statusUpdateDtos = await Context.JobDeliveryJourneys
+            var statusUpdateDtos = await context.JobDeliveryJourneys
                 .AsNoTracking()
                 .Where(j => j.JobId == jobId && j.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus))
                 .Select(s => new JobDeliveryJourneyDto
@@ -3033,6 +2986,7 @@ public partial class JobRepository(
                     NewJobStatusName = s.NewJobStatus.UcjsName,
                     OldJobStatusName = s.OldJobStatus.UcjsName
                 })
+                .TagWith("DeliveryJourney - Live Status Updates")
                 .ToListAsync();
 
             return statusUpdateDtos
@@ -3080,7 +3034,7 @@ public partial class JobRepository(
                 .ToList();
         }
 
-        var archivedStatusUpdateDtos = await Context.JobDeliveryJourneyArchives
+        var archivedStatusUpdateDtos = await context.JobDeliveryJourneyArchives
             .AsNoTracking()
             .Where(j => j.JobId == jobId && j.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus))
             .Select(s => new JobDeliveryJourneyArchiveDto
@@ -3098,6 +3052,7 @@ public partial class JobRepository(
                 OldValue = s.OldValue,
                 NewValue = s.NewValue
             })
+            .TagWith("DeliveryJourney - Archived Status Updates")
             .ToListAsync();
 
         return archivedStatusUpdateDtos
@@ -3783,12 +3738,11 @@ public partial class JobRepository(
         {
             await MarkJobAsReadAsync(jobId);
 
-            // Check for a live job first
-            var isLiveJob = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
+            var isLiveJob = await Context.IsLiveJob(jobId);
 
-            if (isLiveJob) return await GetLiveJobByIdAsync(jobId);
+            if (isLiveJob)
+                return await GetLiveJobByIdAsync(jobId);
 
-            // Handle archived job
             return await GetArchivedJobByIdAsync(jobId);
         }
         catch (Exception e)
@@ -3800,42 +3754,34 @@ public partial class JobRepository(
 
     private async Task<JobGroupViewModel> GetLiveJobByIdAsync(int jobId)
     {
-        var mainJob = await Context.TucJobs
+        var mainJobInfo = await Context.TucJobs
             .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
-            .Select(JobMappings.JobMappingCore)
+            .Select(j => new { j.UcjbId, FamilyRootId = j.ParentId ?? j.UcjbId })
+            .TagWith("GetLiveJob - Family Root Lookup")
             .FirstOrDefaultAsync();
 
-        if (mainJob == null)
-            throw new KeyNotFoundException($"Job {jobId} not found");
+        ArgumentNullException.ThrowIfNull(mainJobInfo);
 
-        var effectiveJobId = mainJob.ParentId ?? jobId;
+        var familyRootId = mainJobInfo.FamilyRootId;
 
-        // Load collections sequentially
-        await LoadFlightInfoAsync(effectiveJobId, mainJob);
-        await LoadPricingBreakdownAsync(effectiveJobId, mainJob);
-        await LoadParcelDimensionsAsync(jobId, effectiveJobId, mainJob);
-        await LoadJobItemFlagsAsync(jobId, mainJob);
-
-        var familyRootId = mainJob.ParentId ?? jobId;
-        var relatedJobs = await Context.TucJobs
+        var allJobsInFamily = await Context.TucJobs
             .AsNoTracking()
-            .Where(j => j.ParentId == familyRootId && j.UcjbId != jobId)
+            .AsSplitQuery()
+            .Where(j => j.UcjbId == familyRootId || j.ParentId == familyRootId)
             .Select(JobMappings.JobMappingCore)
+            .TagWith($"GetLiveJob - Complete Family {familyRootId}")
             .ToListAsync();
 
-        foreach (var relatedJob in relatedJobs)
-        {
-            var relatedEffectiveJobId = relatedJob.ParentId ?? relatedJob.Id;
-            await LoadFlightInfoAsync(relatedEffectiveJobId, relatedJob);
-            await LoadPricingBreakdownAsync(relatedEffectiveJobId, relatedJob);
-            await LoadParcelDimensionsAsync(relatedJob.Id, relatedEffectiveJobId, relatedJob);
-            await LoadJobItemFlagsAsync(relatedJob.Id, relatedJob);
-        }
+        var mainJob = allJobsInFamily.FirstOrDefault(j => j.Id == jobId);
+        ArgumentNullException.ThrowIfNull(mainJob);
 
-        ApplyFlightTimezones(mainJob);
-        foreach (var relatedJob in relatedJobs)
-            ApplyFlightTimezones(relatedJob);
+        var relatedJobs = allJobsInFamily.Where(j => j.Id != jobId).ToList();
+
+        var allJobs = new List<JobViewModel> { mainJob };
+        allJobs.AddRange(relatedJobs);
+
+        await EnrichJobsWithCollectionsAsync(allJobs);
 
         return new JobGroupViewModel
         {
@@ -3844,103 +3790,109 @@ public partial class JobRepository(
         };
     }
 
-    private async Task<JobGroupViewModel> GetArchivedJobByIdAsync(int jobId)
+    private async Task EnrichJobsWithCollectionsAsync(List<JobViewModel> jobs)
     {
-        var archivedJob = await Context.TucJobArchives
-            .AsNoTracking()
-            .Where(j => j.UcjbId == jobId)
-            .Select(JobMappings.JobArchiveMapping)
-            .FirstOrDefaultAsync();
+        if (jobs.Count == 0) return;
 
-        if (archivedJob == null)
-            throw new KeyNotFoundException($"Archived job {jobId} not found");
+        var jobIds = jobs.Select(j => j.Id).ToList();
+        var effectiveJobIds = jobs.Select(j => j.ParentId ?? j.Id).Distinct().ToList();
 
-        var archivedJobFamilyRootId = archivedJob.ParentId ?? jobId;
+        await using var flightContext = await _contextFactory.CreateDbContextAsync();
+        await using var pricingContext = await _contextFactory.CreateDbContextAsync();
+        await using var parcelContext = await _contextFactory.CreateDbContextAsync();
+        await using var flagsContext = await _contextFactory.CreateDbContextAsync();
 
-        var archivedJobRelatedJobs = await Context.TucJobArchives
-            .AsNoTracking()
-            .Where(j => j.ParentId == archivedJobFamilyRootId && j.UcjbId != jobId)
-            .Select(JobMappings.JobArchiveMapping)
-            .ToListAsync();
+        var flightInfoTask = BatchLoadFlightInfoAsync(flightContext, _infoService, jobs);
+        var pricingTask = BatchLoadPricingBreakdownAsync(pricingContext, effectiveJobIds, jobs);
+        var parcelDimensionsTask = BatchLoadParcelDimensionsAsync(parcelContext, jobIds, effectiveJobIds, jobs);
+        var jobItemFlagsTask = BatchLoadJobItemFlagsAsync(flagsContext, jobIds, jobs);
 
-        return new JobGroupViewModel
-        {
-            Job = archivedJob,
-            RelatedJobs = archivedJobRelatedJobs
-        };
+        await Task.WhenAll(flightInfoTask, pricingTask, parcelDimensionsTask, jobItemFlagsTask);
     }
 
-    private async Task LoadFlightInfoAsync(int effectiveJobId,
-        JobViewModel job)
+    private static async Task BatchLoadFlightInfoAsync(
+        DespatchContext context,
+        ITenantInfoService infoService,
+        List<JobViewModel> jobs)
     {
-        // Check if this is a flight job
-        if (job.SpeedId == null)
-            return;
-
-        var speed = await Context.TucJobTypes
+        var jobSpeedGroupings = await context.TucJobTypes
             .AsNoTracking()
-            .Where(s => s.UcjtId == job.SpeedId.Value)
-            .Select(s => new { s.GroupingId })
-            .FirstOrDefaultAsync();
-
-        var isUsTenant = _infoService.IsUsTenant();
-        var isFlightJob = speed?.GroupingId == (isUsTenant
-            ? (int)SpeedGrouping.Flight
-            : (int)UrgentSpeedGrouping.Flight);
-
-        if (!isFlightJob)
-            return;
-
-        // Load flight segments
-        var flightSegments = await Context.TucJobNationwides
-            .AsNoTracking()
-            .Where(n => n.UcnwJobId == effectiveJobId)
-            .OrderBy(n => n.UcnwLegNumber)
-            .Select(segment => new FlightSegmentViewModel
-            {
-                SegmentOrder = segment.UcnwLegNumber - 1,
-                CarrierFsCode = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length >= 2
-                    ? segment.UcnwFlightNo.Substring(0, 2)
-                    : "??",
-                FlightNumber = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length > 2
-                    ? segment.UcnwFlightNo.Substring(2)
-                    : "????",
-                DepartureTime = segment.UcnwEtd ?? SqlMinDateTime,
-                ArrivalTime = segment.UcnwEta ?? SqlMinDateTime,
-                DepartureAirportFsCode = segment.DepartureAirportFsCode,
-                DepartureAirportName = segment.DepartureAirportName,
-                DepartureAirportCity = segment.DepartureAirportCity,
-                DepartureAirportCountry = segment.DepartureAirportCountry,
-                DepartureAirportTimeZone = segment.DepartureAirportTimeZoneNavigation.Name,
-                DepartureAirportTimeZoneId = segment.DepartureAirportTimeZoneId ?? 0,
-                DepartureTerminal = segment.DepartureTerminal,
-                ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
-                ArrivalAirportName = segment.ArrivalAirportName,
-                ArrivalAirportCity = segment.ArrivalAirportCity,
-                ArrivalAirportCountry = segment.ArrivalAirportCountry,
-                ArrivalAirportTimeZone = segment.ArrivalAirportTimeZoneNavigation.Name,
-                ArrivalAirportTimeZoneId = segment.ArrivalAirportTimeZoneId ?? 0,
-                ArrivalTerminal = segment.ArrivalTerminal,
-                ElapsedTime = (int)(segment.UcnwEta.HasValue && segment.UcnwEtd.HasValue
-                    ? (segment.UcnwEta.Value - segment.UcnwEtd.Value).TotalMinutes
-                    : 0),
-                AircraftName = segment.AircraftName,
-                AirlineName = segment.UcnwAirlineName
-            })
+            .Where(s => jobs.Select(j => j.SpeedId).Contains(s.UcjtId))
+            .Select(s => new { s.UcjtId, s.GroupingId })
+            .TagWith("BatchLoadFlightInfo - Speed Groupings")
             .ToListAsync();
 
-        if (flightSegments.Count > 0)
+        var isUsTenant = infoService.IsUsTenant();
+        var flightSpeedIds = jobSpeedGroupings
+            .Where(s => s.GroupingId == (isUsTenant
+                ? (int)SpeedGrouping.Flight
+                : (int)UrgentSpeedGrouping.Flight))
+            .Select(s => s.UcjtId)
+            .ToHashSet();
+
+        var flightJobs = jobs.Where(j => j.SpeedId.HasValue && flightSpeedIds.Contains(j.SpeedId.Value)).ToList();
+        if (flightJobs.Count == 0) return;
+
+        var flightJobEffectiveIds = flightJobs.Select(j => j.ParentId ?? j.Id).Distinct().ToList();
+
+        var allFlightSegments = await context.TucJobNationwides
+            .AsNoTracking()
+            .Where(n => n.UcnwJobId.HasValue && flightJobEffectiveIds.Contains(n.UcnwJobId.Value))
+            .OrderBy(n => n.UcnwJobId)
+            .ThenBy(n => n.UcnwLegNumber)
+            .Select(segment => new
+            {
+                JobId = segment.UcnwJobId,
+                Segment = new FlightSegmentViewModel
+                {
+                    SegmentOrder = segment.UcnwLegNumber - 1,
+                    CarrierFsCode = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length >= 2
+                        ? segment.UcnwFlightNo.Substring(0, 2)
+                        : "??",
+                    FlightNumber = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length > 2
+                        ? segment.UcnwFlightNo.Substring(2)
+                        : "????",
+                    DepartureTime = segment.UcnwEtd ?? SqlMinDateTime,
+                    ArrivalTime = segment.UcnwEta ?? SqlMinDateTime,
+                    DepartureAirportFsCode = segment.DepartureAirportFsCode,
+                    DepartureAirportName = segment.DepartureAirportName,
+                    DepartureAirportCity = segment.DepartureAirportCity,
+                    DepartureAirportCountry = segment.DepartureAirportCountry,
+                    DepartureAirportTimeZone = segment.DepartureAirportTimeZoneNavigation.Name,
+                    DepartureAirportTimeZoneId = segment.DepartureAirportTimeZoneId ?? 0,
+                    DepartureTerminal = segment.DepartureTerminal,
+                    ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
+                    ArrivalAirportName = segment.ArrivalAirportName,
+                    ArrivalAirportCity = segment.ArrivalAirportCity,
+                    ArrivalAirportCountry = segment.ArrivalAirportCountry,
+                    ArrivalAirportTimeZone = segment.ArrivalAirportTimeZoneNavigation.Name,
+                    ArrivalAirportTimeZoneId = segment.ArrivalAirportTimeZoneId ?? 0,
+                    ArrivalTerminal = segment.ArrivalTerminal,
+                    ElapsedTime = (int)(segment.UcnwEta.HasValue && segment.UcnwEtd.HasValue
+                        ? (segment.UcnwEta.Value - segment.UcnwEtd.Value).TotalMinutes
+                        : 0),
+                    AircraftName = segment.AircraftName,
+                    AirlineName = segment.UcnwAirlineName
+                },
+                Notes = segment.UcnwNotes
+            })
+            .TagWith("BatchLoadFlightInfo - All Segments")
+            .ToListAsync();
+
+        var segmentsByJob = allFlightSegments
+            .GroupBy(s => s.JobId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        foreach (var job in flightJobs)
         {
+            var effectiveJobId = job.ParentId ?? job.Id;
+            if (!segmentsByJob.TryGetValue(effectiveJobId, out var segments) || !segments.Any())
+                continue;
+
+            var flightSegments = segments.Select(s => s.Segment).ToList();
             var firstSegment = flightSegments[0];
             var lastSegment = flightSegments[^1];
-
-            // Get notes from the first segment's database record
-            var notes = await Context.TucJobNationwides
-                .AsNoTracking()
-                .Where(n => n.UcnwJobId == effectiveJobId)
-                .OrderBy(n => n.UcnwLegNumber)
-                .Select(n => n.UcnwNotes)
-                .FirstOrDefaultAsync();
+            var notes = segments[0].Notes;
 
             job.AssignedFlight = new AssignedFlight
             {
@@ -3952,102 +3904,150 @@ public partial class JobRepository(
                 Notes = notes,
                 FlightSegments = flightSegments
             };
+
+            ApplyFlightTimezones(job);
         }
     }
 
-    private async Task LoadPricingBreakdownAsync(int effectiveJobId,
-        JobViewModel job)
+    private static async Task BatchLoadPricingBreakdownAsync(
+        DespatchContext context,
+        List<int> effectiveJobIds,
+        List<JobViewModel> jobs)
     {
-        var pricingTotal = await Context.PricingBreakdowns
+        var pricingTotals = await context.PricingBreakdowns
             .AsNoTracking()
-            .Where(p => p.JobId == effectiveJobId)
-            .SumAsync(p => (decimal?)p.ChargeAmount);
-
-        if (pricingTotal is > 0) job.Charge = pricingTotal.Value;
-    }
-
-    private async Task LoadParcelDimensionsAsync(int jobId,
-        int effectiveJobId,
-        JobViewModel job)
-    {
-        // First try to load items for this specific job (child items)
-        var childItems = await Context.TucJobItems
-            .AsNoTracking()
-            .Where(i => i.ChildJobId == jobId)
-            .Select(i => new ParcelDimensions
+            .Where(p => p.JobId.HasValue && effectiveJobIds.Contains(p.JobId.Value))
+            .GroupBy(p => p.JobId)
+            .Select(g => new
             {
-                ItemId = i.ItemId,
-                ItemName = i.Notes,
-                Height = i.Height,
-                Depth = i.Depth,
-                Length = i.Length,
-                Barcode = i.Barcode
+                JobId = g.Key,
+                Total = g.Sum(p => p.ChargeAmount)
             })
-            .ToListAsync();
+            .TagWith("BatchLoadPricing - All Jobs")
+            .ToDictionaryAsync(x => x.JobId, x => x.Total);
 
-        if (childItems.Count > 0)
+        foreach (var job in jobs)
         {
-            job.ParcelDimensions = childItems;
-            return;
-        }
-
-        // Otherwise load items for the effective job
-        var items = await Context.TucJobItems
-            .AsNoTracking()
-            .Where(i => i.JobId == effectiveJobId && i.ChildJobId == null)
-            .Select(i => new ParcelDimensions
+            var effectiveJobId = job.ParentId ?? job.Id;
+            if (pricingTotals.TryGetValue(effectiveJobId, out var total) && total > 0)
             {
-                ItemId = i.ItemId,
-                ItemName = i.Notes,
-                Height = i.Height,
-                Depth = i.Depth,
-                Length = i.Length,
-                Barcode = i.Barcode
-            })
-            .ToListAsync();
-
-        job.ParcelDimensions = items;
-
-        // Load PalletInfo as well
-        var pallets = await Context.TucJobItems
-            .AsNoTracking()
-            .Where(i => i.JobId == effectiveJobId)
-            .Select(i => new PalletInfo
-            {
-                Id = i.JobId,
-                Quantity = i.Items,
-                ItemId = i.ItemId,
-                Weight = i.Weight,
-                Length = i.Length ?? 0,
-                Depth = i.Depth ?? 0,
-                Height = i.Height ?? 0,
-                Pu = i.Pu,
-                Do = i.Do,
-                DgClass = i.Dgclass,
-                Notes = i.Notes
-            })
-            .ToListAsync();
-
-        if (pallets.Count > 0)
-        {
-            job.PalletInfo = pallets;
+                job.Charge = total;
+            }
         }
     }
 
-    private async Task LoadJobItemFlagsAsync(int jobId,
-        JobViewModel job)
+    private static async Task BatchLoadParcelDimensionsAsync(
+        DespatchContext context,
+        List<int> jobIds,
+        List<int> effectiveJobIds,
+        List<JobViewModel> jobs)
     {
-        var flags = await Context.TucJobItems
+        var allChildItems = await context.TucJobItems
             .AsNoTracking()
-            .Where(i => i.JobId == jobId)
-            .Select(i => new { i.Pu, i.Do, i.PrivateRes })
+            .Where(i => jobIds.Contains(i.ChildJobId.Value))
+            .Select(i => new
+            {
+                ChildJobId = i.ChildJobId.Value,
+                Parcel = new ParcelDimensions
+                {
+                    ItemId = i.ItemId,
+                    ItemName = i.Notes,
+                    Height = i.Height,
+                    Depth = i.Depth,
+                    Length = i.Length,
+                    Barcode = i.Barcode
+                }
+            })
+            .TagWith("BatchLoadParcels - Child Items")
             .ToListAsync();
 
-        if (flags.Count > 0)
+        var childItemsByJob = allChildItems
+            .GroupBy(x => x.ChildJobId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Parcel).ToList());
+
+        var allParentItems = await context.TucJobItems
+            .AsNoTracking()
+            .Where(i => effectiveJobIds.Contains(i.JobId) && i.ChildJobId == null)
+            .Select(i => new
+            {
+                i.JobId,
+                Parcel = new ParcelDimensions
+                {
+                    ItemId = i.ItemId,
+                    ItemName = i.Notes,
+                    Height = i.Height,
+                    Depth = i.Depth,
+                    Length = i.Length,
+                    Barcode = i.Barcode
+                },
+                Pallet = new PalletInfo
+                {
+                    Id = i.JobId,
+                    Quantity = i.Items,
+                    ItemId = i.ItemId,
+                    Weight = i.Weight,
+                    Length = i.Length ?? 0,
+                    Depth = i.Depth ?? 0,
+                    Height = i.Height ?? 0,
+                    Pu = i.Pu,
+                    Do = i.Do,
+                    DgClass = i.Dgclass,
+                    Notes = i.Notes
+                }
+            })
+            .TagWith("BatchLoadParcels - Parent Items")
+            .ToListAsync();
+
+        var parentItemsByJob = allParentItems
+            .GroupBy(x => x.JobId)
+            .ToDictionary(g => g.Key, g => (
+                Parcels: g.Select(x => x.Parcel).ToList(),
+                Pallets: g.Select(x => x.Pallet).ToList()
+            ));
+
+        foreach (var job in jobs)
         {
-            job.TailLiftPu = flags.Any(f => f.Pu == true);
-            job.TailLiftDo = flags.Any(f => f.Do == true);
-            job.DeliverToPrivateRes = flags.Any(f => f.PrivateRes == true);
+            if (childItemsByJob.TryGetValue(job.Id, out var childItems))
+            {
+                job.ParcelDimensions = childItems;
+                continue;
+            }
+
+            var effectiveJobId = job.ParentId ?? job.Id;
+            if (!parentItemsByJob.TryGetValue(effectiveJobId, out var parentItems)) continue;
+            job.ParcelDimensions = parentItems.Parcels;
+            if (parentItems.Pallets.Count != 0)
+                job.PalletInfo = parentItems.Pallets;
+        }
+    }
+
+    private static async Task BatchLoadJobItemFlagsAsync(
+        DespatchContext context,
+        List<int> jobIds,
+        List<JobViewModel> jobs)
+    {
+        var allFlags = await context.TucJobItems
+            .AsNoTracking()
+            .Where(i => jobIds.Contains(i.JobId))
+            .Select(i => new { i.JobId, i.Pu, i.Do, i.PrivateRes })
+            .TagWith("BatchLoadFlags - All Jobs")
+            .ToListAsync();
+
+        var flagsByJob = allFlags
+            .GroupBy(f => f.JobId)
+            .ToDictionary(g => g.Key, g => new
+            {
+                TailLiftPu = g.Any(f => f.Pu == true),
+                TailLiftDo = g.Any(f => f.Do == true),
+                DeliverToPrivateRes = g.Any(f => f.PrivateRes == true)
+            });
+
+        foreach (var job in jobs)
+        {
+            if (!flagsByJob.TryGetValue(job.Id, out var flags)) continue;
+            job.TailLiftPu = flags.TailLiftPu;
+            job.TailLiftDo = flags.TailLiftDo;
+            job.DeliverToPrivateRes = flags.DeliverToPrivateRes;
         }
     }
 
@@ -4087,6 +4087,43 @@ public partial class JobRepository(
             Log.Error(e, "Error occurred getting job {JobId}. Please see exception.", jobId);
             throw;
         }
+    }
+
+    private async Task<JobGroupViewModel> GetArchivedJobByIdAsync(int jobId)
+    {
+        // Step 1: Get family root
+        var familyRootId = await Context.TucJobArchives
+            .AsNoTracking()
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => j.ParentId ?? j.UcjbId)
+            .TagWith("GetArchivedJob - Family Root")
+            .FirstOrDefaultAsync();
+
+        if (familyRootId == 0)
+            throw new KeyNotFoundException($"Archived job {jobId} not found");
+
+        // Step 2: Load the entire family in ONE query
+        var allJobsInFamily = await Context.TucJobArchives
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Where(j => j.UcjbId == familyRootId || j.ParentId == familyRootId)
+            .Select(JobMappings.JobArchiveMapping)
+            .TagWith($"GetArchivedJob - Family {familyRootId}")
+            .ToListAsync();
+
+        if (!allJobsInFamily.Any())
+            throw new KeyNotFoundException($"Archived job {jobId} not found");
+
+        // Step 3: Split in memory (fast)
+        var archivedJob = allJobsInFamily.FirstOrDefault(j => j.Id == jobId);
+        ArgumentNullException.ThrowIfNull(archivedJob);
+        var archivedJobRelatedJobs = allJobsInFamily.Where(j => j.Id != jobId).ToList();
+
+        return new JobGroupViewModel
+        {
+            Job = archivedJob,
+            RelatedJobs = archivedJobRelatedJobs
+        };
     }
 
     public async Task<List<AddressWithAgent>> GetClosestAirportsAsync(
@@ -4348,18 +4385,17 @@ public partial class JobRepository(
                             j.UcjbStatus != (int)JobStatus.LateDelivery)
                         .CountAsync();
 
-                    if (jobsNotPickedUpOrLate == 0)
-                    {
-                        // All jobs are only picked up or late delivery - set status to 5
-                        var clearListOrders = await Context.TblClearListAreaOrders
-                            .Where(c => c.CourierId == courierId)
-                            .ToListAsync();
+                    if (jobsNotPickedUpOrLate != 0) continue;
+                    
+                    // All jobs are only picked up or late delivery - set status to 5
+                    var clearListOrders = await Context.TblClearListAreaOrders
+                        .Where(c => c.CourierId == courierId)
+                        .ToListAsync();
 
-                        foreach (var order in clearListOrders)
-                        {
-                            order.Status = (int)JobStatus.PickedUp;
-                            order.OrderTime = now;
-                        }
+                    foreach (var order in clearListOrders)
+                    {
+                        order.Status = (int)JobStatus.PickedUp;
+                        order.OrderTime = now;
                     }
                 }
             }

@@ -1041,7 +1041,6 @@ class HomeController extends BaseController {
                 this.toastrService.showSuccessToast("Job dispatched successfully");
             }
 
-            // getData() now automatically handles courier context and refreshes courier jobs if needed
             await this.getData();
         } catch (error) {
             console.error("Error dispatching jobs:", error);
@@ -1592,7 +1591,7 @@ class HomeController extends BaseController {
             this.loadSupportsInBackground();
             await this.getJobList();
 
-            if(this.isUsCustomer) await this.loadDriversWithJobCounts();
+            if (this.isUsCustomer) await this.loadDriversWithJobCounts();
 
             // If we had a courier selected, refresh their current work list
             if (hasCourier && courierId) {
@@ -1916,8 +1915,13 @@ class HomeController extends BaseController {
         try {
             await this.dispatchJob(courierId, job.id);
 
-            // Update the job's assigned courier display
             job.assignedCourier = {id: courierId, text: ''};
+
+            if (this.currentJobId === job.id) {
+                const updatedJob = await this.DispatchData.getDispatchJobDetail(job.id);
+                this.currentJob = angular.copy(updatedJob);
+                this.applyScope();
+            }
 
             return true;
         } catch (error: any) {

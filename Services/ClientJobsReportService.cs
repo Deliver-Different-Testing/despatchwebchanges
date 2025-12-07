@@ -5,8 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Amazon.S3;
-using Amazon.S3.Model;
-using DespatchWeb.EntityClasses;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Dto;

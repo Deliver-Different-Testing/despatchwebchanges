@@ -22,7 +22,7 @@ public static class NoteMappings
             CreatedBy = note.CreatedBy,
             CreatedByName = note.CreatedBy.HasValue && note.CreatedByNavigation != null
             ? FormatName(note.CreatedByNavigation.UcstFirstName, note.CreatedByNavigation.UcstLastName)
-                : string.Empty,
+                : "System",
             UpdatedDate = note.UpdatedDate,
             UpdatedBy = note.UpdatedBy,
             UpdatedByName = note.UpdatedBy.HasValue && note.UpdatedByNavigation != null

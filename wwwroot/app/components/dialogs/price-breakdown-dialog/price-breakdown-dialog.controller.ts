@@ -50,7 +50,6 @@ export class PriceBreakdownDialogController extends BaseController {
         priceBreakdowns: PriceBreakdown[],
         private jobId: number,
         private isPrebook: boolean,
-        private tucJobAmount: number,
     ) {
         super();
         this.initServices($timeout, $interval);
@@ -73,7 +72,7 @@ export class PriceBreakdownDialogController extends BaseController {
         })
     }
 
-    
+
     isJobsItem(item: PriceBreakdown): boolean {
         return item.childJobId === this.jobId;
     }
@@ -117,11 +116,14 @@ export class PriceBreakdownDialogController extends BaseController {
         try {
             this.isSaving = true;
 
+            // Ensure amount defaults to 0 if not provided (since it's now optional)
+            const amount = this.selectedPriceBreakdown.amount || 0;
+
             if (this.isNew) {
                 const newBreakdown: PriceBreakdown = {
                     chargeId: 0,
                     name: this.selectedPriceBreakdown.name,
-                    amount: this.selectedPriceBreakdown.amount,
+                    amount: amount,
                     prebookJobId: this.isPrebook ? this.jobId : undefined,
                     costAmount: this.selectedPriceBreakdown.costAmount,
                     childJobId: this.isPrebook ? undefined : this.jobId,
@@ -134,6 +136,9 @@ export class PriceBreakdownDialogController extends BaseController {
                     this.toastrService.showSuccessToast('Price breakdown added successfully');
                 }
             } else {
+                // Update the amount to ensure it's set to 0 if empty
+                this.selectedPriceBreakdown.amount = amount;
+
                 await this.DispatchData.updatePriceBreakdown(this.selectedPriceBreakdown);
 
                 // Update in the local array
@@ -174,7 +179,7 @@ export class PriceBreakdownDialogController extends BaseController {
             }
         }
     }
-    
+
     cancel() {
         this.$mdDialog.cancel();
     }

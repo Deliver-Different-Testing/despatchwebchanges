@@ -1114,4 +1114,192 @@ public static class JobMappings
                 }
                 : null
         };
+    
+    public static Expression<Func<TucJob, DispatchJobViewModel>> PodSearchMapping(bool isUsCustomer) =>
+    j => new DispatchJobViewModel
+    {
+        Id = j.UcjbId,
+        JobNo = j.UcjbNumber,
+        HasBeenRead = j.TucJobReadTracker != null && j.TucJobReadTracker.HasBeenRead,
+        IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.UcjbId,
+        ParentId = j.ParentId,
+
+        IsFlightJob = j.UcjbSpeedNavigation != null
+                      && j.UcjbSpeedNavigation.GroupingId ==
+                      (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
+        IsAgentJob = j.UcjbSpeedNavigation != null
+                     && j.UcjbSpeedNavigation.GroupingId ==
+                     (isUsCustomer ? (int)SpeedGrouping.Agent : (int)UrgentSpeedGrouping.NationwideAgent),
+
+        Vehicle = j.UcjbSizeNavigation != null
+            ? new Suggestion
+            {
+                Id = j.UcjbSizeNavigation.VehicleSizeId,
+                Text = j.UcjbSizeNavigation.VehicleName
+            }
+            : null,
+        
+        Time = j.UcjbTime,
+        ClientId = j.UcjbClientId,
+        Client = j.UcjbClientCode,
+        ClientName = j.UcjbClient != null ? j.UcjbClient.UcclName : string.Empty,
+
+        From = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuName : null,
+        ToSuburbId = j.UcjbTo,
+        ToAddress = j.UcjbToAddr,
+        
+        PickupAddress = new AddressViewModel
+        {
+            AddressLine1 = j.PickupAddressLine1,
+            AddressLine2 = j.PickupAddressLine2,
+            AddressLine3 = j.PickupAddressLine3,
+            AddressLine4 = j.PickupAddressLine4,
+            AddressLine5 = j.PickupAddressLine5,
+            AddressLine6 = j.PickupAddressLine6,
+            AddressLine7 = j.PickupAddressLine7,
+            AddressLine8 = j.PickupAddressLine8,
+            Latitude = j.PickUpLatitude,
+            Longitude = j.PickUpLongitude
+        },
+        DeliveryAddress = new AddressViewModel
+        {
+            AddressLine1 = j.DeliveryAddressLine1,
+            AddressLine2 = j.DeliveryAddressLine2,
+            AddressLine3 = j.DeliveryAddressLine3,
+            AddressLine4 = j.DeliveryAddressLine4,
+            AddressLine5 = j.DeliveryAddressLine5,
+            AddressLine6 = j.DeliveryAddressLine6,
+            AddressLine7 = j.DeliveryAddressLine7,
+            AddressLine8 = j.DeliveryAddressLine8,
+            Latitude = j.DeliveryLatitude,
+            Longitude = j.DeliveryLongitude
+        },
+        
+        Courier = j.UcjbCourier != null ? j.UcjbCourier.Code : null,
+        CourierData = j.UcjbCourier != null
+            ? new CourierData
+            {
+                Courier = j.UcjbCourier.Code,
+                CourierNumber = j.UcjbCourier.Code,
+                CourierId = j.UcjbCourier.UccrId,
+                CourierMobile = j.UcjbCourier.UccrMobile,
+                CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
+            }
+            : null,
+        AssignedCourier = j.UcjbCourier != null
+            ? new Suggestion
+            {
+                Id = j.UcjbCourier.UccrId,
+                Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
+            }
+            : null,
+        
+        StatusId = j.UcjbStatus,
+        Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsCode : null,
+        StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
+        Speed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : null,
+        SpeedId = j.UcjbSpeed,
+        JobTypeMins = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.Minutes : null,
+        
+        PreBook = false,
+        PickUpLatitude = j.PickUpLatitude,
+        PickUpLongitude = j.PickUpLongitude,
+        DeliveryLatitude = j.DeliveryLatitude,
+        DeliveryLongitude = j.DeliveryLongitude,
+        
+        Booked = j.UcjbDate.CombineWithTime(j.UcjbTime),
+        IsArchived = false,
+        Locked = j.UcjbLocked ?? false,
+        
+        ToAirportId = j.ToAirportId,
+        FromAirportId = j.FromAirportId
+    };
+
+// Add archived version too
+public static Expression<Func<TucJobArchive, DispatchJobViewModel>> PodSearchArchivedMapping(bool isUsCustomer) =>
+    j => new DispatchJobViewModel
+    {
+        Id = j.UcjbId,
+        JobNo = j.UcjbNumber,
+        HasBeenRead = false, // Archived jobs don't track reads
+        IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.UcjbId,
+        ParentId = j.ParentId,
+
+        IsFlightJob = j.SpeedNavigation != null
+                      && j.SpeedNavigation.GroupingId ==
+                      (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
+        IsAgentJob = j.SpeedNavigation != null
+                     && j.SpeedNavigation.GroupingId ==
+                     (isUsCustomer ? (int)SpeedGrouping.Agent : (int)UrgentSpeedGrouping.NationwideAgent),
+
+        Vehicle = j.UcjbSizeNavigation != null
+            ? new Suggestion
+            {
+                Id = j.UcjbSizeNavigation.VehicleSizeId,
+                Text = j.UcjbSizeNavigation.VehicleName
+            }
+            : null,
+        
+        Time = j.UcjbTime,
+        ClientId = j.UcjbClientId,
+        Client = j.UcjbClientCode,
+        ClientName = string.Empty, // Archived may not have client navigation
+        
+        From = null, // Archived may not have suburb navigation
+        ToSuburbId = j.UcjbTo,
+        ToAddress = j.UcjbToAddr,
+        
+        PickupAddress = new AddressViewModel
+        {
+            AddressLine1 = j.PickupAddressLine1,
+            AddressLine2 = j.PickupAddressLine2,
+            AddressLine3 = j.PickupAddressLine3,
+            AddressLine4 = j.PickupAddressLine4,
+            AddressLine5 = j.PickupAddressLine5,
+            AddressLine6 = j.PickupAddressLine6,
+            AddressLine7 = j.PickupAddressLine7,
+            AddressLine8 = j.PickupAddressLine8,
+            Latitude = j.PickUpLatitude,
+            Longitude = j.PickUpLongitude
+        },
+        DeliveryAddress = new AddressViewModel
+        {
+            AddressLine1 = j.DeliveryAddressLine1,
+            AddressLine2 = j.DeliveryAddressLine2,
+            AddressLine3 = j.DeliveryAddressLine3,
+            AddressLine4 = j.DeliveryAddressLine4,
+            AddressLine5 = j.DeliveryAddressLine5,
+            AddressLine6 = j.DeliveryAddressLine6,
+            AddressLine7 = j.DeliveryAddressLine7,
+            AddressLine8 = j.DeliveryAddressLine8,
+            Latitude = j.DeliveryLatitude,
+            Longitude = j.DeliveryLongitude
+        },
+        
+        Courier = null, // Archived may not have courier navigation
+        CourierData = null,
+        AssignedCourier = null,
+        
+        StatusId = j.UcjbStatus,
+        Status = null, // Archived may not have status navigation
+        StatusName = null,
+        Speed = null, // Archived may not have speed navigation
+        SpeedId = j.UcjbSpeed,
+        JobTypeMins = null,
+        
+        PreBook = false,
+        PickUpLatitude = j.PickUpLatitude,
+        PickUpLongitude = j.PickUpLongitude,
+        DeliveryLatitude = j.DeliveryLatitude,
+        DeliveryLongitude = j.DeliveryLongitude,
+        
+        Booked = j.UcjbDate.HasValue 
+            ? j.UcjbDate.Value.CombineWithTime(j.UcjbTime) 
+            : DateTime.MinValue,
+        IsArchived = true,
+        Locked = j.UcjbLocked.HasValue && j.UcjbLocked != 0,
+        
+        ToAirportId = j.ToAirportId,
+        FromAirportId = j.FromAirportId
+    };
 }
