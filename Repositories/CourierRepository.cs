@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
@@ -332,7 +331,7 @@ public class CourierRepository(
                     CourierId = j.UcjbCourierId.Value,
                     j.UcjbDate,
                     j.UcjbTime,
-                    Minutes = j.AcceptedJobType.Minutes
+                    j.AcceptedJobType.Minutes
                 })
                 .TagWith("GetNzAvailableCouriers - Step 2: Job Data")
                 .ToListAsync();
@@ -604,6 +603,8 @@ public class CourierRepository(
                 .GroupBy(x => x.ClearListAreaId)
                 .ToDictionary(g => g.Key, g => g.Select(x => x.PolygonId).ToHashSet());
 
+            Log.Information("Step 2b: Polygons grouped into {Count} clear list areas", polygonsByClearListArea.Count);
+
             // ===================================================================
             // QUERY 3: Get ALL active couriers with jobs
             // ===================================================================
@@ -630,6 +631,7 @@ public class CourierRepository(
                 .OrderBy(c => c.Code)
                 .TagWith("GetClearLists - Step 3: Active Couriers with Job Counts")
                 .ToListAsync();
+            Log.Information("Step 3: Found {Count} active couriers", activeCouriers.Count);
 
             // ===================================================================
             // QUERY 4a: Get courier BASE data (without display orders)
@@ -680,6 +682,7 @@ public class CourierRepository(
                 return new ClearListViewModel();
 
             var courierIds = courierBaseData.Select(c => c.UccrId).ToList();
+            Log.Information("Step 4a: Found {Count} courier base data records", courierBaseData.Count);
 
             // ===================================================================
             // QUERY 4b: Get ALL display orders in ONE query (FIXES N+1)
@@ -839,18 +842,17 @@ public class CourierRepository(
             foreach (var clearList in clearLists)
             {
                 // Get couriers for this specific area
-                if (!polygonsByClearListArea.TryGetValue(clearList.ClearListAreaId, out var validPolygons))
-                    continue;
+                List<CourierClearListDto> areaCouriers = new();
+    
+                if (polygonsByClearListArea.TryGetValue(clearList.ClearListAreaId, out var validPolygons))
+                {
+                    areaCouriers = validPolygons
+                        .Where(polygonId => polygonId != null && couriersByPolygon.ContainsKey(polygonId))
+                        .SelectMany(polygonId => couriersByPolygon[polygonId])
+                        .ToList();
+                }
 
-                var areaCouriers = validPolygons
-                    .Where(polygonId => polygonId != null && couriersByPolygon.ContainsKey(polygonId))
-                    .SelectMany(polygonId => couriersByPolygon[polygonId])
-                    .ToList();
-
-                if (areaCouriers.Count == 0)
-                    continue;
-
-                // Build clear list results for this area (in memory)
+                // Build clear list results even if empty
                 var clearListResults = BuildClearListResultsInMemory(
                     areaCouriers,
                     jobsByCourier,
@@ -858,7 +860,7 @@ public class CourierRepository(
                     currentDate
                 );
 
-                // Build sections
+                // Build sections (will be empty if no couriers)
                 var areaClearList = new AreaClearList
                 {
                     Id = clearList.ClearListAreaId,
@@ -868,15 +870,16 @@ public class CourierRepository(
                     Top = BuildClearListSection(clearListResults, activeCouriers, 1),
                     Middle = BuildClearListSection(clearListResults, activeCouriers, 3),
                     Bottom = BuildClearListSection(clearListResults, activeCouriers, 5),
-                    // Use pre-fetched count from a dictionary
                     TotalRemaining = areaRemainingCounts.GetValueOrDefault(
                         clearList.AreaName?.ToLower() ?? string.Empty,
                         0
                     )
                 };
 
-                areas.Add(areaClearList);
+                areas.Add(areaClearList);  // ← Always add the area
             }
+            
+            Log.Information("Final: Built {Count} areas for display", areas.Count);
 
             // ===================================================================
             // Build column layout
