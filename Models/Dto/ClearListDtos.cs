@@ -30,3 +30,10 @@ public class SuburbClearListAreaDto
     public string Code { get; set; }
     public int? ChannelId { get; set; }
 }
+
+public class PolygonChannelMapping
+{
+    public int ClearListAreaId { get; set; }
+    public int? PolygonId { get; set; }
+    public int? ChannelId { get; set; }
+}
