@@ -643,14 +643,14 @@ class DispatchMapController extends BaseController {
         const position = new this.$window.google.maps.LatLng(courier.latitude, courier.longitude);
 
         if (this.couriersLargeViewEnabled) {
-            // Large view: just courier number with light blue flag
+            // Larger blue driver flag in the large view
             const largeFlagIcon = {
                 path: 'M2,2 L2,24 L6,24 L6,20 L6,12 L30,12 L26,7 L30,2 Z',
-                fillColor: '#87CEEB', // Light blue
+                fillColor: '#87CEEB',
                 fillOpacity: 0.9,
                 strokeWeight: 2,
                 strokeColor: '#FFFFFF',
-                scale: 2.5, // Larger size
+                scale: 1.25, 
                 anchor: new this.$window.google.maps.Point(2, 24),
                 labelOrigin: new this.$window.google.maps.Point(18, 7)
             };
@@ -662,14 +662,14 @@ class DispatchMapController extends BaseController {
                 label: {
                     text: courier.code,
                     color: '#000000',
-                    fontSize: '14px',
+                    fontSize: '12px',
                     fontWeight: 'bold'
                 },
                 title: `Courier ${courier.code}`,
                 opacity: 1
             });
 
-            // No click or hover listeners in large view
+            // No click or hover listeners in the large view
             this.flags.push(marker);
             return;
         }
