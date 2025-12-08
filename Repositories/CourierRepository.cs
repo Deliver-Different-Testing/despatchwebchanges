@@ -671,19 +671,24 @@ public class CourierRepository(
             // ===================================================================
             var courierBaseData = await Context.TucCouriers
                 .AsNoTracking()
-                .Where(c => c.Active &&
-                            c.TblClearListAreaOrder != null)
+                .Where(c => c.Active && c.TblClearListAreaOrder != null)
                 .Where(c => c.CourierFleetId == (int)CourierFleet.UaAucklandP2P ||
                             (c.CourierLogInOut != null &&
-                             c.CourierLogInOut.LogInTime.Date <= currentDateOnly &&  // ← DATE ONLY
+                             c.CourierLogInOut.LogInTime.Date <= currentDateOnly &&
                              c.CourierLogInOut.LogOutTime == null))
-                .Join(
+                // ↓ LEFT JOIN with fleet
+                .GroupJoin(
                     Context.TucCourierFleets.AsNoTracking(),
                     c => c.CourierFleetId,
                     cf => cf.UccfId,
-                    (c, cf) => new { Courier = c, Fleet = cf }
+                    (c, cfGroup) => new { Courier = c, FleetGroup = cfGroup }
                 )
-                .Where(x => x.Fleet.DisplayOnClearlistsDespatch)  // ← FILTER BY FLEET DISPLAY
+                .SelectMany(
+                    x => x.FleetGroup.DefaultIfEmpty(),
+                    (x, cf) => new { x.Courier, Fleet = cf }
+                )
+                // ↓ NO filter on DisplayOnClearlistsDespatch
+                // ↓ LEFT JOIN with GPS
                 .GroupJoin(
                     Context.TblCourierGps.AsNoTracking(),
                     x => x.Courier.CourierGpsid,
@@ -692,20 +697,20 @@ public class CourierRepository(
                 )
                 .SelectMany(
                     x => x.GpsGroup.DefaultIfEmpty(),
-                    (x, gps) => new
-                    {
-                        x.Courier.UccrId,
-                        x.Courier.Code,
-                        x.Courier.UccrChannelId,
-                        x.Courier.SendJobsViaSms,
-                        x.Courier.AutoDespatch,
-                        x.Courier.UccrVehicle,
-                        x.Courier.CourierGpsid,
-                        GpsCreated = gps != null ? gps.Created : (DateTime?)null,
-                        PolygonId = gps != null ? gps.PolygonId : null
-                    }
+                    (x, gps) => new { x.Courier, x.Fleet, Gps = gps }
                 )
-                .TagWith("GetClearLists - Step 4a: Courier Base Data with GPS")
+                .Select(x => new
+                {
+                    x.Courier.UccrId,
+                    x.Courier.Code,
+                    x.Courier.UccrChannelId,
+                    x.Courier.SendJobsViaSms,
+                    x.Courier.AutoDespatch,
+                    x.Courier.UccrVehicle,
+                    x.Courier.CourierGpsid,
+                    GpsCreated = x.Gps != null ? x.Gps.Created : (DateTime?)null,
+                    PolygonId = x.Gps != null ? x.Gps.PolygonId : null
+                })
                 .ToListAsync();
 
             Log.Information("Step 2: Found {Count} courier base data records", courierBaseData.Count);
