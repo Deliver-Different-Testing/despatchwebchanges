@@ -486,7 +486,7 @@ public class BaseJobRepository(
     private async Task<NoteType> ConfirmNoteTypeExists(NoteType noteType)
     {
         // If a note type is not found, default to the internal note
-        var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
+        var noteTypeExists = await Context.ConfirmNoteTypeExists(noteType);
         if (!noteTypeExists) noteType = NoteType.InternalNote;
         return noteType;
     }
@@ -499,9 +499,8 @@ public class BaseJobRepository(
             ArgumentException.ThrowIfNullOrWhiteSpace(noteText);
 
             // If a note type is not found, default to the internal note
-            var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
-            if (!noteTypeExists) noteType = NoteType.InternalNote;
-
+            noteType = await ConfirmNoteTypeExists(noteType);
+            
             var newNotes = jobIds.Select(jobId => new TucNote
                 {
                     JobId = isRecurringJobs ? null : jobId,
@@ -563,19 +562,9 @@ public class BaseJobRepository(
     private async Task<int> GetEffectiveJobId(int jobId, bool isArchived)
     {
         if (isArchived)
-        {
-            return await Context.TucJobArchives
-                .AsNoTracking()
-                .Where(j => j.UcjbId == jobId)
-                .Select(j => j.ParentId ?? j.UcjbId)
-                .FirstOrDefaultAsync();
-        }
-
-        return await Context.TucJobs
-            .AsNoTracking()
-            .Where(j => j.UcjbId == jobId)
-            .Select(j => j.ParentId ?? j.UcjbId)
-            .FirstOrDefaultAsync();
+            return await Context.GetEffectiveJobBookingId(jobId);
+        
+        return await Context.GetEffectiveJobId(jobId);
     }
 
     private async Task<int> GetEffectiveJobBookingIdAsync(int jobBookingId)
@@ -775,12 +764,6 @@ public class BaseJobRepository(
                 // Job information
                 JobNumber = j != null ? j.UcjbNumber : null
             };
-    }
-
-    protected async Task<int> GetJobBookingRelationshipInfoAsync(int bookingId)
-    {
-        if (bookingId == 0) return 0;
-        return await Context.GetEffectiveJobBookingId(bookingId);
     }
 
     protected static string GetTrackingName(int trackingMethodId)
