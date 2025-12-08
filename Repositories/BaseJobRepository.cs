@@ -486,7 +486,7 @@ public class BaseJobRepository(
     private async Task<NoteType> ConfirmNoteTypeExists(NoteType noteType)
     {
         // If a note type is not found, default to the internal note
-        var noteTypeExists = await Context.ConfirmNoteTypeExists(noteType);
+        var noteTypeExists = await Context.ConfirmNoteTypeExistsAsync(noteType);
         if (!noteTypeExists) noteType = NoteType.InternalNote;
         return noteType;
     }
@@ -557,14 +557,14 @@ public class BaseJobRepository(
     }
 
     // Helper Methods
-    public async Task<bool> IsJobArchived(int jobId) => await Context.IsJobArchived(jobId);
+    public async Task<bool> IsJobArchived(int jobId) => await Context.IsJobArchivedAsync(jobId);
 
     private async Task<int> GetEffectiveJobId(int jobId, bool isArchived)
     {
         if (isArchived)
-            return await Context.GetEffectiveJobBookingId(jobId);
+            return await Context.GetEffectiveJobBookingIdAsync(jobId);
         
-        return await Context.GetEffectiveJobId(jobId);
+        return await Context.GetEffectiveJobIdAsync(jobId);
     }
 
     private async Task<int> GetEffectiveJobBookingIdAsync(int jobBookingId)
@@ -875,8 +875,8 @@ public class BaseJobRepository(
         if (_economyCache.HasValue)
             return _economyCache.Value;
 
-        var economySpeedId = await Context.GetEconomySpeedId();
-        var ecoDeliveryTime = await Context.GetEcoDeliveryTime();
+        var economySpeedId = await Context.GetEconomySpeedIdAsync();
+        var ecoDeliveryTime = await Context.GetEcoDeliveryTimeAsync();
 
         _economyCache = (economySpeedId, ecoDeliveryTime);
         return _economyCache.Value;

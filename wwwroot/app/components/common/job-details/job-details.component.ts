@@ -35,7 +35,7 @@ import VoidJobConfirmationDialogService
 import JobPhotoType from "../../../enums/job-photo-type.enum";
 import {IFlightSegment} from "../../Nationwide/nationwide.interfaces";
 import PodPhotoType from "../../../enums/podPhotoType";
-import {formatLongDateTime, getIanaTimezone} from "../../../functions/formatDates";
+import {formatLongDateTime} from "../../../functions/formatDates";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -226,7 +226,6 @@ class JobDetailController extends BaseController {
             jobDetails: true,
             packageDetails: true,
 
-            // Individual field visibility within sections
             // Delivery Details section fields
             dispatcherName: true,
             courierName: true,

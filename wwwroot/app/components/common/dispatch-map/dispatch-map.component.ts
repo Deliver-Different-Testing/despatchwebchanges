@@ -998,7 +998,7 @@ class DispatchMapController extends BaseController {
         this.setupButtonHoverEffect(button);
 
         button.addEventListener('click', async () => {
-            if (this.couriersLargeViewEnabled) return; // Prevent action when the large view is enabled
+            if (this.couriersLargeViewEnabled) return;
 
             await this.toggleUrgentArmyOnly();
             button.style.backgroundColor = this.urgentArmyOnlyEnabled ? '#3f51b5' : '#f44336';
@@ -1202,7 +1202,7 @@ class DispatchMapController extends BaseController {
         this.saveCouriersLargeViewPreference();
 
         if (this.couriersLargeViewEnabled) {
-            // Disable other modes when large view is enabled
+            // Disable other modes when the large view is enabled
             if (this.couriersOnlyEnabled) {
                 this.couriersOnlyEnabled = false;
                 this.saveCouriersOnlyPreference();

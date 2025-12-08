@@ -1835,7 +1835,7 @@ public partial class JobRepository(
         int effectivePrebookId;
         if (isPrebook)
         {
-            effectivePrebookId = await Context.GetEffectiveJobBookingId(jobId);
+            effectivePrebookId = await Context.GetEffectiveJobBookingIdAsync(jobId);
             return await Context.PricingBreakdowns
                 .AsNoTracking()
                 .Where(p => p.PrebookJobId == effectivePrebookId)
@@ -1851,7 +1851,7 @@ public partial class JobRepository(
                 .ToListAsync();
         }
 
-        var effectiveJobId = await Context.GetEffectiveJobId(jobId);
+        var effectiveJobId = await Context.GetEffectiveJobIdAsync(jobId);
         var pricingBreakdowns = await Context.PricingBreakdowns
             .AsNoTracking()
             .Where(p => p.JobId == effectiveJobId)
@@ -1881,8 +1881,8 @@ public partial class JobRepository(
 
             int effectiveJobId;
             if (!isPrebook && viewModel.ChildJobId.HasValue)
-                effectiveJobId = await Context.GetEffectiveJobId(viewModel.ChildJobId.Value);
-            else effectiveJobId = await Context.GetEffectiveJobBookingId(viewModel.PrebookJobId ?? 0);
+                effectiveJobId = await Context.GetEffectiveJobIdAsync(viewModel.ChildJobId.Value);
+            else effectiveJobId = await Context.GetEffectiveJobBookingIdAsync(viewModel.PrebookJobId ?? 0);
 
             var item = new PricingBreakdown
             {
@@ -2694,7 +2694,7 @@ public partial class JobRepository(
         await using var notesDeliveryContext = await _contextFactory.CreateDbContextAsync();
         await using var statusDeliveryContext = await _contextFactory.CreateDbContextAsync();
 
-        var isLiveJob = await Context.IsLiveJob(jobId);
+        var isLiveJob = await Context.IsLiveJobAsync(jobId);
 
         var tasksTask = GetTasksForDeliveryJourneyAsync(tasksDeliveryContext, jobId);
         var messagesTask = GetMessagesForDeliveryJourneyAsync(messagesDeliveryContext, jobId);
@@ -3413,7 +3413,7 @@ public partial class JobRepository(
 
         try
         {
-            var effectiveJobId = await Context.GetEffectiveJobId(jobId);
+            var effectiveJobId = await Context.GetEffectiveJobIdAsync(jobId);
             var childJobId = await IsStopJob(jobId) ? jobId : (int?)null;
 
             // Process existing and new parcels separately
@@ -3489,7 +3489,7 @@ public partial class JobRepository(
 
         try
         {
-            var effectiveJobId = await Context.GetEffectiveBulkJobId(bulkJobId);
+            var effectiveJobId = await Context.GetEffectiveBulkJobIdAsync(bulkJobId);
 
             // Process existing and new parcels separately
             var newParcels = new List<TblBulkJobItem>();
@@ -3740,7 +3740,7 @@ public partial class JobRepository(
         {
             await MarkJobAsReadAsync(jobId);
 
-            var isLiveJob = await Context.IsLiveJob(jobId);
+            var isLiveJob = await Context.IsLiveJobAsync(jobId);
 
             if (isLiveJob)
                 return await GetLiveJobByIdAsync(jobId);
