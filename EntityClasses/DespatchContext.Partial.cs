@@ -78,7 +78,7 @@ public partial class DespatchContext
                             (c.SendJobsViaSms ||
                              c.SendAlertSms ||
                              (c.CourierLogInOut != null &&
-                              c.CourierLogInOut.LogInTime.Date == today &&
+                              c.CourierLogInOut.LogInTime.Date == today.Date &&
                               c.CourierLogInOut.LogOutTime == null)))
                 .OrderBy(c => c.Code)
                 .Select(c => new ActiveCourierDto
