@@ -57,50 +57,76 @@ public class CourierRepository(
             ArgumentNullException.ThrowIfNull(courierId);
             const string truckVehicleName = "Truck";
 
-            var courierStatusData = await Context.TucCouriers
+            var courierData = await Context.TucCouriers
                 .AsNoTracking()
                 .Where(c => c.Active && c.UccrId == courierId)
-                .Select(c => new TruckCourierStatusViewModel
+                .Select(c => new
                 {
-                    CourierId = c.UccrId,
-                    CourierCode = c.Code,
-                    FirstName = c.UccrName,
-                    LastUpdated = c.LastModified,
-                    MaxPallets = c.UccrVehicle == truckVehicleName ? c.MaxPallets : null,
-                    MaxPayLoad = c.UccrVehicle == truckVehicleName ? c.MaxPayload : null,
-                    CurrentPallets = c.UccrVehicle == truckVehicleName
-                        ? c.TucJobUcjbCouriers
-                            .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
-                            .SelectMany(d => d.TucJobItemJobs)
-                            .Sum(i => i.Items)
-                        : null,
-                    CurrentWeight = c.UccrVehicle == truckVehicleName
-                        ? c.TucJobUcjbCouriers
-                            .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
-                            .SelectMany(d => d.TucJobItemJobs)
-                            .Sum(i => i.Items * i.Weight)
-                        : null,
-                    AvailablePallets = c.UccrVehicle == truckVehicleName
-                        ? c.MaxPallets - c.TucJobUcjbCouriers
-                            .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
-                            .SelectMany(d => d.TucJobItemJobs)
-                            .Sum(i => i.Items)
-                        : null,
-                    AvailablePalletCapacity = c.UccrVehicle == truckVehicleName
-                        ? c.MaxPayload - c.TucJobUcjbCouriers
-                            .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
-                            .SelectMany(d => d.TucJobItemJobs)
-                            .Sum(i => i.Items * i.Weight)
-                        : null
+                    c.UccrId,
+                    c.Code,
+                    c.UccrName,
+                    c.LastModified,
+                    c.MaxPallets,
+                    c.MaxPayload,
+                    c.UccrVehicle
                 })
-                .OrderBy(c => c.CourierCode)
+                .TagWith("TruckCourierStatus - Step 1: Courier Data")
                 .FirstOrDefaultAsync();
 
-            return courierStatusData;
+            if (courierData == null) return null;
+
+            if (courierData.UccrVehicle != truckVehicleName)
+            {
+                return new TruckCourierStatusViewModel
+                {
+                    CourierId = courierData.UccrId,
+                    CourierCode = courierData.Code,
+                    FirstName = courierData.UccrName,
+                    LastUpdated = courierData.LastModified,
+                    MaxPallets = null,
+                    MaxPayLoad = null,
+                    CurrentPallets = null,
+                    CurrentWeight = null,
+                    AvailablePallets = null,
+                    AvailablePalletCapacity = null
+                };
+            }
+
+            var jobItemsAggregate = await Context.TucJobs
+                .AsNoTracking() // Article tip #2
+                .Where(j => j.UcjbCourierId == courierId && // Filter early
+                            !j.UcjbJobDone &&
+                            !j.UcjbVoid)
+                .SelectMany(j => j.TucJobItemJobs)
+                .GroupBy(i => 1)
+                .Select(g => new
+                {
+                    TotalItems = g.Sum(i => i.Items),
+                    TotalWeight = g.Sum(i => i.Items * i.Weight)
+                })
+                .TagWith("TruckCourierStatus - Step 2: Job Items Aggregate")
+                .FirstOrDefaultAsync();
+
+            var currentPallets = jobItemsAggregate?.TotalItems ?? 0;
+            var currentWeight = jobItemsAggregate?.TotalWeight ?? 0;
+
+            return new TruckCourierStatusViewModel
+            {
+                CourierId = courierData.UccrId,
+                CourierCode = courierData.Code,
+                FirstName = courierData.UccrName,
+                LastUpdated = courierData.LastModified,
+                MaxPallets = courierData.MaxPallets,
+                MaxPayLoad = courierData.MaxPayload,
+                CurrentPallets = currentPallets,
+                CurrentWeight = currentWeight,
+                AvailablePallets = courierData.MaxPallets - currentPallets,
+                AvailablePalletCapacity = courierData.MaxPayload - currentWeight
+            };
         }
         catch (Exception e)
         {
-            Log.Error(e, "An error occured getting courier status for {CourierId}", courierId);
+            Log.Error(e, "An error occurred getting courier status for {CourierId}", courierId);
             throw;
         }
     }
@@ -113,7 +139,8 @@ public class CourierRepository(
             : await GetNzAvailableCourierPositionsAsync(data);
     }
 
-    private async Task<List<AvailableCourierPosition>> GetUsAvailableCourierPositionsAsync(CourierLocationRequest data)
+    private async Task<List<AvailableCourierPosition>> GetUsAvailableCourierPositionsAsync(
+        CourierLocationRequest data)
     {
         try
         {
@@ -129,7 +156,6 @@ public class CourierRepository(
                             c.CourierGps.Latitude <= data.MaxLat &&
                             c.CourierLogInOut != null &&
                             c.CourierLogInOut.LogOutTime == null)
-                .AsSplitQuery()
                 .Select(c => new CourierPositionWithJobsDto
                 {
                     CourierId = c.UccrId,
@@ -143,19 +169,50 @@ public class CourierRepository(
                     Code = c.Code,
                     FleetId = c.CourierFleetId,
                     DisplayOrder = c.TblClearListAreaOrder != null ? c.TblClearListAreaOrder.Status : null,
-                    TotalJobs = c.TucJobUcjbCouriers.Count(j => !j.UcjbVoid && !j.UcjbJobDone),
-                    Jobs = c.TucJobUcjbCouriers
-                        .Where(j => !j.UcjbVoid && !j.UcjbJobDone && j.UcjbTime != null)
-                        .Select(j => new JobTimingDto
-                        {
-                            UcjbDate = j.UcjbDate,
-                            UcjbTime = j.UcjbTime,
-                            Minutes = j.AcceptedJobType.Minutes ?? 0
-                        })
-                        .ToList()
+                    TotalJobs = 0, // Default value
+                    Jobs = new List<JobTimingDto>() // Empty list
                 })
-                .TagWith("GetUsAvailableCouriers - Optimized")
+                .TagWith("GetUsAvailableCouriers - Step 1: Courier Data")
                 .ToListAsync();
+
+            if (courierData.Count == 0) return [];
+
+            var courierIds = courierData.Select(c => c.CourierId).ToList();
+
+            var jobCounts = await Context.TucJobs
+                .AsNoTracking()
+                .Where(j => j.UcjbCourierId.HasValue && courierIds.Contains(j.UcjbCourierId.Value) &&
+                            !j.UcjbVoid &&
+                            !j.UcjbJobDone)
+                .GroupBy(j => j.UcjbCourierId.Value)
+                .Select(g => new { CourierId = g.Key, Count = g.Count() })
+                .TagWith("GetUsAvailableCouriers - Step 2: Job Counts")
+                .ToListAsync();
+
+            var jobCountDict = jobCounts.ToDictionary(x => x.CourierId, x => x.Count);
+
+            var jobTimings = await Context.TucJobs
+                .AsNoTracking()
+                .Where(j => courierIds.Contains(j.UcjbCourierId.Value) &&
+                            !j.UcjbVoid &&
+                            !j.UcjbJobDone &&
+                            j.UcjbTime != null)
+                .Select(j => new
+                {
+                    CourierId = j.UcjbCourierId.Value,
+                    Job = new JobTimingDto
+                    {
+                        UcjbDate = j.UcjbDate,
+                        UcjbTime = j.UcjbTime,
+                        Minutes = j.AcceptedJobType.Minutes ?? 0
+                    }
+                })
+                .TagWith("GetUsAvailableCouriers - Step 3: Job Timing")
+                .ToListAsync();
+
+            var jobsByCourier = jobTimings
+                .GroupBy(x => x.CourierId)
+                .ToDictionary(g => g.Key, g => g.Select(x => x.Job).ToList());
 
             return courierData.Select(c => new AvailableCourierPosition
             {
@@ -168,10 +225,11 @@ public class CourierRepository(
                 ClearListAreaIDs = c.ClearListAreaIDs,
                 Code = c.Code,
                 IsUrgentArmyDriver = c.FleetId != null && ((CourierFleet)c.FleetId.Value).IsUrgentArmy(),
-                TotalJobs = c.TotalJobs,
-                OverDueJobs = c.Jobs.Count(j =>
-                    j.UcjbTime != null &&
-                    j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes) < currentDate),
+                TotalJobs = jobCountDict.GetValueOrDefault(c.CourierId, 0),
+                OverDueJobs = jobsByCourier.TryGetValue(c.CourierId, out var jobs)
+                    ? jobs.Count(j => j.UcjbTime != null &&
+                                      j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes) < currentDate)
+                    : 0,
                 DisplayOrder = c.DisplayOrder
             }).ToList();
         }
@@ -184,7 +242,8 @@ public class CourierRepository(
         }
     }
 
-    private async Task<List<AvailableCourierPosition>> GetNzAvailableCourierPositionsAsync(CourierLocationRequest data)
+    private async Task<List<AvailableCourierPosition>> GetNzAvailableCourierPositionsAsync(
+        CourierLocationRequest data)
     {
         try
         {
@@ -200,7 +259,6 @@ public class CourierRepository(
                             c.CourierGps.Latitude >= data.MinLat &&
                             c.CourierGps.Latitude <= data.MaxLat &&
                             c.CourierFleetId != (int)CourierFleet.ClientDriver)
-                .AsSplitQuery()
                 .Select(c => new CourierDto
                 {
                     CourierId = c.UccrId,
@@ -209,27 +267,56 @@ public class CourierRepository(
                     Longitude = c.CourierGps.Longitude ?? 0,
                     ChannelId = c.UccrChannelId ?? 0,
                     VehicleType = c.UccrVehicle,
-                    // Project-only IDs for clear list areas (reduce data transfer)
                     ClearListAreaIDs = c.CourierGps.Polygon.TblClearListAreaPolygons
                         .Select(x => x.ClearListAreaId).ToList(),
                     Code = c.Code,
                     FleetId = c.CourierFleetId,
                     DisplayOrder = c.TblClearListAreaOrder != null ? c.TblClearListAreaOrder.Status : null,
-                    // Calculate counts in a database instead of in-memory (Article tip #9)
-                    TotalJobs = c.TucJobUcjbCouriers.Count(j => !j.UcjbVoid && !j.UcjbJobDone),
-                    // Only fetch minimal job data needed for calculation
-                    Jobs = c.TucJobUcjbCouriers
-                        .Where(j => !j.UcjbVoid && !j.UcjbJobDone && j.UcjbTime != null)
-                        .Select(j => new JobDto
-                        {
-                            UcjbDate = j.UcjbDate,
-                            UcjbTime = j.UcjbTime,
-                            Minutes = j.AcceptedJobType.Minutes
-                        })
-                        .ToList()
+                    TotalJobs = 0 // Set default
                 })
-                .TagWith("GetNzAvailableCouriers - Optimized")
-                .ToListAsync(); 
+                .TagWith("GetNzAvailableCouriers - Step 1: Courier Data")
+                .ToListAsync();
+
+            if (couriers.Count == 0) return [];
+
+            var courierIds = couriers.Select(c => c.CourierId).ToList();
+
+            var jobCounts = await Context.TucJobs
+                .AsNoTracking()
+                .Where(j => j.UcjbCourierId.HasValue && courierIds.Contains(j.UcjbCourierId.Value) &&
+                            !j.UcjbVoid &&
+                            !j.UcjbJobDone)
+                .GroupBy(j => j.UcjbCourierId.Value)
+                .Select(g => new
+                {
+                    CourierId = g.Key,
+                    TotalJobs = g.Count()
+                })
+                .TagWith("GetNzAvailableCouriers - Step 2: Job Counts")
+                .ToListAsync();
+
+            var jobCountDict = jobCounts.ToDictionary(x => x.CourierId, x => x.TotalJobs);
+
+            // STEP 3: Get jobs with timing info for overdue calculation
+            var jobsWithTiming = await Context.TucJobs
+                .AsNoTracking()
+                .Where(j => courierIds.Contains(j.UcjbCourierId.Value) &&
+                            !j.UcjbVoid &&
+                            !j.UcjbJobDone &&
+                            j.UcjbTime != null)
+                .Select(j => new CourierJobDto
+                {
+                    CourierId = j.UcjbCourierId.Value,
+                    UcjbDate = j.UcjbDate,
+                    UcjbTime = j.UcjbTime,
+                    Minutes = j.AcceptedJobType.Minutes
+                })
+                .TagWith("GetNzAvailableCouriers - Step 3: Job Timing")
+                .ToListAsync();
+
+            var jobsBycourier = jobsWithTiming
+                .GroupBy(j => j.CourierId)
+                .ToDictionary(g => g.Key, g => g.ToList());
 
             return couriers.Select(dto => new AvailableCourierPosition
             {
@@ -242,11 +329,11 @@ public class CourierRepository(
                 ClearListAreaIDs = dto.ClearListAreaIDs,
                 Code = dto.Code,
                 IsUrgentArmyDriver = dto.FleetId != null && ((CourierFleet)dto.FleetId.Value).IsUrgentArmy(),
-                TotalJobs = dto.TotalJobs,
-                // Calculate overdue jobs in memory (already materialized)
-                OverDueJobs = dto.Jobs.Count(j =>
-                    j.UcjbTime != null &&
-                    j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes ?? 0) < now),
+                TotalJobs = jobCountDict.GetValueOrDefault(dto.CourierId, 0),
+                OverDueJobs = jobsBycourier.TryGetValue(dto.CourierId, out var jobs)
+                    ? jobs.Count(j => j.UcjbTime != null &&
+                                      j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes ?? 0) < now)
+                    : 0,
                 DisplayOrder = dto.DisplayOrder
             }).ToList();
         }
@@ -393,47 +480,27 @@ public class CourierRepository(
     private async Task<List<ActiveCourierDto>> GetActiveCouriersAsync(bool includeJobCount = true)
     {
         var today = infoService.GetCurrentTenantTime().Date;
+        var results = await Context.GetActiveCouriers(today);
+        if (!includeJobCount) return results;
 
-        var query = Context.TucCouriers
+        // Get the job count
+        var courierIds = results.Select(c => c.CourierId).ToList();
+        var jobCounts = await Context.TucJobs
             .AsNoTracking()
-            .Where(c => c.Active &&
-                        (c.SendJobsViaSms ||
-                         c.SendAlertSms ||
-                         (c.CourierLogInOut != null &&
-                          c.CourierLogInOut.LogInTime.Date == today &&
-                          c.CourierLogInOut.LogOutTime == null)));
-
-        if (includeJobCount)
-        {
-            return await query
-                .Select(c => new ActiveCourierDto
-                {
-                    CourierId = c.UccrId,
-                    Code = c.Code,
-                    Name = c.UccrName + " " + c.UccrSurname,
-                    DangerousGoods = c.UccrDangerousGoods == 1,
-                    DgLicenseExpiry = c.DglicenseExpiry,
-                    JobCount = c.TucJobUcjbCouriers
-                        .Count(jt => !jt.UcjbVoid &&
-                                     !jt.UcjbJobDone &&
-                                     jt.UcjbDate.Date <= today)
-                })
-                .OrderBy(c => c.Code)
-                .ToListAsync();
-        }
-
-        return await query
-            .Select(c => new ActiveCourierDto
-            {
-                CourierId = c.UccrId,
-                Code = c.Code,
-                Name = c.UccrName + " " + c.UccrSurname,
-                DangerousGoods = c.UccrDangerousGoods == 1,
-                DgLicenseExpiry = c.DglicenseExpiry,
-                JobCount = 0
-            })
-            .OrderBy(c => c.Code)
+            .Where(j => courierIds.Contains(j.UcjbCourierId.Value) &&
+                        !j.UcjbVoid &&
+                        !j.UcjbJobDone &&
+                        j.UcjbDate.Date <= today)
+            .GroupBy(j => j.UcjbCourierId)
+            .Select(g => new { CourierId = g.Key, Count = g.Count() })
             .ToListAsync();
+
+        var jobCountDict = jobCounts.ToDictionary(x => x.CourierId, x => x.Count);
+
+        foreach (var result in results)
+            result.JobCount = jobCountDict.TryGetValue(result.CourierId, out var count) ? count : 0;
+
+        return results;
     }
 
     public async Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds)
@@ -442,10 +509,10 @@ public class CourierRepository(
 
         try
         {
-            var query = Context.TblDespatchViews
-                .Where(dv => despatchViewIds.Contains(dv.DespatchViewId));
-
-            var clearLists = await query
+            var clearLists = await Context.TblDespatchViews
+                .AsNoTracking()
+                .AsSplitQuery() // Add this!
+                .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
                 .SelectMany(dv => dv.DespatchViewZoneGroups)
                 .Select(dvzg => dvzg.ZoneGroup.ClearListArea)
                 .Where(cla => cla != null)
@@ -457,6 +524,8 @@ public class CourierRepository(
                     AreaOrder = cl.Order
                 })
                 .ToListAsync();
+
+            if (clearLists.Count == 0) return new ClearListViewModel();
 
             // Group areas into columns matching DespatchWeb_Urgent's vertical layout
             var columnDefinitions = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
@@ -536,7 +605,7 @@ public class CourierRepository(
                     assignedAreas.Add(area.Name ?? "");
                 }
 
-                if (columnAreas.Any())
+                if (columnAreas.Count != 0)
                 {
                     columns.Add(new ClearListColumn { Areas = columnAreas });
                 }
@@ -548,28 +617,31 @@ public class CourierRepository(
                 .OrderBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            if (unassignedAreas.Any())
+            if (unassignedAreas.Count == 0)
+                return new ClearListViewModel
+                {
+                    Areas = areas,
+                    Columns = columns
+                };
+            // If we have predefined columns (NZ tenant), append unassigned to last column
+            // If no predefined columns (US/other tenants), distribute horizontally across 4 columns
+            if (columns.Count != 0)
             {
-                // If we have predefined columns (NZ tenant), append unassigned to last column
-                // If no predefined columns (US/other tenants), distribute horizontally across 4 columns
-                if (columns.Any())
+                columns.Last().Areas.AddRange(unassignedAreas);
+            }
+            else
+            {
+                // Distribute unassigned areas horizontally across 4 columns
+                const int maxColumns = 4;
+                for (var i = 0; i < maxColumns; i++)
                 {
-                    columns.Last().Areas.AddRange(unassignedAreas);
+                    columns.Add(new ClearListColumn { Areas = [] });
                 }
-                else
-                {
-                    // Distribute unassigned areas horizontally across 4 columns
-                    const int maxColumns = 4;
-                    for (var i = 0; i < maxColumns; i++)
-                    {
-                        columns.Add(new ClearListColumn { Areas = [] });
-                    }
 
-                    for (var i = 0; i < unassignedAreas.Count; i++)
-                    {
-                        var columnIndex = i % maxColumns; // Distribute horizontally: 0,1,2,3,0,1,2,3...
-                        columns[columnIndex].Areas.Add(unassignedAreas[i]);
-                    }
+                for (var i = 0; i < unassignedAreas.Count; i++)
+                {
+                    var columnIndex = i % maxColumns; // Distribute horizontally: 0,1,2,3,0,1,2,3...
+                    columns[columnIndex].Areas.Add(unassignedAreas[i]);
                 }
             }
 
@@ -665,54 +737,224 @@ public class CourierRepository(
 
     private async Task<List<ClearListResult>> GetClearListCouriers(int clearListAreaId)
     {
-        var currentDate = infoService.GetCurrentTenantTime();
-
-        // Main courier data query - filter by clearListAreaId first for better index usage
-        var courierData = await Context.UTL_fncClearListArea_Couriers(clearListAreaId, currentDate)
-            .Join(
-                Context.TucCouriers,
-                ac => ac.CourierID,
-                c => c.UccrId,
-                (ac, c) => new { ac, c }
-            )
-            .Join(
-                Context.TucCourierFleets.Where(cf => cf.DisplayOnClearlistsDespatch),
-                combined => combined.c.CourierFleetId,
-                cf => cf.UccfId,
-                (combined, cf) => new { combined.ac, combined.c, cf }
-            )
-            .GroupJoin(
-                Context.TblCourierGps,
-                combined => combined.c.CourierGpsid,
-                gps => gps.CourierGpsid,
-                (combined, gpsGroup) => new { combined.ac, combined.c, gpsGroup }
-            )
-            .SelectMany(
-                x => x.gpsGroup.DefaultIfEmpty(),
-                (x, gps) => new ClearListResult
-                {
-                    CourierId = x.ac.CourierID,
-                    Code = x.ac.Code +
-                           (x.c.SendJobsViaSms ? "#" : string.Empty) +
-                           (gps != null && EF.Functions.DateDiffMinute(gps.Created, currentDate) > 3
-                               ? "*"
-                               : string.Empty) +
-                           (!x.c.AutoDespatch ? "^" : string.Empty) +
-                           (x.c.UccrVehicle == "Truck" ? "T" : string.Empty),
-                    DisplayOrder = x.ac.DisplayOrder ?? 0,
-                    Deliver = x.ac.Deliver,
-                    DisplayOrderDesc = x.ac.DisplayOrder == 1 ? x.ac.Created : null,
-                    DisplayOrderAsc = x.ac.DisplayOrder != 1 ? x.ac.Created : null,
-                    AutoDespatch = x.c.AutoDespatch
-                }
-            )
-            .AsNoTracking()
-            .ToListAsync();
-
-        // Add static separator rows
-        var staticRows = new List<ClearListResult>
+        try
         {
-            new()
+            var currentDate = infoService.GetCurrentTenantTime();
+            var currentDateOnly = currentDate.Date;
+
+            // Pre-filter valid courier GPS IDs for the clear list area
+            var validCourierGpsIds = await Context.TblClearListAreaPolygons
+                .AsNoTracking()
+                .Where(cap => cap.ClearListArea.ClearListAreaId == clearListAreaId)
+                .Select(cap => cap.PolygonId)
+                .ToListAsync();
+
+            var validCourierGpsIdSet = validCourierGpsIds.ToHashSet();
+
+            // Get courier IDs that have jobs today
+            var courierIdsWithJobs = await Context.TblJobs
+                .AsNoTracking()
+                .Where(job => job.JobDone == false &&
+                              job.Void == false &&
+                              job.Date.HasValue &&
+                              job.Date.Value.Date == currentDate.Date &&
+                              job.CourierId.HasValue)
+                .Select(job => job.CourierId.Value)
+                .Distinct()
+                .ToListAsync();
+
+            var courierIdsWithJobsSet = courierIdsWithJobs.ToHashSet();
+
+            // Single optimized query to get all courier data with proper filtering
+            var courierData = await Context.TucCouriers
+                .AsNoTracking()
+                .Where(courier => courier.Active == true)
+                .Where(courier => validCourierGpsIdSet.Contains(courier.CourierGpsid))
+                .Where(courier =>
+                    Context.TucCourierFleets.Any(cf =>
+                        cf.UccfId == courier.CourierFleetId &&
+                        cf.UccfId == (int)CourierFleet.UaAucklandP2P &&
+                        cf.DisplayOnClearlistsDespatch) ||
+                    Context.TblCourierLogInOuts.Any(clio =>
+                        clio.CourierLogInOutId == courier.CourierLogInOutId &&
+                        clio.LogInTime.Date == currentDateOnly &&
+                        clio.LogOutTime == null))
+                // Filter to only couriers with DisplayOnClearlistsDespatch fleet
+                .Join(
+                    Context.TucCourierFleets.Where(cf => cf.DisplayOnClearlistsDespatch),
+                    c => c.CourierFleetId,
+                    cf => cf.UccfId,
+                    (c, cf) => new { c, cf }
+                )
+                // Left join with GPS data
+                .GroupJoin(
+                    Context.TblCourierGps,
+                    combined => combined.c.CourierGpsid,
+                    gps => gps.CourierGpsid,
+                    (combined, gpsGroup) => new { combined.c, combined.cf, gpsGroup }
+                )
+                .SelectMany(
+                    x => x.gpsGroup.DefaultIfEmpty(),
+                    (x, gps) => new { x.c, x.cf, gps }
+                )
+                // Get display order and order time
+                .Select(combined => new
+                {
+                    Courier = combined.c,
+                    Gps = combined.gps,
+                    DisplayOrder = Context.TblClearListAreaOrders
+                        .Where(cao => cao.CourierId == combined.c.UccrId)
+                        .Select(cao => (int?)cao.Status)
+                        .FirstOrDefault(),
+                    OrderTime = Context.TblClearListAreaOrders
+                        .Where(cao => cao.CourierId == combined.c.UccrId)
+                        .Select(cao => (DateTime?)cao.OrderTime)
+                        .FirstOrDefault(),
+                    HasJobs = courierIdsWithJobsSet.Contains(combined.c.UccrId)
+                })
+                .ToListAsync();
+
+            // If no couriers, return an empty list with static rows
+            if (courierData.Count == 0) return GetStaticSeparatorRows();
+
+            // Get jobs for all filtered couriers in one query
+            var courierIds = courierData.Select(c => c.Courier.UccrId).ToHashSet();
+
+            var jobsByCourier = await Context.TblJobs
+                .AsNoTracking()
+                .Where(job => job.JobDone == false &&
+                              job.Void == false &&
+                              job.Date.HasValue &&
+                              job.Date.Value.Date == currentDate.Date &&
+                              job.CourierId.HasValue &&
+                              courierIds.Contains(job.CourierId.Value))
+                .Select(job => new
+                {
+                    job.CourierId,
+                    job.ToSuburbId
+                })
+                .ToListAsync();
+
+            // Get suburb to clearly list area mappings
+            var suburbIds = jobsByCourier
+                .Where(j => j.ToSuburbId.HasValue)
+                .Select(j => j.ToSuburbId.Value)
+                .Distinct()
+                .ToHashSet();
+
+            var suburbClearListAreas = await Context.TblPolygonSuburbs
+                .AsNoTracking()
+                .Where(ps => suburbIds.Contains(ps.SuburbId))
+                .Join(Context.TblPolygons.AsNoTracking(),
+                    ps => ps.PolygonId,
+                    p => p.PolygonId,
+                    (ps, p) => new { ps.SuburbId, p.PolygonId })
+                .Join(Context.TblClearListAreaPolygons.AsNoTracking(),
+                    p => p.PolygonId,
+                    cap => cap.PolygonId,
+                    (p, cap) => new { p.SuburbId, cap.ClearListAreaId })
+                .Join(Context.TblClearListAreas.AsNoTracking(),
+                    cap => cap.ClearListAreaId,
+                    cla => cla.ClearListAreaId,
+                    (cap, cla) => new
+                    {
+                        cap.SuburbId,
+                        cla.ClearListAreaId,
+                        cla.Code,
+                        cla.ChannelId
+                    })
+                .ToListAsync();
+
+            var suburbLookup = suburbClearListAreas
+                .GroupBy(sca => sca.SuburbId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            // Build clear list results
+            var clearListResults = new List<ClearListResult>();
+
+            foreach (var courierItem in courierData)
+            {
+                var courier = courierItem.Courier;
+                var gps = courierItem.Gps;
+
+                var courierJobs = jobsByCourier
+                    .Where(j => j.CourierId == courier.UccrId)
+                    .ToList();
+
+                var deliverCodes = new List<string>();
+
+                if (courierJobs.Count > 0)
+                {
+                    var jobsByArea = courierJobs
+                        .GroupBy(job =>
+                        {
+                            if (!job.ToSuburbId.HasValue ||
+                                !suburbLookup.TryGetValue(job.ToSuburbId.Value, out var areaOptions))
+                                return "O";
+
+                            var matchingSameChannel = areaOptions
+                                .FirstOrDefault(sca => sca.ChannelId == courier.UccrChannelId);
+
+                            if (matchingSameChannel != null)
+                                return matchingSameChannel.Code;
+
+                            var matchingDiffChannel = areaOptions.FirstOrDefault();
+                            return matchingDiffChannel?.Code ?? "O";
+                        })
+                        .Select(g => new
+                        {
+                            DeliverCode = g.Key,
+                            JobCount = g.Count()
+                        });
+
+                    deliverCodes = jobsByArea
+                        .Select(area => area.DeliverCode + (area.JobCount > 0 ? area.JobCount.ToString() : ""))
+                        .ToList();
+                }
+
+                // Build courier code with indicators
+                var codeBuilder = courier.Code;
+                if (courier.SendJobsViaSms) codeBuilder += "#";
+                if (gps != null && EF.Functions.DateDiffMinute(gps.Created, currentDate) > 3)
+                    codeBuilder += "*";
+                if (!courier.AutoDespatch) codeBuilder += "^";
+                if (courier.UccrVehicle == "Truck") codeBuilder += "T";
+
+                clearListResults.Add(new ClearListResult
+                {
+                    CourierId = courier.UccrId,
+                    Code = codeBuilder,
+                    DisplayOrder = courierItem.DisplayOrder ?? 0,
+                    Deliver = string.Join(",", deliverCodes),
+                    DisplayOrderDesc = courierItem.DisplayOrder == 1 ? courierItem.OrderTime : null,
+                    DisplayOrderAsc = courierItem.DisplayOrder != 1 ? courierItem.OrderTime : null,
+                    AutoDespatch = courier.AutoDespatch
+                });
+            }
+
+            // Add static separator rows and sort
+            return clearListResults
+                .Concat(GetStaticSeparatorRows())
+                .OrderBy(x => x.DisplayOrder)
+                .ThenBy(x => x.DisplayOrderDesc)
+                .ThenBy(x => x.DisplayOrderAsc)
+                .ThenBy(x => x.Code)
+                .ToList();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierRepository),
+                    nameof(GetClearListCouriers)));
+            throw;
+        }
+    }
+
+    private static List<ClearListResult> GetStaticSeparatorRows()
+    {
+        return
+        [
+            new ClearListResult
             {
                 CourierId = null,
                 Code = "----",
@@ -722,7 +964,8 @@ public class CourierRepository(
                 DisplayOrderAsc = null,
                 AutoDespatch = null
             },
-            new()
+
+            new ClearListResult
             {
                 CourierId = null,
                 Code = "----",
@@ -732,10 +975,9 @@ public class CourierRepository(
                 DisplayOrderAsc = null,
                 AutoDespatch = null
             }
-        };
-
-        return courierData.Concat(staticRows).OrderBy(x => x.DisplayOrder).ToList();
+        ];
     }
+
 
     private static List<ClearListSection> BuildClearListSection(
         List<ClearListResult> data,
@@ -1181,7 +1423,9 @@ public class CourierRepository(
         var pageSize = Math.Max(1, Math.Min(100, request.PageSize));
 
         var query = Context.TucCouriers
-            .Where(c => c.CourierLogInOut != null && c.CourierLogInOut.LogInTime.Date == today.Date);
+            .AsNoTracking() // Article tip #2
+            .Where(c => c.CourierLogInOut != null &&
+                        c.CourierLogInOut.LogInTime.Date == today.Date);
 
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
@@ -1205,31 +1449,43 @@ public class CourierRepository(
         {
             query = request.Status.ToLower() switch
             {
-                "active" => query.Where(c => c.CourierLogInOut != null && c.CourierLogInOut.LogOutTime == null),
-                "inactive" => query.Where(c => c.CourierLogInOut != null && c.CourierLogInOut.LogOutTime != null),
+                "active" => query.Where(c => c.CourierLogInOut.LogOutTime == null),
+                "inactive" => query.Where(c => c.CourierLogInOut.LogOutTime != null),
                 _ => query
             };
         }
 
-        // Combine all aggregates into a single query
         var sessionData = await query
-            .AsNoTracking()
             .Select(c => new
             {
                 c.CourierLogInOut.LogInTime,
                 c.CourierLogInOut.LogOutTime,
                 IsActive = c.CourierLogInOut.LogOutTime == null
             })
+            .TagWith("GetTodayActiveDrivers - Step 1: Session Aggregates")
             .ToListAsync();
 
         var totalCount = sessionData.Count;
+
+        // Early return if no data (Article tip #4 - Use Any())
+        if (totalCount == 0)
+        {
+            return new TodayActiveDriversPaginatedResponse
+            {
+                Items = new List<TodayActiveDriversViewModel>(),
+                Total = 0,
+                Page = page,
+                Pages = 0,
+                TotalActiveDrivers = 0,
+                TotalDriversActiveToday = 0,
+                AverageSessionTime = 0.0
+            };
+        }
+
         var totalActiveDrivers = sessionData.Count(s => s.IsActive);
         var totalDriversActiveToday = sessionData.Count(s => s.IsActive && s.LogInTime.Date == today.Date);
-        var averageSessionTime = sessionData.Count != 0
-            ? sessionData.Average(s => ((s.LogOutTime ?? today) - s.LogInTime).TotalMinutes)
-            : 0.0;
+        var averageSessionTime = sessionData.Average(s => ((s.LogOutTime ?? today) - s.LogInTime).TotalMinutes);
 
-        // Apply sorting
         query = request.OrderBy?.ToLower() switch
         {
             "code" => request.SortDescending
@@ -1258,34 +1514,73 @@ public class CourierRepository(
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
         var couriers = await query
-            .AsNoTracking()
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(c => new TodayActiveDriversViewModel
+            .Select(c => new
+            {
+                c.UccrId,
+                c.Code,
+                CourierName = c.UccrName + " " + c.UccrSurname,
+                Fleet = c.CourierFleet != null ? c.CourierFleet.UccfName : "Not Available",
+                c.CourierLogInOut.LogInTime,
+                c.CourierLogInOut.LogOutTime,
+                Status = c.CourierLogInOut.LogOutTime == null ? "Active" : "Inactive"
+            })
+            .TagWith("GetTodayActiveDrivers - Step 2: Paginated Courier Data")
+            .ToListAsync();
+
+        if (couriers.Count == 0)
+        {
+            return new TodayActiveDriversPaginatedResponse
+            {
+                Items = new List<TodayActiveDriversViewModel>(),
+                Total = totalCount,
+                Page = page,
+                Pages = totalPages,
+                TotalActiveDrivers = totalActiveDrivers,
+                TotalDriversActiveToday = totalDriversActiveToday,
+                AverageSessionTime = averageSessionTime
+            };
+        }
+
+        var courierIds = couriers.Select(c => c.UccrId).ToList();
+
+        var deliveryCounts = await Context.TucJobs
+            .AsNoTracking() // Article tip #2
+            .Where(j => j.UcjbCourierId.HasValue &&
+                        courierIds.Contains(j.UcjbCourierId.Value) &&
+                        j.UcjbDate.Date == today.Date)
+            .GroupBy(j => j.UcjbCourierId.Value)
+            .Select(g => new { CourierId = g.Key, Count = g.Count() })
+            .TagWith("GetTodayActiveDrivers - Step 3: Delivery Counts")
+            .ToListAsync();
+
+        var deliveryCountDict = deliveryCounts.ToDictionary(x => x.CourierId, x => x.Count);
+
+        var courierViewModels = couriers.Select(c =>
+        {
+            var loginTime = TimeZoneHelper.SetDateTimeWithTimeZone(c.LogInTime, tenantTimeZone);
+            var logoutTime = c.LogOutTime.HasValue
+                ? TimeZoneHelper.SetDateTimeWithTimeZone(c.LogOutTime.Value, tenantTimeZone)
+                : (DateTimeOffset?)null;
+
+            return new TodayActiveDriversViewModel
             {
                 CourierId = c.UccrId,
                 Code = c.Code,
-                Name = c.UccrName + " " + c.UccrSurname,
-                Fleet = c.CourierFleet != null ? c.CourierFleet.UccfName : "Not Available",
-                LoginTime = c.CourierLogInOut.LogInTime,
-                LogoutTime = c.CourierLogInOut.LogOutTime,
-                Duration = CourierActiveDuration(c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime ?? today),
-                Deliveries = c.TucJobUcjbCouriers.Count(j => j.UcjbDate.Date == today.Date),
-                Status = c.CourierLogInOut.LogOutTime == null ? "Active" : "Inactive"
-            })
-            .ToListAsync();
-
-        foreach (var courier in couriers)
-        {
-            courier.LoginTime = TimeZoneHelper.SetDateTimeWithTimeZone(courier.LoginTime, tenantTimeZone);
-            courier.LogoutTime = courier.LogoutTime.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(courier.LogoutTime.Value, tenantTimeZone)
-                : null;
-        }
+                Name = c.CourierName,
+                Fleet = c.Fleet,
+                LoginTime = loginTime,
+                LogoutTime = logoutTime,
+                Duration = CourierActiveDuration(c.LogInTime, c.LogOutTime ?? today),
+                Deliveries = deliveryCountDict.GetValueOrDefault(c.UccrId, 0),
+                Status = c.Status
+            };
+        }).ToList();
 
         return new TodayActiveDriversPaginatedResponse
         {
-            Items = couriers,
+            Items = courierViewModels,
             Total = totalCount,
             Page = page,
             Pages = totalPages,
@@ -1337,7 +1632,9 @@ public class CourierRepository(
         var pageSize = Math.Max(1, Math.Min(100, request.PageSize));
 
         var query = Context.TucCouriers
-            .Where(c => c.CourierLogInOut != null && c.CourierLogInOut.LogInTime.Date == now.Date);
+            .AsNoTracking() // Article tip #2
+            .Where(c => c.CourierLogInOut != null &&
+                        c.CourierLogInOut.LogInTime.Date == now.Date);
 
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
@@ -1354,15 +1651,17 @@ public class CourierRepository(
             );
         }
 
-        // Get aggregates in a single query
         var aggregates = await Context.TucJobs
-            .Where(j => j.UcjbComplTime.HasValue && j.UcjbComplTime.Value.Date == now.Date)
+            .AsNoTracking()
+            .Where(j => j.UcjbComplTime.HasValue &&
+                        j.UcjbComplTime.Value.Date == now.Date)
             .GroupBy(j => 1)
             .Select(g => new
             {
                 TotalDeliveries = g.Count(),
                 TotalEarnings = g.Sum(j => j.CourierPayment) ?? 0
             })
+            .TagWith("GetCourierDailyEarnings - Step 1: Global Aggregates")
             .FirstOrDefaultAsync();
 
         var totalDeliveriesToday = aggregates?.TotalDeliveries ?? 0;
@@ -1370,45 +1669,129 @@ public class CourierRepository(
 
         var totalCount = await query.CountAsync();
 
-        // Calculate average hourly rate from courier data
-        var courierEarningsData = await query
-            .AsNoTracking()
+        if (totalCount == 0)
+        {
+            return new CourierDailyEarningsPaginatedResponse
+            {
+                Items = new List<CourierDailyEarningsViewModel>(),
+                Page = page,
+                Pages = 0,
+                Total = 0,
+                TotalEarningsToday = totalEarningsToday,
+                AverageHourlyRate = 0,
+                TotalActiveDrivers = 0,
+                TotalDeliveriesToday = totalDeliveriesToday
+            };
+        }
+
+        var couriers = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(c => new
             {
-                HoursLogged =
-                    EF.Functions.DateDiffMinute(c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime ?? now),
-                Earnings = c.TucJobUcjbCouriers.Sum(j => j.CourierPayment ?? 0)
+                c.UccrId,
+                CourierName = c.UccrName + " " + c.UccrSurname,
+                c.CourierLogInOut.LogInTime,
+                c.CourierLogInOut.LogOutTime
             })
+            .TagWith("GetCourierDailyEarnings - Step 2: Paginated Courier Data")
             .ToListAsync();
 
-        var averageHourlyRate = courierEarningsData
-            .Where(c => c.HoursLogged > 0)
-            .Select(c => c.Earnings / (c.HoursLogged / 60.0m))
-            .DefaultIfEmpty(0)
-            .Average();
+        // Early return if pagination beyond data
+        if (couriers.Count == 0)
+        {
+            return new CourierDailyEarningsPaginatedResponse
+            {
+                Items = new List<CourierDailyEarningsViewModel>(),
+                Page = page,
+                Pages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                Total = totalCount,
+                TotalEarningsToday = totalEarningsToday,
+                AverageHourlyRate = 0,
+                TotalActiveDrivers = totalCount,
+                TotalDeliveriesToday = totalDeliveriesToday
+            };
+        }
+
+        var courierIds = couriers.Select(c => c.UccrId).ToList();
+
+        var earningsData = await Context.TucJobs
+            .AsNoTracking()
+            .Where(j => j.UcjbCourierId.HasValue &&
+                        courierIds.Contains(j.UcjbCourierId.Value) &&
+                        j.UcjbDate.Date == now.Date)
+            .GroupBy(j => j.UcjbCourierId.Value)
+            .Select(g => new
+            {
+                CourierId = g.Key,
+                Deliveries = g.Count(),
+                Earnings = g.Sum(j => j.CourierPayment) ?? 0
+            })
+            .TagWith("GetCourierDailyEarnings - Step 3: Earnings Data")
+            .ToListAsync();
+
+        var earningsDict = earningsData.ToDictionary(x => x.CourierId);
+
+        var allCourierIds = await query
+            .Select(c => c.UccrId)
+            .ToListAsync();
+
+        var allEarningsForAverage = await Context.TucJobs
+            .AsNoTracking()
+            .Where(j => j.UcjbCourierId.HasValue &&
+                        allCourierIds.Contains(j.UcjbCourierId.Value))
+            .GroupBy(j => j.UcjbCourierId.Value)
+            .Select(g => new
+            {
+                CourierId = g.Key,
+                TotalEarnings = g.Sum(j => j.CourierPayment) ?? 0
+            })
+            .TagWith("GetCourierDailyEarnings - Step 4: Average Hourly Rate Calculation")
+            .ToListAsync();
+
+        var allEarningsDict = allEarningsForAverage.ToDictionary(x => x.CourierId, x => x.TotalEarnings);
+
+        // Calculate hourly rates in memory
+        var hourlyRates = new List<decimal>();
+        foreach (var courier in await query.Select(c => new
+                 {
+                     c.UccrId,
+                     c.CourierLogInOut.LogInTime,
+                     c.CourierLogInOut.LogOutTime
+                 }).ToListAsync())
+        {
+            var hoursLogged = ((courier.LogOutTime ?? now) - courier.LogInTime).TotalMinutes;
+            if (hoursLogged > 0 && allEarningsDict.TryGetValue(courier.UccrId, out var earnings))
+            {
+                hourlyRates.Add(earnings / (decimal)(hoursLogged / 60.0));
+            }
+        }
+
+        var averageHourlyRate = hourlyRates.Count > 0 ? hourlyRates.Average() : 0;
 
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
-        var courierDailyEarnings = await query
-            .AsNoTracking()
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(c => new CourierDailyEarningsViewModel
+        var courierDailyEarnings = couriers.Select(c =>
+        {
+            var hoursLogged = (int)((c.LogOutTime ?? now) - c.LogInTime).TotalMinutes;
+            var hasEarnings = earningsDict.TryGetValue(c.UccrId, out var earnings);
+            var deliveries = hasEarnings ? earnings.Deliveries : 0;
+            var totalEarnings = hasEarnings ? earnings.Earnings : 0;
+
+            var hourlyRate = hoursLogged > 0 && totalEarnings > 0
+                ? totalEarnings / (hoursLogged / 60.0m)
+                : 0;
+
+            return new CourierDailyEarningsViewModel
             {
                 CourierId = c.UccrId,
-                Name = c.UccrName + " " + c.UccrSurname,
-                HoursLogged =
-                    EF.Functions.DateDiffMinute(c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime ?? now),
-                Deliveries = c.TucJobUcjbCouriers.Count(j => j.UcjbDate.Date == now.Date),
-                Earnings = c.TucJobUcjbCouriers.Sum(j => j.CourierPayment ?? 0),
-                HourlyRate =
-                    EF.Functions.DateDiffMinute(c.CourierLogInOut.LogInTime, c.CourierLogInOut.LogOutTime ?? now) > 0
-                        ? c.TucJobUcjbCouriers.Sum(j => j.CourierPayment ?? 0) /
-                          (EF.Functions.DateDiffMinute(c.CourierLogInOut.LogInTime,
-                              c.CourierLogInOut.LogOutTime ?? now) / 60.0m)
-                        : 0
-            })
-            .ToListAsync();
+                Name = c.CourierName,
+                HoursLogged = hoursLogged,
+                Deliveries = deliveries,
+                Earnings = totalEarnings,
+                HourlyRate = hourlyRate
+            };
+        }).ToList();
 
         return new CourierDailyEarningsPaginatedResponse
         {
@@ -1624,23 +2007,50 @@ public class CourierRepository(
     public async Task<List<DriverWorkOverviewViewModel>> GetDriverWorkOverviewAsync()
     {
         var now = infoService.GetCurrentTenantTime();
+
         var drivers = await Context.TucCouriers
             .AsNoTracking()
             .Where(c => c.Active)
-            .Select(c => new DriverWorkOverviewViewModel
+            .Select(c => new
             {
-                CourierId = c.UccrId,
-                Name = c.UccrName + " " + c.UccrSurname,
-                VehicleType = MapVehicleTypeToAbbreviation(c.UccrVehicle),
-                JobCount = c.TucJobUcjbCouriers.Count(j => !j.UcjbJobDone
-                                                           && !j.UcjbVoid
-                                                           && j.UcjbDate.Date == now.Date),
-                DriverStatusText = c.CourierLogInOut.LogOutTime == null ? "Active" : "Inactive"
+                c.UccrId,
+                CourierName = c.UccrName + " " + c.UccrSurname,
+                c.UccrVehicle,
+                DriverStatusText = c.CourierLogInOut != null && c.CourierLogInOut.LogOutTime == null
+                    ? "Active"
+                    : "Inactive"
             })
-            .Distinct()
+            .TagWith("GetDriverWorkOverview - Step 1: Active Drivers")
             .ToListAsync();
 
-        return drivers;
+        if (drivers.Count == 0) return [];
+
+        var driverIds = drivers.Select(d => d.UccrId).ToList();
+
+        var jobCounts = await Context.TucJobs
+            .AsNoTracking()
+            .Where(j => j.UcjbCourierId.HasValue &&
+                        driverIds.Contains(j.UcjbCourierId.Value) &&
+                        !j.UcjbJobDone &&
+                        !j.UcjbVoid &&
+                        j.UcjbDate.Date == now.Date)
+            .GroupBy(j => j.UcjbCourierId.Value)
+            .Select(g => new { CourierId = g.Key, Count = g.Count() })
+            .TagWith("GetDriverWorkOverview - Step 2: Job Counts")
+            .ToListAsync();
+
+        var jobCountDict = jobCounts.ToDictionary(x => x.CourierId, x => x.Count);
+
+        return drivers
+            .Select(d => new DriverWorkOverviewViewModel
+            {
+                CourierId = d.UccrId,
+                Name = d.CourierName,
+                VehicleType = MapVehicleTypeToAbbreviation(d.UccrVehicle),
+                JobCount = jobCountDict.GetValueOrDefault(d.UccrId, 0),
+                DriverStatusText = d.DriverStatusText
+            })
+            .ToList();
     }
 
     public async Task ResetClearListAreaOrderAsync(int courierId)

@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using DespatchWeb.Models.Dto;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -67,6 +69,29 @@ public partial class DespatchContext
                 .AsNoTracking()
                 .Select(x => x.EconomyDeliveryTime)
                 .FirstOrDefault());
+
+    private static readonly Func<DespatchContext, DateTime, IAsyncEnumerable<ActiveCourierDto>>
+        GetActiveCouriersCompiled = EF.CompileAsyncQuery((DespatchContext context, DateTime today) =>
+            context.TucCouriers
+                .AsNoTracking()
+                .Where(c => c.Active &&
+                            (c.SendJobsViaSms ||
+                             c.SendAlertSms ||
+                             (c.CourierLogInOut != null &&
+                              c.CourierLogInOut.LogInTime.Date == today &&
+                              c.CourierLogInOut.LogOutTime == null)))
+                .OrderBy(c => c.Code)
+                .Select(c => new ActiveCourierDto
+                {
+                    CourierId = c.UccrId,
+                    Code = c.Code,
+                    Name = c.UccrName + " " + c.UccrSurname,
+                    DangerousGoods = c.UccrDangerousGoods == 1,
+                    DgLicenseExpiry = c.DglicenseExpiry,
+                    JobCount = 0
+                }));
+
+    public async Task<List<ActiveCourierDto>> GetActiveCouriers(DateTime today) => await GetActiveCouriersCompiled(this, today).ToListAsync();
 
     // Access compiled queries
     public async Task<int> GetEffectiveJobId(int jobId) => await GetEffectiveJobIdCompiled(this, jobId);

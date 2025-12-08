@@ -14,13 +14,13 @@ public class CourierDto
     public string Code { get; set; }
     public int? FleetId { get; set; }
     public int TotalJobs { get; set; }
-    public List<JobDto> Jobs { get; set; }
     public string CourierName { get; set; }
     public int? DisplayOrder { get; set; }
 }
 
-public class JobDto
+public class CourierJobDto
 {
+    public int CourierId { get; set; }
     public DateTime UcjbDate { get; set; }
     public DateTime? UcjbTime { get; set; }
     public int? Minutes { get; set; }
