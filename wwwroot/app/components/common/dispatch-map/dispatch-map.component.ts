@@ -70,6 +70,7 @@ class DispatchMapController extends BaseController {
     map?: google.maps.Map;
     tooltip?: google.maps.InfoWindow;
     clearListId?: number;
+    couriersLargeViewEnabled: boolean = false;
 
     constructor(
         private NgMap: angular.map.INgMap,
@@ -92,6 +93,7 @@ class DispatchMapController extends BaseController {
         this.loadAutoZoomPreference();
         this.loadCouriersOnlyPreference();
         this.loadUrgentArmyOnlyPreference();
+        this.loadCouriersLargeViewPreference();
 
         this.configService.getGoogleMapsKey()
             .then((apiKey: string) => {
@@ -376,8 +378,8 @@ class DispatchMapController extends BaseController {
     }
 
     private async updateDisplayedJobs() {
-        if (this.couriersOnlyEnabled) {
-            // Don't add job markers when couriers-only mode is active
+        if (this.couriersOnlyEnabled || this.couriersLargeViewEnabled) {
+            // Don't add job markers when couriers-only mode or large view is active
             return;
         }
 
@@ -640,9 +642,41 @@ class DispatchMapController extends BaseController {
     private addCourierMarker(courier: IAvailableCourierPosition) {
         const position = new this.$window.google.maps.LatLng(courier.latitude, courier.longitude);
 
+        if (this.couriersLargeViewEnabled) {
+            // Large view: just courier number with light blue flag
+            const largeFlagIcon = {
+                path: 'M2,2 L2,24 L6,24 L6,20 L6,12 L30,12 L26,7 L30,2 Z',
+                fillColor: '#87CEEB', // Light blue
+                fillOpacity: 0.9,
+                strokeWeight: 2,
+                strokeColor: '#FFFFFF',
+                scale: 2.5, // Larger size
+                anchor: new this.$window.google.maps.Point(2, 24),
+                labelOrigin: new this.$window.google.maps.Point(18, 7)
+            };
+
+            const marker = new this.$window.google.maps.Marker({
+                position: position,
+                map: this.mapInstance,
+                icon: largeFlagIcon,
+                label: {
+                    text: courier.code,
+                    color: '#000000',
+                    fontSize: '14px',
+                    fontWeight: 'bold'
+                },
+                title: `Courier ${courier.code}`,
+                opacity: 1
+            });
+
+            // No click or hover listeners in large view
+            this.flags.push(marker);
+            return;
+        }
+
+        // Normal view code (existing implementation)
         const flagTextColor = this.getFlagTextColor(courier);
 
-        // Determine a CSS class based on courier status
         let className = "courier courierMarker";
         if (courier.totalJobs === 0) {
             className = "courier courierCream courierMarker";
@@ -650,7 +684,6 @@ class DispatchMapController extends BaseController {
             className = "courier courierRed courierMarker";
         }
 
-        // Create the label overlay
         const label = new Label({
             map: this.mapInstance,
             color: flagTextColor,
@@ -658,15 +691,13 @@ class DispatchMapController extends BaseController {
             cssClass: className
         });
 
-        // Create the display text - backend returns an abbreviated vehicle type
         const displayText = courier.overDueJobs > 0
             ? `${courier.code}-${courier.vehicleType}${courier.totalJobs}/${courier.overDueJobs}`
             : `${courier.code}-${courier.vehicleType}${courier.totalJobs}`;
 
-        // Create marker with flagpole icon - scale down for thinner appearance
         const iconFile = {
             url: '/images/flagpole.png',
-            scaledSize: new this.$window.google.maps.Size(8, 40), // Make it thinner
+            scaledSize: new this.$window.google.maps.Size(8, 40),
             anchor: new this.$window.google.maps.Point(4, 40)
         };
         const marker = new this.$window.google.maps.Marker({
@@ -678,14 +709,12 @@ class DispatchMapController extends BaseController {
             visible: true
         });
 
-        // Bind label to marker
         label.bindTo('position', marker, 'position');
         label.bindTo('text', marker);
         (marker as any).set('display', displayText);
         label.bindTo('text', marker, 'display');
         label.bindTo('zIndex', marker);
 
-        // Disabled fade-in animation for performance
         marker.setOpacity(1);
 
         marker.addListener("mouseover", () => {
@@ -696,7 +725,7 @@ class DispatchMapController extends BaseController {
             const content = `
         <div style="padding: 8px;">
             <strong>${courier.courierName}</strong><br>
-            ${courier.isUrgentArmyDriver ? `Fleet: UA'}<br>` : ''}
+            ${courier.isUrgentArmyDriver ? `Fleet: UA<br>` : ''}
             ${courier.vehicleType ? `Vehicle: ${courier.vehicleType}<br>` : ''}
             <strong>Total Jobs: ${courier.totalJobs}</strong><br>
             ${overdueJobsText}
@@ -713,7 +742,6 @@ class DispatchMapController extends BaseController {
         marker.addListener("click", () => {
             this.mapInstance!.setCenter(position);
 
-            // Zoom in if autoZoom is enabled
             if (this.autoZoomEnabled) {
                 const newZoom = Math.min((this.mapInstance!.getZoom() || 12) + 2, 16);
                 this.mapInstance!.setZoom(newZoom);
@@ -723,7 +751,7 @@ class DispatchMapController extends BaseController {
         this.flags.push(marker);
         this.labels.push(label as any);
     }
-
+    
     private clearJobMarkers() {
         this.markers.forEach((marker: google.maps.Marker) => marker.setMap(null));
         this.markers = [];
@@ -845,6 +873,10 @@ class DispatchMapController extends BaseController {
         // Urgent Army button
         const urgentArmyButton = this.createUrgentArmyButton();
         mapControlsDiv.appendChild(urgentArmyButton);
+        
+        // Courier Large View Button
+        const couriersLargeViewButton = this.createCouriersLargeViewButton();
+        mapControlsDiv.appendChild(couriersLargeViewButton);
 
         // Add the Material Icons font if not already loaded
         if (!document.getElementById('material-icons-font')) {
@@ -925,6 +957,8 @@ class DispatchMapController extends BaseController {
         this.setupButtonHoverEffect(button);
 
         button.addEventListener('click', async () => {
+            if (this.couriersLargeViewEnabled) return; // Prevent action when the large view is enabled
+
             await this.toggleCouriersOnly();
             button.style.backgroundColor = this.couriersOnlyEnabled ? '#3f51b5' : '#f44336';
             const iconSpan = button.querySelector('.material-symbols-outlined')!;
@@ -964,6 +998,8 @@ class DispatchMapController extends BaseController {
         this.setupButtonHoverEffect(button);
 
         button.addEventListener('click', async () => {
+            if (this.couriersLargeViewEnabled) return; // Prevent action when the large view is enabled
+
             await this.toggleUrgentArmyOnly();
             button.style.backgroundColor = this.urgentArmyOnlyEnabled ? '#3f51b5' : '#f44336';
             const iconSpan = button.querySelector('.material-symbols-outlined')!;
@@ -974,6 +1010,46 @@ class DispatchMapController extends BaseController {
 
         return buttonDiv;
     }
+
+    private createCouriersLargeViewButton(): HTMLElement {
+        const buttonDiv = document.createElement('div');
+        buttonDiv.innerHTML = `
+        <button class="md-fab md-mini ${this.couriersLargeViewEnabled ? 'md-primary' : 'md-warn'}" 
+                aria-label="Toggle Couriers Large View"
+                style="width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer; 
+                       box-shadow: 0 2px 5px rgba(0,0,0,0.3); outline: none; display: flex; 
+                       justify-content: center; align-items: center;
+                       background-color: ${this.couriersLargeViewEnabled ? '#3f51b5' : '#f44336'};">
+            <span class="material-symbols-outlined" 
+                  style="color: white; font-size: 20px;">
+                ${this.couriersLargeViewEnabled ? 'fullscreen' : 'fullscreen_exit'}
+            </span>
+            <div class="md-tooltip" 
+                 style="position: absolute; left: 45px; 
+                        background-color: rgba(97,97,97,0.9); color: white;
+                        padding: 4px 8px; border-radius: 2px; font-size: 10px;
+                        white-space: nowrap; opacity: 0; transition: opacity 0.3s;
+                        pointer-events: none;">
+                ${this.couriersLargeViewEnabled ? 'Couriers Large View' : 'Normal View'}
+            </div>
+        </button>
+    `;
+
+        const button = buttonDiv.querySelector('button')!;
+        this.setupButtonHoverEffect(button);
+
+        button.addEventListener('click', async () => {
+            await this.toggleCouriersLargeView();
+            button.style.backgroundColor = this.couriersLargeViewEnabled ? '#3f51b5' : '#f44336';
+            const iconSpan = button.querySelector('.material-symbols-outlined')!;
+            iconSpan.textContent = this.couriersLargeViewEnabled ? 'fullscreen' : 'fullscreen_exit';
+            const tooltip = button.querySelector('.md-tooltip')!;
+            tooltip.textContent = this.couriersLargeViewEnabled ? 'Couriers Large View' : 'Normal View';
+        });
+
+        return buttonDiv;
+    }
+
 
     private setupButtonHoverEffect(button: HTMLButtonElement): void {
         button.addEventListener('mouseenter', () => {
@@ -1117,6 +1193,108 @@ class DispatchMapController extends BaseController {
             } catch (e) {
                 console.error("Error loading urgent army only preference:", e);
                 this.urgentArmyOnlyEnabled = false;
+            }
+        }
+    }
+
+    async toggleCouriersLargeView(): Promise<void> {
+        this.couriersLargeViewEnabled = !this.couriersLargeViewEnabled;
+        this.saveCouriersLargeViewPreference();
+
+        if (this.couriersLargeViewEnabled) {
+            // Disable other modes when large view is enabled
+            if (this.couriersOnlyEnabled) {
+                this.couriersOnlyEnabled = false;
+                this.saveCouriersOnlyPreference();
+            }
+            if (this.urgentArmyOnlyEnabled) {
+                this.urgentArmyOnlyEnabled = false;
+                this.saveUrgentArmyOnlyPreference();
+            }
+
+            // Hide all job markers
+            this.clearJobMarkers();
+            // Show only couriers in a large view
+            if (this.showAvailableCouriers) {
+                await this.fetchCourierPositions();
+            }
+
+            // Update button states
+            this.updateButtonStates();
+        } else {
+            // Clear and redraw courier markers with normal style
+            this.clearCourierMarkers();
+            if (this.showAvailableCouriers) {
+                await this.fetchCourierPositions();
+            }
+            // Restore job markers
+            await this.updateDisplayedJobs();
+
+            // Update button states
+            this.updateButtonStates();
+        }
+    }
+    private updateButtonStates(): void {
+        const couriersOnlyButton = document.querySelector('[aria-label="Toggle Couriers Only"]') as HTMLButtonElement;
+        const urgentArmyButton = document.querySelector('[aria-label="Toggle Urgent Army Filter"]') as HTMLButtonElement;
+
+        if (couriersOnlyButton) {
+            couriersOnlyButton.disabled = this.couriersLargeViewEnabled;
+            couriersOnlyButton.style.opacity = this.couriersLargeViewEnabled ? '0.5' : '1';
+            couriersOnlyButton.style.cursor = this.couriersLargeViewEnabled ? 'not-allowed' : 'pointer';
+            couriersOnlyButton.style.backgroundColor = this.couriersOnlyEnabled ? '#3f51b5' : '#f44336';
+
+            const icon = couriersOnlyButton.querySelector('.material-symbols-outlined');
+            if (icon) {
+                icon.textContent = this.couriersOnlyEnabled ? 'local_shipping' : 'map';
+            }
+            const tooltip = couriersOnlyButton.querySelector('.md-tooltip');
+            if (tooltip) {
+                tooltip.textContent = this.couriersOnlyEnabled ? 'Couriers Only' : 'Pins and Couriers';
+            }
+        }
+
+        if (urgentArmyButton) {
+            urgentArmyButton.disabled = this.couriersLargeViewEnabled;
+            urgentArmyButton.style.opacity = this.couriersLargeViewEnabled ? '0.5' : '1';
+            urgentArmyButton.style.cursor = this.couriersLargeViewEnabled ? 'not-allowed' : 'pointer';
+            urgentArmyButton.style.backgroundColor = this.urgentArmyOnlyEnabled ? '#3f51b5' : '#f44336';
+
+            const icon = urgentArmyButton.querySelector('.material-symbols-outlined');
+            if (icon) {
+                icon.textContent = this.urgentArmyOnlyEnabled ? 'emergency' : 'visibility_off';
+            }
+            const tooltip = urgentArmyButton.querySelector('.md-tooltip');
+            if (tooltip) {
+                tooltip.textContent = this.urgentArmyOnlyEnabled ? 'Show Fleet Only' : 'Show All Couriers';
+            }
+        }
+    }
+    
+
+    private saveCouriersLargeViewPreference(): void {
+        const contactId = ContactID;
+        if (contactId && typeof window !== 'undefined' && window.localStorage) {
+            try {
+                window.localStorage.setItem(`mapCouriersLargeView-${contactId}`, JSON.stringify({display: this.couriersLargeViewEnabled}));
+            } catch (e) {
+                console.error("Error saving couriers large view preference:", e);
+            }
+        }
+    }
+
+    private loadCouriersLargeViewPreference(): void {
+        const contactId = ContactID;
+        if (contactId && typeof window !== 'undefined' && window.localStorage) {
+            try {
+                const savedPreference = window.localStorage.getItem(`mapCouriersLargeView-${contactId}`);
+                if (savedPreference) {
+                    const parsed = JSON.parse(savedPreference);
+                    this.couriersLargeViewEnabled = parsed.display;
+                }
+            } catch (e) {
+                console.error("Error loading couriers large view preference:", e);
+                this.couriersLargeViewEnabled = false;
             }
         }
     }
