@@ -154,7 +154,7 @@ public partial class DespatchContext
                 .ToList());
     
     private static readonly Func<DespatchContext, List<int>, Task<List<PolygonChannelMapping>>> GetPolygonMappingsComplied =
-        EF.CompileQuery((DespatchContext context, List<int> clearListAreaIds) =>
+        EF.CompileAsyncQuery((DespatchContext context, List<int> clearListAreaIds) =>
             context.TblClearListAreaPolygons
                 .AsNoTracking()
                 .Where(cap => clearListAreaIds.Contains(cap.ClearListAreaId))
@@ -168,7 +168,7 @@ public partial class DespatchContext
                         PolygonId = cap.PolygonId,
                         ChannelId = cla.ChannelId
                     })
-                .ToListAsync());
+                .ToList());
 
     // Access compiled queries
     public async Task<List<Suggestion>> GetAllVehicleSizesAsync() => await GetAllVehicleSizesCompiled(this);
