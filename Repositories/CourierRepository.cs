@@ -1047,12 +1047,12 @@ public class CourierRepository(
         if (areaFilterDict.Count == 0)
             return new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-        // Shared filter suffix to avoid string concatenation in loop
         const string statusFilter = " AND ((ucjbStatus IS NULL OR ucjbStatus = 0) AND ucjbCourierId is null)";
 
-        // Execute in parallel with throttling to avoid overwhelming the database
-        var semaphore = new SemaphoreSlim(Math.Min(areaFilterDict.Count, 5)); // Max 5 concurrent queries
+        // Create semaphore with max 5 concurrent operations
+        using var semaphore = new SemaphoreSlim(Math.Min(areaFilterDict.Count, 5));
 
+        // Create and START all tasks immediately by calling ToList()
         var tasks = areaFilterDict.Select(async kvp =>
         {
             await semaphore.WaitAsync();
@@ -1060,14 +1060,10 @@ public class CourierRepository(
             {
                 var areaName = kvp.Key;
                 var filter = kvp.Value + statusFilter;
-
-                // Use string interpolation for better performance than concatenation
-                var query =
-                    $"SELECT *, NULL as CourierLatitude, NULL as CourierLongitude FROM DESWEB_qryDespatch WHERE {filter}";
+                var query = $"SELECT *, NULL as CourierLatitude, NULL as CourierLongitude FROM DESWEB_qryDespatch WHERE {filter}";
 
                 try
                 {
-                    // Create a NEW context for this query
                     await using var context = await _contextFactory.CreateDbContextAsync();
 
                     var count = await context.DeswebQryDespatches
@@ -1076,26 +1072,27 @@ public class CourierRepository(
                         .TagWith($"GetTotalRemaining - Area: {areaName}")
                         .CountAsync();
 
-                    return (AreaName: areaName, Count: count, Success: true);
+                    return (AreaName: areaName, Count: count);
                 }
                 catch (Exception ex)
                 {
                     Log.Warning(ex, "Failed to get total remaining for area {AreaName}", areaName);
-                    return (AreaName: areaName, Count: 0, Success: false);
+                    return (AreaName: areaName, Count: 0);
                 }
             }
             finally
             {
                 semaphore.Release();
             }
-        });
+        }).ToList(); // ← Force immediate evaluation
 
         var counts = await Task.WhenAll(tasks);
 
-        return counts.ToDictionary(
-            r => r.AreaName,
-            r => r.Count,
-            StringComparer.OrdinalIgnoreCase);
+        // Build a dictionary with OrdinalIgnoreCase comparer
+        var results = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var result in counts) results[result.AreaName] = result.Count;
+    
+        return results;
     }
 
     private static List<ClearListResult> GetStaticSeparatorRows()
