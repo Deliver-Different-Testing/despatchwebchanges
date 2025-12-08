@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
+using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -103,26 +104,80 @@ public partial class DespatchContext
     private static readonly Func<DespatchContext, NoteType, Task<bool>> ConfirmNoteTypeExistsCompiled =
         EF.CompileAsyncQuery((DespatchContext context, NoteType noteType) =>
             context.TucNoteTypes.Any(n => n.NoteTypeId == (int)noteType));
+    
+    private static readonly Func<DespatchContext, int, DateTime, Task<ActiveCouriersViewModel>> GetCourierByIdCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int courierId, DateTime now) =>
+            context.TucCouriers
+                .AsNoTracking()
+                .Where(c => c.UccrId == courierId)
+                .Select(c => new ActiveCouriersViewModel
+                {
+                    Code = c.Code,
+                    Name = c.UccrName,
+                    CourierId = c.UccrId,
+                    DangerousGoods = c.UccrDangerousGoods == 1,
+                    DGLicenseExpiry = c.DglicenseExpiry,
+                    IsActive = c.Active == true && (
+                        c.SendJobsViaSms == true ||
+                        c.SendAlertSms == true ||
+                        (c.SendJobsViaSms == false &&
+                         c.CourierLogInOut != null &&
+                         c.CourierLogInOut.LogInTime.Date == now.Date &&
+                         c.CourierLogInOut.LogOutTime == null)
+                    )
+                })
+                .FirstOrDefault());
+    
+    
+    private static readonly Func<DespatchContext, Task<List<Suggestion>>> GetAllVehicleSizesCompiled =
+        EF.CompileAsyncQuery((DespatchContext context) =>
+            context.VehicleSizes
+                .AsNoTracking()
+                .OrderBy(v => v.VehicleName)
+                .Select(v => new Suggestion { Id = v.VehicleSizeId, Text = v.VehicleName })
+                .ToList());
+
+    private static readonly Func<DespatchContext, Task<List<Suggestion>>> GetAllRegionsCompiled =
+        EF.CompileAsyncQuery((DespatchContext context) =>
+            context.TblBulkRegions
+                .AsNoTracking()
+                .OrderBy(r => r.Name)
+                .Select(r => new Suggestion { Id = r.BulkRegionId, Text = r.Name })
+                .ToList());
+
+    private static readonly Func<DespatchContext, Task<List<Suggestion>>> GetAllSpeedsCompiled =
+        EF.CompileAsyncQuery((DespatchContext context) =>
+            context.TucJobTypes
+                .AsNoTracking()
+                .OrderBy(r => r.UcjtName)
+                .Select(r => new Suggestion { Id = r.UcjtId, Text = r.UcjtName })
+                .ToList());
 
     // Access compiled queries
-    public async Task<List<ActiveCourierDto>> GetActiveCouriers(DateTime today) =>
+    public async Task<List<Suggestion>> GetAllVehicleSizesAsync() => await GetAllVehicleSizesCompiled(this);
+    public async Task<List<Suggestion>> GetAllRegionsAsync() => await GetAllRegionsCompiled(this);
+    public async Task<List<Suggestion>> GetAllSpeedsAsync() => await GetAllSpeedsCompiled(this);
+    
+    public async Task<ActiveCouriersViewModel> GetCourierByIdAsync(int courierId, DateTime tenantTime) => await GetCourierByIdCompiled(this, courierId, tenantTime);
+    
+    public async Task<List<ActiveCourierDto>> GetActiveCouriersAsync(DateTime today) =>
         await GetActiveCouriersCompiled(this, today).ToListAsync();
 
-    public async Task<bool> ConfirmNoteTypeExists(NoteType noteType) =>
+    public async Task<bool> ConfirmNoteTypeExistsAsync(NoteType noteType) =>
         await ConfirmNoteTypeExistsCompiled(this, noteType);
 
-    public async Task<int> GetEffectiveJobId(int jobId) => await GetEffectiveJobIdCompiled(this, jobId);
-    public async Task<int> GetEffectiveArchiveJobId(int jobId) => await GetEffectiveArchiveJobIdCompiled(this, jobId);
-    public async Task<int> GetEffectiveBulkJobId(int bulkJobId) => await GetEffectiveBulkJobIdCompiled(this, bulkJobId);
+    public async Task<int> GetEffectiveJobIdAsync(int jobId) => await GetEffectiveJobIdCompiled(this, jobId);
+    public async Task<int> GetEffectiveArchiveJobIdAsync(int jobId) => await GetEffectiveArchiveJobIdCompiled(this, jobId);
+    public async Task<int> GetEffectiveBulkJobIdAsync(int bulkJobId) => await GetEffectiveBulkJobIdCompiled(this, bulkJobId);
 
-    public async Task<int> GetEffectiveJobBookingId(int jobBookingId) =>
+    public async Task<int> GetEffectiveJobBookingIdAsync(int jobBookingId) =>
         await GetEffectiveJobBookingIdCompiled(this, jobBookingId);
 
-    public async Task<bool> IsJobArchived(int jobId) => await IsJobArchivedCompiled(this, jobId);
-    public async Task<int?> GetEconomySpeedId() => await GetEconomySpeedIdCompiled(this);
-    public async Task<DateTime?> GetEcoDeliveryTime() => await GetEcoDeliveryTimeCompiled(this);
+    public async Task<bool> IsJobArchivedAsync(int jobId) => await IsJobArchivedCompiled(this, jobId);
+    public async Task<int?> GetEconomySpeedIdAsync() => await GetEconomySpeedIdCompiled(this);
+    public async Task<DateTime?> GetEcoDeliveryTimeAsync() => await GetEcoDeliveryTimeCompiled(this);
 
-    public async Task<bool> IsLiveJob(int jobId) => await IsLiveJobCompiled(this, jobId);
+    public async Task<bool> IsLiveJobAsync(int jobId) => await IsLiveJobCompiled(this, jobId);
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {

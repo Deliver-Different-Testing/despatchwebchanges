@@ -557,7 +557,7 @@ public partial class JobRepository
 
         if (dto.IsPrebook)
         {
-            var effectiveJobBookingId = await Context.GetEffectiveJobBookingId(dto.JobId);
+            var effectiveJobBookingId = await Context.GetEffectiveJobBookingIdAsync(dto.JobId);
             await Context.Procedures.DD_InsertPricingBreakdownAsync(
                 jobID: null,
                 prebookJobID: effectiveJobBookingId,
@@ -567,7 +567,7 @@ public partial class JobRepository
         }
         else
         {
-            var effectiveJobId = await Context.GetEffectiveJobId(dto.JobId);
+            var effectiveJobId = await Context.GetEffectiveJobIdAsync(dto.JobId);
             await Context.Procedures.DD_InsertPricingBreakdownAsync(
                 jobID: effectiveJobId,
                 prebookJobID: null,

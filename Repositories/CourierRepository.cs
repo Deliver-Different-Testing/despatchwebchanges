@@ -12,6 +12,7 @@ using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Serilog;
 
 namespace DespatchWeb.Repositories;
@@ -19,36 +20,24 @@ namespace DespatchWeb.Repositories;
 public class CourierRepository(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService infoService,
-    IClearListEnvelopeService clearListEnvelopeService)
+    IClearListEnvelopeService clearListEnvelopeService,
+    IMemoryCache cache)
     : BaseRepository(contextFactory),
         ICourierRepository
 {
     private readonly IDbContextFactory<DespatchContext> _contextFactory = contextFactory;
 
+    private static string GetPolygonMappingsCacheKey(List<int> clearListAreaIds)
+    {
+        // Sort IDs to ensure a consistent cache key regardless of order
+        var sortedIds = string.Join("-", clearListAreaIds.OrderBy(x => x));
+        return $"polygon-mappings:{sortedIds}";
+    }
+    
     public async Task<ActiveCouriersViewModel> GetCourierByIdAsync(int courierId)
     {
         var now = infoService.GetCurrentTenantTime();
-        var courier = await Context.TucCouriers
-            .AsNoTracking()
-            .Where(c => c.UccrId == courierId)
-            .Select(c => new ActiveCouriersViewModel
-            {
-                Code = c.Code,
-                Name = c.UccrName,
-                CourierId = c.UccrId,
-                DangerousGoods = c.UccrDangerousGoods == 1,
-                DGLicenseExpiry = c.DglicenseExpiry,
-                IsActive = c.Active == true && (
-                    c.SendJobsViaSms == true ||
-                    c.SendAlertSms == true ||
-                    (c.SendJobsViaSms == false &&
-                     c.CourierLogInOut != null &&
-                     c.CourierLogInOut.LogInTime.Date == now.Date &&
-                     c.CourierLogInOut.LogOutTime == null)
-                )
-            })
-            .FirstOrDefaultAsync();
-
+        var courier = await Context.GetCourierByIdAsync(courierId, now);
         return courier;
     }
 
@@ -514,7 +503,7 @@ public class CourierRepository(
     private async Task<List<ActiveCourierDto>> GetActiveCouriersAsync(bool includeJobCount = true)
     {
         var today = infoService.GetCurrentTenantTime();
-        var results = await Context.GetActiveCouriers(today);
+        var results = await Context.GetActiveCouriersAsync(today);
 
         if (!includeJobCount || results.Count == 0) return results;
 
@@ -586,24 +575,42 @@ public class CourierRepository(
             }
 
             // ===================================================================
-            // QUERY 2: Get ALL courier GPS polygon mappings for ALL areas at once
+            // QUERY 2: Get ALL courier GPS polygon mappings for ALL areas at once (CACHED)
             // ===================================================================
-            var allValidCourierGpsIds = await Context.TblClearListAreaPolygons
-                .AsNoTracking()
-                .Where(cap => clearListAreaIds.Contains(cap.ClearListAreaId))
-                .Join(
-                    Context.TblClearListAreas.AsNoTracking(),
-                    cap => cap.ClearListAreaId,
-                    cla => cla.ClearListAreaId,
-                    (cap, cla) => new
-                    {
-                        cap.ClearListAreaId,
-                        cap.PolygonId,
-                        cla.ChannelId
-                    }
-                )
-                .TagWith("GetClearLists - Step 2: All GPS Mappings with Channels")
-                .ToListAsync();
+            var cacheKey = GetPolygonMappingsCacheKey(clearListAreaIds);
+
+            var allValidCourierGpsIds = await cache.GetOrCreateAsync(
+                cacheKey,
+                async entry =>
+                {
+                    // Cache for 5 minutes
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+        
+                    // Set priority (if memory is low, this can be evicted)
+                    entry.Priority = CacheItemPriority.Normal;
+        
+                    Log.Information("Cache MISS for polygon mappings - fetching from database");
+        
+                    return await Context.TblClearListAreaPolygons
+                        .AsNoTracking()
+                        .Where(cap => clearListAreaIds.Contains(cap.ClearListAreaId))
+                        .Join(
+                            Context.TblClearListAreas.AsNoTracking(),
+                            cap => cap.ClearListAreaId,
+                            cla => cla.ClearListAreaId,
+                            (cap, cla) => new
+                            {
+                                cap.ClearListAreaId,
+                                cap.PolygonId,
+                                cla.ChannelId
+                            }
+                        )
+                        .TagWith("GetClearLists - Step 2: All GPS Mappings with Channels (CACHE MISS)")
+                        .ToListAsync();
+                });
+
+            Log.Information("Step 2: Using polygon mappings (Cached: {IsCached})", 
+                cache.TryGetValue(cacheKey, out _));
 
             var polygonChannelsByClearListArea = allValidCourierGpsIds
                 .GroupBy(x => x.ClearListAreaId)
@@ -624,7 +631,7 @@ public class CourierRepository(
                             (c.SendJobsViaSms ||
                              c.SendAlertSms ||
                              (c.CourierLogInOut != null &&
-                              c.CourierLogInOut.LogInTime.Date == currentDateOnly &&
+                              c.CourierLogInOut.LogInTime.Date <= currentDateOnly &&
                               c.CourierLogInOut.LogOutTime == null)))
                 .Select(c => new ActiveCourierDto
                 {
@@ -642,6 +649,22 @@ public class CourierRepository(
                 .TagWith("GetClearLists - Step 3: Active Couriers with Job Counts")
                 .ToListAsync();
             Log.Information("Step 3: Found {Count} active couriers", activeCouriers.Count);
+            
+            var targetCourierCodes = new[] { "1983", "229" };
+            Log.Information("[STEP 3 - Active Couriers] Total active couriers: {Count}", activeCouriers.Count);
+            foreach (var code in targetCourierCodes)
+            {
+                var targetCourier = activeCouriers.FirstOrDefault(c => c.Code == code);
+                if (targetCourier != null)
+                {
+                    Log.Information("[STEP 3] Found target courier in activeCouriers - Code: {Code}, CourierId: {CourierId}, Active: TRUE, JobCount: {JobCount}",
+                        code, targetCourier.CourierId, targetCourier.JobCount);
+                }
+                else
+                {
+                    Log.Warning("[STEP 3] Target courier {Code} NOT found in activeCouriers query", code);
+                }
+            }
 
             // ===================================================================
             // QUERY 4a: Get courier BASE data (without display orders)
@@ -659,7 +682,7 @@ public class CourierRepository(
                 )
                 .Where(c => c.CourierFleetId == (int)CourierFleet.UaAucklandP2P ||
                             (c.CourierLogInOut != null &&
-                             c.CourierLogInOut.LogInTime.Date == currentDateOnly &&
+                             c.CourierLogInOut.LogInTime.Date <= currentDateOnly &&
                              c.CourierLogInOut.LogOutTime == null))
                 .GroupJoin(
                     Context.TblCourierGps.AsNoTracking(),
@@ -688,6 +711,46 @@ public class CourierRepository(
             Log.Information("Step 2: Found {Count} courier base data records", courierBaseData.Count);
 
             var courierIds = courierBaseData.Select(c => c.UccrId).ToList();
+            foreach (var code in targetCourierCodes)
+{
+    var baseDataCourier = courierBaseData.FirstOrDefault(c => c.Code == code);
+    if (baseDataCourier != null)
+    {
+        Log.Information("[STEP 4a] Found target courier {Code} in courierBaseData - CourierId: {CourierId}, ChannelId: {ChannelId}, PolygonId: {PolygonId}, GPS Created: {GpsCreated}, CourierGpsId: {CourierGpsId}",
+            code, baseDataCourier.UccrId, baseDataCourier.UccrChannelId, baseDataCourier.PolygonId, 
+            baseDataCourier.GpsCreated, baseDataCourier.CourierGpsid);
+    }
+    else
+    {
+        Log.Warning("[STEP 4a] Target courier {Code} NOT found in courierBaseData - Checking filter criteria...", code);
+        
+        // Check what might be filtering them out
+        var checkCourier = await Context.TucCouriers
+            .Where(c => c.Code == code)
+            .Select(c => new {
+                c.Code,
+                c.Active,
+                HasClearListOrder = c.TblClearListAreaOrder != null,
+                CourierFleetId = c.CourierFleetId,
+                HasLoginToday = c.CourierLogInOut != null && c.CourierLogInOut.LogInTime.Date <= currentDateOnly,
+                LoggedOut = c.CourierLogInOut != null && c.CourierLogInOut.LogOutTime != null,
+                LogInTime = c.CourierLogInOut != null ? c.CourierLogInOut.LogInTime : (DateTime?)null,
+                LogOutTime = c.CourierLogInOut != null ? c.CourierLogInOut.LogOutTime : (DateTime?)null
+            })
+            .FirstOrDefaultAsync();
+            
+        if (checkCourier != null)
+        {
+            Log.Warning("[STEP 4a DEBUG] Courier {Code} exists but filtered out - Active: {Active}, HasClearListOrder: {HasClearListOrder}, CourierFleetId: {FleetId}, HasLoginToday: {HasLogin}, LoggedOut: {LoggedOut}, LogInTime: {LogIn}, LogOutTime: {LogOut}",
+                code, checkCourier.Active, checkCourier.HasClearListOrder, checkCourier.CourierFleetId,
+                checkCourier.HasLoginToday, checkCourier.LoggedOut, checkCourier.LogInTime, checkCourier.LogOutTime);
+        }
+        else
+        {
+            Log.Warning("[STEP 4a DEBUG] Courier {Code} does not exist in database", code);
+        }
+    }
+}
 
             // ===================================================================
             // QUERY 4b: Get ALL display orders in ONE query (FIXES N+1)
@@ -729,6 +792,23 @@ public class CourierRepository(
                 .Where(c => c.PolygonId.HasValue)
                 .GroupBy(c => c.PolygonId.Value)
                 .ToDictionary(g => g.Key, g => g.ToList());
+            
+            Log.Information("[STEP 4c - Combined Data] Total allCourierData: {Count}", allCourierData.Count);
+            foreach (var code in targetCourierCodes)
+            {
+                var combinedDataCourier = allCourierData.FirstOrDefault(c => c.Code == code);
+                if (combinedDataCourier != null)
+                {
+                    Log.Information("[STEP 4c] Found target courier {Code} in allCourierData - CourierId: {CourierId}, PolygonId: {PolygonId}, DisplayOrder: {DisplayOrder}, ChannelId: {ChannelId}",
+                        code, combinedDataCourier.UccrId, combinedDataCourier.PolygonId, 
+                        combinedDataCourier.DisplayOrder, combinedDataCourier.UccrChannelId);
+                }
+                else
+                {
+                    Log.Warning("[STEP 4c] Target courier {Code} NOT found in allCourierData after display order join", code);
+                }
+            }
+
 
             // ===================================================================
             // QUERY 5: Get ALL jobs for ALL couriers at once
@@ -2235,38 +2315,11 @@ public class CourierRepository(
     }
 
 
-    public async Task<List<Suggestion>> GetVehicleSizesAsync()
-    {
-        var vehicles = await Context.VehicleSizes
-            .AsNoTracking()
-            .OrderBy(v => v.VehicleName)
-            .Select(v => new Suggestion { Id = v.VehicleSizeId, Text = v.VehicleName })
-            .ToListAsync();
+    public async Task<List<Suggestion>> GetVehicleSizesAsync() => await Context.GetAllVehicleSizesAsync();
 
-        return vehicles;
-    }
+    public async Task<List<Suggestion>> GetAllRegionsAsync() => await Context.GetAllRegionsAsync();
 
-    public async Task<List<Suggestion>> GetAllRegionsAsync()
-    {
-        var regions = await Context.TblBulkRegions
-            .AsNoTracking()
-            .OrderBy(r => r.Name)
-            .Select(r => new Suggestion { Id = r.BulkRegionId, Text = r.Name })
-            .ToListAsync();
-
-        return regions;
-    }
-
-    public async Task<List<Suggestion>> GetAllSpeedsAsync()
-    {
-        var speeds = await Context.TucJobTypes
-            .AsNoTracking()
-            .OrderBy(r => r.UcjtName)
-            .Select(r => new Suggestion { Id = r.UcjtId, Text = r.UcjtName })
-            .ToListAsync();
-
-        return speeds;
-    }
+    public async Task<List<Suggestion>> GetAllSpeedsAsync() => await Context.GetAllSpeedsAsync();
 
 
     /// <summary>
