@@ -152,11 +152,30 @@ public partial class DespatchContext
                 .OrderBy(r => r.UcjtName)
                 .Select(r => new Suggestion { Id = r.UcjtId, Text = r.UcjtName })
                 .ToList());
+    
+    private static readonly Func<DespatchContext, List<int>, Task<List<PolygonChannelMapping>>> GetPolygonMappingsComplied =
+        EF.CompileQuery((DespatchContext context, List<int> clearListAreaIds) =>
+            context.TblClearListAreaPolygons
+                .AsNoTracking()
+                .Where(cap => clearListAreaIds.Contains(cap.ClearListAreaId))
+                .Join(
+                    context.TblClearListAreas.AsNoTracking(),
+                    cap => cap.ClearListAreaId,
+                    cla => cla.ClearListAreaId,
+                    (cap, cla) => new PolygonChannelMapping
+                    {
+                        ClearListAreaId = cap.ClearListAreaId,
+                        PolygonId = cap.PolygonId,
+                        ChannelId = cla.ChannelId
+                    })
+                .ToListAsync());
 
     // Access compiled queries
     public async Task<List<Suggestion>> GetAllVehicleSizesAsync() => await GetAllVehicleSizesCompiled(this);
     public async Task<List<Suggestion>> GetAllRegionsAsync() => await GetAllRegionsCompiled(this);
     public async Task<List<Suggestion>> GetAllSpeedsAsync() => await GetAllSpeedsCompiled(this);
+    
+    public async Task<List<PolygonChannelMapping>> GetPolygonMappings(List<int> clearListAreaIds) => await GetPolygonMappingsComplied(this, clearListAreaIds);
     
     public async Task<ActiveCouriersViewModel> GetCourierByIdAsync(int courierId, DateTime tenantTime) => await GetCourierByIdCompiled(this, courierId, tenantTime);
     
