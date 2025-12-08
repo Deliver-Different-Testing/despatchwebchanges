@@ -129,29 +129,26 @@ public partial class DespatchContext
                 .FirstOrDefault());
     
     
-    private static readonly Func<DespatchContext, Task<List<Suggestion>>> GetAllVehicleSizesCompiled =
+    private static readonly Func<DespatchContext, IAsyncEnumerable<Suggestion>> GetAllVehicleSizesCompiled =
         EF.CompileAsyncQuery((DespatchContext context) =>
             context.VehicleSizes
                 .AsNoTracking()
                 .OrderBy(v => v.VehicleName)
-                .Select(v => new Suggestion { Id = v.VehicleSizeId, Text = v.VehicleName })
-                .ToList());
+                .Select(v => new Suggestion { Id = v.VehicleSizeId, Text = v.VehicleName }));
 
-    private static readonly Func<DespatchContext, Task<List<Suggestion>>> GetAllRegionsCompiled =
+    private static readonly Func<DespatchContext, IAsyncEnumerable<Suggestion>> GetAllRegionsCompiled =
         EF.CompileAsyncQuery((DespatchContext context) =>
             context.TblBulkRegions
                 .AsNoTracking()
                 .OrderBy(r => r.Name)
-                .Select(r => new Suggestion { Id = r.BulkRegionId, Text = r.Name })
-                .ToList());
+                .Select(r => new Suggestion { Id = r.BulkRegionId, Text = r.Name }));
 
-    private static readonly Func<DespatchContext, Task<List<Suggestion>>> GetAllSpeedsCompiled =
+    private static readonly Func<DespatchContext, IAsyncEnumerable<Suggestion>> GetAllSpeedsCompiled =
         EF.CompileAsyncQuery((DespatchContext context) =>
             context.TucJobTypes
                 .AsNoTracking()
                 .OrderBy(r => r.UcjtName)
-                .Select(r => new Suggestion { Id = r.UcjtId, Text = r.UcjtName })
-                .ToList());
+                .Select(r => new Suggestion { Id = r.UcjtId, Text = r.UcjtName }));
     
     private static readonly Func<DespatchContext, List<int>, IAsyncEnumerable<PolygonChannelMapping>> GetPolygonMappingsCompiled =
         EF.CompileAsyncQuery((DespatchContext context, List<int> clearListAreaIds) =>
@@ -170,9 +167,9 @@ public partial class DespatchContext
                     }));
 
     // Access compiled queries
-    public async Task<List<Suggestion>> GetAllVehicleSizesAsync() => await GetAllVehicleSizesCompiled(this);
-    public async Task<List<Suggestion>> GetAllRegionsAsync() => await GetAllRegionsCompiled(this);
-    public async Task<List<Suggestion>> GetAllSpeedsAsync() => await GetAllSpeedsCompiled(this);
+    public async Task<List<Suggestion>> GetAllVehicleSizesAsync() => await GetAllVehicleSizesCompiled(this).ToListAsync();
+    public async Task<List<Suggestion>> GetAllRegionsAsync() => await GetAllRegionsCompiled(this).ToListAsync();
+    public async Task<List<Suggestion>> GetAllSpeedsAsync() => await GetAllSpeedsCompiled(this).ToListAsync();
     
     public async Task<List<PolygonChannelMapping>> GetPolygonMappings(List<int> clearListAreaIds) => await GetPolygonMappingsCompiled(this, clearListAreaIds).ToListAsync();
     
