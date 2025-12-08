@@ -1835,7 +1835,7 @@ public partial class JobRepository(
         int effectivePrebookId;
         if (isPrebook)
         {
-            effectivePrebookId = await GetJobBookingRelationshipInfoAsync(jobId);
+            effectivePrebookId = await Context.GetEffectiveJobBookingId(jobId);
             return await Context.PricingBreakdowns
                 .AsNoTracking()
                 .Where(p => p.PrebookJobId == effectivePrebookId)
@@ -1851,7 +1851,7 @@ public partial class JobRepository(
                 .ToListAsync();
         }
 
-        var effectiveJobId = await GetJobRelationshipInfoAsync(jobId);
+        var effectiveJobId = await Context.GetEffectiveJobId(jobId);
         var pricingBreakdowns = await Context.PricingBreakdowns
             .AsNoTracking()
             .Where(p => p.JobId == effectiveJobId)
@@ -1880,8 +1880,9 @@ public partial class JobRepository(
             var isPrebook = viewModel.PrebookJobId.HasValue;
 
             int effectiveJobId;
-            if (!isPrebook) effectiveJobId = await GetJobRelationshipInfoAsync(viewModel.ChildJobId ?? 0);
-            else effectiveJobId = await GetJobBookingRelationshipInfoAsync(viewModel.PrebookJobId ?? 0);
+            if (!isPrebook && viewModel.ChildJobId.HasValue)
+                effectiveJobId = await Context.GetEffectiveJobId(viewModel.ChildJobId.Value);
+            else effectiveJobId = await Context.GetEffectiveJobBookingId(viewModel.PrebookJobId ?? 0);
 
             var item = new PricingBreakdown
             {
@@ -2662,6 +2663,7 @@ public partial class JobRepository(
     public async Task<JobLateCallDto> GetJobForLateCallAsync(int jobId)
     {
         var job = await Context.TucJobs
+            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(JobMappings.JobLateCallMapping)
             .FirstOrDefaultAsync();
@@ -3411,7 +3413,7 @@ public partial class JobRepository(
 
         try
         {
-            var effectiveJobId = await GetJobRelationshipInfoAsync(jobId);
+            var effectiveJobId = await Context.GetEffectiveJobId(jobId);
             var childJobId = await IsStopJob(jobId) ? jobId : (int?)null;
 
             // Process existing and new parcels separately
@@ -3487,7 +3489,7 @@ public partial class JobRepository(
 
         try
         {
-            var effectiveJobId = await GetBulkJobRelationshipInfoAsync(bulkJobId);
+            var effectiveJobId = await Context.GetEffectiveBulkJobId(bulkJobId);
 
             // Process existing and new parcels separately
             var newParcels = new List<TblBulkJobItem>();
@@ -4091,7 +4093,6 @@ public partial class JobRepository(
 
     private async Task<JobGroupViewModel> GetArchivedJobByIdAsync(int jobId)
     {
-        // Step 1: Get family root
         var familyRootId = await Context.TucJobArchives
             .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
@@ -4102,7 +4103,6 @@ public partial class JobRepository(
         if (familyRootId == 0)
             throw new KeyNotFoundException($"Archived job {jobId} not found");
 
-        // Step 2: Load the entire family in ONE query
         var allJobsInFamily = await Context.TucJobArchives
             .AsNoTracking()
             .AsSplitQuery()
@@ -4111,10 +4111,8 @@ public partial class JobRepository(
             .TagWith($"GetArchivedJob - Family {familyRootId}")
             .ToListAsync();
 
-        if (!allJobsInFamily.Any())
-            throw new KeyNotFoundException($"Archived job {jobId} not found");
+        if (allJobsInFamily.Count == 0) throw new KeyNotFoundException($"Archived job {jobId} not found");
 
-        // Step 3: Split in memory (fast)
         var archivedJob = allJobsInFamily.FirstOrDefault(j => j.Id == jobId);
         ArgumentNullException.ThrowIfNull(archivedJob);
         var archivedJobRelatedJobs = allJobsInFamily.Where(j => j.Id != jobId).ToList();
@@ -4229,20 +4227,19 @@ public partial class JobRepository(
                     .SetProperty(x => x.ReadByStaffId, staffId)
                     .SetProperty(x => x.ReadTimestamp, currentTenantTime));
 
-            if (rowsAffected == 0)
-            {
-                // Record doesn't exist, create a new one
-                var data = new TucJobReadTracker
-                {
-                    JobId = jobId,
-                    HasBeenRead = hasBeenRead,
-                    ReadByStaffId = staffId,
-                    ReadTimestamp = currentTenantTime
-                };
+            if (rowsAffected != 0) return;
 
-                await Context.TucJobReadTrackers.AddAsync(data);
-                await Context.SaveChangesAsync();
-            }
+            // Record doesn't exist, create a new one
+            var data = new TucJobReadTracker
+            {
+                JobId = jobId,
+                HasBeenRead = hasBeenRead,
+                ReadByStaffId = staffId,
+                ReadTimestamp = currentTenantTime
+            };
+
+            await Context.TucJobReadTrackers.AddAsync(data);
+            await Context.SaveChangesAsync();
         }
         catch (Exception e)
         {

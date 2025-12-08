@@ -777,24 +777,6 @@ public class BaseJobRepository(
             };
     }
 
-    protected async Task<int> GetJobRelationshipInfoAsync(int jobId)
-    {
-        if (jobId == 0) return 0;
-        return await Context.GetEffectiveJobId(jobId);
-    }
-
-    protected async Task<int> GetBulkJobRelationshipInfoAsync(int bulkJobId)
-    {
-        if (bulkJobId == 0) return 0;
-
-        return await Context.TblBulkJobs
-            .AsNoTracking()
-            .Where(j => j.BulkJobId == bulkJobId)
-            .Select(j => j.BulkParentId ?? j.BulkJobId)
-            .FirstOrDefaultAsync();
-    }
-
-
     protected async Task<int> GetJobBookingRelationshipInfoAsync(int bookingId)
     {
         if (bookingId == 0) return 0;

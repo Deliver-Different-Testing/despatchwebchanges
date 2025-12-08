@@ -364,9 +364,9 @@ public class RecurringJobRepository(
         jobBooked.UcbkInActiveDate = currentTenantTime;
     }
 
-    public async Task<List<TucNoteViewModel>> GetRecurringNotesByJobIdAsync(int jobId)
+    public async Task<List<TucNoteViewModel>> GetRecurringNotesByJobIdAsync(int jobBookingId)
     {
-        var effectivePrebookId = await GetJobBookingRelationshipInfoAsync(jobId);
+        var effectivePrebookId = await Context.GetEffectiveJobBookingId(jobBookingId);
         var tenantTimeZone = _infoService.GetTenantTimeZone();
 
         var notes = await Context.TucNotes

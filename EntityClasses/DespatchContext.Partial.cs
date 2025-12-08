@@ -24,13 +24,21 @@ public partial class DespatchContext
     private static readonly Func<DespatchContext, int, Task<bool>> IsLiveJobCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobs.Any(j => j.UcjbId == jobId));
-    
+
     private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveJobIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobs
                 .AsNoTracking()
                 .Where(j => j.UcjbId == jobId)
                 .Select(j => j.ParentId ?? j.UcjbId)
+                .FirstOrDefault());
+
+    private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveBulkJobIdCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int bulkJobId) =>
+            context.TblBulkJobs
+                .AsNoTracking()
+                .Where(j => j.BulkJobId == bulkJobId)
+                .Select(j => j.BulkParentId ?? j.BulkJobId)
                 .FirstOrDefault());
 
     private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveJobBookingIdCompiled =
@@ -59,9 +67,10 @@ public partial class DespatchContext
                 .AsNoTracking()
                 .Select(x => x.EconomyDeliveryTime)
                 .FirstOrDefault());
-    
+
     // Access compiled queries
     public async Task<int> GetEffectiveJobId(int jobId) => await GetEffectiveJobIdCompiled(this, jobId);
+    public async Task<int> GetEffectiveBulkJobId(int bulkJobId) => await GetEffectiveBulkJobIdCompiled(this, bulkJobId);
 
     public async Task<int> GetEffectiveJobBookingId(int jobBookingId) =>
         await GetEffectiveJobBookingIdCompiled(this, jobBookingId);
