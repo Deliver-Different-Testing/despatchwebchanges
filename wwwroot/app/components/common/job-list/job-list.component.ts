@@ -867,7 +867,7 @@ class JobsListController extends BaseController {
     }
 
     async performCourierSearch(searchText: string, job?: IDispatchJob): Promise<ISuggestion[]> {
-        if (!searchText || searchText.length < 2) return [];
+        if (!searchText) return [];
 
         try {
             // Check if this is a DG job
@@ -1263,7 +1263,8 @@ class JobsListController extends BaseController {
                 "Bulk Assign Courier",
                 null,
                 false,
-                "moped_package");
+                "moped_package",
+                1);
 
             for (const job of this.selectedJobs) {
                 if (this.onJobDispatch) {

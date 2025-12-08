@@ -20,7 +20,8 @@ class EditParcelDimensionsDialogController extends BaseController {
     isLoading: boolean = false;
     isParentJob: boolean = false;
     isFormDirty: boolean = false;
-    
+    bulkAddCount: number = 1;
+
     dimensionsString: string;
 
     // Validation state
@@ -77,7 +78,25 @@ class EditParcelDimensionsDialogController extends BaseController {
         this.selectedParcelIndex = this.parcels.length - 1;
         this.isFormDirty = true;
     }
+    
+    addBulkParcels() {
+        if (!this.bulkAddCount || this.bulkAddCount < 1) {
+            this.toastrService.showWarningToast('Please enter a valid number of parcels to add');
+            return;
+        }
 
+        const count = Math.floor(this.bulkAddCount);
+        for (let i = 0; i < count; i++) {
+            const newParcel = this.initializeParcel();
+            this.parcels.push(newParcel);
+        }
+
+        this.selectedParcelIndex = this.parcels.length - 1;
+        this.isFormDirty = true;
+        this.bulkAddCount = 1; // Reset to default
+        this.toastrService.showSuccessToast(`Added ${count} ${count === 1 ? 'parcel' : 'parcels'}`);
+    }
+    
     private initializeParcel(): IParcelDimensions {
         return {
             itemName: "",

@@ -11,21 +11,45 @@
         </div>
     </md-toolbar>
 
-    <div ng-if="::ctrl.isParentJob" md-colors="{background: 'primary-50'}" class="md-padding" layout="row" layout-align="start center">
+    <div ng-if="::ctrl.isParentJob" md-colors="{background: 'primary-50'}" class="md-padding" layout="row"
+         layout-align="start center">
         <md-icon md-font-set="material-symbols-outlined" md-colors="{color: 'primary'}" class="md-margin">info</md-icon>
         <span class="md-body-1">This is a child job. Parcel information has been inherited from the parent job.</span>
     </div>
 
     <div ng-if="!ctrl.hasCurrentParcel()" class="md-padding" layout="column" layout-align="center center">
-        <md-card class="md-padding" style="max-width: 400px; text-align: center;">
+        <md-card class="md-padding empty-state-card">
             <md-card-content layout="column" layout-align="center center">
-                <md-icon md-font-set="material-symbols-outlined" style="font-size: 64px;" md-colors="{color: 'primary-700'}">inventory_2</md-icon>
+                <md-icon md-font-set="material-symbols-outlined" style="font-size: 64px;"
+                         md-colors="{color: 'primary-700'}">inventory_2
+                </md-icon>
                 <h3 class="md-headline">No Parcels Added</h3>
-                <p class="md-body-1">Add a parcel to begin entering dimensions</p>
-                <md-button class="md-raised md-primary" ng-click="ctrl.addNewParcel()">
-                    <md-icon md-font-set="material-symbols-outlined">add</md-icon>
-                    Add Parcel
-                </md-button>
+                <p class="md-body-1">Add parcels to begin entering dimensions</p>
+
+                <div layout="row" layout-align="center center" layout-wrap style="margin-top: 16px;">
+                    <md-button class="md-raised md-primary" ng-click="ctrl.addNewParcel()">
+                        <md-icon md-font-set="material-symbols-outlined">add</md-icon>
+                        Add Single Parcel
+                    </md-button>
+
+                    <div layout="row" layout-align="start center" style="margin-left: 16px;">
+                        <md-input-container class="md-block bulk-input-empty" style="margin: 0; min-width: 80px;">
+                            <label for="bulkAddCountEmpty">Quantity</label>
+                            <input id="bulkAddCountEmpty"
+                                   ng-model="ctrl.bulkAddCount"
+                                   type="number"
+                                   min="1"
+                                   max="100"
+                                   step="1"
+                                   aria-label="Number of parcels to add">
+                        </md-input-container>
+
+                        <md-button class="md-raised" ng-click="ctrl.addBulkParcels()" style="margin-left: 8px;">
+                            <md-icon md-font-set="material-symbols-outlined">add_box</md-icon>
+                            Add Multiple
+                        </md-button>
+                    </div>
+                </div>
             </md-card-content>
         </md-card>
     </div>
@@ -33,14 +57,41 @@
     <div ng-if="ctrl.hasCurrentParcel()">
         <md-dialog-content>
             <div class="md-dialog-content">
-                <md-card md-colors="{background: 'primary-50'}" class="md-padding" layout="row" layout-align="start center">
-                    <md-icon md-font-set="material-symbols-outlined" md-colors="{color: 'primary'}" style="margin: 8px;">inventory_2</md-icon>
+                <md-card md-colors="{background: 'primary-50'}" class="md-padding current-parcel-header" layout="row"
+                         layout-align="start center">
+                    <md-icon md-font-set="material-symbols-outlined" md-colors="{color: 'primary'}"
+                             style="margin: 8px;">inventory_2
+                    </md-icon>
                     <span class="md-subhead">{{ctrl.getCurrentParcel().itemName || 'Parcel ' + (ctrl.selectedParcelIndex + 1)}}</span>
                     <span flex></span>
-                    <md-button class="md-icon-button" ng-click="ctrl.addNewParcel()" aria-label="Add new parcel">
-                        <md-tooltip md-direction="bottom">Add New Parcel</md-tooltip>
-                        <md-icon md-font-set="material-symbols-outlined" md-colors="{color: 'primary'}">add</md-icon>
-                    </md-button>
+
+                    <div layout="row" layout-align="end center">
+                        <md-input-container class="md-block bulk-input-header"
+                                            style="min-width: 70px; margin: 0 8px 0 0;">
+                            <label for="bulkAddCountHeader">Qty</label>
+                            <input id="bulkAddCountHeader"
+                                   ng-model="ctrl.bulkAddCount"
+                                   type="number"
+                                   min="1"
+                                   max="100"
+                                   step="1"
+                                   aria-label="Number of parcels to add">
+                            <md-tooltip md-direction="bottom">Number of Additional Parcels To Add</md-tooltip>
+                        </md-input-container>
+
+                        <md-button class="md-icon-button" ng-click="ctrl.addBulkParcels()"
+                                   aria-label="Add multiple parcels">
+                            <md-tooltip md-direction="bottom">Add Multiple Parcels</md-tooltip>
+                            <md-icon md-font-set="material-symbols-outlined" md-colors="{color: 'primary'}">add_box
+                            </md-icon>
+                        </md-button>
+
+                        <md-button class="md-icon-button" ng-click="ctrl.addNewParcel()" aria-label="Add new parcel">
+                            <md-tooltip md-direction="bottom">Add Single Parcel</md-tooltip>
+                            <md-icon md-font-set="material-symbols-outlined" md-colors="{color: 'primary'}">add
+                            </md-icon>
+                        </md-button>
+                    </div>
                 </md-card>
 
                 <!-- Main content with form and visualization -->
@@ -49,13 +100,15 @@
                         <md-input-container class="md-icon-float md-block">
                             <label for="itemName">Item Name</label>
                             <md-icon md-font-set="material-symbols-outlined">package</md-icon>
-                            <input id="itemName" ng-model="ctrl.getCurrentParcel().itemName" type="text" placeholder="Enter item name">
+                            <input id="itemName" ng-model="ctrl.getCurrentParcel().itemName" type="text"
+                                   placeholder="Enter item name">
                         </md-input-container>
 
                         <md-input-container class="md-block">
                             <label for="barcode">Barcode</label>
                             <md-icon md-font-set="material-symbols-outlined">barcode</md-icon>
-                            <input id="barcode" ng-model="ctrl.getCurrentParcel().barcode" type="text" placeholder="Enter barcode">
+                            <input id="barcode" ng-model="ctrl.getCurrentParcel().barcode" type="text"
+                                   placeholder="Enter barcode">
                         </md-input-container>
 
                         <md-card class="md-padding" md-colors="{background: 'background-hue-1'}">
@@ -64,19 +117,22 @@
                             <div layout-gt-sm="row">
                                 <md-input-container class="md-block" flex-gt-sm>
                                     <label for="length">Length</label>
-                                    <input id="length" min="0" ng-model="ctrl.getCurrentParcel().length" step="0.01" type="number" placeholder="0.00">
+                                    <input id="length" min="0" ng-model="ctrl.getCurrentParcel().length" step="0.01"
+                                           type="number" placeholder="0.00">
                                     <div class="md-caption dimension-unit">{{::ctrl.dimensionsString}}</div>
                                 </md-input-container>
-
+                                /
                                 <md-input-container class="md-block" flex-gt-sm>
                                     <label for="width">Width</label>
-                                    <input id="width" min="0" ng-model="ctrl.getCurrentParcel().depth" step="0.01" type="number" placeholder="0.00">
+                                    <input id="width" min="0" ng-model="ctrl.getCurrentParcel().depth" step="0.01"
+                                           type="number" placeholder="0.00">
                                     <div class="md-caption dimension-unit">{{::ctrl.dimensionsString}}</div>
                                 </md-input-container>
 
                                 <md-input-container class="md-block" flex-gt-sm>
                                     <label for="height">Height</label>
-                                    <input id="height" min="0" ng-model="ctrl.getCurrentParcel().height" step="0.01" type="number" placeholder="0.00">
+                                    <input id="height" min="0" ng-model="ctrl.getCurrentParcel().height" step="0.01"
+                                           type="number" placeholder="0.00">
                                     <div class="md-caption dimension-unit">{{::ctrl.dimensionsString}}</div>
                                 </md-input-container>
                             </div>
@@ -87,7 +143,21 @@
         </md-dialog-content>
 
         <!-- Parcel Timeline -->
-        <md-card class="md-padding" md-colors="{background: 'background-hue-1'}">
+        <md-card class="md-padding timeline-card" md-colors="{background: 'background-hue-1'}">
+            <div layout="row" layout-align="space-between center" style="margin-bottom: 8px;">
+                <h4 class="md-subhead" style="margin: 0;">
+                    <md-icon md-font-set="material-symbols-outlined"
+                             style="font-size: 20px; vertical-align: middle; margin-right: 4px;">
+                        view_timeline
+                    </md-icon>
+                    Parcel Timeline
+                </h4>
+                <div class="md-caption" md-colors="{color: 'background-600'}">
+                    Total: {{ctrl.parcels.length}} {{ctrl.parcels.length === 1 ? 'parcel' : 'parcels'}}
+                </div>
+            </div>
+            <md-divider style="margin-bottom: 8px;"></md-divider>
+
             <div class="timeline-container" layout="row" layout-align="center center">
                 <div layout="row" layout-align="center center" ng-repeat="parcel in ctrl.parcels">
                     <!-- Parcel Step -->
@@ -103,11 +173,14 @@
                                        md-colors="{background: 'background-900-0.7', color: 'background-50'}"
                                        aria-label="Delete parcel"
                                        style="display: flex; align-items: center; justify-content: center;">
-                                <md-icon md-font-set="material-symbols-outlined" style="margin: 0; display: block; color: white;">close</md-icon>
+                                <md-icon md-font-set="material-symbols-outlined"
+                                         style="margin: 0; display: block; color: white;">close
+                                </md-icon>
                                 <md-tooltip md-direction="top">Delete Parcel</md-tooltip>
                             </md-button>
                         </div>
-                        <div class="step-label md-caption" ng-class="{'md-body-2': ctrl.selectedParcelIndex === $index, 'md-body-1': ctrl.selectedParcelIndex !== $index}">
+                        <div class="step-label md-caption"
+                             ng-class="{'md-body-2': ctrl.selectedParcelIndex === $index, 'md-body-1': ctrl.selectedParcelIndex !== $index}">
                             {{parcel.itemName || 'Parcel ' + ($index + 1)}}
                         </div>
                     </div>
@@ -118,16 +191,17 @@
                     </div>
                 </div>
 
-                <div layout="row" layout-align="center center" ng-if="ctrl.parcels.length < 10">
+                <div layout="row" layout-align="center center">
                     <div class="timeline-connector"
                          md-colors="{background: 'background-400'}"
                          ng-if="ctrl.parcels.length > 0">
                     </div>
                     <div class="timeline-step">
-                        <div class="step-circle add-button" ng-click="ctrl.addNewParcel()" md-colors="{color: 'background-700'}">
+                        <div class="step-circle add-button" ng-click="ctrl.addNewParcel()"
+                             md-colors="{color: 'background-700'}">
                             <md-icon md-font-set="material-symbols-outlined">add</md-icon>
                         </div>
-                        <div class="step-label md-caption">Add Parcel</div>
+                        <div class="step-label md-caption">Add Single</div>
                     </div>
                 </div>
             </div>
