@@ -673,22 +673,22 @@ public class CourierRepository(
                 .AsNoTracking()
                 .Where(c => c.Active &&
                             c.TblClearListAreaOrder != null)
-                .Join(
-                    Context.TucCourierFleets.AsNoTracking()
-                        .Where(cf => cf.DisplayOnClearlistsDespatch),
-                    c => c.CourierFleetId,
-                    cf => cf.UccfId,
-                    (c, cf) => c
-                )
                 .Where(c => c.CourierFleetId == (int)CourierFleet.UaAucklandP2P ||
                             (c.CourierLogInOut != null &&
-                             c.CourierLogInOut.LogInTime.Date <= currentDateOnly &&
+                             c.CourierLogInOut.LogInTime.Date <= currentDateOnly &&  // ← DATE ONLY
                              c.CourierLogInOut.LogOutTime == null))
+                .Join(
+                    Context.TucCourierFleets.AsNoTracking(),
+                    c => c.CourierFleetId,
+                    cf => cf.UccfId,
+                    (c, cf) => new { Courier = c, Fleet = cf }
+                )
+                .Where(x => x.Fleet.DisplayOnClearlistsDespatch)  // ← FILTER BY FLEET DISPLAY
                 .GroupJoin(
                     Context.TblCourierGps.AsNoTracking(),
-                    c => c.CourierGpsid,
+                    x => x.Courier.CourierGpsid,
                     gps => gps.CourierGpsid,
-                    (c, gpsGroup) => new { Courier = c, GpsGroup = gpsGroup }
+                    (x, gpsGroup) => new { x.Courier, x.Fleet, GpsGroup = gpsGroup }
                 )
                 .SelectMany(
                     x => x.GpsGroup.DefaultIfEmpty(),
@@ -705,52 +705,52 @@ public class CourierRepository(
                         PolygonId = gps != null ? gps.PolygonId : null
                     }
                 )
-                .TagWith("GetClearLists - Step 2: Courier Base Data with GPS")
+                .TagWith("GetClearLists - Step 4a: Courier Base Data with GPS")
                 .ToListAsync();
 
             Log.Information("Step 2: Found {Count} courier base data records", courierBaseData.Count);
 
             var courierIds = courierBaseData.Select(c => c.UccrId).ToList();
             foreach (var code in targetCourierCodes)
-{
-    var baseDataCourier = courierBaseData.FirstOrDefault(c => c.Code == code);
-    if (baseDataCourier != null)
-    {
-        Log.Information("[STEP 4a] Found target courier {Code} in courierBaseData - CourierId: {CourierId}, ChannelId: {ChannelId}, PolygonId: {PolygonId}, GPS Created: {GpsCreated}, CourierGpsId: {CourierGpsId}",
-            code, baseDataCourier.UccrId, baseDataCourier.UccrChannelId, baseDataCourier.PolygonId, 
-            baseDataCourier.GpsCreated, baseDataCourier.CourierGpsid);
-    }
-    else
-    {
-        Log.Warning("[STEP 4a] Target courier {Code} NOT found in courierBaseData - Checking filter criteria...", code);
+            {
+                var baseDataCourier = courierBaseData.FirstOrDefault(c => c.Code == code);
+                if (baseDataCourier != null)
+                {
+                    Log.Information("[STEP 4a] Found target courier {Code} in courierBaseData - CourierId: {CourierId}, ChannelId: {ChannelId}, PolygonId: {PolygonId}, GPS Created: {GpsCreated}, CourierGpsId: {CourierGpsId}",
+                        code, baseDataCourier.UccrId, baseDataCourier.UccrChannelId, baseDataCourier.PolygonId, 
+                        baseDataCourier.GpsCreated, baseDataCourier.CourierGpsid);
+                }
+                else
+                {
+                    Log.Warning("[STEP 4a] Target courier {Code} NOT found in courierBaseData - Checking filter criteria...", code);
         
-        // Check what might be filtering them out
-        var checkCourier = await Context.TucCouriers
-            .Where(c => c.Code == code)
-            .Select(c => new {
-                c.Code,
-                c.Active,
-                HasClearListOrder = c.TblClearListAreaOrder != null,
-                CourierFleetId = c.CourierFleetId,
-                HasLoginToday = c.CourierLogInOut != null && c.CourierLogInOut.LogInTime.Date <= currentDateOnly,
-                LoggedOut = c.CourierLogInOut != null && c.CourierLogInOut.LogOutTime != null,
-                LogInTime = c.CourierLogInOut != null ? c.CourierLogInOut.LogInTime : (DateTime?)null,
-                LogOutTime = c.CourierLogInOut != null ? c.CourierLogInOut.LogOutTime : (DateTime?)null
-            })
-            .FirstOrDefaultAsync();
+                    // Check what might be filtering them out
+                    var checkCourier = await Context.TucCouriers
+                        .Where(c => c.Code == code)
+                        .Select(c => new {
+                            c.Code,
+                            c.Active,
+                            HasClearListOrder = c.TblClearListAreaOrder != null,
+                            CourierFleetId = c.CourierFleetId,
+                            HasLoginToday = c.CourierLogInOut != null && c.CourierLogInOut.LogInTime.Date <= currentDateOnly,
+                            LoggedOut = c.CourierLogInOut != null && c.CourierLogInOut.LogOutTime != null,
+                            LogInTime = c.CourierLogInOut != null ? c.CourierLogInOut.LogInTime : (DateTime?)null,
+                            LogOutTime = c.CourierLogInOut != null ? c.CourierLogInOut.LogOutTime : (DateTime?)null
+                        })
+                        .FirstOrDefaultAsync();
             
-        if (checkCourier != null)
-        {
-            Log.Warning("[STEP 4a DEBUG] Courier {Code} exists but filtered out - Active: {Active}, HasClearListOrder: {HasClearListOrder}, CourierFleetId: {FleetId}, HasLoginToday: {HasLogin}, LoggedOut: {LoggedOut}, LogInTime: {LogIn}, LogOutTime: {LogOut}",
-                code, checkCourier.Active, checkCourier.HasClearListOrder, checkCourier.CourierFleetId,
-                checkCourier.HasLoginToday, checkCourier.LoggedOut, checkCourier.LogInTime, checkCourier.LogOutTime);
-        }
-        else
-        {
-            Log.Warning("[STEP 4a DEBUG] Courier {Code} does not exist in database", code);
-        }
-    }
-}
+                    if (checkCourier != null)
+                    {
+                        Log.Warning("[STEP 4a DEBUG] Courier {Code} exists but filtered out - Active: {Active}, HasClearListOrder: {HasClearListOrder}, CourierFleetId: {FleetId}, HasLoginToday: {HasLogin}, LoggedOut: {LoggedOut}, LogInTime: {LogIn}, LogOutTime: {LogOut}",
+                            code, checkCourier.Active, checkCourier.HasClearListOrder, checkCourier.CourierFleetId,
+                            checkCourier.HasLoginToday, checkCourier.LoggedOut, checkCourier.LogInTime, checkCourier.LogOutTime);
+                    }
+                    else
+                    {
+                        Log.Warning("[STEP 4a DEBUG] Courier {Code} does not exist in database", code);
+                    }
+                }
+            }
 
             // ===================================================================
             // QUERY 4b: Get ALL display orders in ONE query (FIXES N+1)
