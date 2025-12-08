@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using DespatchWeb.Enums;
 using DespatchWeb.Models.Dto;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -30,6 +31,14 @@ public partial class DespatchContext
     private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveJobIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobs
+                .AsNoTracking()
+                .Where(j => j.UcjbId == jobId)
+                .Select(j => j.ParentId ?? j.UcjbId)
+                .FirstOrDefault());
+    
+    private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveArchiveJobIdCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
+            context.TucJobArchives
                 .AsNoTracking()
                 .Where(j => j.UcjbId == jobId)
                 .Select(j => j.ParentId ?? j.UcjbId)
@@ -91,10 +100,19 @@ public partial class DespatchContext
                     JobCount = 0
                 }));
 
-    public async Task<List<ActiveCourierDto>> GetActiveCouriers(DateTime today) => await GetActiveCouriersCompiled(this, today).ToListAsync();
+    private static readonly Func<DespatchContext, NoteType, Task<bool>> ConfirmNoteTypeExistsCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, NoteType noteType) =>
+            context.TucNoteTypes.Any(n => n.NoteTypeId == (int)noteType));
 
     // Access compiled queries
+    public async Task<List<ActiveCourierDto>> GetActiveCouriers(DateTime today) =>
+        await GetActiveCouriersCompiled(this, today).ToListAsync();
+
+    public async Task<bool> ConfirmNoteTypeExists(NoteType noteType) =>
+        await ConfirmNoteTypeExistsCompiled(this, noteType);
+
     public async Task<int> GetEffectiveJobId(int jobId) => await GetEffectiveJobIdCompiled(this, jobId);
+    public async Task<int> GetEffectiveArchiveJobId(int jobId) => await GetEffectiveArchiveJobIdCompiled(this, jobId);
     public async Task<int> GetEffectiveBulkJobId(int bulkJobId) => await GetEffectiveBulkJobIdCompiled(this, bulkJobId);
 
     public async Task<int> GetEffectiveJobBookingId(int jobBookingId) =>
