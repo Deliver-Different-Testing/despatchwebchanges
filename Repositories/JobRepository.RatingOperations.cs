@@ -179,9 +179,12 @@ public partial class JobRepository
                             }).ToList()
                             : null,
 
-                        PickupTailLift = job.TucJobItemsArchives != null && job.TucJobItemsArchives.Any(i => i.Pu == true),
-                        DropoffTailLift = job.TucJobItemsArchives != null && job.TucJobItemsArchives.Any(i => i.Do == true),
-                        PrivateRes = job.TucJobItemsArchives != null & job.TucJobItemsArchives.Any(i => i.PrivateRes == true),
+                        PickupTailLift = job.TucJobItemsArchives != null &&
+                                         job.TucJobItemsArchives.Any(i => i.Pu == true),
+                        DropoffTailLift = job.TucJobItemsArchives != null &&
+                                          job.TucJobItemsArchives.Any(i => i.Do == true),
+                        PrivateRes = job.TucJobItemsArchives != null &
+                                     job.TucJobItemsArchives.Any(i => i.PrivateRes == true),
                         HasDgDocuments = job.Dgdocument,
                         TruckStartTime = job.TruckStartTime.HasValue ? job.TruckStartTime.ToString() : null,
                         TruckHours = job.TruckHours.HasValue ? (int)job.TruckHours : null,
@@ -339,7 +342,9 @@ public partial class JobRepository
                     RefB = job.UcbkClientRefb,
                     Quantity = job.Quantity.HasValue ? (int)job.Quantity : 0,
                     BookedDate = job.UcbkDate ?? DateTime.MinValue,
-                    PreviousRate = job.PricingBreakdownPrebookJobs != null ? job.PricingBreakdownPrebookJobs.Sum(p => p.Charged) : null,
+                    PreviousRate = job.PricingBreakdownPrebookJobs != null
+                        ? job.PricingBreakdownPrebookJobs.Sum(p => p.Charged)
+                        : null,
 
                     PickupLat = job.PickUpLatitude ?? 0,
                     PickupLong = job.PickUpLongitude ?? 0,
@@ -418,7 +423,9 @@ public partial class JobRepository
                         )
                         : DateTime.MinValue,
 
-                    PreviousRate = job.PricingBreakdownPrebookJobs != null ? job.PricingBreakdownPrebookJobs.Sum(p => p.Charged) : null,
+                    PreviousRate = job.PricingBreakdownPrebookJobs != null
+                        ? job.PricingBreakdownPrebookJobs.Sum(p => p.Charged)
+                        : null,
 
                     PickupLat = job.PickUpLatitude ?? 0,
                     PickupLong = job.PickUpLongitude ?? 0,
@@ -550,7 +557,7 @@ public partial class JobRepository
 
         if (dto.IsPrebook)
         {
-            var effectiveJobBookingId = await GetJobBookingRelationshipInfoAsync(dto.JobId);
+            var effectiveJobBookingId = await Context.GetEffectiveJobBookingId(dto.JobId);
             await Context.Procedures.DD_InsertPricingBreakdownAsync(
                 jobID: null,
                 prebookJobID: effectiveJobBookingId,
@@ -560,7 +567,7 @@ public partial class JobRepository
         }
         else
         {
-            var effectiveJobId = await GetJobRelationshipInfoAsync(dto.JobId);
+            var effectiveJobId = await Context.GetEffectiveJobId(dto.JobId);
             await Context.Procedures.DD_InsertPricingBreakdownAsync(
                 jobID: effectiveJobId,
                 prebookJobID: null,
@@ -612,7 +619,7 @@ public partial class JobRepository
             throw;
         }
     }
-    
+
     public async Task<decimal> GetJobRateUsAsync(RateJobUsDto dto)
     {
         var rate = new OutputParameter<decimal?>();
@@ -651,8 +658,8 @@ public partial class JobRepository
             returnValue: returnValue
         );
 
-        Log.Information("Calculated price: {Rate}. Pricing breakdown: {DescriptionValue}", 
-            rate.Value ?? 0, 
+        Log.Information("Calculated price: {Rate}. Pricing breakdown: {DescriptionValue}",
+            rate.Value ?? 0,
             description.Value);
 
         return rate.Value ?? 0;

@@ -71,7 +71,7 @@ public class JobController(
                 sw.ElapsedMilliseconds,
                 result.Jobs?.Count ?? 0,
                 result.TotalCount,
-                string.Join(",", despatchViewIds ?? new List<int>()),
+                string.Join(",", despatchViewIds ?? []),
                 queryParams.StartDate?.ToString("yyyy-MM-dd") ?? "none",
                 queryParams.EndDate?.ToString("yyyy-MM-dd") ?? "none");
 
@@ -93,7 +93,7 @@ public class JobController(
             Log.Error(ex,
                 "Error processing job list request after {ElapsedMs}ms (Views: {ViewIds}, DateRange: {StartDate} to {EndDate})",
                 sw.ElapsedMilliseconds,
-                string.Join(",", despatchViewIds ?? new List<int>()),
+                string.Join(",", despatchViewIds ?? []),
                 queryParams.StartDate?.ToString("yyyy-MM-dd") ?? "none",
                 queryParams.EndDate?.ToString("yyyy-MM-dd") ?? "none");
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
@@ -799,7 +799,7 @@ public class JobController(
     {
         const int latePickupStatus = (int)JobStatus.LatePickup;
 
-        // Don't create event if AlertLatePickup is negative
+        // Don't create an event if AlertLatePickup is negative
         if (alertLatePickup < 0)
             return new LateStatusResult
                 { ShouldCreateEvent = false, EventType = latePickupStatus, LateTime = lateTime };
