@@ -12,6 +12,7 @@ public class CourierClearListDto
     public string UccrVehicle { get; set; }
     public int? CourierGpsid { get; set; }
     public DateTime? GpsCreated { get; set; }
+    public int? PolygonId { get; set; } 
     public int? DisplayOrder { get; set; }
     public DateTime? OrderTime { get; set; }
 }

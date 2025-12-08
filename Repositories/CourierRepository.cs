@@ -572,8 +572,8 @@ public class CourierRepository(
             if (clearLists.Count == 0) return new ClearListViewModel();
 
             var clearListAreaIds = clearLists.Select(cl => cl.ClearListAreaId).ToList();
-            
-            Log.Information("Step 1: Found {Count} clear lists for despatchViewIds: {@Ids}", 
+
+            Log.Information("Step 1: Found {Count} clear lists for despatchViewIds: {@Ids}",
                 clearLists.Count, despatchViewIds);
 
             if (clearLists.Count == 0)
@@ -591,19 +591,29 @@ public class CourierRepository(
             var allValidCourierGpsIds = await Context.TblClearListAreaPolygons
                 .AsNoTracking()
                 .Where(cap => clearListAreaIds.Contains(cap.ClearListAreaId))
-                .Select(cap => new
-                {
-                    cap.ClearListAreaId,
-                    cap.PolygonId
-                })
-                .TagWith("GetClearLists - Step 2: All GPS Mappings")
+                .Join(
+                    Context.TblClearListAreas.AsNoTracking(),
+                    cap => cap.ClearListAreaId,
+                    cla => cla.ClearListAreaId,
+                    (cap, cla) => new
+                    {
+                        cap.ClearListAreaId,
+                        cap.PolygonId,
+                        cla.ChannelId
+                    }
+                )
+                .TagWith("GetClearLists - Step 2: All GPS Mappings with Channels")
                 .ToListAsync();
 
-            var polygonsByClearListArea = allValidCourierGpsIds
+            var polygonChannelsByClearListArea = allValidCourierGpsIds
                 .GroupBy(x => x.ClearListAreaId)
-                .ToDictionary(g => g.Key, g => g.Select(x => x.PolygonId).ToHashSet());
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(x => new { x.PolygonId, x.ChannelId }).ToList()
+                );
 
-            Log.Information("Step 2b: Polygons grouped into {Count} clear list areas", polygonsByClearListArea.Count);
+            Log.Information("Step 2b: Polygons grouped into {Count} clear list areas",
+                polygonChannelsByClearListArea.Count);
 
             // ===================================================================
             // QUERY 3: Get ALL active couriers with jobs
@@ -636,17 +646,13 @@ public class CourierRepository(
             // ===================================================================
             // QUERY 4a: Get courier BASE data (without display orders)
             // ===================================================================
-            var allCourierGpsIds = polygonsByClearListArea.Values
-                .SelectMany(x => x)
-                .Distinct()
-                .ToHashSet();
-
             var courierBaseData = await Context.TucCouriers
                 .AsNoTracking()
-                .Where(courier => courier.Active &&
-                                  allCourierGpsIds.Contains(courier.CourierGpsid))
+                .Where(c => c.Active &&
+                            c.TblClearListAreaOrder != null)
                 .Join(
-                    Context.TucCourierFleets.AsNoTracking().Where(cf => cf.DisplayOnClearlistsDespatch),
+                    Context.TucCourierFleets.AsNoTracking()
+                        .Where(cf => cf.DisplayOnClearlistsDespatch),
                     c => c.CourierFleetId,
                     cf => cf.UccfId,
                     (c, cf) => c
@@ -672,17 +678,16 @@ public class CourierRepository(
                         x.Courier.AutoDespatch,
                         x.Courier.UccrVehicle,
                         x.Courier.CourierGpsid,
-                        GpsCreated = gps != null ? gps.Created : (DateTime?)null
+                        GpsCreated = gps != null ? gps.Created : (DateTime?)null,
+                        PolygonId = gps != null ? gps.PolygonId : null
                     }
                 )
-                .TagWith("GetClearLists - Step 4a: Courier Base Data")
+                .TagWith("GetClearLists - Step 2: Courier Base Data with GPS")
                 .ToListAsync();
 
-            if (courierBaseData.Count == 0)
-                return new ClearListViewModel();
+            Log.Information("Step 2: Found {Count} courier base data records", courierBaseData.Count);
 
             var courierIds = courierBaseData.Select(c => c.UccrId).ToList();
-            Log.Information("Step 4a: Found {Count} courier base data records", courierBaseData.Count);
 
             // ===================================================================
             // QUERY 4b: Get ALL display orders in ONE query (FIXES N+1)
@@ -714,13 +719,15 @@ public class CourierRepository(
                 UccrVehicle = c.UccrVehicle,
                 CourierGpsid = c.CourierGpsid,
                 GpsCreated = c.GpsCreated,
+                PolygonId = c.PolygonId,
                 DisplayOrder = displayOrderDict.TryGetValue(c.UccrId, out var order) ? order.Status : null,
                 OrderTime = displayOrderDict.TryGetValue(c.UccrId, out var order2) ? order2.OrderTime : null
             }).ToList();
 
             // Group couriers by GPS polygon ID for area filtering
             var couriersByPolygon = allCourierData
-                .GroupBy(c => c.CourierGpsid)
+                .Where(c => c.PolygonId.HasValue)
+                .GroupBy(c => c.PolygonId.Value)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
             // ===================================================================
@@ -733,7 +740,7 @@ public class CourierRepository(
                 .Where(job => !job.JobDone &&
                               !job.Void &&
                               job.Date.HasValue &&
-                              job.Date.Value.Date == currentDateOnly &&
+                              job.Date.Value.Date <= currentDateOnly &&
                               job.CourierId.HasValue &&
                               allCourierIds.Contains(job.CourierId.Value))
                 .Select(job => new CourierJobSuburbDto
@@ -747,6 +754,7 @@ public class CourierRepository(
             var jobsByCourier = allJobs
                 .GroupBy(j => j.CourierId)
                 .ToDictionary(g => g.Key, g => g.ToList());
+
 
             // ===================================================================
             // QUERY 6: Get ALL suburb mappings at once
@@ -834,21 +842,37 @@ public class CourierRepository(
             };
 
             clearLists = clearLists
-                .OrderBy(cl => areaDisplayOrder.TryGetValue(cl.AreaName ?? "", out var order) ? order : 999)
+                .OrderBy(cl => areaDisplayOrder.TryGetValue(cl.AreaName, out var order) ? order : 999)
                 .ToList();
 
             var areas = new List<AreaClearList>();
 
             foreach (var clearList in clearLists)
             {
-                // Get couriers for this specific area
-                List<CourierClearListDto> areaCouriers = new();
-    
-                if (polygonsByClearListArea.TryGetValue(clearList.ClearListAreaId, out var validPolygons))
+                // Get couriers for this specific area WITH channel matching
+                List<CourierClearListDto> areaCouriers = [];
+
+                if (polygonChannelsByClearListArea.TryGetValue(clearList.ClearListAreaId, out var validPolygonChannels))
                 {
-                    areaCouriers = validPolygons
-                        .Where(polygonId => polygonId != null && couriersByPolygon.ContainsKey(polygonId))
-                        .SelectMany(polygonId => couriersByPolygon[polygonId])
+                    // For each polygon-channel pair in this clear list area
+                    foreach (var polygonChannel in validPolygonChannels)
+                    {
+                        if (polygonChannel.PolygonId == null ||
+                            !couriersByPolygon.TryGetValue(polygonChannel.PolygonId.Value, out var couriersWithPolygon))
+                            continue;
+
+                        // Filter to only couriers whose channel matches the area's channel
+                        var matchingCouriers = couriersWithPolygon
+                            .Where(c => c.UccrChannelId == polygonChannel.ChannelId)
+                            .ToList();
+
+                        areaCouriers.AddRange(matchingCouriers);
+                    }
+
+                    // Remove duplicates (in case a courier matches multiple polygon-channel combos)
+                    areaCouriers = areaCouriers
+                        .GroupBy(c => c.UccrId)
+                        .Select(g => g.First())
                         .ToList();
                 }
 
@@ -876,9 +900,9 @@ public class CourierRepository(
                     )
                 };
 
-                areas.Add(areaClearList);  // ← Always add the area
+                areas.Add(areaClearList);
             }
-            
+
             Log.Information("Final: Built {Count} areas for display", areas.Count);
 
             // ===================================================================
@@ -969,7 +993,10 @@ public class CourierRepository(
                         if (matchingSameChannel != null)
                             return matchingSameChannel.Code;
 
-                        return areaOptions.FirstOrDefault()?.Code ?? "O";
+                        var matchingDifferentChannel = areaOptions
+                            .FirstOrDefault(sca => sca.ChannelId != courier.UccrChannelId);
+
+                        return matchingDifferentChannel?.Code ?? "O";
                     })
                     .Select(g => new
                     {
@@ -1010,6 +1037,7 @@ public class CourierRepository(
             .ThenBy(x => x.DisplayOrderDesc)
             .ThenBy(x => x.DisplayOrderAsc)
             .ThenBy(x => x.Code)
+            .ThenBy(x => x.Deliver)
             .ToList();
     }
 
