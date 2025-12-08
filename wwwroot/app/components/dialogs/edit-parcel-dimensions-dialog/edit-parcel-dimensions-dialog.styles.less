@@ -1,8 +1,67 @@
 .parcel-dimensions-dialog-component {
+    // Empty state card styling
+    .empty-state-card {
+        max-width: 500px;
+        text-align: center;
+
+        .bulk-input-empty {
+            input {
+                text-align: center;
+                font-weight: 500;
+            }
+        }
+    }
+
+    // Current parcel header styling
+    .current-parcel-header {
+        transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+
+        .bulk-input-header {
+            input {
+                text-align: center;
+                font-weight: 500;
+                font-size: 14px;
+            }
+
+            label {
+                font-size: 12px;
+            }
+        }
+
+        &:hover {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    }
+
+    // Timeline card styling
+    .timeline-card {
+        transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    }
+
     .timeline-container {
         max-width: 100%;
         overflow-x: auto;
-        min-height: 80px;
+        min-height: 90px;
+        padding: 16px 8px;
+
+        &::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        &::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        &::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
     }
 
     .timeline-step {
@@ -10,56 +69,96 @@
         flex-direction: column;
         align-items: center;
         cursor: pointer;
-        padding: 0 8px;
+        padding: 0 12px;
         position: relative;
+        transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+        min-width: 80px;
+
+        &:hover {
+            transform: translateY(-2px);
+
+            .step-circle {
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+            }
+        }
 
         .step-circle {
             position: relative;
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
 
             &.add-button {
-                border: 1px dashed rgba(0, 0, 0, 0.6);
+                border: 2px dashed rgba(0, 0, 0, 0.3);
+                background: white;
+
+                &:hover {
+                    border-color: rgba(63, 81, 181, 0.6);
+                    background: rgba(63, 81, 181, 0.05);
+                }
             }
 
             .delete-button {
                 position: absolute;
-                top: -4px;
-                right: -4px;
-                width: 18px;
-                height: 18px;
-                min-height: 18px;
+                top: -6px;
+                right: -6px;
+                width: 20px;
+                height: 20px;
+                min-height: 20px;
+                min-width: 20px;
+                padding: 0;
+                margin: 0;
+                background: #f44336 !important;
+                transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+                opacity: 0;
 
                 md-icon {
-                    font-size: 12px;
-                    width: 12px;
-                    height: 12px;
-                    min-width: 12px;
-                    min-height: 12px;
+                    font-size: 14px;
+                    width: 14px;
+                    height: 14px;
+                    min-width: 14px;
+                    min-height: 14px;
+                    line-height: 14px;
+                }
+
+                &:hover {
+                    transform: scale(1.1);
+                    background: #d32f2f !important;
                 }
             }
         }
 
+        &:hover .delete-button {
+            opacity: 1;
+        }
+
         .step-label {
-            margin-top: 4px;
+            margin-top: 8px;
             text-align: center;
             max-width: 100px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            transition: color 0.2s;
+        }
+
+        &.md-accent .step-label {
+            font-weight: 500;
         }
     }
 
     .timeline-connector {
         height: 2px;
-        width: 32px;
+        width: 40px;
         margin: 0 4px;
         position: relative;
-        top: -10px;
+        top: -14px;
+        transition: background 0.3s;
     }
 
     .dimension-unit {
@@ -68,5 +167,7 @@
         top: 0;
         line-height: 36px;
         padding-right: 8px;
+        font-weight: 500;
+        opacity: 0.7;
     }
 }

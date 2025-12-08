@@ -26,12 +26,13 @@ class AutoCompleteDialogService implements angular.IServiceProvider {
                                  title: string,
                                  existingItem: any,
                                  showRerateOption?: boolean,
-                                 itemIcon: string = "topic") {
+                                 itemIcon: string = "topic",
+                                 minInputLength: number = 2) {
         console.debug('AutoCompleteDialogService: showAutocompleteDialog called');
         
         const options: IAutoCompleteOptions = {
             placeholder, 
-            minimumInputLength: 2, 
+            minimumInputLength: minInputLength, 
             searchUrl: url
         };
 
