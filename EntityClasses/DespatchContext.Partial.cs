@@ -153,29 +153,28 @@ public partial class DespatchContext
                 .Select(r => new Suggestion { Id = r.UcjtId, Text = r.UcjtName })
                 .ToList());
     
-    private static readonly Func<DespatchContext, List<int>, Task<List<PolygonChannelMapping>>> GetPolygonMappingsComplied =
+    private static readonly Func<DespatchContext, List<int>, IAsyncEnumerable<PolygonChannelMapping>> GetPolygonMappingsCompiled =
         EF.CompileAsyncQuery((DespatchContext context, List<int> clearListAreaIds) =>
-            context.TblClearListAreaPolygons
+            context.TblClearListAreas
                 .AsNoTracking()
-                .Where(cap => clearListAreaIds.Contains(cap.ClearListAreaId))
+                .Where(cla => clearListAreaIds.Contains(cla.ClearListAreaId))
                 .Join(
-                    context.TblClearListAreas.AsNoTracking(),
-                    cap => cap.ClearListAreaId,
+                    context.TblClearListAreaPolygons.AsNoTracking(),
                     cla => cla.ClearListAreaId,
-                    (cap, cla) => new PolygonChannelMapping
+                    cap => cap.ClearListAreaId,
+                    (cla, cap) => new PolygonChannelMapping
                     {
                         ClearListAreaId = cap.ClearListAreaId,
                         PolygonId = cap.PolygonId,
                         ChannelId = cla.ChannelId
-                    })
-                .ToList());
+                    }));
 
     // Access compiled queries
     public async Task<List<Suggestion>> GetAllVehicleSizesAsync() => await GetAllVehicleSizesCompiled(this);
     public async Task<List<Suggestion>> GetAllRegionsAsync() => await GetAllRegionsCompiled(this);
     public async Task<List<Suggestion>> GetAllSpeedsAsync() => await GetAllSpeedsCompiled(this);
     
-    public async Task<List<PolygonChannelMapping>> GetPolygonMappings(List<int> clearListAreaIds) => await GetPolygonMappingsComplied(this, clearListAreaIds);
+    public async Task<List<PolygonChannelMapping>> GetPolygonMappings(List<int> clearListAreaIds) => await GetPolygonMappingsCompiled(this, clearListAreaIds).ToListAsync();
     
     public async Task<ActiveCouriersViewModel> GetCourierByIdAsync(int courierId, DateTime tenantTime) => await GetCourierByIdCompiled(this, courierId, tenantTime);
     
