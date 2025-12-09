@@ -31,13 +31,19 @@ public class OpenJobDto
     public string DeliveryTimeZone { get; set; }
     public string CourierName { get; set; }
     public string CourierSurname { get; set; }
-    public List<DateTime> CourierCompletedJobs { get; set; }
-    public DateTime? CourierLastCompleted { get; set; }
     public int Quantity { get; set; }
     public string PackageTypeName { get; set; }
     public decimal TotalDistance { get; set; }
+    
+    public int? CourierId { get; set; }
 
     // Fields for calculations
     public DateTime? DeliveryTime { get; set; }
     public int? SpeedMinutes { get; set; }
+}
+
+public class CourierCompletionData
+{
+    public int CompletedToday { get; set; }
+    public DateTime? LastCompleted { get; set; }
 }

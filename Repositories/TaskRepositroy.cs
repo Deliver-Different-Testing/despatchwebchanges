@@ -23,7 +23,9 @@ public class TaskRepository(
         var tenantTimeZone = infoService.GetTenantTimeZone();
         var today = filters?.Date ?? infoService.GetCurrentTenantTime().AddDays(1);
 
-        var query = Context.TucEvents.Where(t => t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.CS));
+        var query = Context.TucEvents
+            .AsNoTracking()
+            .Where(t => t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.CS));
 
         if (filters != null) query = ApplyFilters(query, filters);
 
@@ -31,7 +33,6 @@ public class TaskRepository(
 
         var tasks = await query
             .Select(TaskMapping)
-            .AsNoTracking()
             .ToListAsync();
 
         foreach (var task in tasks) task.DueDate = TimeZoneHelper.SetDateTimeWithTimeZone(task.DueDate, tenantTimeZone);

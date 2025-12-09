@@ -27,6 +27,9 @@ class DispatchMapController extends BaseController {
         "$scope",
     ];
 
+    private isFetchingCouriers: boolean = false;
+    private readonly debouncedFetchCouriers?: (...args: any[]) => void;
+
     private locationRefreshInterval?: angular.IPromise<void>;
     private readonly LOCATION_REFRESH_INTERVAL = 15000;
     private readonly MAX_JOBS_TO_DISPLAY = 1000; // Limit jobs to prevent performance issues
@@ -85,8 +88,13 @@ class DispatchMapController extends BaseController {
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
-
         this.bindFunctions();
+        
+         this.debouncedFetchCouriers = this.debounce(
+             this.fetchCourierPositionsInternal.bind(this),
+             300,
+             'fetchCouriers'
+         );
     }
 
     $onInit() {
@@ -324,13 +332,21 @@ class DispatchMapController extends BaseController {
     }
 
     async fetchCourierPositions() {
-        if (!this.showAvailableCouriers) {
+        if (!this.showAvailableCouriers || !this.mapInstance) {
             return;
         }
 
-        if (!this.mapInstance) {
+        // Use the debounced version
+        this.debouncedFetchCouriers!();
+    }
+
+    private async fetchCourierPositionsInternal() {
+        // Prevent concurrent calls
+        if (this.isFetchingCouriers) {
             return;
         }
+
+        this.isFetchingCouriers = true;
 
         try {
             const coordinates = await this.getSearchCoordinates();
@@ -344,6 +360,8 @@ class DispatchMapController extends BaseController {
         } catch (error) {
             console.error('[DispatchMapController] Failed to fetch courier positions:', error);
             this.clearCourierMarkers();
+        } finally {
+            this.isFetchingCouriers = false;
         }
     }
 

@@ -646,7 +646,6 @@ public class CourierRepository(
                             (c.CourierLogInOut != null &&
                              c.CourierLogInOut.LogInTime.Date <= currentDateOnly &&
                              c.CourierLogInOut.LogOutTime == null))
-                // ↓ LEFT JOIN with fleet
                 .GroupJoin(
                     Context.TucCourierFleets.AsNoTracking(),
                     c => c.CourierFleetId,
@@ -657,8 +656,6 @@ public class CourierRepository(
                     x => x.FleetGroup.DefaultIfEmpty(),
                     (x, cf) => new { x.Courier, Fleet = cf }
                 )
-                // ↓ NO filter on DisplayOnClearlistsDespatch
-                // ↓ LEFT JOIN with GPS
                 .GroupJoin(
                     Context.TblCourierGps.AsNoTracking(),
                     x => x.Courier.CourierGpsid,
@@ -1084,7 +1081,7 @@ public class CourierRepository(
             {
                 semaphore.Release();
             }
-        }).ToList(); // ← Force immediate evaluation
+        }).ToList();
 
         var counts = await Task.WhenAll(tasks);
 
