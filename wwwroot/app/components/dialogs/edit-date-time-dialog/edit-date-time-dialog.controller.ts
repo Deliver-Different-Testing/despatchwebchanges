@@ -7,9 +7,7 @@ import {JobProperty} from "../../../enums/job-property.enum";
 import {TimeZone} from "../../../contants";
 import dayjs, {Dayjs} from "dayjs";
 import timezone from "dayjs/plugin/timezone";
-import {formatDateForApiWithTzs, getIanaTimezone} from "../../../functions/formatDates";
-import {timezoneLongFilter} from "../../../filters";
-import {IAppConfig} from "../../../interfaces/app-config.interface";
+import {formatDateForApiWithTzs} from "../../../functions/formatDates";
 
 dayjs.extend(timezone);
 
@@ -19,7 +17,6 @@ export class EditDateTimeDialogController extends BaseController {
         "toastrService",
         "$timeout",
         "$interval",
-        "APP_CONFIG",
         "title",
         "fieldName",
         "dateTime",
@@ -29,17 +26,14 @@ export class EditDateTimeDialogController extends BaseController {
     ];
 
     isLoading: boolean = false;
-    readonly isUsCustomer: boolean;
-    readonly browserTimeZoneStr: string;
-    readonly selectedTimeZoneStr: string;
-    private readonly selectedTimeZone: string;
+    browserTimeZone?: string;
+    selectedTimeZone: string;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
-        appConfig: IAppConfig,
         public readonly title: string,
         public readonly fieldName: JobProperty,
         public dateTime?: Dayjs,
@@ -49,14 +43,10 @@ export class EditDateTimeDialogController extends BaseController {
     ) {
         super();
         this.initServices($timeout, $interval);
-        this.isUsCustomer = appConfig.US_Customer;
 
-        const browserIanaTimeZone = getIanaTimezone(dayjs.tz.guess());
-        this.browserTimeZoneStr = timezoneLongFilter(browserIanaTimeZone)
-
-        this.selectedTimeZone = defaultTimeZone?.text ?? getIanaTimezone(TimeZone)
-        this.selectedTimeZoneStr = timezoneLongFilter(this.selectedTimeZone);
-
+        this.browserTimeZone = dayjs.tz.guess();
+        this.selectedTimeZone = defaultTimeZone?.text ?? TimeZone;
+        
         if (!this.dateTime || !this.dateTime.isValid()) {
             console.log('No dateTime provided, setting to current time');
             this.dateTime = dayjs();
@@ -67,28 +57,28 @@ export class EditDateTimeDialogController extends BaseController {
 
     updateDateTime(dateTime: Dayjs): void {
         try {
-            if (!dateTime.isValid()) {
+            if(!dateTime.isValid()) {
                 console.error("Returned datetime is invalid!");
                 return;
             }
-
+            
             if (this.showDate && this.showTime) {
                 // Both date and time required
-                this.dateTime = dateTime;
+                    this.dateTime = dateTime;
             } else if (this.showDate && !this.showTime) {
                 // Date only - set to midnight (00:00:00)
-                this.dateTime = dateTime.startOf('day');
+                    this.dateTime = dateTime.startOf('day');
             } else if (this.showTime && !this.showDate) {
                 // Time only - use minimum date (1900-01-01) with the selected time
-                this.dateTime = dayjs('1900-01-01')
-                    .hour(dateTime.hour())
-                    .minute(dateTime.minute())
-                    .second(0)
-                    .millisecond(0);
+                    this.dateTime = dayjs('1900-01-01')
+                        .hour(dateTime.hour())
+                        .minute(dateTime.minute())
+                        .second(0)
+                        .millisecond(0);
             }
 
             if (this.dateTime) {
-                console.log('DateTime updated:', formatDateForApiWithTzs(this.dateTime, this.selectedTimeZoneStr));
+                console.log('DateTime updated:', formatDateForApiWithTzs(this.dateTime, this.selectedTimeZone));
             } else {
                 console.log('DateTime not updated');
             }
@@ -99,7 +89,7 @@ export class EditDateTimeDialogController extends BaseController {
     }
 
     async submit(): Promise<void> {
-        if (!this.dateTime?.isValid()) {
+        if(!this.dateTime?.isValid()) {
             this.toastrService.showWarningToast('Please provide valid date/time information');
             return;
         }
