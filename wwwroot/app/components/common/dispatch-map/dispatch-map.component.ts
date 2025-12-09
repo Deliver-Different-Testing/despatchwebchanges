@@ -664,11 +664,11 @@ class DispatchMapController extends BaseController {
             // Larger blue driver flag in the large view
             const largeFlagIcon = {
                 path: 'M2,2 L2,24 L6,24 L6,20 L6,12 L30,12 L26,7 L30,2 Z',
-                fillColor: '#87CEEB',
+                fillColor: '#1565C0',
                 fillOpacity: 0.9,
                 strokeWeight: 2,
                 strokeColor: '#FFFFFF',
-                scale: 1.25, 
+                scale: 1.25,
                 anchor: new this.$window.google.maps.Point(2, 24),
                 labelOrigin: new this.$window.google.maps.Point(18, 7)
             };
@@ -679,7 +679,7 @@ class DispatchMapController extends BaseController {
                 icon: largeFlagIcon,
                 label: {
                     text: courier.code,
-                    color: '#000000',
+                    color: '#FFFFFF',
                     fontSize: '12px',
                     fontWeight: 'bold'
                 },
