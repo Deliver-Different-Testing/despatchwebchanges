@@ -609,42 +609,14 @@ public class CourierRepository(
                 polygonChannelsByClearListArea.Count);
 
             // ===================================================================
-            // QUERY 3: Get ALL active couriers with jobs
+            // QUERY 3 & 4: Get ALL courier data with GPS, Fleet, and Job Counts (CONSOLIDATED)
             // ===================================================================
-            var activeCouriers = await Context.TucCouriers
-                .AsNoTracking()
-                .Where(c => c.Active &&
-                            (c.SendJobsViaSms ||
-                             c.SendAlertSms ||
-                             (c.CourierLogInOut != null &&
-                              c.CourierLogInOut.LogInTime.Date <= currentDateOnly &&
-                              c.CourierLogInOut.LogOutTime == null)))
-                .Select(c => new ActiveCourierDto
-                {
-                    CourierId = c.UccrId,
-                    Code = c.Code,
-                    Name = c.UccrName + " " + c.UccrSurname,
-                    DangerousGoods = c.UccrDangerousGoods == 1,
-                    DgLicenseExpiry = c.DglicenseExpiry,
-                    JobCount = c.TucJobUcjbCouriers.Count(j =>
-                        !j.UcjbVoid &&
-                        !j.UcjbJobDone &&
-                        j.UcjbDate.Date <= currentDateOnly)
-                })
-                .OrderBy(c => c.Code)
-                .TagWith("GetClearLists - Step 3: Active Couriers with Job Counts")
-                .ToListAsync();
-            Log.Information("Step 3: Found {Count} active couriers", activeCouriers.Count);
-
-            // ===================================================================
-            // QUERY 4a: Get courier BASE data (without display orders)
-            // ===================================================================
-            var courierBaseData = await Context.TucCouriers
+            var allCourierData = await Context.TucCouriers
                 .AsNoTracking()
                 .Where(c => c.Active && c.TblClearListAreaOrder != null)
                 .Where(c => c.CourierFleetId == (int)CourierFleet.UaAucklandP2P ||
                             (c.CourierLogInOut != null &&
-                             c.CourierLogInOut.LogInTime.Date <= currentDateOnly &&
+                             c.CourierLogInOut.LogInTime.Date == currentDateOnly &&
                              c.CourierLogInOut.LogOutTime == null))
                 .GroupJoin(
                     Context.TucCourierFleets.AsNoTracking(),
@@ -666,23 +638,32 @@ public class CourierRepository(
                     x => x.GpsGroup.DefaultIfEmpty(),
                     (x, gps) => new { x.Courier, x.Fleet, Gps = gps }
                 )
-                .Select(x => new
+                .Select(x => new CourierClearListDto
                 {
-                    x.Courier.UccrId,
-                    x.Courier.Code,
-                    x.Courier.UccrChannelId,
-                    x.Courier.SendJobsViaSms,
-                    x.Courier.AutoDespatch,
-                    x.Courier.UccrVehicle,
-                    x.Courier.CourierGpsid,
-                    GpsCreated = x.Gps != null ? x.Gps.Created : (DateTime?)null,
-                    PolygonId = x.Gps != null ? x.Gps.PolygonId : null
+                    UccrId = x.Courier.UccrId,
+                    Code = x.Courier.Code,
+                    Name = x.Courier.UccrName + " " + x.Courier.UccrSurname,
+                    DangerousGoods = x.Courier.UccrDangerousGoods == 1,
+                    DgLicenseExpiry = x.Courier.DglicenseExpiry,
+                    UccrChannelId = x.Courier.UccrChannelId,
+                    SendJobsViaSms = x.Courier.SendJobsViaSms,
+                    AutoDespatch = x.Courier.AutoDespatch,
+                    UccrVehicle = x.Courier.UccrVehicle,
+                    CourierGpsid = x.Courier.CourierGpsid,
+                    GpsCreated = x.Gps != null ? x.Gps.Created : null,
+                    PolygonId = x.Gps != null ? x.Gps.PolygonId : null,
+                    JobCount = x.Courier.TucJobUcjbCouriers.Count(j =>
+                        !j.UcjbVoid &&
+                        !j.UcjbJobDone &&
+                        j.UcjbDate.Date <= currentDateOnly)
                 })
+                .OrderBy(c => c.Code)
+                .TagWith("GetClearLists - Step 3&4: All Courier Data with GPS and Job Counts")
                 .ToListAsync();
 
-            Log.Information("Step 2: Found {Count} courier base data records", courierBaseData.Count);
+            Log.Information("Step 3&4: Found {Count} couriers with full data", allCourierData.Count);
 
-            var courierIds = courierBaseData.Select(c => c.UccrId).ToList();
+            var courierIds = allCourierData.Select(c => c.UccrId).ToList();
 
             // ===================================================================
             // QUERY 4b: Get ALL display orders in ONE query (FIXES N+1)
@@ -702,22 +683,14 @@ public class CourierRepository(
             var displayOrderDict = displayOrders.ToDictionary(d => d.CourierId);
 
             // ===================================================================
-            // Step 4c: Combine in memory
+            // Step 4c: Add display orders to courier data in memory
             // ===================================================================
-            var allCourierData = courierBaseData.Select(c => new CourierClearListDto
+            foreach (var courier in allCourierData)
             {
-                UccrId = c.UccrId,
-                Code = c.Code,
-                UccrChannelId = c.UccrChannelId,
-                SendJobsViaSms = c.SendJobsViaSms,
-                AutoDespatch = c.AutoDespatch,
-                UccrVehicle = c.UccrVehicle,
-                CourierGpsid = c.CourierGpsid,
-                GpsCreated = c.GpsCreated,
-                PolygonId = c.PolygonId,
-                DisplayOrder = displayOrderDict.TryGetValue(c.UccrId, out var order) ? order.Status : null,
-                OrderTime = displayOrderDict.TryGetValue(c.UccrId, out var order2) ? order2.OrderTime : null
-            }).ToList();
+                if (!displayOrderDict.TryGetValue(courier.UccrId, out var order)) continue;
+                courier.DisplayOrder = order.Status;
+                courier.OrderTime = order.OrderTime;
+            }
 
             // Group couriers by GPS polygon ID for area filtering
             var couriersByPolygon = allCourierData
@@ -726,6 +699,7 @@ public class CourierRepository(
                 .ToDictionary(g => g.Key, g => g.ToList());
 
             Log.Information("[STEP 4c - Combined Data] Total allCourierData: {Count}", allCourierData.Count);
+
 
             // ===================================================================
             // QUERY 5: Get ALL jobs for ALL couriers at once
@@ -751,7 +725,6 @@ public class CourierRepository(
             var jobsByCourier = allJobs
                 .GroupBy(j => j.CourierId)
                 .ToDictionary(g => g.Key, g => g.ToList());
-
 
             // ===================================================================
             // QUERY 6: Get ALL suburb mappings at once
@@ -888,9 +861,9 @@ public class CourierRepository(
                     Name = clearList.AreaName,
                     Order = clearList.AreaOrder,
                     PercentHeight = 33,
-                    Top = BuildClearListSection(clearListResults, activeCouriers, 1),
-                    Middle = BuildClearListSection(clearListResults, activeCouriers, 3),
-                    Bottom = BuildClearListSection(clearListResults, activeCouriers, 5),
+                    Top = BuildClearListSection(clearListResults, allCourierData, 1),
+                    Middle = BuildClearListSection(clearListResults, allCourierData, 3),
+                    Bottom = BuildClearListSection(clearListResults, allCourierData, 5),
                     TotalRemaining = areaRemainingCounts.GetValueOrDefault(
                         clearList.AreaName?.ToLower() ?? string.Empty,
                         0
@@ -1057,7 +1030,8 @@ public class CourierRepository(
             {
                 var areaName = kvp.Key;
                 var filter = kvp.Value + statusFilter;
-                var query = $"SELECT *, NULL as CourierLatitude, NULL as CourierLongitude FROM DESWEB_qryDespatch WHERE {filter}";
+                var query =
+                    $"SELECT *, NULL as CourierLatitude, NULL as CourierLongitude FROM DESWEB_qryDespatch WHERE {filter}";
 
                 try
                 {
@@ -1088,7 +1062,7 @@ public class CourierRepository(
         // Build a dictionary with OrdinalIgnoreCase comparer
         var results = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         foreach (var result in counts) results[result.AreaName] = result.Count;
-    
+
         return results;
     }
 
@@ -1122,7 +1096,7 @@ public class CourierRepository(
 
     private static List<ClearListSection> BuildClearListSection(
         List<ClearListResult> data,
-        List<ActiveCourierDto> activeCouriers,
+        List<CourierClearListDto> allCouriers,
         int displayOrder
     )
     {
@@ -1132,13 +1106,13 @@ public class CourierRepository(
             .Where(c => c.DisplayOrder == displayOrder)
             .Select(x =>
             {
-                var activeCourier = activeCouriers.FirstOrDefault(c => c?.CourierId == x.CourierId);
+                var courier = allCouriers.FirstOrDefault(c => c?.UccrId == x.CourierId);
                 return new ClearListSection
                 {
                     CourierNumber = x.Code,
-                    CourierData = BuildCourierData(x, activeCouriers),
+                    CourierData = BuildCourierData(x, allCouriers),
                     Destinations = BuildDestinations(x.Deliver),
-                    JobCount = activeCourier?.JobCount ?? 0
+                    JobCount = courier?.JobCount ?? 0
                 };
             })
             .ToList();
@@ -1146,16 +1120,17 @@ public class CourierRepository(
 
     private static CourierData BuildCourierData(
         ClearListResult result,
-        List<ActiveCourierDto> activeCouriers
+        List<CourierClearListDto> allCouriers
     )
     {
-        if (activeCouriers == null)
+        if (allCouriers == null)
             return new CourierData();
-        var activeCourier = activeCouriers.FirstOrDefault(c => c?.CourierId == result?.CourierId);
+
+        var courier = allCouriers.FirstOrDefault(c => c?.UccrId == result?.CourierId);
 
         return new CourierData
         {
-            Courier = $"{activeCourier?.Code} {activeCourier?.Name}".Trim(),
+            Courier = $"{courier?.Code} {courier?.Name}".Trim(),
             Location = "Unknown",
             Pu = "Unknown",
             Del = result?.Deliver ?? "Unknown",
@@ -2242,7 +2217,6 @@ public class CourierRepository(
             }
         }
     }
-
 
     public async Task<List<Suggestion>> GetVehicleSizesAsync() => await Context.GetAllVehicleSizesAsync();
 

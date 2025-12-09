@@ -15,6 +15,10 @@ public class CourierClearListDto
     public int? PolygonId { get; set; } 
     public int? DisplayOrder { get; set; }
     public DateTime? OrderTime { get; set; }
+    public string Name { get; set; }
+    public bool DangerousGoods { get; set; }
+    public DateTime? DgLicenseExpiry { get; set; }
+    public int JobCount { get; set; }
 }
 
 public class CourierJobSuburbDto
