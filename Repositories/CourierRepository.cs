@@ -192,6 +192,7 @@ public class CourierRepository(
                             c.CourierGps.Latitude <= data.MaxLat &&
                             c.CourierLogInOut != null &&
                             c.CourierLogInOut.LogOutTime == null)
+                .Where(c => c.CourierFleet.DisplayOnClearlistsDespatch)
                 .Select(c => new
                 {
                     c.UccrId,
@@ -288,6 +289,7 @@ public class CourierRepository(
                             c.CourierGps.Longitude <= data.MaxLng &&
                             c.CourierGps.Latitude >= data.MinLat &&
                             c.CourierGps.Latitude <= data.MaxLat)
+                .Where(c => c.CourierFleet.DisplayOnClearlistsDespatch)
                 .Select(c => new
                 {
                     c.UccrId,
@@ -618,6 +620,7 @@ public class CourierRepository(
                             (c.CourierLogInOut != null &&
                              c.CourierLogInOut.LogInTime.Date == currentDateOnly &&
                              c.CourierLogInOut.LogOutTime == null))
+                .Where(c => c.CourierFleet.DisplayOnClearlistsDespatch)
                 .GroupJoin(
                     Context.TucCourierFleets.AsNoTracking(),
                     c => c.CourierFleetId,
