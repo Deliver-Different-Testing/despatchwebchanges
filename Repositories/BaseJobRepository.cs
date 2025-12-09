@@ -694,12 +694,7 @@ public class BaseJobRepository(
         var effectiveJobId = await GetEffectiveJobId(jobId, false);
         var tenantTimeZone = infoService.GetTenantTimeZone();
 
-        var notes = await Context.TucNotes
-            .AsNoTracking()
-            .Where(n => n.JobId == effectiveJobId)
-            .Select(NoteMappings.ActiveNoteMap)
-            .ToListAsync();
-
+        var notes = await Context.GetActiveNotesByJobIdAsync(effectiveJobId);
         UpdateNoteDate(notes, tenantTimeZone);
         return notes;
     }

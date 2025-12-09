@@ -10,26 +10,43 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.MessageModels;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace DespatchWeb.Repositories;
 
 public class MessageRepository(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService infoService,
-    IMessageHelperService messageHelper) : BaseRepository(contextFactory), IMessageRepository
+    IMessageHelperService messageHelper,
+    IMemoryCache cache) : BaseRepository(contextFactory), IMessageRepository
 {
+    private readonly IDbContextFactory<DespatchContext> _contextFactory = contextFactory;
+
     public async Task<int> GetUnreadMessageCountAsync()
     {
         var currentStaffId = infoService.GetStaffId();
+        var cacheKey = $"unread-messages:{currentStaffId}";
 
-        var unreadCount = await Context.TucManualMessages
-            .UnreadForStaff(currentStaffId)
-            .AsNoTracking()
-            .CountAsync();
+        // Try cache first
+        if (cache.TryGetValue<int>(cacheKey, out var cachedCount)) return cachedCount;
+
+        // Use compiled query
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var unreadCount = await Context.GetUnreadMessageCountAsync(currentStaffId, context);
+
+        // Cache with sliding expiration matching poll interval
+        cache.Set(
+            cacheKey, 
+            unreadCount, 
+            new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60),
+                Priority = CacheItemPriority.Normal
+            });
 
         return unreadCount;
     }
-
+    
     public async Task<List<RecentMessageViewModel>> GetRecentListAsync()
     {
         var staffId = infoService.GetStaffId();
@@ -40,7 +57,7 @@ public class MessageRepository(
             .IncludeParticipants()
             .ToListAsync();
 
-        // Group by other party and build a result using helper service
+        // Group by another party and build a result using helper service
         var result = allMessages
             .Select(m => new
             {
@@ -201,17 +218,16 @@ public class MessageRepository(
     {
         var currentDate = infoService.GetCurrentTenantTime();
         var currentStaffId = infoService.GetStaffId();
+        
+        var affectedRows = otherPartyType == OtherMessagePartyType.Courier
+            ? await Context.MarkCourierMessagesAsReadAsync(currentStaffId, otherPartyId, currentDate)
+            : await Context.MarkStaffMessagesAsReadAsync(currentStaffId, otherPartyId, currentDate);
 
-        var query = Context.TucManualMessages.UnreadForStaff(currentStaffId);
-
-        // Filter by another party type
-        query = otherPartyType == OtherMessagePartyType.Courier
-            ? query.Where(m => m.UcmmSendFromCourierId == otherPartyId)
-            : query.Where(m => m.UcmmSendFromStaffId == otherPartyId);
-
-        await query.ExecuteUpdateAsync(setters => setters
-            .SetProperty(m => m.Read, true)
-            .SetProperty(m => m.TimeRead, currentDate));
+        if (affectedRows > 0)
+        {
+            var cacheKey = $"unread-messages:{currentStaffId}";
+            cache?.Remove(cacheKey);
+        }
     }
 
     public async Task<List<Suggestion>> GetSavedQuickResponsesAsync()
@@ -351,9 +367,7 @@ public class MessageRepository(
 
     private async Task HandleStaffMessageAsync(TucManualMessage message, int sendToStaffId)
     {
-        var staffExists = await Context.TucStaffs
-            .AnyAsync(s => s.UcstId == sendToStaffId && s.UcstActive);
-
+        var staffExists = await Context.StaffExistsAsync(sendToStaffId);
         ArgumentNullException.ThrowIfNull(staffExists);
 
         message.UcmmSendToStaffId = sendToStaffId;

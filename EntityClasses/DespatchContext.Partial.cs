@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using Microsoft.EntityFrameworkCore;
@@ -29,6 +30,10 @@ public partial class DespatchContext
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobs.Any(j => j.UcjbId == jobId));
 
+    private static readonly Func<DespatchContext, int, Task<bool>> StaffExistsCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int staffId) =>
+            context.TucStaffs.Any(j => j.UcstId == staffId));
+
     private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveJobIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobs
@@ -36,7 +41,7 @@ public partial class DespatchContext
                 .Where(j => j.UcjbId == jobId)
                 .Select(j => j.ParentId ?? j.UcjbId)
                 .FirstOrDefault());
-    
+
     private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveArchiveJobIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobArchives
@@ -104,7 +109,7 @@ public partial class DespatchContext
     private static readonly Func<DespatchContext, NoteType, Task<bool>> ConfirmNoteTypeExistsCompiled =
         EF.CompileAsyncQuery((DespatchContext context, NoteType noteType) =>
             context.TucNoteTypes.Any(n => n.NoteTypeId == (int)noteType));
-    
+
     private static readonly Func<DespatchContext, int, DateTime, Task<ActiveCouriersViewModel>> GetCourierByIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int courierId, DateTime now) =>
             context.TucCouriers
@@ -127,8 +132,8 @@ public partial class DespatchContext
                     )
                 })
                 .FirstOrDefault());
-    
-    
+
+
     private static readonly Func<DespatchContext, IAsyncEnumerable<Suggestion>> GetAllVehicleSizesCompiled =
         EF.CompileAsyncQuery((DespatchContext context) =>
             context.VehicleSizes
@@ -149,32 +154,87 @@ public partial class DespatchContext
                 .AsNoTracking()
                 .OrderBy(r => r.UcjtName)
                 .Select(r => new Suggestion { Id = r.UcjtId, Text = r.UcjtName }));
-    
-    private static readonly Func<DespatchContext, List<int>, IAsyncEnumerable<PolygonChannelMapping>> GetPolygonMappingsCompiled =
-        EF.CompileAsyncQuery((DespatchContext context, List<int> clearListAreaIds) =>
-            context.TblClearListAreas
+
+    private static readonly Func<DespatchContext, List<int>, IAsyncEnumerable<PolygonChannelMapping>>
+        GetPolygonMappingsCompiled =
+            EF.CompileAsyncQuery((DespatchContext context, List<int> clearListAreaIds) =>
+                context.TblClearListAreas
+                    .AsNoTracking()
+                    .Where(cla => clearListAreaIds.Contains(cla.ClearListAreaId))
+                    .Join(
+                        context.TblClearListAreaPolygons.AsNoTracking(),
+                        cla => cla.ClearListAreaId,
+                        cap => cap.ClearListAreaId,
+                        (cla, cap) => new PolygonChannelMapping
+                        {
+                            ClearListAreaId = cap.ClearListAreaId,
+                            PolygonId = cap.PolygonId,
+                            ChannelId = cla.ChannelId
+                        }));
+
+
+    private static readonly Func<DespatchContext, int, IAsyncEnumerable<TucNoteViewModel>>
+        GetActiveNotesByJobIdCompiled =
+            EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
+                context.TucNotes
+                    .AsNoTracking()
+                    .Where(n => n.JobId == jobId)
+                    .Select(NoteMappings.ActiveNoteMap));
+
+    private static readonly Func<DespatchContext, int, Task<int>> GetUnreadMessageCountCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int staffId) =>
+            context.TucManualMessages
                 .AsNoTracking()
-                .Where(cla => clearListAreaIds.Contains(cla.ClearListAreaId))
-                .Join(
-                    context.TblClearListAreaPolygons.AsNoTracking(),
-                    cla => cla.ClearListAreaId,
-                    cap => cap.ClearListAreaId,
-                    (cla, cap) => new PolygonChannelMapping
-                    {
-                        ClearListAreaId = cap.ClearListAreaId,
-                        PolygonId = cap.PolygonId,
-                        ChannelId = cla.ChannelId
-                    }));
+                .Count(m => m.UcmmSendToStaffId == staffId && !m.Read)
+        );
+
+    private static readonly Func<DespatchContext, int, int, DateTime, Task<int>> MarkCourierMessagesAsReadCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int staffId, int courierId, DateTime readTime) =>
+            context.TucManualMessages
+                .Where(m => m.UcmmSendToStaffId == staffId &&
+                            !m.Read &&
+                            m.UcmmSendFromCourierId == courierId)
+                .ExecuteUpdate(setters => setters
+                    .SetProperty(m => m.Read, true)
+                    .SetProperty(m => m.TimeRead, readTime))
+        );
+
+    private static readonly Func<DespatchContext, int, int, DateTime, Task<int>> MarkStaffMessagesAsReadCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int staffId, int fromStaffId, DateTime readTime) =>
+            context.TucManualMessages
+                .Where(m => m.UcmmSendToStaffId == staffId &&
+                            !m.Read &&
+                            m.UcmmSendFromStaffId == fromStaffId)
+                .ExecuteUpdate(setters => setters
+                    .SetProperty(m => m.Read, true)
+                    .SetProperty(m => m.TimeRead, readTime))
+        );
 
     // Access compiled queries
-    public async Task<List<Suggestion>> GetAllVehicleSizesAsync() => await GetAllVehicleSizesCompiled(this).ToListAsync();
+    public async Task<List<TucNoteViewModel>> GetActiveNotesByJobIdAsync(int jobId) =>
+        await GetActiveNotesByJobIdCompiled(this, jobId).ToListAsync();
+
+    public async Task<int> MarkCourierMessagesAsReadAsync(int staffId, int fromStaffId, DateTime readTime) =>
+        await MarkCourierMessagesAsReadCompiled(this, staffId, fromStaffId, readTime);
+
+    public async Task<int> MarkStaffMessagesAsReadAsync(int staffId, int fromStaffId, DateTime readTime) =>
+        await MarkStaffMessagesAsReadCompiled(this, staffId, fromStaffId, readTime);
+
+    public async Task<int> GetUnreadMessageCountAsync(int staffId, DespatchContext context = null) =>
+        await GetUnreadMessageCountCompiled(context ?? this, staffId);
+
+    public async Task<List<Suggestion>> GetAllVehicleSizesAsync() =>
+        await GetAllVehicleSizesCompiled(this).ToListAsync();
+
     public async Task<List<Suggestion>> GetAllRegionsAsync() => await GetAllRegionsCompiled(this).ToListAsync();
     public async Task<List<Suggestion>> GetAllSpeedsAsync() => await GetAllSpeedsCompiled(this).ToListAsync();
-    
-    public async Task<List<PolygonChannelMapping>> GetPolygonMappings(List<int> clearListAreaIds) => await GetPolygonMappingsCompiled(this, clearListAreaIds).ToListAsync();
-    
-    public async Task<ActiveCouriersViewModel> GetCourierByIdAsync(int courierId, DateTime tenantTime) => await GetCourierByIdCompiled(this, courierId, tenantTime);
-    
+
+    public async Task<List<PolygonChannelMapping>> GetPolygonMappings(List<int> clearListAreaIds) =>
+        await GetPolygonMappingsCompiled(this, clearListAreaIds).ToListAsync();
+
+    public async Task<ActiveCouriersViewModel> GetCourierByIdAsync(int courierId, DateTime tenantTime) =>
+        await GetCourierByIdCompiled(this, courierId, tenantTime);
+
     public async Task<List<ActiveCourierDto>> GetActiveCouriersAsync(DateTime today) =>
         await GetActiveCouriersCompiled(this, today).ToListAsync();
 
@@ -182,8 +242,12 @@ public partial class DespatchContext
         await ConfirmNoteTypeExistsCompiled(this, noteType);
 
     public async Task<int> GetEffectiveJobIdAsync(int jobId) => await GetEffectiveJobIdCompiled(this, jobId);
-    public async Task<int> GetEffectiveArchiveJobIdAsync(int jobId) => await GetEffectiveArchiveJobIdCompiled(this, jobId);
-    public async Task<int> GetEffectiveBulkJobIdAsync(int bulkJobId) => await GetEffectiveBulkJobIdCompiled(this, bulkJobId);
+
+    public async Task<int> GetEffectiveArchiveJobIdAsync(int jobId) =>
+        await GetEffectiveArchiveJobIdCompiled(this, jobId);
+
+    public async Task<int> GetEffectiveBulkJobIdAsync(int bulkJobId) =>
+        await GetEffectiveBulkJobIdCompiled(this, bulkJobId);
 
     public async Task<int> GetEffectiveJobBookingIdAsync(int jobBookingId) =>
         await GetEffectiveJobBookingIdCompiled(this, jobBookingId);
@@ -193,6 +257,8 @@ public partial class DespatchContext
     public async Task<DateTime?> GetEcoDeliveryTimeAsync() => await GetEcoDeliveryTimeCompiled(this);
 
     public async Task<bool> IsLiveJobAsync(int jobId) => await IsLiveJobCompiled(this, jobId);
+
+    public async Task<bool> StaffExistsAsync(int staffId) => await StaffExistsCompiled(this, staffId);
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {
