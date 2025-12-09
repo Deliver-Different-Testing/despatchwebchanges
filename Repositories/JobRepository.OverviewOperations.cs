@@ -22,11 +22,13 @@ public partial class JobRepository
         OverviewJobsRequest parameters
     )
     {
-        // Base query
-        // Get just parent jobs to start with
-        var query = Context.TucJobs.Where(j => j.ParentId == j.UcjbId || !j.ParentId.HasValue);
+        var isUsCustomer = _infoService.IsUsTenant();
 
-        // Apply a status group
+        var query = Context.TucJobs
+            .AsNoTracking()
+            .Where(j => j.ParentId == j.UcjbId || !j.ParentId.HasValue);
+
+        // Apply status group - filter early
         query = statusGroup switch
         {
             JobStatusGroup.Active => query.Where(j =>
@@ -55,7 +57,7 @@ public partial class JobRepository
         // Apply speed filter if provided
         if (parameters.Speeds.Count > 0)
             query = query.Where(j => parameters.Speeds.Contains(j.UcjbSpeedNavigation.UcjtId));
-        
+
         // Apply courier filter if provided
         if (parameters.Couriers.Count > 0)
             query = query.Where(j => parameters.Couriers.Contains(j.UcjbCourier.UccrId));
@@ -65,18 +67,18 @@ public partial class JobRepository
         {
             var search = parameters.Search.ToLower().Trim();
             query = query.Where(j =>
-                EF.Functions.Like(j.UcjbNumber.ToLower(), $"%{search}%")
-                || EF.Functions.Like(j.UcjbStatusNavigation.UcjsName.ToLower(), $"%{search}%")
-                || j.TblBulkJobs.Any(b => EF.Functions.Like(b.Region.Name.ToLower(), $"%{search}%"))
-                || EF.Functions.Like(j.PickupAddressLine5.ToLower(), $"%{search}%")
-                || EF.Functions.Like(j.PickupAddressLine6.ToLower(), $"%{search}%")
-                || EF.Functions.Like(j.DeliveryAddressLine5.ToLower(), $"%{search}%")
-                || EF.Functions.Like(j.DeliveryAddressLine6.ToLower(), $"%{search}%")
+                EF.Functions.Like(j.UcjbNumber, $"%{search}%")
+                || EF.Functions.Like(j.UcjbStatusNavigation.UcjsName, $"%{search}%")
+                || j.TblBulkJobs.Any(b => EF.Functions.Like(b.Region.Name, $"%{search}%"))
+                || EF.Functions.Like(j.PickupAddressLine5, $"%{search}%")
+                || EF.Functions.Like(j.PickupAddressLine6, $"%{search}%")
+                || EF.Functions.Like(j.DeliveryAddressLine5, $"%{search}%")
+                || EF.Functions.Like(j.DeliveryAddressLine6, $"%{search}%")
                 || (
                     j.UcjbCourier != null
                     && (
-                        EF.Functions.Like(j.UcjbCourier.UccrName.ToLower(), $"%{search}%")
-                        || EF.Functions.Like(j.UcjbCourier.UccrSurname.ToLower(), $"%{search}%")
+                        EF.Functions.Like(j.UcjbCourier.UccrName, $"%{search}%")
+                        || EF.Functions.Like(j.UcjbCourier.UccrSurname, $"%{search}%")
                     )
                 )
             );
@@ -88,75 +90,73 @@ public partial class JobRepository
         if (parameters.EndDate.HasValue)
             query = query.Where(j => j.UcjbDate <= parameters.EndDate);
 
-        // Apply sorting
         query = ApplySorting(query, parameters.OrderBy, parameters.OrderDirection);
 
-        // Get total count for pagination
         var total = await query.CountAsync();
+
+        if (total == 0)
+        {
+            return new PaginatedResponse<DeliveryJob>
+            {
+                Items = new List<DeliveryJob>(),
+                Total = 0,
+                Page = parameters.Page,
+                Pages = 0
+            };
+        }
+
         var pages = (int)Math.Ceiling(total / (double)parameters.Limit);
 
-        var isUsCustomer = _infoService.IsUsTenant();
-
-        // Apply pagination
         var jobs = await query
             .Skip((parameters.Page - 1) * parameters.Limit)
             .Take(parameters.Limit)
+            .AsSplitQuery()
             .Select(j => new DeliveryJob
             {
                 JobId = j.UcjbId,
                 JobName = j.UcjbNumber,
                 Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : "Unknown",
-                Region =
-                    j.TblBulkJobs.FirstOrDefault() != null
-                        ? j.TblBulkJobs.FirstOrDefault().Region.Name
-                        : null,
+                Region = j.TblBulkJobs.FirstOrDefault() != null
+                    ? j.TblBulkJobs.FirstOrDefault().Region.Name
+                    : null,
+                // Simple conditional - server evaluable
                 Pickup = isUsCustomer
                     ? j.PickupAddressLine5 + ", " + j.PickupAddressLine6
                     : j.UcjbFromAddr,
                 Delivery = isUsCustomer
                     ? j.DeliveryAddressLine5 + ", " + j.DeliveryAddressLine6
                     : j.UcjbToAddr,
-                Driver =
-                    j.UcjbCourier != null
-                        ? j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
-                        : null,
+                Driver = j.UcjbCourier != null
+                    ? j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
+                    : null,
                 Completion = j.InverseParent.Count != 0
-                    ? (int)
-                    Math.Round(
-                        (double)
-                        j.InverseParent.Count(c =>
+                    ? (int)Math.Round(
+                        (double)j.InverseParent.Count(c =>
                             c.UcjbJobDone
-                            || (
-                                c.UcjbStatus.HasValue
-                                && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value)
-                            )
-                        )
-                        / j.InverseParent.Count
-                        * 100
+                            || (c.UcjbStatus.HasValue
+                                && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))
+                        ) / j.InverseParent.Count * 100
                     )
                     : 0,
-                ChildJobs = j
-                    .InverseParent.Select(c => new ChildDeliveryJob
+                ChildJobs = j.InverseParent
+                    .Select(c => new ChildDeliveryJob
                     {
                         JobId = c.UcjbId,
                         JobName = c.UcjbNumber,
                         Status = c.UcjbStatusNavigation != null ? c.UcjbStatusNavigation.UcjsName : "Unknown",
-                        Region =
-                            c.TblBulkJobs.FirstOrDefault() != null
-                                ? c.TblBulkJobs.FirstOrDefault().Region.Name
-                                : null,
+                        Region = c.TblBulkJobs.FirstOrDefault() != null
+                            ? c.TblBulkJobs.FirstOrDefault().Region.Name
+                            : null,
                         Pickup = c.PickupAddressLine5 + ", " + c.PickupAddressLine6,
                         Delivery = c.DeliveryAddressLine5 + ", " + c.DeliveryAddressLine6,
-                        Driver =
-                            c.UcjbCourier != null
-                                ? c.UcjbCourier.UccrName + ", " + c.UcjbCourier.UccrSurname
-                                : null,
-                        Completion =
-                            c.UcjbJobDone || c.UcjbStatus == (int)JobStatus.Completed ? 100 : 0
+                        Driver = c.UcjbCourier != null
+                            ? c.UcjbCourier.UccrName + ", " + c.UcjbCourier.UccrSurname
+                            : null,
+                        Completion = c.UcjbJobDone || c.UcjbStatus == (int)JobStatus.Completed ? 100 : 0
                     })
                     .ToList()
             })
-            .AsNoTracking()
+            .TagWith("GetJobsForOverviewPage - Paginated Jobs with Children")
             .ToListAsync();
 
         return new PaginatedResponse<DeliveryJob>
@@ -174,7 +174,7 @@ public partial class JobRepository
         string orderDirection
     )
     {
-        var isAscending = !orderDirection.Equals("desc", StringComparison.CurrentCultureIgnoreCase);
+        var isAscending = !orderDirection.Equals("desc", StringComparison.OrdinalIgnoreCase);
 
         query = orderBy?.ToLower() switch
         {
@@ -190,24 +190,16 @@ public partial class JobRepository
                 ? query.OrderBy(j =>
                     j.InverseParent.Count(c =>
                         c.UcjbJobDone
-                        || (
-                            c.UcjbStatus.HasValue
-                            && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value)
-                        )
-                    )
-                    / (double)j.InverseParent.Count
-                    * 100
+                        || (c.UcjbStatus.HasValue
+                            && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))
+                    ) / (double)j.InverseParent.Count * 100
                 )
                 : query.OrderByDescending(j =>
                     j.InverseParent.Count(c =>
                         c.UcjbJobDone
-                        || (
-                            c.UcjbStatus.HasValue
-                            && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value)
-                        )
-                    )
-                    / (double)j.InverseParent.Count
-                    * 100
+                        || (c.UcjbStatus.HasValue
+                            && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))
+                    ) / (double)j.InverseParent.Count * 100
                 ),
 
             "pickup" => isAscending
@@ -290,11 +282,16 @@ public partial class JobRepository
         {
             var now = _infoService.GetCurrentTenantTime();
             var tenantTimeZone = _infoService.GetTenantTimeZone();
+            var currentDate = now.Date; // #12: Pre-calculate for server-evaluable predicate
 
-            var query = Context.TucJobs.Where(j =>
-                j.UcjbStatus != (int)JobStatus.Completed && j.UcjbStatus != (int)JobStatus.Rejected &&
-                j.UcjbStatus != (int)JobStatus.Void
-            );
+            // #2: Apply AsNoTracking early
+            var query = Context.TucJobs
+                .AsNoTracking()
+                .Where(j =>
+                    j.UcjbStatus != (int)JobStatus.Completed &&
+                    j.UcjbStatus != (int)JobStatus.Rejected &&
+                    j.UcjbStatus != (int)JobStatus.Void
+                );
 
             // Apply date range filter
             if (parameters.StartDate.HasValue)
@@ -315,13 +312,13 @@ public partial class JobRepository
             // Apply courier filter if provided
             if (parameters.Couriers.Count > 0)
                 query = query.Where(j => parameters.Couriers.Contains(j.UcjbCourier.UccrId));
-            
+
             // Order
             query = query.OrderBy(j => j.PickUpTime.Value);
 
-            // Query to DTO
+            // #3: Project only needed fields early
+            // #10: Add TagWith for debugging
             var jobDtos = await query
-                .AsNoTracking()
                 .Select(j => new OpenJobDto
                 {
                     JobId = j.UcjbId,
@@ -348,34 +345,70 @@ public partial class JobRepository
                     DeliveryAddressLine7 = j.DeliveryAddressLine7,
                     DeliveryAddressLine8 = j.DeliveryAddressLine8,
                     DeliveryTimeZone = j.DeliverByTimeZone != null ? j.DeliverByTimeZone.Name : null,
+                    CourierId = j.UcjbCourier != null ? j.UcjbCourier.UccrId : null,
                     CourierName = j.UcjbCourier != null ? j.UcjbCourier.UccrName : null,
                     CourierSurname = j.UcjbCourier != null ? j.UcjbCourier.UccrSurname : null,
-                    CourierCompletedJobs = j.UcjbCourier != null
-                        ? j.UcjbCourier.TucJobUcjbCouriers
-                            .Where(dj => dj.UcjbStatus == (int)JobStatus.Completed
-                                         && dj.UcjbComplTime.HasValue
-                                         && dj.UcjbComplTime.Value.Date == now.Date)
-                            .Select(dj => dj.UcjbComplTime.Value)
-                            .ToList()
-                        : new List<DateTime>(),
-                    CourierLastCompleted = j.UcjbCourier != null
-                        ? j.UcjbCourier.TucJobUcjbCouriers
-                            .Where(dj => dj.UcjbStatus == (int)JobStatus.Completed && dj.UcjbComplTime.HasValue)
-                            .OrderByDescending(dj => dj.UcjbComplTime)
-                            .Select(dj => dj.UcjbComplTime)
-                            .FirstOrDefault()
-                        : null,
                     Quantity = j.UcjbQty ?? 0,
                     PackageTypeName = j.AcceptedJobType != null ? j.AcceptedJobType.UcjtName : null,
                     TotalDistance = j.TotalDistance ?? 0,
-                    // Fields needed for delivery time calculation
                     DeliveryTime = j.DeliverByTime,
                     SpeedMinutes = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.Minutes : null
                 })
+                .TagWith("GetOpenJobs - Step 1: Job Data")
                 .ToListAsync();
 
-            // Map DTOs to ViewModels
-            var openJobs = jobDtos.Select(dto => MapToOpenJobResponse(dto, tenantTimeZone)).ToList();
+            // Early return if no jobs
+            if (jobDtos.Count == 0) return new List<OpenJobResponse>();
+
+            // Get unique courier IDs
+            var courierIds = jobDtos
+                .Where(j => j.CourierId.HasValue)
+                .Select(j => j.CourierId.Value)
+                .Distinct()
+                .ToList();
+
+            // Query 2: Get courier completion data separately (avoids N+1)
+            Dictionary<int, CourierCompletionData> courierCompletionDict = new();
+
+            if (courierIds.Count > 0)
+            {
+                var courierCompletions = await Context.TucJobs
+                    .AsNoTracking()
+                    .Where(j => j.UcjbCourierId.HasValue &&
+                                courierIds.Contains(j.UcjbCourierId.Value) &&
+                                j.UcjbStatus == (int)JobStatus.Completed &&
+                                j.UcjbComplTime.HasValue)
+                    .GroupBy(j => j.UcjbCourierId.Value)
+                    .Select(g => new
+                    {
+                        CourierId = g.Key,
+                        CompletedToday = g.Count(j => j.UcjbComplTime.Value.Date == currentDate),
+                        LastCompleted = g.OrderByDescending(j => j.UcjbComplTime).Select(j => j.UcjbComplTime)
+                            .FirstOrDefault()
+                    })
+                    .TagWith("GetOpenJobs - Step 2: Courier Completion Data")
+                    .ToListAsync();
+
+                courierCompletionDict = courierCompletions.ToDictionary(
+                    c => c.CourierId,
+                    c => new CourierCompletionData
+                    {
+                        CompletedToday = c.CompletedToday,
+                        LastCompleted = c.LastCompleted
+                    }
+                );
+            }
+
+            // Map DTOs to ViewModels with courier data
+            var openJobs = jobDtos.Select(dto =>
+            {
+                var courierData = dto.CourierId.HasValue &&
+                                  courierCompletionDict.TryGetValue(dto.CourierId.Value, out var data)
+                    ? data
+                    : new CourierCompletionData { CompletedToday = 0, LastCompleted = null };
+
+                return MapToOpenJobResponse(dto, courierData, tenantTimeZone);
+            }).ToList();
 
             return openJobs;
         }
@@ -386,7 +419,10 @@ public partial class JobRepository
         }
     }
 
-    private static OpenJobResponse MapToOpenJobResponse(OpenJobDto dto, string tenantTimeZone)
+    private static OpenJobResponse MapToOpenJobResponse(
+        OpenJobDto dto,
+        CourierCompletionData courierData,
+        string tenantTimeZone)
     {
         return new OpenJobResponse
         {
@@ -394,7 +430,7 @@ public partial class JobRepository
             Reference = dto.Reference,
             Status = dto.StatusName,
             PickupTime = dto.PickupTime.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(dto.PickupTime.Value, dto.PickupTimeZone ?? tenantTimeZone) 
+                ? TimeZoneHelper.SetDateTimeWithTimeZone(dto.PickupTime.Value, dto.PickupTimeZone ?? tenantTimeZone)
                 : null,
             PickupName = dto.PickupFromContact,
             PickupAddress = AddressFormatter.FormatWithCityStateZip(
@@ -426,9 +462,9 @@ public partial class JobRepository
             DriverName = !string.IsNullOrEmpty(dto.CourierName)
                 ? $"{dto.CourierName} {dto.CourierSurname}".Trim()
                 : null,
-            CompletedToday = dto.CourierCompletedJobs.Count,
-            LastCompleted = dto.CourierLastCompleted.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(dto.CourierLastCompleted.Value, tenantTimeZone)
+            CompletedToday = courierData.CompletedToday,
+            LastCompleted = courierData.LastCompleted.HasValue
+                ? TimeZoneHelper.SetDateTimeWithTimeZone(courierData.LastCompleted.Value, tenantTimeZone)
                 : null,
             Quantity = dto.Quantity,
             PackageType = dto.PackageTypeName,
@@ -439,7 +475,8 @@ public partial class JobRepository
     private static DateTimeOffset? CalculateDeliveryTime(OpenJobDto dto, string tenantTimeZone)
     {
         if (dto.DeliveryTime.HasValue)
-            return TimeZoneHelper.SetDateTimeWithTimeZone(dto.DeliveryTime.Value, dto.DeliveryTimeZone ?? tenantTimeZone);
+            return TimeZoneHelper.SetDateTimeWithTimeZone(dto.DeliveryTime.Value,
+                dto.DeliveryTimeZone ?? tenantTimeZone);
         if (dto.PickupTime.HasValue && dto.SpeedMinutes.HasValue)
             return TimeZoneHelper.SetDateTimeWithTimeZone(dto.PickupTime.Value.AddMinutes(dto.SpeedMinutes.Value),
                 dto.PickupTimeZone ?? tenantTimeZone);
