@@ -27,7 +27,7 @@ public static class NoteMappings
             UpdatedBy = note.UpdatedBy,
             UpdatedByName = note.UpdatedBy.HasValue && note.UpdatedByNavigation != null
             ? FormatName(note.UpdatedByNavigation.UcstFirstName, note.UpdatedByNavigation.UcstLastName)
-                : string.Empty,
+                : string.Empty
         };
     
     private static string FormatName(string firstName, string lastName) => string.Concat(firstName, " ", lastName);
