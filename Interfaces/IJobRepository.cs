@@ -36,7 +36,7 @@ public interface IJobRepository
     Task<JobSearchResult> CurrentJobListAsync(int courierId,
         DateTimeOffset? startDate,
         DateTimeOffset? endDate);
-    
+
     Task<JobSearchResult> JobListAsync(
         JobQueryParams queryParams,
         bool isInternal,
@@ -127,7 +127,7 @@ public interface IJobRepository
         string value);
 
     Task ReleaseBulkJobByIdAsync(int bulkJobId);
-    
+
     Task<int> QuickAddJobAsync(JobCreateViewModel request);
     Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel);
     Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId);
@@ -208,4 +208,6 @@ public interface IJobRepository
     Task<decimal> GetJobRateUsAsync(RateJobUsDto dto);
     Task AssignCourierToJobAsync(List<int> jobIds, int courierId);
     Task AssignCourierToChildJobsAsync(List<int> jobIds, InternalJobStatus internalStatus);
+    Task<List<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived);
+    Task<int?> GetJobParentIdAsync(int jobId);
 }

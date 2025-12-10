@@ -111,6 +111,114 @@
           font-style: italic;
         }
       }
+
+      .void-job-related {
+        margin-top: 16px;
+        border: 1px solid #e0e0e0;
+        border-radius: @border-radius;
+        background-color: #fafafa;
+
+        .void-job-related-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 16px;
+          border-bottom: 1px solid #e0e0e0;
+          background-color: #f5f5f5;
+
+          .void-job-related-title {
+            font-weight: @weight-medium;
+            font-size: @font-base;
+            color: @text-dark;
+          }
+
+          .void-job-related-actions {
+            display: flex;
+            gap: 8px;
+
+            .void-job-select-btn {
+              min-width: auto;
+              padding: 0 8px;
+              font-size: @font-xs;
+              text-transform: none;
+              color: @primary-blue;
+
+              &:hover {
+                background-color: rgba(62, 175, 194, 0.1);
+              }
+            }
+          }
+        }
+
+        .void-job-related-loading {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          padding: 24px;
+          color: @text-muted;
+          font-size: @font-sm;
+        }
+
+        .void-job-related-list {
+          max-height: 200px;
+          overflow-y: auto;
+
+          .void-job-related-empty {
+            padding: 16px;
+            text-align: center;
+            color: @text-muted;
+            font-style: italic;
+          }
+
+          .void-job-related-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+            border-bottom: 1px solid #eeeeee;
+
+            &:last-child {
+              border-bottom: none;
+            }
+
+            &:hover {
+              background-color: #f0f0f0;
+            }
+
+            &.selected {
+              background-color: rgba(62, 175, 194, 0.1);
+            }
+
+            md-checkbox {
+              margin: 0 8px 0 0;
+            }
+
+            .void-job-related-item-text {
+              flex: 1;
+              font-size: @font-sm;
+              color: @text-dark;
+            }
+
+            .void-job-related-item-current {
+              font-size: @font-xs;
+              color: @primary-blue;
+              font-weight: @weight-medium;
+              margin-left: 8px;
+            }
+          }
+        }
+
+        .void-job-related-summary {
+          padding: 8px 16px;
+          border-top: 1px solid #e0e0e0;
+          background-color: #f5f5f5;
+          font-size: @font-xs;
+          color: @text-muted;
+          text-align: right;
+        }
+      }
     }
   }
 

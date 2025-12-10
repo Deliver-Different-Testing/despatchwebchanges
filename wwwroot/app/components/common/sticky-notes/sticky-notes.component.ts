@@ -5,7 +5,7 @@ import ToastrService from "../../../services/toastr.service";
 import {IJobNote, INoteType} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
-import {getIanaTimezone} from "../../../functions/formatDates";
+import {timezoneShortFilter} from "../../../filters";
 
 class StickyNoteController extends BaseController {
     private previousJobId?: number;
@@ -25,7 +25,6 @@ class StickyNoteController extends BaseController {
         'noteManagementDialogService',
         'toastrService',
         '$mdDialog',
-        '$filter'
     ];
 
     constructor(
@@ -33,7 +32,6 @@ class StickyNoteController extends BaseController {
         private noteManagementDialogService: NoteManagementDialogService,
         private toastrService: ToastrService,
         private $mdDialog: angular.material.IDialogService,
-        private $filter: angular.IFilterService,
     ) {
         super();
         
@@ -226,7 +224,7 @@ class StickyNoteController extends BaseController {
         const diffDays = now.diff(dayjsDate, 'days');
 
         // Get the formatted timezone using the filter
-        const timezoneShort = this.$filter<(timezone: string) => string>('timezoneShort')(TimeZone);
+        const timezoneShort = timezoneShortFilter(TimeZone);
         const timezoneDisplay = timezoneShort ? ` (${timezoneShort})` : '';
 
         if (diffDays === 0) {

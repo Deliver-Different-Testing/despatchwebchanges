@@ -9,12 +9,15 @@ import {
     IEditAddressDialogViewModel,
     IJobGroup,
     IJobGroupDto,
-    IJobQueryParams, IJobQueryParamsDto,
+    IJobQueryParams,
+    IJobQueryParamsDto,
     IJobSearchResult,
     IJobSearchResultDto,
     ILateCallRequest,
+    IMultiSuggestion,
     InternalStatus,
-    IParcelDimensions, ISimpleRepriceJobModel,
+    IParcelDimensions,
+    ISimpleRepriceJobModel,
     ISuggestion,
     ITimeZoneSuggestion,
     JobCreateViewModelDto,
@@ -27,7 +30,8 @@ import {
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {
     ActiveCourierViewModel,
-    IAvailableCourierPosition, IDriverWorkOverview,
+    IAvailableCourierPosition,
+    IDriverWorkOverview,
     IPotentialCouriers,
     ITruckCourierStatus,
 } from "../interfaces/courier.interface";
@@ -42,7 +46,7 @@ import {
 } from "../interfaces/requests.interfaces";
 import {JobEventData} from "../components/dialogs/add-event-dialog/add-event-dialog.interfaces";
 import {IDeliveryJourney, IDeliveryJourneyDto} from "../components/common/task-history/task-history.interfaces";
-import {formatDateForApi, formatDateForApiWithTzs} from "../functions/formatDates";
+import {formatDateForApiWithTzs} from "../functions/formatDates";
 import IInterCourierData from "../components/dialogs/inter-courier-charge-dialog/interfaces/IInterCourierData";
 import {Is3PhotoInfo} from "../interfaces/aws.interfaces";
 import dayjs, {Dayjs} from "dayjs";
@@ -131,6 +135,18 @@ class DispatchCoreService implements angular.IServiceProvider {
             "job/IsBulkJobParent", {
                 params: {
                     bulkJobId,
+                }
+            }
+        );
+        return response.data;
+    }
+
+    async getRelatedJobsMultiSelectList(jobId: number, isArchived: boolean): Promise<IMultiSuggestion[]> {
+        const response = await this.$http.get<IMultiSuggestion[]>(
+            "job/GetRelatedJobsMultiSelectList", {
+                params: {
+                    jobId,
+                    isArchived,
                 }
             }
         );
@@ -227,21 +243,23 @@ class DispatchCoreService implements angular.IServiceProvider {
         );
     }
 
-    async voidJob(jobId: number, voidSingleJobOnly: boolean, voidReason?: string): Promise<void> {
+    async voidJob(jobId: number, voidSingleJobOnly: boolean, voidReason?: string, selectedJobIds?: number[]): Promise<void> {
         const data: VoidJobRequest = {
             jobId,
             voidSingleJobOnly,
-            voidReason
+            voidReason,
+            selectedJobIds
         }
 
         await this.$http.post(`job/Void`, data);
     }
 
-    async voidBulkJob(bulkJobId: number, voidSingleJobOnly: boolean, voidReason?: string): Promise<void> {
+    async voidBulkJob(bulkJobId: number, voidSingleJobOnly: boolean, voidReason?: string, selectedJobIds?: number[]): Promise<void> {
         const data: VoidBulkJobRequest = {
             bulkJobId,
             voidSingleJobOnly,
-            voidReason
+            voidReason,
+            selectedJobIds
         }
 
         await this.$http.post(`job/VoidBulkJob`, data);

@@ -464,6 +464,10 @@ export interface ISuggestion {
     selected?: boolean;
 }
 
+export interface IMultiSuggestion extends ISuggestion {
+    selected: boolean;
+}
+
 export interface IAirlineSuggestion extends ISuggestion {
     fullAirlineName: string;
 }
@@ -914,10 +918,12 @@ export interface IReadTrackerInfo {
 
 export interface VoidJobRequest extends VoidJobRequestBase {
     jobId: number;
+    selectedJobIds?: number[];
 }
 
 export interface VoidBulkJobRequest extends VoidJobRequestBase {
     bulkJobId: number;
+    selectedJobIds?: number[];
 }
 
 interface VoidJobRequestBase {
