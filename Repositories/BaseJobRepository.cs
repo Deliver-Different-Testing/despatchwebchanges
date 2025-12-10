@@ -837,10 +837,13 @@ public class BaseJobRepository(
     {
         try
         {
+            // Always create note on the parent job (or self if no parent)
+            var effectiveJobId = await Context.GetEffectiveJobBookingIdAsync(jobId);
+
             noteType = await ConfirmNoteTypeExists(noteType);
             var newNote = new TucNote
             {
-                JobBookingId = jobId,
+                JobBookingId = effectiveJobId,
                 NoteText = noteText,
                 IsImportant = isImportant,
                 NoteTypeId = (int)noteType

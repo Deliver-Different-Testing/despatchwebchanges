@@ -31,7 +31,7 @@
                 <button class="tab"
                         ng-class="{'active': ctrl.selectedCategory === 'in-progress'}"
                         ng-click="ctrl.filterByCategory('in-progress')">ACTIVE
-                </button>  
+                </button>
                 <button class="tab"
                         ng-class="{'active': ctrl.selectedCategory === 'delivered'}"
                         ng-click="ctrl.filterByCategory('delivered')">DONE
@@ -111,7 +111,8 @@
                     </div>
 
 
-                    <div class="header-cell" ng-class="ctrl.getSortClass('isArchived')" ng-if="::ctrl.isJobSearchPage()">
+                    <div class="header-cell" ng-class="ctrl.getSortClass('isArchived')"
+                         ng-if="::ctrl.isJobSearchPage()">
                         <div class="header-content">
                             <span class="header-text">IS ARCHIVED</span>
                             <md-icon class="sort-icon" md-font-set="material-symbols-outlined">
@@ -121,7 +122,7 @@
                         <button class="resize-handle"
                                 ng-mousedown="ctrl.startResize($event, 'isArchived'); $event.stopPropagation()"></button>
                     </div>
-                    
+
                     <div class="header-cell" ng-class="ctrl.getSortClass('speed')" ng-click="ctrl.sortBy('speed')">
                         <div class="header-content">
                             <span class="header-text">SPEED</span>
@@ -155,7 +156,8 @@
                                 ng-mousedown="ctrl.startResize($event, 'jobNo'); $event.stopPropagation()"></button>
                     </div>
 
-                    <div class="header-cell" ng-class="ctrl.getSortClass('client')" ng-click="ctrl.sortBy('client')" ng-if="::!ctrl.isUsCustomer">
+                    <div class="header-cell" ng-class="ctrl.getSortClass('client')" ng-click="ctrl.sortBy('client')"
+                         ng-if="::!ctrl.isUsCustomer">
                         <div class="header-content">
                             <span class="header-text">CLIENT</span>
                             <md-icon class="sort-icon" md-font-set="material-symbols-outlined">
@@ -243,19 +245,22 @@
                     <!-- Priority Column -->
                     <div class="job-cell {{ctrl.shouldShowPriorityColumn(job) ? 'priority' : ''}}">
                         <!-- Expand/Collapse button for multipart jobs -->
-                        <md-button
-                                ng-if="ctrl.isMultiPartJob(job) && job.isParentOrSingle"
-                                ng-click="ctrl.toggleJobGroup(job); $event.stopPropagation()"
-                                aria-label="{{job._isExpanded ? 'Collapse' : 'Expand'}} {{ctrl.getChildCount(job)}} child jobs"
-                                class="md-fab md-mini">
-                            <md-icon md-font-set="material-symbols-outlined">
-                                {{job._isExpanded ? 'expand_more' : 'chevron_right'}}
-                            </md-icon>
-                            <md-tooltip md-direction="bottom">
-                                {{job._isExpanded ? 'Hide' : 'Show'}} {{ctrl.getChildCount(job)}} related job{{ctrl.getChildCount(job) > 1 ? 's' : ''}}
-                            </md-tooltip>
-                        </md-button>
-
+                        <div class="md-dense">
+                            <md-button
+                                    aria-label="{{job._isExpanded ? 'Collapse' : 'Expand'}} {{ctrl.getChildCount(job)}} child jobs"
+                                    class="md-raised"
+                                    ng-click="ctrl.toggleJobGroup(job); $event.stopPropagation()"
+                                    ng-if="ctrl.isMultiPartJob(job) && job.isParentOrSingle">
+                                <md-icon md-font-set="material-symbols-outlined">
+                                    {{job._isExpanded ? 'expand_more' : 'chevron_right'}}
+                                </md-icon>
+                                <md-tooltip md-direction="bottom">
+                                    {{job._isExpanded ? 'Hide' : 'Show'}} {{ctrl.getChildCount(job)}} related
+                                    job{{ctrl.getChildCount(job) > 1 ? 's' : ''}}
+                                </md-tooltip>
+                            </md-button>
+                        </div>
+                        
                         <!-- Static indicators for non-expandable jobs -->
                         <md-icon
                                 md-font-set="material-symbols-outlined"
@@ -279,7 +284,7 @@
                     <div class="job-cell isarchived-cell" ng-if="::ctrl.isJobSearchPage()">
                         <md-checkbox ng-model="job.isArchived" aria-label="Is Archived" disabled></md-checkbox>
                     </div>
-                    
+
                     <!-- Speed Column -->
                     <div class="job-cell speed-cell">
                         <span class="speed-value">{{job.speed}}</span>
@@ -346,7 +351,9 @@
                             </div>
                             <div class="courier-info">
                                 <!-- NZ tenant: Show courier code and name on one line -->
-                                <div ng-if="!ctrl.isUsCustomer" class="courier-name">{{job.courierData.courier}} - {{job.assignedCourier.text}}</div>
+                                <div class="courier-name" ng-if="!ctrl.isUsCustomer">{{job.courierData.courier}} -
+                                    {{job.assignedCourier.text}}
+                                </div>
                                 <!-- US tenant: Show courier name and code on separate lines -->
                                 <div ng-if="ctrl.isUsCustomer">
                                     <div class="courier-name">{{job.assignedCourier.text}}</div>
@@ -435,7 +442,9 @@
                     <div class="job-cell child-indicator-cell">
                         <div class="child-connector">
                             <span class="connector-line" ng-class="{'last': $last}"></span>
-                            <md-icon md-font-set="material-symbols-outlined" class="child-icon">subdirectory_arrow_right</md-icon>
+                            <md-icon class="child-icon" md-font-set="material-symbols-outlined">
+                                subdirectory_arrow_right
+                            </md-icon>
                         </div>
                     </div>
 
@@ -488,7 +497,9 @@
                         <!-- US tenant: Original format with city-state -->
                         <div ng-if="::ctrl.isUsCustomer">
                             <div class="address">{{ctrl.getDeliveryAddress(childJob)}}</div>
-                            <div class="city-state">{{childJob.deliveryAddress && childJob.deliveryAddress.addressLine1}}</div>
+                            <div class="city-state">
+                                {{childJob.deliveryAddress && childJob.deliveryAddress.addressLine1}}
+                            </div>
                         </div>
                     </div>
 
@@ -501,7 +512,9 @@
                             </div>
                             <div class="courier-info">
                                 <!-- NZ tenant: Show courier code and name on one line -->
-                                <div ng-if="::!ctrl.isUsCustomer" class="courier-name">{{childJob.courierData.courier}} - {{childJob.assignedCourier.text}}</div>
+                                <div class="courier-name" ng-if="::!ctrl.isUsCustomer">{{childJob.courierData.courier}}
+                                    - {{childJob.assignedCourier.text}}
+                                </div>
                                 <!-- US tenant: Show courier name and code on separate lines -->
                                 <div ng-if="::ctrl.isUsCustomer">
                                     <div class="courier-name">{{childJob.assignedCourier.text}}</div>
@@ -603,8 +616,8 @@
                        aria-label="bulk restore">
                 <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
                 <md-tooltip md-direction="bottom">Restore</md-tooltip>
-            </md-button>   
-            
+            </md-button>
+
             <md-button class="md-fab md-primary md-mini"
                        ng-click="ctrl.bulkRedispatchJobs()"
                        aria-label="bulk redispatch">

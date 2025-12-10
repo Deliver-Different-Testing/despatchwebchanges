@@ -74,6 +74,8 @@ public class NoteController(
 
             if (noteViewModel.JobBookingId.HasValue)
                 await recurringJobRepository.SaveRecurringJobNote(noteViewModel);
+            else if (noteViewModel.BulkJobId.HasValue)
+                await jobRepository.SaveBulkNoteAsync(noteViewModel);
             else
                 await jobRepository.SaveNoteAsync(noteViewModel);
 
@@ -81,7 +83,7 @@ public class NoteController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "{Message}", 
+            Log.Error(ex, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(CreateNote)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
@@ -118,13 +120,16 @@ public class NoteController(
             if (existingNote == null)
                 return NotFound($"Note with ID {noteViewModel.NoteId} not found.");
 
-            await jobRepository.SaveNoteAsync(noteViewModel);
+            if (noteViewModel.BulkJobId.HasValue)
+                await jobRepository.SaveBulkNoteAsync(noteViewModel);
+            else
+                await jobRepository.SaveNoteAsync(noteViewModel);
 
             return Ok();
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "{Message}", 
+            Log.Error(ex, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(UpdateNote)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }

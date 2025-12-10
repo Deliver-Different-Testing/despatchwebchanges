@@ -35,6 +35,7 @@ class RecurringJobsController extends BaseController {
 
     private readonly RecurringJobsLayoutKey: string = `layouts-${AppPage.Recurring}-${ContactID}`;
     private readonly RecurringJobsLastActiveLayoutKey: string = `lastActiveLayout-${AppPage.Recurring}-${ContactID}`
+    private readonly timeZone: string;
 
     readonly boxes: Record<string, IBox> = {
         jobList: {
@@ -56,6 +57,7 @@ class RecurringJobsController extends BaseController {
     };
 
     readonly isUsCustomer: boolean;
+    readonly timeZoneShort: string;
 
     currentJobId?: number;
     isAdmin: boolean = false;
@@ -75,7 +77,6 @@ class RecurringJobsController extends BaseController {
     defaultLayout?: ILayout;
     layout?: { columns: IColumn[] };
     currentLayoutName?: string;
-    timeZone: string;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -90,10 +91,11 @@ class RecurringJobsController extends BaseController {
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
-        
+
         this.isUsCustomer = appConfig.US_Customer;
         this.isAdmin = ClientInternal;
         this.timeZone = getIanaTimezone(TimeZone);
+        this.timeZoneShort = this.getShortTimeZoneString();
 
         this.initializeLayout();
     }
@@ -101,7 +103,7 @@ class RecurringJobsController extends BaseController {
     $onInit(): void {
         this.refreshData().then(() => console.log("Recurring Jobs Loaded!"));
     }
-    
+
     saveLayout() {
         this.$mdDialog
             .show(this.$mdDialog
@@ -272,7 +274,7 @@ class RecurringJobsController extends BaseController {
 
     async refreshData(): Promise<void> {
         console.log("Refreshing data!")
-        
+
         try {
             // Parse sort order
             let orderBy = this.jobQuery.order || "booked";
@@ -282,10 +284,10 @@ class RecurringJobsController extends BaseController {
                 orderBy = orderBy.substring(1);
                 orderDirection = "desc";
             }
-            
+
             this.jobQuery.order = orderBy;
             this.jobQuery.orderDirection = orderDirection;
-            
+
             this.currentJobId = undefined;
             this.prebookJobsPromise = this.recurringJobsService.getPreBookJobs(this.jobQuery);
 
@@ -301,7 +303,7 @@ class RecurringJobsController extends BaseController {
             this.applyScope();
         }
     }
-    
+
     showItems(job: IJob): boolean {
         if (job.client !== "Other") {
             if (this.cancelledSelected) {
@@ -415,7 +417,7 @@ class RecurringJobsController extends BaseController {
             this.applyScope();
         }
     }
-    
+
     getContextMenuOptions(job: IPrebookListModel): any[] | IContextMenuOption[] {
         if (!job) return [];
 
@@ -430,34 +432,34 @@ class RecurringJobsController extends BaseController {
         this.jobQuery.page = 1;
         await this.refreshData();
     }
-    
+
     async searchJobs(searchText: string): Promise<void> {
-        if(searchText.length < 2) return;
-        
+        if (searchText.length < 2) return;
+
         this.jobQuery.searchText = searchText;
         this.jobQuery.page = 1;
-        
+
         await this.refreshData();
     }
-    
+
     async switchActiveFilter(isActive: boolean): Promise<void> {
         this.jobQuery.active = isActive;
         this.jobQuery.page = 1;
-        
+
         await this.refreshData();
     }
-    
+
     async onPaginate() {
         console.log("Paginating!")
         await this.refreshData();
     }
-    
+
     exportToCSV(jobList: IPrebookListModel[] = this.jobList): void {
         if (!jobList || jobList.length === 0) {
             this.toastrService.showWarningToast("No jobs to export");
             return;
         }
-        
+
         // Define CSV headers
         const headers = [
             "Job Number",
@@ -523,7 +525,7 @@ class RecurringJobsController extends BaseController {
         ].join('\n');
 
         // Create and trigger download
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
 
