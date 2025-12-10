@@ -511,11 +511,14 @@ class NationwideControl extends BaseController {
                 };
 
                 this.layouts.push(currentLayout);
+                this.currentLayoutName = name;
 
                 if (Modernizr.localstorage) {
                     localStorage.setItem(this.NationwideLayoutKey, JSON.stringify(this.layouts));
                     localStorage.setItem(this.NationwideLastActiveLayoutKey, name);
                 }
+
+                this.toastrService.showSuccessToast("Layout saved successfully");
             });
     }
 
