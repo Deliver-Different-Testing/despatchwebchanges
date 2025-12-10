@@ -247,11 +247,10 @@
                                 ng-if="ctrl.isMultiPartJob(job) && job.isParentOrSingle"
                                 ng-click="ctrl.toggleJobGroup(job); $event.stopPropagation()"
                                 aria-label="{{job._isExpanded ? 'Collapse' : 'Expand'}} {{ctrl.getChildCount(job)}} child jobs"
-                                class="md-fab md-primary">
-                            <md-icon md-font-set="material-symbols-outlined" class="expand-icon">
+                                class="md-fab md-raised md-mini">
+                            <md-icon md-font-set="material-symbols-outlined">
                                 {{job._isExpanded ? 'expand_more' : 'chevron_right'}}
                             </md-icon>
-                            <span class="child-count-badge">{{ctrl.getChildCount(job)}}</span>
                             <md-tooltip md-direction="bottom">
                                 {{job._isExpanded ? 'Hide' : 'Show'}} {{ctrl.getChildCount(job)}} related job{{ctrl.getChildCount(job) > 1 ? 's' : ''}}
                             </md-tooltip>
@@ -283,12 +282,12 @@
                     
                     <!-- Speed Column -->
                     <div class="job-cell speed-cell">
-                        <span class="speed-value">{{job.speed || '-'}}</span>
+                        <span class="speed-value">{{job.speed}}</span>
                     </div>
 
                     <!-- Vehicle Type Column -->
                     <div class="job-cell vehicle-cell">
-                        <span class="vehicle-type">{{job.vehicle.text || '-'}}</span>
+                        <span class="vehicle-type">{{job.vehicle.text}}</span>
                     </div>
 
                     <!-- Job ID Column -->
@@ -299,12 +298,12 @@
 
                     <!-- Client Column (NZ tenants only) -->
                     <div class="job-cell client-cell" ng-if="::!ctrl.isUsCustomer">
-                        <span class="client-code">{{job.client || '-'}}</span>
+                        <span class="client-code">{{job.client}}</span>
                     </div>
 
                     <!-- Pickup Column -->
                     <div class="job-cell route-cell pickup-cell">
-                        <div class="address">{{job.pickupAddress && job.pickupAddress.addressLine5 || ''}}</div>
+                        <div class="address">{{job.pickupAddress && job.pickupAddress.addressLine5}}</div>
                     </div>
 
                     <!-- Delivery Column -->
@@ -316,7 +315,7 @@
                         <!-- US tenant: Original format with city-state -->
                         <div ng-if="::ctrl.isUsCustomer">
                             <div class="address">{{ctrl.getDeliveryAddress(job)}}</div>
-                            <div class="city-state">{{job.deliveryAddress && job.deliveryAddress.addressLine1 || ''}}</div>
+                            <div class="city-state">{{job.deliveryAddress && job.deliveryAddress.addressLine1}}</div>
                         </div>
                     </div>
 
@@ -456,12 +455,12 @@
 
                     <!-- Speed Column -->
                     <div class="job-cell speed-cell">
-                        <span class="speed-value">{{childJob.speed || '-'}}</span>
+                        <span class="speed-value">{{childJob.speed}}</span>
                     </div>
 
                     <!-- Vehicle Type Column -->
                     <div class="job-cell vehicle-cell">
-                        <span class="vehicle-type">{{childJob.vehicle.text || '-'}}</span>
+                        <span class="vehicle-type">{{childJob.vehicle.text}}</span>
                     </div>
 
                     <!-- Job ID Column -->
@@ -472,12 +471,12 @@
 
                     <!-- Client Column (NZ tenants only) -->
                     <div class="job-cell client-cell" ng-if="::!ctrl.isUsCustomer">
-                        <span class="client-code">{{childJob.client || '-'}}</span>
+                        <span class="client-code">{{childJob.client}}</span>
                     </div>
 
                     <!-- Pickup Column -->
                     <div class="job-cell route-cell pickup-cell">
-                        <div class="address">{{childJob.pickupAddress && childJob.pickupAddress.addressLine5 || ''}}</div>
+                        <div class="address">{{childJob.pickupAddress && childJob.pickupAddress.addressLine5}}</div>
                     </div>
 
                     <!-- Delivery Column -->
@@ -489,7 +488,7 @@
                         <!-- US tenant: Original format with city-state -->
                         <div ng-if="::ctrl.isUsCustomer">
                             <div class="address">{{ctrl.getDeliveryAddress(childJob)}}</div>
-                            <div class="city-state">{{childJob.deliveryAddress && childJob.deliveryAddress.addressLine1 || ''}}</div>
+                            <div class="city-state">{{childJob.deliveryAddress && childJob.deliveryAddress.addressLine1}}</div>
                         </div>
                     </div>
 
