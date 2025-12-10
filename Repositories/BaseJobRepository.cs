@@ -883,13 +883,15 @@ public class BaseJobRepository(
         }
     }
 
-    protected async Task<(int? economySpeedId, DateTime? ecoDeliveryTime)> GetEconomySpeedAndDeliveryTimeAsync()
+    protected async Task<(int? economySpeedId, DateTime? ecoDeliveryTime)> GetEconomySpeedAndDeliveryTimeAsync(DespatchContext customContext = null)
     {
         if (_economyCache.HasValue)
             return _economyCache.Value;
-
-        var economySpeedId = await Context.GetEconomySpeedIdAsync();
-        var ecoDeliveryTime = await Context.GetEcoDeliveryTimeAsync();
+        
+        var context = customContext ?? Context;
+        
+        var economySpeedId = await context.GetEconomySpeedIdAsync();
+        var ecoDeliveryTime = await context.GetEcoDeliveryTimeAsync();
 
         _economyCache = (economySpeedId, ecoDeliveryTime);
         return _economyCache.Value;

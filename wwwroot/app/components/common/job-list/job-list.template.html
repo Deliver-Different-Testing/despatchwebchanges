@@ -247,7 +247,7 @@
                                 ng-if="ctrl.isMultiPartJob(job) && job.isParentOrSingle"
                                 ng-click="ctrl.toggleJobGroup(job); $event.stopPropagation()"
                                 aria-label="{{job._isExpanded ? 'Collapse' : 'Expand'}} {{ctrl.getChildCount(job)}} child jobs"
-                                class="md-fab md-raised md-mini">
+                                class="md-fab md-mini">
                             <md-icon md-font-set="material-symbols-outlined">
                                 {{job._isExpanded ? 'expand_more' : 'chevron_right'}}
                             </md-icon>

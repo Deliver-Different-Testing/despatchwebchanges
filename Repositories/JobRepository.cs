@@ -1069,29 +1069,45 @@ public partial class JobRepository(
 
         var query = Context.TucJobs
             .AsNoTracking()
-            .Where(j => j.UcjbCourierId != null && j.UcjbCourierId == courierId
-                                                && !j.UcjbJobDone && !j.UcjbVoid
-                                                && j.UcjbStatusNavigation.UcjsId != (int)JobStatus.Void
-                                                && j.UcjbStatusNavigation.UcjsId != (int)JobStatus.Completed);
+            .Where(j => j.UcjbCourierId == courierId
+                        && !j.UcjbJobDone && !j.UcjbVoid
+                        && j.UcjbStatus != (int)JobStatus.Void
+                        && j.UcjbStatus != (int)JobStatus.Completed);
 
-        if (startDate.HasValue) query = query.Where(j => j.UcjbDate.Date >= startDate.Value.Date.Date);
-        if (endDate.HasValue) query = query.Where(j => j.UcjbDate.Date <= endDate.Value.Date.Date);
+        if (startDate.HasValue)
+        {
+            var start = startDate.Value.Date;
+            query = query.Where(j => j.UcjbDate >= start);
+        }
+        if (endDate.HasValue)
+        {
+            var end = endDate.Value.Date;
+            query = query.Where(j => j.UcjbDate < end.AddDays(1));
+        }
 
-        // Get a total count before pagination
-        var totalCount = await query.CountAsync();
+        // Fetch economy settings in parallel with the main query
+        await using var economyTaskContext = await _contextFactory.CreateDbContextAsync();
+        var economyTask = GetEconomySpeedAndDeliveryTimeAsync(economyTaskContext);
 
-        var mapItems = await query
-            .AsNoTracking()
-            .Select(JobMappings.ToDispatchMapItem)
-            .ToListAsync();
-
-        // Apply pagination
+        // Single query to get both jobs and map items data
         var jobs = await query
             .Select(JobMappings.JobDispatchMapping(isUsCustomer))
             .ToListAsync();
 
+        var totalCount = jobs.Count;
+
+        // Build map items from jobs (avoids the second query)
+        var mapItems = jobs.Select(j => new DispatchMapItem
+        {
+            JobId = j.Id,
+            JobNo = j.JobNo,
+            PickupAddress = j.PickupAddress,
+            DeliveryAddress = j.DeliveryAddress,
+            AssignedCourier = j.AssignedCourier
+        }).ToList();
+
         // Calculate remaining time for each job
-        var (economySpeedId, ecoDeliveryTime) = await GetEconomySpeedAndDeliveryTimeAsync();
+        var (economySpeedId, ecoDeliveryTime) = await economyTask;
         var now = _infoService.GetCurrentTenantTime();
         foreach (var job in jobs)
         {
@@ -4156,25 +4172,15 @@ public partial class JobRepository(
 
     private async Task MarkJobAsReadAsync(int jobId)
     {
-        var alreadyOpened = await Context.TucJobReadTrackers.AnyAsync(x => x.JobId == jobId);
-        if (alreadyOpened) return;
-
-        var isLiveJob = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
-        if (!isLiveJob) return;
-
         var staffId = _infoService.GetStaffId();
         var currentTenantTime = _infoService.GetCurrentTenantTime();
 
-        var readTracker = new TucJobReadTracker
-        {
-            JobId = jobId,
-            HasBeenRead = true,
-            ReadByStaffId = staffId,
-            ReadTimestamp = currentTenantTime
-        };
-
-        await Context.TucJobReadTrackers.AddAsync(readTracker);
-        await Context.SaveChangesAsync();
+        // Single query: insert only if job exists in TucJobs and no tracker exists yet
+        await Context.Database.ExecuteSqlInterpolatedAsync($@"
+            INSERT INTO tucJobReadTracker (JobId, HasBeenRead, ReadByStaffId, ReadTimestamp)
+            SELECT {jobId}, 1, {staffId}, {currentTenantTime}
+            WHERE EXISTS (SELECT 1 FROM tucJob WHERE ucjbId = {jobId})
+              AND NOT EXISTS (SELECT 1 FROM tucJobReadTracker WHERE JobId = {jobId})");
     }
 
     private async Task<JobGroupViewModel> GetLiveJobByIdAsync(int jobId)

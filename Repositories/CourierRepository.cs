@@ -2152,6 +2152,8 @@ public class CourierRepository(
                         driverIds.Contains(j.UcjbCourierId.Value) &&
                         !j.UcjbJobDone &&
                         !j.UcjbVoid &&
+                        j.UcjbStatus != (int)JobStatus.Void &&
+                        j.UcjbStatus != (int)JobStatus.Completed &&
                         j.UcjbDate.Date <= now.Date)
             .GroupBy(j => j.UcjbCourierId.Value)
             .Select(g => new { CourierId = g.Key, Count = g.Count() })
