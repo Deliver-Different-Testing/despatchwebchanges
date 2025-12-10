@@ -612,7 +612,7 @@
                                 </td>
                                 <td md-cell>
                                     <div class="table-actions">
-                                        <md-button class="md-icon-button" ng-click="ctrl.sendComplianceReminder(item)">
+                                        <md-button class="md-icon-button" ng-click="ctrl.sendComplianceReminder(item)" aria-label="Send Reminder">
                                             <md-icon md-font-set="material-symbols-outlined">email</md-icon>
                                             <md-tooltip>Send Reminder</md-tooltip>
                                         </md-button>
@@ -881,7 +881,8 @@
                                 <td md-cell>
                                     <div class="table-actions">
                                         <md-button class="md-icon-button"
-                                                   ng-click="ctrl.sendSingleEmailToCourier($event, driver)">
+                                                   ng-click="ctrl.sendSingleEmailToCourier($event, driver)"
+                                                   aria-label="Email">
                                             <md-icon md-font-set="material-symbols-outlined">email</md-icon>
                                             <md-tooltip>Email</md-tooltip>
                                         </md-button>

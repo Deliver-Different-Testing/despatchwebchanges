@@ -183,7 +183,8 @@
                                         ng-if="box.name === 'flightAgentDataTable' && ctrl.flightOptions.length > 0">
                                     <md-button
                                             class="md-icon-button md-primary"
-                                            ng-click="ctrl.loadNextFlights()">
+                                            ng-click="ctrl.loadNextFlights()"
+                                            aria-label="Next Available Flights">
                                         <md-tooltip md-direction="top">Next Available Flights
                                         </md-tooltip>
                                         <md-icon md-font-set="material-symbols-outlined">next_week
@@ -192,7 +193,8 @@
 
                                     <md-button
                                             class="md-icon-button md-primary"
-                                            ng-click="ctrl.loadNextDayFlights()">
+                                            ng-click="ctrl.loadNextDayFlights()"
+                                            aria-label="Next Day's Flights">
                                         <md-tooltip md-direction="top">Next Day's Flights
                                         </md-tooltip>
                                         <md-icon md-font-set="material-symbols-outlined">event_upcoming

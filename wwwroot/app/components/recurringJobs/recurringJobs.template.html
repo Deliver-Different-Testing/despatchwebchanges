@@ -90,7 +90,8 @@
                                     <!--Refresh-->
                                     <md-button class="md-icon-button"
                                                ng-click="ctrl.refreshData()"
-                                               ng-if="::ctrl.boxes[box.name].showRefresh">
+                                               ng-if="::ctrl.boxes[box.name].showRefresh"
+                                               aria-label="Refresh">
                                         <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
                                         <md-tooltip md-direction="bottom">Refresh</md-tooltip>
                                     </md-button>
@@ -98,7 +99,8 @@
                                     <!--Inactive Filter-->
                                     <md-menu ng-if="::ctrl.boxes[box.name].showFilter">
                                         <md-button class="md-icon-button"
-                                                   ng-click="$mdMenu.open($event)">
+                                                   ng-click="$mdMenu.open($event)"
+                                                   aria-label="Active/Inactive Filter">
                                             <md-icon md-font-set="material-symbols-outlined">filter_list</md-icon>
                                             <md-tooltip md-direction="bottom">Active/Inactive Filter</md-tooltip>
                                         </md-button>
@@ -121,7 +123,8 @@
 
                                     <md-button class="md-icon-button"
                                                ng-if="::box.name == 'jobList'"
-                                               ng-click="ctrl.exportToCSV()">
+                                               ng-click="ctrl.exportToCSV()"
+                                               aria-label="Export Recurring Jobs">
                                         <md-icon md-font-set="material-symbols-outlined">file_export</md-icon>
                                         <md-tooltip md-direction="bottom">Export Recurring Jobs</md-tooltip>
                                     </md-button>

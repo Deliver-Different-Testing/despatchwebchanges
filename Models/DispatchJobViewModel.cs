@@ -94,6 +94,7 @@ public class DispatchJobViewModel
 
     // UI helper fields
     public List<Suggestion> RelatedJobs { get; set; }
+    public List<DispatchJobViewModel> Children { get; set; }
 
     public string ConNote { get; set; }
     public DateTime? FollowupTime { get; set; }

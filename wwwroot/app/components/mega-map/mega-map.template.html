@@ -106,11 +106,11 @@
                 <div class="md-toolbar-tools">
                     <h2>Job #{{ctrl.selectedJob.jobNumber}}</h2>
                     <span flex></span>
-                    <md-button class="md-icon-button" ng-click="ctrl.openJobDispatch(ctrl.selectedJob.jobId)">
+                    <md-button class="md-icon-button" ng-click="ctrl.openJobDispatch(ctrl.selectedJob.jobId)" aria-label="View Job Details">
                         <md-icon md-font-set="material-symbols-outlined">visibility</md-icon>
                         <md-tooltip md-direction="bottom">View Job Details</md-tooltip>
                     </md-button>
-                    <md-button class="md-icon-button" ng-click="ctrl.closeJobInfo()">
+                    <md-button class="md-icon-button" ng-click="ctrl.closeJobInfo()" aria-label="Close">
                         <md-icon md-font-set="material-symbols-outlined">close</md-icon>
                         <md-tooltip md-direction="bottom">Close</md-tooltip>
                     </md-button>
