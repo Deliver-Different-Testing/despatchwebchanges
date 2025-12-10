@@ -2152,7 +2152,7 @@ public class CourierRepository(
                         driverIds.Contains(j.UcjbCourierId.Value) &&
                         !j.UcjbJobDone &&
                         !j.UcjbVoid &&
-                        j.UcjbDate.Date == now.Date)
+                        j.UcjbDate.Date <= now.Date)
             .GroupBy(j => j.UcjbCourierId.Value)
             .Select(g => new { CourierId = g.Key, Count = g.Count() })
             .TagWith("GetDriverWorkOverview - Step 2: Job Counts")
@@ -2165,7 +2165,7 @@ public class CourierRepository(
             {
                 CourierId = d.UccrId,
                 Name = d.CourierName,
-                VehicleType = MapVehicleTypeToAbbreviation(d.UccrVehicle),
+                VehicleType = MapVehicleTypeToAbbreviation(d.UccrVehicle) ?? "No Vehicle",
                 JobCount = jobCountDict.GetValueOrDefault(d.UccrId, 0),
                 DriverStatusText = d.DriverStatusText
             })

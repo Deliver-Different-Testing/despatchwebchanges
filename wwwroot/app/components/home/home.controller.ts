@@ -1213,6 +1213,7 @@ class HomeController extends BaseController {
 
         try {
             this.currentListLoading = true;
+            this.applyScope();
 
             const result = await this.DispatchData.getJobsCurrent(
                 courierId,
@@ -1232,6 +1233,7 @@ class HomeController extends BaseController {
             this.jobsCurrentList = [];
         } finally {
             this.currentListLoading = false;
+            this.applyScope();
         }
     }
 
@@ -1288,7 +1290,10 @@ class HomeController extends BaseController {
             this.tasksService.cancelJobTaskLoading(this.currentAppPage, this.currentJobId);
         }
 
-        this.currentWorkViewMode = CurrentWorkLists.SelectedDriver;
+        // Only switch to the Selected Driver view if not in All Drivers (Overview) mode
+        if (this.currentWorkViewMode !== CurrentWorkLists.Overview) {
+            this.currentWorkViewMode = CurrentWorkLists.SelectedDriver;
+        }
 
         await this.markJobReadStatus(job.id, true);
 
@@ -2357,9 +2362,11 @@ class HomeController extends BaseController {
         this.applyScope();
     }
 
-    switchCurrentWorkViewMode(): void {
-        if (this.currentWorkViewMode !== CurrentWorkLists.SelectedDriver) {
+    async switchCurrentWorkViewMode(): Promise<void> {
+        if (this.currentWorkViewMode === CurrentWorkLists.Overview) {
             this.currentWorkSelection = '';
+            // Refresh driver job counts when switching to All Drivers view
+            await this.loadDriversWithJobCounts();
         }
     }
 }

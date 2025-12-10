@@ -233,7 +233,7 @@
                                 </md-button>
                                 <md-button class="md-raised md-primary save-btn"
                                            ng-click="ctrl.saveItem()"
-                                           ng-disabled="ctrl.priceBreakdownForm.$invalid || ctrl.isSaving">
+                                           ng-disabled="!ctrl.selectedPriceBreakdown.name || ctrl.selectedPriceBreakdown.costAmount == null || ctrl.isSaving">
                                     <md-progress-circular ng-if="ctrl.isSaving"
                                                           md-mode="indeterminate"
                                                           md-diameter="20"
