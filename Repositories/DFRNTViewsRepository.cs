@@ -11,7 +11,8 @@ using Serilog;
 
 namespace DespatchWeb.Repositories;
 
-public class DfrntViewsRepository(IDbContextFactory<DespatchContext> contextFactory) : BaseRepository(contextFactory), IDfrntViewsRepository
+public class DfrntViewsRepository(IDbContextFactory<DespatchContext> contextFactory)
+    : BaseRepository(contextFactory), IDfrntViewsRepository
 {
     public async Task<List<DfrntPageViewModel>> GetViewsByUserAndPageAsync(int userId, AppPage page)
     {
@@ -34,7 +35,6 @@ public class DfrntViewsRepository(IDbContextFactory<DespatchContext> contextFact
                 views.Count, userId, page);
 
             return views;
-
         }
         catch (Exception ex)
         {

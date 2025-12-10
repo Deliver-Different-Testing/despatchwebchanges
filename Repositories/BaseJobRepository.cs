@@ -472,7 +472,7 @@ public class BaseJobRepository(
         ArgumentException.ThrowIfNullOrWhiteSpace(noteText);
 
         // If a note type is not found, default to the internal note
-        var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
+        var noteTypeExists = await Context.ConfirmNoteTypeExistsAsync(noteType);
         if (!noteTypeExists) noteType = NoteType.InternalNote;
 
         var newNotes = bulkJobIds.Select(bulkJobId => new TblBulkJobNote
@@ -500,7 +500,7 @@ public class BaseJobRepository(
 
             // If a note type is not found, default to the internal note
             noteType = await ConfirmNoteTypeExists(noteType);
-            
+
             var newNotes = jobIds.Select(jobId => new TucNote
                 {
                     JobId = isRecurringJobs ? null : jobId,
@@ -562,18 +562,9 @@ public class BaseJobRepository(
     private async Task<int> GetEffectiveJobId(int jobId, bool isArchived)
     {
         if (isArchived)
-            return await Context.GetEffectiveJobBookingIdAsync(jobId);
-        
-        return await Context.GetEffectiveJobIdAsync(jobId);
-    }
+            return await Context.GetEffectiveArchiveJobIdAsync(jobId);
 
-    private async Task<int> GetEffectiveJobBookingIdAsync(int jobBookingId)
-    {
-        return await Context.TucJobBookings
-            .AsNoTracking()
-            .Where(j => j.UcbkId == jobBookingId)
-            .Select(j => j.ParentId ?? j.UcbkId)
-            .FirstOrDefaultAsync();
+        return await Context.GetEffectiveJobIdAsync(jobId);
     }
 
     // Note Create/Update Operations
@@ -582,8 +573,6 @@ public class BaseJobRepository(
     {
         var isArchived = viewModel.JobId.HasValue && await IsJobArchived(viewModel.JobId.Value) &&
                          !viewModel.JobBookingId.HasValue;
-        var isPrebook = viewModel.JobBookingId.HasValue;
-
         if (isArchived)
         {
             var archivedNote = viewModel.ToArchivedEntity();
@@ -602,9 +591,11 @@ public class BaseJobRepository(
         activeNote.CreatedDate = currentTime;
         activeNote.CreatedBy = staffId;
 
+        var isPrebook = viewModel.JobBookingId.HasValue;
+
         if (isPrebook)
         {
-            var effectiveJobBookingId = await GetEffectiveJobBookingIdAsync(viewModel.JobBookingId.Value);
+            var effectiveJobBookingId = await Context.GetEffectiveJobBookingIdAsync(viewModel.JobBookingId.Value);
             activeNote.JobBookingId = effectiveJobBookingId;
         }
         else
@@ -630,7 +621,11 @@ public class BaseJobRepository(
             var archivedNote = await Context.TucNoteArchives.FindAsync([viewModel.NoteId], cancellationToken);
             ArgumentNullException.ThrowIfNull(archivedNote);
 
-            UpdateNoteProperties(archivedNote, viewModel);
+            archivedNote.NoteTypeId = viewModel.NoteTypeId;
+            archivedNote.JobId = viewModel.JobId;
+            archivedNote.JobBookingId = viewModel.JobBookingId;
+            archivedNote.NoteText = viewModel.NoteText;
+            archivedNote.IsImportant = viewModel.IsImportant;
             archivedNote.UpdatedDate = currentTime;
             archivedNote.UpdatedBy = staffId;
 
@@ -645,13 +640,17 @@ public class BaseJobRepository(
         var activeNote = await Context.TucNotes.FindAsync([viewModel.NoteId], cancellationToken);
         ArgumentNullException.ThrowIfNull(activeNote);
 
-        UpdateNoteProperties(activeNote, viewModel);
+        activeNote.NoteTypeId = viewModel.NoteTypeId;
+        activeNote.JobId = viewModel.JobId;
+        activeNote.JobBookingId = viewModel.JobBookingId;
+        activeNote.NoteText = viewModel.NoteText;
+        activeNote.IsImportant = viewModel.IsImportant;
         activeNote.UpdatedDate = currentTime;
         activeNote.UpdatedBy = staffId;
 
         if (isPrebook)
         {
-            var effectiveJobBookingId = await GetEffectiveJobBookingIdAsync(viewModel.JobBookingId.Value);
+            var effectiveJobBookingId = await Context.GetEffectiveJobBookingIdAsync(viewModel.JobBookingId.Value);
             activeNote.JobBookingId = effectiveJobBookingId;
         }
         else
@@ -665,26 +664,10 @@ public class BaseJobRepository(
         await Context.SaveChangesAsync(cancellationToken);
     }
 
-    private static void UpdateNoteProperties<T>(T note, TucNoteViewModel viewModel)
-        where T : class
-    {
-        dynamic dynamicNote = note;
-        dynamicNote.NoteTypeId = viewModel.NoteTypeId;
-        dynamicNote.JobId = viewModel.JobId;
-        dynamicNote.JobBookingId = viewModel.JobBookingId;
-        dynamicNote.NoteText = viewModel.NoteText;
-        dynamicNote.IsImportant = viewModel.IsImportant;
-    }
-
     // Query Methods
     private async Task<TucNoteViewModel> GetActiveNoteByIdAsync(int noteId)
     {
-        var note = await Context.TucNotes
-            .AsNoTracking()
-            .Where(x => x.NoteId == noteId)
-            .Select(NoteMappings.ActiveNoteMap)
-            .FirstOrDefaultAsync();
-
+        var note = await Context.GetActiveNotesByNoteIdAsync(noteId);
         UpdateNoteDate(note, infoService.GetTenantTimeZone());
         return note;
     }
@@ -888,4 +871,47 @@ public class BaseJobRepository(
         if (note.UpdatedDate.HasValue)
             note.UpdatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(note.UpdatedDate.Value, tenantTimeZone);
     }
+
+    public async Task<List<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived)
+    {
+        if (isArchived)
+        {
+            // First, get the parent ID for this job (if it has one)
+            var effectiveArchiveJobId = await Context.GetEffectiveArchiveJobIdAsync(jobId);
+
+            var archivedData = await Context.TucJobArchives
+                .AsNoTracking()
+                .Where(j => j.UcjbId == effectiveArchiveJobId || j.ParentId == effectiveArchiveJobId)
+                .Select(j => new MultiSuggestion
+                {
+                    Id = j.UcjbId,
+                    Text = j.UcjbNumber,
+                    Selected = j.UcjbId == jobId
+                })
+                .TagWith($"GetRelatedJobs - Archived Family for Job {jobId}")
+                .ToListAsync();
+
+            return archivedData;
+        }
+
+        // Live job from TucJob
+        var effectiveLiveJobId = await Context.GetEffectiveJobIdAsync(jobId);
+
+        var liveData = await Context.TucJobs
+            .AsNoTracking()
+            .Where(j => j.UcjbId == effectiveLiveJobId || j.ParentId == effectiveLiveJobId)
+            .Select(j => new MultiSuggestion
+            {
+                Id = j.UcjbId,
+                Text = j.UcjbNumber,
+                Selected = j.UcjbId == jobId
+            })
+            .TagWith($"GetRelatedJobs - Live Family {effectiveLiveJobId}")
+            .ToListAsync();
+
+        return liveData;
+    }
+
+    public async Task<int?> GetJobParentIdAsync(int jobId) =>
+        await Context.GetJobParentIdAsync(jobId);
 }

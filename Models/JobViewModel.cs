@@ -21,7 +21,7 @@ public class JobViewModel : DispatchJobViewModel
     public string AcceptedName { get; set; }
 
     public string ClientName { get; set; }
-    
+
     public string LoggedInContactName { get; set; }
 
     public string DeliverToContact { get; set; }
@@ -48,7 +48,7 @@ public class JobViewModel : DispatchJobViewModel
 
     public DateTime? FollowupTime { get; set; }
     public int? InternalStatusId { get; set; }
-    public string ConNote {get;set;}
+    public string ConNote { get; set; }
     public List<PalletInfo> PalletInfo { get; set; }
 
     public bool? DgDocumentation { get; set; }
@@ -80,11 +80,11 @@ public class JobViewModel : DispatchJobViewModel
 
     public int? DeliverByWindowMins { get; set; }
 
-    public Suggestion  PickUpTimeZone { get; set; }
-    public Suggestion DeliveryTimeZone {get;set;}
+    public Suggestion PickUpTimeZone { get; set; }
+    public Suggestion DeliveryTimeZone { get; set; }
     public string HasDgDocsString { get; set; }
     public bool CalculateDimsOncePerJob { get; set; }
-    
+
     // Tail Lift
     public bool TailLiftPu { get; set; }
     public bool TailLiftDo { get; set; }
@@ -106,7 +106,7 @@ public class AssignedFlight
 {
     public string FlightNumber { get; set; }
     public DateTimeOffset? ExpectedDeparture { get; set; }
-    public string DepartureTimeZone {get;set;}
+    public string DepartureTimeZone { get; set; }
     public DateTimeOffset? ExpectedArrival { get; set; }
     public string ArrivalTimeZone { get; set; }
     public string Notes { get; set; }
@@ -130,7 +130,8 @@ public class PalletInfo
 
 public class AddressViewModel
 {
-    public AddressViewModel(string addressLine1, string addressLine2, string addressLine3, string addressLine4, string addressLine5, string addressLine6, string addressLine7, string addressLine8)
+    public AddressViewModel(string addressLine1, string addressLine2, string addressLine3, string addressLine4,
+        string addressLine5, string addressLine6, string addressLine7, string addressLine8)
     {
         AddressLine1 = addressLine1;
         AddressLine2 = addressLine2;
@@ -197,9 +198,14 @@ public class Suggestion
     public string Text { get; set; }
 }
 
+public class MultiSuggestion : Suggestion
+{
+    public bool Selected { get; set; }
+}
+
 public class AirlineSuggestion : Suggestion
 {
-    public string FullAirlineName { get; set; } 
+    public string FullAirlineName { get; set; }
 }
 
 public class AirportSuggestion : Suggestion
@@ -209,7 +215,7 @@ public class AirportSuggestion : Suggestion
 
 public class TimeZoneSuggestion : Suggestion
 {
-    public string TimeZoneIana {get;set;}
+    public string TimeZoneIana { get; set; }
 }
 
 public class NoteTypeViewModel : Suggestion

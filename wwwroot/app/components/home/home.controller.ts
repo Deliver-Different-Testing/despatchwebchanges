@@ -15,11 +15,7 @@ import {
     IJobSearchResult,
     ISuggestion,
 } from "../../interfaces/job.interface";
-import {
-    IDriverWorkOverview,
-    IPotentialCouriers,
-    ITruckCourierStatus
-} from "../../interfaces/courier.interface";
+import {IDriverWorkOverview, IPotentialCouriers, ITruckCourierStatus} from "../../interfaces/courier.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import BaseController from "../base-controller";
@@ -55,7 +51,6 @@ import IDateFilterData from "../common/date-filter-menu/IDateFilterData";
 import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
 import utc from "dayjs/plugin/utc";
 import {getMinsSelectionOptions} from "../../functions/MinsSelectionOptions";
-import {getIanaTimezone} from "../../functions/formatDates";
 import DispatchBoxes from "./enums/DispatchBoxes";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 import ITaskItemConfig from "../../enums/task-item-config";
@@ -1561,7 +1556,22 @@ class HomeController extends BaseController {
             this.totalJobCount = result.totalCount;
         } catch (error: any) {
             console.error("Error getting job list:", error);
-            this.toastrService.showErrorToast("Failed to get job list. Please try again.");
+
+            const statusCode = error?.status || error?.response?.status;
+            const errorMessage = error?.data?.message || error?.message || 'Unknown error';
+
+            let toastMessage = "Failed to get job list.";
+            if (statusCode === 500) {
+                toastMessage = `Server error (500): ${errorMessage}`;
+            } else if (statusCode === 503 || errorMessage.toLowerCase().includes('timeout') || errorMessage.toLowerCase().includes('connection')) {
+                toastMessage = "Database connection issue. Server may be under heavy load.";
+            } else if (statusCode === 401 || statusCode === 403) {
+                toastMessage = "Access denied. Please refresh and try again.";
+            } else if (statusCode) {
+                toastMessage = `Failed to get job list (${statusCode}): ${errorMessage}`;
+            }
+
+            this.toastrService.showErrorToast(toastMessage);
 
             this.jobList = [];
 

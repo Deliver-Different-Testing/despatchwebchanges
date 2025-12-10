@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.Mail;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -908,7 +909,35 @@ public class JobController(
     {
         try
         {
+            // Get the parent ID before voiding (if this is a child job)
+            var parentId = await jobRepository.GetJobParentIdAsync(request.JobId);
+
+            // Determine if the parent is being voided too
+            var isParentBeingVoided = parentId.HasValue &&
+                                      request.SelectedJobIds is { Count: > 0 } &&
+                                      request.SelectedJobIds.Contains(parentId.Value);
+
             await jobRepository.VoidJobAsync(request);
+
+            // Rerate the parent job if a child was voided but the parent was not
+            if (!parentId.HasValue || isParentBeingVoided) return Ok();
+
+            var isUsTenant = infoService.IsUsTenant();
+            if (isUsTenant)
+            {
+                var jobDetails = await jobRepository.GetJobDetailsForRatingAsync(parentId.Value);
+                if (jobDetails.IsManuallyRated) return Ok();
+
+                await rateJobService.RateJobUsAsync(jobDetails);
+            }
+            else
+            {
+                var jobDetails = await jobRepository.GetJobDetailsForRatingNzAsync(parentId.Value, false);
+                if (jobDetails.IsManuallyRated) return Ok();
+
+                await rateJobService.RateJobNzAsync(jobDetails);
+            }
+
             return Ok();
         }
         catch (Exception ex)
@@ -1142,7 +1171,7 @@ public class JobController(
         // Set up HttpClient
         httpClient.BaseAddress = new Uri(baseUrl ?? string.Empty);
         httpClient.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue(
+            new AuthenticationHeaderValue(
                 "Basic",
                 Convert.ToBase64String(Encoding.ASCII.GetBytes($"{un}:{pw}"))
             );
@@ -1685,6 +1714,20 @@ public class JobController(
     {
         var isParent = await jobRepository.IsJobParentAsync(jobId);
         return Json(isParent);
+    }
+
+    public async Task<IActionResult> GetRelatedJobsMultiSelectList(int jobId, bool isArchived)
+    {
+        try
+        {
+            var relatedJobs = await jobRepository.GetRelatedJobsMultiSelectListAsync(jobId, isArchived);
+            return Json(relatedJobs);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error getting related jobs for Job {JobId}", jobId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
     }
 
     public async Task<IActionResult> IsBulkJobParent(int bulkJobId)

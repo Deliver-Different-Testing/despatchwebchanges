@@ -14,17 +14,6 @@ namespace DespatchWeb.EntityClasses;
 
 public partial class DespatchContext
 {
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (Debugger.IsAttached)
-        {
-            optionsBuilder.LogTo(Console.WriteLine,
-                    [DbLoggerCategory.Database.Command.Name],
-                    LogLevel.Information)
-                .EnableSensitiveDataLogging();
-        }
-    }
-
     // Compiled queries
     private static readonly Func<DespatchContext, int, Task<bool>> IsLiveJobCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
@@ -69,6 +58,14 @@ public partial class DespatchContext
     private static readonly Func<DespatchContext, int, Task<bool>> IsJobArchivedCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobArchives.Any(j => j.UcjbId == jobId));
+
+    private static readonly Func<DespatchContext, int, Task<int?>> GetJobParentIdCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
+            context.TucJobs
+                .AsNoTracking()
+                .Where(j => j.UcjbId == jobId)
+                .Select(j => j.ParentId)
+                .FirstOrDefault());
 
     private static readonly Func<DespatchContext, Task<int?>> GetEconomySpeedIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context) =>
@@ -210,7 +207,29 @@ public partial class DespatchContext
                     .SetProperty(m => m.TimeRead, readTime))
         );
 
+    private static readonly Func<DespatchContext, int, Task<TucNoteViewModel>> GetActiveNoteByIdCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int noteId) =>
+            context.TucNotes
+                .AsNoTracking()
+                .Where(x => x.NoteId == noteId)
+                .Select(NoteMappings.ActiveNoteMap)
+                .FirstOrDefault());
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        if (Debugger.IsAttached)
+        {
+            optionsBuilder.LogTo(Console.WriteLine,
+                    [DbLoggerCategory.Database.Command.Name],
+                    LogLevel.Information)
+                .EnableSensitiveDataLogging();
+        }
+    }
+
     // Access compiled queries
+    public async Task<TucNoteViewModel> GetActiveNotesByNoteIdAsync(int noteId) =>
+        await GetActiveNoteByIdCompiled(this, noteId);
+
     public async Task<List<TucNoteViewModel>> GetActiveNotesByJobIdAsync(int jobId) =>
         await GetActiveNotesByJobIdCompiled(this, jobId).ToListAsync();
 
@@ -253,6 +272,7 @@ public partial class DespatchContext
         await GetEffectiveJobBookingIdCompiled(this, jobBookingId);
 
     public async Task<bool> IsJobArchivedAsync(int jobId) => await IsJobArchivedCompiled(this, jobId);
+    public async Task<int?> GetJobParentIdAsync(int jobId) => await GetJobParentIdCompiled(this, jobId);
     public async Task<int?> GetEconomySpeedIdAsync() => await GetEconomySpeedIdCompiled(this);
     public async Task<DateTime?> GetEcoDeliveryTimeAsync() => await GetEcoDeliveryTimeCompiled(this);
 

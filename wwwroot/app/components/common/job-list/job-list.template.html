@@ -452,18 +452,18 @@
 
                     <!-- Vehicle Type Column -->
                     <div class="job-cell vehicle-cell">
-                        <span class="vehicle-type">{{::childJob.vehicle.text || '-'}}</span>
+                        <span class="vehicle-type">{{childJob.vehicle.text || '-'}}</span>
                     </div>
 
                     <!-- Job ID Column -->
                     <div class="job-cell job-id-cell">
-                        <div class="job-id">{{::childJob.jobNo}}</div>
-                        <div class="client-name" ng-if="::ctrl.isUsCustomer">{{::childJob.client}}</div>
+                        <div class="job-id">{{childJob.jobNo}}</div>
+                        <div class="client-name" ng-if="::ctrl.isUsCustomer">{{childJob.client}}</div>
                     </div>
 
                     <!-- Client Column (NZ tenants only) -->
                     <div class="job-cell client-cell" ng-if="::!ctrl.isUsCustomer">
-                        <span class="client-code">{{::childJob.client || '-'}}</span>
+                        <span class="client-code">{{childJob.client || '-'}}</span>
                     </div>
 
                     <!-- Pickup Column -->
@@ -490,7 +490,7 @@
                         <!-- Show courier info if already assigned -->
                         <div ng-if="ctrl.hasAssignedCourier(childJob)" class="courier-info-container">
                             <div class="courier-avatar" ng-style="{'background': ctrl.getCourierColor(childJob)}">
-                                {{::ctrl.getCourierInitials(childJob)}}
+                                {{ctrl.getCourierInitials(childJob)}}
                             </div>
                             <div class="courier-info">
                                 <!-- NZ tenant: Show courier code and name on one line -->
@@ -553,7 +553,7 @@
 
                     <!-- Status Column -->
                     <div class="job-cell">
-                        <div class="status">{{::ctrl.getStatusAbbreviation(childJob)}}</div>
+                        <div class="status">{{ctrl.getStatusAbbreviation(childJob)}}</div>
                     </div>
                 </div>
 
