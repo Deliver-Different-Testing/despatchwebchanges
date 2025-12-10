@@ -131,7 +131,9 @@ function transformJobDTO(dto: IJobDto, isUsCustomer: boolean): IJob {
         _completedTimeStr: dto.completedTime ? formatShortDateTime(dto.completedTime, isUsCustomer) : undefined,
         _followupTimeStr: dto.followupTime ? formatShortDateTime(dto.followupTime, isUsCustomer) : undefined,
         _pickUpTimeZoneStr: dto.pickUpTimeZone ? timezoneShortFilter(dto.pickUpTimeZone.text) : undefined,
-        _deliveryTimeZoneStr: dto.deliveryTimeZone ? timezoneShortFilter(dto.deliveryTimeZone.text) : undefined
+        _deliveryTimeZoneStr: dto.deliveryTimeZone ? timezoneShortFilter(dto.deliveryTimeZone.text) : undefined,
+        _stopDateStr: dto.stopDate ? formatLongDate(dto.stopDate, isUsCustomer) : undefined,
+        _restartDateStr: dto.restartDate ? formatLongDate(dto.restartDate, isUsCustomer) : undefined,
     };
 }
 
