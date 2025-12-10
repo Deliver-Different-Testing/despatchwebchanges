@@ -389,6 +389,51 @@ public partial class DespatchContext
                 .HasForeignKey(d => d.InvoiceProcessId)
                 .HasPrincipalKey(cc => cc.UcipId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.AcceptedJobType)
+                .WithMany()
+                .HasForeignKey(d => d.AcceptedJobTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.DesiredJobType)
+                .WithMany()
+                .HasForeignKey(d => d.DesiredJobTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.UcjbCourier)
+                .WithMany()
+                .HasForeignKey(d => d.UcjbCourierId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.UcjbStatusNavigation)
+                .WithMany()
+                .HasForeignKey(d => d.UcjbStatus)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.UcjbFromNavigation)
+                .WithMany()
+                .HasForeignKey(d => d.UcjbFrom)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.UcjbToNavigation)
+                .WithMany()
+                .HasForeignKey(d => d.UcjbTo)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.Source)
+                .WithMany()
+                .HasForeignKey(d => d.SourceId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.ClosestCourier)
+                .WithMany()
+                .HasForeignKey(d => d.ClosestCourierId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.JobRelationshipType)
+                .WithMany()
+                .HasForeignKey(d => d.JobRelationshipTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<TucNoteArchive>(entity =>
