@@ -6,13 +6,6 @@ import {findIana} from "windows-iana";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-export function formatDateForApi(date: Date | Dayjs | string): string {
-    // Always use ISO 8601 format for backend communication
-    // This removes timezone to get around timezone conversion issues.
-    // Make sure to store the correct timezone in the db
-    return dayjs(date).format('YYYY-MM-DD HH:mm:ss');
-}
-
 export function formatDateForApiWithTzs(date: Date | Dayjs | string, timeZone?: string): string {
     if (!timeZone) timeZone = TimeZone;
 

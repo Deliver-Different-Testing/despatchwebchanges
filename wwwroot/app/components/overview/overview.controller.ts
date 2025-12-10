@@ -412,15 +412,9 @@ class OverviewController extends BaseController {
         await this.refreshData();
     }
 
-    async onPaginate(page: number, limit: number): Promise<void> {
-        this.query.page = page;
-
-        // Only save if the limit actually changed
-        if (this.query.limit !== limit) {
-            this.query.limit = limit;
-            this.saveLimit();
-        }
-
+    async onPaginate(): Promise<void> {
+        // Save limit to localStorage (md-table-pagination updates query.page and query.limit via two-way binding)
+        this.saveLimit();
         await this.refreshData();
     }
 
