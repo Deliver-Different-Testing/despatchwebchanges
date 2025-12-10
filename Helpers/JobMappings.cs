@@ -869,6 +869,7 @@ public static class JobMappings
 
             // Client information
             Client = j.UcbkClientCode,
+            ClientName = j.UcbkClient != null ? j.UcbkClient.UcclName : string.Empty,
             ToContactPhone = j.DeliverToPhone ?? "Not specified",
 
             // Job characteristics

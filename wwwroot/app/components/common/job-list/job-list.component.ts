@@ -12,7 +12,7 @@ import JobHighlightService from "./job-highlight.service";
 import DensityMode from "../../../enums/densityMode";
 import AutoCompleteDialogService from "../../dialogs/auto-complete-dialog/auto-complete-dialog.service";
 import ToastrService from "../../../services/toastr.service";
-import {formatMins, getIanaTimezone} from "../../../functions/formatDates";
+import {formatLongDateTime, formatMins, getIanaTimezone} from "../../../functions/formatDates";
 
 class JobsListController extends BaseController {
     static $inject = [
@@ -711,11 +711,11 @@ class JobsListController extends BaseController {
         const now = dayjs();
 
         if (date.isSame(now, 'day')) {
-            return 'Today ' + date.format('HH:mm');
+            return 'Today ' + formatMins(date);
         } else if (date.isSame(now.subtract(1, 'day'), 'day')) {
-            return 'Yesterday ' + date.format('HH:mm');
+            return 'Yesterday ' + formatMins(date);
         } else {
-            return date.format('MM/DD/YYYY HH:mm');
+            return formatLongDateTime(date);
         }
     }
 

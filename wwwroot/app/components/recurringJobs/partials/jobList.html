@@ -23,7 +23,7 @@
                 context-menu-on="contextmenu"
                 context-menu-class="job-context-menu"
                 ng-repeat="job in ctrl.jobList track by job.id">
-            <td md-cell>{{job._bookedStr}} ({{::ctrl.timeZone | timezoneShort}})</td>
+            <td md-cell>{{job._bookedStr}} ({{::ctrl.timeZoneShort}})</td>
             <td md-cell>{{job.speed}}</td>
             <td md-cell>{{job.customJobName}}</td>
             <td md-cell>{{job.client}}</td>
@@ -84,7 +84,7 @@
             </td>
             
             <td md-cell>
-                {{job._nextDueTimeStr}} ({{::ctrl.timeZone | timezoneShort}})
+                {{job._nextDueTimeStr}} ({{::ctrl.timeZoneShort}})
             </td>
             <td md-cell>{{job.courier}}</td>
             <td md-cell>
