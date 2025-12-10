@@ -398,7 +398,8 @@
                                 </div>
 
                                 <md-button class="md-icon-button" ng-click="ctrl.getData()"
-                                           ng-if="::ctrl.boxes[box.name].showRefresh">
+                                           ng-if="::ctrl.boxes[box.name].showRefresh"
+                                           aria-label="Refresh">
                                     <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
                                     <md-tooltip md-direction="bottom">Refresh</md-tooltip>
                                 </md-button>

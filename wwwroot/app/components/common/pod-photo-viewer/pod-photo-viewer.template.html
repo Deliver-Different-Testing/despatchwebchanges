@@ -2,7 +2,8 @@
     <div class="pod-photo-viewer-container">
         <button
                 ng-click="ctrl.closeViewer()"
-                class="close-button md-icon-button">
+                class="close-button md-icon-button"
+                aria-label="Close photo viewer">
             <md-icon md-font-set="material-symbols-outlined">close</md-icon>
         </button>
 
@@ -14,13 +15,15 @@
             />
             <button
                     ng-click="ctrl.prevPhoto()"
-                    class="nav-button prev-button md-icon-button">
+                    class="nav-button prev-button md-icon-button"
+                    aria-label="Previous photo">
                 <md-icon md-font-set="material-symbols-outlined">chevron_left</md-icon>
             </button>
 
             <button
                     ng-click="ctrl.nextPhoto()"
-                    class="nav-button next-button md-icon-button">
+                    class="nav-button next-button md-icon-button"
+                    aria-label="Next photo">
                 <md-icon md-font-set="material-symbols-outlined">chevron_right</md-icon>
             </button>
         </div>
@@ -31,6 +34,7 @@
                     ng-click="ctrl.setPhotoIndex($index)"
                     class="indicator-dot"
                     ng-class="{'active': ctrl.currentIndex === $index}"
+                    aria-label="Go to photo {{$index + 1}}"
             ></button>
         </div>
 

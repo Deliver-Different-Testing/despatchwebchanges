@@ -554,6 +554,129 @@
           &.multi-part-parent {
             background: #f1f5f9;
             border-left: 3px solid #8b5cf6;
+
+            &:hover {
+              background: #e2e8f0;
+            }
+          }
+
+          // Expand/collapse button for parent jobs with children
+          .expand-children-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            background: #8b5cf6;
+            border: none;
+            border-radius: 6px;
+            padding: 4px 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 38px;
+            height: 26px;
+
+            &:hover {
+              background: #7c3aed;
+              transform: scale(1.02);
+            }
+
+            &.expanded {
+              background: #6d28d9;
+            }
+
+            .expand-icon {
+              font-size: 16px !important;
+              color: white;
+              transition: transform 0.2s ease;
+            }
+
+            .child-count-badge {
+              font-size: 10px;
+              font-weight: 600;
+              color: white;
+              background: rgba(255, 255, 255, 0.2);
+              border-radius: 8px;
+              padding: 1px 5px;
+              min-width: 14px;
+              text-align: center;
+            }
+          }
+
+          // Child job rows styling
+          &.child-job-row {
+            background: linear-gradient(to right, #f8fafc 0%, #ffffff 100%);
+            border-left: 3px solid #a78bfa;
+            border-bottom: 1px solid #e2e8f0;
+            position: relative;
+
+            &:hover {
+              background: linear-gradient(to right, #ede9fe 0%, #f5f3ff 100%);
+              box-shadow: 0 1px 3px rgba(139, 92, 246, 0.15);
+            }
+
+            &.first-child {
+              border-top: 1px dashed #c4b5fd;
+            }
+
+            &.last-child {
+              border-bottom: 2px solid #a78bfa;
+              margin-bottom: 4px;
+            }
+
+            &.selected {
+              background: linear-gradient(to right, #ddd6fe 0%, #ede9fe 100%) !important;
+              border-left: 4px solid #7c3aed !important;
+            }
+
+            .child-indicator-cell {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              padding-left: 4px;
+
+              .child-connector {
+                display: flex;
+                align-items: center;
+                position: relative;
+                height: 100%;
+
+                .connector-line {
+                  position: absolute;
+                  left: 8px;
+                  top: -50%;
+                  width: 2px;
+                  height: 100%;
+                  background: #c4b5fd;
+
+                  &.last {
+                    height: 50%;
+                  }
+                }
+
+                .child-icon {
+                  font-size: 18px !important;
+                  color: #8b5cf6;
+                  margin-left: 4px;
+                }
+              }
+            }
+
+            .child-job-id {
+              color: #6d28d9;
+              font-weight: 500;
+            }
+
+            // Slightly smaller text for child rows
+            .date-cell,
+            .time-cell,
+            .speed-cell,
+            .vehicle-cell,
+            .client-cell,
+            .route-cell,
+            .courier-cell,
+            .remaining-cell {
+              font-size: 11px;
+            }
           }
 
           .priority {

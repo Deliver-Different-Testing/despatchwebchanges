@@ -136,6 +136,9 @@ function transformJobDTO(dto: IJobDto, isUsCustomer: boolean): IJob {
 }
 
 export function transformDispatchJobDTO(dto: IDispatchJobDto): IDispatchJob {
+    // Transform children recursively if present
+    const children = dto.children?.map(transformDispatchJobDTO);
+
     return {
         ...dto,
         time: dto.time ? dayjs(dto.time) : undefined,
@@ -144,7 +147,11 @@ export function transformDispatchJobDTO(dto: IDispatchJobDto): IDispatchJob {
         _deliveryTimeString: dto.booked ? formatMins(dto.booked) : undefined,
         _deliveryDateString: dto.booked ? formatShortDate(dto.booked) : undefined,
         _pickUpTimeZoneStr: dto.pickUpTimeZone ? timezoneShortFilter(dto.pickUpTimeZone.text) : undefined,
-        _deliveryTimeZoneStr: dto.deliveryTimeZone ? timezoneShortFilter(dto.deliveryTimeZone.text) : undefined
+        _deliveryTimeZoneStr: dto.deliveryTimeZone ? timezoneShortFilter(dto.deliveryTimeZone.text) : undefined,
+        // Map backend children to _groupChildren for the UI
+        children: children,
+        _groupChildren: children,
+        _isExpanded: false
     };
 }
 

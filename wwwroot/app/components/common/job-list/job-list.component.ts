@@ -612,6 +612,16 @@ class JobsListController extends BaseController {
         return (job.isParentOrSingle && job._groupChildren && job._groupChildren.length > 0) ?? false;
     }
 
+    toggleJobGroup(job: IDispatchJob): void {
+        if (!this.isMultiPartJob(job)) return;
+        job._isExpanded = !job._isExpanded;
+        this.applyScope();
+    }
+
+    getChildCount(job: IDispatchJob): number {
+        return job._groupChildren?.length ?? 0;
+    }
+
     isUrgent(job: IDispatchJob): boolean {
         const now = dayjs();
         const deliveryTime = dayjs(job.time);

@@ -779,6 +779,9 @@ export interface IDispatchJob {
     deliveryTimeZone: ISuggestion;
     
     
+    // Children (from backend grouping)
+    children?: IDispatchJob[];
+
     // Private
     _isExpanded?: boolean;
     _groupChildren?: IDispatchJob[];
@@ -892,6 +895,9 @@ export interface IDispatchJobDto {
 
     pickUpTimeZone: ISuggestion;
     deliveryTimeZone: ISuggestion;
+
+    // Children (from backend grouping)
+    children?: IDispatchJobDto[];
 }
 
 export interface ILateCallRequest {

@@ -612,7 +612,8 @@
 
                                 <md-button class="md-icon-button"
                                            ng-if="ctrl.isEditMode"
-                                           ng-click="ctrl.toggleFieldVisibility('packageDetails')">
+                                           ng-click="ctrl.toggleFieldVisibility('packageDetails')"
+                                           aria-label="Toggle package details visibility">
                                     <md-icon md-font-set="material-symbols-outlined">
                                         {{ ctrl.isFieldVisible('packageDetails') ? 'visibility' : 'visibility_off' }}
                                     </md-icon>
@@ -710,7 +711,8 @@
 
                                 <md-button class="md-icon-button"
                                            ng-if="ctrl.isEditMode"
-                                           ng-click="ctrl.toggleFieldVisibility('additionalInfo')">
+                                           ng-click="ctrl.toggleFieldVisibility('additionalInfo')"
+                                           aria-label="Toggle additional info visibility">
                                     <md-icon md-font-set="material-symbols-outlined">
                                         {{ ctrl.isFieldVisible('additionalInfo') ? 'visibility' : 'visibility_off' }}
                                     </md-icon>
@@ -775,7 +777,8 @@
 
                                     <md-button class="md-icon-button"
                                                ng-if="ctrl.isEditMode"
-                                               ng-click="ctrl.toggleFieldVisibility('deliveryDetails')">
+                                               ng-click="ctrl.toggleFieldVisibility('deliveryDetails')"
+                                               aria-label="Toggle delivery details visibility">
                                         <md-icon md-font-set="material-symbols-outlined">
                                             {{ ctrl.isFieldVisible('deliveryDetails') ? 'visibility' : 'visibility_off'
                                             }}
@@ -897,7 +900,8 @@
 
                                     <md-button class="md-icon-button"
                                                ng-if="ctrl.isEditMode"
-                                               ng-click="ctrl.toggleFieldVisibility('truckOptions')">
+                                               ng-click="ctrl.toggleFieldVisibility('truckOptions')"
+                                               aria-label="Toggle truck options visibility">
                                         <md-icon md-font-set="material-symbols-outlined">
                                             {{ ctrl.isFieldVisible('truckOptions') ? 'visibility' : 'visibility_off'}}
                                         </md-icon>
@@ -1898,14 +1902,16 @@
         <md-button
                 class="md-icon-button nav-button prev-button"
                 ng-click="ctrl.prevPhoto(); $event.stopPropagation();"
-                ng-if="ctrl.formattedPodPhotos.length > 1">
+                ng-if="ctrl.formattedPodPhotos.length > 1"
+                aria-label="Previous photo">
             <md-icon md-font-set="material-symbols-outlined">chevron_left</md-icon>
         </md-button>
 
         <md-button
                 class="md-icon-button nav-button next-button"
                 ng-click="ctrl.nextPhoto(); $event.stopPropagation();"
-                ng-if="ctrl.formattedPodPhotos.length > 1">
+                ng-if="ctrl.formattedPodPhotos.length > 1"
+                aria-label="Next photo">
             <md-icon md-font-set="material-symbols-outlined">chevron_right</md-icon>
         </md-button>
     </div>

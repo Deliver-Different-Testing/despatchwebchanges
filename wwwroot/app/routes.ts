@@ -18,7 +18,7 @@ class RouterConfig {
             .configureJobSearchState()
             .configurePrebooksState()
             .configureOverviewState()
-            .configureMegaMapState()
+            // .configureMegaMapState() // Hidden temporarily
             .configureTaskDashboardState()
             .configureDriverManagementState();
     }
@@ -191,34 +191,35 @@ class RouterConfig {
         return this;
     }
 
-    private configureMegaMapState(): this {
-        this.$stateProvider.state("megaMap", {
-            url: "/megaMap",
-            resolve: {
-                manifest: ['$http', async ($http: angular.IHttpService) => {
-                    try {
-                        const response = await $http.get<Record<string, string>>('dist/manifest.json');
-                        return response.data;
-                    } catch {
-                        console.warn('[ROUTES] Failed to load manifest for megaMap state, using fallback names');
-                        return {
-                            'megaMap.js': 'megaMap.js',
-                            'megaMap.css': 'megaMap.css'
-                        };
-                    }
-                }],
-                loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
-                    const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
-                    return $ocLazyLoad.load([
-                        getAssetPath('megaMap.js'),
-                        getAssetPath('megaMap.css')
-                    ]);
-                }]
-            },
-            component: "megaMapComponent",
-        });
-        return this;
-    }
+    // Hidden temporarily
+    // private configureMegaMapState(): this {
+    //     this.$stateProvider.state("megaMap", {
+    //         url: "/megaMap",
+    //         resolve: {
+    //             manifest: ['$http', async ($http: angular.IHttpService) => {
+    //                 try {
+    //                     const response = await $http.get<Record<string, string>>('dist/manifest.json');
+    //                     return response.data;
+    //                 } catch {
+    //                     console.warn('[ROUTES] Failed to load manifest for megaMap state, using fallback names');
+    //                     return {
+    //                         'megaMap.js': 'megaMap.js',
+    //                         'megaMap.css': 'megaMap.css'
+    //                     };
+    //                 }
+    //             }],
+    //             loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+    //                 const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
+    //                 return $ocLazyLoad.load([
+    //                     getAssetPath('megaMap.js'),
+    //                     getAssetPath('megaMap.css')
+    //                 ]);
+    //             }]
+    //         },
+    //         component: "megaMapComponent",
+    //     });
+    //     return this;
+    // }
 
     private configureTaskDashboardState(): this {
         this.$stateProvider.state("taskDashboard", {

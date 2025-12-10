@@ -97,16 +97,27 @@ public class BaseJobRepository(
 
             var totalCount = await query.CountAsync();
 
-            var jobs = await query
+            var allJobs = await query
                 .AsNoTracking()
                 .AsSplitQuery()
                 .Select(JobMappings.JobDispatchMapping(isUsTenant))
                 .ToListAsync();
 
-            await EnrichJobsWithCollections(jobs);
+            await EnrichJobsWithCollections(allJobs);
+
+            var (economySpeedId, ecoDeliveryTime) = await GetEconomySpeedAndDeliveryTimeAsync();
+            var now = infoService.GetCurrentTenantTime();
+            foreach (var job in allJobs)
+            {
+                job.AngularId = Guid.NewGuid();
+                job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
+            }
+
+            // Group children under their parent jobs
+            var jobs = GroupJobsByParent(allJobs);
 
             var mapItems = page == AppPage.Dispatch
-                ? jobs.Select(j => new DispatchMapItem
+                ? allJobs.Select(j => new DispatchMapItem
                 {
                     JobId = j.Id,
                     JobNo = j.JobNo,
@@ -115,14 +126,6 @@ public class BaseJobRepository(
                     AssignedCourier = j.AssignedCourier
                 }).ToList()
                 : null;
-
-            var (economySpeedId, ecoDeliveryTime) = await GetEconomySpeedAndDeliveryTimeAsync();
-            var now = infoService.GetCurrentTenantTime();
-            foreach (var job in jobs)
-            {
-                job.AngularId = Guid.NewGuid();
-                job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
-            }
 
             return new JobSearchResult
             {
@@ -753,6 +756,38 @@ public class BaseJobRepository(
             3 => "Email & Mobile",
             _ => string.Empty
         };
+    }
+
+    /// <summary>
+    /// Groups child jobs under their parent jobs.
+    /// Returns a flat list containing only parent/single jobs, with children nested in the Children property.
+    /// </summary>
+    private static List<DispatchJobViewModel> GroupJobsByParent(List<DispatchJobViewModel> allJobs)
+    {
+        // Identify parent jobs (jobs that are parents or have no parent)
+        var parentJobs = allJobs
+            .Where(j => j.IsParentOrSingle)
+            .ToDictionary(j => j.Id);
+
+        // Identify child jobs (jobs that have a parent different from themselves)
+        var childJobs = allJobs
+            .Where(j => !j.IsParentOrSingle && j.ParentId.HasValue)
+            .ToList();
+
+        // Attach children to their parents
+        foreach (var child in childJobs)
+        {
+            if (!child.ParentId.HasValue || !parentJobs.TryGetValue(child.ParentId.Value, out var parent)) continue;
+            parent.Children ??= [];
+            parent.Children.Add(child);
+        }
+
+        // Sort children within each parent by job ID for consistent ordering
+        foreach (var parent in parentJobs.Values.Where(p => p.Children is { Count: > 0 })) 
+            parent.Children = parent.Children.OrderBy(c => c.Id).ToList();
+
+        // Return only parent/single jobs (children are now nested)
+        return parentJobs.Values.OrderBy(j => j.Id).ToList();
     }
 
     protected static double? CalculateRemainTime(DispatchJobViewModel job, DateTime currentTenantTime,
