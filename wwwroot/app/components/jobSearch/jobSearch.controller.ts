@@ -330,11 +330,14 @@ class JobSearchController extends BaseController {
                 };
 
                 this.layouts.push(currentLayout);
+                this.currentLayoutName = name;
 
                 if (Modernizr.localstorage) {
                     localStorage.setItem(this.LayoutKey, JSON.stringify(this.layouts));
                     localStorage.setItem(this.LastActiveLayoutKey, name);
                 }
+
+                this.toastrService.showSuccessToast("Layout saved successfully");
             });
     }
 

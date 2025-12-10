@@ -243,11 +243,11 @@
                     <!-- Priority Column -->
                     <div class="job-cell {{ctrl.shouldShowPriorityColumn(job) ? 'priority' : ''}}">
                         <!-- Expand/Collapse button for multipart jobs -->
-                        <button ng-if="ctrl.isMultiPartJob(job) && job.isParentOrSingle"
-                                class="expand-children-btn"
-                                ng-class="{'expanded': job._isExpanded}"
+                        <md-button
+                                ng-if="ctrl.isMultiPartJob(job) && job.isParentOrSingle"
                                 ng-click="ctrl.toggleJobGroup(job); $event.stopPropagation()"
-                                aria-label="{{job._isExpanded ? 'Collapse' : 'Expand'}} {{ctrl.getChildCount(job)}} child jobs">
+                                aria-label="{{job._isExpanded ? 'Collapse' : 'Expand'}} {{ctrl.getChildCount(job)}} child jobs"
+                                class="md-fab md-primary">
                             <md-icon md-font-set="material-symbols-outlined" class="expand-icon">
                                 {{job._isExpanded ? 'expand_more' : 'chevron_right'}}
                             </md-icon>
@@ -255,7 +255,7 @@
                             <md-tooltip md-direction="bottom">
                                 {{job._isExpanded ? 'Hide' : 'Show'}} {{ctrl.getChildCount(job)}} related job{{ctrl.getChildCount(job) > 1 ? 's' : ''}}
                             </md-tooltip>
-                        </button>
+                        </md-button>
 
                         <!-- Static indicators for non-expandable jobs -->
                         <md-icon
