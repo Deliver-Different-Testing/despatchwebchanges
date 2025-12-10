@@ -982,7 +982,7 @@
                             class="info-section"
                             flex="50"
                             flex-xs="100"
-                            ng-if="ctrl.job.preBook">
+                            ng-if="::ctrl.job.preBook">
                         <div class="info-section">
                             <md-toolbar class="job-detail-toolbar">
                                 <div class="md-toolbar-tools">
@@ -1089,7 +1089,7 @@
                                     </md-icon>
                                     <div class="md-list-item-text">
                                         <h3>Stop Date</h3>
-                                        <p>{{ctrl.job.stopDate ? (ctrl.job.stopDate | date:'MM/dd') : '-'}}</p>
+                                        <p>{{ctrl.job._stopDateStr}}</p>
                                     </div>
                                 </md-list-item>
 
@@ -1107,7 +1107,7 @@
                                     </md-icon>
                                     <div class="md-list-item-text">
                                         <h3>Restart Date</h3>
-                                        <p>{{ctrl.job.restartDate ? (ctrl.job.restartDate | date:'MM/dd') : '-'}}</p>
+                                        <p>{{ctrl.job._restartDateStr}}</p>
                                     </div>
                                 </md-list-item>
 
@@ -1883,7 +1883,7 @@
         <div class="pod-photo-info">
             <p class="timestamp">
                 {{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].timestamp |
-            date:'medium'}} ({{ctrl.job.deliveryTimeZone.text | timezoneShort}}
+            date:'medium'}} ({{ctrl.job._deliveryTimeZoneStr}}
             </p>
             <p class="uploader">
                 Delivered by
@@ -1964,7 +1964,7 @@
                 <md-grid-tile-footer>
                     <h3>
                         {{photo.timestamp | date:'shortTime'}}
-                        {{ctrl.job.deliveryTimeZone.text | timezoneShort}}
+                        {{ctrl.job._deliveryTimeZoneStr}}
                         <md-icon ng-if="!ctrl.isImageFile(photo)" md-font-set="material-symbols-outlined"
                                  style="font-size: 16px; margin-left: 4px;">
                             download

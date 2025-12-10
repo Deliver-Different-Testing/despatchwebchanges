@@ -6,8 +6,8 @@ import {
     InternalStatus,
     ISuggestion,
 } from "../../../interfaces/job.interface";
-import {ContactID, FirstName, TimeZone} from "../../../contants";
-import {CallData, TabItem} from "./job-details.interfaces";
+import {ContactID, FirstName} from "../../../contants";
+import {CallData} from "./job-details.interfaces";
 import {PodPhoto} from "../pod-photo-viewer/pod-photo-viewer.interfaces";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import "./job-details.styles.less";

@@ -65,5 +65,6 @@ public enum JobProperty
     TailLiftDo,
     DeliverToPrivateRes,
     Barcode,
-    CourierId
+    CourierId,
+    InactiveBy
 }

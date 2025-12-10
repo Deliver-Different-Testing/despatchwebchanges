@@ -28,6 +28,7 @@ public class RecurringJobRepository(
         var isUsTenant = _infoService.IsUsTenant();
 
         var query = Context.TucJobBookings
+            .AsNoTracking()
             .Where(j => j.UcbkActive == request.Active && j.UcbkOneOff == false);
 
         // US tenants: exclude child jobs (only show jobs where ParentId is null or matches root)
@@ -97,8 +98,17 @@ public class RecurringJobRepository(
             .Skip((request.Page - 1) * request.Limit)
             .Take(request.Limit)
             .Select(JobMappings.ToPrebookListViewModel)
-            .AsNoTracking()
             .ToListAsync();
+
+        // Early return if no records
+        if (items.Count == 0)
+            return new PaginatedResponse<PrebookListViewModel>
+            {
+                Items = [],
+                Total = 0,
+                Page = request.Page,
+                Pages = request.Limit
+            };
 
         var tenantTimeZone = _infoService.GetTenantTimeZone();
         foreach (var item in items)
@@ -343,8 +353,14 @@ public class RecurringJobRepository(
             case JobProperty.StopDate:
                 job.StopDate = DateTimeOffset.Parse(value).DateTime;
                 break;
+            case JobProperty.RestartDate:
+                job.RestartDate = DateTimeOffset.Parse(value).DateTime;
+                break;
             case JobProperty.CourierId:
                 job.CourierId = int.Parse(value);
+                break;
+            case JobProperty.InactiveBy:
+                job.UcbkInActiveBy = int.Parse(value);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);

@@ -198,6 +198,8 @@ export interface IJob {
     _readTrackerTimeStr?: string;
     _pickUpTimeZoneStr?: string;
     _deliveryTimeZoneStr?: string;
+    _stopDateStr?: string;
+    _restartDateStr?: string;
 }
 
 export interface IJobDto {
