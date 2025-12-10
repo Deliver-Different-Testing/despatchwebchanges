@@ -67,7 +67,7 @@ public static class JobMappings
             AddressLine2 = j.PickupAddressLine2,
             AddressLine3 = j.PickupAddressLine3,
             AddressLine4 = j.PickupAddressLine4,
-            AddressLine5 = j.PickupAddressLine5,
+            AddressLine5 = j.PickupAddressLine5 ?? "-",
             AddressLine6 = j.PickupAddressLine6,
             AddressLine7 = j.PickupAddressLine7,
             AddressLine8 = j.PickupAddressLine8,
@@ -76,7 +76,7 @@ public static class JobMappings
         },
         DeliveryAddress = new AddressViewModel
         {
-            AddressLine1 = j.DeliveryAddressLine1,
+            AddressLine1 = j.DeliveryAddressLine1 ?? "-",
             AddressLine2 = j.DeliveryAddressLine2,
             AddressLine3 = j.DeliveryAddressLine3,
             AddressLine4 = j.DeliveryAddressLine4,
@@ -95,18 +95,18 @@ public static class JobMappings
         DeliveryContact = j.DeliverToContact ?? "Not specified",
 
         Direct = j.Direct,
-        Speed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : null,
+        Speed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : "-",
         Notify = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName : null,
         Vehicle =
             j.UcjbSizeNavigation != null
                 ? new Suggestion
                 {
                     Id = j.UcjbSizeNavigation.VehicleSizeId,
-                    Text = j.UcjbSizeNavigation.VehicleName
+                    Text = j.UcjbSizeNavigation.VehicleName ?? "-"
                 }
                 : null,
 
-        Client = j.UcjbClientCode,
+        Client = j.UcjbClientCode ?? "-",
         ClientId = j.UcjbClientId,
         ClientName = j.UcjbClient != null ? j.UcjbClient.UcclName : "-",
 

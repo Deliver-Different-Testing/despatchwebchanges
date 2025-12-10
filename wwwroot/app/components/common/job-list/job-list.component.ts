@@ -233,11 +233,7 @@ class JobsListController extends BaseController {
             if (this.enableVirtualScrolling && changes['jobs'].previousValue !== changes['jobs'].currentValue) {
                 this.currentPage = 0;
                 // Check if all jobs are already loaded in the initial batch
-                if (this.totalJobsCount > 0 && this.jobs && this.jobs.length >= this.totalJobsCount) {
-                    this.allJobsLoaded = true;
-                } else {
-                    this.allJobsLoaded = false;
-                }
+                this.allJobsLoaded = !!(this.totalJobsCount > 0 && this.jobs && this.jobs.length >= this.totalJobsCount);
             }
 
             this.calculateStats();
@@ -332,7 +328,7 @@ class JobsListController extends BaseController {
             localStorage.setItem(`${this.DENSE_MODE_SAVE_KEY}_${this.jobListType}`, mode);
         }
 
-        // Apply CSS class to THIS component root only
+        // Apply a CSS class to THIS component root only
         this.registerTimeout(() => {
             const componentElement = angular.element(`.job-list-component.job-list-${this.jobListType}`);
             if (componentElement.length > 0) {
