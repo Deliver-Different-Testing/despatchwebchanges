@@ -133,22 +133,13 @@ public class RecurringJobRepository(
 
     public async Task<JobGroupViewModel> GetRecurringJobByIdAsync(int jobId)
     {
-        var mainJobInfo = await Context.TucJobBookings
-            .AsNoTracking()
-            .Where(j => j.UcbkId == jobId)
-            .Select(j => new { j.UcbkId, BookingParentId = j.BookingParentId })
-            .TagWith("GetRecurringJob - Booking Parent Lookup")
-            .FirstOrDefaultAsync();
-
-        ArgumentNullException.ThrowIfNull(mainJobInfo);
-
-        var bookingParentId = mainJobInfo.BookingParentId ?? mainJobInfo.UcbkId;
+        var effectiveJobId = await Context.GetEffectiveJobBookingIdAsync(jobId);
 
         var allJobsInGroup = await Context.TucJobBookings
             .AsNoTracking()
-            .Where(j => j.UcbkId == bookingParentId || j.BookingParentId == bookingParentId)
+            .Where(j => j.UcbkId == effectiveJobId || j.BookingParentId == effectiveJobId)
             .Select(JobMappings.JobRecurringMapping)
-            .TagWith($"GetRecurringJob - Complete Booking Group {bookingParentId}")
+            .TagWith($"GetRecurringJob - Complete Booking Group {effectiveJobId}")
             .ToListAsync();
 
         var mainJob = allJobsInGroup.FirstOrDefault(j => j.Id == jobId);
@@ -165,289 +156,310 @@ public class RecurringJobRepository(
 
     public async Task UpdateRecurringJobAsync(int jobId, JobProperty property, string value)
     {
-        string noteText = null;
-
-        switch (property)
+        try
         {
-            // Simple single-field updates using ExecuteUpdateAsync (most efficient - no entity loading)
-            case JobProperty.Items:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.Quantity, short.Parse(value)));
-                return;
+            string noteText;
 
-            case JobProperty.SpeedID:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId && j.UcbkDone != true)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkSpeed, int.Parse(value)));
-                return;
-
-            case JobProperty.ClientID:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkClientId, int.Parse(value)));
-                return;
-
-            case JobProperty.ClientCode:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkClientCode, value[..Math.Min(value.Length, 5)]));
-                return;
-
-            case JobProperty.Pedal:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkCbd, bool.Parse(value)));
-                return;
-
-            case JobProperty.Attention:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkAttention, bool.Parse(value)));
-                return;
-
-            case JobProperty.Reprice:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.Reprice, bool.Parse(value)));
-                return;
-
-            case JobProperty.Truck:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s
-                        .SetProperty(j => j.Truck, bool.Parse(value))
-                        .SetProperty(j => j.UcbkVan, false));
-                return;
-
-            case JobProperty.Van:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s
-                        .SetProperty(j => j.UcbkVan, bool.Parse(value))
-                        .SetProperty(j => j.Truck, false));
-                return;
-
-            case JobProperty.VanOK:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.VanOk, bool.Parse(value)));
-                return;
-
-            case JobProperty.RefA:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkClientRefa, value[..Math.Min(value.Length, 20)]));
-                return;
-
-            case JobProperty.RefB:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkClientRefb, value[..Math.Min(value.Length, 15)]));
-                return;
-
-            case JobProperty.OurRef:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkOurRef, value[..Math.Min(value.Length, 20)]));
-                return;
-
-            case JobProperty.DGClass:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.Dgclass, int.Parse(value)));
-                return;
-
-            case JobProperty.Direct:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.Direct, bool.Parse(value)));
-                return;
-
-            case JobProperty.TrackingMobile:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s =>
-                        s.SetProperty(j => j.TrackingMobile, value[..Math.Min(value.Length, 100)]));
-                return;
-
-            case JobProperty.TrackingEmail:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.TrackingEmail, value[..Math.Min(value.Length, 100)]));
-                return;
-
-            case JobProperty.Amount:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkAmount, decimal.Parse(value)));
-                return;
-
-            case JobProperty.AcceptedJobTypeID:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.AcceptedJobTypeId, short.Parse(value)));
-                return;
-
-            case JobProperty.DeliverBy:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.DeliverByTime, DateTimeOffset.Parse(value).DateTime));
-                return;
-
-            case JobProperty.BookedTime:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkDate, DateTimeOffset.Parse(value).DateTime));
-                return;
-
-            case JobProperty.StopDate:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.StopDate, DateTimeOffset.Parse(value).DateTime));
-                return;
-
-            case JobProperty.RestartDate:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.RestartDate, DateTimeOffset.Parse(value).DateTime));
-                return;
-
-            case JobProperty.CourierId:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.CourierId, int.Parse(value)));
-                return;
-
-            case JobProperty.InactiveBy:
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkInActiveBy, int.Parse(value)));
-                return;
-
-            // Updates that need to update parent + all children in one query
-            case JobProperty.Time:
-                var timeValue = DateTimeOffset.Parse(value).DateTime;
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.ParentId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkTime, timeValue));
-                return;
-
-            case JobProperty.Date:
-                var dateValue = DateTimeOffset.Parse(value).DateTime;
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.ParentId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkDate, dateValue));
-                return;
-
-            case JobProperty.Weight:
-                var weight = short.Parse(value);
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.ParentId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkWeight, weight));
-                return;
-
-            case JobProperty.CustomJobName:
-                var customName = value[..Math.Min(value.Length, 100)];
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.ParentId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.CustomJobName, customName));
-                return;
-
-            // Contact fields: update parent + first/last child
-            case JobProperty.FromContactName:
-                var fromContact = value[..Math.Min(value.Length, 100)];
-                var firstChildIdForContact = await Context.TucJobBookings
-                    .Where(c => c.ParentId == jobId).OrderBy(c => c.UcbkId)
-                    .Select(c => (int?)c.UcbkId).FirstOrDefaultAsync();
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.UcbkId == firstChildIdForContact)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.PickupFromContact, fromContact));
-                return;
-
-            case JobProperty.FromContactPhone:
-                var fromPhone = value[..Math.Min(value.Length, 100)];
-                var firstChildIdForPhone = await Context.TucJobBookings
-                    .Where(c => c.ParentId == jobId).OrderBy(c => c.UcbkId)
-                    .Select(c => (int?)c.UcbkId).FirstOrDefaultAsync();
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.UcbkId == firstChildIdForPhone)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.PickupFromPhone, fromPhone));
-                return;
-
-            case JobProperty.ToContactName:
-                var toContact = value[..Math.Min(value.Length, 100)];
-                var lastChildIdForContact = await Context.TucJobBookings
-                    .Where(c => c.ParentId == jobId).OrderByDescending(c => c.UcbkId)
-                    .Select(c => (int?)c.UcbkId).FirstOrDefaultAsync();
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.UcbkId == lastChildIdForContact)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.DeliverToContact, toContact));
-                return;
-
-            case JobProperty.ToContactPhone:
-                var toPhone = value[..Math.Min(value.Length, 100)];
-                var lastChildIdForPhone = await Context.TucJobBookings
-                    .Where(c => c.ParentId == jobId).OrderByDescending(c => c.UcbkId)
-                    .Select(c => (int?)c.UcbkId).FirstOrDefaultAsync();
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.UcbkId == lastChildIdForPhone)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.DeliverToPhone, toPhone));
-                return;
-
-            // Updates with notes - use ExecuteUpdateAsync then create note
-            case JobProperty.Size:
-                var size = int.Parse(value);
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkSize, size));
-                noteText = $"Changed Size to {size}";
-                break;
-
-            case JobProperty.DGDocumentation:
-                var dgDoc = bool.Parse(value);
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.Dgdocument, dgDoc));
-                noteText = $"Changed DGDocumentation to {(dgDoc ? "Yes" : "No")}";
-                break;
-
-            case JobProperty.TrackingMethod:
-                var trackingMethodId = int.Parse(value);
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.TrackingMethod, trackingMethodId));
-                noteText = $"Changed Tracking Method to {GetTrackingName(trackingMethodId)}";
-                break;
-
-            case JobProperty.Frequency:
-                var frequency = int.Parse(value);
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkFrequency, frequency));
-                noteText = $"Frequency of recurring job set to: {((Frequency)frequency).ToDisplayString()}";
-                break;
-
-            case JobProperty.HolidayDelivery:
-                var holidayOption = int.Parse(value);
-                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.HolidayDeliveryOption, holidayOption));
-                noteText =
-                    $"Holiday Delivery Option set to: {((HolidayDeliveryOptions)holidayOption).ToDisplayString()}";
-                break;
-
-            // DaysOfWeek: updates parent + all children, also handles child->parent propagation
-            case JobProperty.DaysOfWeek:
-                var dayEnum = (DaysOfWeek)int.Parse(value);
-                var daysInt = (int)dayEnum;
-
-                // Get parent ID if this is a child job
-                var parentId = await Context.TucJobBookings
-                    .Where(j => j.UcbkId == jobId)
-                    .Select(j => j.ParentId)
-                    .FirstOrDefaultAsync();
-
-                // Update this job, its children, and if it's a child, also parent and siblings
-                var effectiveParentId = parentId ?? jobId;
-                await Context.TucJobBookings
-                    .Where(j => j.UcbkId == effectiveParentId || j.ParentId == effectiveParentId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkDaysInt, daysInt));
-
-                noteText = $"Days of recurring jobs set to: {dayEnum.ToDisplayString()}";
-                break;
-
-            // Active: needs multiple fields and conditional logic
-            case JobProperty.Active:
-                var isActive = bool.Parse(value);
-                var staffId = _infoService.GetStaffId();
-                var currentTenantTime = _infoService.GetCurrentTenantTime();
-
-                if (isActive)
-                {
+            switch (property)
+            {
+                // Simple single-field updates using ExecuteUpdateAsync (most efficient - no entity loading)
+                case JobProperty.Items:
                     await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkActive, true));
-                }
-                else
-                {
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.Quantity, short.Parse(value)));
+                    return;
+
+                case JobProperty.SpeedID:
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId && j.UcbkDone != true)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkSpeed, int.Parse(value)));
+                    return;
+
+                case JobProperty.ClientID:
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkClientId, int.Parse(value)));
+                    return;
+
+                case JobProperty.ClientCode:
+                    var clientCode = value.Substring(0, Math.Min(value.Length, 5));
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s =>
+                            s.SetProperty(j => j.UcbkClientCode, clientCode));
+                    return;
+
+                case JobProperty.Pedal:
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkCbd, bool.Parse(value)));
+                    return;
+
+                case JobProperty.Attention:
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkAttention, bool.Parse(value)));
+                    return;
+
+                case JobProperty.Reprice:
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.Reprice, bool.Parse(value)));
+                    return;
+
+                case JobProperty.Truck:
                     await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
                         .ExecuteUpdateAsync(s => s
-                            .SetProperty(j => j.UcbkActive, false)
-                            .SetProperty(j => j.UcbkInActiveBy, staffId)
-                            .SetProperty(j => j.UcbkInActiveDate, currentTenantTime));
-                }
+                            .SetProperty(j => j.Truck, bool.Parse(value))
+                            .SetProperty(j => j.UcbkVan, false));
+                    return;
 
-                noteText = $"Changed Active to {(isActive ? "Yes" : "No")}";
-                break;
+                case JobProperty.Van:
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s
+                            .SetProperty(j => j.UcbkVan, bool.Parse(value))
+                            .SetProperty(j => j.Truck, false));
+                    return;
 
-            default:
-                throw new ArgumentOutOfRangeException(nameof(property), property, null);
+                case JobProperty.VanOK:
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.VanOk, bool.Parse(value)));
+                    return;
+
+                case JobProperty.RefA:
+                    var refA = value.Substring(0, Math.Min(value.Length, 20));
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s =>
+                            s.SetProperty(j => j.UcbkClientRefa, refA));
+                    return;
+
+                case JobProperty.RefB:
+                    var refB = value.Substring(0, Math.Min(value.Length, 15));
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s =>
+                            s.SetProperty(j => j.UcbkClientRefb, refB));
+                    return;
+
+                case JobProperty.OurRef:
+                    var ourRef = value.Substring(0, Math.Min(value.Length, 20));
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkOurRef, ourRef));
+                    return;
+
+                case JobProperty.DGClass:
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.Dgclass, int.Parse(value)));
+                    return;
+
+                case JobProperty.Direct:
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.Direct, bool.Parse(value)));
+                    return;
+
+                case JobProperty.TrackingMobile:
+                    var trackingMobile = value.Substring(0, Math.Min(value.Length, 100));
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s =>
+                            s.SetProperty(j => j.TrackingMobile, trackingMobile));
+                    return;
+
+                case JobProperty.TrackingEmail:
+                    var trackingEmail = value.Substring(0, Math.Min(value.Length, 100));
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s =>
+                            s.SetProperty(j => j.TrackingEmail, trackingEmail));
+                    return;
+
+                case JobProperty.Amount:
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkAmount, decimal.Parse(value)));
+                    return;
+
+                case JobProperty.AcceptedJobTypeID:
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.AcceptedJobTypeId, short.Parse(value)));
+                    return;
+
+                case JobProperty.DeliverBy:
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s =>
+                            s.SetProperty(j => j.DeliverByTime, DateTimeOffset.Parse(value).DateTime));
+                    return;
+
+                case JobProperty.BookedTime:
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkDate, DateTimeOffset.Parse(value).DateTime));
+                    return;
+
+                case JobProperty.StopDate:
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.StopDate, DateTimeOffset.Parse(value).DateTime));
+                    return;
+
+                case JobProperty.RestartDate:
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s =>
+                            s.SetProperty(j => j.RestartDate, DateTimeOffset.Parse(value).DateTime));
+                    return;
+
+                case JobProperty.CourierId:
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.CourierId, int.Parse(value)));
+                    return;
+
+                case JobProperty.InactiveBy:
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkInActiveBy, int.Parse(value)));
+                    return;
+
+                // Updates that need to update parent + all children in one query
+                case JobProperty.Time:
+                    var timeValue = DateTimeOffset.Parse(value).DateTime;
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.ParentId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkTime, timeValue));
+                    return;
+
+                case JobProperty.Date:
+                    var dateValue = DateTimeOffset.Parse(value).DateTime;
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.ParentId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkDate, dateValue));
+                    return;
+
+                case JobProperty.Weight:
+                    var weight = short.Parse(value);
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.ParentId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkWeight, weight));
+                    return;
+
+                case JobProperty.CustomJobName:
+                    var customName = value[..Math.Min(value.Length, 100)];
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.ParentId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.CustomJobName, customName));
+                    return;
+
+                // Contact fields: update parent + first/last child
+                case JobProperty.FromContactName:
+                    var fromContact = value[..Math.Min(value.Length, 100)];
+                    var firstChildIdForContact = await Context.TucJobBookings
+                        .Where(c => c.ParentId == jobId).OrderBy(c => c.UcbkId)
+                        .Select(c => c.UcbkId).FirstOrDefaultAsync();
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.UcbkId == firstChildIdForContact)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.PickupFromContact, fromContact));
+                    return;
+
+                case JobProperty.FromContactPhone:
+                    var fromPhone = value[..Math.Min(value.Length, 100)];
+                    var firstChildIdForPhone = await Context.TucJobBookings
+                        .Where(c => c.ParentId == jobId).OrderBy(c => c.UcbkId)
+                        .Select(c => c.UcbkId).FirstOrDefaultAsync();
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.UcbkId == firstChildIdForPhone)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.PickupFromPhone, fromPhone));
+                    return;
+
+                case JobProperty.ToContactName:
+                    var toContact = value[..Math.Min(value.Length, 100)];
+                    var lastChildIdForContact = await Context.TucJobBookings
+                        .Where(c => c.ParentId == jobId).OrderByDescending(c => c.UcbkId)
+                        .Select(c => c.UcbkId).FirstOrDefaultAsync();
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.UcbkId == lastChildIdForContact)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.DeliverToContact, toContact));
+                    return;
+
+                case JobProperty.ToContactPhone:
+                    var toPhone = value[..Math.Min(value.Length, 100)];
+                    var lastChildIdForPhone = await Context.TucJobBookings
+                        .Where(c => c.ParentId == jobId).OrderByDescending(c => c.UcbkId)
+                        .Select(c => c.UcbkId).FirstOrDefaultAsync();
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.UcbkId == lastChildIdForPhone)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.DeliverToPhone, toPhone));
+                    return;
+
+                // Updates with notes - use ExecuteUpdateAsync then create a note
+                case JobProperty.Size:
+                    var size = int.Parse(value);
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkSize, size));
+                    noteText = $"Changed Size to {size}";
+                    break;
+
+                case JobProperty.DGDocumentation:
+                    var dgDoc = bool.Parse(value);
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.Dgdocument, dgDoc));
+                    noteText = $"Changed DGDocumentation to {(dgDoc ? "Yes" : "No")}";
+                    break;
+
+                case JobProperty.TrackingMethod:
+                    var trackingMethodId = int.Parse(value);
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.TrackingMethod, trackingMethodId));
+                    noteText = $"Changed Tracking Method to {GetTrackingName(trackingMethodId)}";
+                    break;
+
+                case JobProperty.Frequency:
+                    var frequency = int.Parse(value);
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkFrequency, frequency));
+                    noteText = $"Frequency of recurring job set to: {((Frequency)frequency).ToDisplayString()}";
+                    break;
+
+                case JobProperty.HolidayDelivery:
+                    var holidayOption = int.Parse(value);
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.HolidayDeliveryOption, holidayOption));
+                    noteText =
+                        $"Holiday Delivery Option set to: {((HolidayDeliveryOptions)holidayOption).ToDisplayString()}";
+                    break;
+
+                // DaysOfWeek: updates parent + all children, also handles child->parent propagation
+                case JobProperty.DaysOfWeek:
+                    var dayEnum = (DaysOfWeek)int.Parse(value);
+                    var daysInt = (int)dayEnum;
+
+                    // Get parent ID if this is a child's job
+                    var parentId = await Context.TucJobBookings
+                        .Where(j => j.UcbkId == jobId)
+                        .Select(j => j.ParentId)
+                        .FirstOrDefaultAsync();
+
+                    // Update this job, its children, and if it's a child, also parent and siblings
+                    var effectiveParentId = parentId ?? jobId;
+                    await Context.TucJobBookings
+                        .Where(j => j.UcbkId == effectiveParentId || j.ParentId == effectiveParentId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkDaysInt, daysInt));
+
+                    noteText = $"Days of recurring jobs set to: {dayEnum.ToDisplayString()}";
+                    break;
+
+                // Active: needs multiple fields and conditional logic
+                case JobProperty.Active:
+                    var isActive = bool.Parse(value);
+                    var staffId = _infoService.GetStaffId();
+                    var currentTenantTime = _infoService.GetCurrentTenantTime();
+
+                    if (isActive)
+                    {
+                        await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                            .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkActive, true));
+                    }
+                    else
+                    {
+                        await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                            .ExecuteUpdateAsync(s => s
+                                .SetProperty(j => j.UcbkActive, false)
+                                .SetProperty(j => j.UcbkInActiveBy, staffId)
+                                .SetProperty(j => j.UcbkInActiveDate, currentTenantTime));
+                    }
+
+                    noteText = $"Changed Active to {(isActive ? "Yes" : "No")}";
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(property), property, null);
+            }
+
+            if (!string.IsNullOrEmpty(noteText))
+                await CreateNewRecurringJobNote(jobId, noteText, false);
         }
-
-        if (!string.IsNullOrEmpty(noteText))
-            await CreateNewRecurringJobNote(jobId, noteText, false);
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(RecurringJobRepository), nameof(UpdateRecurringJobAsync)));
+            throw;
+        }
     }
 
     public async Task<List<TucNoteViewModel>> GetRecurringNotesByJobIdAsync(int jobBookingId)
@@ -488,7 +500,7 @@ public class RecurringJobRepository(
                 .AsNoTracking()
                 .Where(child => child.ParentId == request.JobId)
                 .OrderByDescending(child => child.UcbkId)
-                .Select(child => (int?)child.UcbkId)
+                .Select(child => child.UcbkId)
                 .FirstOrDefaultAsync();
 
             // Update parent job and last child job (if exists)
@@ -529,7 +541,7 @@ public class RecurringJobRepository(
                 .AsNoTracking()
                 .Where(child => child.ParentId == request.JobId)
                 .OrderBy(child => child.UcbkId)
-                .Select(child => (int?)child.UcbkId)
+                .Select(child => child.UcbkId)
                 .FirstOrDefaultAsync();
 
             // Update parent job and first child job (if exists)
