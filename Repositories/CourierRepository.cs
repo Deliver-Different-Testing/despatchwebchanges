@@ -655,10 +655,7 @@ public class CourierRepository(
                     CourierGpsid = x.Courier.CourierGpsid,
                     GpsCreated = x.Gps != null ? x.Gps.Created : null,
                     PolygonId = x.Gps != null ? x.Gps.PolygonId : null,
-                    JobCount = x.Courier.TucJobUcjbCouriers.Count(j =>
-                        !j.UcjbVoid &&
-                        !j.UcjbJobDone &&
-                        j.UcjbDate.Date <= currentDateOnly)
+                    JobCount = 0  // Placeholder, will populate after Step 5
                 })
                 .OrderBy(c => c.Code)
                 .TagWith("GetClearLists - Step 3&4: All Courier Data with GPS and Job Counts")
@@ -709,21 +706,31 @@ public class CourierRepository(
             // ===================================================================
             var allCourierIds = allCourierData.Select(c => c.UccrId).ToHashSet();
 
-            var allJobs = await Context.TblJobs
+            var nextDay = currentDateOnly.AddDays(1);
+
+            var allJobs = await Context.TucJobs  // ✅ Active jobs only
                 .AsNoTracking()
-                .Where(job => !job.JobDone &&
-                              !job.Void &&
-                              job.Date.HasValue &&
-                              job.Date.Value.Date <= currentDateOnly &&
-                              job.CourierId.HasValue &&
-                              allCourierIds.Contains(job.CourierId.Value))
+                .Where(job => !job.UcjbJobDone &&
+                              !job.UcjbVoid &&
+                              job.UcjbDate < nextDay &&  // ✅ SARGable
+                              job.UcjbCourierId.HasValue &&
+                              allCourierIds.Contains(job.UcjbCourierId.Value))
                 .Select(job => new CourierJobSuburbDto
                 {
-                    CourierId = job.CourierId.Value,
-                    ToSuburbId = job.ToSuburbId
+                    CourierId = job.UcjbCourierId.Value,
+                    ToSuburbId = job.UcjbTo  // Check actual column name
                 })
                 .TagWith("GetClearLists - Step 5: All Jobs")
                 .ToListAsync();
+
+            var jobCountsByCourier = allJobs
+                .GroupBy(j => j.CourierId)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            foreach (var courier in allCourierData)
+            {
+                courier.JobCount = jobCountsByCourier.GetValueOrDefault(courier.UccrId, 0);
+            }
 
             var jobsByCourier = allJobs
                 .GroupBy(j => j.CourierId)
