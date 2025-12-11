@@ -225,13 +225,12 @@
                 </div>
 
                 <!-- Job Rows -->
-                <div ng-repeat-start="job in ctrl.filteredJobs track by $index"
+                <div ng-repeat="job in ctrl.filteredJobs track by $index"
                      class="job-row {{ctrl.getJobPriorityClass(job)}}"
                      ng-class="{
                              'selected': ctrl.selectedJob && ctrl.selectedJob.id === job.id,
                              'multi-selected': job.selected,
                              'unread': !job.hasBeenRead,
-                             'multi-part-parent': ctrl.isMultiPartJob(job) && !!job.isParentOrSingle,
                              'child-job': !job.isParentOrSingle,
                              'related-job': ctrl.hasRelatedJobs(job),
                              'warning': ctrl.isWarning(job)
@@ -244,28 +243,11 @@
 
                     <!-- Priority Column -->
                     <div class="job-cell {{ctrl.shouldShowPriorityColumn(job) ? 'priority' : ''}}">
-                        <!-- Expand/Collapse button for multipart jobs -->
-                        <div class="md-dense">
-                            <md-button
-                                    aria-label="{{job._isExpanded ? 'Collapse' : 'Expand'}} {{ctrl.getChildCount(job)}} child jobs"
-                                    class="md-raised"
-                                    ng-click="ctrl.toggleJobGroup(job); $event.stopPropagation()"
-                                    ng-if="ctrl.isMultiPartJob(job) && job.isParentOrSingle">
-                                <md-icon md-font-set="material-symbols-outlined">
-                                    {{job._isExpanded ? 'expand_more' : 'chevron_right'}}
-                                </md-icon>
-                                <md-tooltip md-direction="bottom">
-                                    {{job._isExpanded ? 'Hide' : 'Show'}} {{ctrl.getChildCount(job)}} related
-                                    job{{ctrl.getChildCount(job) > 1 ? 's' : ''}}
-                                </md-tooltip>
-                            </md-button>
-                        </div>
-                        
-                        <!-- Static indicators for non-expandable jobs -->
+                        <!-- Static indicators -->
                         <md-icon
                                 md-font-set="material-symbols-outlined"
                                 class="airport-icon"
-                                ng-if="(job.fromAirportId || job.toAirportId) && !ctrl.isMultiPartJob(job)">
+                                ng-if="job.fromAirportId || job.toAirportId">
                             {{ ctrl.getFlightIcon(job) }}
                         </md-icon>
                     </div>
@@ -416,165 +398,6 @@
                     <div class="job-cell">
                         <md-chip class="status {{job.statusName | lowercase | replace:' ':'-'}}">
                             {{job.status}}
-                        </md-chip>
-                    </div>
-                </div>
-
-                <!-- Child Job Rows -->
-                <div ng-repeat-end
-                     ng-if="job._isExpanded && ctrl.isMultiPartJob(job)"
-                     ng-repeat="childJob in job._groupChildren track by $index"
-                     class="job-row child-job-row {{ctrl.getJobPriorityClass(childJob)}}"
-                     ng-class="{
-                             'selected': ctrl.selectedJob && ctrl.selectedJob.id === childJob.id,
-                             'multi-selected': childJob.selected,
-                             'unread': !childJob.hasBeenRead,
-                             'first-child': $first,
-                             'last-child': $last
-                         }"
-                     ng-style="{'grid-template-columns': ctrl.getGridTemplateColumns()}"
-                     context-menu="ctrl.getJobContextMenuOptions(childJob)"
-                     context-menu-on="contextmenu"
-                     context-menu-class="job-context-menu"
-                     ng-click="ctrl.selectJob(childJob, $event)">
-
-                    <!-- Priority Column - Child indicator -->
-                    <div class="job-cell child-indicator-cell">
-                        <div class="child-connector">
-                            <span class="connector-line" ng-class="{'last': $last}"></span>
-                            <md-icon class="child-icon" md-font-set="material-symbols-outlined">
-                                subdirectory_arrow_right
-                            </md-icon>
-                        </div>
-                    </div>
-
-                    <!-- Date Column -->
-                    <div class="job-cell date-cell">
-                        <div class="date">{{childJob._deliveryDateString}}</div>
-                    </div>
-
-                    <!-- Time Column -->
-                    <div class="job-cell time-cell">
-                        <div class="time">{{childJob._deliveryTimeString}} {{::ctrl.timeZoneShort}}</div>
-                    </div>
-
-                    <div class="job-cell isarchived-cell" ng-if="::ctrl.isJobSearchPage()">
-                        <md-checkbox ng-model="childJob.isArchived" aria-label="Is Archived" disabled></md-checkbox>
-                    </div>
-
-                    <!-- Speed Column -->
-                    <div class="job-cell speed-cell">
-                        <span class="speed-value">{{childJob.speed}}</span>
-                    </div>
-
-                    <!-- Vehicle Type Column -->
-                    <div class="job-cell vehicle-cell">
-                        <span class="vehicle-type">{{childJob.vehicle.text}}</span>
-                    </div>
-
-                    <!-- Job ID Column -->
-                    <div class="job-cell job-id-cell">
-                        <div class="job-id child-job-id">{{childJob.jobNo}}</div>
-                        <div class="client-name" ng-if="::ctrl.isUsCustomer">{{childJob.client}}</div>
-                    </div>
-
-                    <!-- Client Column (NZ tenants only) -->
-                    <div class="job-cell client-cell" ng-if="::!ctrl.isUsCustomer">
-                        <span class="client-code">{{childJob.client}}</span>
-                    </div>
-
-                    <!-- Pickup Column -->
-                    <div class="job-cell route-cell pickup-cell">
-                        <div class="address">{{childJob.pickupAddress && childJob.pickupAddress.addressLine5}}</div>
-                    </div>
-
-                    <!-- Delivery Column -->
-                    <div class="job-cell route-cell delivery-cell">
-                        <!-- NZ tenant: Just address without suburb -->
-                        <div ng-if="::!ctrl.isUsCustomer" class="address">
-                            {{ctrl.getDeliveryAddressWithoutSuburb(childJob)}}
-                        </div>
-                        <!-- US tenant: Original format with city-state -->
-                        <div ng-if="::ctrl.isUsCustomer">
-                            <div class="address">{{ctrl.getDeliveryAddress(childJob)}}</div>
-                            <div class="city-state">
-                                {{childJob.deliveryAddress && childJob.deliveryAddress.addressLine1}}
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Courier Column -->
-                    <div class="job-cell courier-cell">
-                        <!-- Show courier info if already assigned -->
-                        <div ng-if="ctrl.hasAssignedCourier(childJob)" class="courier-info-container">
-                            <div class="courier-avatar" ng-style="{'background': ctrl.getCourierColor(childJob)}">
-                                {{ctrl.getCourierInitials(childJob)}}
-                            </div>
-                            <div class="courier-info">
-                                <!-- NZ tenant: Show courier code and name on one line -->
-                                <div class="courier-name" ng-if="::!ctrl.isUsCustomer">{{childJob.courierData.courier}}
-                                    - {{childJob.assignedCourier.text}}
-                                </div>
-                                <!-- US tenant: Show courier name and code on separate lines -->
-                                <div ng-if="::ctrl.isUsCustomer">
-                                    <div class="courier-name">{{childJob.assignedCourier.text}}</div>
-                                    <div class="courier-id">{{childJob.courierData.courier}}</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Show assign button when no courier assigned -->
-                        <button ng-if="!ctrl.hasAssignedCourier(childJob) && !childJob.showCourierSearch && ctrl.allowDispatch"
-                                class="assign-btn"
-                                ng-click="ctrl.showCourierAssignment(childJob)">
-                            Assign
-                        </button>
-
-                        <div class="courier-search-container"
-                             ng-if="!ctrl.hasAssignedCourier(childJob) && childJob.showCourierSearch">
-                            <md-autocomplete
-                                    ng-disabled="!childJob.showCourierSearch"
-                                    md-no-cache="true"
-                                    md-autofocus="true"
-                                    md-autoselect="true"
-                                    md-select-on-focus="true"
-                                    md-selected-item="childJob.assignedCourier"
-                                    md-search-text="childJob.searchText"
-                                    md-selected-item-change="ctrl.handleDispatchSelection(item, childJob)"
-                                    md-items="item in ctrl.performCourierSearch(childJob.searchText, childJob)"
-                                    md-item-text="item.text"
-                                    md-min-length="1"
-                                    placeholder="Search Courier..."
-                                    ng-blur="ctrl.hideCourierAssignment(childJob)">
-                                <md-item-template>
-                                    <md-icon
-                                            md-font-set="material-symbols-outlined"
-                                            style="margin-right: 5px;">
-                                        assignment_ind
-                                    </md-icon>
-                                    <span md-highlight-text="ctrl.searchText"
-                                          md-highlight-flags="^i">
-                                        {{item.text}}
-                                    </span>
-                                </md-item-template>
-                                <md-not-found>
-                                    No couriers matching "{{childJob.searchText}}" were found.
-                                </md-not-found>
-                            </md-autocomplete>
-                        </div>
-                    </div>
-
-                    <!-- Remaining Time Column for child -->
-                    <div class="job-cell remaining-cell">
-                        <span class="remaining-time" ng-class="{'overdue': ctrl.isOverdue(childJob)}">
-                            {{childJob.remain || '-'}}
-                        </span>
-                    </div>
-
-                    <!-- Status Column -->
-                    <div class="job-cell status-cell">
-                        <md-chip class="status {{childJob.statusName | lowercase | replace:' ':'-'}}">
-                            {{childJob.status}}
                         </md-chip>
                     </div>
                 </div>
