@@ -64,7 +64,7 @@
                                     {{ctrl.priceBreakdown.length}} {{ctrl.priceBreakdown.length === 1 ? 'item' : 'items'}}
                                 </span>
                             </div>
-                            <md-button class="md-raised md-primary" ng-click="ctrl.addNewItem()">
+                            <md-button class="md-raised md-primary md-dense" ng-click="ctrl.addNewItem()">
                                 <md-icon md-font-set="material-symbols-outlined">add</md-icon>
                                 Add Item
                             </md-button>
@@ -227,11 +227,11 @@
                             </div>
 
                             <div class="form-actions" layout="row" layout-align="end center">
-                                <md-button class="md-raised cancel-btn" ng-click="ctrl.cancelEdit()">
+                                <md-button class="md-raised md-dense" ng-click="ctrl.cancelEdit()">
                                     <md-icon md-font-set="material-symbols-outlined">close</md-icon>
                                     Cancel
                                 </md-button>
-                                <md-button class="md-raised md-primary save-btn"
+                                <md-button class="md-raised md-primary md-dense"
                                            ng-click="ctrl.saveItem()"
                                            ng-disabled="!ctrl.selectedPriceBreakdown.name || ctrl.selectedPriceBreakdown.costAmount == null || ctrl.isSaving">
                                     <md-progress-circular ng-if="ctrl.isSaving"
@@ -251,7 +251,7 @@
             </div>
         </md-dialog-content>
 
-        <md-dialog-actions class="dialog-footer" ng-if="!ctrl.isEditing">
+        <md-dialog-actions class="dialog-footer md-dense" ng-if="!ctrl.isEditing">
             <div class="footer-content" layout="row" layout-align="space-between center" flex>
                 <div class="footer-info">
                     <span class="info-text" ng-if="ctrl.priceBreakdown.length > 0">

@@ -14,22 +14,218 @@ public partial class JobRepository
 {
     private async Task UpdateTucJobAsync(int jobId, JobProperty property, string value)
     {
-        var isUsCustomer = _infoService.IsUsTenant();
+        // Try to use ExecuteUpdateAsync for simple single-field updates (no entity loading required)
+        if (await TryExecuteDirectUpdateAsync(jobId, property, value))
+            return;
 
+        // Fall back to entity-based updates for complex cases requiring includes or business logic
+        await UpdateTucJobWithEntityAsync(jobId, property, value);
+    }
+
+    /// <summary>
+    /// Attempts to update a job using ExecuteUpdateAsync for better performance.
+    /// Returns true if the update was handled, false if it needs an entity-based approach.
+    /// </summary>
+    private async Task<bool> TryExecuteDirectUpdateAsync(int jobId, JobProperty property, string value)
+    {
+        var baseQuery = Context.TucJobs.Where(j => j.UcjbId == jobId);
+        int rowsAffected;
+
+        switch (property)
+        {
+            case JobProperty.Time:
+                var time = DateTimeOffset.Parse(value).DateTime;
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbTime, time));
+                break;
+
+            case JobProperty.Date:
+                var date = DateTimeOffset.Parse(value).DateTime;
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbDate, date));
+                break;
+
+            case JobProperty.Items:
+                var qty = short.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbQty, qty));
+                break;
+
+            case JobProperty.Pedal:
+                var pedal = bool.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbCbd, pedal));
+                break;
+
+            case JobProperty.Attention:
+                var attention = bool.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbAttention, attention));
+                break;
+
+            case JobProperty.Reprice:
+                var reprice = bool.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.Reprice, reprice));
+                break;
+
+            case JobProperty.RefA:
+                var refA = value[..Math.Min(value.Length, 20)];
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbClientRefa, refA));
+                break;
+
+            case JobProperty.RefB:
+                var refB = value[..Math.Min(value.Length, 15)];
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbClientRefb, refB));
+                break;
+
+            case JobProperty.OurRef:
+                var ourRef = value[..Math.Min(value.Length, 20)];
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbOurRef, ourRef));
+                break;
+
+            case JobProperty.FromContactName:
+                var fromContact = value[..Math.Min(value.Length, 100)];
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.PickupFromContact, fromContact));
+                break;
+
+            case JobProperty.ToContactName:
+                var toContact = value[..Math.Min(value.Length, 100)];
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.DeliverToContact, toContact));
+                break;
+
+            case JobProperty.FromContactPhone:
+                var fromPhone = value[..Math.Min(value.Length, 100)];
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.PickupFromPhone, fromPhone));
+                break;
+
+            case JobProperty.ToContactPhone:
+                var toPhone = value[..Math.Min(value.Length, 100)];
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.DeliverToPhone, toPhone));
+                break;
+
+            case JobProperty.CompletedTime:
+                var complTime = DateTimeOffset.Parse(value).DateTime;
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbComplTime, complTime));
+                break;
+
+            case JobProperty.DGClass:
+                var dgClass = int.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.Dgclass, dgClass));
+                break;
+
+            case JobProperty.DGDocumentation:
+                var dgDoc = bool.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.Dgdocument, dgDoc));
+                break;
+
+            case JobProperty.TrackingMethod:
+                var trackingMethod = int.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.TrackingMethod, trackingMethod));
+                break;
+
+            case JobProperty.Direct:
+                var direct = bool.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.Direct, direct));
+                break;
+
+            case JobProperty.TrackingMobile:
+                var trackingMobile = value[..Math.Min(value.Length, 100)];
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.TrackingMobile, trackingMobile));
+                break;
+
+            case JobProperty.TrackingEmail:
+                var trackingEmail = value[..Math.Min(value.Length, 100)];
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.TrackingEmail, trackingEmail));
+                break;
+
+            case JobProperty.PODName:
+            case JobProperty.PodName:
+                var podName = value[..Math.Min(value.Length, 100)];
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbPodname, podName));
+                break;
+
+            case JobProperty.AcceptedJobTypeID:
+                var acceptedJobType = short.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.AcceptedJobTypeId, acceptedJobType));
+                break;
+
+            case JobProperty.Locked:
+                var locked = bool.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbLocked, locked));
+                break;
+
+            case JobProperty.PuTime:
+                var puTime = DateTimeOffset.Parse(value).DateTime;
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.PickUpTime, puTime));
+                break;
+
+            case JobProperty.DeliverBy:
+                var deliverBy = DateTimeOffset.Parse(value).DateTime;
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.DeliverByTime, deliverBy));
+                break;
+
+            case JobProperty.BookedTime:
+                var bookedTime = DateTimeOffset.Parse(value).DateTime;
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbDate, bookedTime));
+                break;
+
+            case JobProperty.FollowupTime:
+                var followupTime = DateTimeOffset.Parse(value).DateTime;
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.FollowupTime, followupTime));
+                break;
+
+            case JobProperty.Barcode:
+                var barcode = value[..Math.Min(value.Length, 20)];
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.Barcode, barcode));
+                break;
+
+            case JobProperty.DeliverToLeaveID:
+                var leaveId = int.Parse(value);
+                var privateBusiness = leaveId == 1 ? (int?)null : 1;
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s
+                    .SetProperty(j => j.DeliverToLeaveId, leaveId)
+                    .SetProperty(j => j.DeliverToPrivateBusiness, privateBusiness));
+                break;
+
+            case JobProperty.Amount:
+                var amount = decimal.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s
+                    .SetProperty(j => j.UcjbAmount, amount)
+                    .SetProperty(j => j.RatedManually, true));
+                break;
+
+            case JobProperty.ClientCode:
+                var clientCode = value[..Math.Min(value.Length, 5)];
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbClientCode, clientCode));
+                break;
+
+            default:
+                // Property requires entity-based update
+                return false;
+        }
+
+        if (rowsAffected == 0)
+            throw new ArgumentException($"Job with ID {jobId} not found", nameof(jobId));
+
+        Log.Debug("ExecuteUpdateAsync: Updated {Property} for job {JobId}", property, jobId);
+        return true;
+    }
+
+    /// <summary>
+    /// Updates a job using entity tracking for complex cases requiring includes,
+    /// related entity updates, or business logic.
+    /// </summary>
+    private async Task UpdateTucJobWithEntityAsync(int jobId, JobProperty property, string value)
+    {
         var query = Context.TucJobs.Where(j => j.UcjbId == jobId);
         query = AddRequiredIncludes(query, property);
-      
+
         var job = await query.FirstOrDefaultAsync();
         ArgumentNullException.ThrowIfNull(job);
 
-        // Internal Status handled separately 
+        // Internal Status handled separately
         if (property == JobProperty.InternalStatusID)
         {
             await UpdateJobInternalStatusAsync(job, value);
             return;
         }
 
-        // Update the correct field prop
+        // Update the correct field prop - complex cases only
         switch (property)
         {
             case JobProperty.ConNote:
@@ -40,17 +236,8 @@ public partial class JobRepository
                 var airportOnly = bool.Parse(value);
                 job.TucJobNationwides.First().UcnwAirportOnly = airportOnly;
                 break;
-            case JobProperty.Time:
-                job.UcjbTime = DateTimeOffset.Parse(value).DateTime;
-                break;
-            case JobProperty.Date:
-                job.UcjbDate = DateTimeOffset.Parse(value).DateTime;
-                break;
             case JobProperty.Size:
                 UpdateJobSize(value, job);
-                break;
-            case JobProperty.Items:
-                job.UcjbQty = short.Parse(value);
                 break;
             case JobProperty.Void:
                 var voidJob = bool.Parse(value);
@@ -58,7 +245,6 @@ public partial class JobRepository
                 job.UcjbVoid = false;
                 break;
             case JobProperty.SpeedID:
-            case JobProperty.AcceptedJobTypeID when !job.UcjbJobDone:
                 job.UcjbSpeed = short.Parse(value);
                 break;
             case JobProperty.Weight:
@@ -85,22 +271,10 @@ public partial class JobRepository
                 job.UcjbClientId = int.Parse(value);
                 job.UcjbClientCode = job.UcjbClient.UcclCode;
                 break;
-            case JobProperty.ClientCode:
-                job.UcjbClientCode = value[..Math.Min(value.Length, 5)];
-                break;
             case JobProperty.ContactID:
                 var contactId = int.Parse(value);
                 job.ContactId = contactId;
                 job.UcjbContact = job.Contact?.UserName;
-                break;
-            case JobProperty.Pedal:
-                job.UcjbCbd = bool.Parse(value);
-                break;
-            case JobProperty.Attention:
-                job.UcjbAttention = bool.Parse(value);
-                break;
-            case JobProperty.Reprice:
-                job.Reprice = bool.Parse(value);
                 break;
             case JobProperty.Status:
                 var newStatus = int.Parse(value);
@@ -109,32 +283,6 @@ public partial class JobRepository
                 if (newStatus == (int)JobStatus.PickedUp)
                     job.PickUpTime = _infoService.GetCurrentTimeFromTimeZone(job.PickupTimeZone);
 
-                break;
-            case JobProperty.RefA:
-                job.UcjbClientRefa = value[..Math.Min(value.Length, 20)];
-                break;
-            case JobProperty.RefB:
-                job.UcjbClientRefb = value[..Math.Min(value.Length, 15)];
-                break;
-            case JobProperty.OurRef:
-                job.UcjbOurRef = value[..Math.Min(value.Length, 20)];
-                break;
-            case JobProperty.FromContactName:
-                job.PickupFromContact = value[..Math.Min(value.Length, 100)];
-                break;
-            case JobProperty.ToContactName:
-                job.DeliverToContact = value[..Math.Min(value.Length, 100)];
-                break;
-            case JobProperty.FromContactPhone:
-                job.PickupFromPhone = value[..Math.Min(value.Length, 100)];
-                break;
-            case JobProperty.ToContactPhone:
-                job.DeliverToPhone = value[..Math.Min(value.Length, 100)];
-                break;
-            case JobProperty.DeliverToLeaveID:
-                var leaveId = int.Parse(value);
-                job.DeliverToLeaveId = leaveId;
-                job.DeliverToPrivateBusiness = leaveId == 1 ? null : 1;
                 break;
             case JobProperty.UndeliverableLocationID:
                 job.UndeliverableLocationId = int.Parse(value);
@@ -155,37 +303,6 @@ public partial class JobRepository
                     job.UcjbComplTime = _infoService.GetCurrentTenantTime();
                 }
 
-                break;
-            case JobProperty.CompletedTime:
-                job.UcjbComplTime = DateTimeOffset.Parse(value).DateTime;
-                break;
-            case JobProperty.DGClass:
-                job.Dgclass = int.Parse(value);
-                break;
-            case JobProperty.DGDocumentation:
-                var dgDoc = bool.Parse(value);
-                job.Dgdocument = dgDoc;
-                break;
-            case JobProperty.TrackingMethod:
-                var trackingMethodId = int.Parse(value);
-                job.TrackingMethod = trackingMethodId;
-                break;
-            case JobProperty.Direct:
-                job.Direct = bool.Parse(value);
-                break;
-            case JobProperty.TrackingMobile:
-                job.TrackingMobile = value[..Math.Min(value.Length, 100)];
-                break;
-            case JobProperty.TrackingEmail:
-                job.TrackingEmail = value[..Math.Min(value.Length, 100)];
-                break;
-            case JobProperty.PODName:
-            case JobProperty.PodName:
-                job.UcjbPodname = value[..Math.Min(value.Length, 100)];
-                break;
-            case JobProperty.Amount:
-                job.UcjbAmount = decimal.Parse(value);
-                job.RatedManually = true;
                 break;
             case JobProperty.NotifiedJobTypeID:
                 var notifiedJobTypeId = short.Parse(value);
@@ -208,24 +325,6 @@ public partial class JobRepository
                 }
 
                 break;
-            case JobProperty.AcceptedJobTypeID:
-                job.AcceptedJobTypeId = short.Parse(value);
-                break;
-            case JobProperty.Locked:
-                job.UcjbLocked = bool.Parse(value);
-                break;
-            case JobProperty.PuTime:
-                job.PickUpTime = DateTimeOffset.Parse(value).DateTime;
-                break;
-            case JobProperty.DeliverBy:
-                job.DeliverByTime = DateTimeOffset.Parse(value).DateTime;
-                break;
-            case JobProperty.BookedTime:
-                job.UcjbDate = DateTimeOffset.Parse(value).DateTime;
-                break;
-            case JobProperty.FollowupTime:
-                job.FollowupTime = DateTimeOffset.Parse(value).DateTime;
-                break;
             case JobProperty.TailLiftPu:
                 if (job.TucJobItemJobs == null) throw new NullReferenceException("TucJobItemJobs is null");
                 foreach (var item in job.TucJobItemJobs) item.Pu = bool.Parse(value);
@@ -237,9 +336,6 @@ public partial class JobRepository
             case JobProperty.DeliverToPrivateRes:
                 if (job.TucJobItemJobs == null) throw new NullReferenceException("TucJobItemJobs is null");
                 foreach (var item in job.TucJobItemJobs) item.PrivateRes = bool.Parse(value);
-                break;
-            case JobProperty.Barcode:
-                job.Barcode = value[..Math.Min(value.Length, 20)];
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);

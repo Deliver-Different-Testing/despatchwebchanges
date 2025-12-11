@@ -1,83 +1,77 @@
-﻿md-toolbar.job-detail-toolbar {
-  background-color: #ffffff !important;
-  color: #4B5563 !important;  // Dark gray for title
-  border-bottom: 1px solid #E5E7EB !important;  // Lighter border
-  min-height: 64px;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+// Job Detail Toolbar - Compact Professional Design
+// Following Material Design 3 density guidelines
+
+md-toolbar.job-detail-toolbar {
+  background-color: #f8fafc !important;
+  color: #374151 !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  min-height: 40px;
+  transition: all 150ms ease;
 
   .md-toolbar-tools {
     background-color: transparent !important;
     color: inherit !important;
-    min-height: 64px;
-    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 40px;
+    padding: 0 12px;
 
     span, .md-title, .greeting-message, .md-headline-title {
-      color: #4B5563 !important;  // Dark gray for headers
-      font-weight: 500 !important;  // Medium weight for titles
-      font-size: 16px;
-      transition: font-size 200ms cubic-bezier(0.4, 0, 0.2, 1);
+      color: #374151 !important;
+      font-weight: 600 !important;
+      font-size: 13px;
+      letter-spacing: 0.01em;
     }
 
-    // For data values specifically
     .data-value {
-      color: #111827 !important;  // Near black for actual data
+      color: #111827 !important;
     }
 
-    // For labels
     .data-label {
-      color: #6B7280 !important;  // Medium gray for labels
-      font-size: 13px !important;
+      color: #6b7280 !important;
+      font-size: 12px !important;
     }
 
     md-icon {
-      color: #6B7280 !important;  // Medium gray for icons
-      fill: #6B7280 !important;
-      font-size: 24px;
-      transition: font-size 200ms cubic-bezier(0.4, 0, 0.2, 1);
+      color: #6b7280 !important;
+      fill: #6b7280 !important;
+      font-size: 18px;
     }
 
     .material-symbols-outlined {
-      color: #6B7280 !important;  // Medium gray for material icons
-      font-size: 24px;
-      transition: font-size 200ms cubic-bezier(0.4, 0, 0.2, 1);
+      color: #6b7280 !important;
+      font-size: 18px;
     }
 
     .md-button, .md-icon-button {
-      color: #4B5563 !important;  // Dark gray for buttons
-      transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+      color: #374151 !important;
 
       &:hover {
-        background-color: rgba(75, 85, 99, 0.08) !important;  // Subtle gray hover
+        background-color: rgba(55, 65, 81, 0.06) !important;
       }
 
       &:focus {
-        background-color: rgba(75, 85, 99, 0.12) !important;  // Slightly darker on focus
+        background-color: rgba(55, 65, 81, 0.1) !important;
       }
 
       md-icon, .material-symbols-outlined {
-        color: #4B5563 !important;
-        transition: font-size 200ms cubic-bezier(0.4, 0, 0.2, 1);
+        color: #374151 !important;
+        font-size: 16px;
       }
     }
 
     md-divider, .vertical-divider {
-      border-right-color: #E5E7EB !important;  // Light gray dividers
-      background-color: #E5E7EB !important;
+      border-right-color: #e5e7eb !important;
+      background-color: #e5e7eb !important;
     }
 
     .custom-badge {
-      background-color: #4B5563 !important;  // Dark gray badge
+      background-color: #374151 !important;
       color: #ffffff !important;
     }
 
     md-progress-circular {
       path {
-        stroke: #4B5563 !important;  // Dark gray progress
+        stroke: #374151 !important;
       }
-    }
-
-    .toolbar-logo {
-      filter: brightness(0.3) saturate(100%);  // Slightly lighter than pure black
     }
   }
 
@@ -89,86 +83,32 @@
   }
 }
 
-// Dense View Modifiers for Job Detail Toolbar
+// Dense View Modifiers
 .job-detail-page {
   &.dense-view {
     md-toolbar.job-detail-toolbar {
-      min-height: 40px;
+      min-height: 36px;
 
       .md-toolbar-tools {
-        min-height: 40px;
-        padding: 0 12px;
+        min-height: 36px;
+        padding: 0 10px;
 
         span, .md-title, .greeting-message, .md-headline-title {
-          font-size: 14px;
+          font-size: 12px;
         }
 
-        md-icon {
-          font-size: 20px;
-        }
-
-        .material-symbols-outlined {
-          font-size: 20px;
-        }
-
-        .md-button {
-          min-width: 36px;
-          font-size: 13px;
-          padding: 0 12px;
-
-          md-icon, .material-symbols-outlined {
-            font-size: 18px;
-            margin-right: 4px;
-          }
-        }
-
-        .md-icon-button {
-          width: 36px;
-          height: 36px;
-          min-width: 36px;
-          min-height: 36px;
-
-          md-icon, .material-symbols-outlined {
-            font-size: 18px;
-          }
-        }
-      }
-    }
-  }
-
-  &.ultradense-view {
-    md-toolbar.job-detail-toolbar {
-      min-height: 32px;
-      border-bottom-width: 1px;
-
-      .md-toolbar-tools {
-        min-height: 32px;
-        padding: 0 8px;
-
-        span, .md-title, .greeting-message, .md-headline-title {
-          font-size: 13px;
-          font-weight: 600;
-        }
-
-        md-icon {
-          font-size: 18px;
-        }
-
-        .material-symbols-outlined {
-          font-size: 18px;
+        md-icon, .material-symbols-outlined {
+          font-size: 16px;
         }
 
         .md-button {
           min-width: 32px;
           font-size: 12px;
-          padding: 0 8px;
-          height: 32px;
-          min-height: 32px;
-          line-height: 32px;
+          padding: 0 10px;
 
           md-icon, .material-symbols-outlined {
-            font-size: 16px;
-            margin-right: 3px;
+            font-size: 14px;
+            margin-right: 4px;
           }
         }
 
@@ -182,50 +122,81 @@
             font-size: 16px;
           }
         }
+      }
+    }
+  }
 
-        // Compact spacing for ultra-dense
+  &.ultradense-view {
+    md-toolbar.job-detail-toolbar {
+      min-height: 28px;
+
+      .md-toolbar-tools {
+        min-height: 28px;
+        padding: 0 8px;
+
+        span, .md-title, .greeting-message, .md-headline-title {
+          font-size: 11px;
+          font-weight: 600;
+        }
+
+        md-icon, .material-symbols-outlined {
+          font-size: 14px;
+        }
+
+        .md-button {
+          min-width: 28px;
+          font-size: 11px;
+          padding: 0 6px;
+          height: 24px;
+          min-height: 24px;
+          line-height: 24px;
+
+          md-icon, .material-symbols-outlined {
+            font-size: 12px;
+            margin-right: 2px;
+          }
+        }
+
+        .md-icon-button {
+          width: 24px;
+          height: 24px;
+          min-width: 24px;
+          min-height: 24px;
+
+          md-icon, .material-symbols-outlined {
+            font-size: 14px;
+          }
+        }
+
         > * + * {
-          margin-left: 6px;
+          margin-left: 4px;
         }
       }
     }
   }
 }
 
-// Mobile responsive adjustments
+// Mobile responsive
 @media (max-width: 768px) {
   md-toolbar.job-detail-toolbar {
+    min-height: 36px;
+
     .md-toolbar-tools {
+      min-height: 36px;
       padding: 0 8px;
 
-      .md-button {
+      span, .md-title, .greeting-message, .md-headline-title {
         font-size: 12px;
+      }
+
+      .md-button {
+        font-size: 11px;
         padding: 0 8px;
       }
 
       .md-icon-button {
-        width: 36px;
-        height: 36px;
-      }
-    }
-  }
-
-  .job-detail-page {
-    &.dense-view, &.ultradense-view {
-      md-toolbar.job-detail-toolbar {
-        .md-toolbar-tools {
-          padding: 0 6px;
-
-          .md-button {
-            font-size: 11px;
-            padding: 0 6px;
-          }
-
-          .md-icon-button {
-            width: 32px;
-            height: 32px;
-          }
-        }
+        width: 32px;
+        height: 32px;
       }
     }
   }

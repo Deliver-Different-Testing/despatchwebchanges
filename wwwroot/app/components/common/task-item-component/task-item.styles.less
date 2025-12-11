@@ -1,258 +1,382 @@
 @import "../../../../css/variables.less";
 
+// ============================================
+// Task Item - Professional Compact Design
+// Following Material Design 3 Guidelines
+// ============================================
+
+// Design Tokens
+@ti-surface: #ffffff;
+@ti-surface-dim: #f8fafc;
+@ti-surface-container: #f1f5f9;
+@ti-surface-container-high: #e2e8f0;
+@ti-on-surface: #1e293b;
+@ti-on-surface-variant: #64748b;
+@ti-outline: #cbd5e1;
+@ti-outline-variant: #e2e8f0;
+@ti-primary: @primary-blue;
+@ti-primary-container: #dbeafe;
+@ti-on-primary-container: #1e40af;
+
+// Status Colors
+@ti-success: #2e7d32;
+@ti-success-bg: rgba(46, 125, 50, 0.08);
+@ti-success-border: rgba(46, 125, 50, 0.2);
+@ti-error: #c62828;
+@ti-error-light: #e53935;
+@ti-error-bg: rgba(229, 57, 53, 0.08);
+@ti-error-border: rgba(229, 57, 53, 0.2);
+@ti-info: #1565c0;
+@ti-info-bg: rgba(25, 118, 210, 0.08);
+@ti-info-border: rgba(25, 118, 210, 0.2);
+@ti-warning: #fb8500;
+
+// Spacing Scale (4px base)
+@ti-space-1: 4px;
+@ti-space-2: 8px;
+@ti-space-3: 12px;
+@ti-space-4: 16px;
+@ti-space-5: 20px;
+
+// Border Radius
+@ti-radius-sm: 4px;
+@ti-radius-md: 6px;
+@ti-radius-lg: 8px;
+@ti-radius-full: 9999px;
+
+// Shadows
+@ti-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+@ti-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+
+// Transitions
+@ti-transition: 150ms ease;
+
+// Typography
+@ti-text-xs: 11px;
+@ti-text-sm: 12px;
+@ti-text-base: 13px;
+@ti-text-lg: 14px;
+
+// ============================================
+// Main Task Item
+// ============================================
+
 .task-item {
   position: relative;
-  padding: 16px 20px;
-  min-height: 72px;
-  border-radius: 8px;
+  padding: @ti-space-3 @ti-space-4;
+  min-height: 64px;
+  border-radius: @ti-radius-md;
   margin: 0 0 1px 0;
-  transition: all 0.15s ease;
+  transition: all @ti-transition;
   box-sizing: border-box;
   width: 100%;
-  background-color: whitesmoke;
-  border: 2px solid rgba(0, 0, 0, 0.08);
+  background-color: @ti-surface;
+  border: 1px solid @ti-outline-variant;
+  box-shadow: @ti-shadow-sm;
 
   // Graceful width shrinking
   min-width: 280px;
   overflow: hidden;
 
-  // Clickable state
+  // ============================================
+  // Clickable State
+  // ============================================
   &.clickable {
     cursor: pointer;
 
     &:hover {
-      background-color: rgba(0, 0, 0, 0.02);
-      border-color: rgba(0, 0, 0, 0.12);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      background-color: @ti-surface-dim;
+      border-color: @ti-outline;
+      box-shadow: @ti-shadow-md;
+
+      .task-title {
+        color: @ti-primary;
+      }
     }
 
     &:active {
-      background-color: rgba(0, 0, 0, 0.04);
+      background-color: @ti-surface-container;
       transform: translateY(1px);
     }
   }
 
-  // Completed state
+  // ============================================
+  // Completed State
+  // ============================================
   &.completed {
-    background-color: #fafafa;
-    border-color: rgba(0, 0, 0, 0.06);
+    background-color: @ti-surface-dim;
+    border-color: @ti-outline-variant;
+
+    .priority-indicator {
+      opacity: 0.4;
+    }
   }
 
-  // Priority indicator
+  // ============================================
+  // Priority Indicator
+  // ============================================
   .priority-indicator {
     position: absolute;
     left: 0;
-    top: 16px;
-    bottom: 16px;
-    width: 4px;
-    border-radius: 2px;
+    top: @ti-space-3;
+    bottom: @ti-space-3;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+    transition: opacity @ti-transition;
 
     &.high {
-      background-color: #e53935; // Red
+      background-color: @ti-error-light;
     }
 
     &.medium {
-      background-color: #fb8500; // Orange  
+      background-color: @ti-warning;
     }
 
     &.low {
-      background-color: #757575; // Gray
+      background-color: @ti-on-surface-variant;
     }
   }
 
+  // ============================================
   // Checkbox
+  // ============================================
   .task-checkbox {
-    margin: 0 16px 0 0;
+    margin: 0 @ti-space-3 0 0;
 
     .md-container {
-      border-radius: 3px;
+      border-radius: @ti-radius-sm;
       border-width: 2px;
     }
   }
 
-  // Task content
+  // ============================================
+  // Task Content
+  // ============================================
   .md-list-item-text {
     margin: 0;
     flex: 1;
 
     .task-title {
-      font-size: @font-lg;
-      font-weight: @weight-medium;
-      line-height: @line-tight;
-      margin: 0 0 6px;
+      font-size: @ti-text-lg;
+      font-weight: 600;
+      line-height: 1.3;
+      margin: 0 0 @ti-space-1;
       display: flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 8px;
-      color: rgba(0, 0, 0, 0.87);
-      min-width: 0; // Allow text to shrink
+      gap: @ti-space-2;
+      color: @ti-on-surface;
+      min-width: 0;
+      transition: color @ti-transition;
 
       &.completed-text {
         text-decoration: line-through;
-        color: rgba(0, 0, 0, 0.6);
+        color: @ti-on-surface-variant;
       }
     }
 
     .task-description {
-      font-size: @font-base;
-      line-height: @line-normal;
-      margin: 0 0 10px;
-      color: rgba(0, 0, 0, 0.6);
-      max-height: 40px;
+      font-size: @ti-text-sm;
+      line-height: 1.4;
+      margin: 0 0 @ti-space-2;
+      color: @ti-on-surface-variant;
+      max-height: 36px;
       overflow: hidden;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       word-wrap: break-word;
-      min-width: 0; // Allow text to shrink
+      min-width: 0;
 
       &.completed-text {
-        color: rgba(0, 0, 0, 0.38);
+        color: @ti-outline;
       }
     }
   }
 
-  // Task metadata
+  // ============================================
+  // Task Metadata
+  // ============================================
   .task-meta {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
-    margin: 6px 0;
+    gap: @ti-space-2;
+    margin: @ti-space-1 0 0;
     max-width: 100%;
-    min-width: 0; // Allow content to shrink
+    min-width: 0;
 
     .meta-item {
       display: flex;
       align-items: center;
-      min-width: 0; // Allow shrinking
+      min-width: 0;
 
       .icon {
-        font-size: 16px;
-        height: 16px;
-        width: 16px;
-        margin-right: 6px;
-        color: rgba(0, 0, 0, 0.54);
-        flex-shrink: 0; // Keep icons consistent
+        font-size: 14px;
+        height: 14px;
+        width: 14px;
+        margin-right: @ti-space-1;
+        color: @ti-on-surface-variant;
+        flex-shrink: 0;
       }
 
       span {
-        font-size: @font-xs;
-        font-weight: @weight-medium;
-        color: rgba(0, 0, 0, 0.6);
-        line-height: @line-normal;
+        font-size: @ti-text-xs;
+        font-weight: 500;
+        color: @ti-on-surface-variant;
+        line-height: 1.4;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
     }
 
+    // ============================================
+    // Assignee Button
+    // ============================================
     .assignee-button {
       display: flex;
       align-items: center;
-      height: 32px;
-      padding: 6px 12px;
-      border-radius: 16px;
-      background: rgba(0, 0, 0, 0.04);
-      border: 1px solid rgba(0, 0, 0, 0.08);
+      height: 28px;
+      padding: @ti-space-1 @ti-space-3;
+      border-radius: @ti-radius-full;
+      background: @ti-surface-container;
+      border: 1px solid @ti-outline-variant;
       cursor: pointer;
-      transition: all 0.15s ease;
-      min-width: 0; // Allow shrinking
-      max-width: 150px; // Prevent excessive width
+      transition: all @ti-transition;
+      min-width: 0;
+      max-width: 140px;
 
       &:hover {
-        background-color: rgba(0, 0, 0, 0.08);
-        border-color: rgba(0, 0, 0, 0.12);
+        background-color: @ti-surface-container-high;
+        border-color: @ti-outline;
+      }
+
+      md-icon {
+        font-size: 14px;
+        height: 14px;
+        width: 14px;
+        margin-right: @ti-space-1;
+        color: @ti-on-surface-variant;
       }
 
       span {
-        font-size: @font-xs;
-        font-weight: @weight-medium;
-        color: rgba(0, 0, 0, 0.87);
-        line-height: @line-normal;
+        font-size: @ti-text-xs;
+        font-weight: 500;
+        color: @ti-on-surface;
+        line-height: 1.4;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 100px;
+        max-width: 90px;
       }
     }
 
+    // ============================================
+    // Job ID Chip
+    // ============================================
     .job-id-chip {
-      height: 28px;
+      height: 24px;
       display: flex;
       align-items: center;
-      padding: 0 12px;
-      border-radius: 14px;
-      background-color: rgba(0, 0, 0, 0.04);
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      font-size: @font-xs;
-      font-weight: @weight-semibold;
-      color: rgba(0, 0, 0, 0.87);
-      font-family: monospace;
-      flex-shrink: 0; // Keep job IDs readable
+      padding: 0 @ti-space-2;
+      border-radius: @ti-radius-sm;
+      background-color: @ti-primary-container;
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      font-size: @ti-text-xs;
+      font-weight: 600;
+      color: @ti-on-primary-container;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+      flex-shrink: 0;
       white-space: nowrap;
+    }
+
+    // ============================================
+    // Job Type
+    // ============================================
+    .job-type {
+      height: 24px;
+      padding: 0 @ti-space-2;
+      border-radius: @ti-radius-sm;
+      background-color: @ti-surface-container;
+      border: 1px solid @ti-outline-variant;
+
+      .icon {
+        color: @ti-on-surface-variant;
+      }
+
+      span {
+        color: @ti-on-surface-variant;
+      }
     }
   }
 
-  // Date/time section
+  // ============================================
+  // Date/Time Section
+  // ============================================
   .task-date-compact {
-    min-width: 140px;
-    max-width: 180px;
-    padding-left: 16px;
+    min-width: 130px;
+    max-width: 160px;
+    padding-left: @ti-space-3;
     position: relative;
-    flex-shrink: 0; // Prevent date section from shrinking too much
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: @ti-space-1;
 
     .date-time-button {
       width: 100%;
-      height: 32px;
-      border-radius: 6px;
-      margin-bottom: 4px;
-      padding: 0 12px;
-      background-color: rgba(0, 0, 0, 0.04);
-      border: 1px solid rgba(0, 0, 0, 0.08);
+      height: 28px;
+      border-radius: @ti-radius-sm;
+      padding: 0 @ti-space-2;
+      background-color: @ti-surface-container;
+      border: 1px solid @ti-outline-variant;
       display: flex;
       align-items: center;
       justify-content: flex-start;
       cursor: pointer;
-      transition: all 0.15s ease;
-      min-width: 0; // Allow content to shrink
+      transition: all @ti-transition;
+      min-width: 0;
 
       &.date-button, &.time-button {
         .icon {
-          font-size: 16px;
-          margin-right: 8px;
-          color: rgba(0, 0, 0, 0.54);
-          flex-shrink: 0; // Keep icons consistent
+          font-size: 18px;
+          height: 14px;
+          width: 14px;
+          margin-right: @ti-space-2;
+          color: @ti-on-surface-variant;
+          flex-shrink: 0;
+          margin-top: 3px;
         }
 
         span {
-          font-size: @font-xs;
-          font-weight: @weight-medium;
-          color: rgba(0, 0, 0, 0.87);
-          line-height: @line-normal;
+          font-size: @ti-text-xs;
+          font-weight: 500;
+          color: @ti-on-surface;
+          line-height: 1.4;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          min-width: 0; // Allow text to shrink
+          min-width: 0;
         }
       }
 
       &.overdue-button {
-        background-color: rgba(229, 57, 53, 0.08);
-        border-color: rgba(229, 57, 53, 0.2);
+        background-color: @ti-error-bg;
+        border-color: @ti-error-border;
 
         .icon {
-          color: #e53935;
+          color: @ti-error-light;
         }
 
         span {
-          color: #c62828;
+          color: @ti-error;
         }
       }
 
       &:hover {
-        background-color: rgba(0, 0, 0, 0.08);
-        border-color: rgba(0, 0, 0, 0.12);
+        background-color: @ti-surface-container-high;
+        border-color: @ti-outline;
 
         &.overdue-button:hover {
           background-color: rgba(229, 57, 53, 0.12);
@@ -262,226 +386,259 @@
     }
   }
 
-  // Status chip
+  // ============================================
+  // Status Chips
+  // ============================================
   .status-chip {
-    height: 24px;
-    padding: 0 10px;
-    border-radius: 12px;
+    height: 20px;
+    padding: 0 @ti-space-2;
+    border-radius: @ti-radius-sm;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: @font-xs;
-    font-weight: @weight-semibold;
-    line-height: @line-tight;
+    font-size: @ti-text-xs;
+    font-weight: 600;
+    line-height: 1;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    flex-shrink: 0; // Keep status chips readable
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
 
     &.done {
-      background-color: rgba(46, 125, 50, 0.1);
-      color: #2e7d32;
-      border: 1px solid rgba(46, 125, 50, 0.2);
+      background-color: @ti-success-bg;
+      color: @ti-success;
+      border: 1px solid @ti-success-border;
     }
 
     &.overdue {
-      background-color: rgba(229, 57, 53, 0.1);
-      color: #c62828;
-      border: 1px solid rgba(229, 57, 53, 0.2);
+      background-color: @ti-error-bg;
+      color: @ti-error;
+      border: 1px solid @ti-error-border;
     }
 
     &.todo {
-      background-color: rgba(25, 118, 210, 0.1);
-      color: #1565c0;
-      border: 1px solid rgba(25, 118, 210, 0.2);
+      background-color: @ti-info-bg;
+      color: @ti-info;
+      border: 1px solid @ti-info-border;
     }
   }
 
+  // ============================================
   // Divider
+  // ============================================
   .task-divider {
     height: 1px;
-    background-color: rgba(0, 0, 0, 0.08);
-    margin-top: 12px;
+    background-color: @ti-outline-variant;
+    margin-top: @ti-space-3;
   }
 
-  // Compact view
+  // ============================================
+  // Compact View
+  // ============================================
   &.compact {
-    padding: 12px 16px;
-    min-height: 56px;
-    min-width: 240px; // Slightly smaller for compact
+    padding: @ti-space-2 @ti-space-3;
+    min-height: 48px;
+    min-width: 240px;
 
     .task-title {
-      font-size: @font-base;
-      line-height: @line-tight;
-      margin: 0 0 4px;
+      font-size: @ti-text-base;
+      line-height: 1.3;
+      margin: 0 0 @ti-space-1;
     }
 
     .task-description {
-      font-size: @font-sm;
-      line-height: @line-normal;
-      margin: 0 0 6px;
-      max-height: 32px;
-      -webkit-line-clamp: 1; // Single line in compact mode
+      font-size: @ti-text-xs;
+      line-height: 1.4;
+      margin: 0 0 @ti-space-1;
+      max-height: 28px;
+      -webkit-line-clamp: 1;
     }
 
     .task-meta {
-      margin: 4px 0;
-      gap: 6px;
+      margin: @ti-space-1 0 0;
+      gap: @ti-space-1;
 
       .assignee-button {
-        height: 28px;
-        padding: 4px 10px;
-        max-width: 120px; // Smaller in compact mode
+        height: 24px;
+        padding: @ti-space-1 @ti-space-2;
+        max-width: 110px;
+
+        md-icon {
+          font-size: 12px;
+          height: 12px;
+          width: 12px;
+        }
 
         span {
-          font-size: @font-xs;
-          max-width: 80px;
+          font-size: @ti-text-xs;
+          max-width: 70px;
         }
       }
 
       .job-id-chip {
-        height: 24px;
-        padding: 0 10px;
-        font-size: @font-xs;
+        height: 20px;
+        padding: 0 @ti-space-1;
+        font-size: 10px;
       }
 
-      .meta-item span {
-        font-size: @font-xs;
+      .meta-item {
+        .icon {
+          font-size: 12px;
+          height: 12px;
+          width: 12px;
+        }
+
+        span {
+          font-size: 10px;
+        }
       }
     }
 
     .task-date-compact {
-      min-width: 110px;
-      max-width: 140px;
-      padding-left: 12px;
+      min-width: 100px;
+      max-width: 130px;
+      padding-left: @ti-space-2;
 
       .date-time-button {
-        height: 28px;
-        padding: 0 10px;
+        height: 24px;
+        padding: 0 @ti-space-2;
+
+        .icon {
+          font-size: 12px;
+          height: 12px;
+          width: 12px;
+          margin-right: @ti-space-1;
+        }
 
         span {
-          font-size: @font-xs;
+          font-size: 10px;
         }
       }
     }
 
     .status-chip {
-      height: 22px;
-      padding: 0 8px;
-      font-size: @font-xs;
+      height: 18px;
+      padding: 0 @ti-space-1;
+      font-size: 10px;
+    }
+
+    .priority-indicator {
+      top: @ti-space-2;
+      bottom: @ti-space-2;
+      width: 2px;
     }
   }
 
-  // Responsive styles with graceful shrinking
+  // ============================================
+  // Responsive Styles
+  // ============================================
   @media (max-width: 768px) {
-    padding: 14px 16px;
-    min-height: 64px;
+    padding: @ti-space-3 @ti-space-3;
+    min-height: 56px;
     min-width: 240px;
 
     .task-title {
-      font-size: @font-base;
-      line-height: @line-tight;
+      font-size: @ti-text-base;
+      line-height: 1.3;
     }
 
     .task-description {
-      font-size: @font-sm;
-      line-height: @line-normal;
+      font-size: @ti-text-xs;
+      line-height: 1.4;
     }
 
     .task-date-compact {
       min-width: 100%;
       max-width: none;
       padding-left: 0;
-      margin-top: 12px;
-      display: flex;
+      margin-top: @ti-space-2;
       flex-direction: row;
-      gap: 8px;
+      gap: @ti-space-2;
 
       .date-time-button {
         flex: 1;
-        min-width: 0; // Allow buttons to shrink equally
-        margin-bottom: 0;
+        min-width: 0;
 
         span {
-          font-size: @font-xs;
+          font-size: @ti-text-xs;
         }
       }
     }
 
     .task-meta {
       .assignee-button {
-        max-width: 130px;
+        max-width: 120px;
 
         span {
-          max-width: 90px;
+          max-width: 80px;
         }
       }
     }
   }
 
   @media (max-width: 480px) {
-    padding: 12px 14px;
-    min-height: 56px;
+    padding: @ti-space-2 @ti-space-3;
+    min-height: 48px;
     min-width: 200px;
 
     .task-title {
-      font-size: @font-sm;
-      line-height: @line-tight;
+      font-size: @ti-text-sm;
+      line-height: 1.3;
     }
 
     .task-description {
-      font-size: @font-xs;
-      line-height: @line-normal;
+      font-size: @ti-text-xs;
+      line-height: 1.4;
     }
 
     .task-meta {
-      gap: 6px;
+      gap: @ti-space-1;
 
       .assignee-button,
       .job-id-chip {
-        height: 28px;
-        font-size: @font-xs;
-        padding: 0 8px;
-        max-width: 110px;
+        height: 24px;
+        font-size: @ti-text-xs;
+        padding: 0 @ti-space-2;
+        max-width: 100px;
       }
 
       .assignee-button span {
-        max-width: 70px;
+        max-width: 60px;
       }
 
       .meta-item span {
-        font-size: @font-xs;
+        font-size: 10px;
       }
     }
 
     .task-date-compact {
-      gap: 6px;
+      gap: @ti-space-1;
 
       .date-time-button {
-        height: 28px;
-        padding: 0 8px;
+        height: 24px;
+        padding: 0 @ti-space-2;
 
         span {
-          font-size: @font-xs;
+          font-size: 10px;
         }
       }
     }
 
     .status-chip {
-      height: 20px;
-      padding: 0 6px;
-      font-size: @font-xs;
+      height: 18px;
+      padding: 0 @ti-space-1;
+      font-size: 10px;
     }
   }
 
   // Extra small screens - stack layout
   @media (max-width: 360px) {
     min-width: 180px;
-    padding: 10px 12px;
+    padding: @ti-space-2 @ti-space-2;
 
     .task-meta {
       flex-direction: column;
       align-items: flex-start;
-      gap: 4px;
+      gap: @ti-space-1;
 
       .assignee-button,
       .job-id-chip {
@@ -492,7 +649,7 @@
 
     .task-date-compact {
       flex-direction: column;
-      gap: 4px;
+      gap: @ti-space-1;
 
       .date-time-button {
         width: 100%;

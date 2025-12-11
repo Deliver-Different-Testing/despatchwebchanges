@@ -1621,6 +1621,47 @@ class HomeController extends BaseController {
         }
     }
 
+    async refreshBox(boxName: string): Promise<void> {
+        console.log("'Refresh box called. ", boxName);
+        
+        switch (boxName) {
+            case DispatchBoxes.JobDetail:
+                await this.refreshJobDetail();
+                break;
+            case DispatchBoxes.JobsList:
+            case DispatchBoxes.Map:
+            default:
+                await this.getData();
+                break;
+        }
+    }
+
+    async refreshJobDetail(): Promise<void> {
+        if (!this.currentJobId) {
+            console.log("No job selected to refresh");
+            return;
+        }
+        
+        console.log('refreshing job detail!');
+
+        try {
+            // Re-fetch the current job details
+            const updatedJob = await this.DispatchData.getDispatchJobDetail(this.currentJobId);
+            if (updatedJob) {
+                this.currentJob = angular.copy(updatedJob);
+                // Trigger change detection by updating the jobId reference
+                const jobId = this.currentJobId;
+                this.currentJobId = undefined;
+                this.$timeoutService?.(() => {
+                    this.currentJobId = jobId;
+                }, 0);
+            }
+        } catch (error: any) {
+            console.error("Error refreshing job detail:", error);
+            this.toastrService.showErrorToast("Failed to refresh job details");
+        }
+    }
+
 
     async fetchDriverLocations(): Promise<void> {
         this.driverLocationsLoading = true;

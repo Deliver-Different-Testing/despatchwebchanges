@@ -1,41 +1,29 @@
-﻿@import '../../../../css/variables.less';
+@import '../../../../css/variables.less';
 
-// Variables
-@primary-color: #1976d2;
-@primary-dark: #1565c0;
-@primary-light: #e3f2fd;
-@accent-color: #00bcd4;
-@text-primary: #212121;
-@text-secondary: #757575;
-@text-hint: #9e9e9e;
-@border-color: #e0e0e0;
-@background-hover: #f5f5f5;
-@success-color: #4caf50;
-@shadow-medium: 0 2px 8px rgba(0, 0, 0, 0.12);
-@shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.16);
-@transition-standard: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+// Date Filter Menu Component Styles
+// All styles are scoped to .date-filter-menu to prevent leakage
 
-// Mixins
-.card-style {
-  background: white;
-  box-shadow: @menu-box-shadow;
-}
-
-.flex-center {
-  display: flex;
-  align-items: center;
-}
-
-.transition-all {
-  transition: all @transition-standard;
-}
-
-// Main Menu Container
 .date-filter-menu {
+  // Component-specific variables
+  @dfm-primary-color: #1976d2;
+  @dfm-primary-dark: #1565c0;
+  @dfm-primary-light: #e3f2fd;
+  @dfm-accent-color: #00bcd4;
+  @dfm-text-primary: #212121;
+  @dfm-text-secondary: #757575;
+  @dfm-text-hint: #9e9e9e;
+  @dfm-border-color: #e0e0e0;
+  @dfm-background-hover: #f5f5f5;
+  @dfm-success-color: #4caf50;
+  @dfm-shadow-medium: 0 2px 8px rgba(0, 0, 0, 0.12);
+  @dfm-shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.16);
+  @dfm-transition-standard: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  // Main Menu Container
   min-width: 420px;
   max-width: 480px;
   max-height: calc(100vh - 80px);
-  box-shadow: @shadow-elevated;
+  box-shadow: @dfm-shadow-elevated;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 0;
@@ -62,435 +50,425 @@
       background: #555;
     }
   }
-}
 
-// Wrapper
-.date-filter-wrapper {
-  background: white;
-  display: flex;
-  flex-direction: column;
-}
+  // Wrapper
+  .date-filter-wrapper {
+    background: white;
+    display: flex;
+    flex-direction: column;
+  }
 
-// Header Section
-.date-filter-header {
-  background: linear-gradient(135deg, @primary-color 0%, @primary-dark 100%);
-  padding: 20px 24px;
-  color: white;
-  border-bottom: none;
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  // Header Section
+  .date-filter-header {
+    background: linear-gradient(135deg, @dfm-primary-color 0%, @dfm-primary-dark 100%);
+    padding: 20px 24px;
+    color: white;
+    border-bottom: none;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 
-  .header-content {
-    .flex-center;
-    gap: 16px;
-    margin-bottom: 12px;
+    .header-content {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 12px;
 
-    .header-icon-wrapper {
-      .flex-center;
-      justify-content: center;
-      width: 48px;
-      height: 48px;
-      background: rgba(255, 255, 255, 0.15);
+      .header-icon-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+
+        .header-icon {
+          font-size: 28px;
+          color: white;
+        }
+      }
+
+      .header-text {
+        flex: 1;
+
+        .header-title {
+          font-size: 20px;
+          font-weight: 600;
+          margin: 0 0 4px 0;
+          letter-spacing: 0.3px;
+        }
+
+        .header-subtitle {
+          font-size: 13px;
+          opacity: 0.9;
+          font-weight: 400;
+        }
+      }
+    }
+
+    .timezone-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
       backdrop-filter: blur(10px);
 
-      .header-icon {
-        font-size: 28px;
+      .timezone-icon {
+        color: white;
+      }
+
+      .timezone-text {
         color: white;
       }
     }
-
-    .header-text {
-      flex: 1;
-
-      .header-title {
-        font-size: 20px;
-        font-weight: 600;
-        margin: 0 0 4px 0;
-        letter-spacing: 0.3px;
-      }
-
-      .header-subtitle {
-        font-size: 13px;
-        opacity: 0.9;
-        font-weight: 400;
-      }
-    }
   }
 
-  .timezone-badge {
-    .flex-center;
-    gap: 6px;
-    padding: 6px 12px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 500;
-    backdrop-filter: blur(10px);
-
-    .timezone-icon {
-      color: white;
-    }
-
-    .timezone-text {
-      color: white;
-    }
-  }
-}
-
-// Content Area
-.date-filter-content {
-  padding: 24px;
-}
-
-// Section Header
-.section-header {
-  .flex-center;
-  gap: 8px;
-  margin-bottom: 16px;
-
-  .section-icon {
-    font-size: 20px;
-    color: @primary-color;
+  // Content Area
+  .date-filter-content {
+    padding: 24px;
   }
 
-  .section-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: @text-primary;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-}
-
-// Range Selection Section
-.range-selection-section {
-  margin-bottom: 0;
-
-  .range-radio-group {
+  // Section Header
+  .section-header {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     gap: 8px;
-
-    .range-option {
-      margin: 0;
-      padding: 0;
-
-      .md-container {
-        margin-right: 12px;
-      }
-
-      .option-content {
-        .flex-center;
-        gap: 12px;
-        padding: 12px 16px 12px 8px;
-        border-radius: 8px;
-        .transition-all;
-        width: 100%;
-
-        .option-icon {
-          font-size: 24px;
-          color: @text-secondary;
-          .transition-all;
-        }
-
-        .option-text {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-          flex: 1;
-
-          .option-label {
-            font-size: 15px;
-            font-weight: 500;
-            color: @text-primary;
-            .transition-all;
-          }
-
-          .option-description {
-            font-size: 12px;
-            color: @text-secondary;
-          }
-        }
-
-        &:hover {
-          background: @background-hover;
-
-          .option-icon {
-            color: @primary-color;
-          }
-        }
-      }
-
-      &.md-checked {
-        .option-content {
-          background: @primary-light;
-
-          .option-icon {
-            color: @primary-color;
-          }
-
-          .option-label {
-            color: @primary-color;
-            font-weight: 600;
-          }
-        }
-      }
-    }
-  }
-}
-
-// Section Divider
-.section-divider {
-  margin: 20px -24px;
-  border-color: @border-color;
-}
-
-// Custom Date Section
-.custom-date-section {
-  animation: fadeIn 0.3s ease-in-out;
-
-  .date-picker-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
     margin-bottom: 16px;
 
-    @media (max-width: 600px) {
-      grid-template-columns: 1fr;
-    }
-
-    .date-picker-item {
-      .date-picker-label {
-        .flex-center;
-        gap: 8px;
-        margin-bottom: 8px;
-
-        .label-icon {
-          font-size: 18px;
-          color: @primary-color;
-        }
-
-        .label-text {
-          font-size: 13px;
-          font-weight: 600;
-          color: @text-primary;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-      }
-
-      .date-picker-field {
-        .card-style;
-        padding: 8px;
-        border: 1px solid @border-color;
-        .transition-all;
-
-        &:hover {
-          border-color: @primary-color;
-          box-shadow: @shadow-medium;
-        }
-
-        &:focus-within {
-          border-color: @primary-color;
-          box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
-        }
-      }
-    }
-  }
-
-  .date-range-display {
-    .card-style;
-    .flex-center;
-    gap: 10px;
-    padding: 12px 16px;
-    background: linear-gradient(135deg, @primary-light 0%, rgba(227, 242, 253, 0.5) 100%);
-    border: 1px solid rgba(25, 118, 210, 0.2);
-
-    .display-icon {
+    .section-icon {
       font-size: 20px;
-      color: @primary-color;
+      color: @dfm-primary-color;
     }
 
-    .display-text {
+    .section-title {
       font-size: 14px;
-      font-weight: 500;
-      color: @primary-color;
+      font-weight: 600;
+      color: @dfm-text-primary;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
   }
-}
 
-// Custom Minutes Section
-.custom-minutes-section {
-  animation: fadeIn 0.3s ease-in-out;
+  // Range Selection Section
+  .range-selection-section {
+    margin-bottom: 0;
 
-  .minutes-selector-wrapper {
-    .minutes-selector-label {
-      .flex-center;
+    .range-radio-group {
+      display: flex;
+      flex-direction: column;
       gap: 8px;
-      margin-bottom: 16px;
 
-      .label-icon {
-        font-size: 18px;
-        color: @primary-color;
-      }
+      .range-option {
+        margin: 0;
+        padding: 0;
 
-      .label-text {
-        font-size: 13px;
-        font-weight: 600;
-        color: @text-primary;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-    }
-
-    .duration-select {
-      margin: 0 0 20px 0;
-
-      md-select {
-        .card-style;
-        border: 1px solid @border-color;
-        .transition-all;
-
-        &:hover {
-          border-color: @primary-color;
+        .md-container {
+          margin-right: 12px;
         }
 
-        .md-select-value {
-          padding: 12px 16px;
-          border: none;
+        .option-content {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 16px 12px 8px;
+          border-radius: 8px;
+          transition: all @dfm-transition-standard;
+          width: 100%;
+
+          .option-icon {
+            font-size: 24px;
+            color: @dfm-text-secondary;
+            transition: all @dfm-transition-standard;
+          }
+
+          .option-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+
+            .option-label {
+              font-size: 15px;
+              font-weight: 500;
+              color: @dfm-text-primary;
+              transition: all @dfm-transition-standard;
+            }
+
+            .option-description {
+              font-size: 12px;
+              color: @dfm-text-secondary;
+            }
+          }
+
+          &:hover {
+            background: @dfm-background-hover;
+
+            .option-icon {
+              color: @dfm-primary-color;
+            }
+          }
+        }
+
+        &.md-checked {
+          .option-content {
+            background: @dfm-primary-light;
+
+            .option-icon {
+              color: @dfm-primary-color;
+            }
+
+            .option-label {
+              color: @dfm-primary-color;
+              font-weight: 600;
+            }
+          }
         }
       }
     }
+  }
 
-    .time-range-display {
+  // Section Divider
+  .section-divider {
+    margin: 20px -24px;
+    border-color: @dfm-border-color;
+  }
+
+  // Custom Date Section
+  .custom-date-section {
+    animation: dfm-fadeIn 0.3s ease-in-out;
+
+    .date-picker-grid {
       display: grid;
-      grid-template-columns: 1fr auto 1fr;
+      grid-template-columns: 1fr 1fr;
       gap: 16px;
-      align-items: center;
+      margin-bottom: 16px;
 
       @media (max-width: 600px) {
         grid-template-columns: 1fr;
-        gap: 12px;
       }
 
-      .time-card {
-        .card-style;
-        padding: 16px;
-        border: 1px solid @border-color;
-        .transition-all;
-
-        &:hover {
-          box-shadow: @shadow-medium;
-          transform: translateY(-2px);
-        }
-
-        .time-card-header {
-          .flex-center;
+      .date-picker-item {
+        .date-picker-label {
+          display: flex;
+          align-items: center;
           gap: 8px;
           margin-bottom: 8px;
 
-          .time-card-icon {
+          .label-icon {
             font-size: 18px;
+            color: @dfm-primary-color;
           }
 
-          .time-card-label {
-            font-size: 11px;
+          .label-text {
+            font-size: 13px;
             font-weight: 600;
+            color: @dfm-text-primary;
             text-transform: uppercase;
             letter-spacing: 0.5px;
           }
         }
 
-        .time-card-value {
-          font-size: 14px;
+        .date-picker-field {
+          background: white;
+          box-shadow: @menu-box-shadow;
+          padding: 8px;
+          border: 1px solid @dfm-border-color;
+          transition: all @dfm-transition-standard;
+
+          &:hover {
+            border-color: @dfm-primary-color;
+            box-shadow: @dfm-shadow-medium;
+          }
+
+          &:focus-within {
+            border-color: @dfm-primary-color;
+            box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+          }
+        }
+      }
+    }
+
+    .date-range-display {
+      background: white;
+      box-shadow: @menu-box-shadow;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, @dfm-primary-light 0%, rgba(227, 242, 253, 0.5) 100%);
+      border: 1px solid rgba(25, 118, 210, 0.2);
+
+      .display-icon {
+        font-size: 20px;
+        color: @dfm-primary-color;
+      }
+
+      .display-text {
+        font-size: 14px;
+        font-weight: 500;
+        color: @dfm-primary-color;
+      }
+    }
+  }
+
+  // Custom Minutes Section
+  .custom-minutes-section {
+    animation: dfm-fadeIn 0.3s ease-in-out;
+
+    .minutes-selector-wrapper {
+      .minutes-selector-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+
+        .label-icon {
+          font-size: 18px;
+          color: @dfm-primary-color;
+        }
+
+        .label-text {
+          font-size: 13px;
           font-weight: 600;
-          color: @text-primary;
+          color: @dfm-text-primary;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
+      }
 
-        &.start-time {
-          border-left: 3px solid @success-color;
+      .duration-select {
+        margin: 0 0 20px 0;
 
-          .time-card-icon {
-            color: @success-color;
+        md-select {
+          background: white;
+          box-shadow: @menu-box-shadow;
+          border: 1px solid @dfm-border-color;
+          transition: all @dfm-transition-standard;
+
+          &:hover {
+            border-color: @dfm-primary-color;
           }
 
-          .time-card-label {
-            color: @success-color;
-          }
-        }
-
-        &.end-time {
-          border-left: 3px solid @accent-color;
-
-          .time-card-icon {
-            color: @accent-color;
-          }
-
-          .time-card-label {
-            color: @accent-color;
+          .md-select-value {
+            padding: 12px 16px;
+            border: none;
           }
         }
       }
 
-      .time-arrow {
-        .flex-center;
-        justify-content: center;
-        color: @text-hint;
+      .time-range-display {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 16px;
+        align-items: center;
 
         @media (max-width: 600px) {
-          transform: rotate(90deg);
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+
+        .time-card {
+          background: white;
+          box-shadow: @menu-box-shadow;
+          padding: 16px;
+          border: 1px solid @dfm-border-color;
+          transition: all @dfm-transition-standard;
+
+          &:hover {
+            box-shadow: @dfm-shadow-medium;
+            transform: translateY(-2px);
+          }
+
+          .time-card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+
+            .time-card-icon {
+              font-size: 18px;
+            }
+
+            .time-card-label {
+              font-size: 11px;
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+          }
+
+          .time-card-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: @dfm-text-primary;
+          }
+
+          &.start-time {
+            border-left: 3px solid @dfm-success-color;
+
+            .time-card-icon {
+              color: @dfm-success-color;
+            }
+
+            .time-card-label {
+              color: @dfm-success-color;
+            }
+          }
+
+          &.end-time {
+            border-left: 3px solid @dfm-accent-color;
+
+            .time-card-icon {
+              color: @dfm-accent-color;
+            }
+
+            .time-card-label {
+              color: @dfm-accent-color;
+            }
+          }
+        }
+
+        .time-arrow {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: @dfm-text-hint;
+
+          @media (max-width: 600px) {
+            transform: rotate(90deg);
+          }
         }
       }
     }
   }
-}
 
-// Action Buttons
-.action-buttons {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  margin-top: 24px;
-  padding: 20px 0 0 0;
-  border-top: 1px solid @border-color;
-  background: white;
-  position: sticky;
-  bottom: 0;
-  z-index: 10;
-}
-
-// Trigger Button
-.date-filter-trigger {
-  .transition-all;
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.08);
-    transform: scale(1.05);
+  // Action Buttons
+  .action-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+    padding: 20px 0 0 0;
+    border-top: 1px solid @dfm-border-color;
+    background: white;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
   }
-}
 
-// Animations
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-// Material Design Overrides for this component
-.date-filter-menu {
+  // Material Design Overrides for this component
   md-input-container {
     &.md-input-has-value label {
-      color: @primary-color;
+      color: @dfm-primary-color;
     }
 
     &.md-input-focused label {
-      color: @primary-color;
+      color: @dfm-primary-color;
     }
 
     .md-errors-spacer {
@@ -500,47 +478,69 @@
 
   md-radio-button {
     &.md-checked .md-on {
-      background-color: @primary-color;
+      background-color: @dfm-primary-color;
     }
 
     .md-off {
-      border-color: @text-secondary;
+      border-color: @dfm-text-secondary;
+    }
+  }
+
+  // Responsive Adjustments
+  @media (max-width: 600px) {
+    .date-filter-header {
+      padding: 16px 20px;
+
+      .header-content {
+        .header-icon-wrapper {
+          width: 40px;
+          height: 40px;
+
+          .header-icon {
+            font-size: 24px;
+          }
+        }
+
+        .header-text {
+          .header-title {
+            font-size: 18px;
+          }
+
+          .header-subtitle {
+            font-size: 12px;
+          }
+        }
+      }
+    }
+
+    .date-filter-content {
+      padding: 20px;
+    }
+
+    .action-buttons {
+      flex-direction: column;
     }
   }
 }
 
-// Responsive Adjustments
-@media (max-width: 600px) {
-  .date-filter-header {
-    padding: 16px 20px;
+// Trigger Button (outside menu, but scoped with specific class)
+.date-filter-trigger {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-    .header-content {
-      .header-icon-wrapper {
-        width: 40px;
-        height: 40px;
-
-        .header-icon {
-          font-size: 24px;
-        }
-      }
-
-      .header-text {
-        .header-title {
-          font-size: 18px;
-        }
-
-        .header-subtitle {
-          font-size: 12px;
-        }
-      }
-    }
+  &:hover {
+    background: rgba(0, 0, 0, 0.08);
+    transform: scale(1.05);
   }
+}
 
-  .date-filter-content {
-    padding: 20px;
+// Scoped animation keyframes
+@keyframes dfm-fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
   }
-
-  .action-buttons {
-    flex-direction: column;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
