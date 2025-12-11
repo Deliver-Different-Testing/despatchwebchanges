@@ -50,7 +50,7 @@
     </div>
 
     <!-- Selected Driver Mode -->
-    <div ng-if="ctrl.currentWorkViewMode === 'selected'">
+    <div ng-if="!ctrl.isUsCustomer || ctrl.currentWorkViewMode === 'selected'">
         <jobs-list
                 ng-if="ctrl.jobsCurrentList"
                 jobs="ctrl.jobsCurrentList"
