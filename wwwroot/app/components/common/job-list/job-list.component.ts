@@ -938,7 +938,7 @@ class JobsListController extends BaseController {
     }
 
     shouldShowPriorityColumn(job: IDispatchJob): boolean {
-        return !!(job.toAirportId || job.fromAirportId);
+        return !!(job.toAirportId || job.fromAirportId || this.isMultiPartJob(job));
     }
 
     private loadColumnWidths(): void {

@@ -36,6 +36,7 @@ import JobPhotoType from "../../../enums/job-photo-type.enum";
 import {IFlightSegment} from "../../Nationwide/nationwide.interfaces";
 import PodPhotoType from "../../../enums/podPhotoType";
 import {formatLongDateTime} from "../../../functions/formatDates";
+import {ViewDensity, ViewDensityLabels} from "../../../enums/view-density.enum";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -78,7 +79,7 @@ class JobDetailController extends BaseController {
     distance?: number;
     timeZoneShort: string;
     jobAddressIcon: string = "pin_drop";
-    viewDensity: 'normal' | 'dense' | 'ultradense' = 'normal';
+    viewDensity: ViewDensity = ViewDensity.Normal;
     trackingOptions: ISuggestion[];
 
     jobGroup?: IJobGroup;
@@ -2122,8 +2123,8 @@ class JobDetailController extends BaseController {
     loadViewDensity(): void {
         try {
             const stored = localStorage.getItem(this.VIEW_DENSITY_KEY);
-            if (stored && ['normal', 'dense', 'ultradense'].includes(stored)) {
-                this.viewDensity = stored as 'normal' | 'dense' | 'ultradense';
+            if (stored && Object.values(ViewDensity).includes(stored as ViewDensity)) {
+                this.viewDensity = stored as ViewDensity;
             }
         } catch (error) {
             console.warn('Failed to load view density from localStorage:', error);
@@ -2140,22 +2141,22 @@ class JobDetailController extends BaseController {
 
     toggleViewDensity(): void {
         switch (this.viewDensity) {
-            case 'normal':
-                this.viewDensity = 'dense';
+            case ViewDensity.Normal:
+                this.viewDensity = ViewDensity.Dense;
                 break;
-            case 'dense':
-                this.viewDensity = 'normal';
+            case ViewDensity.Dense:
+                this.viewDensity = ViewDensity.Normal;
                 break;
         }
         this.saveViewDensity();
     }
 
     isDenseView(): boolean {
-        return this.viewDensity === 'dense';
+        return this.viewDensity === ViewDensity.Dense;
     }
 
-    isUltraDenseView(): boolean {
-        return this.viewDensity === 'ultradense';
+    getViewDensityLabel(): string {
+        return ViewDensityLabels[this.viewDensity];
     }
 
     isPdfFile(photo: any): boolean {

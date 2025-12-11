@@ -1584,7 +1584,6 @@ public partial class JobRepository(
         await UpdateJobDisplayInDespatchAsync(jobId);
     }
 
-
     public async Task<List<SuburbLookup>> GetSuburbsAsync()
     {
         return await Context.TucSuburbs

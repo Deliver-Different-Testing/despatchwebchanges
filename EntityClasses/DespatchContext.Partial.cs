@@ -52,7 +52,7 @@ public partial class DespatchContext
             context.TucJobBookings
                 .AsNoTracking()
                 .Where(j => j.UcbkId == jobBookingId)
-                .Select(j => j.ParentId ?? j.UcbkId)
+                .Select(j => j.BookingParentId ?? j.UcbkId)
                 .FirstOrDefault());
 
     private static readonly Func<DespatchContext, int, Task<bool>> IsJobArchivedCompiled =
