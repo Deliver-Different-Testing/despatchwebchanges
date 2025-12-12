@@ -509,6 +509,7 @@ class OverviewController extends BaseController {
             );
         } finally {
             this.isLoading = false;
+            this.applyScope();
         }
     }
 
