@@ -1645,21 +1645,21 @@ class HomeController extends BaseController {
             console.log("No job selected to refresh");
             return;
         }
-        
+
         console.log('refreshing job detail!');
 
         try {
-            // Re-fetch the current job details
-            const updatedJob = await this.DispatchData.getDispatchJobDetail(this.currentJobId);
-            if (updatedJob) {
-                this.currentJob = angular.copy(updatedJob);
-                // Trigger change detection by updating the jobId reference
-                const jobId = this.currentJobId;
-                this.currentJobId = undefined;
-                this.$timeoutService?.(() => {
-                    this.currentJobId = jobId;
-                }, 0);
-            }
+            const jobId = this.currentJobId;
+
+            // Trigger change detection by clearing and restoring the jobId
+            this.currentJobId = undefined;
+            this.applyScope();
+
+            // Use $timeout to ensure digest cycle completes before restoring jobId
+            this.$timeoutService?.(() => {
+                this.currentJobId = jobId;
+                this.applyScope();
+            }, 50);
         } catch (error: any) {
             console.error("Error refreshing job detail:", error);
             this.toastrService.showErrorToast("Failed to refresh job details");

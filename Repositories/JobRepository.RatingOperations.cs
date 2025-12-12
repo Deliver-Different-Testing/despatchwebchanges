@@ -368,7 +368,8 @@ public partial class JobRepository
                     Cubic = job.TucJobBookingItemBookings != null
                         ? job.TucJobBookingItemBookings.Sum(i => i.Cubic)
                         : null,
-                    CalculateDimsOncePerJob = job.DimensionsType == 1
+                    CalculateDimsOncePerJob = job.DimensionsType == 1,
+                    IsPrebook = true
                 })
                 .FirstOrDefaultAsync();
 

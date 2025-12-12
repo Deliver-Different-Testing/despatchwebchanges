@@ -268,8 +268,14 @@ public partial class JobRepository
 
                 break;
             case JobProperty.ClientID:
-                job.UcjbClientId = int.Parse(value);
-                job.UcjbClientCode = job.UcjbClient.UcclCode;
+                var newClientId = int.Parse(value);
+                var clientCode =  await Context.TucClients
+                    .Where(c => c.UcclId == newClientId)
+                    .Select(c => c.UcclCode)
+                    .FirstOrDefaultAsync();
+                
+                job.UcjbClientId = newClientId;
+                job.UcjbClientCode = clientCode;
                 break;
             case JobProperty.ContactID:
                 var contactId = int.Parse(value);
@@ -425,8 +431,14 @@ public partial class JobRepository
 
                 break;
             case JobProperty.ClientID:
-                archive.UcjbClientId = int.Parse(value);
-                archive.UcjbClientCode = archive.UcjbClient.UcclCode;
+                var archiveClientId = int.Parse(value);
+                var clientCode = await Context.TucClients
+                    .Where(c => c.UcclId == archiveClientId)
+                    .Select(c => c.UcclCode)
+                    .FirstOrDefaultAsync();
+                
+                archive.UcjbClientId = archiveClientId;
+                archive.UcjbClientCode = clientCode;
                 break;
             case JobProperty.ClientCode:
                 archive.UcjbClientCode = value[..Math.Min(value.Length, 5)];
@@ -647,9 +659,12 @@ public partial class JobRepository
                 bulkJob.Weight = decimal.Parse(value);
                 break;
             case JobProperty.ClientID:
-                var clientId = int.Parse(value);
-                bulkJob.ClientId = clientId;
-                bulkJob.ClientCode = bulkJob.Client?.UcclCode;
+                var bulkClientId = int.Parse(value);
+                bulkJob.ClientId = bulkClientId;
+                bulkJob.ClientCode = await Context.TucClients
+                    .Where(c => c.UcclId == bulkClientId)
+                    .Select(c => c.UcclCode)
+                    .FirstOrDefaultAsync();
                 break;
             case JobProperty.ClientCode:
                 bulkJob.ClientCode = value[..Math.Min(value.Length, 5)];
