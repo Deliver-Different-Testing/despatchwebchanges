@@ -46,6 +46,10 @@ export function transformFlightDTO(dto: IFlightViewModelDto): IFlightViewModel {
         ...dto,
         departureTime: formatDateFromApi(dto.departureTime),
         arrivalTime: formatDateFromApi(dto.arrivalTime),
+        _departureTimeStr: formatLongDateTime(dto.departureTime),
+        _departureTimeZoneStr: timezoneShortFilter(dto.departureTimeZone),
+        _arrivalTimeStr: formatLongDateTime(dto.arrivalTime),
+        _arrivalTimeZoneStr: formatLongDateTime(dto.arrivalTime),
         flightSegments: dto.flightSegments?.map(segment => ({
             ...segment,
             departureTime: formatDateFromApi(segment.departureTime),

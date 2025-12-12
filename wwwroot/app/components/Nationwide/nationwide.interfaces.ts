@@ -25,6 +25,12 @@ export interface IFlightViewModel {
     score: number;
     connectionId: string;
     flightSegments: IFlightSegment[];
+
+    // Private
+    _departureTimeStr: string;
+    _arrivalTimeStr: string;
+    _arrivalTimeZoneStr: string;
+    _departureTimeZoneStr: string;
 }
 
 
