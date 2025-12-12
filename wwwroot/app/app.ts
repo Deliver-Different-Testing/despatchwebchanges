@@ -48,6 +48,8 @@ import dayjs from "dayjs";
 import 'dayjs/locale/en';
 import 'dayjs/locale/en-nz';
 import NoDataComponent from "./components/common/no-data/no-data.component";
+import TablePaginationComponent from "./components/common/table-pagination/table-pagination.component";
+import DataTableComponent from "./components/common/data-table/data-table.component";
 import TruckCourierStatusDialogController
     from "./components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.controller";
 import TruckCourierStatusDialogService
@@ -56,7 +58,6 @@ import MessagingService from "./services/messaging.service";
 import MessagingDialogService from "./components/dialogs/messaging-dialog/messaging-dialog.service";
 import MessagingDialogController from "./components/dialogs/messaging-dialog/messaging-dialog.controller";
 import CustomUrlService from "./services/custom-url.service";
-import ResolutionWarningService from "./components/dialogs/resolution-warning-dialog/resolution-warning.service";
 import VoidJobConfirmationDialogController
     from "./components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.controller";
 import VoidJobConfirmationDialogService
@@ -177,6 +178,8 @@ app.component("jobDetailWidget", JobDetailComponent);
 app.component("materialSidenav", MaterialSidenavComponent);
 app.component("podPhotoViewer", PodPhotoViewerComponent);
 app.component("noData", NoDataComponent);
+app.component("tablePagination", TablePaginationComponent);
+app.component("dataTable", DataTableComponent);
 app.component("stickyNote", StickyNoteComponent);
 app.component("dateFilterMenu", DateFilterMenuComponent);
 app.component("customDatePicker", DayJsDatePickerComponent);
@@ -218,13 +221,8 @@ app.service("addressLookupService", AddressLookupService);
 app.service("truckCourierStatusDialogService", TruckCourierStatusDialogService);
 app.service("messagingService", MessagingService);
 app.service("messagingDialogService", MessagingDialogService);
-app.service('resolutionWarningService', ResolutionWarningService);
 app.service('customUrlService', CustomUrlService);
 app.service('voidJobConfirmationDialogService', VoidJobConfirmationDialogService);
 app.service('simplePriceEditDialogService', SimplePriceEditDialogService);
-
-app.run(['resolutionWarningService', (resolutionWarningService: ResolutionWarningService) => {
-    resolutionWarningService.checkAndShowResolutionWarning();
-}]);
 
 export default app;

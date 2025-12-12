@@ -1,119 +1,146 @@
-<md-table-container class="table-scroll-with-pagination">
-    <table md-progress="ctrl.prebookJobsPromise" md-row-select md-table>
-        <thead fix-head md-head md-on-reorder="ctrl.onReorder" md-order="ctrl.jobQuery.order">
-        <tr md-row>
-            <th md-column md-order-by="booked">Booked</th>
-            <th md-column md-order-by="speed">Speed</th>
-            <th md-column md-order-by="customJobName">Job Name</th>
-            <th md-column md-order-by="client">Client</th>
-            <th md-column md-order-by="from">From</th>
-            <th md-column md-order-by="to">To</th>
-            <th md-column md-order-by="nextDueTime">Next Due</th>
-            <th md-column md-order-by="courier">Courier</th>
-            <th md-column>Actions</th>
-        </tr>
-        </thead>
+<div class="data-table data-table--hover data-table--sticky-header"
+     ng-class="{'data-table--loading': ctrl.isLoading}">
 
-        <tbody md-body>
-        <tr
-                md-row
-                md-truncate
-                ng-click="ctrl.selectJobDetail(job.id)"
-                context-menu="ctrl.getContextMenuOptions(job)"
-                context-menu-on="contextmenu"
-                context-menu-class="job-context-menu"
-                ng-repeat="job in ctrl.jobList track by job.id">
-            <td md-cell>{{job._bookedStr}} ({{::ctrl.timeZoneShort}})</td>
-            <td md-cell>{{job.speed}}</td>
-            <td md-cell>{{job.customJobName}}</td>
-            <td md-cell>{{job.client}}</td>
-            
-            <td md-cell md-truncate>
-                <div class="address-compact" ng-class="{'us-format': ctrl.isUsCustomer}">
-                    <!-- Display the first non-empty address line -->
-                    <div class="address-primary" ng-if="job.pickupAddress.addressLine1">
-                        {{job.pickupAddress.addressLine1}}
-                    </div>
-                    <!-- Display the second line (usually contains suburb/city for NZ, city/state for US) -->
-                    <div class="address-secondary" ng-if="!ctrl.isUsCustomer && (job.pickupAddress.addressLine2 || job.pickupAddress.addressLine3)">
-                        {{job.pickupAddress.addressLine2 || job.pickupAddress.addressLine3}}
-                    </div>
-                    <div class="address-secondary" ng-if="ctrl.isUsCustomer && (job.pickupAddress.addressLine5 || job.pickupAddress.addressLine6)">
-                        {{job.pickupAddress.addressLine5}}{{job.pickupAddress.addressLine6 ? ', ' + job.pickupAddress.addressLine6 : ''}}
-                    </div>
-                    <!-- Fallback to fullAddress if no address lines -->
-                    <div ng-if="!job.pickupAddress.addressLine1 && job.pickupAddress.fullAddress">
-                        <div class="address-primary">{{job.pickupAddress.fullAddress | limitTo: 30}}</div>
-                    </div>
-                    <md-tooltip md-direction="bottom">
-                        <div class="address-tooltip">
-                            <div ng-repeat="line in [job.pickupAddress.addressLine1, job.pickupAddress.addressLine2, job.pickupAddress.addressLine3, job.pickupAddress.addressLine4, job.pickupAddress.addressLine5, job.pickupAddress.addressLine6, job.pickupAddress.addressLine7, job.pickupAddress.addressLine8] track by $index" ng-if="line">
-                                {{line}}
-                            </div>
-                            <div ng-if="!job.pickupAddress.addressLine1">{{job.pickupAddress.fullAddress}}</div>
+    <!-- Loading overlay -->
+    <div class="data-table__loading-overlay" ng-if="ctrl.isLoading">
+        <md-progress-circular md-mode="indeterminate" md-diameter="40"></md-progress-circular>
+    </div>
+
+    <!-- Table container -->
+    <div class="data-table__container">
+        <table class="data-table__table">
+            <!-- Header -->
+            <thead class="data-table__head">
+                <tr class="data-table__header-row">
+                    <th class="data-table__header-cell sortable"
+                        ng-repeat="column in ctrl.tableColumns track by column.key"
+                        ng-class="{
+                            'align-center': column.align === 'center',
+                            'align-right': column.align === 'right'
+                        }"
+                        ng-style="{'width': column.width}"
+                        ng-click="column.sortable && ctrl.onSort({column: column.sortKey || column.key, direction: ctrl.tableSort.column === (column.sortKey || column.key) && ctrl.tableSort.direction === 'asc' ? 'desc' : 'asc'})">
+                        <div class="data-table__header-content">
+                            <span class="data-table__header-label">{{column.label}}</span>
+                            <md-icon class="data-table__sort-icon"
+                                     ng-if="column.sortable"
+                                     ng-class="{'active': ctrl.tableSort.column === (column.sortKey || column.key)}"
+                                     md-font-set="material-symbols-outlined">
+                                {{ctrl.tableSort.column === (column.sortKey || column.key) ? (ctrl.tableSort.direction === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'unfold_more'}}
+                            </md-icon>
                         </div>
-                    </md-tooltip>
-                </div>
-            </td>
-            <td md-cell md-truncate>
-                <div class="address-compact" ng-class="{'us-format': ctrl.isUsCustomer}">
-                    <!-- Display the first non-empty address line -->
-                    <div class="address-primary" ng-if="job.deliveryAddress.addressLine1">
-                        {{job.deliveryAddress.addressLine1}}
-                    </div>
-                    <!-- Display the second line (usually contains suburb/city for NZ, city/state for US) -->
-                    <div class="address-secondary" ng-if="!ctrl.isUsCustomer && (job.deliveryAddress.addressLine2 || job.deliveryAddress.addressLine3)">
-                        {{job.deliveryAddress.addressLine2 || job.deliveryAddress.addressLine3}}
-                    </div>
-                    <div class="address-secondary" ng-if="ctrl.isUsCustomer && (job.deliveryAddress.addressLine5 || job.deliveryAddress.addressLine6)">
-                        {{job.deliveryAddress.addressLine5}}{{job.deliveryAddress.addressLine6 ? ', ' + job.deliveryAddress.addressLine6 : ''}}
-                    </div>
-                    <!-- Fallback to fullAddress if no address lines -->
-                    <div ng-if="!job.deliveryAddress.addressLine1 && job.deliveryAddress.fullAddress">
-                        <div class="address-primary">{{job.deliveryAddress.fullAddress | limitTo: 30}}</div>
-                    </div>
-                    <md-tooltip md-direction="bottom">
-                        <div class="address-tooltip">
-                            <div ng-repeat="line in [job.deliveryAddress.addressLine1, job.deliveryAddress.addressLine2, job.deliveryAddress.addressLine3, job.deliveryAddress.addressLine4, job.deliveryAddress.addressLine5, job.deliveryAddress.addressLine6, job.deliveryAddress.addressLine7, job.deliveryAddress.addressLine8] track by $index" ng-if="line">
-                                {{line}}
-                            </div>
-                            <div ng-if="!job.deliveryAddress.addressLine1">{{job.deliveryAddress.fullAddress}}</div>
+                    </th>
+                </tr>
+            </thead>
+
+            <!-- Body -->
+            <tbody class="data-table__body">
+                <tr class="data-table__row"
+                    ng-repeat="job in ctrl.jobList track by job.id"
+                    ng-click="ctrl.selectJobDetail(job.id)"
+                    context-menu="ctrl.getContextMenuOptions(job)"
+                    context-menu-on="contextmenu"
+                    context-menu-class="job-context-menu">
+
+                    <!-- Booked -->
+                    <td class="data-table__cell">
+                        <span>{{job._bookedStr}} ({{::ctrl.timeZoneShort}})</span>
+                    </td>
+
+                    <!-- Speed -->
+                    <td class="data-table__cell">
+                        <span>{{job.speed}}</span>
+                    </td>
+
+                    <!-- Job Name -->
+                    <td class="data-table__cell">
+                        <div class="data-table__cell-content truncate">
+                            {{job.customJobName}}
                         </div>
-                    </md-tooltip>
-                </div>
-            </td>
-            
-            <td md-cell>
-                {{job._nextDueTimeStr}} ({{::ctrl.timeZoneShort}})
-            </td>
-            <td md-cell>{{job.courier}}</td>
-            <td md-cell>
-                <md-button class="md-icon-button" ng-click="ctrl.voidPrebookJob(job.id); $event.stopPropagation()"
-                           title="Void">
-                    <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
-                    <md-tooltip md-direction="bottom">Delete Recurring Job</md-tooltip>
-                </md-button>
-            </td>
-        </tr>
-        </tbody>
-    </table>
-</md-table-container>
+                    </td>
 
-<!-- Pagination -->
-<md-table-pagination
-        md-limit="ctrl.jobQuery.limit"
-        md-limit-options="[25, 50, 100, 250]"
-        md-page="ctrl.jobQuery.page"
-        md-total="{{ctrl.totalJobCount}}"
-        md-on-paginate="ctrl.onPaginate"
-        md-page-select>
-</md-table-pagination>
+                    <!-- Client -->
+                    <td class="data-table__cell">
+                        <span>{{job.client}}</span>
+                    </td>
 
-<!-- No Data Message -->
-<no-data
-        ng-if="!ctrl.jobList || ctrl.jobList.length === 0"
-        title="No Recurring Jobs Available"
-        message="There are currently no recurring jobs that match your criteria."
-        icon="list_alt"
-        show-action="false">
-</no-data>
+                    <!-- From (Pickup Address) -->
+                    <td class="data-table__cell">
+                        <div class="data-table__cell-content truncate address-cell">
+                            <div class="address-primary">{{ctrl.getAddressPrimary(job.pickupAddress)}}</div>
+                            <div class="address-secondary" ng-if="ctrl.getAddressSecondary(job.pickupAddress)">
+                                {{ctrl.getAddressSecondary(job.pickupAddress)}}
+                            </div>
+                            <md-tooltip md-direction="bottom">
+                                <div class="address-tooltip">
+                                    <div ng-repeat="line in ctrl.getAddressTooltipLines(job.pickupAddress) track by $index">
+                                        {{line}}
+                                    </div>
+                                </div>
+                            </md-tooltip>
+                        </div>
+                    </td>
+
+                    <!-- To (Delivery Address) -->
+                    <td class="data-table__cell">
+                        <div class="data-table__cell-content truncate address-cell">
+                            <div class="address-primary">{{ctrl.getAddressPrimary(job.deliveryAddress)}}</div>
+                            <div class="address-secondary" ng-if="ctrl.getAddressSecondary(job.deliveryAddress)">
+                                {{ctrl.getAddressSecondary(job.deliveryAddress)}}
+                            </div>
+                            <md-tooltip md-direction="bottom">
+                                <div class="address-tooltip">
+                                    <div ng-repeat="line in ctrl.getAddressTooltipLines(job.deliveryAddress) track by $index">
+                                        {{line}}
+                                    </div>
+                                </div>
+                            </md-tooltip>
+                        </div>
+                    </td>
+
+                    <!-- Next Due -->
+                    <td class="data-table__cell">
+                        <span>{{job._nextDueTimeStr}} ({{::ctrl.timeZoneShort}})</span>
+                    </td>
+
+                    <!-- Courier -->
+                    <td class="data-table__cell">
+                        <span>{{job.courier}}</span>
+                    </td>
+
+                    <!-- Actions -->
+                    <td class="data-table__cell data-table__actions-cell">
+                        <md-button class="md-icon-button"
+                                   ng-click="ctrl.voidPrebookJob(job.id); $event.stopPropagation()"
+                                   aria-label="Delete recurring job">
+                            <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
+                            <md-tooltip md-direction="bottom">Delete Recurring Job</md-tooltip>
+                        </md-button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Empty state -->
+    <div class="data-table__empty" ng-if="(!ctrl.jobList || ctrl.jobList.length === 0) && !ctrl.isLoading">
+        <div class="data-table__empty-default">
+            <md-icon class="data-table__empty-icon" md-font-set="material-symbols-outlined">
+                event_repeat
+            </md-icon>
+            <p class="data-table__empty-message">No recurring jobs available</p>
+            <p class="data-table__empty-submessage">There are currently no recurring jobs that match your criteria.</p>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <table-pagination
+            ng-if="ctrl.totalJobCount > 0"
+            page="ctrl.jobQuery.page"
+            limit="ctrl.jobQuery.limit"
+            total="ctrl.totalJobCount"
+            limit-options="[25, 50, 100, 250]"
+            on-paginate="ctrl.onPaginate(page, limit)"
+            show-page-select="true">
+    </table-pagination>
+</div>

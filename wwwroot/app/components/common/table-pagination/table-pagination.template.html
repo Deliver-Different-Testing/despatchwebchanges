@@ -1,0 +1,59 @@
+<div class="table-pagination">
+    <div class="pagination-controls">
+        <!-- Rows per page -->
+        <span class="rows-label">Rows per page:</span>
+        <md-select ng-model="ctrl.effectiveLimit"
+                   ng-change="ctrl.onLimitChange()"
+                   class="limit-select"
+                   aria-label="Rows per page">
+            <md-option ng-repeat="option in ctrl.effectiveLimitOptions" ng-value="option">
+                {{option}}
+            </md-option>
+        </md-select>
+
+        <!-- Page info -->
+        <span class="page-info">
+            {{ctrl.startItem}}-{{ctrl.endItem}} of {{ctrl.total}}
+        </span>
+
+        <!-- Page select dropdown (optional) -->
+        <md-select ng-if="ctrl.showPageSelect && ctrl.totalPages > 1"
+                   ng-model="ctrl.page"
+                   ng-change="ctrl.onPageSelectChange()"
+                   class="page-select"
+                   aria-label="Select page">
+            <md-option ng-repeat="p in ctrl.pageOptions" ng-value="p">
+                {{p}}
+            </md-option>
+        </md-select>
+
+        <!-- Navigation buttons -->
+        <md-button class="md-icon-button pagination-btn"
+                   ng-click="ctrl.goToFirstPage()"
+                   ng-disabled="!ctrl.canGoBack"
+                   aria-label="First page">
+            <md-icon md-font-set="material-symbols-outlined">first_page</md-icon>
+        </md-button>
+
+        <md-button class="md-icon-button pagination-btn"
+                   ng-click="ctrl.goToPreviousPage()"
+                   ng-disabled="!ctrl.canGoBack"
+                   aria-label="Previous page">
+            <md-icon md-font-set="material-symbols-outlined">chevron_left</md-icon>
+        </md-button>
+
+        <md-button class="md-icon-button pagination-btn"
+                   ng-click="ctrl.goToNextPage()"
+                   ng-disabled="!ctrl.canGoForward"
+                   aria-label="Next page">
+            <md-icon md-font-set="material-symbols-outlined">chevron_right</md-icon>
+        </md-button>
+
+        <md-button class="md-icon-button pagination-btn"
+                   ng-click="ctrl.goToLastPage()"
+                   ng-disabled="!ctrl.canGoForward"
+                   aria-label="Last page">
+            <md-icon md-font-set="material-symbols-outlined">last_page</md-icon>
+        </md-button>
+    </div>
+</div>

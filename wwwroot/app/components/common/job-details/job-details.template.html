@@ -1159,56 +1159,6 @@
                 <div
                         class="info-sections-container "
                         style="background: #f5f5f5">
-                    <!-- Client Information -->
-                    <section class="info-section client-section"
-                             ng-if="ctrl.isFieldVisible('clientInformation') || ctrl.isEditMode">
-                        <md-toolbar class="job-detail-toolbar">
-                            <div class="md-toolbar-tools">
-                                <span class="material-symbols-outlined">account_box</span>
-                                <span class="md-headline-title" flex style="margin-left: 8px">
-                                    Client Information
-                                </span>
-
-                                <div flex></div>
-
-                                <md-button class="md-icon-button"
-                                           ng-if="ctrl.isEditMode"
-                                           ng-click="ctrl.toggleFieldVisibility('clientInformation')">
-                                    <md-icon md-font-set="material-symbols-outlined">
-                                        {{ ctrl.isFieldVisible('clientInformation') ? 'visibility' : 'visibility_off' }}
-                                    </md-icon>
-                                </md-button>
-                            </div>
-                        </md-toolbar>
-
-                        <md-list class="md-dense" flex>
-                            <md-list-item
-                                    ng-if="ctrl.isFieldVisible('client') || ctrl.isEditMode"
-                                    class="md-2-line md-long-text"
-                                    ng-click="ctrl.clientClick($event, ctrl.job)">
-                                <md-icon
-                                        class="md-avatar"
-                                        aria-label="Account number"
-                                        md-font-set="material-symbols-outlined">
-                                    tag
-                                </md-icon>
-                                <div class="md-list-item-text">
-                                    <h3>Account</h3>
-                                    <p>{{ctrl.job.client || '-'}}</p>
-                                </div>
-
-                                <md-icon
-                                        ng-if="ctrl.isEditMode"
-                                        class="md-secondary"
-                                        md-font-set="material-symbols-outlined"
-                                        ng-click="ctrl.toggleFieldVisibility('client')"
-                                        aria-label="client">
-                                    {{ ctrl.isFieldVisible('client') ? 'visibility' : 'visibility_off' }}
-                                </md-icon>
-                            </md-list-item>
-                        </md-list>
-                    </section>
-
                     <!-- Booked By -->
                     <section class="info-section booker-section"
                              ng-if="ctrl.isFieldVisible('bookedBy') || ctrl.isEditMode">

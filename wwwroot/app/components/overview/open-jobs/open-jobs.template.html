@@ -44,81 +44,79 @@
             </div>
 
             <div ng-if="ctrl.isTableView && ctrl.tableJobs.length" class="table-view-container">
-                <md-table-container>
-                    <table md-table>
-                        <thead md-head md-order="ctrl.tableQuery.order" md-on-reorder="ctrl.onSortChange">
-                        <tr md-row>
-                            <th md-column md-order-by="reference">
-                                <span>Job Number</span>
-                            </th>
-                            <th md-column md-order-by="driverName">
-                                <span>Driver</span>
-                            </th>
-                            <th md-column md-order-by="status">
-                                <span>Status</span>
-                            </th>
-                            <th md-column md-order-by="pickup">
-                                <span>Pickup</span>
-                            </th>
-                            <th md-column md-order-by="pickupAddress">
-                                <span>Pickup Location</span>
-                            </th>
-                            <th md-column md-order-by="delivery">
-                                <span>Delivery</span>
-                            </th>
-                            <th md-column md-order-by="deliveryAddress">
-                                <span>Delivery Location</span>
-                            </th>
-                            <th md-column>
-                                <span>Package</span>
-                            </th>
-                            <th md-column md-numeric md-order-by="mileage">
-                                <span>Mileage</span>
-                            </th>
-                        </tr>
-                        </thead>
-                        <tbody md-body>
-                        <tr md-row ng-repeat="job in ctrl.tableJobs | orderBy: ctrl.tableQuery.order | limitTo: ctrl.tableQuery.limit: (ctrl.tableQuery.page - 1) * ctrl.tableQuery.limit">
-                            <td md-cell>{{::job.reference}}</td>
-                            <td md-cell>{{::job.driverName || 'Unassigned'}}</td>
-                            <td md-cell>
-                                <md-chip class="status-chip {{::job.status}}">
-                                    {{::job.status}}
-                                </md-chip>
-                            </td>
-                            <td md-cell>
-                                    {{::job.pickup.timeString }}
-                            </td>
-                            <td md-cell>
-                                <div class="location-name">{{::job.pickup.name}}</div>
-                                <div class="location-address">{{::job.pickup.address}}</div>
-                            </td>
-                            <td md-cell>
-                                    {{::job.delivery.timeString }}
-                            </td>
-                            <td md-cell>
-                                <div class="location-name">{{::job.delivery.name}}</div>
-                                <div class="location-address">{{::job.delivery.address}}</div>
-                            </td>
-                            <td md-cell>
-                                    {{::job.quantity}} {{::job.packageType}}
-                            </td>
-                            <td md-cell md-numeric>
-                                {{::job.mileage}}
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </md-table-container>
+                <div class="data-table data-table--hover">
+                    <div class="data-table__container">
+                        <table class="data-table__table">
+                            <thead class="data-table__head">
+                                <tr class="data-table__header-row">
+                                    <th class="data-table__header-cell"
+                                        ng-repeat="column in ctrl.tableColumns track by column.key"
+                                        ng-class="{
+                                            'sortable': column.sortable,
+                                            'align-right': column.align === 'right'
+                                        }"
+                                        ng-click="column.sortable && ctrl.onSort({column: column.key, direction: ctrl.tableSort.column === column.key && ctrl.tableSort.direction === 'asc' ? 'desc' : 'asc'})">
+                                        <div class="data-table__header-content">
+                                            <span class="data-table__header-label">{{column.label}}</span>
+                                            <md-icon class="data-table__sort-icon"
+                                                     ng-if="column.sortable"
+                                                     ng-class="{'active': ctrl.tableSort.column === column.key}"
+                                                     md-font-set="material-symbols-outlined">
+                                                {{ctrl.tableSort.column === column.key ? (ctrl.tableSort.direction === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'unfold_more'}}
+                                            </md-icon>
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="data-table__body">
+                                <tr class="data-table__row" ng-repeat="job in ctrl.paginatedTableJobs track by job.reference">
+                                    <!-- Job Number -->
+                                    <td class="data-table__cell">{{::job.reference}}</td>
+                                    <!-- Driver -->
+                                    <td class="data-table__cell">{{::job.driverName || 'Unassigned'}}</td>
+                                    <!-- Status -->
+                                    <td class="data-table__cell">
+                                        <md-chip class="status-chip {{::job.status}}">
+                                            {{::job.status}}
+                                        </md-chip>
+                                    </td>
+                                    <!-- Pickup Time -->
+                                    <td class="data-table__cell">{{::job.pickup.timeString}}</td>
+                                    <!-- Pickup Location -->
+                                    <td class="data-table__cell">
+                                        <div class="data-table__cell-content truncate location-cell">
+                                            <div class="location-name">{{::job.pickup.name}}</div>
+                                            <div class="location-address">{{::job.pickup.address}}</div>
+                                        </div>
+                                    </td>
+                                    <!-- Delivery Time -->
+                                    <td class="data-table__cell">{{::job.delivery.timeString}}</td>
+                                    <!-- Delivery Location -->
+                                    <td class="data-table__cell">
+                                        <div class="data-table__cell-content truncate location-cell">
+                                            <div class="location-name">{{::job.delivery.name}}</div>
+                                            <div class="location-address">{{::job.delivery.address}}</div>
+                                        </div>
+                                    </td>
+                                    <!-- Package -->
+                                    <td class="data-table__cell">{{::job.quantity}} {{::job.packageType}}</td>
+                                    <!-- Mileage -->
+                                    <td class="data-table__cell align-right">{{::job.mileage}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
 
-                <md-table-pagination
-                        md-limit="ctrl.tableQuery.limit"
-                        md-limit-options="[5, 10, 15, 20]"
-                        md-page="ctrl.tableQuery.page"
-                        md-total="{{ctrl.tableJobs.length}}"
-                        md-on-paginate="ctrl.onPaginate"
-                        md-page-select>
-                </md-table-pagination>
+                    <!-- Pagination -->
+                    <table-pagination
+                            page="ctrl.tableQuery.page"
+                            limit="ctrl.tableQuery.limit"
+                            total="ctrl.tableJobs.length"
+                            limit-options="[5, 10, 15, 20]"
+                            on-paginate="ctrl.onPaginate(page, limit)"
+                            show-page-select="true">
+                    </table-pagination>
+                </div>
             </div>
 
             <div class="driver-sections" ng-if="!ctrl.isTableView && ctrl.drivers.length">

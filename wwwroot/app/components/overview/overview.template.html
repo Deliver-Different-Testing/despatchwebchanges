@@ -261,103 +261,138 @@
                         </div>
 
                         <!-- Data Table -->
-                        <md-table-container>
-                            <table md-progress="ctrl.promise" md-table ng-model="ctrl.selected">
-                                <thead md-head md-on-reorder="ctrl.onReorder" md-order="ctrl.query.order">
-                                <tr md-row>
-                                    <th md-column></th>
-                                    <th md-column md-order-by="jobName">Job Number</th>
-                                    <th md-column md-order-by="status">Status</th>
-                                    <th md-column md-order-by="completion">Completion</th>
-                                    <th md-column md-order-by="pickup">Pickup</th>
-                                    <th md-column md-order-by="delivery">Delivery</th>
-                                    <th md-column md-order-by="driver">Driver</th>
-                                    <th md-column md-order-by="region">Region</th>
-                                    <th md-column>Actions</th>
-                                    <th md-column></th>
-                                </tr>
-                                </thead>
-                                <tbody md-body>
-                                <!-- Parent row -->
-                                <tr md-row ng-repeat-start="delivery in ctrl.deliveries">
-                                    <td md-cell>
-                                        <md-button class="md-icon-button"
-                                                   ng-click="delivery.expanded = !delivery.expanded"
-                                                   ng-if="delivery.childJobs && delivery.childJobs.length > 0">
-                                            <md-icon md-font-set="material-symbols-outlined">
-                                                {{delivery.expanded ? 'expand_more' : 'chevron_right'}}
-                                            </md-icon>
-                                        </md-button>
-                                    </td>
-                                    <td md-cell>{{delivery.jobName}}</td>
-                                    <td md-cell>
-                                        <md-chip class="status-chip {{delivery.status}}">
-                                            {{delivery.status}}
-                                        </md-chip>
-                                    </td>
-                                    <td md-cell>
-                                        <md-progress-linear
-                                                class="progress-status"
-                                                md-mode="determinate"
-                                                ng-class="ctrl.getProgressClass(delivery.completion)"
-                                                value="{{delivery.completion}}">
-                                        </md-progress-linear>
-                                    </td>
-                                    <td md-cell>{{delivery.pickup}}</td>
-                                    <td md-cell>{{delivery.delivery}}</td>
-                                    <td md-cell>{{delivery.driver}}</td>
-                                    <td md-cell>{{delivery.region}}</td>
-                                    <td md-cell>
-                                        <div layout="row">
-                                            <md-button aria-label="Show on map" class="md-icon-button"
-                                                       ng-click="ctrl.showMap($event, delivery)">
-                                                <md-icon md-font-set="material-symbols-outlined">map</md-icon>
-                                                <md-tooltip md-direction="bottom">Open Map</md-tooltip>
-                                            </md-button>
-                                            <md-button aria-label="View job details" class="md-icon-button"
-                                                       ng-click="ctrl.openJobDetail(delivery)">
-                                                <md-icon md-font-set="material-symbols-outlined">visibility</md-icon>
-                                                <md-tooltip md-direction="bottom">View Job Details</md-tooltip>
-                                            </md-button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <!-- Child rows -->
-                                <tr md-row ng-if="delivery.expanded" ng-repeat="childJob in delivery.childJobs"
-                                    ng-repeat-end>
-                                    <td md-cell></td>
-                                    <td colspan="7" md-cell>
-                                        <div class="child-job-row">
-                                            <span>{{childJob.jobName}}</span>
-                                            <md-chip class="status-chip {{childJob.status}}">
-                                                {{childJob.status}}
-                                            </md-chip>
-                                            <md-progress-linear
-                                                    class="progress-status"
-                                                    md-mode="determinate"
-                                                    ng-class="ctrl.getProgressClass(childJob.completion)"
-                                                    value="{{childJob.completion}}">
-                                            </md-progress-linear>
-                                            <span>{{childJob.pickup}}</span>
-                                            <span>{{childJob.delivery}}</span>
-                                            <span>{{childJob.driver}}</span>
-                                            <span>{{childJob.region}}</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
-                        </md-table-container>
+                        <div class="data-table data-table--hover data-table--sticky-header"
+                             ng-class="{'data-table--loading': ctrl.isLoading}">
 
-                        <!-- Pagination -->
-                        <md-table-pagination
-                                md-limit="ctrl.query.limit"
-                                md-limit-options="[10, 20, 30, 50]"
-                                md-on-paginate="ctrl.onPaginate"
-                                md-page="ctrl.query.page"
-                                md-page-select
-                                md-total="{{ctrl.query.total}}">
-                        </md-table-pagination>
+                            <!-- Loading overlay -->
+                            <div class="data-table__loading-overlay" ng-if="ctrl.isLoading">
+                                <md-progress-circular md-mode="indeterminate" md-diameter="40"></md-progress-circular>
+                            </div>
+
+                            <div class="data-table__container">
+                                <table class="data-table__table">
+                                    <thead class="data-table__head">
+                                        <tr class="data-table__header-row">
+                                            <th class="data-table__header-cell" ng-repeat="column in ctrl.tableColumns track by column.key"
+                                                ng-class="{'sortable': column.sortable}"
+                                                ng-style="{'width': column.width}"
+                                                ng-click="column.sortable && ctrl.onSort({column: column.key, direction: ctrl.tableSort.column === column.key && ctrl.tableSort.direction === 'asc' ? 'desc' : 'asc'})">
+                                                <div class="data-table__header-content">
+                                                    <span class="data-table__header-label">{{column.label}}</span>
+                                                    <md-icon class="data-table__sort-icon"
+                                                             ng-if="column.sortable"
+                                                             ng-class="{'active': ctrl.tableSort.column === column.key}"
+                                                             md-font-set="material-symbols-outlined">
+                                                        {{ctrl.tableSort.column === column.key ? (ctrl.tableSort.direction === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'unfold_more'}}
+                                                    </md-icon>
+                                                </div>
+                                            </th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody class="data-table__body">
+                                        <!-- Parent row -->
+                                        <tr class="data-table__row" ng-repeat-start="delivery in ctrl.deliveries">
+                                            <!-- Expand -->
+                                            <td class="data-table__cell">
+                                                <md-button class="md-icon-button"
+                                                           ng-click="delivery.expanded = !delivery.expanded"
+                                                           ng-if="delivery.childJobs && delivery.childJobs.length > 0">
+                                                    <md-icon md-font-set="material-symbols-outlined">
+                                                        {{delivery.expanded ? 'expand_more' : 'chevron_right'}}
+                                                    </md-icon>
+                                                </md-button>
+                                            </td>
+                                            <!-- Job Number -->
+                                            <td class="data-table__cell">{{delivery.jobName}}</td>
+                                            <!-- Status -->
+                                            <td class="data-table__cell">
+                                                <md-chip class="status-chip {{delivery.status}}">
+                                                    {{delivery.status}}
+                                                </md-chip>
+                                            </td>
+                                            <!-- Completion -->
+                                            <td class="data-table__cell">
+                                                <md-progress-linear
+                                                        class="progress-status"
+                                                        md-mode="determinate"
+                                                        ng-class="ctrl.getProgressClass(delivery.completion)"
+                                                        value="{{delivery.completion}}">
+                                                </md-progress-linear>
+                                            </td>
+                                            <!-- Pickup -->
+                                            <td class="data-table__cell">{{delivery.pickup}}</td>
+                                            <!-- Delivery -->
+                                            <td class="data-table__cell">{{delivery.delivery}}</td>
+                                            <!-- Driver -->
+                                            <td class="data-table__cell">{{delivery.driver}}</td>
+                                            <!-- Region -->
+                                            <td class="data-table__cell">{{delivery.region}}</td>
+                                            <!-- Actions -->
+                                            <td class="data-table__cell data-table__actions-cell">
+                                                <md-button aria-label="Show on map" class="md-icon-button"
+                                                           ng-click="ctrl.showMap($event, delivery)">
+                                                    <md-icon md-font-set="material-symbols-outlined">map</md-icon>
+                                                    <md-tooltip md-direction="bottom">Open Map</md-tooltip>
+                                                </md-button>
+                                                <md-button aria-label="View job details" class="md-icon-button"
+                                                           ng-click="ctrl.openJobDetail(delivery)">
+                                                    <md-icon md-font-set="material-symbols-outlined">visibility</md-icon>
+                                                    <md-tooltip md-direction="bottom">View Job Details</md-tooltip>
+                                                </md-button>
+                                            </td>
+                                        </tr>
+                                        <!-- Child rows -->
+                                        <tr class="data-table__row data-table__row--child"
+                                            ng-if="delivery.expanded"
+                                            ng-repeat="childJob in delivery.childJobs"
+                                            ng-repeat-end>
+                                            <td class="data-table__cell"></td>
+                                            <td class="data-table__cell" colspan="8">
+                                                <div class="child-job-row">
+                                                    <span class="child-job-name">{{childJob.jobName}}</span>
+                                                    <md-chip class="status-chip {{childJob.status}}">
+                                                        {{childJob.status}}
+                                                    </md-chip>
+                                                    <md-progress-linear
+                                                            class="progress-status"
+                                                            md-mode="determinate"
+                                                            ng-class="ctrl.getProgressClass(childJob.completion)"
+                                                            value="{{childJob.completion}}">
+                                                    </md-progress-linear>
+                                                    <span>{{childJob.pickup}}</span>
+                                                    <span>{{childJob.delivery}}</span>
+                                                    <span>{{childJob.driver}}</span>
+                                                    <span>{{childJob.region}}</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Empty state -->
+                            <div class="data-table__empty" ng-if="(!ctrl.deliveries || ctrl.deliveries.length === 0) && !ctrl.isLoading">
+                                <div class="data-table__empty-default">
+                                    <md-icon class="data-table__empty-icon" md-font-set="material-symbols-outlined">
+                                        local_shipping
+                                    </md-icon>
+                                    <p class="data-table__empty-message">No deliveries found</p>
+                                    <p class="data-table__empty-submessage">Try adjusting your filters or date range.</p>
+                                </div>
+                            </div>
+
+                            <!-- Pagination -->
+                            <table-pagination
+                                    ng-if="ctrl.query.total > 0"
+                                    page="ctrl.query.page"
+                                    limit="ctrl.query.limit"
+                                    total="ctrl.query.total"
+                                    limit-options="[10, 20, 30, 50]"
+                                    on-paginate="ctrl.onPaginate(page, limit)"
+                                    show-page-select="true">
+                            </table-pagination>
+                        </div>
                     </div>
                 </md-card>
 
