@@ -1,13 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using DespatchWeb.Enums;
+﻿using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace DespatchWeb.Controllers;
 
@@ -25,6 +26,7 @@ public class CourierController(
                 despatchViewIds = [49];
 
             var result = await courierRepository.GetClearListsAsync(despatchViewIds);
+
             return Json(result);
         }
         catch (Exception e)
@@ -33,6 +35,13 @@ public class CourierController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
+
+    //[HttpGet("debug-sql")]
+    //public  IActionResult GetDebugSql([FromQuery] List<int> despatchViewIds)
+    //{
+    //    var sql =  courierRepository.GetClearListsDebugSql(despatchViewIds);
+    //    return Content(sql, "text/plain");
+    //}
 
     public async Task<IActionResult> ClearListEnvelope(int clearListId)
     {
@@ -77,18 +86,10 @@ public class CourierController(
         }
     }
 
-    public async Task<IActionResult> PotentialCouriers(int jobId)
+    public Task<IActionResult> PotentialCouriers(int jobId)
     {
-        try
-        {
-            var result = await courierRepository.GetPotentialCouriersAsync(jobId);
-            return Json(result);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error getting potential couriers");
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
+        // TODO: Disabled due to performance issues - re-enable once optimized
+        return Task.FromResult<IActionResult>(Json(new List<PotentialCouriersViewModel>()));
     }
 
     public async Task<IActionResult> AllActiveSearch(string searchTerm, bool dgOnly = false)
