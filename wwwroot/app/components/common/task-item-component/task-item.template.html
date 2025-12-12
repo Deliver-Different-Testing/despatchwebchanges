@@ -14,7 +14,7 @@
                  aria-label="Complete task">
     </md-checkbox>
 
-    <div class="md-list-item-text task-content" flex>
+    <div class="md-list-item-text task-content"style="margin-bottom: 10px;" flex>
         <!-- Task title -->
         <h3 class="task-title" ng-class="{'completed-text': ctrl.task.closed}">
             {{::ctrl.task.title}}
@@ -54,7 +54,6 @@
 
             <!-- Job type -->
             <div ng-if="::ctrl.config.showJobType !== false" class="meta-item job-type">
-                <md-icon class="icon" md-font-set="material-symbols-outlined">label</md-icon>
                 <span>{{ctrl.task.eventType.charAt(0).toUpperCase() + ctrl.task.eventType.slice(1)}}</span>
             </div>
         </div>

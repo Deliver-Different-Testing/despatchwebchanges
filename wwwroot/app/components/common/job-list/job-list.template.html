@@ -290,13 +290,21 @@
 
                     <!-- Pickup Column -->
                     <div class="job-cell route-cell pickup-cell">
-                        <div class="address">{{job.pickupAddress && job.pickupAddress.addressLine5}}</div>
+                        <!-- NZ tenant: Just address without suburb -->
+                        <div ng-if="::!ctrl.isUsCustomer" class="address">
+                            {{ctrl.getPickupAddressWithoutSuburb(job)}}
+                        </div>
+                        <!-- US tenant: Original format with city-state -->
+                        <div ng-if="::ctrl.isUsCustomer">
+                            <div class="address">{{ctrl.getPickupAddress(job)}}</div>
+                            <div class="city-state">{{job.pickupAddress && job.pickupAddress.addressLine1}}</div>
+                        </div>
                     </div>
 
                     <!-- Delivery Column -->
                     <div class="job-cell route-cell delivery-cell">
                         <!-- NZ tenant: Just address without suburb -->
-                        <div ng-if="!ctrl.isUsCustomer" class="address">
+                        <div ng-if="::!ctrl.isUsCustomer" class="address">
                             {{ctrl.getDeliveryAddressWithoutSuburb(job)}}
                         </div>
                         <!-- US tenant: Original format with city-state -->
@@ -333,11 +341,11 @@
                             </div>
                             <div class="courier-info">
                                 <!-- NZ tenant: Show courier code and name on one line -->
-                                <div class="courier-name" ng-if="!ctrl.isUsCustomer">{{job.courierData.courier}} -
+                                <div class="courier-name" ng-if="::!ctrl.isUsCustomer">{{job.courierData.courier}} -
                                     {{job.assignedCourier.text}}
                                 </div>
                                 <!-- US tenant: Show courier name and code on separate lines -->
-                                <div ng-if="ctrl.isUsCustomer">
+                                <div ng-if="::ctrl.isUsCustomer">
                                     <div class="courier-name">{{job.assignedCourier.text}}</div>
                                     <div class="courier-id">{{job.courierData.courier}}</div>
                                 </div>

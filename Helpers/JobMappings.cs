@@ -173,7 +173,7 @@ public static class JobMappings
         FollowupTime = j.FollowupTime,
         Void = j.UcjbVoid,
         IsInvoiced = false,
-        Barcode = j.Barcode,
+        Barcode = j.Barcode ?? "-",
 
         // Simple navigation properties
         LoggedInContactName = j.LoggedInContact != null
@@ -404,7 +404,7 @@ public static class JobMappings
         ScheduleName = j.ScheduleName,
         Void = j.Void,
         IsInvoiced = false,
-        Barcode = j.Barcode,
+        Barcode = j.Barcode ?? "-",
 
         LoggedInContactName = j.LoggedInContact != null
             ? j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname
@@ -571,7 +571,7 @@ public static class JobMappings
         BookingSource = j.Source != null
             ? new Suggestion { Id = j.Source.SourceId, Text = j.Source.Name }
             : null,
-        Barcode = j.Barcode,
+        Barcode = j.Barcode ?? "-",
 
         PickupTime = j.SpeedNavigation != null ? j.SpeedNavigation.PickupTime : null,
         DeliveryTime = j.SpeedNavigation != null ? j.SpeedNavigation.DeliveryTime : null,
@@ -795,7 +795,7 @@ public static class JobMappings
                     Text = j.Source.Name
                 }
                 : null,
-            Barcode = j.Barcode,
+            Barcode = j.Barcode ?? "-",
 
             PickupTime = null,
             DeliveryTime = null,
@@ -805,7 +805,7 @@ public static class JobMappings
                 ? new CourierData { CourierId = j.Courier.UccrId, CourierNumber = j.Courier.Code, CourierName = j.Courier.UccrName }
                 : null,
             AssignedCourier = j.Courier != null
-                ? new Suggestion { Id = j.Courier.UccrId, Text = j.Courier.UccrName }
+                ? new Suggestion { Id = j.Courier.UccrId, Text = j.Courier.UccrName ?? "-" }
                 : null,
 
             // Tail Lift

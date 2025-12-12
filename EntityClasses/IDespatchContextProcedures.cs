@@ -22,7 +22,7 @@ namespace DespatchWeb.EntityClasses
         Task<List<DES_stpJob_SplitJobResult>> DES_stpJob_SplitJobAsync(int? jobID, bool? preBookJob, string userName, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_stpJob_SplitJob_ReRateResult>> DES_stpJob_SplitJob_ReRateAsync(int? parentJobID, bool? preBookJob, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_stpJob_SplitJobRestoreResult>> DES_stpJob_SplitJobRestoreAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<List<DES_stpJob_UnSplitResult>> DES_stpJob_UnSplitAsync(int? jobID, OutputParameter<string> message, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<int> DES_stpJob_UnSplitAsync(int? jobID, OutputParameter<string> message, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DESWEB_qdfSwapPODResult>> DESWEB_qdfSwapPODAsync(string ucjbNumber1, string ucjbNumber2, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DESWEB_qryPotentialCouriersResult>> DESWEB_qryPotentialCouriersAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> DESWEB_stpUpdateSplitJobMeetingAddressAsync(int? jobID, int? suburb, string address, decimal? deliveryLatitude, decimal? deliveryLongitude, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
@@ -34,7 +34,7 @@ namespace DespatchWeb.EntityClasses
         Task<List<REP_qryPerformance_Summary_PerformanceSpendResult>> REP_qryPerformance_Summary_PerformanceSpendAsync(int? clientID, DateTime? startDate, DateTime? endDate, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> sp_RateJob2Async(int? intClientID, int? intFromID, int? intToID, int? intSpeed, bool? bolPedal, bool? bolVan, bool? bolReturn, int? intWeight, int? size, bool? includeFuelSurcharge, string ourRef, string clientRefA, string clientRefB, int? quantity, DateTime? booked, OutputParameter<decimal?> curAmount, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<uspReassignJobResult>> uspReassignJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<List<uspReDespatchJobResult>> uspReDespatchJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<int> uspReDespatchJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> uspReDespatchJobByCourierIDAsync(int? courierID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<uspRestoreJobResult>> uspRestoreJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<UTL_stpJob_InsertFromTblBulkJobResult>> UTL_stpJob_InsertFromTblBulkJobAsync(int? bulkJobID, string runName, int? courierID, int? runStatus, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);

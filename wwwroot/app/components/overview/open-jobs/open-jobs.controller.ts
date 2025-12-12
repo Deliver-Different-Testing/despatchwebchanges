@@ -5,6 +5,7 @@ import BaseController from "../../base-controller";
 import dayjs from "dayjs";
 import duration from 'dayjs/plugin/duration';
 import {formatMins} from "../../../functions/formatDates";
+import {IDataTableColumn, IDataTableSort} from "../../common/data-table/data-table.interfaces";
 
 class OpenJobsWidgetController extends BaseController {
     static $inject = [
@@ -30,6 +31,10 @@ class OpenJobsWidgetController extends BaseController {
         page: 1
     };
 
+    // Data table configuration
+    tableColumns: IDataTableColumn[] = [];
+    tableSort: IDataTableSort = { column: 'reference', direction: 'asc' };
+
     constructor(
         private overviewService: OverviewService,
         private overviewFiltersService: OverviewFiltersService,
@@ -49,12 +54,27 @@ class OpenJobsWidgetController extends BaseController {
         // Subscribe to filter changes
         this.overviewFiltersService.onFilterChange(() => this.loadOpenJobs());
 
+        this.initTableColumns();
         this.loadSavedLimit();
         this.loadOpenJobs();
         this.loadCardState();
         this.loadViewModeState();
 
         this.registerInterval(this.loadOpenJobs, 60000);
+    }
+
+    private initTableColumns(): void {
+        this.tableColumns = [
+            { key: 'reference', label: 'Job Number', sortable: true },
+            { key: 'driverName', label: 'Driver', sortable: true },
+            { key: 'status', label: 'Status', sortable: true },
+            { key: 'pickup', label: 'Pickup', sortable: true },
+            { key: 'pickupAddress', label: 'Pickup Location', sortable: true, truncate: true },
+            { key: 'delivery', label: 'Delivery', sortable: true },
+            { key: 'deliveryAddress', label: 'Delivery Location', sortable: true, truncate: true },
+            { key: 'package', label: 'Package', sortable: false },
+            { key: 'mileage', label: 'Mileage', sortable: true, align: 'right' }
+        ];
     }
 
     private loadSavedLimit() {
@@ -245,6 +265,50 @@ class OpenJobsWidgetController extends BaseController {
             this.tableQuery.limit = limit;
             this.saveLimit();
         }
+    }
+
+    onSort(sort: IDataTableSort): void {
+        this.tableSort = sort;
+        this.tableQuery.order = sort.direction === 'desc' ? `-${sort.column}` : sort.column;
+    }
+
+    get sortedTableJobs(): ViewJob[] {
+        if (!this.tableJobs || this.tableJobs.length === 0) return [];
+
+        const column = this.tableSort.column;
+        const direction = this.tableSort.direction === 'asc' ? 1 : -1;
+
+        return [...this.tableJobs].sort((a: any, b: any) => {
+            let valueA = a[column];
+            let valueB = b[column];
+
+            // Handle nested properties for pickup/delivery
+            if (column === 'pickup' || column === 'delivery') {
+                valueA = a[column]?.timeString || '';
+                valueB = b[column]?.timeString || '';
+            } else if (column === 'pickupAddress') {
+                valueA = a.pickup?.address || '';
+                valueB = b.pickup?.address || '';
+            } else if (column === 'deliveryAddress') {
+                valueA = a.delivery?.address || '';
+                valueB = b.delivery?.address || '';
+            }
+
+            if (valueA === valueB) return 0;
+            if (valueA === null || valueA === undefined) return 1;
+            if (valueB === null || valueB === undefined) return -1;
+
+            if (typeof valueA === 'string' && typeof valueB === 'string') {
+                return valueA.localeCompare(valueB) * direction;
+            }
+
+            return (valueA < valueB ? -1 : 1) * direction;
+        });
+    }
+
+    get paginatedTableJobs(): ViewJob[] {
+        const start = (this.tableQuery.page - 1) * this.tableQuery.limit;
+        return this.sortedTableJobs.slice(start, start + this.tableQuery.limit);
     }
 }
 

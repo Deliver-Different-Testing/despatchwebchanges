@@ -5,7 +5,7 @@
                 All Drivers
             </md-radio-button>
             <md-radio-button value="selected" class="md-primary" ng-disabled="!ctrl.currentCourier">
-                Selected Driver
+                {{ctrl.currentCourier ? ctrl.currentCourier.text : 'Selected Driver'}}
             </md-radio-button>
         </md-radio-group>
     </div>

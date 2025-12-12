@@ -268,6 +268,10 @@
     <_ContentIncludedByDefault Remove="wwwroot\app\directives\dayjs-datepicker.directive.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\app\directives\dayjs-timepicker.directive.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\create-job-dialog\interfaces\ICreateJobDialogControllerScope.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\resolution-warning-dialog\resolution-warning-dialog.controller.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\resolution-warning-dialog\resolution-warning-dialog.styles.less" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\resolution-warning-dialog\resolution-warning-dialog.template.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\resolution-warning-dialog\resolution-warning.service.ts" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
@@ -358,8 +362,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dialog.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\resolution-warning-dialog\resolution-warning-dialog.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\resolution-warning-dialog\resolution-warning.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\simple-price-edit-dialog\simple-price-edit-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\simple-price-edit-dialog\simple-price-edit-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.controller.ts" />

@@ -88,7 +88,7 @@
                         <md-menu-item ng-repeat="lo in ctrl.layouts track by $index">
                             <md-button>
                                 <md-icon md-font-set="material-symbols-outlined" ng-click="ctrl.deleteLayout($index)"
-                                         ng-if="::lo.name != 'Default'">
+                                         ng-if="lo.name != 'Default'">
                                     delete
                                 </md-icon>
                                 <md-icon md-font-set="material-symbols-outlined" ng-if="lo.name == 'Default'">
@@ -111,7 +111,7 @@
 
                 <md-divider class="vertical-divider"></md-divider>
 
-                <span class="greeting-message">{{::ctrl.greeting}}</span>
+                <span class="greeting-message">{{ctrl.greeting}}</span>
 
                 <md-button aria-label="Menu" class="md-icon-button" ng-mouseover="ctrl.toggleSidenav()">
                     <md-icon md-font-set="material-symbols-outlined">menu</md-icon>
@@ -140,13 +140,13 @@
                         <md-toolbar class="widget-toolbar">
                             <div class="md-toolbar-tools">
                                 <!--Icon-->
-                                <span class="material-symbols-outlined">{{::ctrl.boxes[box.name].icon}}</span>
+                                <span class="material-symbols-outlined">{{ctrl.boxes[box.name].icon}}</span>
 
                                 <span class="md-card-title">
-                                {{::ctrl.boxes[box.name].title}}
-                                <span ng-if="::box.name == 'jobDetail'">{{ctrl.currentSelection}}</span>
-                                <span ng-if="::box.name == 'currentWork' || box.name == 'map'">{{ctrl.currentWorkSelection}}</span>
-                                <span ng-if="::box.name == 'supports'">{{ctrl.getActiveSupportFilterNames()}}</span>
+                                {{ctrl.boxes[box.name].title}}
+                                <span ng-if="box.name == 'detail'">{{ctrl.currentSelection}}</span>
+                                <span ng-if="box.name == 'currentWork' || box.name == 'map'">{{ctrl.currentWorkSelection}}</span>
+                                <span ng-if="box.name == 'supports'">{{ctrl.getActiveSupportFilterNames()}}</span>
                             </span>
 
                                 <!-- Job List View Tabs -->
@@ -189,7 +189,7 @@
                                             <md-button
                                                     class="md-fab md-raised md-mini"
                                                     ng-click="ctrl.addStopToJob($event, ctrl.currentJob)"
-                                                    ng-if="::ctrl.isDeliveryJob(ctrl.currentJob)">
+                                                    ng-if="ctrl.isDeliveryJob(ctrl.currentJob)">
                                                 <md-tooltip md-direction="bottom">Add Stop</md-tooltip>
                                                 <md-icon md-font-set="material-symbols-outlined">
                                                     pin_drop
@@ -254,7 +254,7 @@
                                     </md-fab-speed-dial>
                                 </div>
 
-                                <div class="row-overflow" ng-if="::box.name === 'currentWork'">
+                                <div class="row-overflow" ng-if="box.name === 'currentWork'">
                                     <div class="courier-match-search">
                                         <md-input-container class="md-icon-float md-block">
                                             <md-icon md-font-set="material-symbols-outlined">delivery_truck_speed</md-icon>
@@ -277,7 +277,7 @@
                                     </div>
                                 </div>
 
-                                <div class="row-overflow" ng-if="::box.name === 'driverLocations'">
+                                <div class="row-overflow" ng-if="box.name === 'driverLocations'">
                                     <md-button class="md-icon-button"
                                                ng-click="ctrl.clearDriverLocationFilter()"
                                                ng-if="ctrl.clearListId">
@@ -311,7 +311,7 @@
                                     </md-menu>
                                 </div>
 
-                                <div ng-if="::box.name == 'supports'">
+                                <div ng-if="box.name == 'supports'">
                                     <md-menu>
                                         <md-button aria-label="open staff support filter menu"
                                                    class="md-icon-button"
@@ -397,8 +397,8 @@
                                     </md-menu>
                                 </div>
 
-                                <md-button class="md-icon-button" ng-click="ctrl.getData()"
-                                           ng-if="::ctrl.boxes[box.name].showRefresh"
+                                <md-button class="md-icon-button" ng-click="ctrl.refreshBox(box.name)"
+                                           ng-if="ctrl.boxes[box.name].showRefresh"
                                            aria-label="Refresh">
                                     <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
                                     <md-tooltip md-direction="bottom">Refresh</md-tooltip>
@@ -412,7 +412,7 @@
                             </div>
                         </md-toolbar>
 
-                        <div class="box-content" ng-include="::ctrl.boxes[box.name].templateUrl">
+                        <div class="box-content" ng-include="ctrl.boxes[box.name].templateUrl">
                         </div>
                     </div>
                 </div>

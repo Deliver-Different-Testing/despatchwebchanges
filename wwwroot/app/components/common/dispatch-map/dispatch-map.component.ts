@@ -710,8 +710,8 @@ class DispatchMapController extends BaseController {
         });
 
         const displayText = courier.overDueJobs > 0
-            ? `${courier.code}-${courier.vehicleType}${courier.totalJobs}/${courier.overDueJobs}`
-            : `${courier.code}-${courier.vehicleType}${courier.totalJobs}`;
+            ? `${courier.code}-${courier.courierName}${courier.totalJobs}/${courier.overDueJobs}`
+            : `${courier.code}-${courier.courierName}${courier.totalJobs}`;
 
         const iconFile = {
             url: '/images/flagpole.png',

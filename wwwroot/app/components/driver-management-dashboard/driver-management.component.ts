@@ -56,6 +56,7 @@ class DriverManagementController extends BaseController {
 
     // Compliance
     compliancePromise?: Promise<ICourierCompliancePaginated>;
+    complianceLoading: boolean = false;
     complianceQuery: IPaginatedRequest = {
         orderBy: "code",
         pageSize: 10,
@@ -78,6 +79,7 @@ class DriverManagementController extends BaseController {
 
     // After Hours
     afterHoursSchedulePromise?: Promise<ICourierAfterHoursPaginated>;
+    afterHoursLoading: boolean = false;
     afterHoursQuery: IPaginatedRequest = {
         orderBy: "name",
         pageSize: 10,
@@ -97,6 +99,7 @@ class DriverManagementController extends BaseController {
 
     // Today Active Drivers
     todayActiveDriversPromise?: Promise<ITodayActiveDriverPaginated>;
+    todayActiveDriversLoading: boolean = false;
     todayActiveDriversList: ITodayActiveDrivers[] = [];
     todayActiveDriversQuery: IPaginatedRequest = {
         orderBy: "name",
@@ -119,6 +122,7 @@ class DriverManagementController extends BaseController {
 
     // Daily Driver Earnings
     driverEarningsPromise?: Promise<ICourierDailyEarningsPaginated>;
+    driverEarningsLoading: boolean = false;
     driverEarningsList: ICourierDailyEarnings[] = [];
     driverEarningsQuery: IPaginatedRequest = {
         orderBy: "name",
@@ -136,6 +140,7 @@ class DriverManagementController extends BaseController {
 
     // Email Management
     driverEmailPromise?: Promise<IPaginatedResponse<IDriverEmail>>;
+    driverEmailLoading: boolean = false;
     driverEmailList: IDriverEmail[] = [];
     driverEmailQuery: IPaginatedRequest = {
         orderBy: "code",
@@ -356,6 +361,7 @@ class DriverManagementController extends BaseController {
     // Compliance Methods
     async loadComplianceData(): Promise<void> {
         try {
+            this.complianceLoading = true;
             this.compliancePromise = this.driverManagementService.getCourierComplianceList(
                 this.complianceQuery,
                 this.complianceFilters
@@ -373,6 +379,9 @@ class DriverManagementController extends BaseController {
         } catch (error) {
             console.error('Error loading compliance data:', error);
             this.toastrService.showErrorToast('Failed to load compliance data');
+        } finally {
+            this.complianceLoading = false;
+            this.applyScope();
         }
     }
 
@@ -455,6 +464,7 @@ class DriverManagementController extends BaseController {
     // After Hours Methods
     async loadAfterHoursSchedule(): Promise<void> {
         try {
+            this.afterHoursLoading = true;
             this.afterHoursSchedulePromise = this.driverManagementService.getAfterHoursCourierScheduleList(
                 this.afterHoursQuery,
                 this.afterHoursFilters
@@ -471,6 +481,9 @@ class DriverManagementController extends BaseController {
         } catch (error) {
             console.error('Error loading after hours schedule:', error);
             this.toastrService.showErrorToast('Failed to load after hours schedule');
+        } finally {
+            this.afterHoursLoading = false;
+            this.applyScope();
         }
     }
 
@@ -493,14 +506,18 @@ class DriverManagementController extends BaseController {
 // Email Management Methods
     async loadDriverEmails(): Promise<void> {
         try {
+            this.driverEmailLoading = true;
             this.driverEmailPromise = this.driverManagementService.getDriverEmails(this.driverEmailQuery);
 
             const driverEmailResponse = await this.driverEmailPromise;
             this.driverEmailList = driverEmailResponse?.items ?? [];
             this.totalDriverEmails = driverEmailResponse?.total ?? 0
         } catch (error) {
-            console.error('Error loading today active drivers:', error);
-            this.toastrService.showErrorToast('Failed to load today active drivers');
+            console.error('Error loading driver emails:', error);
+            this.toastrService.showErrorToast('Failed to load driver emails');
+        } finally {
+            this.driverEmailLoading = false;
+            this.applyScope();
         }
     }
 
@@ -589,6 +606,7 @@ class DriverManagementController extends BaseController {
     /* Today Active Drivers */
     async loadTodayActiveDrivers(): Promise<void> {
         try {
+            this.todayActiveDriversLoading = true;
             this.todayActiveDriversPromise = this.driverManagementService.getTodayActiveDriversAsync(
                 this.todayActiveDriversQuery,
                 this.todayActiveDriversFilters
@@ -606,6 +624,9 @@ class DriverManagementController extends BaseController {
         } catch (error) {
             console.error('Error loading today active drivers:', error);
             this.toastrService.showErrorToast('Failed to load today active drivers');
+        } finally {
+            this.todayActiveDriversLoading = false;
+            this.applyScope();
         }
     }
 
@@ -640,6 +661,7 @@ class DriverManagementController extends BaseController {
     /* Daily Driver Earnings */
     async loadDriverTodayEarnings(): Promise<void> {
         try {
+            this.driverEarningsLoading = true;
             this.driverEarningsPromise = this.driverManagementService.getDriverDailyEarnings(this.driverEarningsQuery);
 
             const earningsResponse = await this.driverEarningsPromise;
@@ -654,6 +676,9 @@ class DriverManagementController extends BaseController {
         } catch (error) {
             console.error('Error loading driver earnings:', error);
             this.toastrService.showErrorToast('Failed to load driver earnings');
+        } finally {
+            this.driverEarningsLoading = false;
+            this.applyScope();
         }
     }
 
@@ -760,6 +785,31 @@ class DriverManagementController extends BaseController {
     
     displayDaysOnAfterHoursTable(days: string[]): string {
         return days.join(', ');
+    }
+
+    // Pagination handlers
+    onActiveDriversPaginate(page: number, pageSize: number): void {
+        this.todayActiveDriversQuery.page = page;
+        this.todayActiveDriversQuery.pageSize = pageSize;
+        this.loadTodayActiveDrivers();
+    }
+
+    onCompliancePaginate(page: number, pageSize: number): void {
+        this.complianceQuery.page = page;
+        this.complianceQuery.pageSize = pageSize;
+        this.loadComplianceData();
+    }
+
+    onAfterHoursPaginate(page: number, pageSize: number): void {
+        this.afterHoursQuery.page = page;
+        this.afterHoursQuery.pageSize = pageSize;
+        this.loadAfterHoursSchedule();
+    }
+
+    onDriverEarningsPaginate(page: number, pageSize: number): void {
+        this.driverEarningsQuery.page = page;
+        this.driverEarningsQuery.pageSize = pageSize;
+        this.loadDriverTodayEarnings();
     }
 }
 

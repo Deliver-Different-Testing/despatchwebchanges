@@ -6,7 +6,7 @@
 
 <div class="job-detail-page"
      ng-if="ctrl.job"
-     ng-class="{'dense-view': ctrl.isDenseView(), 'ultradense-view': ctrl.isUltraDenseView()}">
+     ng-class="{'dense-view': ctrl.isDenseView()}">
     <md-card
             class="warning-section "
             ng-if="ctrl.job.isArchived || ctrl.job.preBook || ctrl.job.isBulkJob">
@@ -61,7 +61,7 @@
                         style="margin-right: 5px">
                     browse
                 </md-icon>
-                {{ ctrl.viewDensity }}
+                {{ ctrl.getViewDensityLabel() }}
             </md-button>
 
             <!-- Edit Mode Toggle -->
@@ -90,7 +90,7 @@
                     ng-if="::!ctrl.job.preBook"
                     class="status-button {{ctrl.job.statusName | lowercase | replace:' ':'-'}}"
                     ng-click="ctrl.statusClick($event, ctrl.job)">
-                <md-icon class="status-icon" md-font-set="material-symbols-outlined">
+                <md-icon class="status-icon" style="margin-top: 6px;" md-font-set="material-symbols-outlined">
                     package_2
                 </md-icon>
                 {{ctrl.job.statusName}}
@@ -142,7 +142,7 @@
         </div>
 
         <div class="metrics-grid">
-            <div class="metric-card" md-ink-ripple>
+            <div class="metric-card" md-ink-ripple ng-click="ctrl.showItemNotEditableToaster('Dispatch Time')">
                 <div class="metric-label">Dispatch</div>
                 <div class="metric-value">
                     <span ng-if="ctrl.job.dispatchTime">
@@ -269,13 +269,6 @@
                         </div>
                     </div>
 
-                    <!-- Route Connection -->
-                    <div class="route-divider" hide-xs>
-                        <div class="route-icon">
-                            <span class="material-symbols-outlined">arrow_forward</span>
-                        </div>
-                    </div>
-
                     <!-- Delivery Location -->
                     <div class="address-block delivery-block"
                          flex="50"
@@ -377,8 +370,7 @@
                 font-size: 14px;
                 font-weight: 500;
               "
-                        >Total {{::ctrl.isUsCustomer ? 'Miles' : 'KMs'}}:
-              {{ctrl.job.distance || '0'}} {{::ctrl.isUsCustomer ? 'miles' : 'km'}}</span>
+                        >Total {{::ctrl.isUsCustomer ? 'Miles' : 'KMs'}}: {{ctrl.job.distance || '0'}} {{::ctrl.isUsCustomer ? 'miles' : 'km'}}</span>
                     </div>
                 </div>
 
@@ -678,7 +670,8 @@
                             </md-list-item>
                             
                             <md-list-item
-                                    class="md-2-line md-long-text">
+                                    class="md-2-line md-long-text"
+                                    ng-click="ctrl.showItemNotEditableToaster('Barcode')">
                                 <md-icon
                                         class="md-avatar"
                                         aria-label="barcode"
@@ -687,7 +680,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Barcode</h3>
-                                    <p>{{ctrl.job.barcode || ''}}</p>
+                                    <p>{{ctrl.job.barcode}}</p>
                                 </div>
                             </md-list-item>
                         </md-list>
@@ -822,7 +815,7 @@
                                     </md-icon>
                                     <div class="md-list-item-text">
                                         <h3>Courier</h3>
-                                        <p>{{ctrl.job.courierData.courierName}}</p>
+                                        <p>{{ctrl.job.assignedCourier.text || '-'}}</p>
                                     </div>
 
                                     <md-icon class="md-secondary"
@@ -835,7 +828,8 @@
                                 </md-list-item>
 
                                 <md-list-item class="md-2-line md-long-text"
-                                              ng-if="ctrl.isFieldVisible('courierMobile') || ctrl.isEditMode">
+                                              ng-if="ctrl.isFieldVisible('courierMobile') || ctrl.isEditMode"
+                                              ng-click="ctrl.showItemNotEditableToaster('Courier Mobile')">
                                     <md-icon
                                             class="md-avatar"
                                             aria-label="courier phone"
@@ -857,7 +851,8 @@
                                 </md-list-item>
 
                                 <md-list-item class="md-2-line md-long-text"
-                                              ng-if="ctrl.isFieldVisible('scheduleName') || ctrl.isEditMode">
+                                              ng-if="ctrl.isFieldVisible('scheduleName') || ctrl.isEditMode"
+                                              ng-click="ctrl.showItemNotEditableToaster('Schedule Name')">
                                     <md-icon
                                             class="md-avatar"
                                             aria-label="schedule name"
@@ -1164,56 +1159,6 @@
                 <div
                         class="info-sections-container "
                         style="background: #f5f5f5">
-                    <!-- Client Information -->
-                    <section class="info-section client-section"
-                             ng-if="ctrl.isFieldVisible('clientInformation') || ctrl.isEditMode">
-                        <md-toolbar class="job-detail-toolbar">
-                            <div class="md-toolbar-tools">
-                                <span class="material-symbols-outlined">account_box</span>
-                                <span class="md-headline-title" flex style="margin-left: 8px">
-                                    Client Information
-                                </span>
-
-                                <div flex></div>
-
-                                <md-button class="md-icon-button"
-                                           ng-if="ctrl.isEditMode"
-                                           ng-click="ctrl.toggleFieldVisibility('clientInformation')">
-                                    <md-icon md-font-set="material-symbols-outlined">
-                                        {{ ctrl.isFieldVisible('clientInformation') ? 'visibility' : 'visibility_off' }}
-                                    </md-icon>
-                                </md-button>
-                            </div>
-                        </md-toolbar>
-
-                        <md-list class="md-dense" flex>
-                            <md-list-item
-                                    ng-if="ctrl.isFieldVisible('client') || ctrl.isEditMode"
-                                    class="md-2-line md-long-text"
-                                    ng-click="ctrl.clientClick($event, ctrl.job)">
-                                <md-icon
-                                        class="md-avatar"
-                                        aria-label="Account number"
-                                        md-font-set="material-symbols-outlined">
-                                    tag
-                                </md-icon>
-                                <div class="md-list-item-text">
-                                    <h3>Account</h3>
-                                    <p>{{ctrl.job.client || '-'}}</p>
-                                </div>
-
-                                <md-icon
-                                        ng-if="ctrl.isEditMode"
-                                        class="md-secondary"
-                                        md-font-set="material-symbols-outlined"
-                                        ng-click="ctrl.toggleFieldVisibility('client')"
-                                        aria-label="client">
-                                    {{ ctrl.isFieldVisible('client') ? 'visibility' : 'visibility_off' }}
-                                </md-icon>
-                            </md-list-item>
-                        </md-list>
-                    </section>
-
                     <!-- Booked By -->
                     <section class="info-section booker-section"
                              ng-if="ctrl.isFieldVisible('bookedBy') || ctrl.isEditMode">
@@ -1237,7 +1182,8 @@
                         <md-list class="md-dense" flex>
                             <md-list-item
                                     ng-if="ctrl.isFieldVisible('loggedInContactName') || ctrl.isEditMode"
-                                    class="md-2-line md-long-text">
+                                    class="md-2-line md-long-text"
+                                    ng-click="ctrl.showItemNotEditableToaster('Logged-in Contact')">
                                 <md-icon
                                         class="md-avatar"
                                         aria-label="logged in contact"
@@ -1260,7 +1206,8 @@
 
                             <md-list-item
                                     ng-if="ctrl.isFieldVisible('bookingSource') || ctrl.isEditMode"
-                                    class="md-2-line md-long-text">
+                                    class="md-2-line md-long-text"
+                                    ng-click="ctrl.showItemNotEditableToaster('Source')">
                                 <md-icon
                                         class="md-avatar"
                                         aria-label="booking source"
@@ -1420,6 +1367,7 @@
                                     class="md-2-line md-long-text"
                                     ng-click="!ctrl.job.locked && ctrl.jobTypeClick($event, ctrl.job)">
                                 <md-icon
+                                        class="md-avatar"
                                         aria-label="Job type"
                                         md-font-set="material-symbols-outlined">
                                     category
@@ -1794,7 +1742,7 @@
 
                 <div class="read-details" ng-if="ctrl.job.readTrackerInfo.hasBeenRead">
                     <span>Read by: <strong>{{ctrl.job.readTrackerInfo.readBy || 'Unknown'}}</strong></span>
-                    <span class="read-date">on {{ctrl.readTrackerInfo._readDateStr}} {{::ctrl.timeZoneShort}}</span>
+                    <span class="read-date">on {{ctrl.job.readTrackerInfo._readDateStr}} {{::ctrl.timeZoneShort}}</span>
                 </div>
 
                 <div

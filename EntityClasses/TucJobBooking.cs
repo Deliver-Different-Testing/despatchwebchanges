@@ -372,6 +372,8 @@ public partial class TucJobBooking
 
     public string CustomJobName { get; set; }
 
+    public string Connote { get; set; }
+
     public virtual TucJobBooking BookingParent { get; set; }
 
     public virtual TucCourier Courier { get; set; }

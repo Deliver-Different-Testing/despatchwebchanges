@@ -258,6 +258,10 @@ class HomeController extends BaseController {
             await this.markJobReadStatus(data.jobId, data.isRead);
         });
 
+        this.watchEvent('angular-resizable.resizeEnd', () => {
+            this.saveCurrentLayout();
+        });
+
         this.truckMode = "On";
 
         this.queryParams = {
@@ -1618,6 +1622,47 @@ class HomeController extends BaseController {
         } catch (error: any) {
             console.error("Error in getData:", error);
             this.toastrService.showErrorToast("An error occurred while loading data. Please refresh the page.");
+        }
+    }
+
+    async refreshBox(boxName: string): Promise<void> {
+        console.log("'Refresh box called. ", boxName);
+        
+        switch (boxName) {
+            case DispatchBoxes.JobDetail:
+                await this.refreshJobDetail();
+                break;
+            case DispatchBoxes.JobsList:
+            case DispatchBoxes.Map:
+            default:
+                await this.getData();
+                break;
+        }
+    }
+
+    async refreshJobDetail(): Promise<void> {
+        if (!this.currentJobId) {
+            console.log("No job selected to refresh");
+            return;
+        }
+
+        console.log('refreshing job detail!');
+
+        try {
+            const jobId = this.currentJobId;
+
+            // Trigger change detection by clearing and restoring the jobId
+            this.currentJobId = undefined;
+            this.applyScope();
+
+            // Use $timeout to ensure digest cycle completes before restoring jobId
+            this.$timeoutService?.(() => {
+                this.currentJobId = jobId;
+                this.applyScope();
+            }, 50);
+        } catch (error: any) {
+            console.error("Error refreshing job detail:", error);
+            this.toastrService.showErrorToast("Failed to refresh job details");
         }
     }
 

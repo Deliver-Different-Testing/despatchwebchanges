@@ -5140,37 +5140,19 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
 
-            entity.HasIndex(e => new { e.UcjbCourierId, e.UcjbDate }, "IX_TucJob_ActiveJobs_Filtered")
-                .HasFilter("([UcjbVoid]=(0) AND [UcjbJobDone]=(0))")
-                .HasFillFactor(90);
-
             entity.HasIndex(e => e.ContactId, "IX_TucJob_ContactID");
 
             entity.HasIndex(e => new { e.UcjbCourierId, e.UcjbVoid, e.UcjbJobDone, e.UcjbDate }, "IX_TucJob_CourierStatus_Date").HasFillFactor(90);
 
             entity.HasIndex(e => e.UcjbSpeed, "IX_TucJob_Speed");
 
-            entity.HasIndex(e => new { e.ParentId, e.UcjbCourierId }, "IX_TucJobs_ChildJobAssignment")
-                .HasFilter("([ParentId] IS NOT NULL)")
-                .HasFillFactor(90);
-
             entity.HasIndex(e => e.UcjbCourierId, "IX_TucJobs_CourierId");
 
             entity.HasIndex(e => new { e.UcjbDate, e.UcjbTime }, "IX_TucJobs_Date_Time");
 
-            entity.HasIndex(e => e.UcjbId, "IX_TucJobs_DeliveryCoordinates")
-                .HasFilter("([DeliveryLatitude] IS NOT NULL AND [DeliveryLongitude] IS NOT NULL)")
-                .HasFillFactor(90);
-
             entity.HasIndex(e => e.UcjbId, "IX_TucJobs_Lookup");
 
             entity.HasIndex(e => e.UcjbId, "IX_TucJobs_NationwideFlightQueries").HasFillFactor(90);
-
-            entity.HasIndex(e => new { e.ParentId, e.UcjbId }, "IX_TucJobs_ParentRelationship").HasFilter("([ParentId] IS NOT NULL)");
-
-            entity.HasIndex(e => e.UcjbId, "IX_TucJobs_PickupCoordinates")
-                .HasFilter("([PickUpLatitude] IS NOT NULL AND [PickUpLongitude] IS NOT NULL)")
-                .HasFillFactor(90);
 
             entity.HasIndex(e => new { e.UcjbStatus, e.UcjbDate }, "IX_TucJobs_Status_Date");
 
@@ -6110,6 +6092,9 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.BulkParentId).HasColumnName("BulkParentID");
             entity.Property(e => e.ClientItemIds).HasMaxLength(100);
             entity.Property(e => e.ClientNotes).HasMaxLength(500);
+            entity.Property(e => e.Connote)
+                .HasMaxLength(255)
+                .HasColumnName("connote");
             entity.Property(e => e.ContactId).HasColumnName("ContactID");
             entity.Property(e => e.CourierFuel).HasColumnType("money");
             entity.Property(e => e.CourierId).HasColumnName("CourierID");
