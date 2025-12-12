@@ -258,6 +258,10 @@ class HomeController extends BaseController {
             await this.markJobReadStatus(data.jobId, data.isRead);
         });
 
+        this.watchEvent('angular-resizable.resizeEnd', () => {
+            this.saveCurrentLayout();
+        });
+
         this.truckMode = "On";
 
         this.queryParams = {

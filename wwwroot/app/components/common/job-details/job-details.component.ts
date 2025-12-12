@@ -321,6 +321,7 @@ class JobDetailController extends BaseController {
             this.toastrService.showErrorToast("Failed to load job details");
         } finally {
             this.isLoading = false;
+            this.applyScope();
         }
     }
 

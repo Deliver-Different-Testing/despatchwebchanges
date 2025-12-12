@@ -433,6 +433,26 @@ class JobsListController extends BaseController {
         // For non-structured addresses, parse the 'toAddress' field
         const toLines = (job.toAddress || '').split(',').map(line => line.trim());
         return toLines.join(', ');
+    }  
+    
+    getPickupAddressWithoutSuburb(job: IDispatchJob): string {
+        // For NZ tenants, exclude addressLine5 (suburb) as it's displayed separately
+        if (job.pickupAddress) {
+            const addr = job.pickupAddress;
+            const addressParts = [
+                addr.addressLine5,
+                addr.addressLine2,
+                addr.addressLine3,
+                addr.addressLine4,
+                addr.addressLine8
+            ].filter(line => line && line.trim());
+
+            return addressParts.join(', ');
+        }
+
+        // For non-structured addresses, parse the 'fromAddress' field
+        const fromLines = (job.from || '').split(',').map(line => line.trim());
+        return fromLines.join(', ');
     }
 
     getCourierInitials(job: IDispatchJob): string {
