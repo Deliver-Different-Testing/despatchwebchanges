@@ -328,6 +328,12 @@ public class RecurringJobRepository(
                     var customName = value[..Math.Min(value.Length, 100)];
                     await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.BookingParentId == jobId)
                         .ExecuteUpdateAsync(s => s.SetProperty(j => j.CustomJobName, customName));
+                    return;    
+                
+                case JobProperty.ConNote:
+                    var conNote = value[..Math.Min(value.Length, 100)];
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.Connote, conNote));
                     return;
 
                 // Contact fields: update parent + first/last child

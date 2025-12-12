@@ -120,7 +120,9 @@ public class NoteController(
             if (existingNote == null)
                 return NotFound($"Note with ID {noteViewModel.NoteId} not found.");
 
-            if (noteViewModel.BulkJobId.HasValue)
+            if (noteViewModel.JobBookingId.HasValue)
+                await recurringJobRepository.SaveRecurringJobNote(noteViewModel);
+            else if (noteViewModel.BulkJobId.HasValue)
                 await jobRepository.SaveBulkNoteAsync(noteViewModel);
             else
                 await jobRepository.SaveNoteAsync(noteViewModel);
