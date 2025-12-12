@@ -1,0 +1,130 @@
+<div class="data-table"
+     ng-class="{
+        'data-table--bordered': ctrl.config.bordered,
+        'data-table--dense': ctrl.config.dense,
+        'data-table--hover': ctrl.config.hoverEffect,
+        'data-table--sticky-header': ctrl.config.stickyHeader,
+        'data-table--loading': ctrl.isLoading,
+        'data-table--selectable': ctrl.config.selectable
+     }">
+
+    <!-- Loading overlay -->
+    <div class="data-table__loading-overlay" ng-if="ctrl.isLoading">
+        <md-progress-circular md-mode="indeterminate" md-diameter="40"></md-progress-circular>
+    </div>
+
+    <!-- Table container -->
+    <div class="data-table__container">
+        <table class="data-table__table">
+            <!-- Header -->
+            <thead class="data-table__head">
+                <tr class="data-table__header-row">
+                    <!-- Selection checkbox column -->
+                    <th class="data-table__header-cell data-table__checkbox-cell"
+                        ng-if="ctrl.config.selectable && ctrl.config.multiSelect">
+                        <md-checkbox class="data-table__checkbox"
+                                     ng-checked="ctrl.allSelected"
+                                     ng-indeterminate="ctrl.someSelected"
+                                     ng-click="ctrl.toggleAllSelection($event)"
+                                     aria-label="Select all rows">
+                        </md-checkbox>
+                    </th>
+
+                    <!-- Selection placeholder for single select -->
+                    <th class="data-table__header-cell data-table__checkbox-cell"
+                        ng-if="ctrl.config.selectable && !ctrl.config.multiSelect">
+                    </th>
+
+                    <!-- Column headers -->
+                    <th class="data-table__header-cell"
+                        ng-repeat="column in ctrl.visibleColumns track by column.key"
+                        ng-class="ctrl.getColumnClasses(column)"
+                        ng-style="ctrl.getColumnStyle(column)"
+                        ng-click="ctrl.handleHeaderClick(column, $event)">
+                        <div class="data-table__header-content">
+                            <span class="data-table__header-label">{{column.label}}</span>
+                            <md-icon class="data-table__sort-icon"
+                                     ng-if="column.sortable"
+                                     ng-class="{'active': ctrl.isSortedColumn(column)}"
+                                     md-font-set="material-symbols-outlined">
+                                {{ctrl.getSortIcon(column)}}
+                            </md-icon>
+                        </div>
+                    </th>
+
+                    <!-- Actions column header (transcluded) -->
+                    <th class="data-table__header-cell data-table__actions-cell"
+                        ng-if="ctrl.hasTranscludedContent"
+                        ng-transclude="headerActions">
+                    </th>
+                </tr>
+            </thead>
+
+            <!-- Body -->
+            <tbody class="data-table__body">
+                <tr class="data-table__row"
+                    ng-repeat="row in ctrl.data track by ctrl.trackByFn($index, row)"
+                    ng-class="ctrl.getRowClasses(row, $index)"
+                    ng-click="ctrl.handleRowClick(row, $index, $event)"
+                    ng-dblclick="ctrl.handleRowDoubleClick(row, $index, $event)"
+                    ng-contextmenu="ctrl.handleRowContext(row, $index, $event)">
+
+                    <!-- Selection checkbox -->
+                    <td class="data-table__cell data-table__checkbox-cell"
+                        ng-if="ctrl.config.selectable">
+                        <md-checkbox class="data-table__checkbox"
+                                     ng-checked="ctrl.isRowSelected(row)"
+                                     ng-click="ctrl.toggleRowSelection(row, $event)"
+                                     aria-label="Select row">
+                        </md-checkbox>
+                    </td>
+
+                    <!-- Data cells -->
+                    <td class="data-table__cell"
+                        ng-repeat="column in ctrl.visibleColumns track by column.key"
+                        ng-class="ctrl.getColumnClasses(column)"
+                        ng-style="ctrl.getColumnStyle(column)">
+                        <div class="data-table__cell-content"
+                             ng-class="{'truncate': column.truncate}">
+                            <!-- Default cell content -->
+                            <span ng-if="!column.templateId">
+                                {{ctrl.getCellValue(row, column)}}
+                            </span>
+                        </div>
+                    </td>
+
+                    <!-- Row actions (transcluded) -->
+                    <td class="data-table__cell data-table__actions-cell"
+                        ng-if="ctrl.hasTranscludedContent"
+                        ng-transclude="rowActions">
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Empty state -->
+    <div class="data-table__empty" ng-if="ctrl.isEmpty && !ctrl.isLoading">
+        <div ng-transclude="emptyState">
+            <!-- Default empty state -->
+            <div class="data-table__empty-default">
+                <md-icon class="data-table__empty-icon"
+                         md-font-set="material-symbols-outlined">
+                    {{ctrl.config.emptyIcon}}
+                </md-icon>
+                <p class="data-table__empty-message">{{ctrl.config.emptyMessage}}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <table-pagination
+            ng-if="ctrl.showPagination && ctrl.total > 0"
+            page="ctrl.page"
+            page-size="ctrl.pageSize"
+            total="ctrl.total"
+            limit-options="ctrl.pageSizeOptions || [10, 25, 50, 100]"
+            on-paginate="ctrl.handlePaginate(page, pageSize)"
+            show-page-select="true">
+    </table-pagination>
+</div>

@@ -25,6 +25,7 @@
 // Main Container
 .driver-management-container {
   height: 100vh;
+  overflow-x: hidden;
   overflow-y: auto;
   margin-top: -20px;
   background-color: @main-background-color;
@@ -35,9 +36,25 @@
     background: @main-background-color;
     border-bottom: 1px solid @standard-grey;
     height: calc(100% - 64px);
+    overflow: hidden;
 
     md-tabs-wrapper {
       background: white;
+    }
+
+    md-tabs-content-wrapper {
+      overflow-x: hidden;
+      overflow-y: auto;
+      height: calc(100% - 49px); // Account for tab header height
+    }
+
+    md-tab-content {
+      overflow-x: hidden;
+      overflow-y: auto;
+
+      &.md-active {
+        overflow-y: auto;
+      }
     }
 
     md-tab-item {
@@ -393,6 +410,25 @@
   .data-table-card {
     box-shadow: @card-shadow;
     overflow: hidden;
+
+    // New data-table component styles
+    .data-table {
+      overflow: hidden;
+      max-width: 100%;
+
+      .data-table__container {
+        max-height: 600px;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: auto;
+      }
+
+      .data-table__table {
+        width: 100%;
+        min-width: 800px; // Ensure table has minimum width for all columns
+        table-layout: auto;
+      }
+    }
 
     md-table-container {
       max-height: 600px;

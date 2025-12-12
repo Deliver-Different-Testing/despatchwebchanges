@@ -17,6 +17,7 @@ import {DateRangeDialogController} from "../dialogs/date-range-dialog/date-range
 import MapDialogService from "../dialogs/map-dialog/map-dialog.service";
 import {IPaginatedResponse} from "../../interfaces/paginated-response.interface";
 import DispatchCoreService from "../../services/dispatch-core.service";
+import {IDataTableColumn, IDataTableSort} from "../common/data-table/data-table.interfaces";
 
 class OverviewController extends BaseController {
     static $inject = [
@@ -51,6 +52,10 @@ class OverviewController extends BaseController {
     promise?: Promise<IPaginatedResponse<OverviewTableParentJob>>;
 
     search: string;
+
+    // Data table configuration
+    tableColumns: IDataTableColumn[] = [];
+    tableSort: IDataTableSort = { column: 'jobName', direction: 'asc' };
 
     dateRange: IOverViewDateSearchRange;
     selectedRegions: ISuggestion[];
@@ -124,9 +129,24 @@ class OverviewController extends BaseController {
 
         this.activeTab = 0;
 
+        this.initTableColumns();
         this.loadOverviewCardState();
         this.loadSavedLimit();
         this.initialDataLoad();
+    }
+
+    private initTableColumns(): void {
+        this.tableColumns = [
+            { key: 'expand', label: '', sortable: false, width: '48px' },
+            { key: 'jobName', label: 'Job Number', sortable: true },
+            { key: 'status', label: 'Status', sortable: true },
+            { key: 'completion', label: 'Completion', sortable: true },
+            { key: 'pickup', label: 'Pickup', sortable: true },
+            { key: 'delivery', label: 'Delivery', sortable: true },
+            { key: 'driver', label: 'Driver', sortable: true },
+            { key: 'region', label: 'Region', sortable: true },
+            { key: 'actions', label: 'Actions', sortable: false }
+        ];
     }
 
     $onInit() {
@@ -410,6 +430,13 @@ class OverviewController extends BaseController {
     async onReorder() {
         this.query.page = 1;
         await this.refreshData();
+    }
+
+    onSort(sort: IDataTableSort): void {
+        this.tableSort = sort;
+        this.query.order = sort.direction === 'desc' ? `-${sort.column}` : sort.column;
+        this.query.page = 1;
+        this.refreshData();
     }
 
     onPaginate(page: number, limit: number): void {

@@ -16,6 +16,7 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import {getIanaTimezone} from "../../functions/formatDates";
 import {IPaginatedResponse} from "../../interfaces/paginated-response.interface";
+import {IDataTableColumn, IDataTableSort, IDataTableConfig} from "../common/data-table/data-table.interfaces";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -71,12 +72,28 @@ class RecurringJobsController extends BaseController {
     totalJobCount: number = 0;
     jobList: IPrebookListModel[] = [];
     prebookJobsPromise?: Promise<IPaginatedResponse<IPrebookListModel>>
+    isLoading: boolean = false;
     showInput: Record<string, boolean> = {};
     cancelledSelected?: boolean;
     layouts: ILayout[] = [];
     defaultLayout?: ILayout;
     layout?: { columns: IColumn[] };
     currentLayoutName?: string;
+
+    // Data table configuration
+    tableColumns: IDataTableColumn[] = [];
+    tableConfig: IDataTableConfig = {
+        selectable: false,
+        hoverEffect: true,
+        stickyHeader: true,
+        emptyMessage: 'No recurring jobs available',
+        emptyIcon: 'event_repeat',
+        trackBy: 'id'
+    };
+    tableSort: IDataTableSort = {
+        column: 'booked',
+        direction: 'asc'
+    };
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -98,10 +115,25 @@ class RecurringJobsController extends BaseController {
         this.timeZoneShort = this.getShortTimeZoneString();
 
         this.initializeLayout();
+        this.initTableColumns();
     }
 
     $onInit(): void {
         this.refreshData().then(() => console.log("Recurring Jobs Loaded!"));
+    }
+
+    private initTableColumns(): void {
+        this.tableColumns = [
+            { key: 'booked', label: 'Booked', field: '_bookedStr', sortable: true, sortKey: 'booked' },
+            { key: 'speed', label: 'Speed', field: 'speed', sortable: true },
+            { key: 'customJobName', label: 'Job Name', field: 'customJobName', sortable: true, truncate: true },
+            { key: 'client', label: 'Client', field: 'client', sortable: true },
+            { key: 'from', label: 'From', sortable: true, truncate: true },
+            { key: 'to', label: 'To', sortable: true, truncate: true },
+            { key: 'nextDueTime', label: 'Next Due', field: '_nextDueTimeStr', sortable: true, sortKey: 'nextDueTime' },
+            { key: 'courier', label: 'Courier', field: 'courier', sortable: true },
+            { key: 'actions', label: 'Actions', sortable: false, align: 'center', width: '80px' }
+        ];
     }
 
     saveLayout() {
@@ -275,6 +307,8 @@ class RecurringJobsController extends BaseController {
     async refreshData(): Promise<void> {
         console.log("Refreshing data!")
 
+        this.isLoading = true;
+
         try {
             // Parse sort order
             let orderBy = this.jobQuery.order || "booked";
@@ -299,7 +333,9 @@ class RecurringJobsController extends BaseController {
         } catch (error) {
             console.error("Error loading prebook jobs:", error);
             this.jobList = [];
+            this.totalJobCount = 0;
         } finally {
+            this.isLoading = false;
             this.applyScope();
         }
     }
@@ -433,6 +469,47 @@ class RecurringJobsController extends BaseController {
         await this.refreshData();
     }
 
+    onSort(sort: IDataTableSort): void {
+        this.tableSort = sort;
+        this.jobQuery.order = sort.column;
+        this.jobQuery.orderDirection = sort.direction;
+        this.jobQuery.page = 1;
+        this.refreshData();
+    }
+
+    getAddressPrimary(address: IAddressViewModel): string {
+        if (!address) return '';
+        return address.addressLine1 || address.fullAddress?.substring(0, 30) || '';
+    }
+
+    getAddressSecondary(address: IAddressViewModel): string {
+        if (!address) return '';
+        if (this.isUsCustomer) {
+            const parts = [address.addressLine5, address.addressLine6].filter(Boolean);
+            return parts.join(', ');
+        }
+        return address.addressLine2 || address.addressLine3 || '';
+    }
+
+    getAddressTooltipLines(address: IAddressViewModel): string[] {
+        if (!address) return [];
+        const lines = [
+            address.addressLine1,
+            address.addressLine2,
+            address.addressLine3,
+            address.addressLine4,
+            address.addressLine5,
+            address.addressLine6,
+            address.addressLine7,
+            address.addressLine8
+        ].filter(Boolean) as string[];
+
+        if (lines.length === 0 && address.fullAddress) {
+            return [address.fullAddress];
+        }
+        return lines;
+    }
+
     async searchJobs(searchText: string): Promise<void> {
         if (searchText.length < 2) return;
 
@@ -449,9 +526,10 @@ class RecurringJobsController extends BaseController {
         await this.refreshData();
     }
 
-    async onPaginate() {
-        console.log("Paginating!")
-        await this.refreshData();
+    onPaginate(page: number, limit: number): void {
+        this.jobQuery.page = page;
+        this.jobQuery.limit = limit;
+        this.refreshData();
     }
 
     exportToCSV(jobList: IPrebookListModel[] = this.jobList): void {

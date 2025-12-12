@@ -386,62 +386,75 @@
 
                 <!-- Today Active Drivers Table -->
                 <md-card class="data-table-card">
-                    <md-table-container>
-                        <table md-table md-progress="ctrl.todayActiveDriversPromise" class="active-drivers-table">
-                            <thead md-head md-order="ctrl.todayActiveDriversQuery.orderBy"
-                                   md-on-reorder="ctrl.loadTodayActiveDrivers">
-                            <tr md-row>
-                                <th md-column md-order-by="code">Code</th>
-                                <th md-column md-order-by="name">Name</th>
-                                <th md-column md-order-by="fleet">Fleet</th>
-                                <th md-column md-order-by="loginTime">Login Time</th>
-                                <th md-column md-order-by="logoutTime">Logout Time</th>
-                                <th md-column>Duration</th>
-                                <th md-column md-order-by="deliveries">Deliveries</th>
-                                <th md-column md-order-by="status">Status</th>
-                            </tr>
-                            </thead>
-                            <tbody md-body>
-                            <tr md-row ng-repeat="driver in ctrl.todayActiveDriversList track by $index"
-                                class="table-row">
-                                <td md-cell>
-                                    <span class="code-badge">{{driver.code}}</span>
-                                </td>
-                                <td md-cell>{{driver.name}}</td>
-                                <td md-cell>
-                                    <span class="fleet-badge">{{driver.fleet}}</span>
-                                </td>
-                                <td md-cell>
-                                    <span class="time-value">{{driver.loginTime | momentFormat:'HH:mm' }}</span>
-                                </td>
-                                <td md-cell>
-                                    <span class="time-value">{{driver.logoutTime | momentFormat:'HH:mm' }}</span>
-                                </td>
-                                <td md-cell>
-                                    <span class="duration-badge">{{driver.duration}}</span>
-                                </td>
-                                <td md-cell>
-                                    <span class="delivery-count">{{driver.deliveries}}</span>
-                                </td>
-                                <td md-cell>
-                                    <span class="status-badge"
-                                          ng-class="ctrl.getDriverStatusClass(driver.status)">
-                                        {{driver.status}}
-                                    </span>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </md-table-container>
+                    <div class="data-table data-table--hover"
+                         ng-class="{'data-table--loading': ctrl.todayActiveDriversLoading}">
+                        <div class="data-table__loading-overlay" ng-if="ctrl.todayActiveDriversLoading">
+                            <md-progress-circular md-mode="indeterminate" md-diameter="40"></md-progress-circular>
+                        </div>
+                        <div class="data-table__container">
+                            <table class="data-table__table">
+                                <thead class="data-table__head">
+                                <tr class="data-table__header-row">
+                                    <th class="data-table__header-cell">Code</th>
+                                    <th class="data-table__header-cell">Name</th>
+                                    <th class="data-table__header-cell">Fleet</th>
+                                    <th class="data-table__header-cell">Login Time</th>
+                                    <th class="data-table__header-cell">Logout Time</th>
+                                    <th class="data-table__header-cell">Duration</th>
+                                    <th class="data-table__header-cell">Deliveries</th>
+                                    <th class="data-table__header-cell">Status</th>
+                                </tr>
+                                </thead>
+                                <tbody class="data-table__body">
+                                <tr class="data-table__row" ng-repeat="driver in ctrl.todayActiveDriversList track by $index">
+                                    <td class="data-table__cell">
+                                        <span class="code-badge">{{driver.code}}</span>
+                                    </td>
+                                    <td class="data-table__cell">{{driver.name}}</td>
+                                    <td class="data-table__cell">
+                                        <span class="fleet-badge">{{driver.fleet}}</span>
+                                    </td>
+                                    <td class="data-table__cell">
+                                        <span class="time-value">{{driver.loginTime | momentFormat:'HH:mm' }}</span>
+                                    </td>
+                                    <td class="data-table__cell">
+                                        <span class="time-value">{{driver.logoutTime | momentFormat:'HH:mm' }}</span>
+                                    </td>
+                                    <td class="data-table__cell">
+                                        <span class="duration-badge">{{driver.duration}}</span>
+                                    </td>
+                                    <td class="data-table__cell">
+                                        <span class="delivery-count">{{driver.deliveries}}</span>
+                                    </td>
+                                    <td class="data-table__cell">
+                                        <span class="status-badge"
+                                              ng-class="ctrl.getDriverStatusClass(driver.status)">
+                                            {{driver.status}}
+                                        </span>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
 
-                    <md-table-pagination
-                            md-limit="ctrl.todayActiveDriversQuery.pageSize"
-                            md-limit-options="[10, 25, 50, 100]"
-                            md-page="ctrl.todayActiveDriversQuery.page"
-                            md-total="{{ctrl.todayActiveDriversStats.totalActiveDrivers}}"
-                            md-on-paginate="ctrl.loadActiveDriversData"
-                            md-page-select>
-                    </md-table-pagination>
+                        <!-- Empty state -->
+                        <div class="data-table__empty" ng-if="(!ctrl.todayActiveDriversList || ctrl.todayActiveDriversList.length === 0) && !ctrl.todayActiveDriversLoading">
+                            <div class="data-table__empty-default">
+                                <md-icon class="data-table__empty-icon" md-font-set="material-symbols-outlined">person_off</md-icon>
+                                <p class="data-table__empty-message">No active drivers</p>
+                                <p class="data-table__empty-submessage">There are no active drivers that match your criteria.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <table-pagination
+                            page="ctrl.todayActiveDriversQuery.page"
+                            page-size="ctrl.todayActiveDriversQuery.pageSize"
+                            total="ctrl.todayActiveDriversStats.totalActiveDrivers"
+                            limit-options="[10, 25, 50, 100]"
+                            on-paginate="ctrl.onActiveDriversPaginate(page, pageSize)"
+                            show-page-select="true">
+                    </table-pagination>
                 </md-card>
             </div>
         </md-tab>
@@ -562,77 +575,86 @@
 
                 <!-- Compliance Table -->
                 <md-card class="data-table-card">
-                    <md-table-container>
-                        <table md-table md-progress="ctrl.compliancePromise" class="compliance-table">
-                            <thead md-head md-order="ctrl.complianceQuery.orderBy"
-                                   md-on-reorder="ctrl.loadComplianceData">
-                            <tr md-row>
-                                <th md-column md-order-by="code">Code</th>
-                                <th md-column md-order-by="name">Name</th>
-                                <th md-column md-order-by="type">Type</th>
-                                <th md-column>Item/Number</th>
-                                <th md-column md-order-by="expiry">Expiry Date</th>
-                                <th md-column>Status</th>
-                                <th md-column>Days Until Expiry</th>
-                                <th md-column>Actions</th>
-                            </tr>
-                            </thead>
-                            <tbody md-body>
-                            <tr md-row ng-repeat="item in ctrl.complianceItems track by $index"
-                                class="table-row">
-                                <td md-cell>
-                                    <span class="code-badge">{{item.code}}</span>
-                                </td>
-                                <td md-cell>{{item.name}}</td>
-                                <td md-cell>
-                                    <span class="type-badge">{{item.complianceType}}</span>
-                                </td>
-                                <td md-cell>{{item.itemNumber}}</td>
-                                <td md-cell>
-                                    <span class="date-value">{{item.expiryDate | momentFormat:'MMM D, YYYY'}}</span>
-                                </td>
-                                <td md-cell>
-                                    <span class="status-badge"
-                                          ng-class="ctrl.getComplianceStatus(item.expiryDate).class">
-                                        {{ctrl.getComplianceStatus(item.expiryDate).status}}
-                                    </span>
-                                </td>
-                                <td md-cell>
-                                    <span class="days-badge" ng-class="ctrl.getComplianceStatus(item.expiryDate).class">
-                                        <span ng-if="ctrl.getComplianceStatus(item.expiryDate).daysUntil > -999">
-                                            <span ng-if="ctrl.getComplianceStatus(item.expiryDate).daysUntil < 0">
-                                                {{Math.abs(ctrl.getComplianceStatus(item.expiryDate).daysUntil)}} days overdue
-                                            </span>
-                                            <span ng-if="ctrl.getComplianceStatus(item.expiryDate).daysUntil >= 0">
-                                                {{ctrl.getComplianceStatus(item.expiryDate).daysUntil}} days
-                                            </span>
+                    <div class="data-table data-table--hover"
+                         ng-class="{'data-table--loading': ctrl.complianceLoading}">
+                        <div class="data-table__loading-overlay" ng-if="ctrl.complianceLoading">
+                            <md-progress-circular md-mode="indeterminate" md-diameter="40"></md-progress-circular>
+                        </div>
+                        <div class="data-table__container">
+                            <table class="data-table__table">
+                                <thead class="data-table__head">
+                                <tr class="data-table__header-row">
+                                    <th class="data-table__header-cell">Code</th>
+                                    <th class="data-table__header-cell">Name</th>
+                                    <th class="data-table__header-cell">Type</th>
+                                    <th class="data-table__header-cell">Item/Number</th>
+                                    <th class="data-table__header-cell">Expiry Date</th>
+                                    <th class="data-table__header-cell">Status</th>
+                                    <th class="data-table__header-cell">Days Until Expiry</th>
+                                    <th class="data-table__header-cell">Actions</th>
+                                </tr>
+                                </thead>
+                                <tbody class="data-table__body">
+                                <tr class="data-table__row" ng-repeat="item in ctrl.complianceItems track by $index">
+                                    <td class="data-table__cell">
+                                        <span class="code-badge">{{item.code}}</span>
+                                    </td>
+                                    <td class="data-table__cell">{{item.name}}</td>
+                                    <td class="data-table__cell">
+                                        <span class="type-badge">{{item.complianceType}}</span>
+                                    </td>
+                                    <td class="data-table__cell">{{item.itemNumber}}</td>
+                                    <td class="data-table__cell">
+                                        <span class="date-value">{{item.expiryDate | momentFormat:'MMM D, YYYY'}}</span>
+                                    </td>
+                                    <td class="data-table__cell">
+                                        <span class="status-badge"
+                                              ng-class="ctrl.getComplianceStatus(item.expiryDate).class">
+                                            {{ctrl.getComplianceStatus(item.expiryDate).status}}
                                         </span>
-                                        <span ng-if="ctrl.getComplianceStatus(item.expiryDate).daysUntil === -999">—</span>
-                                    </span>
-                                </td>
-                                <td md-cell>
-                                    <div class="table-actions">
+                                    </td>
+                                    <td class="data-table__cell">
+                                        <span class="days-badge" ng-class="ctrl.getComplianceStatus(item.expiryDate).class">
+                                            <span ng-if="ctrl.getComplianceStatus(item.expiryDate).daysUntil > -999">
+                                                <span ng-if="ctrl.getComplianceStatus(item.expiryDate).daysUntil < 0">
+                                                    {{Math.abs(ctrl.getComplianceStatus(item.expiryDate).daysUntil)}} days overdue
+                                                </span>
+                                                <span ng-if="ctrl.getComplianceStatus(item.expiryDate).daysUntil >= 0">
+                                                    {{ctrl.getComplianceStatus(item.expiryDate).daysUntil}} days
+                                                </span>
+                                            </span>
+                                            <span ng-if="ctrl.getComplianceStatus(item.expiryDate).daysUntil === -999">—</span>
+                                        </span>
+                                    </td>
+                                    <td class="data-table__cell data-table__actions-cell">
                                         <md-button class="md-icon-button" ng-click="ctrl.sendComplianceReminder(item)" aria-label="Send Reminder">
                                             <md-icon md-font-set="material-symbols-outlined">email</md-icon>
                                             <md-tooltip>Send Reminder</md-tooltip>
                                         </md-button>
-                                    </div>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </md-table-container>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
 
-                    <md-table-pagination
-                            md-limit="ctrl.complianceQuery.pageSize"
-                            md-limit-options="[10, 25, 50, 100]"
-                            md-page="ctrl.complianceQuery.page"
-                            md-total="{{ctrl.complianceStats.totalDrivers}}"
-                            md-on-paginate="ctrl.loadComplianceData"
-                            md-page-select>
-                    </md-table-pagination>
+                        <!-- Empty state -->
+                        <div class="data-table__empty" ng-if="(!ctrl.complianceItems || ctrl.complianceItems.length === 0) && !ctrl.complianceLoading">
+                            <div class="data-table__empty-default">
+                                <md-icon class="data-table__empty-icon" md-font-set="material-symbols-outlined">verified_user</md-icon>
+                                <p class="data-table__empty-message">No compliance records</p>
+                                <p class="data-table__empty-submessage">There are no compliance items that match your criteria.</p>
+                            </div>
+                        </div>
+                    </div>
 
-                    <md-progress-linear md-mode="indeterminate" ng-if="ctrl.complianceLoading"></md-progress-linear>
+                    <table-pagination
+                            page="ctrl.complianceQuery.page"
+                            page-size="ctrl.complianceQuery.pageSize"
+                            total="ctrl.complianceStats.totalDrivers"
+                            limit-options="[10, 25, 50, 100]"
+                            on-paginate="ctrl.onCompliancePaginate(page, pageSize)"
+                            show-page-select="true">
+                    </table-pagination>
                 </md-card>
             </div>
         </md-tab>
@@ -739,65 +761,78 @@
 
                 <!-- Schedule Table -->
                 <md-card class="data-table-card">
-                    <md-table-container>
-                        <table md-table md-progress="ctrl.afterHoursSchedulePromise" class="schedule-table">
-                            <thead md-head md-order="ctrl.afterHoursQuery.orderBy"
-                                   md-on-reorder="ctrl.loadAfterHoursSchedule">
-                            <tr md-row>
-                                <th md-column md-order-by="name">Driver Name</th>
-                                <th md-column md-order-by="code">Driver Code</th>
-                                <th md-column md-order-by="day">Day</th>
-                                <th md-column md-order-by="startTime">Start Time</th>
-                                <th md-column md-order-by="endTime">End Time</th>
-                                <th md-column>Duration</th>
-                                <th md-column>Actions</th>
-                            </tr>
-                            </thead>
-                            <tbody md-body>
-                            <tr md-row
-                                ng-repeat="assignment in ctrl.afterHoursSchedule track by assignment.afterHoursScheduleId"
-                                class="table-row">
-                                <td md-cell>{{assignment.courierName}}</td>
-                                <td md-cell>{{assignment.courierCode}}</td>
-                                <td md-cell>
-                                    <span class="day-badge">{{ctrl.displayDaysOnAfterHoursTable(assignment.days)}}</span>
-                                </td>
-                                <td md-cell>
-                                    <span class="time-badge start-time">{{ctrl.formatScheduleTime(assignment.startTime)}}</span>
-                                </td>
-                                <td md-cell>
-                                    <span class="time-badge end-time">{{ctrl.formatScheduleTime(assignment.endTime)}}</span>
-                                </td>
-                                <td md-cell>
-                                    <span class="duration-badge">{{assignment.duration}}</span>
-                                </td>
-                                <td md-cell>
-                                    <div layout="row" layout-align="start center" layout-gap="8px">
-                                        <md-button class="md-fab md-mini md-raised"
-                                                   ng-click="ctrl.editAfterHoursSchedule($event, assignment)">
+                    <div class="data-table data-table--hover"
+                         ng-class="{'data-table--loading': ctrl.afterHoursLoading}">
+                        <div class="data-table__loading-overlay" ng-if="ctrl.afterHoursLoading">
+                            <md-progress-circular md-mode="indeterminate" md-diameter="40"></md-progress-circular>
+                        </div>
+                        <div class="data-table__container">
+                            <table class="data-table__table">
+                                <thead class="data-table__head">
+                                <tr class="data-table__header-row">
+                                    <th class="data-table__header-cell">Driver Name</th>
+                                    <th class="data-table__header-cell">Driver Code</th>
+                                    <th class="data-table__header-cell">Day</th>
+                                    <th class="data-table__header-cell">Start Time</th>
+                                    <th class="data-table__header-cell">End Time</th>
+                                    <th class="data-table__header-cell">Duration</th>
+                                    <th class="data-table__header-cell">Actions</th>
+                                </tr>
+                                </thead>
+                                <tbody class="data-table__body">
+                                <tr class="data-table__row"
+                                    ng-repeat="assignment in ctrl.afterHoursSchedule track by assignment.afterHoursScheduleId">
+                                    <td class="data-table__cell">{{assignment.courierName}}</td>
+                                    <td class="data-table__cell">{{assignment.courierCode}}</td>
+                                    <td class="data-table__cell">
+                                        <span class="day-badge">{{ctrl.displayDaysOnAfterHoursTable(assignment.days)}}</span>
+                                    </td>
+                                    <td class="data-table__cell">
+                                        <span class="time-badge start-time">{{ctrl.formatScheduleTime(assignment.startTime)}}</span>
+                                    </td>
+                                    <td class="data-table__cell">
+                                        <span class="time-badge end-time">{{ctrl.formatScheduleTime(assignment.endTime)}}</span>
+                                    </td>
+                                    <td class="data-table__cell">
+                                        <span class="duration-badge">{{assignment.duration}}</span>
+                                    </td>
+                                    <td class="data-table__cell data-table__actions-cell">
+                                        <md-button class="md-icon-button"
+                                                   ng-click="ctrl.editAfterHoursSchedule($event, assignment)"
+                                                   aria-label="Edit">
                                             <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
                                             <md-tooltip md-direction="bottom">Edit</md-tooltip>
                                         </md-button>
-                                        <md-button class="md-fab md-mini md-raised"
-                                                   ng-click="ctrl.deleteAfterHoursSchedule($event, assignment)">
+                                        <md-button class="md-icon-button"
+                                                   ng-click="ctrl.deleteAfterHoursSchedule($event, assignment)"
+                                                   aria-label="Delete">
                                             <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
                                             <md-tooltip md-direction="bottom">Delete</md-tooltip>
                                         </md-button>
-                                    </div>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </md-table-container>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
 
-                    <md-table-pagination
-                            md-limit="ctrl.afterHoursQuery.pageSize"
-                            md-limit-options="[10, 25, 50, 100]"
-                            md-page="ctrl.afterHoursQuery.page"
-                            md-total="{{ctrl.afterHoursStats.totalAssignments}}"
-                            md-on-paginate="ctrl.loadAfterHoursSchedule"
-                            md-page-select>
-                    </md-table-pagination>
+                        <!-- Empty state -->
+                        <div class="data-table__empty" ng-if="(!ctrl.afterHoursSchedule || ctrl.afterHoursSchedule.length === 0) && !ctrl.afterHoursLoading">
+                            <div class="data-table__empty-default">
+                                <md-icon class="data-table__empty-icon" md-font-set="material-symbols-outlined">schedule</md-icon>
+                                <p class="data-table__empty-message">No after hours schedules</p>
+                                <p class="data-table__empty-submessage">There are no after hours schedules that match your criteria.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <table-pagination
+                            page="ctrl.afterHoursQuery.page"
+                            page-size="ctrl.afterHoursQuery.pageSize"
+                            total="ctrl.afterHoursStats.totalAssignments"
+                            limit-options="[10, 25, 50, 100]"
+                            on-paginate="ctrl.onAfterHoursPaginate(page, pageSize)"
+                            show-page-select="true">
+                    </table-pagination>
                 </md-card>
             </div>
         </md-tab>
@@ -834,64 +869,76 @@
 
                 <!-- Email List Table -->
                 <md-card class="data-table-card">
-                    <md-table-container>
-                        <table md-table md-progress="ctrl.driverEmailPromise" class="email-table">
-                            <thead md-head md-order="ctrl.driverEmailQuery.orderBy"
-                                   md-on-reorder="ctrl.loadDriverEmails">
-                            <tr md-row>
-                                <th md-column class="checkbox-column">
-                                    <md-checkbox
-                                            class="md-primary"
-                                            ng-model="ctrl.selectAll"
-                                            ng-change="ctrl.selectAll ? ctrl.selectAllEmails() : ctrl.deselectAllEmails()"
-                                            aria-label="Select all">
-                                    </md-checkbox>
-                                </th>
-                                <th md-column>Code</th>
-                                <th md-column>Name</th>
-                                <th md-column>Email</th>
-                                <th md-column>Phone</th>
-                                <th md-column>Fleet</th>
-                                <th md-column>Actions</th>
-                            </tr>
-                            </thead>
-                            <tbody md-body>
-                            <tr md-row ng-repeat="driver in ctrl.driverEmailList track by driver.id" class="table-row">
-                                <td md-cell class="checkbox-column">
-                                    <md-checkbox
-                                            class="md-primary"
-                                            ng-checked="driver.selected"
-                                            ng-click="driver.selected = !driver.selected"
-                                            aria-label="Select {{driver.name}}">
-                                    </md-checkbox>
-                                </td>
-                                <td md-cell>
-                                    <span class="code-badge">{{driver.code}}</span>
-                                </td>
-                                <td md-cell>{{driver.name}}</td>
-                                <td md-cell>
-                                    <span class="email-value">{{driver.email}}</span>
-                                </td>
-                                <td md-cell>
-                                    <span class="phone-value">{{driver.phone}}</span>
-                                </td>
-                                <td md-cell>
-                                    <span class="fleet-badge">{{driver.fleet}}</span>
-                                </td>
-                                <td md-cell>
-                                    <div class="table-actions">
+                    <div class="data-table data-table--hover"
+                         ng-class="{'data-table--loading': ctrl.driverEmailLoading}">
+                        <div class="data-table__loading-overlay" ng-if="ctrl.driverEmailLoading">
+                            <md-progress-circular md-mode="indeterminate" md-diameter="40"></md-progress-circular>
+                        </div>
+                        <div class="data-table__container">
+                            <table class="data-table__table">
+                                <thead class="data-table__head">
+                                <tr class="data-table__header-row">
+                                    <th class="data-table__header-cell data-table__checkbox-cell">
+                                        <md-checkbox
+                                                class="md-primary data-table__checkbox"
+                                                ng-model="ctrl.selectAll"
+                                                ng-change="ctrl.selectAll ? ctrl.selectAllEmails() : ctrl.deselectAllEmails()"
+                                                aria-label="Select all">
+                                        </md-checkbox>
+                                    </th>
+                                    <th class="data-table__header-cell">Code</th>
+                                    <th class="data-table__header-cell">Name</th>
+                                    <th class="data-table__header-cell">Email</th>
+                                    <th class="data-table__header-cell">Phone</th>
+                                    <th class="data-table__header-cell">Fleet</th>
+                                    <th class="data-table__header-cell">Actions</th>
+                                </tr>
+                                </thead>
+                                <tbody class="data-table__body">
+                                <tr class="data-table__row" ng-repeat="driver in ctrl.driverEmailList track by driver.id">
+                                    <td class="data-table__cell data-table__checkbox-cell">
+                                        <md-checkbox
+                                                class="md-primary data-table__checkbox"
+                                                ng-checked="driver.selected"
+                                                ng-click="driver.selected = !driver.selected"
+                                                aria-label="Select {{driver.name}}">
+                                        </md-checkbox>
+                                    </td>
+                                    <td class="data-table__cell">
+                                        <span class="code-badge">{{driver.code}}</span>
+                                    </td>
+                                    <td class="data-table__cell">{{driver.name}}</td>
+                                    <td class="data-table__cell">
+                                        <span class="email-value">{{driver.email}}</span>
+                                    </td>
+                                    <td class="data-table__cell">
+                                        <span class="phone-value">{{driver.phone}}</span>
+                                    </td>
+                                    <td class="data-table__cell">
+                                        <span class="fleet-badge">{{driver.fleet}}</span>
+                                    </td>
+                                    <td class="data-table__cell data-table__actions-cell">
                                         <md-button class="md-icon-button"
                                                    ng-click="ctrl.sendSingleEmailToCourier($event, driver)"
                                                    aria-label="Email">
                                             <md-icon md-font-set="material-symbols-outlined">email</md-icon>
                                             <md-tooltip>Email</md-tooltip>
                                         </md-button>
-                                    </div>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </md-table-container>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Empty state -->
+                        <div class="data-table__empty" ng-if="(!ctrl.driverEmailList || ctrl.driverEmailList.length === 0) && !ctrl.driverEmailLoading">
+                            <div class="data-table__empty-default">
+                                <md-icon class="data-table__empty-icon" md-font-set="material-symbols-outlined">mail</md-icon>
+                                <p class="data-table__empty-message">No driver emails</p>
+                                <p class="data-table__empty-submessage">There are no driver emails that match your criteria.</p>
+                            </div>
+                        </div>
+                    </div>
                 </md-card>
             </div>
         </md-tab>
@@ -977,47 +1024,60 @@
 
                 <!-- Driver Earnings Table -->
                 <md-card class="data-table-card">
-                    <md-table-container>
-                        <table md-table md-progress="ctrl.driverEarningsPromise" class="earnings-table">
-                            <thead md-head md-order="ctrl.driverEarningsQuery.orderBy"
-                                   md-on-reorder="ctrl.loadDriverTodayEarnings">
-                            <tr md-row>
-                                <th md-column md-order-by="name">Name</th>
-                                <th md-column md-order-by="hoursLogged">Hours Logged</th>
-                                <th md-column md-order-by="deliveries">Deliveries</th>
-                                <th md-column md-order-by="earnings">Earnings</th>
-                                <th md-column md-order-by="hourlyRate">Hourly Rate</th>
-                            </tr>
-                            </thead>
-                            <tbody md-body>
-                            <tr md-row ng-repeat="driver in ctrl.driverEarningsList track by $index"
-                                class="table-row">
-                                <td md-cell>{{driver.name}}</td>
-                                <td md-cell>
-                                    <span class="duration-badge">{{driver.hoursLogged | number:1}}h</span>
-                                </td>
-                                <td md-cell>
-                                    <span class="delivery-count">{{driver.deliveries}}</span>
-                                </td>
-                                <td md-cell>
-                                    <span class="earnings-value">${{driver.earnings | number:2}}</span>
-                                </td>
-                                <td md-cell>
-                                    <span class="rate-value">${{driver.hourlyRate | number:2}}/h</span>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </md-table-container>
+                    <div class="data-table data-table--hover"
+                         ng-class="{'data-table--loading': ctrl.driverEarningsLoading}">
+                        <div class="data-table__loading-overlay" ng-if="ctrl.driverEarningsLoading">
+                            <md-progress-circular md-mode="indeterminate" md-diameter="40"></md-progress-circular>
+                        </div>
+                        <div class="data-table__container">
+                            <table class="data-table__table">
+                                <thead class="data-table__head">
+                                <tr class="data-table__header-row">
+                                    <th class="data-table__header-cell">Name</th>
+                                    <th class="data-table__header-cell">Hours Logged</th>
+                                    <th class="data-table__header-cell">Deliveries</th>
+                                    <th class="data-table__header-cell">Earnings</th>
+                                    <th class="data-table__header-cell">Hourly Rate</th>
+                                </tr>
+                                </thead>
+                                <tbody class="data-table__body">
+                                <tr class="data-table__row" ng-repeat="driver in ctrl.driverEarningsList track by $index">
+                                    <td class="data-table__cell">{{driver.name}}</td>
+                                    <td class="data-table__cell">
+                                        <span class="duration-badge">{{driver.hoursLogged | number:1}}h</span>
+                                    </td>
+                                    <td class="data-table__cell">
+                                        <span class="delivery-count">{{driver.deliveries}}</span>
+                                    </td>
+                                    <td class="data-table__cell">
+                                        <span class="earnings-value">${{driver.earnings | number:2}}</span>
+                                    </td>
+                                    <td class="data-table__cell">
+                                        <span class="rate-value">${{driver.hourlyRate | number:2}}/h</span>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
 
-                    <md-table-pagination
-                            md-limit="ctrl.driverEarningsQuery.pageSize"
-                            md-limit-options="[10, 25, 50, 100]"
-                            md-page="ctrl.driverEarningsQuery.page"
-                            md-total="{{ctrl.driverEarningsStats.totalActiveDrivers}}"
-                            md-on-paginate="ctrl.loadDriverTodayEarnings"
-                            md-page-select>
-                    </md-table-pagination>
+                        <!-- Empty state -->
+                        <div class="data-table__empty" ng-if="(!ctrl.driverEarningsList || ctrl.driverEarningsList.length === 0) && !ctrl.driverEarningsLoading">
+                            <div class="data-table__empty-default">
+                                <md-icon class="data-table__empty-icon" md-font-set="material-symbols-outlined">payments</md-icon>
+                                <p class="data-table__empty-message">No earnings data</p>
+                                <p class="data-table__empty-submessage">There are no driver earnings that match your criteria.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <table-pagination
+                            page="ctrl.driverEarningsQuery.page"
+                            page-size="ctrl.driverEarningsQuery.pageSize"
+                            total="ctrl.driverEarningsStats.totalActiveDrivers"
+                            limit-options="[10, 25, 50, 100]"
+                            on-paginate="ctrl.onDriverEarningsPaginate(page, pageSize)"
+                            show-page-select="true">
+                    </table-pagination>
                 </md-card>
             </div>
         </md-tab>
