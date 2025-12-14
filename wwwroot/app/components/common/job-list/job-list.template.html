@@ -290,10 +290,9 @@
 
                     <!-- Pickup Column -->
                     <div class="job-cell route-cell pickup-cell">
-                        <!-- NZ tenant: Just address without suburb -->
-                        <div ng-if="::!ctrl.isUsCustomer" class="address">
-                            {{ctrl.getPickupAddressWithoutSuburb(job)}}
-                        </div>
+                        <!-- NZ tenant:  Urgent requested format -->
+                        <div ng-if="::!ctrl.isUsCustomer"
+                                class="address">{{job.pickupAddress && job.pickupAddress.addressLine5}}</div>
                         <!-- US tenant: Original format with city-state -->
                         <div ng-if="::ctrl.isUsCustomer">
                             <div class="address">{{ctrl.getPickupAddress(job)}}</div>
