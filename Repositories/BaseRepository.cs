@@ -11,6 +11,12 @@ public class BaseRepository(IDbContextFactory<DespatchContext> contextFactory) :
 
     protected DespatchContext Context => _context ??= contextFactory.CreateDbContext();
 
+    /// <summary>
+    /// Creates a new DbContext instance for parallel operations.
+    /// The caller is responsible for disposing the context.
+    /// </summary>
+    protected DespatchContext CreateNewContext() => contextFactory.CreateDbContext();
+
     public void Dispose() => _context?.Dispose();
 
     public async Task AddEntityAsync<T>(T entity)
