@@ -276,43 +276,69 @@ public class TaskRepository(
 
     public async Task CreateEventsForJobAsync(int jobId, List<EventGroupViewModel> eventGroupViewModels)
     {
-        var job = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
-        ArgumentNullException.ThrowIfNull(job);
-        ArgumentNullException.ThrowIfNull(job.UcjbClientId);
-
         var currentDate = infoService.GetCurrentTenantTime();
         var staffId = infoService.GetStaffId();
-        var dispatcherName = await Context.TucStaffs
+
+        // Run both queries in parallel using separate contexts (DbContext is not thread-safe)
+        await using var jobContext = CreateNewContext();
+        await using var staffContext = CreateNewContext();
+
+        var jobTask = jobContext.TucJobs
+            .AsNoTracking()
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new
+            {
+                j.UcjbId,
+                j.UcjbNumber,
+                j.UcjbClientId,
+                j.UcjbContact,
+                j.UcjbCourierId,
+                j.UcjbSpeed
+            })
+            .FirstOrDefaultAsync();
+
+        var dispatcherTask = staffContext.TucStaffs
+            .AsNoTracking()
             .Where(s => s.UcstId == staffId)
             .Select(s => s.UcstFirstName + " " + s.UcstLastName)
             .FirstOrDefaultAsync();
 
-        foreach (var eventGroup in eventGroupViewModels)
+        await Task.WhenAll(jobTask, dispatcherTask);
+
+        var job = await jobTask;
+        var dispatcherName = await dispatcherTask;
+
+        ArgumentNullException.ThrowIfNull(job);
+        ArgumentNullException.ThrowIfNull(job.UcjbClientId);
+
+        // Batch create all events
+        var events = eventGroupViewModels.Select(eventGroup => new TucEvent
         {
-            await InsertEventAsync(
-                jobNo: job.UcjbNumber,
-                clientId: job.UcjbClientId ?? 0,
-                contact: job.UcjbContact,
-                date: currentDate,
-                time: currentDate,
-                type: eventGroup.EventType.Id,
-                lateTime: null,
-                etaTime: null,
-                staffIdIn: eventGroup.AssignTo?.Id,
-                staffIdOut: null,
-                responseTime: null,
-                notes: eventGroup.Notes,
-                pageCourier: false,
-                closed: false,
-                originator: staffId,
-                description: eventGroup.EventType.Text,
-                courierId: job.UcjbCourierId,
-                jobId: job.UcjbId,
-                despatcher: dispatcherName,
-                jobType: job.UcjbSpeed,
-                dueTime: eventGroup.DueTime
-            );
-        }
+            UcevJobNumber = job.UcjbNumber,
+            UcevClientId = job.UcjbClientId ?? 0,
+            UcevContact = job.UcjbContact,
+            UcevDate = currentDate,
+            UcevTime = currentDate,
+            UcevType = eventGroup.EventType.Id,
+            UcevLateTime = null,
+            UcevEtatime = null,
+            UcevStaffIdin = eventGroup.AssignTo?.Id,
+            UcevStaffIdout = null,
+            UcevResponseTime = null,
+            UcevNotes = eventGroup.Notes,
+            UcevPageCourier = false,
+            UcevClosed = false,
+            UcevOriginator = staffId,
+            UcevDescription = eventGroup.EventType.Text,
+            UcevCourierId = job.UcjbCourierId,
+            UcevJobId = job.UcjbId,
+            UcevDespatcher = dispatcherName,
+            UcevJobType = job.UcjbSpeed,
+            UcevDueTime = eventGroup.DueTime ?? currentDate
+        }).ToList();
+
+        await Context.TucEvents.AddRangeAsync(events);
+        await Context.SaveChangesAsync();
     }
 
     public async Task<List<Suggestion>> GetActiveStaffAsync()
@@ -385,18 +411,16 @@ public class TaskRepository(
         // Filter by SearchText if provided
         if (string.IsNullOrWhiteSpace(filters.SearchText)) return query;
 
-        var searchText = filters.SearchText.ToLower();
+        var searchPattern = $"%{filters.SearchText}%";
         query = query.Where(e =>
-            (e.UcevDescription != null && e.UcevDescription.ToLower().Contains(searchText))
-            || (e.UcevNotes != null && e.UcevNotes.Contains(searchText))
-            || (e.UcevDespatcher != null && e.UcevDespatcher.ToLower().Contains(searchText))
-            || (e.UcevJob != null && e.UcevJob.UcjbNumber != null &&
-                e.UcevJob.UcjbNumber.ToLower().Contains(searchText))
-            || (e.UcevJob != null && e.UcevJob.Parent != null && e.UcevJob.Parent.UcjbNumber != null &&
-                e.UcevJob.Parent.UcjbNumber.ToLower().Contains(searchText))
-            || (e.UcevJob != null && e.UcevJob.Parent != null && e.UcevJob.Parent.InverseParent != null &&
-                e.UcevJob.Parent.InverseParent.Any(j =>
-                    j.UcjbNumber != null && j.UcjbNumber.ToLower().Contains(searchText)))
+            EF.Functions.Like(e.UcevDescription, searchPattern)
+            || EF.Functions.Like(e.UcevNotes, searchPattern)
+            || EF.Functions.Like(e.UcevDespatcher, searchPattern)
+            || (e.UcevJob != null && EF.Functions.Like(e.UcevJob.UcjbNumber, searchPattern))
+            || (e.UcevJob != null && e.UcevJob.Parent != null &&
+                EF.Functions.Like(e.UcevJob.Parent.UcjbNumber, searchPattern))
+            || (e.UcevJob != null && e.UcevJob.Parent != null &&
+                e.UcevJob.Parent.InverseParent.Any(j => EF.Functions.Like(j.UcjbNumber, searchPattern)))
         );
 
         return query;
@@ -491,26 +515,29 @@ public class TaskRepository(
 
         if (type is (int)EventType.LatePickUp or (int)EventType.LateDelivery)
         {
-            var automaticResponse = false;
-
-            var job = await Context.TucJobs.FindAsync(jobId);
-            if (job != null)
-            {
-                // Find the relevant ClientContactJobType record
-                var clientContactJobType =
-                    Context.TblClientContactJobTypes.First(x => x.JobTypeId == job.UcjbSpeed);
-
-                if (clientContactJobType != null)
+            // Single query to get job speed and contact type info
+            var jobContactInfo = await Context.TucJobs
+                .AsNoTracking()
+                .Where(j => j.UcjbId == jobId)
+                .Select(j => new
                 {
-                    automaticResponse = type switch
-                    {
-                        // Late pickup
-                        (int)EventType.LatePickUp => AutoResponseTypes.Contains(clientContactJobType.PickupType),
-                        // Late delivery
-                        (int)EventType.LateDelivery => AutoResponseTypes.Contains(clientContactJobType.DeliveryType),
-                        _ => false
-                    };
-                }
+                    j.UcjbSpeed,
+                    ContactJobType = Context.TblClientContactJobTypes
+                        .Where(x => x.JobTypeId == j.UcjbSpeed)
+                        .Select(x => new { x.PickupType, x.DeliveryType })
+                        .FirstOrDefault()
+                })
+                .FirstOrDefaultAsync();
+
+            var automaticResponse = false;
+            if (jobContactInfo?.ContactJobType != null)
+            {
+                automaticResponse = type switch
+                {
+                    (int)EventType.LatePickUp => AutoResponseTypes.Contains(jobContactInfo.ContactJobType.PickupType),
+                    (int)EventType.LateDelivery => AutoResponseTypes.Contains(jobContactInfo.ContactJobType.DeliveryType),
+                    _ => false
+                };
             }
 
             // Set fields for automatic response

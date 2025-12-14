@@ -29,7 +29,7 @@ public class RecurringJobRepository(
 
         var query = Context.TucJobBookings
             .AsNoTracking()
-            .Where(j => j.UcbkActive == request.Active && j.UcbkOneOff == false);
+            .Where(j => j.UcbkActive == request.Active && j.UcbkOneOff != true);
 
         // US tenants: exclude child jobs (only show parent jobs)
         if (isUsTenant) query = query.Where(j => !j.ParentId.HasValue);
@@ -107,7 +107,7 @@ public class RecurringJobRepository(
                 Items = [],
                 Total = 0,
                 Page = request.Page,
-                Pages = request.Limit
+                Pages = 0
             };
 
         var tenantTimeZone = _infoService.GetTenantTimeZone();
@@ -127,7 +127,7 @@ public class RecurringJobRepository(
             Items = items,
             Total = totalCount,
             Page = request.Page,
-            Pages = request.Limit
+            Pages = (int)Math.Ceiling((double)totalCount / request.Limit)
         };
     }
 

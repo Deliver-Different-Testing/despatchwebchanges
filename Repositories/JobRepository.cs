@@ -1086,8 +1086,7 @@ public partial class JobRepository(
         }
 
         // Fetch economy settings in parallel with the main query
-        await using var economyTaskContext = await _contextFactory.CreateDbContextAsync();
-        var economyTask = GetEconomySpeedAndDeliveryTimeAsync(economyTaskContext);
+        var economyTask = GetEconomySpeedAndDeliveryTimeAsync();
 
         // Single query to get both jobs and map items data
         var jobs = await query

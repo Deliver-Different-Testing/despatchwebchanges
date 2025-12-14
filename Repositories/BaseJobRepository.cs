@@ -95,8 +95,6 @@ public class BaseJobRepository(
                     };
             }
 
-            var totalCount = await query.CountAsync();
-
             var allJobs = await query
                 .AsNoTracking()
                 .AsSplitQuery()
@@ -127,7 +125,7 @@ public class BaseJobRepository(
             return new JobSearchResult
             {
                 Jobs = allJobs,
-                TotalCount = totalCount,
+                TotalCount = allJobs.Count,
                 HasMore = false,
                 MapItems = page == AppPage.Dispatch ? mapItems : null
             };
@@ -149,10 +147,12 @@ public class BaseJobRepository(
             .Distinct()
             .ToList();
 
-        // Load-related jobs
-        if (parentIds.Count != 0)
-        {
-            var relatedJobsDict = await Context.TucJobs
+        // Run both queries in parallel using separate contexts (DbContext is not thread-safe)
+        await using var relatedJobsContext = CreateNewContext();
+        await using var flightsContext = CreateNewContext();
+
+        var relatedJobsTask = parentIds.Count != 0
+            ? relatedJobsContext.TucJobs
                 .AsNoTracking()
                 .Where(j => parentIds.Contains(j.ParentId.Value))
                 .GroupBy(j => j.ParentId.Value)
@@ -161,23 +161,29 @@ public class BaseJobRepository(
                     ParentId = g.Key,
                     RelatedJobs = g.Select(j => new Suggestion { Id = j.UcjbId, Text = j.UcjbNumber }).ToList()
                 })
-                .ToDictionaryAsync(x => x.ParentId, x => x.RelatedJobs);
+                .ToDictionaryAsync(x => x.ParentId, x => x.RelatedJobs)
+            : Task.FromResult(new Dictionary<int, List<Suggestion>>());
 
-            foreach (var job in jobs.Where(j => j.ParentId.HasValue))
-            {
-                if (job.ParentId != null && relatedJobsDict.TryGetValue(job.ParentId.Value, out var related))
-                    job.RelatedJobs = related;
-            }
-        }
-
-        // Load flights
-        var flightsDict = await Context.TucJobNationwides
+        var flightsTask = flightsContext.TucJobNationwides
             .AsNoTracking()
             .Where(nw => nw.UcnwJobId.HasValue && jobIds.Contains(nw.UcnwJobId.Value))
             .Select(nw => new { nw.UcnwJobId, nw.UcnwFlightNo })
             .GroupBy(x => x.UcnwJobId)
             .ToDictionaryAsync(g => g.Key, g => new AssignedFlight { FlightNumber = g.First().UcnwFlightNo });
 
+        await Task.WhenAll(relatedJobsTask, flightsTask);
+
+        var relatedJobsDict = await relatedJobsTask;
+        var flightsDict = await flightsTask;
+
+        // Apply related jobs
+        foreach (var job in jobs.Where(j => j.ParentId.HasValue))
+        {
+            if (job.ParentId != null && relatedJobsDict.TryGetValue(job.ParentId.Value, out var related))
+                job.RelatedJobs = related;
+        }
+
+        // Apply flights
         foreach (var job in jobs)
         {
             if (flightsDict.TryGetValue(job.Id, out var flight))
@@ -424,9 +430,27 @@ public class BaseJobRepository(
     {
         ArgumentNullException.ThrowIfNull(noteId);
 
-        // Try to get from active notes first, then archived if not found
-        var note = await GetActiveNoteByIdAsync(noteId);
-        return note ?? await GetArchivedNoteByIdAsync(noteId);
+        // Run both queries in parallel using separate contexts (DbContext is not thread-safe)
+        await using var activeContext = CreateNewContext();
+        await using var archivedContext = CreateNewContext();
+
+        var tenantTimeZone = infoService.GetTenantTimeZone();
+
+        var activeTask = activeContext.GetActiveNotesByNoteIdAsync(noteId);
+        var archivedTask = CreateArchivedNoteQuery(archivedContext)
+            .Where(note => note.NoteId == noteId)
+            .FirstOrDefaultAsync();
+
+        await Task.WhenAll(activeTask, archivedTask);
+
+        var activeNote = await activeTask;
+        var archivedNote = await archivedTask;
+
+        var result = activeNote ?? archivedNote;
+        if (result != null)
+            UpdateNoteDate(result, tenantTimeZone);
+
+        return result;
     }
 
     public async Task SaveNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default)
@@ -703,19 +727,21 @@ public class BaseJobRepository(
         return await query.ToListAsync();
     }
 
-    private IQueryable<TucNoteViewModel> CreateArchivedNoteQuery()
+    private IQueryable<TucNoteViewModel> CreateArchivedNoteQuery() => CreateArchivedNoteQuery(Context);
+
+    private static IQueryable<TucNoteViewModel> CreateArchivedNoteQuery(DespatchContext context)
     {
-        return from note in Context.TucNoteArchives
-            join noteType in Context.TucNoteTypes
+        return from note in context.TucNoteArchives
+            join noteType in context.TucNoteTypes
                 on note.NoteTypeId equals noteType.NoteTypeId into noteTypes
             from nt in noteTypes.DefaultIfEmpty()
-            join createdBy in Context.TucStaffs
+            join createdBy in context.TucStaffs
                 on note.CreatedBy equals createdBy.UcstId into createdStaff
             from cs in createdStaff.DefaultIfEmpty()
-            join updatedBy in Context.TucStaffs
+            join updatedBy in context.TucStaffs
                 on note.UpdatedBy equals updatedBy.UcstId into updatedStaff
             from us in updatedStaff.DefaultIfEmpty()
-            join job in Context.TucJobArchives
+            join job in context.TucJobArchives
                 on note.JobId equals job.UcjbId into jobs
             from j in jobs.DefaultIfEmpty()
             select new TucNoteViewModel
@@ -802,7 +828,7 @@ public class BaseJobRepository(
     {
         try
         {
-            // Always create note on the parent job (or self if no parent)
+            // Always create a note on the parent job (or self if no parent)
             var effectiveJobId = await Context.GetEffectiveJobBookingIdAsync(jobId);
 
             noteType = await ConfirmNoteTypeExists(noteType);
@@ -851,17 +877,21 @@ public class BaseJobRepository(
         }
     }
 
-    protected async Task<(int? economySpeedId, DateTime? ecoDeliveryTime)> GetEconomySpeedAndDeliveryTimeAsync(DespatchContext customContext = null)
+    protected async Task<(int? economySpeedId, DateTime? ecoDeliveryTime)> GetEconomySpeedAndDeliveryTimeAsync()
     {
         if (_economyCache.HasValue)
             return _economyCache.Value;
-        
-        var context = customContext ?? Context;
-        
-        var economySpeedId = await context.GetEconomySpeedIdAsync();
-        var ecoDeliveryTime = await context.GetEcoDeliveryTimeAsync();
 
-        _economyCache = (economySpeedId, ecoDeliveryTime);
+        // Run both queries in parallel using separate contexts (DbContext is not thread-safe)
+        await using var economyContext = CreateNewContext();
+        await using var deliveryTimeContext = CreateNewContext();
+
+        var economySpeedTask = economyContext.GetEconomySpeedIdAsync();
+        var ecoDeliveryTimeTask = deliveryTimeContext.GetEcoDeliveryTimeAsync();
+
+        await Task.WhenAll(economySpeedTask, ecoDeliveryTimeTask);
+
+        _economyCache = (await economySpeedTask, await ecoDeliveryTimeTask);
         return _economyCache.Value;
     }
 
