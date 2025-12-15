@@ -5,7 +5,7 @@ import crypto from "crypto";
 import { lessLoader } from "esbuild-plugin-less";
 
 // Type definitions
-type EntryPointName = 'vendor' | 'app' | 'home' | 'nationwide' | 'overview' | 'jobSearch' | 'megaMap' | 'taskDashboard' | 'recurringJobs' | 'driverManagement';
+type EntryPointName = 'vendor' | 'app' | 'home' | 'nationwide' | 'overview' | 'jobSearch' | 'megaMap' | 'taskDashboard' | 'recurringJobs' | 'driverManagement' | 'courierMap';
 type EntryPoints = Record<EntryPointName, string>;
 
 // Configuration
@@ -25,10 +25,11 @@ const entryPoints: EntryPoints = {
     taskDashboard: path.join(rootDir, "wwwroot/app/components/task-dashboard/task-dashboard.module.ts"),
     recurringJobs: path.join(rootDir, "wwwroot/app/components/recurringJobs/recurringJobs.module.ts"),
     driverManagement: path.join(rootDir, "wwwroot/app/components/driver-management-dashboard/driver-management.module.ts"),
+    courierMap: path.join(rootDir, "wwwroot/app/components/courier-map/courier-map.module.ts"),
 };
 
 // Files that should be hashed in production
-const filesToHash: EntryPointName[] = ['vendor', 'app', 'home', 'nationwide', 'overview', 'jobSearch', 'megaMap', 'taskDashboard', 'recurringJobs', 'driverManagement'];
+const filesToHash: EntryPointName[] = ['vendor', 'app', 'home', 'nationwide', 'overview', 'jobSearch', 'megaMap', 'taskDashboard', 'recurringJobs', 'driverManagement', 'courierMap'];
 
 // Utility functions
 function toRelativePath(filePath: string): string {

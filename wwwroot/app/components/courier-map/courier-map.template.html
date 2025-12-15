@@ -1,0 +1,119 @@
+<div>
+    <md-toolbar class="md-hue-2 md-whiteframe-2dp">
+        <div class="md-toolbar-tools">
+            <img alt="DFRNT" class="toolbar-logo" src="images/dfrnt_logo.png">
+            <md-divider class="vertical-divider"></md-divider>
+            <h2 class="md-title">Courier Map</h2>
+
+            <span flex></span>
+
+            <span style="font-size: medium;">{{::ctrl.greetUser()}}</span>
+
+            <md-button aria-label="Menu" class="md-icon-button" ng-mouseover="ctrl.toggleSidenav()">
+                <md-icon md-font-set="material-symbols-outlined">menu</md-icon>
+            </md-button>
+        </div>
+    </md-toolbar>
+
+    <material-sidenav></material-sidenav>
+</div>
+
+<div class="courier-map-container" layout="column" flex>
+    <!-- Map Container -->
+    <div class="map-wrapper" flex>
+        <!-- HERE Maps Component -->
+        <here-map-tracking
+                map-id="courierMap"
+                credentials="ctrl.hereMapCredentials"
+                config="ctrl.hereMapConfig"
+                on-map-ready="ctrl.onMapReady(map, platform)"
+                ng-if="ctrl.hereMapCredentials && ctrl.hereMapConfig">
+        </here-map-tracking>
+
+        <!-- Active Drivers Panel -->
+        <div class="drivers-panel"
+             ng-class="{'panel-hidden': ctrl.isPanelHidden, 'panel-animating': ctrl.isPanelAnimating}">
+
+            <!-- Panel Content -->
+            <div class="panel-content">
+                <md-toolbar class="md-primary panel-header">
+                    <div class="md-toolbar-tools">
+                        <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
+                        <span class="panel-title">Active Drivers</span>
+                        <span flex></span>
+                        <span class="driver-count">{{ctrl.totalActiveDrivers}}</span>
+                        <md-button class="md-icon-button panel-refresh-button"
+                                   ng-click="ctrl.refreshData()"
+                                   ng-disabled="ctrl.dataLoading"
+                                   aria-label="Refresh drivers">
+                            <md-icon md-font-set="material-symbols-outlined"
+                                     ng-class="{'spin': ctrl.dataLoading}">
+                                refresh
+                            </md-icon>
+                        </md-button>
+                    </div>
+                </md-toolbar>
+
+                <md-content class="driver-list-content">
+                    <!-- Loading State -->
+                    <div class="loading-container" ng-if="ctrl.dataLoading" layout="row" layout-align="center center">
+                        <md-progress-circular md-mode="indeterminate" md-diameter="40"></md-progress-circular>
+                    </div>
+
+                    <!-- No Drivers State -->
+                    <div class="no-drivers" ng-if="!ctrl.dataLoading && ctrl.drivers.length === 0" layout="column" layout-align="center center">
+                        <md-icon md-font-set="material-symbols-outlined" class="no-data-icon">no_accounts</md-icon>
+                        <span class="no-data-text">No active drivers</span>
+                    </div>
+
+                    <!-- Driver List -->
+                    <md-list ng-if="!ctrl.dataLoading && ctrl.drivers.length > 0">
+                        <md-list-item class="driver-item"
+                                      ng-repeat="driver in ctrl.drivers track by driver.courierId"
+                                      ng-click="ctrl.centerOnDriver(driver)"
+                                      md-ink-ripple>
+                            <md-icon md-font-set="material-symbols-outlined" class="driver-icon">person_pin</md-icon>
+                            <div class="md-list-item-text" flex>
+                                <h4 class="driver-name">{{driver.courierName}}</h4>
+                                <p class="driver-jobs" ng-if="driver.totalJobs > 0">
+                                    Jobs: {{driver.totalJobs}}
+                                </p>
+                            </div>
+                            <md-icon md-font-set="material-symbols-outlined" class="locate-icon">my_location</md-icon>
+                        </md-list-item>
+                    </md-list>
+                </md-content>
+            </div>
+
+            <!-- Toggle Arrow Button -->
+            <md-button class="md-icon-button toggle-button"
+                       ng-click="ctrl.togglePanel()"
+                       aria-label="Toggle drivers panel">
+                <md-icon md-font-set="material-symbols-outlined"
+                         ng-class="{'rotate-arrow': ctrl.isPanelHidden}">
+                    chevron_right
+                </md-icon>
+            </md-button>
+        </div>
+
+        <!-- Return to Overview Button -->
+        <md-button class="md-fab md-mini overview-button"
+                   ng-click="ctrl.returnToOverview()"
+                   aria-label="Return to overview">
+            <md-icon md-font-set="material-symbols-outlined">zoom_out_map</md-icon>
+            <md-tooltip md-direction="left">Return to overview</md-tooltip>
+        </md-button>
+
+        <!-- Refresh Button -->
+        <md-button class="md-fab md-mini refresh-button"
+                   ng-click="ctrl.refreshData()"
+                   ng-disabled="ctrl.dataLoading"
+                   aria-label="Refresh data">
+            <md-icon md-font-set="material-symbols-outlined"
+                     ng-class="{'spin': ctrl.dataLoading}">
+                refresh
+            </md-icon>
+            <md-tooltip md-direction="left">Refresh</md-tooltip>
+        </md-button>
+    </div>
+</div>
