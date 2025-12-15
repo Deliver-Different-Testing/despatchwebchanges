@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Frozen;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
@@ -20,47 +18,59 @@ public class TenantInfoService(
     IDbContextFactory<DespatchContext> contextFactory,
     IMemoryCache cache) : ITenantInfoService
 {
-    private static readonly FrozenDictionary<string, string> CountryToCulture = new Dictionary<string, string>
+    private DespatchContext _context;
+    private DespatchContext Context => _context ??= contextFactory.CreateDbContext();
+
+    private string _cachedTimeZone;
+    private string _cachedCountryCode;
+    private int? _cachedStaffId;
+    private int? _cachedContactId;
+    private TimeZoneInfo _cachedTimeZoneInfo;
+    private CultureInfo _cachedCultureInfo;
+
+    private string GetTimeZone() => _cachedTimeZone ??= contextAccessor.HttpContext?.User.Claims
+        .FirstOrDefault(x => x.Type == "TimeZone")?.Value;
+
+    private string GetCountryCode() => _cachedCountryCode ??= contextAccessor.HttpContext?.User.Claims
+        .FirstOrDefault(x => x.Type == "CountryCode")?.Value;
+
+    private TimeZoneInfo GetTimeZoneInfo()
     {
-        ["US"] = "en-US",
-        ["GB"] = "en-GB",
-        ["AU"] = "en-AU",
-        ["NZ"] = "en-NZ"
-    }.ToFrozenDictionary();
-
-    private DespatchContext Context => field ??= contextFactory.CreateDbContext();
-
-    private int? _staffId;
-    private int? _contactId;
-
-    private string GetClaim(string claimType) =>
-        contextAccessor.HttpContext?.User.Claims.FirstOrDefault(c => c.Type == claimType)?.Value;
-
-    private string TimeZone => field ??= GetClaim("TimeZone");
-    private string CountryCode => field ??= GetClaim("CountryCode");
-
-    private TimeZoneInfo TenantTimeZoneInfo =>
-        field ??= TimeZoneInfo.FindSystemTimeZoneById(TimeZone ?? "UTC");
-
-    private CultureInfo TenantCultureInfo
-    {
-        get
-        {
-            if (field != null) return field;
-            var cultureCode = CountryToCulture.GetValueOrDefault(CountryCode, "en-US");
-            return field = new CultureInfo(cultureCode);
-        }
+        if (_cachedTimeZoneInfo != null) return _cachedTimeZoneInfo;
+        var timeZone = GetTimeZone();
+        _cachedTimeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timeZone ?? "UTC");
+        return _cachedTimeZoneInfo;
     }
 
-    public DateTime GetCurrentTenantTime() =>
-        TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TenantTimeZoneInfo);
+    private CultureInfo GetCultureInfo()
+    {
+        if (_cachedCultureInfo != null) return _cachedCultureInfo;
+        var countryCode = GetCountryCode();
+        var cultureCode = countryCode switch
+        {
+            "US" => "en-US",
+            "GB" => "en-GB",
+            "AU" => "en-AU",
+            "NZ" => "en-NZ",
+            _ => "en-US"
+        };
+        _cachedCultureInfo = new CultureInfo(cultureCode);
+        return _cachedCultureInfo;
+    }
+
+    public DateTime GetCurrentTenantTime()
+    {
+        var tenantTimeZoneInfo = GetTimeZoneInfo();
+        return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tenantTimeZoneInfo);
+    }
 
     public DateTime GetCurrentTimeFromTimeZone(TimeZone timeZone)
     {
         if (timeZone is null)
             return GetCurrentTenantTime();
 
-        var timeZoneInfo = cache.GetOrCreate($"timezone_info_{timeZone.Name}", entry =>
+        var cacheKey = $"timezone_info_{timeZone.Name}";
+        var timeZoneInfo = cache.GetOrCreate(cacheKey, entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
             return TimeZoneInfo.FindSystemTimeZoneById(timeZone.Name);
@@ -69,27 +79,53 @@ public class TenantInfoService(
         return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZoneInfo);
     }
 
-    public string FormatDateForTenant(DateTime? dateTime) =>
-        dateTime?.ToString("g", TenantCultureInfo) ?? string.Empty;
+    public string FormatDateForTenant(DateTime? dateTime)
+    {
+        if (!dateTime.HasValue)
+            return string.Empty;
 
-    public int GetStaffId() =>
-        _staffId ??= int.TryParse(GetClaim("StaffID"), out var id) ? id : 0;
+        var culture = GetCultureInfo();
+        return dateTime.Value.ToString("g", culture);
+    }
 
-    public int GetContactId() =>
-        _contactId ??= int.TryParse(GetClaim("ContactID"), out var id) ? id : 0;
 
-    public bool IsUsTenant() =>
-        string.Equals(CountryCode, Country.Us.GetDescription(), StringComparison.OrdinalIgnoreCase);
+    public int GetStaffId()
+    {
+        if (_cachedStaffId.HasValue) return _cachedStaffId.Value;
+        var staffIdString = contextAccessor.HttpContext?.User.Claims
+            .FirstOrDefault(x => x.Type == "StaffID")?.Value;
+        _cachedStaffId = int.Parse(staffIdString ?? "0");
+        return _cachedStaffId.Value;
+    }
+
+    public int GetContactId()
+    {
+        if (_cachedContactId.HasValue) return _cachedContactId.Value;
+        var contactId = contextAccessor.HttpContext?.User.Claims
+            .FirstOrDefault(x => x.Type == "ContactID")?.Value;
+        _cachedContactId = int.Parse(contactId ?? "0");
+        return _cachedContactId.Value;
+    }
+
+    public bool IsUsTenant()
+    {
+        var countryCode = GetCountryCode();
+        var usa = Country.Us.GetDescription();
+        return countryCode?.ToUpper().Equals(usa) ?? false;
+    }
 
     public async Task<Suggestion> GetStaffInfoAsync()
     {
         var staffId = GetStaffId();
 
-        return await cache.GetOrCreateAsync($"staff_info_{staffId}", async entry =>
+        // Cache key unique per staff member
+        var cacheKey = $"staff_info_{staffId}";
+
+        return await cache.GetOrCreateAsync(cacheKey, async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(8);
 
-            return await Context.TucStaffs
+            var staff = await Context.TucStaffs
                 .Where(s => s.UcstId == staffId)
                 .Select(s => new Suggestion
                 {
@@ -98,15 +134,18 @@ public class TenantInfoService(
                 })
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
+
+            return staff;
         });
     }
-
-    public string GetTenantTimeZone() => TimeZone ?? "UTC";
-
+    
+    public string GetTenantTimeZone() => GetTimeZone() ?? "UTC";
+    
     public DateTimeOffset ConvertUtcToTenantTimeZone(DateTime utcDateTime)
     {
-        var tenantTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, TenantTimeZoneInfo);
-        var offset = TenantTimeZoneInfo.GetUtcOffset(utcDateTime);
+        var tenantTimeZoneInfo = GetTimeZoneInfo();
+        var tenantTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tenantTimeZoneInfo);
+        var offset = tenantTimeZoneInfo.GetUtcOffset(utcDateTime);
         return new DateTimeOffset(tenantTime, offset);
     }
 }
