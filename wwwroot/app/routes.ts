@@ -20,7 +20,8 @@ class RouterConfig {
             .configureOverviewState()
             // .configureMegaMapState() // Hidden temporarily
             .configureTaskDashboardState()
-            .configureDriverManagementState();
+            .configureDriverManagementState()
+            .configureCourierMapState();
     }
 
     private configureHomeState(): this {
@@ -275,6 +276,35 @@ class RouterConfig {
                 }]
             },
             component: "driverManagementComponent",
+        });
+        return this;
+    }
+
+    private configureCourierMapState(): this {
+        this.$stateProvider.state("courierMap", {
+            url: "/courierMap",
+            resolve: {
+                manifest: ['$http', async ($http: angular.IHttpService) => {
+                    try {
+                        const response = await $http.get<Record<string, string>>('dist/manifest.json');
+                        return response.data;
+                    } catch {
+                        console.warn('[ROUTES] Failed to load manifest for courierMap state, using fallback names');
+                        return {
+                            'courierMap.js': 'courierMap.js',
+                            'courierMap.css': 'courierMap.css'
+                        };
+                    }
+                }],
+                loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                    const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
+                    return $ocLazyLoad.load([
+                        getAssetPath('courierMap.js'),
+                        getAssetPath('courierMap.css')
+                    ]);
+                }]
+            },
+            component: "courierMapComponent",
         });
         return this;
     }
