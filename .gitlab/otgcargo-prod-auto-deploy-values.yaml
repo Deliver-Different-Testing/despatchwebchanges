@@ -26,8 +26,20 @@ tolerations:
 hpa:
   enabled: true
   minReplicas: 2
-  maxReplicas: 3
-  targetCPUUtilizationPercentage: 85
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 85
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 70
 
 ingress:
   tls:
@@ -52,19 +64,26 @@ livenessProbe:
   path: "/healthz"
   initialDelaySeconds: 30
   timeoutSeconds: 15
+  failureThreshold: 5
   scheme: "HTTP"
   probeType: "httpGet"
 readinessProbe:
   path: "/healthz"
   initialDelaySeconds: 30
-  timeoutSeconds: 5
+  timeoutSeconds: 10
+  failureThreshold: 5
   scheme: "HTTP"
   probeType: "httpGet"
 
 resources:
   requests:
-    memory: 256Mi
+    memory: 512Mi
     cpu: 100m
   limits:
-    memory: 512Mi
+    memory: 1Gi
     cpu: 500m
+
+lifecycle:
+  preStop:
+    exec:
+      command: ["/bin/sh", "-c", "sleep 10"]
