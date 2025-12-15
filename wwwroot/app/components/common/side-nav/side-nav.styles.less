@@ -1,32 +1,29 @@
 @import "../../../../css/variables.less";
 
-// Professional color system
+// Nav color system - uses Material theme via md-colors directive
 @nav-surface: #ffffff;
-@nav-surface-variant: #f8f9fa;
 @nav-border: #e5e7eb;
-@nav-text-primary: #111827;
-@nav-text-secondary: #6b7280;
-@nav-text-muted: #9ca3af;
-@nav-hover-bg: #f3f4f6;
-@nav-active-bg: fade(@primary-color, 8%);
-@nav-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+@nav-text-primary: @text-dark;
+@nav-text-secondary: @text-muted;
+@nav-shadow: @menu-box-shadow;
 
 .side-nav-component {
   .md-sidenav-right {
     background-color: @nav-surface;
-    width: 320px;
+    width: 280px;
     display: flex;
     flex-direction: column;
-    height: calc(100% - 16px);
-    border-left: 1px solid @nav-border;
+    height: 100vh;
+    max-height: 100vh;
+    border-left: none;
     box-shadow: @nav-shadow;
+    overflow: hidden;
   }
 
-  // Header section with user info
+  // Header section - background color set by md-colors directive
   .nav-header {
-    background-color: @nav-surface-variant;
-    border-bottom: 1px solid @nav-border;
     padding: 0;
+    flex-shrink: 0;
 
     .account-header {
       padding: 24px 20px;
@@ -36,15 +33,15 @@
         width: 64px;
         height: 64px;
         border-radius: 32px;
-        background-color: @nav-active-bg;
+        background-color: rgba(255, 255, 255, 0.2);
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 16px;
-        border: 2px solid fade(@primary-color, 20%);
+        margin-bottom: 12px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
 
         md-icon {
-          color: @primary-color;
+          color: inherit;
           font-size: 32px;
           height: 32px;
           width: 32px;
@@ -55,7 +52,7 @@
         .md-title {
           font-size: @font-lg;
           font-weight: @weight-semibold;
-          color: @nav-text-primary;
+          color: inherit;
           margin: 0 0 4px 0;
           line-height: @line-tight;
         }
@@ -63,7 +60,8 @@
         .md-caption {
           font-size: @font-sm;
           font-weight: @weight-normal;
-          color: @nav-text-secondary;
+          color: inherit;
+          opacity: 0.8;
           margin: 0;
         }
       }
@@ -71,37 +69,38 @@
       .date-display {
         display: inline-block;
         margin-top: 12px;
-        padding: 6px 12px;
-        background-color: @nav-surface-variant;
+        padding: 6px 14px;
+        background-color: rgba(255, 255, 255, 0.2);
         border-radius: 16px;
         font-size: @font-xs;
         font-weight: @weight-medium;
-        color: @nav-text-secondary;
-        border: 1px solid @nav-border;
+        color: inherit;
       }
     }
   }
 
   // Navigation content
   .nav-content {
-    flex: 1;
+    flex: 1 1 auto;
     overflow-y: auto;
-    padding: 8px 0;
+    overflow-x: hidden;
+    padding: 8px;
+    min-height: 0;
 
     md-list {
       padding: 0;
     }
 
     .nav-item {
-      margin: 2px 12px;
-      border-radius: 8px;
-      min-height: 48px;
+      margin: 2px 0;
+      border-radius: 6px;
+      min-height: 40px;
       position: relative;
       transition: all 0.15s ease;
       cursor: pointer;
 
       &:hover:not(.active) {
-        background-color: @nav-hover-bg;
+        background-color: rgba(0, 0, 0, 0.04);
 
         .nav-item-content {
           md-icon, p {
@@ -111,15 +110,11 @@
       }
 
       &.active {
-        background-color: @nav-active-bg;
+        background-color: rgba(0, 0, 0, 0.08);
 
         .nav-item-content {
-          md-icon {
-            color: @primary-color;
-          }
-
-          p {
-            color: @primary-color;
+          md-icon, p {
+            color: @nav-text-primary;
             font-weight: @weight-semibold;
           }
         }
@@ -131,8 +126,8 @@
           top: 50%;
           transform: translateY(-50%);
           width: 3px;
-          height: 24px;
-          background-color: @primary-color;
+          height: 20px;
+          background-color: @nav-text-primary;
           border-radius: 0 2px 2px 0;
         }
       }
@@ -140,14 +135,14 @@
       .nav-item-content {
         display: flex;
         align-items: center;
-        padding: 12px 16px;
+        padding: 10px 12px;
 
         md-icon {
           color: @nav-text-secondary;
           font-size: 20px;
           height: 20px;
           width: 20px;
-          margin-right: 16px;
+          margin-right: 12px;
           transition: color 0.15s ease;
           flex-shrink: 0;
         }
@@ -166,61 +161,60 @@
 
   // Footer section
   .nav-footer {
-    background-color: @nav-surface-variant;
+    background-color: @main-background-color;
     border-top: 1px solid @nav-border;
-    padding: 20px;
-    margin-top: auto;
+    padding: 12px 16px;
+    flex-shrink: 0;
 
     .copyright-text {
       text-align: center;
 
       p {
-        margin: 0 0 4px 0;
+        margin: 0;
         font-size: @font-xs;
         font-weight: @weight-normal;
-        color: @nav-text-muted;
+        color: @nav-text-secondary;
         line-height: @line-normal;
       }
 
       .version-text {
         font-size: @font-xs;
-        color: @nav-text-muted;
-        opacity: 0.8;
-        margin: 4px 0 16px 0;
+        color: @nav-text-secondary;
+        opacity: 0.7;
+        margin: 4px 0 8px 0;
       }
 
       .nz-made {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background-color: fade(@primary-color, 10%);
-        border: 1px solid fade(@primary-color, 20%);
-        border-radius: 20px;
-        padding: 8px 16px;
+        background-color: fade(@primary-blue, 10%);
+        border-radius: 16px;
+        padding: 6px 12px;
+        margin-top: 8px;
 
         md-icon {
-          color: @primary-color;
-          font-size: 20px;
-          height: 16px;
-          width: 16px;
-          margin-right: 8px;
+          color: @primary-blue;
+          font-size: 14px;
+          height: 14px;
+          width: 14px;
+          margin-right: 6px;
         }
 
         span {
           font-size: @font-xs;
           font-weight: @weight-medium;
-          color: @primary-color;
-          letter-spacing: 0.25px;
+          color: @primary-blue;
         }
       }
     }
   }
 
-  // Enhanced transitions
+  // Smooth transitions
   .md-sidenav-right {
     &.ng-enter,
     &.ng-leave {
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     &.ng-enter {
@@ -243,7 +237,7 @@
   // Responsive adjustments
   @media (max-width: 768px) {
     .md-sidenav-right {
-      width: 280px;
+      width: 260px;
     }
 
     .nav-header .account-header {
@@ -264,9 +258,9 @@
   }
 }
 
-// Material Design ripple effect enhancement
+// Ripple effect
 .nav-item {
   .md-ripple-container {
-    border-radius: 8px;
+    border-radius: 6px;
   }
 }
