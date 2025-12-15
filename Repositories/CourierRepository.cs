@@ -2188,7 +2188,25 @@ END CATCH");
 
         var courierIds = couriers.Select(c => c.UccrId).ToList();
 
-        var earningsData = await Context.TucJobs
+        // Get all courier data for hourly rate calculation (single query instead of 3)
+        var allCouriersForAverage = await query
+            .AsNoTracking()
+            .Select(c => new
+            {
+                c.UccrId,
+                c.CourierLogInOut.LogInTime,
+                c.CourierLogInOut.LogOutTime
+            })
+            .TagWith("GetCourierDailyEarnings - Step 3: All Couriers for Average")
+            .ToListAsync();
+
+        var allCourierIds = allCouriersForAverage.Select(c => c.UccrId).ToList();
+
+        // Run earnings queries in parallel using separate contexts
+        await using var earningsContext = CreateNewContext();
+        await using var allEarningsContext = CreateNewContext();
+
+        var earningsTask = earningsContext.TucJobs
             .AsNoTracking()
             .Where(j => j.UcjbCourierId.HasValue &&
                         courierIds.Contains(j.UcjbCourierId.Value) &&
@@ -2200,16 +2218,10 @@ END CATCH");
                 Deliveries = g.Count(),
                 Earnings = g.Sum(j => j.CourierPayment) ?? 0
             })
-            .TagWith("GetCourierDailyEarnings - Step 3: Earnings Data")
+            .TagWith("GetCourierDailyEarnings - Step 4a: Paginated Earnings Data")
             .ToListAsync();
 
-        var earningsDict = earningsData.ToDictionary(x => x.CourierId);
-
-        var allCourierIds = await query
-            .Select(c => c.UccrId)
-            .ToListAsync();
-
-        var allEarningsForAverage = await Context.TucJobs
+        var allEarningsTask = allEarningsContext.TucJobs
             .AsNoTracking()
             .Where(j => j.UcjbCourierId.HasValue &&
                         allCourierIds.Contains(j.UcjbCourierId.Value))
@@ -2219,19 +2231,20 @@ END CATCH");
                 CourierId = g.Key,
                 TotalEarnings = g.Sum(j => j.CourierPayment) ?? 0
             })
-            .TagWith("GetCourierDailyEarnings - Step 4: Average Hourly Rate Calculation")
+            .TagWith("GetCourierDailyEarnings - Step 4b: All Earnings for Average")
             .ToListAsync();
 
+        await Task.WhenAll(earningsTask, allEarningsTask);
+
+        var earningsData = await earningsTask;
+        var allEarningsForAverage = await allEarningsTask;
+
+        var earningsDict = earningsData.ToDictionary(x => x.CourierId);
         var allEarningsDict = allEarningsForAverage.ToDictionary(x => x.CourierId, x => x.TotalEarnings);
 
-        // Calculate hourly rates in memory
+        // Calculate hourly rates in memory using cached courier data
         var hourlyRates = new List<decimal>();
-        foreach (var courier in await query.Select(c => new
-                 {
-                     c.UccrId,
-                     c.CourierLogInOut.LogInTime,
-                     c.CourierLogInOut.LogOutTime
-                 }).ToListAsync())
+        foreach (var courier in allCouriersForAverage)
         {
             var hoursLogged = ((courier.LogOutTime ?? now) - courier.LogInTime).TotalMinutes;
             if (hoursLogged > 0 && allEarningsDict.TryGetValue(courier.UccrId, out var earnings))
@@ -2286,7 +2299,7 @@ END CATCH");
         var pageSize = Math.Max(1, Math.Min(100, request.PageSize));
 
         var query = Context.TucCouriers
-            .Where(c => c.UccrEmail != null).Distinct().AsQueryable();
+            .Where(c => c.UccrEmail != null);
 
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
@@ -2309,6 +2322,10 @@ END CATCH");
 
         var courierEmails = await query
             .AsNoTracking()
+            .OrderBy(c => c.UccrName)
+            .ThenBy(c => c.UccrSurname)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(c => new CourierEmailViewModel
             {
                 CourierId = c.UccrId,
@@ -2385,14 +2402,15 @@ END CATCH");
                 .ExecuteDeleteAsync();
 
             // Create new schedules with the updated data (new days, new times)
-            foreach (var schedule in request.Days.Select(GetDayOfWeekAsInt).Select(dayOfWeek => new TblAfterhoursCourier
-                     {
-                         CourierId = request.CourierId,
-                         WeekDay = dayOfWeek,
-                         StartTime = request.StartTime.Value.DateTime,
-                         EndTime = request.EndTime.Value.DateTime
-                     })) await Context.TblAfterhoursCouriers.AddAsync(schedule);
+            var schedules = request.Days.Select(GetDayOfWeekAsInt).Select(dayOfWeek => new TblAfterhoursCourier
+            {
+                CourierId = request.CourierId,
+                WeekDay = dayOfWeek,
+                StartTime = request.StartTime.Value.DateTime,
+                EndTime = request.EndTime.Value.DateTime
+            }).ToList();
 
+            await Context.TblAfterhoursCouriers.AddRangeAsync(schedules);
             await Context.SaveChangesAsync();
         }
         catch (Exception e)
@@ -2411,15 +2429,16 @@ END CATCH");
             ArgumentNullException.ThrowIfNull(request.StartTime);
             ArgumentNullException.ThrowIfNull(request.EndTime);
 
-            // Add a record for each day
-            foreach (var schedule in request.Days.Select(GetDayOfWeekAsInt).Select(dayOfWeek => new TblAfterhoursCourier
-                     {
-                         CourierId = request.CourierId,
-                         WeekDay = dayOfWeek,
-                         StartTime = request.StartTime.Value.DateTime,
-                         EndTime = request.EndTime.Value.DateTime
-                     })) await Context.TblAfterhoursCouriers.AddAsync(schedule);
+            // Add records for each day in batch
+            var schedules = request.Days.Select(GetDayOfWeekAsInt).Select(dayOfWeek => new TblAfterhoursCourier
+            {
+                CourierId = request.CourierId,
+                WeekDay = dayOfWeek,
+                StartTime = request.StartTime.Value.DateTime,
+                EndTime = request.EndTime.Value.DateTime
+            }).ToList();
 
+            await Context.TblAfterhoursCouriers.AddRangeAsync(schedules);
             await Context.SaveChangesAsync();
         }
         catch (Exception e)

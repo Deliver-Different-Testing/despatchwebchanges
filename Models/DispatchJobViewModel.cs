@@ -104,4 +104,5 @@ public class DispatchJobViewModel
     public Suggestion PickUpTimeZone { get; set; }
     public Suggestion DeliveryTimeZone { get; set; }
     public bool AllowSplit { get; set; }
+    public string CustomJobName { get; set; }
 }

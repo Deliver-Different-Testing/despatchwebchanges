@@ -409,7 +409,8 @@ public partial class JobRepository(
                         (j.UcjbClientRefb ?? string.Empty) + " " +
                         (j.UcjbOurRef ?? string.Empty) + " " +
                         j.UcjbNumber + " " +
-                        (j.Barcode ?? string.Empty),
+                        (j.Barcode ?? string.Empty) + " " +
+                        (j.CustomJobName ?? string.Empty),
                         wildSearch
                     )
                 );
@@ -424,7 +425,8 @@ public partial class JobRepository(
                         (j.UcjbClientRefb ?? string.Empty) + " " +
                         (j.UcjbOurRef ?? string.Empty) + " " +
                         j.UcjbNumber + " " +
-                        (j.Barcode ?? string.Empty),
+                        (j.Barcode ?? string.Empty) + " " +
+                        (j.CustomJobName ?? string.Empty),
                         wildSearch
                     )
                 );
@@ -586,19 +588,28 @@ public partial class JobRepository(
             .Distinct()
             .ToList();
 
-        var dbData = await Context
+        // Run TucJobs and TucJobArchives queries in parallel with separate contexts
+        await using var activeJobsContext = CreateNewContext();
+        await using var archivedJobsContext = CreateNewContext();
+
+        var dbDataTask = activeJobsContext
             .TucJobs.Where(j =>
                 (ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value)))
                 && j.UcjbLocked != true
             )
             .ToListAsync();
 
-        var dbDataArchive = await Context
+        var dbDataArchiveTask = archivedJobsContext
             .TucJobArchives.Where(j =>
                 (ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value)))
                 && (j.UcjbLocked != 1 || !j.UcjbInvoiceNo.HasValue)
             )
             .ToListAsync();
+
+        await Task.WhenAll(dbDataTask, dbDataArchiveTask);
+
+        var dbData = await dbDataTask;
+        var dbDataArchive = await dbDataArchiveTask;
 
         // Update job status
         await UpdateJobStatusesAsync(data, dbData, dbDataArchive);
@@ -1354,8 +1365,8 @@ public partial class JobRepository(
             .MaxAsync(selector: jt => jt.DeliveryTime);
 
         // Get job information
-        var job = Context.TucJobs.FirstOrDefault(predicate: j => j.UcjbId == jobId);
-        ArgumentNullException.ThrowIfNull(argument: job);
+        var job = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
+        ArgumentNullException.ThrowIfNull(job);
 
         if (!job.UcjbTime.HasValue) return;
 
@@ -3062,27 +3073,32 @@ public partial class JobRepository(
         runDate ??= _infoService.GetCurrentTenantTime();
         var cutoffDate = runDate.Value.AddDays(-3);
 
+        // Use proper joins instead of subqueries to avoid N+1 queries
         var query = from bs in Context.TblBulkScans
+            join courier in Context.TucCouriers on bs.CourierId equals courier.UccrId into courierJoin
+            from courier in courierJoin.DefaultIfEmpty()
+            join runViewerTransferTo in Context.TucCouriers on bs.ToCourierId equals runViewerTransferTo.UccrId into rvtJoin
+            from runViewerTransferTo in rvtJoin.DefaultIfEmpty()
             where bs.ScanDateTime > cutoffDate && bs.Scan == scan
+            orderby bs.ScanDateTime
             select new
             {
                 bs.BulkScanId,
-                Courier = Context.TucCouriers.FirstOrDefault(c => c.UccrId == bs.CourierId),
+                Courier = courier,
                 bs.ScanDateTime,
                 bs.ScanType,
                 bs.CourierId,
                 bs.ToCourierId,
                 bs.RunName,
                 TransferTo = bs.ToCourier,
-                RunViewerTransferTo = Context.TucCouriers
-                    .FirstOrDefault(c => bs.CourierId == 999
-                                         && c.UccrId == bs.ToCourierId
-                                         && c.Active)
+                // Only include RunViewerTransferTo when CourierId is 999 and the courier is active
+                RunViewerTransferTo = bs.CourierId == 999 && runViewerTransferTo != null && runViewerTransferTo.Active
+                    ? runViewerTransferTo
+                    : null
             };
 
         var results = await query
             .AsNoTracking()
-            .OrderBy(s => s.ScanDateTime)
             .Select(s => new ScanDetailResult
             {
                 BulkScanId = s.BulkScanId,
@@ -4578,61 +4594,75 @@ public partial class JobRepository(
 
     public async Task UpdateClearListAreaOrderStatus(List<int> courierIds)
     {
+        if (courierIds.Count == 0) return;
+
         var now = _infoService.GetCurrentTenantTime();
         try
         {
+            // Batch query 1: Get job counts per courier (jobs not void and not done)
+            var jobCountsByCourier = await Context.TucJobs
+                .Where(j => j.UcjbDate.Date == now.Date
+                            && !j.UcjbVoid
+                            && !j.UcjbJobDone
+                            && j.UcjbCourierId.HasValue
+                            && courierIds.Contains(j.UcjbCourierId.Value))
+                .GroupBy(j => j.UcjbCourierId!.Value)
+                .Select(g => new { CourierId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.CourierId, x => x.Count);
+
+            // Batch query 2: Get counts of jobs NOT picked up or late delivery per courier
+            var nonPickedUpCountsByCourier = await Context.TucJobs
+                .Where(j => j.UcjbDate.Date == now.Date
+                            && !j.UcjbVoid
+                            && !j.UcjbJobDone
+                            && j.UcjbCourierId.HasValue
+                            && courierIds.Contains(j.UcjbCourierId.Value)
+                            && j.UcjbStatus != (int)JobStatus.PickedUp
+                            && j.UcjbStatus != (int)JobStatus.LateDelivery)
+                .GroupBy(j => j.UcjbCourierId!.Value)
+                .Select(g => new { CourierId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.CourierId, x => x.Count);
+
+            // Determine which couriers get which status
+            var couriersToSetRejected = new List<int>(); // Status 3 - no jobs
+            var couriersToSetPickedUp = new List<int>(); // Status 5 - all jobs picked up or late
+
             foreach (var courierId in courierIds)
             {
-                // Count jobs that are not void and not done for the courier
-                var jobCount = await Context.TucJobs
-                    .Where(j => j.UcjbDate.Date == now.Date
-                                && !j.UcjbVoid &&
-                                !j.UcjbJobDone &&
-                                j.UcjbCourierId == courierId)
-                    .CountAsync();
+                var jobCount = jobCountsByCourier.GetValueOrDefault(courierId, 0);
 
                 if (jobCount == 0)
                 {
-                    // No jobs-set status to 3
-                    var clearListOrders = await Context.TblClearListAreaOrders
-                        .Where(c => c.CourierId == courierId)
-                        .ToListAsync();
-
-                    foreach (var order in clearListOrders)
-                    {
-                        order.Status = (int)JobStatus.Rejected;
-                        order.OrderTime = now;
-                    }
+                    couriersToSetRejected.Add(courierId);
                 }
-                else // jobCount > 0
+                else
                 {
-                    // Check if jobs are only status 5 (picked up) or 8 (late delivery)
-                    var jobsNotPickedUpOrLate = await Context.TucJobs
-                        .Where(j =>
-                            j.UcjbDate.Date == now.Date &&
-                            j.UcjbVoid == false &&
-                            j.UcjbJobDone == false &&
-                            j.UcjbCourierId == courierId &&
-                            j.UcjbStatus != (int)JobStatus.PickedUp &&
-                            j.UcjbStatus != (int)JobStatus.LateDelivery)
-                        .CountAsync();
-
-                    if (jobsNotPickedUpOrLate != 0) continue;
-
-                    // All jobs are only picked up or late delivery - set status to 5
-                    var clearListOrders = await Context.TblClearListAreaOrders
-                        .Where(c => c.CourierId == courierId)
-                        .ToListAsync();
-
-                    foreach (var order in clearListOrders)
+                    var nonPickedUpCount = nonPickedUpCountsByCourier.GetValueOrDefault(courierId, 0);
+                    if (nonPickedUpCount == 0)
                     {
-                        order.Status = (int)JobStatus.PickedUp;
-                        order.OrderTime = now;
+                        couriersToSetPickedUp.Add(courierId);
                     }
                 }
             }
 
-            await Context.SaveChangesAsync();
+            // Bulk update using ExecuteUpdateAsync - no entity loading needed
+            if (couriersToSetRejected.Count > 0)
+            {
+                await Context.TblClearListAreaOrders
+                    .Where(c => couriersToSetRejected.Contains(c.CourierId))
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(c => c.Status, (int)JobStatus.Rejected)
+                        .SetProperty(c => c.OrderTime, now));
+            }
+
+            if (couriersToSetPickedUp.Count > 0)
+            {
+                await Context.TblClearListAreaOrders
+                    .Where(c => couriersToSetPickedUp.Contains(c.CourierId))
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(c => c.Status, (int)JobStatus.PickedUp)
+                        .SetProperty(c => c.OrderTime, now));
+            }
         }
         catch (Exception e)
         {

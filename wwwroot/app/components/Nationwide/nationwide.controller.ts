@@ -955,6 +955,13 @@ class NationwideControl extends BaseController {
     private loadTasksInBackground(filterType: string = this.tasksFilter, jobId?: number): void {
         const effectiveJobId = jobId || this.currentJob?.id;
 
+        // Don't load tasks if no job is selected
+        if (!effectiveJobId) {
+            this.tasks = [];
+            this.filteredTasks = [];
+            return;
+        }
+
         if (this.tasksLoadingInBackground) {
             this.tasksService.cancelJobTaskLoading(this.nationwidePageId, this.currentJob?.id);
         }
@@ -1567,12 +1574,19 @@ class NationwideControl extends BaseController {
     }
 
     async loadTasks(filterType: string = this.tasksFilter): Promise<void> {
+        // Don't load tasks if no job is selected
+        if (!this.currentJob?.id) {
+            this.tasks = [];
+            this.filteredTasks = [];
+            return;
+        }
+
         try {
             this.tasksLoading = true;
 
             const filterRequest = this.tasksService.buildFilterRequest(
                 filterType,
-                this.currentJob?.id,
+                this.currentJob.id,
                 this.staffFilter,
                 this.eventTypeFilter,
                 this.nationwidePageId

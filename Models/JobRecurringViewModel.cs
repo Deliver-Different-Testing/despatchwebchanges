@@ -12,7 +12,6 @@ public class JobRecurringViewModel : JobViewModel
     public DateTime? StopDate { get; set; }
     public DateTime? RestartDate { get; set; }
     public bool? Active { get; set; }
-    public string CustomJobName { get; set; }
 
     public int DaysOfWeek { get; set; }
     public int Frequency { get; set; }

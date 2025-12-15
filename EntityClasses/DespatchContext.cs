@@ -5233,6 +5233,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CourierPayment).HasColumnType("money");
             entity.Property(e => e.CourierPercentage).HasColumnType("numeric(18, 4)");
             entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
+            entity.Property(e => e.CustomJobName).HasMaxLength(255);
             entity.Property(e => e.DeliverByTime).HasColumnType("datetime");
             entity.Property(e => e.DeliverByTimeZoneId).HasColumnName("DeliverByTimeZoneID");
             entity.Property(e => e.DeliverToContact).HasMaxLength(100);
@@ -5729,6 +5730,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CourierPayment).HasColumnType("money");
             entity.Property(e => e.CourierPercentage).HasColumnType("numeric(18, 4)");
             entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
+            entity.Property(e => e.CustomJobName).HasMaxLength(255);
             entity.Property(e => e.DeliverByTime).HasColumnType("datetime");
             entity.Property(e => e.DeliverByTimeZoneId).HasColumnName("DeliverByTimeZoneID");
             entity.Property(e => e.DeliverToContact).HasMaxLength(100);

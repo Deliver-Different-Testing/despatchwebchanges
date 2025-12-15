@@ -668,7 +668,7 @@ class HomeController extends BaseController {
                 title: 'Support Tasks',
                 icon: "support",
                 templateUrl: "app/components/home/partials/supports.html",
-                showRefresh: false,
+                showRefresh: true,
                 visible: true,
                 description: "Manage support requests and auxiliary tasks"
             }
@@ -1393,6 +1393,13 @@ class HomeController extends BaseController {
     private loadSupportsInBackground(filterType: string = this.supportsFilter, jobId?: number): void {
         const effectiveJobId = jobId || this.currentJobId;
 
+        // Don't load tasks if no job is selected
+        if (!effectiveJobId) {
+            this.supports = [];
+            this.filteredSupports = [];
+            return;
+        }
+
         if (this.supportsLoadingInBackground) {
             console.log("Supports already loading in background, cancelling previous");
             this.tasksService.cancelJobTaskLoading(this.currentAppPage, this.currentJobId);
@@ -1627,10 +1634,13 @@ class HomeController extends BaseController {
 
     async refreshBox(boxName: string): Promise<void> {
         console.log("'Refresh box called. ", boxName);
-        
+
         switch (boxName) {
             case DispatchBoxes.JobDetail:
                 await this.refreshJobDetail();
+                break;
+            case DispatchBoxes.Supports:
+                await this.getSupports();
                 break;
             case DispatchBoxes.JobsList:
             case DispatchBoxes.Map:
@@ -1788,6 +1798,13 @@ class HomeController extends BaseController {
     }
 
     async loadSupports(filterType: string = this.supportsFilter): Promise<void> {
+        // Don't load tasks if no job is selected
+        if (!this.currentJobId) {
+            this.supports = [];
+            this.filteredSupports = [];
+            return;
+        }
+
         try {
             this.supportsLoading = true;
             this.applyScope();
@@ -1864,6 +1881,10 @@ class HomeController extends BaseController {
     async filterTasks(filterType: string): Promise<void> {
         this.supportsFilter = filterType;
         await this.loadSupports(filterType);
+    }
+
+    async getSupports(): Promise<void> {
+        await this.loadSupports(this.supportsFilter);
     }
 
     private async markJobReadStatus(jobId: number, isRead: boolean) {

@@ -475,6 +475,8 @@ public partial class TucJobArchive
 
     public DateTime? CourierBonusCancelled { get; set; }
 
+    public string CustomJobName { get; set; }
+
     public virtual TucAgent Agent { get; set; }
 
     public virtual TimeZone DeliverByTimeZone { get; set; }

@@ -455,6 +455,8 @@ public partial class TucJob
 
     public string PickupCondition { get; set; }
 
+    public string CustomJobName { get; set; }
+
     public virtual TucJobType AcceptedJobType { get; set; }
 
     public virtual TucAgent Agent { get; set; }

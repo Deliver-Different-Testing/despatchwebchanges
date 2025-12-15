@@ -13,6 +13,12 @@
                 <md-tooltip md-direction="bottom">Messages</md-tooltip>
             </md-button>
 
+            <md-button aria-label="Refresh tasks" class="md-icon-button"
+                       ng-click="ctrl.refreshTasks()">
+                <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+                <md-tooltip md-direction="bottom">Refresh Tasks</md-tooltip>
+            </md-button>
+
             <date-filter-menu
                     ng-if="!ctrl.showFullCalendar"
                     date-filter-data="ctrl.dateFilterData"

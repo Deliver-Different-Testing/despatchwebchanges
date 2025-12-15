@@ -526,7 +526,8 @@ class JobsListController extends BaseController {
             case JobCategory.NeedsDispatch:
                 return this.needsDispatch(job);
             case JobCategory.InProgress:
-                return this.isActive(job);
+                // Show all jobs that are not delivered (both assigned and unassigned)
+                return !this.isDelivered(job);
             case JobCategory.Delivered:
                 return this.isDelivered(job);
             default:
