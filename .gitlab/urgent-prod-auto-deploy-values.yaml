@@ -26,9 +26,20 @@ tolerations:
 hpa:
   enabled: true
   minReplicas: 2
-  maxReplicas: 3
-  targetCPUUtilizationPercentage: 85
-  targetMemoryUtilizationPercentage: 70
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 85
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 70
 
 ingress:
   tls:
