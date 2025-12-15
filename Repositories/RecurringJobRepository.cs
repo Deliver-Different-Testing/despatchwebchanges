@@ -32,7 +32,7 @@ public class RecurringJobRepository(
             .Where(j => j.UcbkActive == request.Active && j.UcbkOneOff != true);
 
         // US tenants: exclude child jobs (only show parent jobs)
-        if (isUsTenant) query = query.Where(j => !j.ParentId.HasValue);
+        if (isUsTenant) query = query.Where(j => !j.ParentId.HasValue || j.ParentId == j.UcbkId);
 
         if (!string.IsNullOrWhiteSpace(request.SearchText))
         {
@@ -508,7 +508,7 @@ public class RecurringJobRepository(
             // Update parent job and last child job (if exists)
             var rowsAffected = await Context.TucJobBookings
                 .Where(jb => jb.UcbkId == request.JobId || jb.UcbkId == lastChildId)
-                .ExecuteUpdateAsync(setters => setters
+                .ExecuteUpdateAsync(s => s
                     .SetProperty(jb => jb.DeliveryLatitude, address.Latitude)
                     .SetProperty(jb => jb.DeliveryLongitude, address.Longitude)
                     .SetProperty(jb => jb.DeliveryAddressLine1, address.AddressLine1)
@@ -549,7 +549,7 @@ public class RecurringJobRepository(
             // Update parent job and first child job (if exists)
             var rowsAffected = await Context.TucJobBookings
                 .Where(jb => jb.UcbkId == request.JobId || jb.UcbkId == firstChildId)
-                .ExecuteUpdateAsync(setters => setters
+                .ExecuteUpdateAsync(s => s
                     .SetProperty(jb => jb.PickUpLatitude, address.Latitude)
                     .SetProperty(jb => jb.PickUpLongitude, address.Longitude)
                     .SetProperty(jb => jb.PickupAddressLine1, address.AddressLine1)
