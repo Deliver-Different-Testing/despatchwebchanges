@@ -86,16 +86,16 @@
                         </md-menu-item>
                         <md-divider></md-divider>
                         <md-menu-item ng-repeat="lo in ctrl.layouts track by $index">
-                            <md-button>
-                                <md-icon md-font-set="material-symbols-outlined" ng-click="ctrl.deleteLayout($index)"
+                            <md-button ng-click="ctrl.loadLayout($index)">
+                                <md-icon md-font-set="material-symbols-outlined"
+                                         ng-click="ctrl.deleteLayout($index); $event.stopPropagation()"
                                          ng-if="lo.name != 'Default'">
                                     delete
                                 </md-icon>
                                 <md-icon md-font-set="material-symbols-outlined" ng-if="lo.name == 'Default'">
                                     tune
                                 </md-icon>
-                                <span ng-click="ctrl.loadLayout($index)"
-                                      ng-style="lo.name == ctrl.currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
+                                <span ng-style="lo.name == ctrl.currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
                             </md-button>
                         </md-menu-item>
                     </md-menu-content>
@@ -142,7 +142,7 @@
                                 <!--Icon-->
                                 <span class="material-symbols-outlined">{{ctrl.boxes[box.name].icon}}</span>
 
-                                <span class="md-card-title">
+                                <span class="md-card-title" md-truncate>
                                 {{ctrl.boxes[box.name].title}}
                                 <span ng-if="box.name == 'detail'">{{ctrl.currentSelection}}</span>
                                 <span ng-if="box.name == 'currentWork' || box.name == 'map'">{{ctrl.currentWorkSelection}}</span>

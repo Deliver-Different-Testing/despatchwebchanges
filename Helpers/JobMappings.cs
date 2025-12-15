@@ -385,7 +385,9 @@ public static class JobMappings
         DeliverToPrivateRes = false, // Will be set from separate query
         ParcelDimensions = null, // Will be loaded separately
         PalletInfo = null, // Will be loaded separately
-        AssignedFlight = null // Will be loaded separately
+        AssignedFlight = null, // Will be loaded separately
+
+        CustomJobName = j.CustomJobName
     };
 
 
@@ -765,7 +767,9 @@ public static class JobMappings
                 }
                 : null,
 
-        Locked = j.UcjbLocked != null && j.UcjbLocked != 0
+        Locked = j.UcjbLocked != null && j.UcjbLocked != 0,
+
+        CustomJobName = j.CustomJobName
     };
 
     public static readonly Expression<Func<TucJobBooking, JobViewModel>> JobRecurringMapping = j =>
@@ -796,6 +800,7 @@ public static class JobMappings
                 }
                 : null,
             Barcode = j.Barcode ?? "-",
+            ConNote = j.Connote,
 
             PickupTime = null,
             DeliveryTime = null,
