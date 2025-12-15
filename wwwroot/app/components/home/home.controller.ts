@@ -1043,7 +1043,14 @@ class HomeController extends BaseController {
                 this.toastrService.showSuccessToast("Job dispatched successfully");
             }
 
+            // Save the job ID before getData() which clears currentJob
+            const savedJobId = jobId;
+
             await this.getData();
+
+            // Restore the job ID and refresh the job detail to show updated courier assignment
+            this.currentJobId = savedJobId;
+            await this.refreshJobDetail();
         } catch (error) {
             console.error("Error dispatching jobs:", error);
             throw error;
