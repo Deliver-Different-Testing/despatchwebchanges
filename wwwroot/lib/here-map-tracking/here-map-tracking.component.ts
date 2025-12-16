@@ -274,7 +274,10 @@ class HereMapController {
                 undefined
             );
 
-            this.autoZoomMapToShowAllPoints();
+            // Only auto-zoom if preserveView is not enabled
+            if (!this.$scope.config?.preserveView) {
+                this.autoZoomMapToShowAllPoints();
+            }
         }
     }
     
@@ -553,7 +556,12 @@ class HereMapController {
         if (!this.mapInstance?.map || !this.$scope.config?.job) {
             return;
         }
-        
+
+        // Respect preserveView setting - don't auto-zoom if preserveView is enabled
+        if (this.$scope.config.preserveView) {
+            return;
+        }
+
         if(!this.$scope.config.courierLocation) return;
         const allPoints = this.mapService.getAllVisiblePoints(
             this.$scope.config.job,

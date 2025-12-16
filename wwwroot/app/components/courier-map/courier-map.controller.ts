@@ -11,7 +11,6 @@ import ToastrService from "../../services/toastr.service";
 import GreetUser from "../../functions/greetUser";
 
 declare const H: any;
-declare const FirstName: string;
 
 // Bounding box coordinates for country-wide courier queries
 const US_BOUNDS = { minLng: -125, maxLng: -65, minLat: 24, maxLat: 50 };
@@ -50,6 +49,9 @@ class CourierMapController extends BaseController {
     mapCenter: Coordinates;
     hereMapCredentials?: HereMapCredentials;
     hereMapConfig?: HereMapConfig;
+
+    // User zoom tracking - preserve user's zoom level across refreshes
+    private userZoomLevel: number | null = null;
 
     // Data
     drivers: IAvailableCourierPosition[] = [];
@@ -124,9 +126,15 @@ class CourierMapController extends BaseController {
         this.map = map;
         this.platform = platform;
 
-        // Create a group for all markers (batch operations are faster)
+        // Create a group for all markers
         this.markerGroup = new H.map.Group();
         this.map.addObject(this.markerGroup);
+
+        // Track user zoom changes to preserve across refreshes
+        this.map.addEventListener('mapviewchangeend', () => {
+            // Store the user's zoom level whenever they change it
+            this.userZoomLevel = this.map.getZoom();
+        });
 
         // Load initial data
         this.refreshData();
@@ -141,6 +149,9 @@ class CourierMapController extends BaseController {
     // Internal refresh implementation
     private async refreshDataInternal(): Promise<void> {
         if (!this.map || this.isRefreshing) return;
+
+        // Preserve zoom level before any operations
+        const zoomBeforeRefresh = this.userZoomLevel ?? this.map.getZoom();
 
         try {
             this.isRefreshing = true;
@@ -174,6 +185,9 @@ class CourierMapController extends BaseController {
             // Smart marker update
             this.updateMarkersEfficiently(validCouriers);
 
+            // Restore zoom if it was changed by any side effects
+            this.restoreZoomIfNeeded(zoomBeforeRefresh);
+
         } catch (error) {
             if (this.pendingRequest !== null) {
                 // Only show an error if this wasn't canceled
@@ -184,6 +198,16 @@ class CourierMapController extends BaseController {
             this.isRefreshing = false;
             this.dataLoading = false;
             this.applyScope();
+        }
+    }
+
+    // Restore zoom level if it was changed unexpectedly
+    private restoreZoomIfNeeded(expectedZoom: number): void {
+        if (!this.map) return;
+
+        const currentZoom = this.map.getZoom();
+        if (Math.abs(currentZoom - expectedZoom) > 0.1) {
+            this.map.setZoom(expectedZoom);
         }
     }
 
@@ -219,7 +243,7 @@ class CourierMapController extends BaseController {
         // Update existing or add new markers
         const markersToAdd: any[] = [];
 
-        couriers.forEach(courier => {
+        couriers.forEach((courier: IAvailableCourierPosition) => {
             const existing = this.courierMarkers.get(courier.courierId);
 
             if (existing) {
@@ -247,7 +271,7 @@ class CourierMapController extends BaseController {
                     existing.name = newLabel;
                 }
             } else {
-                // Create new marker
+                // Create a new marker
                 const marker = this.createCourierMarker(courier);
                 markersToAdd.push(marker);
 
@@ -387,7 +411,7 @@ class CourierMapController extends BaseController {
         return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }
 
-    // Get marker label based on region
+    // Get marker label based on the region
     private getMarkerLabel(driver: IAvailableCourierPosition): string {
         if (this.isUsCustomer) {
             return driver.courierName || '';

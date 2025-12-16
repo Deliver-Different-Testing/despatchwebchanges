@@ -67,10 +67,10 @@ public class BaseJobRepository(
             {
                 case AppPage.Dispatch:
                     if (queryParams.DateCutoff.HasValue)
-                        query = query.Where(j => j.UcjbDate.Date <= queryParams.DateCutoff.Value.Date);
+                        query = query.Where(j => j.UcjbDate.Date <= queryParams.DateCutoff.Value);
 
                     if (queryParams.StartDate.HasValue)
-                        query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
+                        query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value);
 
                     query = ApplyEndDateFilter(query, queryParams.EndDate, queryParams.UseTime);
 
@@ -223,7 +223,7 @@ public class BaseJobRepository(
 
         if (viewFilters.Count == 0) return Context.TucJobs.Where(j => false).Select(j => j.UcjbId);
 
-        // Case 3: Build combined filter and return IQueryable
+        // Case 3: Build combined filter
         var combinedFilters = string.Join(" OR ", viewFilters.Select(filter => $"({filter})"));
 
         return Context.DeswebQryDespatchJobViewFilters
