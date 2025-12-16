@@ -1207,9 +1207,10 @@ class HomeController extends BaseController {
         if (!courier.courierId) {
             throw new Error('Courier ID is required');
         }
+
         const data = await this.DispatchData.getJobsCurrent(courier.courierId,
-            this.queryParams.startDate,
-            this.queryParams.endDate);
+            this.dateFilterData.startDate,
+            this.dateFilterData.endDate);
 
         if (this.currentJob !== null && this.currentJob?.courier !== code) {
             this.currentJob = undefined;
@@ -1231,8 +1232,8 @@ class HomeController extends BaseController {
 
             const result = await this.DispatchData.getJobsCurrent(
                 courierId,
-                this.queryParams.startDate,
-                this.queryParams.endDate
+                this.dateFilterData.startDate,
+                this.dateFilterData.endDate
             );
             this.jobsCurrentList = result.jobs;
 

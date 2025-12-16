@@ -34,8 +34,8 @@ public interface IJobRepository
     Task<List<PerformanceSpendReportModel>> GetClientJobsReportDataAsync(ClientJobsReportRequest request);
 
     Task<JobSearchResult> CurrentJobListAsync(int courierId,
-        DateTimeOffset? startDate,
-        DateTimeOffset? endDate);
+        DateTimeOffset startDate,
+        DateTimeOffset endDate);
 
     Task<JobSearchResult> JobListAsync(
         JobQueryParams queryParams,

@@ -1089,29 +1089,22 @@ public partial class JobRepository(
     }
 
     public async Task<JobSearchResult> CurrentJobListAsync(int courierId,
-        DateTimeOffset? startDate,
-        DateTimeOffset? endDate)
+        DateTimeOffset startDate,
+        DateTimeOffset endDate)
     {
         var isUsCustomer = _infoService.IsUsTenant();
+        var start = startDate.DateTime;
+        var end = endDate.DateTime;
 
         var query = Context.TucJobs
             .AsNoTracking()
             .Where(j => j.UcjbCourierId == courierId
                         && !j.UcjbJobDone && !j.UcjbVoid
                         && j.UcjbStatus != (int)JobStatus.Void
-                        && j.UcjbStatus != (int)JobStatus.Completed);
-
-        if (startDate.HasValue)
-        {
-            var start = startDate.Value.Date;
-            query = query.Where(j => j.UcjbDate >= start);
-        }
-        if (endDate.HasValue)
-        {
-            var end = endDate.Value.Date;
-            query = query.Where(j => j.UcjbDate < end.AddDays(1));
-        }
-
+                        && j.UcjbStatus != (int)JobStatus.Completed
+                        && j.UcjbDate >= start 
+                        && j.UcjbDate <= end);
+        
         // Fetch economy settings in parallel with the main query
         var economyTask = GetEconomySpeedAndDeliveryTimeAsync();
 
