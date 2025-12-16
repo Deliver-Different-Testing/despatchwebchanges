@@ -360,6 +360,33 @@ class CourierMapController extends BaseController {
         this.searchTerm = '';
     }
 
+    // Generate a consistent color based on courier ID
+    getDriverColor(courierId: number): string {
+        const colors = [
+            '#3b82f6', // blue
+            '#10b981', // emerald
+            '#8b5cf6', // violet
+            '#f59e0b', // amber
+            '#ef4444', // red
+            '#06b6d4', // cyan
+            '#ec4899', // pink
+            '#84cc16', // lime
+            '#6366f1', // indigo
+            '#14b8a6', // teal
+        ];
+        return colors[courierId % colors.length];
+    }
+
+    // Get initials from driver name
+    getDriverInitials(name: string): string {
+        if (!name) return '?';
+        const parts = name.trim().split(/\s+/);
+        if (parts.length === 1) {
+            return parts[0].substring(0, 2).toUpperCase();
+        }
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
     // Get marker label based on region
     private getMarkerLabel(driver: IAvailableCourierPosition): string {
         if (this.isUsCustomer) {
