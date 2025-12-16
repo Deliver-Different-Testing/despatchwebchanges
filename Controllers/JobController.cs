@@ -21,6 +21,7 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using ExcelDataReader;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
@@ -28,6 +29,7 @@ using EventType = DespatchWeb.Enums.EventType;
 
 namespace DespatchWeb.Controllers;
 
+[Authorize]
 public class JobController(
     IJobRepository jobRepository,
     ITaskRepository taskRepository,

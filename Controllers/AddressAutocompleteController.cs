@@ -2,11 +2,13 @@
 using System.Threading.Tasks;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 
 namespace DespatchWeb.Controllers;
 
+[Authorize]
 public class AddressAutocompleteController(IAddressLookupService addressLookup) : Controller
 {
     public async Task<IActionResult> AutocompleteAddressSearch(string text)

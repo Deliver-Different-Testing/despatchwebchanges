@@ -6,11 +6,13 @@ using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 
 namespace DespatchWeb.Controllers;
 
+[Authorize]
 public class NationwideJobController(
     INationwideJobRepository repository,
     IFlightStatsService flightService,

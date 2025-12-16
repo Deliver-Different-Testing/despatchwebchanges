@@ -3,11 +3,13 @@ using System.Threading.Tasks;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 
 namespace DespatchWeb.Controllers;
 
+[Authorize]
 public class OverviewController(IJobRepository jobRepository, ICourierRepository courierRepository)
     : Controller
 {

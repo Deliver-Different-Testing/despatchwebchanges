@@ -3,11 +3,13 @@ using System.Threading.Tasks;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.MessageModels;
 using DespatchWeb.Models.RequestModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 
 namespace DespatchWeb.Controllers;
 
+[Authorize]
 public class MessagesController(IMessageRepository messageRepository) : Controller
 {
     public async Task<IActionResult> GetUnreadMessageCount()

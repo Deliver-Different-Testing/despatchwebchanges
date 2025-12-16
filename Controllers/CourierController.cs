@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace DespatchWeb.Controllers;
 
+[Authorize]
 public class CourierController(
     ICourierRepository courierRepository,
     ITenantInfoService infoService,
