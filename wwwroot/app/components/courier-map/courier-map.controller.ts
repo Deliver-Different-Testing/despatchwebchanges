@@ -56,6 +56,9 @@ class CourierMapController extends BaseController {
     totalActiveDrivers: number = 0;
     dataLoading: boolean = false;
 
+    // Search
+    searchTerm: string = '';
+
     // Panel state
     isPanelHidden: boolean = false;
     isPanelAnimating: boolean = false;
@@ -236,11 +239,12 @@ class CourierMapController extends BaseController {
                     existing.lng = courier.longitude!;
                 }
 
-                // Update name if changed
-                if (existing.name !== courier.courierName) {
-                    const icon = this.getOrCreateIcon(courier.courierName);
+                // Update label if changed
+                const newLabel = this.getMarkerLabel(courier);
+                if (existing.name !== newLabel) {
+                    const icon = this.getOrCreateIcon(newLabel);
                     existing.marker.setIcon(icon);
-                    existing.name = courier.courierName;
+                    existing.name = newLabel;
                 }
             } else {
                 // Create new marker
@@ -250,7 +254,7 @@ class CourierMapController extends BaseController {
                 this.courierMarkers.set(courier.courierId, {
                     courierId: courier.courierId,
                     marker: marker,
-                    name: courier.courierName,
+                    name: this.getMarkerLabel(courier),
                     lat: courier.latitude!,
                     lng: courier.longitude!
                 });
@@ -302,7 +306,8 @@ class CourierMapController extends BaseController {
 
     private createCourierMarker(driver: IAvailableCourierPosition): any {
         const point = new H.geo.Point(driver.latitude, driver.longitude);
-        const icon = this.getOrCreateIcon(driver.courierName);
+        const label = this.getMarkerLabel(driver);
+        const icon = this.getOrCreateIcon(label);
         const marker = new H.map.Marker(point, { icon, data: driver });
 
         // Use event delegation pattern - store driver data on marker
@@ -335,6 +340,34 @@ class CourierMapController extends BaseController {
         this.registerTimeout(() => {
             this.returnToOverview();
         }, 5000);
+    }
+
+    // Filtered drivers for search
+    get filteredDrivers(): IAvailableCourierPosition[] {
+        if (!this.searchTerm || this.searchTerm.trim() === '') {
+            return this.drivers;
+        }
+
+        const term = this.searchTerm.toLowerCase().trim();
+        return this.drivers.filter(driver => {
+            const name = (driver.courierName || '').toLowerCase();
+            const code = (driver.code || '').toLowerCase();
+            return name.includes(term) || code.includes(term);
+        });
+    }
+
+    clearSearch(): void {
+        this.searchTerm = '';
+    }
+
+    // Get marker label based on region
+    private getMarkerLabel(driver: IAvailableCourierPosition): string {
+        if (this.isUsCustomer) {
+            return driver.courierName || '';
+        } else {
+            // NZ: prefer code, fallback to name
+            return driver.code || driver.courierName || '';
+        }
     }
 
     returnToOverview(): void {

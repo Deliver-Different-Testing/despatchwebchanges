@@ -55,6 +55,24 @@
                 </md-toolbar>
 
                 <md-content class="driver-list-content">
+                    <!-- Search Box -->
+                    <div class="search-container">
+                        <md-input-container class="search-input-container md-block" md-no-float>
+                            <md-icon md-font-set="material-symbols-outlined">search</md-icon>
+                            <input type="text"
+                                   ng-model="ctrl.searchTerm"
+                                   ng-model-options="{ debounce: 150 }"
+                                   placeholder="Search drivers..."
+                                   aria-label="Search drivers">
+                            <md-button class="md-icon-button search-clear-button"
+                                       ng-if="ctrl.searchTerm"
+                                       ng-click="ctrl.clearSearch()"
+                                       aria-label="Clear search">
+                                <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+                            </md-button>
+                        </md-input-container>
+                    </div>
+
                     <!-- Loading State -->
                     <div class="loading-container" ng-if="ctrl.dataLoading" layout="row" layout-align="center center">
                         <md-progress-circular md-mode="indeterminate" md-diameter="40"></md-progress-circular>
@@ -66,15 +84,22 @@
                         <span class="no-data-text">No active drivers</span>
                     </div>
 
+                    <!-- No Search Results State -->
+                    <div class="no-drivers" ng-if="!ctrl.dataLoading && ctrl.drivers.length > 0 && ctrl.filteredDrivers.length === 0" layout="column" layout-align="center center">
+                        <md-icon md-font-set="material-symbols-outlined" class="no-data-icon">search_off</md-icon>
+                        <span class="no-data-text">No matching drivers</span>
+                    </div>
+
                     <!-- Driver List -->
-                    <md-list ng-if="!ctrl.dataLoading && ctrl.drivers.length > 0">
+                    <md-list ng-if="!ctrl.dataLoading && ctrl.filteredDrivers.length > 0">
                         <md-list-item class="driver-item"
-                                      ng-repeat="driver in ctrl.drivers track by driver.courierId"
+                                      ng-repeat="driver in ctrl.filteredDrivers track by driver.courierId"
                                       ng-click="ctrl.centerOnDriver(driver)"
                                       md-ink-ripple>
                             <md-icon md-font-set="material-symbols-outlined" class="driver-icon">person_pin</md-icon>
                             <div class="md-list-item-text" flex>
                                 <h4 class="driver-name">{{driver.courierName}}</h4>
+                                <p class="driver-code" ng-if="driver.code">{{driver.code}}</p>
                                 <p class="driver-jobs" ng-if="driver.totalJobs > 0">
                                     Jobs: {{driver.totalJobs}}
                                 </p>
