@@ -10,7 +10,7 @@
     <md-menu-content class="date-filter-menu">
         <div md-prevent-menu-close class="date-filter-wrapper">
             <!-- Professional Header -->
-            <div class="date-filter-header">
+            <div class="date-filter-header" md-colors="{background: 'primary-700'}">
                 <div class="header-content">
                     <div class="header-icon-wrapper">
                         <md-icon class="header-icon" md-font-set="material-symbols-outlined">date_range</md-icon>
@@ -30,13 +30,13 @@
                 <!-- Range Type Selection -->
                 <div class="range-selection-section">
                     <md-radio-group
-                            class="range-radio-group"
+                            class="md-primary range-radio-group"
                             ng-change="ctrl.onSearchRangeChange(ctrl.selectedRangeOption)"
                             ng-model="ctrl.selectedRangeOption"
                             aria-label="Date range selection">
                         <md-radio-button value="all_time" class="range-option">
-                            <div class="option-content">
-                                <md-icon class="option-icon" md-font-set="material-symbols-outlined">all_inclusive</md-icon>
+                            <div class="option-content" md-colors="::{background: 'primary-50'}">
+                                <md-icon class="option-icon" md-font-set="material-symbols-outlined" md-colors="{color: 'primary-700'}">all_inclusive</md-icon>
                                 <div class="option-text">
                                     <span class="option-label">All Time</span>
                                     <span class="option-description">Up to 24 hours ahead</span>
@@ -45,8 +45,8 @@
                         </md-radio-button>
 
                         <md-radio-button value="custom_minutes" class="range-option">
-                            <div class="option-content">
-                                <md-icon class="option-icon" md-font-set="material-symbols-outlined">timer</md-icon>
+                            <div class="option-content" md-colors="::{background: 'primary-50'}">
+                                <md-icon class="option-icon" md-font-set="material-symbols-outlined" md-colors="{color: 'primary-700'}">timer</md-icon>
                                 <div class="option-text">
                                     <span class="option-label">Time Range</span>
                                     <span class="option-description">Select duration in minutes</span>
@@ -55,8 +55,8 @@
                         </md-radio-button>
 
                         <md-radio-button value="custom_date" class="range-option">
-                            <div class="option-content">
-                                <md-icon class="option-icon" md-font-set="material-symbols-outlined">calendar_month</md-icon>
+                            <div class="option-content" md-colors="::{background: 'primary-50'}">
+                                <md-icon class="option-icon" md-font-set="material-symbols-outlined" md-colors="{color: 'primary-700'}">calendar_month</md-icon>
                                 <div class="option-text">
                                     <span class="option-label">Custom Range</span>
                                     <span class="option-description">Pick start and end dates</span>
@@ -74,7 +74,7 @@
                         <!-- Start Date -->
                         <div class="date-picker-item">
                             <label class="date-picker-label">
-                                <md-icon class="label-icon dialog-icon" md-font-set="material-symbols-outlined">event_available</md-icon>
+                                <md-icon class="label-icon dialog-icon" md-font-set="material-symbols-outlined" md-colors="::{color: 'primary-700'}">event_available</md-icon>
                                 <span class="label-text">Start Date</span>
                             </label>
                             <div class="date-picker-field">
@@ -90,7 +90,7 @@
                         <!-- End Date -->
                         <div class="date-picker-item">
                             <label class="date-picker-label">
-                                <md-icon class="label-icon dialog-icon" md-font-set="material-symbols-outlined">event_busy</md-icon>
+                                <md-icon class="label-icon dialog-icon" md-font-set="material-symbols-outlined" md-colors="::{color: 'primary-700'}">event_busy</md-icon>
                                 <span class="label-text">End Date</span>
                             </label>
                             <div class="date-picker-field">
@@ -104,9 +104,9 @@
                         </div>
                     </div>
 
-                    <div class="date-range-display" ng-if="ctrl.startDate && ctrl.endDate">
-                        <md-icon class="display-icon dialog-icon" md-font-set="material-symbols-outlined">info</md-icon>
-                        <span class="display-text">
+                    <div class="date-range-display" ng-if="ctrl.startDate && ctrl.endDate" md-colors="::{background: 'primary-50'}">
+                        <md-icon class="display-icon dialog-icon" md-font-set="material-symbols-outlined" md-colors="::{color: 'primary-700'}">info</md-icon>
+                        <span class="display-text" md-colors="::{color: 'primary-700'}">
                             {{ctrl.startDate.format('MMM DD, YYYY')}} → {{ctrl.endDate.format('MMM DD, YYYY')}}
                         </span>
                     </div>
@@ -118,7 +118,7 @@
 
                     <div class="minutes-selector-wrapper">
                         <label class="minutes-selector-label">
-                            <md-icon class="label-icon dialog-icon" md-font-set="material-symbols-outlined">schedule</md-icon>
+                            <md-icon class="label-icon dialog-icon" md-font-set="material-symbols-outlined" md-colors="::{color: 'primary-700'}">schedule</md-icon>
                             <span class="label-text">Duration</span>
                         </label>
 

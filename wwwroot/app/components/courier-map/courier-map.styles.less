@@ -49,7 +49,7 @@
     box-shadow: @panel-shadow;
     display: flex;
     flex-direction: row;
-    overflow: hidden;
+    overflow: visible;
     z-index: 50;
     transform: translateX(0);
     transition: transform @animation-duration @animation-easing;
@@ -68,6 +68,8 @@
         flex-direction: column;
         min-width: 0;
         overflow: hidden;
+        background: @panel-bg;
+        border-radius: 12px;
     }
 
     // Header
@@ -86,7 +88,6 @@
         }
 
         .panel-title {
-            font-size: 14px;
             font-weight: 600;
             color: @text-primary;
         }
@@ -94,7 +95,6 @@
         .driver-count-badge {
             background: @accent-color;
             color: white;
-            font-size: 11px;
             font-weight: 600;
             padding: 2px 8px;
             border-radius: 10px;
@@ -115,7 +115,6 @@
             transition: background-color 150ms ease;
 
             md-icon {
-                font-size: 20px;
                 color: @text-secondary;
             }
 
@@ -147,7 +146,6 @@
         }
 
         .search-icon {
-            font-size: 18px;
             color: @text-secondary;
             margin-right: 8px;
         }
@@ -157,7 +155,6 @@
             border: none;
             background: transparent;
             padding: 10px 0;
-            font-size: 13px;
             color: @text-primary;
             outline: none;
 
@@ -179,7 +176,6 @@
             margin-left: 4px;
 
             md-icon {
-                font-size: 16px;
                 color: @text-secondary;
             }
 
@@ -257,7 +253,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
             font-weight: 600;
             color: white;
             margin-right: 12px;
@@ -270,7 +265,6 @@
         }
 
         .driver-name {
-            font-size: 13px;
             font-weight: 500;
             color: @text-primary;
             white-space: nowrap;
@@ -286,7 +280,6 @@
         }
 
         .driver-code {
-            font-size: 11px;
             color: @accent-color;
             font-weight: 500;
         }
@@ -295,16 +288,10 @@
             display: flex;
             align-items: center;
             gap: 2px;
-            font-size: 11px;
             color: @text-secondary;
-
-            md-icon {
-                font-size: 14px;
-            }
         }
 
         .locate-btn {
-            font-size: 18px;
             color: @text-secondary;
             opacity: 0;
             transition: opacity 150ms ease, color 150ms ease;
@@ -332,7 +319,6 @@
         transition: background-color 150ms ease;
 
         md-icon {
-            font-size: 20px;
             color: @text-secondary;
             transition: transform @animation-duration @animation-easing;
 
@@ -371,7 +357,6 @@
         transition: background-color 150ms ease, box-shadow 150ms ease;
 
         md-icon {
-            font-size: 20px;
             color: @text-primary;
         }
 

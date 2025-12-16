@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -159,18 +160,19 @@ public class ClientJobsReportService(
 
         // Limit length to 50 characters
         if (sanitized.Length > 50)
-            sanitized = sanitized.Substring(0, 50);
+            sanitized = sanitized[..50];
 
         return string.IsNullOrWhiteSpace(sanitized) ? "Unknown" : sanitized;
     }
 
     private async Task UploadToS3Async(byte[] csvBytes, DateTime currentDate, string clientCode)
     {
-#if DEBUG
-        // Skip S3 upload in debug mode
-        Log.Debug("Debug mode: Skipping S3 upload for client jobs report.");
-        return;
-#else
+        if (Debugger.IsAttached)
+        {
+            Log.Debug("Debug mode: Skipping S3 upload for client jobs report.");
+            return;
+        }
+
         var folder = currentDate.ToString("yyyyMM");
         var timestamp = currentDate.ToString("yyyyMMddHHmmss");
         var key = $"ClientJobsReports/{folder}/ClientJobsReport_{clientCode}_{timestamp}.csv";
@@ -202,6 +204,5 @@ public class ClientJobsReportService(
             Log.Error(e, "Failed to upload client jobs report to S3: {Message}", e.Message);
             // Don't throw - allow download to continue even if S3 upload fails
         }
-#endif
     }
 }

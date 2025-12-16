@@ -791,47 +791,19 @@ class JobSearchController extends BaseController {
         }
     }
 
-    async downloadJobList() {
-        try {
-            const response: any = await this.jobSearchService.podJobsDownload(
-                this.searchCriteria.from_date,
-                this.searchCriteria.to_date,
-                this.searchCriteria.courier,
-                this.searchCriteria.client,
-                this.searchCriteria.speedId,
-                this.searchCriteria.wild,
-                this.searchCriteria.job
-            );
+    downloadJobList() {
+        const downloadUrl = this.jobSearchService.getPodJobsDownloadUrl(
+            this.searchCriteria.from_date,
+            this.searchCriteria.to_date,
+            this.searchCriteria.courier,
+            this.searchCriteria.client,
+            this.searchCriteria.speedId,
+            this.searchCriteria.wild,
+            this.searchCriteria.job
+        );
 
-            if (response.status === 200) {
-                let filename = "jobs.csv";  // default filename
-                const contentDisposition = response.headers()["content-disposition"];
-
-                if (contentDisposition) {
-                    const filenameMatch = contentDisposition.split(';')
-                        .find((part: string) => part.trim().startsWith('filename='));
-                    if (filenameMatch) {
-                        filename = filenameMatch.split('=')[1].trim().replace(/"/g, '');
-                    }
-                }
-
-                const blob = new Blob([response.data], {type: 'text/csv'});
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            } else {
-                console.error("Error downloading jobs");
-            }
-        } catch (error) {
-            console.error("Failed to download jobs:", error);
-        } finally {
-            this.applyScope();
-        }
+        // Open in new window to trigger browser's native download
+        window.open(downloadUrl, '_blank');
     }
 
     isClientJobsReportEnabled(): boolean {
@@ -842,89 +814,15 @@ class JobSearchController extends BaseController {
         );
     }
 
-    async downloadClientJobsReport() {
-        try {
-            const response: any = await this.jobSearchService.clientJobsReportDownload(
-                this.searchCriteria.from_date,
-                this.searchCriteria.to_date,
-                this.searchCriteria.courier,
-                this.searchCriteria.client,
-                this.searchCriteria.speedId,
-                this.searchCriteria.wild,
-                this.searchCriteria.job
-            );
+    downloadClientJobsReport() {
+        const downloadUrl = this.jobSearchService.getClientJobsReportDownloadUrl(
+            this.searchCriteria.from_date,
+            this.searchCriteria.to_date,
+            this.searchCriteria.client,
+        );
 
-            if (response.status === 200) {
-                let filename = "client-jobs-report.csv";  // default filename
-                const contentDisposition = response.headers()["content-disposition"];
-
-                if (contentDisposition) {
-                    const filenameMatch = contentDisposition.split(';')
-                        .find((part: string) => part.trim().startsWith('filename='));
-                    if (filenameMatch) {
-                        filename = filenameMatch.split('=')[1].trim().replace(/"/g, '');
-                    }
-                }
-
-                const blob = new Blob([response.data], {type: 'text/csv'});
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
-
-                this.toastrService.showSuccessToast("Client jobs report downloaded successfully.");
-            } else {
-                console.error("Error downloading client jobs report");
-                this.toastrService.showErrorToast("Failed to download client jobs report.");
-            }
-        } catch (error: any) {
-            console.error("Failed to download client jobs report:", error);
-
-            // Extract error message from response
-            let errorMessage = "Failed to download client jobs report.";
-
-            // Try to parse error response
-            if (error?.data) {
-                try {
-                    // If data is a Blob (binary), convert to text first
-                    if (error.data instanceof Blob) {
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                            try {
-                                const jsonResponse = JSON.parse(reader.result as string);
-                                const message = jsonResponse?.error || "Failed to download client jobs report.";
-                                this.toastrService.showErrorToast(message);
-                                this.applyScope();
-                            } catch {
-                                this.toastrService.showErrorToast(errorMessage);
-                                this.applyScope();
-                            }
-                        };
-                        reader.readAsText(error.data);
-                        return; // Exit early, reader.onload will handle the toast
-                    }
-                    // If data is already an object
-                    else if (typeof error.data === 'object' && error.data.error) {
-                        errorMessage = error.data.error;
-                    }
-                    // If data is a string, try to parse it
-                    else if (typeof error.data === 'string') {
-                        const parsed = JSON.parse(error.data);
-                        errorMessage = parsed?.error || errorMessage;
-                    }
-                } catch (parseError) {
-                    console.error("Error parsing error response:", parseError);
-                }
-            }
-
-            this.toastrService.showErrorToast(errorMessage);
-        } finally {
-            this.applyScope();
-        }
+        // Open in new window to trigger browser's native download
+        window.open(downloadUrl, '_blank');
     }
 
     uploadJobList() {

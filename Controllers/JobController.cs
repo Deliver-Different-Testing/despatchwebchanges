@@ -871,7 +871,7 @@ public class JobController(
     {
         try
         {
-            await jobRepository.ReDispatchSelectedJobsAsync(data.CourierId, data.JobIds);
+            await jobRepository.ReDispatchSelectedJobsAsync(data.JobIds);
             await dispatchJobService.DispatchJobsToCourierAsync(data.JobIds, data.CourierId);
             return Ok();
         }
