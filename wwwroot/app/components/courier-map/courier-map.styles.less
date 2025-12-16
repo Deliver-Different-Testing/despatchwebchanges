@@ -135,6 +135,75 @@
         overflow-y: auto;
         max-height: 350px;
 
+        // Search box styles
+        .search-container {
+            padding: 8px 12px;
+            border-bottom: 1px solid @divider-color;
+            background: #fafafa;
+
+            .search-input-container {
+                margin: 0;
+                padding: 0;
+                position: relative;
+
+                md-icon {
+                    position: absolute;
+                    left: 8px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: @text-secondary;
+                    font-size: 20px;
+                    width: 20px;
+                    height: 20px;
+                }
+
+                input {
+                    padding-left: 32px;
+                    padding-right: 32px;
+                    border: 1px solid @divider-color;
+                    border-radius: 4px;
+                    background: white;
+                    height: 36px;
+                    font-size: 13px;
+
+                    &:focus {
+                        border-color: @primary-blue;
+                        outline: none;
+                    }
+
+                    &::placeholder {
+                        color: @text-secondary;
+                    }
+                }
+
+                .search-clear-button {
+                    position: absolute;
+                    right: 0;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    margin: 0;
+                    padding: 0;
+                    min-width: 28px;
+                    min-height: 28px;
+                    width: 28px;
+                    height: 28px;
+
+                    md-icon {
+                        position: static;
+                        transform: none;
+                        font-size: 18px;
+                        width: 18px;
+                        height: 18px;
+                        color: @text-secondary;
+                    }
+
+                    &:hover md-icon {
+                        color: @text-primary;
+                    }
+                }
+            }
+        }
+
         md-list {
             padding: 0;
 
@@ -164,6 +233,13 @@
                         font-size: 14px;
                         font-weight: 500;
                         color: @text-primary;
+                    }
+
+                    .driver-code {
+                        margin: 2px 0 0 0;
+                        font-size: 11px;
+                        color: @primary-blue;
+                        font-weight: 500;
                     }
 
                     .driver-jobs {
