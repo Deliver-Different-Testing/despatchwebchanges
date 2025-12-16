@@ -1,22 +1,22 @@
 // Variables
-@panel-width: 320px;
+@panel-width: 300px;
 @panel-bg: #ffffff;
-@panel-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-@toggle-button-size: 36px;
-@animation-duration: 300ms;
+@panel-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+@toggle-button-size: 32px;
+@animation-duration: 250ms;
 @animation-easing: cubic-bezier(0.4, 0, 0.2, 1);
 
-@primary-blue: #2196F3;
-@primary-blue-dark: #1976D2;
-@text-primary: #212121;
-@text-secondary: #757575;
-@divider-color: #e0e0e0;
-@hover-bg: rgba(0, 0, 0, 0.04);
+@text-primary: #1e293b;
+@text-secondary: #64748b;
+@border-color: #e2e8f0;
+@hover-bg: #f8fafc;
+@active-bg: #f1f5f9;
+@accent-color: #3b82f6;
 
 .courier-map-container {
     position: relative;
     width: 100%;
-    height: calc(100vh - 64px); // Account for toolbar height
+    height: calc(100vh - 64px);
     overflow: hidden;
 
     .map-wrapper {
@@ -45,19 +45,17 @@
     width: @panel-width;
     max-height: calc(100% - 32px);
     background: @panel-bg;
-    border-radius: 8px;
+    border-radius: 12px;
     box-shadow: @panel-shadow;
     display: flex;
     flex-direction: row;
     overflow: hidden;
-    z-index: 50; // Below sidenav (z-index ~60)
-
-    // Slide animation
+    z-index: 50;
     transform: translateX(0);
     transition: transform @animation-duration @animation-easing;
 
     &.panel-hidden {
-        transform: translateX(calc(100% - @toggle-button-size));
+        transform: translateX(calc(100% - @toggle-button-size + 8px));
     }
 
     &.panel-animating {
@@ -72,278 +70,331 @@
         overflow: hidden;
     }
 
+    // Header
     .panel-header {
-        min-height: 48px;
-        max-height: 48px;
-        border-radius: 8px 0 0 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-bottom: 1px solid @border-color;
+        background: @panel-bg;
 
-        .md-toolbar-tools {
-            padding: 0 16px;
-            min-height: 48px;
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: @text-primary;
+        }
+
+        .driver-count-badge {
+            background: @accent-color;
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .refresh-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 150ms ease;
 
             md-icon {
-                margin-right: 8px;
+                font-size: 20px;
+                color: @text-secondary;
             }
 
-            .panel-title {
-                font-size: 14px;
-                font-weight: 500;
+            &:hover {
+                background: @hover-bg;
             }
 
-            .driver-count {
-                background: rgba(255, 255, 255, 0.2);
-                padding: 2px 10px;
-                border-radius: 12px;
-                font-size: 13px;
-                font-weight: 600;
-                margin-right: 4px;
+            &:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+        }
+    }
+
+    // Search Box
+    .search-box {
+        display: flex;
+        align-items: center;
+        margin: 12px;
+        padding: 0 12px;
+        background: @hover-bg;
+        border: 1px solid @border-color;
+        border-radius: 8px;
+        transition: border-color 150ms ease, box-shadow 150ms ease;
+
+        &:focus-within {
+            border-color: @accent-color;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .search-icon {
+            font-size: 18px;
+            color: @text-secondary;
+            margin-right: 8px;
+        }
+
+        input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 10px 0;
+            font-size: 13px;
+            color: @text-primary;
+            outline: none;
+
+            &::placeholder {
+                color: @text-secondary;
+            }
+        }
+
+        .clear-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 4px;
+
+            md-icon {
+                font-size: 16px;
+                color: @text-secondary;
             }
 
-            .panel-refresh-button {
-                margin: 0;
-                padding: 0;
-                min-width: 32px;
-                min-height: 32px;
-                width: 32px;
-                height: 32px;
+            &:hover {
+                background: @active-bg;
 
                 md-icon {
-                    color: rgba(0, 0, 0, 0.7);
-                    margin: 0;
-                    font-size: 20px;
-                    width: 20px;
-                    height: 20px;
-
-                    &.spin {
-                        animation: spin 1s linear infinite;
-                    }
-                }
-
-                &:hover {
-                    background: rgba(0, 0, 0, 0.1);
-                }
-
-                &[disabled] {
-                    opacity: 0.6;
+                    color: @text-primary;
                 }
             }
         }
     }
 
-    .driver-list-content {
+    // Driver List Wrapper
+    .driver-list-wrapper {
         flex: 1;
         overflow-y: auto;
-        max-height: 350px;
+        max-height: 400px;
+    }
 
-        // Search box styles
-        .search-container {
-            padding: 8px 12px;
-            border-bottom: 1px solid @divider-color;
-            background: #fafafa;
+    // State Container (loading, empty, no results)
+    .state-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        text-align: center;
 
-            .search-input-container {
-                margin: 0;
-                padding: 0;
-                position: relative;
-
-                md-icon {
-                    position: absolute;
-                    left: 8px;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    color: @text-secondary;
-                    font-size: 20px;
-                    width: 20px;
-                    height: 20px;
-                }
-
-                input {
-                    padding-left: 32px;
-                    padding-right: 32px;
-                    border: 1px solid @divider-color;
-                    border-radius: 4px;
-                    background: white;
-                    height: 36px;
-                    font-size: 13px;
-
-                    &:focus {
-                        border-color: @primary-blue;
-                        outline: none;
-                    }
-
-                    &::placeholder {
-                        color: @text-secondary;
-                    }
-                }
-
-                .search-clear-button {
-                    position: absolute;
-                    right: 0;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    margin: 0;
-                    padding: 0;
-                    min-width: 28px;
-                    min-height: 28px;
-                    width: 28px;
-                    height: 28px;
-
-                    md-icon {
-                        position: static;
-                        transform: none;
-                        font-size: 18px;
-                        width: 18px;
-                        height: 18px;
-                        color: @text-secondary;
-                    }
-
-                    &:hover md-icon {
-                        color: @text-primary;
-                    }
-                }
-            }
+        .state-icon {
+            font-size: 40px;
+            color: @text-secondary;
+            opacity: 0.5;
+            margin-bottom: 12px;
         }
 
-        md-list {
-            padding: 0;
-
-            .driver-item {
-                min-height: 56px;
-                padding: 8px 16px;
-                border-bottom: 1px solid @divider-color;
-                cursor: pointer;
-                transition: background-color 150ms ease;
-
-                &:hover {
-                    background-color: @hover-bg;
-                }
-
-                &:last-child {
-                    border-bottom: none;
-                }
-
-                .driver-icon {
-                    color: @primary-blue;
-                    margin-right: 12px;
-                }
-
-                .md-list-item-text {
-                    .driver-name {
-                        margin: 0;
-                        font-size: 14px;
-                        font-weight: 500;
-                        color: @text-primary;
-                    }
-
-                    .driver-code {
-                        margin: 2px 0 0 0;
-                        font-size: 11px;
-                        color: @primary-blue;
-                        font-weight: 500;
-                    }
-
-                    .driver-jobs {
-                        margin: 4px 0 0 0;
-                        font-size: 12px;
-                        color: @text-secondary;
-                        white-space: nowrap;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                    }
-                }
-
-                .locate-icon {
-                    color: @text-secondary;
-                    opacity: 0;
-                    transition: opacity 150ms ease;
-                }
-
-                &:hover .locate-icon {
-                    opacity: 1;
-                }
-            }
+        .state-text {
+            font-size: 13px;
+            color: @text-secondary;
         }
     }
 
-    // Toggle button
-    .toggle-button {
+    // Driver List
+    .driver-list {
+        .driver-row {
+            display: flex;
+            align-items: center;
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: background-color 150ms ease;
+            border-bottom: 1px solid @border-color;
+
+            &:last-child {
+                border-bottom: none;
+            }
+
+            &:hover {
+                background: @hover-bg;
+
+                .locate-btn {
+                    opacity: 1;
+                    color: @accent-color;
+                }
+            }
+
+            &:active {
+                background: @active-bg;
+            }
+        }
+
+        .driver-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .driver-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .driver-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: @text-primary;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .driver-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 2px;
+        }
+
+        .driver-code {
+            font-size: 11px;
+            color: @accent-color;
+            font-weight: 500;
+        }
+
+        .driver-jobs {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            font-size: 11px;
+            color: @text-secondary;
+
+            md-icon {
+                font-size: 14px;
+            }
+        }
+
+        .locate-btn {
+            font-size: 18px;
+            color: @text-secondary;
+            opacity: 0;
+            transition: opacity 150ms ease, color 150ms ease;
+            margin-left: 8px;
+        }
+    }
+
+    // Toggle Button
+    .toggle-btn {
         position: absolute;
-        left: -(@toggle-button-size / 2);
+        left: -16px;
         top: 50%;
         transform: translateY(-50%);
         width: @toggle-button-size;
         height: @toggle-button-size;
-        min-width: @toggle-button-size;
-        min-height: @toggle-button-size;
-        background: @panel-bg !important;
-        box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
+        border: none;
+        background: @panel-bg;
+        box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
         border-radius: 50%;
-        z-index: 51; // Just above panel
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 51;
+        transition: background-color 150ms ease;
 
         md-icon {
+            font-size: 20px;
             color: @text-secondary;
             transition: transform @animation-duration @animation-easing;
 
-            &.rotate-arrow {
+            &.rotated {
                 transform: rotate(180deg);
             }
         }
 
         &:hover {
-            background: darken(@panel-bg, 3%) !important;
+            background: @hover-bg;
         }
     }
 }
 
-// Loading container
-.loading-container {
-    padding: 32px;
-}
-
-// No drivers state
-.no-drivers {
-    padding: 32px 16px;
-
-    .no-data-icon {
-        font-size: 48px;
-        width: 48px;
-        height: 48px;
-        color: @text-secondary;
-        margin-bottom: 8px;
-    }
-
-    .no-data-text {
-        color: @text-secondary;
-        font-size: 14px;
-    }
-}
-
-// Floating action buttons
-.overview-button {
-    position: absolute;
-    bottom: 80px;
-    right: 16px;
-    z-index: 99;
-}
-
-.refresh-button {
+// Map Controls
+.map-controls {
     position: absolute;
     bottom: 24px;
     right: 16px;
-    z-index: 99;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 49;
 
-    md-icon.spin {
-        animation: spin 1s linear infinite;
+    .map-control-btn {
+        width: 40px;
+        height: 40px;
+        border: none;
+        background: @panel-bg;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 150ms ease, box-shadow 150ms ease;
+
+        md-icon {
+            font-size: 20px;
+            color: @text-primary;
+        }
+
+        &:hover {
+            background: @hover-bg;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
     }
 }
 
+// Spin animation
 @keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.spin {
+    animation: spin 1s linear infinite;
 }
 
 // HERE Maps UI customization
@@ -363,21 +414,13 @@
         right: 8px;
         max-height: calc(100% - 16px);
 
-        .driver-list-content {
-            max-height: 280px;
+        .driver-list-wrapper {
+            max-height: 300px;
         }
     }
 
-    .overview-button,
-    .refresh-button {
+    .map-controls {
         right: 8px;
-    }
-
-    .overview-button {
-        bottom: 72px;
-    }
-
-    .refresh-button {
         bottom: 16px;
     }
 }

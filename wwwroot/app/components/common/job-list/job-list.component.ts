@@ -251,13 +251,15 @@ class JobsListController extends BaseController {
             this.applyFilters();
         }
 
-        // Add these:
-        if (changes['jobListType'] && !changes['jobListType'].isFirstChange()) {
+        // Handle jobListType changes (including first change to load correct saved state)
+        if (changes['jobListType']) {
             this.setupJobListVariables();
             this.loadColumnWidths();
             this.loadSortState();
 
-            this.applyFilters();
+            if (!changes['jobListType'].isFirstChange()) {
+                this.applyFilters();
+            }
         }
 
         if (changes['enableVirtualScrolling'] && !changes['enableVirtualScrolling'].isFirstChange()) {

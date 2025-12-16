@@ -1,115 +1,316 @@
-﻿.job-search-view {
-  .dateService {
-    overflow-x: auto;
-    overflow-y: auto;
-    max-height: 100vh;
-    max-width: 100%;
+@import '../../../css/variables';
+
+// Variables
+@text-primary: #1e293b;
+@text-secondary: #64748b;
+@border-color: #e2e8f0;
+@hover-bg: #f8fafc;
+@active-bg: #f1f5f9;
+@accent-color: #3b82f6;
+@panel-bg: #ffffff;
+
+.job-search-view {
+  // Search Panel
+  .search-panel {
     padding: 16px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: calc(100vh - 64px);
+    box-sizing: border-box;
+  }
 
-    .container-fluid {
-      min-width: 100%;
+  // Panel Sections
+  .panel-section {
+    background: @panel-bg;
+    border: 1px solid @border-color;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    overflow: hidden;
 
-      &.space {
-        margin-bottom: 20px;
+    .section-header {
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: @hover-bg;
+      border-bottom: 1px solid @border-color;
+      font-size: 13px;
+      font-weight: 600;
+      color: @text-primary;
+
+      md-icon {
+        font-size: 18px;
+        color: @text-secondary;
       }
     }
 
-    // Label styles
-    .label-padding {
-      padding: 10px;
-      display: block;
+    .section-content {
+      padding: 16px;
+    }
+  }
+
+  // Date Quick Select
+  .date-quick-select {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+
+    .quick-btn {
+      flex: 1;
+      min-width: 80px;
+      margin: 0 !important;
+      padding: 10px 16px;
+      border: 1px solid @border-color;
+      border-radius: 6px;
+      font-size: 13px;
       font-weight: 500;
-    }
+      cursor: pointer;
+      transition: all 150ms ease;
 
-    // Spacing utility
-    .space {
-      margin-bottom: 20px;
-    }
+      &:not(.md-primary) {
+        background: @panel-bg;
+        color: @text-primary;
 
-    // Form elements
-    .form-control {
+        &:hover {
+          background: @hover-bg;
+          border-color: @accent-color;
+        }
+      }
+
+      &.md-primary.md-raised {
+        border-color: transparent;
+      }
+    }
+  }
+
+  // Date Range Inputs
+  .date-range-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid @border-color;
+
+    .date-field {
+      label {
+        display: block;
+        font-size: 12px;
+        font-weight: 500;
+        color: @text-secondary;
+        margin-bottom: 6px;
+      }
+    }
+  }
+
+  // Filter Grid
+  .filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+
+    .filter-field {
+      label {
+        display: block;
+        font-size: 12px;
+        font-weight: 500;
+        color: @text-secondary;
+        margin-bottom: 6px;
+      }
+
+      md-autocomplete {
+        width: 100%;
+
+        input {
+          width: 100%;
+          padding: 10px 12px;
+          border: 1px solid @border-color;
+          border-radius: 6px;
+          font-size: 13px;
+          background: @panel-bg;
+          transition: border-color 150ms ease, box-shadow 150ms ease;
+
+          &:focus {
+            outline: none;
+            border-color: @accent-color;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          }
+
+          &::placeholder {
+            color: @text-secondary;
+          }
+        }
+
+        .md-autocomplete-suggestions-container {
+          border: 1px solid @border-color;
+          border-radius: 6px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          margin-top: 4px;
+        }
+      }
+    }
+  }
+
+  // Search Fields
+  .search-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+
+    .search-field {
+      label {
+        display: block;
+        font-size: 12px;
+        font-weight: 500;
+        color: @text-secondary;
+        margin-bottom: 6px;
+      }
+
+      .text-input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid @border-color;
+        border-radius: 6px;
+        font-size: 13px;
+        background: @panel-bg;
+        transition: border-color 150ms ease, box-shadow 150ms ease;
+        box-sizing: border-box;
+
+        &:focus {
+          outline: none;
+          border-color: @accent-color;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        &::placeholder {
+          color: @text-secondary;
+        }
+      }
+    }
+  }
+
+  // Panel Actions
+  .panel-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: @hover-bg;
+    border: 1px solid @border-color;
+    border-radius: 8px;
+    overflow: hidden;
+
+    .search-btn {
       width: 100%;
-      padding: 8px 12px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 14px;
+      margin: 0 !important;
 
-      &.focusMe:focus {
-        outline: none;
-        border-color: #2196F3;
-        box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+      md-icon {
+        font-size: 18px;
+        margin-right: 8px;
       }
     }
 
-    // Material Design components adjustments
-    md-autocomplete {
-      width: 100%;
-    }
-
-    md-datepicker {
-      width: 100%;
-    }
-
-    md-radio-group {
-      .md-radio-button {
-        margin-right: 16px;
-        margin-bottom: 8px;
-      }
-    }
-
-    // Button section
-    section[layout="row"] {
+    .secondary-actions {
+      display: flex;
       flex-wrap: wrap;
       gap: 8px;
+      width: 100%;
+      box-sizing: border-box;
 
-      md-button {
-        min-width: 120px;
-        margin: 4px;
+      md-button.md-raised {
+        flex: 1 1 auto;
+        min-width: 80px;
+        margin: 0 !important;
+        padding: 0 12px;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
 
         md-icon {
-          margin-right: 8px;
+          font-size: 18px;
+          flex-shrink: 0;
+        }
+
+        .btn-label {
+          margin-left: 6px;
         }
       }
     }
+  }
 
-    // Hidden file input
-    .inputfile {
-      position: absolute;
-      left: -9999px;
-      visibility: hidden;
-      width: 0;
-      height: 0;
-    }
+  // Hidden file input
+  .hidden-input {
+    position: absolute;
+    left: -9999px;
+    visibility: hidden;
+    width: 0;
+    height: 0;
+  }
 
-    // Responsive design
-    @media (max-width: 768px) {
+  // Responsive design
+  @media (max-width: 768px) {
+    .search-panel {
       padding: 12px;
+    }
 
-      .label-padding {
-        padding: 8px 0;
-      }
-
-      .space {
-        margin-bottom: 16px;
-      }
-
-      section[layout="row"] {
-        md-button {
-          min-width: 100px;
-          font-size: 13px;
-        }
+    .panel-section {
+      .section-content {
+        padding: 12px;
       }
     }
 
-    @media (max-width: 480px) {
-      padding: 8px;
-      max-height: calc(100vh - 20px); // Account for smaller screens
-      section[layout="row"] {
-        flex-direction: column;
+    .date-quick-select {
+      .quick-btn {
+        min-width: 70px;
+        padding: 8px 12px;
+        font-size: 12px;
+      }
+    }
 
-        md-button {
-          width: 100%;
-          margin: 4px 0;
+    .date-range-inputs {
+      grid-template-columns: 1fr;
+    }
+
+    .filter-grid,
+    .search-fields {
+      grid-template-columns: 1fr;
+    }
+
+    .panel-actions {
+      .secondary-actions {
+        md-button.md-raised {
+          padding: 0 8px;
+          font-size: 12px;
+
+          .btn-label {
+            display: none;
+          }
+        }
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    .search-panel {
+      padding: 8px;
+    }
+
+    .date-quick-select {
+      flex-direction: column;
+
+      .quick-btn {
+        width: 100%;
+      }
+    }
+
+    .panel-actions {
+      .secondary-actions {
+        md-button.md-raised {
+          flex: 1 1 100%;
+
+          .btn-label {
+            display: inline;
+          }
         }
       }
     }
