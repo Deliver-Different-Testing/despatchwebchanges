@@ -22,6 +22,7 @@ public partial class JobRepository
                 .Where(j => j.UcjbId == jobId)
                 .Include(j => j.UcjbClient)
                 .Include(j => j.UcjbSpeedNavigation)
+                .AsSplitQuery()
                 .Select(job => new JobRatingDetailsDto
                 {
                     // Map the entity properties to our model
@@ -94,6 +95,7 @@ public partial class JobRepository
                     .Where(j => j.UcjbId == jobId)
                     .Include(j => j.UcjbClient)
                     .Include(j => j.TucJobItemsArchives)
+                    .AsSplitQuery()
                     .Select(job => new JobRatingDetailsDtoNz
                     {
                         JobId = job.UcjbId,
@@ -205,6 +207,7 @@ public partial class JobRepository
                     .Include(j => j.UcjbClient)
                     .Include(j => j.UcjbSpeedNavigation)
                     .Include(j => j.TucJobItemJobs)
+                    .AsSplitQuery()
                     .Select(job => new JobRatingDetailsDtoNz
                     {
                         JobId = job.UcjbId,
@@ -322,6 +325,7 @@ public partial class JobRepository
                 .Where(j => j.UcbkId == jobId)
                 .Include(j => j.UcbkClient) // Include client info
                 .Include(j => j.UcbkSpeedNavigation) // Include job type info
+                .AsSplitQuery()
                 .Select(job => new JobRatingDetailsDto
                 {
                     JobId = job.UcbkId,
@@ -394,6 +398,7 @@ public partial class JobRepository
                 .Include(j => j.UcbkClient)
                 .Include(j => j.UcbkSpeedNavigation)
                 .Include(j => j.TucJobBookingItemBookings)
+                .AsSplitQuery()
                 .Select(job => new JobRatingDetailsDtoNz
                 {
                     JobId = job.UcbkId,
