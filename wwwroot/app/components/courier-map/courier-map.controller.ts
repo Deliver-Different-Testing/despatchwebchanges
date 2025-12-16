@@ -107,7 +107,7 @@ class CourierMapController extends BaseController {
 
             this.hereMapConfig = {
                 center: this.mapCenter,
-                zoom: this.isUsCustomer ? 4 : 7,
+                zoom: this.isUsCustomer ? 4 : 10,
                 disableAutoZoom: true,
                 preserveView: true
             };
@@ -335,11 +335,11 @@ class CourierMapController extends BaseController {
         if (!this.map || !driver.latitude || !driver.longitude) return;
 
         this.map.setCenter({ lat: driver.latitude, lng: driver.longitude });
-        this.map.setZoom(14);
-
-        this.registerTimeout(() => {
-            this.returnToOverview();
-        }, 5000);
+        // Only zoom in if current zoom is too far out to see the driver clearly
+        const currentZoom = this.map.getZoom();
+        if (currentZoom < 12) {
+            this.map.setZoom(12);
+        }
     }
 
     // Filtered drivers for search

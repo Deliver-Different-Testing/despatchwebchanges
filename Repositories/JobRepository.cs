@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Data;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Dapper;
 using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -15,6 +12,7 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using CourierLocation = DespatchWeb.Models.Response.CourierLocation;
@@ -1027,41 +1025,59 @@ public partial class JobRepository(
             .ToList();
     }
 
-    public async Task<List<PerformanceSpendReportModel>> GetClientJobsReportDataAsync(ClientJobsReportRequest request)
+    public async Task<List<PerformanceSpendReportModel>> GetClientJobsReportDataAsync([FromQuery] ClientJobsReportRequest request)
     {
         try
         {
-            // Configure Dapper to use ColumnAttribute for mapping
-            SqlMapper.SetTypeMap(
-                typeof(PerformanceSpendReportModel),
-                new CustomPropertyTypeMap(
-                    typeof(PerformanceSpendReportModel),
-                    (type, columnName) =>
-                        type.GetProperties().FirstOrDefault(prop =>
-                            prop.GetCustomAttributes(false)
-                                .OfType<ColumnAttribute>()
-                                .Any(attr => attr.Name == columnName)
-                            || prop.Name == columnName
-                        )
-                )
+            var results = await Context.Procedures.REP_qryPerformance_Summary_PerformanceSpendAsync(
+                request.ClientId ?? 0,
+                request.StartDate.Date,
+                request.EndDate.Date
             );
 
-            // Call the stored procedure using Dapper (handles type conversions flexibly)
-            // Pass only the date part (without a time component)
-            await using var connection = Context.Database.GetDbConnection();
-
-            var parameters = new DynamicParameters();
-            parameters.Add("@ClientID", request.ClientId ?? 0, DbType.Int32);
-            parameters.Add("@StartDate", request.StartDate.Date, DbType.Date);
-            parameters.Add("@EndDate", request.EndDate.Date, DbType.Date);
-
-            var results = await connection.QueryAsync<PerformanceSpendReportModel>(
-                "REP_qryPerformance_Summary_PerformanceSpend",
-                parameters,
-                commandType: CommandType.StoredProcedure
-            );
-
-            return results.ToList();
+            return results.Select(r => new PerformanceSpendReportModel
+            {
+                JobNumber = r.JobNumber,
+                ucjbType = r.ucjbType,
+                Date = r.Date?.ToString("yyyy-MM-dd"),
+                Booked = r.Booked?.ToString("yyyy-MM-dd HH:mm:ss"),
+                BookedBy = r.BookedBy,
+                PickedUpTime = r.Pickeduptime?.ToString("yyyy-MM-dd HH:mm:ss"),
+                Delivered = r.Delivered?.ToString("yyyy-MM-dd HH:mm:ss"),
+                TotalTime = r.TotalTime?.ToString(),
+                DeliveryMins = r.DeliveryMins?.ToString(),
+                PODName = r.PODName,
+                Booker = r.Booker,
+                AchievedSpeed = r.AchievedSpeed,
+                From = r.From,
+                FromPostcode = r.FromPostcode,
+                To = r.To,
+                ToPostcode = r.ToPostcode,
+                ucjbFromAddr = r.ucjbFromAddr,
+                Address = r.Address,
+                Courier = r.Courier?.ToString(),
+                LatePickup = r.LatePickup?.ToString(),
+                LateDelivery = r.LateDelivery?.ToString(),
+                ucclLegalName = r.ucclLegalName,
+                ucjbSpeed = r.ucjbSpeed?.ToString(),
+                Notes = r.Notes,
+                ChargeExclGST = r.ChargeExclGST?.ToString("F2"),
+                RefA = r.RefA,
+                RefB = r.RefB,
+                UrgentRef = r.UrgentRef,
+                Weight = r.Weight?.ToString(),
+                Vehicle = r.Vehicle,
+                Quantity = r.Quantity?.ToString(),
+                ucjbYear = r.ucjbYear?.ToString(),
+                ucjbMonth = r.ucjbMonth?.ToString(),
+                Code = r.Code,
+                uccrName = r.uccrName,
+                ucjbInvoiceNo = r.ucjbInvoiceNo?.ToString(),
+                ucjbLocked = r.ucjbLocked?.ToString(),
+                ucjbClientID = r.ucjbClientID?.ToString(),
+                ucclNote = r.ucclNote,
+                Minutes = r.Minutes?.ToString()
+            }).ToList();
         }
         catch (Exception e)
         {
@@ -1158,8 +1174,7 @@ public partial class JobRepository(
         string job2) =>
         await Context.Procedures.DESWEB_qdfSwapPODAsync(job1, job2);
 
-    public async Task ReDispatchSelectedJobsAsync(int courierId,
-        List<int> jobIds)
+    public async Task ReDispatchSelectedJobsAsync(List<int> jobIds)
     {
         try
         {

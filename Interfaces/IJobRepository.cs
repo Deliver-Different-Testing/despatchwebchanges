@@ -46,7 +46,7 @@ public interface IJobRepository
         int? selectedClearListId = null);
 
     Task SwapPodAsync(string job1, string job2);
-    Task ReDispatchSelectedJobsAsync(int courierId, List<int> jobIds);
+    Task ReDispatchSelectedJobsAsync(List<int> jobIds);
     Task ReSendSelectedJobsAsync(string jobIds);
     Task ReAssignSelectedJobsAsync(string jobIds);
     Task SetFirstJobAsync(int jobId, int courierId);

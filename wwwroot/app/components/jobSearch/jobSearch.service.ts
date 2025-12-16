@@ -52,7 +52,7 @@ class JobSearchService implements angular.IServiceProvider {
         }
     }
 
-    async podJobsDownload(
+    getPodJobsDownloadUrl(
         fromDate: Dayjs,
         toDate: Dayjs,
         courierId?: number,
@@ -60,48 +60,30 @@ class JobSearchService implements angular.IServiceProvider {
         speedId?: number,
         wild?: string,
         job?: string
-    ) {
-        return this.$http.get(
-            `/Job/PODSearchDownload`,
-            {
-                params: {
-                    courierId,
-                    clientId,
-                    speedId,
-                    wild,
-                    job,
-                    fromDate: formatDateForApiWithTzs(fromDate),
-                    toDate: formatDateForApiWithTzs(toDate)
-                },
-                responseType: "blob"
-            }
-        );
+    ): string {
+        const params = new URLSearchParams();
+        params.append('fromDate', formatDateForApiWithTzs(fromDate));
+        params.append('toDate', formatDateForApiWithTzs(toDate));
+        if (courierId) params.append('courierId', courierId.toString());
+        if (clientId) params.append('clientId', clientId.toString());
+        if (speedId) params.append('speedId', speedId.toString());
+        if (wild) params.append('wild', wild);
+        if (job) params.append('job', job);
+        return `/Job/PodSearchDownload?${params.toString()}`;
     }
 
-    async clientJobsReportDownload(
+    getClientJobsReportDownloadUrl(
         fromDate: Dayjs,
         toDate: Dayjs,
-        courierId?: number,
         clientId?: number,
-        speedId?: number,
-        wild?: string,
-        job?: string
-    ) {
-        return this.$http.get(
-            `/Job/ClientJobsReportDownload`,
-            {
-                params: {
-                    startDate: formatDateForApiWithTzs(fromDate),
-                    endDate: formatDateForApiWithTzs(toDate),
-                    courierId,
-                    clientId,
-                    speedId,
-                    wild,
-                    job
-                },
-                responseType: "blob"
-            }
-        );
+    ): string {
+        const params = new URLSearchParams();
+        params.append('startDate', formatDateForApiWithTzs(fromDate));
+        params.append('endDate', formatDateForApiWithTzs(toDate));
+        if (clientId) {
+            params.append('clientId', clientId.toString());
+        }
+        return `/Job/ClientJobsReportDownload?${params.toString()}`;
     }
 
     async uploadJobList(file: File) {

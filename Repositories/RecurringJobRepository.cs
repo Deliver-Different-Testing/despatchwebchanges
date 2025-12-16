@@ -162,7 +162,7 @@ public class RecurringJobRepository(
 
             switch (property)
             {
-                // Simple single-field updates using ExecuteUpdateAsync (most efficient - no entity loading)
+                // Simple single-field updates
                 case JobProperty.Items:
                     var items = short.Parse(value);
                     await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
@@ -176,16 +176,17 @@ public class RecurringJobRepository(
                     return;
 
                 case JobProperty.ClientID:
+                    // Parse ID and get Code
                     var clientId = int.Parse(value);
-                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.BookingParentId == jobId)
-                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkClientId, clientId));
-                    return;
-
-                case JobProperty.ClientCode:
-                    var clientCode = value[..Math.Min(value.Length, 5)];
-                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.BookingParentId == jobId)
-                        .ExecuteUpdateAsync(s =>
-                            s.SetProperty(j => j.UcbkClientCode, clientCode));
+                    var code = await Context.TucClients
+                        .AsNoTracking()
+                        .Select(c => c.UcclCode)
+                        .FirstOrDefaultAsync();
+                    
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.BookingParentId == jobId || j.ParentId == jobId)
+                        .ExecuteUpdateAsync(s => s
+                            .SetProperty(j => j.UcbkClientId, clientId)
+                            .SetProperty(j => j.UcbkClientCode, code));
                     return;
 
                 case JobProperty.Pedal:
