@@ -280,18 +280,22 @@ public class JobController(
         return Ok();
     }
 
-    public async Task<IActionResult> Current(int courierId,
-        DateTimeOffset? startDate,
-        DateTimeOffset? endDate)
+    public async Task<IActionResult> GetCurrentWorkList(int courierId,
+        DateTimeOffset startDate,
+        DateTimeOffset endDate)
     {
         try
         {
+            ArgumentNullException.ThrowIfNull(courierId);
+            ArgumentNullException.ThrowIfNull(startDate);
+            ArgumentNullException.ThrowIfNull(endDate);
+            
             var result = await jobRepository.CurrentJobListAsync(courierId, startDate, endDate);
             return Json(result);
         }
         catch (Exception e)
         {
-            Log.Error(e, "An error occured getting current jobs courier {CourierId}", courierId);
+            Log.Error(e, "{Message}", ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(GetCurrentWorkList)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }

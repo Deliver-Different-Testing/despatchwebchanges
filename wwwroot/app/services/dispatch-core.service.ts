@@ -354,18 +354,14 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getJobsCurrent(courierId: number,
-                         startDate?: Dayjs,
-                         endDate?: Dayjs): Promise<IJobSearchResult> {
-
-        const startDateString = startDate ? formatDateForApiWithTzs(startDate) : null;
-        const endDateString = endDate ? formatDateForApiWithTzs(endDate) : null;
-
+                         startDate: Dayjs,
+                         endDate: Dayjs): Promise<IJobSearchResult> {
         const response = await this.$http.get<IJobSearchResultDto>(
-            `job/current`, {
+            `job/GetCurrentWorkList`, {
                 params: {
                     courierId,
-                    startDate: startDateString,
-                    endDate: endDateString,
+                    startDate: formatDateForApiWithTzs(startDate),
+                    endDate: formatDateForApiWithTzs(endDate),
                 },
             }
         );
