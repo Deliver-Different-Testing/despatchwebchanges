@@ -2350,47 +2350,27 @@ public partial class JobRepository(
 
         var currentTenantTime = _infoService.GetCurrentTenantTime();
         var staffId = _infoService.GetStaffId();
+        var shouldMarkAsRead = data.ShouldMarkAsRead;
 
-        // Use ExecuteUpdate for existing records - single SQL statement, no entity tracking
-        await Context.TucJobReadTrackers
-            .Where(t => jobIds.Contains(t.JobId))
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(t => t.HasBeenRead, data.ShouldMarkAsRead)
-                .SetProperty(t => t.ReadTimestamp, currentTenantTime)
-                .SetProperty(t => t.ReadByStaffId, staffId));
+        // Build comma-separated list of job IDs for SQL IN clause
+        var jobIdList = string.Join(",", jobIds);
 
-        // Get job IDs that already have trackers to exclude from insert
-        var existingJobIds = await Context.TucJobReadTrackers
-            .Where(t => jobIds.Contains(t.JobId))
-            .Select(t => t.JobId)
-            .ToListAsync();
+        // Use a single atomic SQL statement to handle both update and insert
+        // This prevents the race condition where multiple pods try to insert the same JobId
+        await Context.Database.ExecuteSqlRawAsync($@"
+            -- Update existing tracker records
+            UPDATE tucJobReadTracker
+            SET HasBeenRead = @p0, ReadTimestamp = @p1, ReadByStaffId = @p2
+            WHERE JobId IN ({jobIdList});
 
-        var newJobIds = jobIds.Except(existingJobIds).ToList();
-
-        // Filter out job IDs that don't exist in TucJobs (e.g., archived jobs from TblJobs)
-        // to prevent FK constraint violations
-        if (newJobIds.Count != 0)
-        {
-            var validJobIds = await Context.TucJobs
-                .Where(j => newJobIds.Contains(j.UcjbId))
-                .Select(j => j.UcjbId)
-                .ToListAsync();
-
-            // Only insert trackers for jobs that actually exist in TucJobs
-            if (validJobIds.Count != 0)
-            {
-                var newTrackers = validJobIds.Select(jobId => new TucJobReadTracker
-                {
-                    JobId = jobId,
-                    HasBeenRead = true,
-                    ReadTimestamp = currentTenantTime,
-                    ReadByStaffId = staffId
-                });
-
-                Context.AddRange(newTrackers);
-                await Context.SaveChangesAsync();
-            }
-        }
+            -- Insert new tracker records only for jobs that exist in tucJob and don't have a tracker yet
+            -- Uses NOT EXISTS to prevent PK violation race condition
+            INSERT INTO tucJobReadTracker (JobId, HasBeenRead, ReadByStaffId, ReadTimestamp)
+            SELECT j.UcjbId, @p0, @p2, @p1
+            FROM tucJob j
+            WHERE j.UcjbId IN ({jobIdList})
+              AND NOT EXISTS (SELECT 1 FROM tucJobReadTracker t WHERE t.JobId = j.UcjbId);",
+            shouldMarkAsRead, currentTenantTime, staffId);
     }
 
     public async Task<bool> JobNumberExistsAsync(string jobNumber) =>
@@ -3052,26 +3032,18 @@ public partial class JobRepository(
             var staffId = _infoService.GetStaffId();
             var currentTenantTime = _infoService.GetCurrentTenantTime();
 
-            var rowsAffected = await Context.TucJobReadTrackers
-                .Where(x => x.JobId == jobId)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(x => x.HasBeenRead, hasBeenRead)
-                    .SetProperty(x => x.ReadByStaffId, staffId)
-                    .SetProperty(x => x.ReadTimestamp, currentTenantTime));
-
-            if (rowsAffected != 0) return;
-
-            // Record doesn't exist, create a new one
-            var data = new TucJobReadTracker
-            {
-                JobId = jobId,
-                HasBeenRead = hasBeenRead,
-                ReadByStaffId = staffId,
-                ReadTimestamp = currentTenantTime
-            };
-
-            await Context.TucJobReadTrackers.AddAsync(data);
-            await Context.SaveChangesAsync();
+            // Use MERGE to handle concurrent inserts safely (prevents PK violation race condition)
+            await Context.Database.ExecuteSqlInterpolatedAsync($@"
+                MERGE INTO tucJobReadTracker WITH (HOLDLOCK) AS target
+                USING (SELECT {jobId} AS JobId) AS source
+                ON target.JobId = source.JobId
+                WHEN MATCHED THEN
+                    UPDATE SET HasBeenRead = {hasBeenRead},
+                               ReadByStaffId = {staffId},
+                               ReadTimestamp = {currentTenantTime}
+                WHEN NOT MATCHED THEN
+                    INSERT (JobId, HasBeenRead, ReadByStaffId, ReadTimestamp)
+                    VALUES ({jobId}, {hasBeenRead}, {staffId}, {currentTenantTime});");
         }
         catch (Exception e)
         {
