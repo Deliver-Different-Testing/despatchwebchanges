@@ -7,6 +7,7 @@ using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 
@@ -100,6 +101,7 @@ public partial class HomeController(
         return maskedString;
     }
 
+    [Authorize]
     public async Task<IActionResult> ActiveClients(string searchTerm)
     {
         var result = await clientRepository.ActiveClientsAsync(searchTerm);
