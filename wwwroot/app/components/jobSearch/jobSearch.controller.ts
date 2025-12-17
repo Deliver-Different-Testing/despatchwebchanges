@@ -61,6 +61,7 @@ class JobSearchController extends BaseController {
 
     private readonly LayoutKey: string = `layoutsCS-${ContactID}`
     private readonly LastActiveLayoutKey: string = `lastActiveLayoutCS-${ContactID}`
+    private readonly BoxVisibilityKey: string = `boxVisibility-${AppPage.JobSearch}-${ContactID}`
 
     readonly isAdmin: boolean;
 
@@ -77,9 +78,6 @@ class JobSearchController extends BaseController {
     jobDetailFabIsOpen: boolean = false;
     dateSearchRange: JobSearchDateRange;
     searchCriteria: ISearchCriteria;
-    clientSelectedItem?: number;
-    courierSelectedItem?: number;
-    speedSelectedItem?: number;
     clientSearchText: string;
     courierSearchText: string;
     speedSearchText: string;
@@ -152,10 +150,11 @@ class JobSearchController extends BaseController {
             from_date: now.subtract(7, 'day'),
             to_date: now.add(7, 'day'),
             followupClient: "All",
-            includeClosed: true
+            includeClosed: true,
+            clients: [],
+            couriers: [],
+            speeds: []
         };
-        this.clientSelectedItem = this.searchCriteria.client;
-        this.courierSelectedItem = this.searchCriteria.client;
         this.clientSearchText = '';
         this.courierSearchText = '';
         this.speedSearchText = '';
@@ -248,8 +247,13 @@ class JobSearchController extends BaseController {
             revert: 200,
             delay: 150,
             forcePlaceholderSize: true,
+            disabled: false, // Will be updated when layout changes
 
             start: (e: JQueryEventObject, ui: any) => {
+                // Prevent drag on default layout
+                if (this.isDefaultLayout()) {
+                    return false;
+                }
                 ui.item.addClass('dragging');
 
                 const dragInfo = angular.element('#draggingItems');
@@ -294,6 +298,7 @@ class JobSearchController extends BaseController {
         this.layout = angular.copy(layout.layout);
 
         this.applyLayoutDimensions();
+        this.loadBoxVisibility();
 
         if (Modernizr.localstorage) {
             localStorage.setItem(this.LastActiveLayoutKey, layout.name);
@@ -483,6 +488,73 @@ class JobSearchController extends BaseController {
                 description: "Timeline and history of job delivery progress"
             }
         };
+    }
+
+    private getBoxVisibilityKey(layoutName: string): string {
+        return `${this.BoxVisibilityKey}-${layoutName}`;
+    }
+
+    private saveBoxVisibility(): void {
+        if (!Modernizr.localstorage || !this.boxes || !this.currentLayoutName) return;
+
+        try {
+            const boxState: Record<string, { visible: boolean; collapsed: boolean }> = {};
+            Object.keys(this.boxes).forEach(boxName => {
+                boxState[boxName] = {
+                    visible: this.boxes![boxName].visible ?? true,
+                    collapsed: this.boxes![boxName].collapsed ?? false
+                };
+            });
+            const key = this.getBoxVisibilityKey(this.currentLayoutName);
+            localStorage.setItem(key, JSON.stringify(boxState));
+        } catch (error) {
+            console.error('Error saving box visibility to storage:', error);
+        }
+    }
+
+    private loadBoxVisibility(): void {
+        if (!Modernizr.localstorage || !this.boxes || !this.currentLayoutName) return;
+
+        try {
+            const key = this.getBoxVisibilityKey(this.currentLayoutName);
+            const savedState = localStorage.getItem(key);
+            if (savedState) {
+                const boxState = JSON.parse(savedState);
+                Object.keys(boxState).forEach(boxName => {
+                    if (this.boxes && this.boxes[boxName]) {
+                        // Handle both old format (boolean) and new format (object)
+                        if (typeof boxState[boxName] === 'boolean') {
+                            this.boxes[boxName].visible = boxState[boxName];
+                            this.boxes[boxName].collapsed = false;
+                        } else {
+                            this.boxes[boxName].visible = boxState[boxName].visible ?? true;
+                            this.boxes[boxName].collapsed = boxState[boxName].collapsed ?? false;
+                        }
+                    }
+                });
+            } else {
+                // No saved state for this layout - reset all boxes to visible and expanded
+                Object.keys(this.boxes).forEach(boxName => {
+                    this.boxes![boxName].visible = true;
+                    this.boxes![boxName].collapsed = false;
+                });
+            }
+        } catch (error) {
+            console.error('Error loading box visibility from storage:', error);
+        }
+    }
+
+    toggleBoxCollapse(boxName: string): void {
+        if (!this.boxes || !this.boxes[boxName]) return;
+        if (this.isDefaultLayout()) return; // Don't allow collapse on default layout
+
+        this.boxes[boxName].collapsed = !this.boxes[boxName].collapsed;
+        this.saveBoxVisibility();
+        this.applyScope();
+    }
+
+    isDefaultLayout(): boolean {
+        return this.currentLayoutName === 'Default';
     }
 
     toggleSidenav() {
@@ -795,9 +867,9 @@ class JobSearchController extends BaseController {
         const downloadUrl = this.jobSearchService.getPodJobsDownloadUrl(
             this.searchCriteria.from_date,
             this.searchCriteria.to_date,
-            this.searchCriteria.courier,
-            this.searchCriteria.client,
-            this.searchCriteria.speedId,
+            this.getCourierIds(),
+            this.getClientIds(),
+            this.getSpeedIds(),
             this.searchCriteria.wild,
             this.searchCriteria.job
         );
@@ -808,7 +880,7 @@ class JobSearchController extends BaseController {
 
     isClientJobsReportEnabled(): boolean {
         return !!(
-            this.searchCriteria.client &&
+            this.searchCriteria.clients?.length > 0 &&
             this.searchCriteria.from_date &&
             this.searchCriteria.to_date
         );
@@ -818,7 +890,7 @@ class JobSearchController extends BaseController {
         const downloadUrl = this.jobSearchService.getClientJobsReportDownloadUrl(
             this.searchCriteria.from_date,
             this.searchCriteria.to_date,
-            this.searchCriteria.client,
+            this.getClientIds(),
         );
 
         // Open in new window to trigger browser's native download
@@ -920,16 +992,6 @@ class JobSearchController extends BaseController {
         return this.jobSearchService.getActiveClients(searchText);
     }
 
-    async selectedClientChange(item: ISuggestion) {
-        if (!item) {
-            this.searchCriteria.client = undefined;
-            return;
-        }
-
-        this.searchCriteria.client = item.id;
-        await this.refreshAllData();
-    }
-    
     async speedQuerySearch(searchText: string) {
         if (!searchText || searchText.length < 2) return [];
 
@@ -969,24 +1031,20 @@ class JobSearchController extends BaseController {
         }
     }
 
-    async selectedCourierChange(item: ISuggestion) {
-        if (!item) {
-            this.searchCriteria.courier = undefined;
-            return;
-        }
+    // Helper methods to extract IDs from selected items
+    private getClientIds(): number[] | undefined {
+        const ids = this.searchCriteria.clients?.map(c => c.id) || [];
+        return ids.length > 0 ? ids : undefined;
+    }
 
-        this.searchCriteria.courier = item.id;
-        await this.refreshAllData();
-    }   
-    
-    async selectedSpeedChange(item: ISuggestion) {
-        if (!item) {
-            this.searchCriteria.speedId = undefined;
-            return;
-        }
+    private getCourierIds(): number[] | undefined {
+        const ids = this.searchCriteria.couriers?.map(c => c.id) || [];
+        return ids.length > 0 ? ids : undefined;
+    }
 
-        this.searchCriteria.speedId = item.id;
-        await this.refreshAllData();
+    private getSpeedIds(): number[] | undefined {
+        const ids = this.searchCriteria.speeds?.map(s => s.id) || [];
+        return ids.length > 0 ? ids : undefined;
     }
 
     onSearchRangeChange(dateRangeOption: JobSearchDateRange) {
@@ -1112,9 +1170,9 @@ class JobSearchController extends BaseController {
                 this.searchCriteria.to_date,
                 page,
                 pageSize,
-                this.searchCriteria.courier,
-                this.searchCriteria.client,
-                this.searchCriteria.speedId,
+                this.getCourierIds(),
+                this.getClientIds(),
+                this.getSpeedIds(),
                 this.searchCriteria.job,
                 this.searchCriteria.wild,
             );
@@ -1131,9 +1189,9 @@ class JobSearchController extends BaseController {
                 this.searchCriteria.to_date,
                 page,
                 pageSize,
-                this.searchCriteria.courier,
-                this.searchCriteria.client,
-                this.searchCriteria.speedId,
+                this.getCourierIds(),
+                this.getClientIds(),
+                this.getSpeedIds(),
                 this.searchCriteria.wild,
                 this.searchCriteria.job,
             );
@@ -1155,6 +1213,11 @@ class JobSearchController extends BaseController {
             );
 
             if (!result) return;
+
+            if (result.boxes) {
+                this.boxes = result.boxes;
+                this.saveBoxVisibility();
+            }
 
             this.saveCurrentLayout();
             this.applyScope();

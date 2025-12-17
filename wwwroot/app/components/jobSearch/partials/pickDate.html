@@ -1,185 +1,163 @@
-<div class="search-panel">
-    <!-- Date Range Section -->
-    <div class="panel-section">
-        <div class="section-header">
-            <md-icon md-font-set="material-symbols-outlined">calendar_today</md-icon>
-            <span>Date Range</span>
+<div class="search-criteria">
+    <!-- Date Range -->
+    <div class="criteria-group">
+        <label class="group-label">Date Range</label>
+        <div class="date-buttons">
+            <md-button class="date-btn"
+                       ng-class="{'md-primary md-raised': ctrl.dateSearchRange === 'today'}"
+                       ng-click="ctrl.dateSearchRange = 'today'; ctrl.onSearchRangeChange('today')">
+                Today
+            </md-button>
+            <md-button class="date-btn"
+                       ng-class="{'md-primary md-raised': ctrl.dateSearchRange === 'fortnight'}"
+                       ng-click="ctrl.dateSearchRange = 'fortnight'; ctrl.onSearchRangeChange('fortnight')">
+                Fortnight
+            </md-button>
+            <md-button class="date-btn"
+                       ng-class="{'md-primary md-raised': ctrl.dateSearchRange === 'month'}"
+                       ng-click="ctrl.dateSearchRange = 'month'; ctrl.onSearchRangeChange('month')">
+                Month
+            </md-button>
+            <md-button class="date-btn"
+                       ng-class="{'md-primary md-raised': ctrl.dateSearchRange === 'custom'}"
+                       ng-click="ctrl.dateSearchRange = 'custom'; ctrl.onSearchRangeChange('custom')">
+                Custom
+            </md-button>
         </div>
-        <div class="section-content">
-            <!-- Quick Select Buttons -->
-            <div class="date-quick-select">
-                <md-button class="quick-btn"
-                           ng-class="{'md-primary md-raised': ctrl.dateSearchRange === 'today'}"
-                           ng-click="ctrl.dateSearchRange = 'today'; ctrl.onSearchRangeChange('today')">
-                    Today
-                </md-button>
-                <md-button class="quick-btn"
-                           ng-class="{'md-primary md-raised': ctrl.dateSearchRange === 'fortnight'}"
-                           ng-click="ctrl.dateSearchRange = 'fortnight'; ctrl.onSearchRangeChange('fortnight')">
-                    Fortnight
-                </md-button>
-                <md-button class="quick-btn"
-                           ng-class="{'md-primary md-raised': ctrl.dateSearchRange === 'month'}"
-                           ng-click="ctrl.dateSearchRange = 'month'; ctrl.onSearchRangeChange('month')">
-                    Month
-                </md-button>
-                <md-button class="quick-btn"
-                           ng-class="{'md-primary md-raised': ctrl.dateSearchRange === 'custom'}"
-                           ng-click="ctrl.dateSearchRange = 'custom'; ctrl.onSearchRangeChange('custom')">
-                    Custom
-                </md-button>
+        <div class="date-range" ng-if="ctrl.dateSearchRange === 'custom'">
+            <div class="date-field">
+                <label>From</label>
+                <custom-date-picker
+                        date-time="ctrl.searchCriteria.from_date"
+                        show-date="true"
+                        show-time="false"
+                        on-change="ctrl.updateFromDatePicker(dateTime)">
+                </custom-date-picker>
             </div>
-
-            <!-- Custom Date Pickers -->
-            <div class="date-range-inputs" ng-if="ctrl.dateSearchRange === 'custom'">
-                <div class="date-field">
-                    <label>From</label>
-                    <custom-date-picker
-                            date-time="ctrl.searchCriteria.from_date"
-                            show-date="true"
-                            show-time="false"
-                            on-change="ctrl.updateFromDatePicker(dateTime)">
-                    </custom-date-picker>
-                </div>
-                <div class="date-field">
-                    <label>To</label>
-                    <custom-date-picker
-                            date-time="ctrl.searchCriteria.to_date"
-                            show-date="true"
-                            show-time="false"
-                            on-change="ctrl.updateToDatePicker(dateTime)">
-                    </custom-date-picker>
-                </div>
+            <div class="date-field">
+                <label>To</label>
+                <custom-date-picker
+                        date-time="ctrl.searchCriteria.to_date"
+                        show-date="true"
+                        show-time="false"
+                        on-change="ctrl.updateToDatePicker(dateTime)">
+                </custom-date-picker>
             </div>
         </div>
     </div>
 
-    <!-- Filters Section -->
-    <div class="panel-section">
-        <div class="section-header">
-            <md-icon md-font-set="material-symbols-outlined">filter_list</md-icon>
-            <span>Filters</span>
-        </div>
-        <div class="section-content">
-            <div class="filter-grid">
-                <!-- Client -->
-                <div class="filter-field">
-                    <label>Client</label>
-                    <md-autocomplete
-                            md-clear-button="true"
-                            md-item-text="item.text"
-                            md-items="item in ctrl.clientQuerySearch(ctrl.clientSearchText)"
-                            md-min-length="2"
-                            md-search-text="ctrl.clientSearchText"
-                            md-selected-item="ctrl.clientSelectedItem"
-                            md-selected-item-change="ctrl.selectedClientChange(item)"
-                            placeholder="Search clients...">
-                        <md-item-template>
-                            <span md-highlight-flags="^i" md-highlight-text="ctrl.clientSearchText">{{item.text}}</span>
-                        </md-item-template>
-                        <md-not-found>No clients found</md-not-found>
-                    </md-autocomplete>
-                </div>
-
-                <!-- Courier -->
-                <div class="filter-field">
-                    <label>Courier</label>
-                    <md-autocomplete
-                            md-items="item in ctrl.courierQuerySearch(ctrl.courierSearchText)"
-                            md-search-text="ctrl.courierSearchText"
-                            md-selected-item="ctrl.courierSelectedItem"
-                            md-selected-item-change="ctrl.selectedCourierChange(item)"
-                            md-item-text="item.text"
-                            md-min-length="1"
-                            placeholder="Search couriers..."
-                            md-clear-button="true">
-                        <md-item-template>
-                            <span md-highlight-flags="^i" md-highlight-text="ctrl.courierSearchText">{{item.text}}</span>
-                        </md-item-template>
-                        <md-not-found>No couriers found</md-not-found>
-                    </md-autocomplete>
-                </div>
-
-                <!-- Speed -->
-                <div class="filter-field">
-                    <label>Speed</label>
-                    <md-autocomplete
-                            md-items="item in ctrl.speedQuerySearch(ctrl.speedSearchText)"
-                            md-search-text="ctrl.speedSearchText"
-                            md-selected-item="ctrl.speedSelectedItem"
-                            md-selected-item-change="ctrl.selectedSpeedChange(item)"
-                            md-item-text="item.text"
-                            md-min-length="1"
-                            placeholder="Search speeds..."
-                            md-clear-button="true">
-                        <md-item-template>
-                            <span md-highlight-flags="^i" md-highlight-text="ctrl.speedSearchText">{{item.text}}</span>
-                        </md-item-template>
-                        <md-not-found>No speeds found</md-not-found>
-                    </md-autocomplete>
-                </div>
-            </div>
-        </div>
+    <!-- Filters -->
+    <div class="criteria-group">
+        <label class="group-label">Clients</label>
+        <md-chips ng-model="ctrl.searchCriteria.clients"
+                  md-autocomplete-snap
+                  md-require-match="true">
+            <md-autocomplete
+                    md-search-text="ctrl.clientSearchText"
+                    md-items="item in ctrl.clientQuerySearch(ctrl.clientSearchText)"
+                    md-item-text="item.text"
+                    md-min-length="2"
+                    placeholder="Search clients...">
+                <md-item-template>
+                    <span md-highlight-flags="^i" md-highlight-text="ctrl.clientSearchText">{{item.text}}</span>
+                </md-item-template>
+            </md-autocomplete>
+            <md-chip-template>
+                <span>{{$chip.text}}</span>
+            </md-chip-template>
+        </md-chips>
     </div>
 
-    <!-- Search Fields Section -->
-    <div class="panel-section">
-        <div class="section-header">
-            <md-icon md-font-set="material-symbols-outlined">search</md-icon>
-            <span>Search</span>
-        </div>
-        <div class="section-content">
-            <div class="search-fields">
-                <div class="search-field">
-                    <label>Job Number</label>
-                    <input type="text"
-                           class="text-input"
-                           ng-model="ctrl.searchCriteria.job"
-                           ng-keyup="$event.keyCode === 13 && ctrl.refreshAllData()"
-                           placeholder="Enter job number...">
-                </div>
-                <div class="search-field">
-                    <label>General Search</label>
-                    <input type="text"
-                           class="text-input"
-                           ng-model="ctrl.searchCriteria.wild"
-                           ng-keyup="$event.keyCode === 13 && ctrl.refreshAllData()"
-                           placeholder="Job, address, name, refs...">
-                </div>
-            </div>
-        </div>
+    <div class="criteria-group">
+        <label class="group-label">Couriers</label>
+        <md-chips ng-model="ctrl.searchCriteria.couriers"
+                  md-autocomplete-snap
+                  md-require-match="true">
+            <md-autocomplete
+                    md-search-text="ctrl.courierSearchText"
+                    md-items="item in ctrl.courierQuerySearch(ctrl.courierSearchText)"
+                    md-item-text="item.text"
+                    md-min-length="1"
+                    placeholder="Search couriers...">
+                <md-item-template>
+                    <span md-highlight-flags="^i" md-highlight-text="ctrl.courierSearchText">{{item.text}}</span>
+                </md-item-template>
+            </md-autocomplete>
+            <md-chip-template>
+                <span>{{$chip.text}}</span>
+            </md-chip-template>
+        </md-chips>
     </div>
 
-    <!-- Actions Section -->
-    <div class="panel-actions">
-        <md-button class="md-raised md-primary search-btn" ng-click="ctrl.refreshAllData()">
-            <md-icon md-font-set="material-symbols-outlined">search</md-icon>
+    <div class="criteria-group">
+        <label class="group-label">Speeds</label>
+        <md-chips ng-model="ctrl.searchCriteria.speeds"
+                  md-autocomplete-snap
+                  md-require-match="true">
+            <md-autocomplete
+                    md-search-text="ctrl.speedSearchText"
+                    md-items="item in ctrl.speedQuerySearch(ctrl.speedSearchText)"
+                    md-item-text="item.text"
+                    md-min-length="1"
+                    placeholder="Search speeds...">
+                <md-item-template>
+                    <span md-highlight-flags="^i" md-highlight-text="ctrl.speedSearchText">{{item.text}}</span>
+                </md-item-template>
+            </md-autocomplete>
+            <md-chip-template>
+                <span>{{$chip.text}}</span>
+            </md-chip-template>
+        </md-chips>
+    </div>
+
+    <!-- Text Search -->
+    <div class="criteria-group">
+        <label class="group-label">Job Number</label>
+        <input type="text"
+               class="search-input"
+               ng-model="ctrl.searchCriteria.job"
+               ng-keyup="$event.keyCode === 13 && ctrl.refreshAllData()"
+               placeholder="Enter job number">
+    </div>
+
+    <div class="criteria-group">
+        <label class="group-label">General Search</label>
+        <input type="text"
+               class="search-input"
+               ng-model="ctrl.searchCriteria.wild"
+               ng-keyup="$event.keyCode === 13 && ctrl.refreshAllData()"
+               placeholder="Address, name, reference...">
+    </div>
+
+    <!-- Actions -->
+    <div class="criteria-actions">
+        <md-button class="md-raised md-primary action-search" ng-click="ctrl.refreshAllData()">
             Search
         </md-button>
-
-        <div class="secondary-actions">
-            <md-button class="md-raised" ng-click="ctrl.downloadJobList()">
+        <div class="action-secondary">
+            <md-button class="md-icon-button" ng-click="ctrl.downloadJobList()" aria-label="Download">
                 <md-icon md-font-set="material-symbols-outlined">download</md-icon>
-                <span class="btn-label">Download</span>
+                <md-tooltip>Download</md-tooltip>
             </md-button>
-            <md-button class="md-raised"
+            <md-button class="md-icon-button"
                        ng-click="ctrl.downloadClientJobsReport()"
-                       ng-disabled="!ctrl.isClientJobsReportEnabled()">
+                       ng-disabled="!ctrl.isClientJobsReportEnabled()"
+                       aria-label="Report">
                 <md-icon md-font-set="material-symbols-outlined">description</md-icon>
-                <span class="btn-label">Report</span>
+                <md-tooltip>Client Report</md-tooltip>
             </md-button>
-            <md-button class="md-raised" ng-click="ctrl.uploadJobList()">
+            <md-button class="md-icon-button" ng-click="ctrl.uploadJobList()" aria-label="Upload">
                 <md-icon md-font-set="material-symbols-outlined">upload</md-icon>
-                <span class="btn-label">Upload</span>
+                <md-tooltip>Upload</md-tooltip>
             </md-button>
         </div>
-
-        <input type="file"
-               name="jobListUpload"
-               id="jobListUpload"
-               file-model="myFile"
-               class="hidden-input"
-               accept=".xlsx,.xls,.csv"
-               onchange="angular.element(this).scope().ctrl.onUploadJobList()">
     </div>
+
+    <input type="file"
+           name="jobListUpload"
+           id="jobListUpload"
+           file-model="myFile"
+           style="display: none;"
+           accept=".xlsx,.xls,.csv"
+           onchange="angular.element(this).scope().ctrl.onUploadJobList()">
 </div>

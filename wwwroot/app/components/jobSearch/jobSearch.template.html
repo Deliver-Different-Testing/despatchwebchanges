@@ -67,8 +67,9 @@
     </div>
 
     <div class="dashboard-padding">
-        <div class="columns">
+        <div class="columns" ng-class="{'layout-locked': ctrl.isDefaultLayout()}">
             <div class="column" id="co-{{column.id}}" ng-repeat="(colKey,column) in ctrl.layout.columns"
+                 ng-class="{'resize-disabled': ctrl.isDefaultLayout()}"
                  r-directions="['right']" r-flex="true" resizable style="flex-basis: {{column.width}}">
 
                 <div class="column-sortable"
@@ -77,6 +78,7 @@
                     <div class="box"
                          id="box-{{box.name}}"
                          ng-repeat="(boxName,box) in column.boxes"
+                         ng-class="{'box-collapsed': ctrl.boxes[box.name].collapsed, 'resize-disabled': ctrl.isDefaultLayout()}"
                          r-directions="['bottom']"
                          r-flex="true"
                          resizable
@@ -226,7 +228,19 @@
                                     <md-tooltip md-direction="bottom">Refresh</md-tooltip>
                                 </md-button>
 
-                                <div class="box-handle md-icon-button">
+                                <md-button class="md-icon-button box-collapse-btn"
+                                           ng-click="ctrl.toggleBoxCollapse(box.name)"
+                                           ng-if="!ctrl.isDefaultLayout()"
+                                           aria-label="{{ctrl.boxes[box.name].collapsed ? 'Expand' : 'Collapse'}}">
+                                    <md-icon md-font-set="material-symbols-outlined">
+                                        {{ctrl.boxes[box.name].collapsed ? 'expand_more' : 'expand_less'}}
+                                    </md-icon>
+                                    <md-tooltip md-direction="bottom">
+                                        {{ctrl.boxes[box.name].collapsed ? 'Expand' : 'Collapse'}}
+                                    </md-tooltip>
+                                </md-button>
+
+                                <div class="box-handle md-icon-button" ng-if="!ctrl.isDefaultLayout()">
                                     <md-icon class="md-drag-button" md-font-set="material-symbols-outlined">
                                         drag_indicator
                                     </md-icon>
@@ -234,7 +248,7 @@
                             </div>
                         </md-toolbar>
 
-                        <div class="box-content" ng-include="::ctrl.boxes[box.name].templateUrl"></div>
+                        <div class="box-content" ng-if="!ctrl.boxes[box.name].collapsed" ng-include="::ctrl.boxes[box.name].templateUrl"></div>
 
                     </div>
                 </div>
@@ -247,7 +261,7 @@
     <ul active-icon="close"
         effect="slidein"
         mfb-menu
-        position="bl"
+        position="br"
         resting-icon="menu"
         template-url="ng-mfb-menu-md.tpl.html"
         toggling-method="hover">

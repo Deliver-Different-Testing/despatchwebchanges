@@ -25,13 +25,13 @@ public class PodExportService(
 
         // Fetch data
         var data = await jobRepository.PodSearchDownloadAsync(
-            request.CourierId,
-            request.SpeedId,
+            request.CourierIds,
+            request.SpeedIds,
             request.Wild ?? string.Empty,
             request.Job ?? string.Empty,
             request.FromDate.DateTime.ResetTimeToStartOfDay(),
             request.ToDate.DateTime.ResetTimeToEndOfDay(),
-            request.ClientId
+            request.ClientIds
         );
 
         // Generate CSV

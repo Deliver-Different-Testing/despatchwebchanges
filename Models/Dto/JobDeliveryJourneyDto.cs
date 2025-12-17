@@ -9,29 +9,31 @@ public class JobDeliveryJourneyDto
     public string ChangeType { get; set; }
     public string Comments { get; set; }
     public string FieldName { get; set; }
-    
-    // Staff
+    public string OldValue { get; set; }
+    public string NewValue { get; set; }
+
+    // Staff (who made the update)
     public string StaffFirstName { get; set; }
     public string StaffLastName { get; set; }
-    
-    // Courier
+
+    // Courier (who made the update)
     public string CourierName { get; set; }
     public string CourierSurname { get; set; }
-    
+
     // Flight
     public string FlightNumber { get; set; }
-    
-    // New Agent
+
+    // Agent changes
     public string NewAgentName { get; set; }
-    
-    // Old Agent
     public string OldAgentName { get; set; }
-    
-    // New Job Status
+
+    // Job Status changes
     public string NewJobStatusName { get; set; }
-    
-    // Old Job Status
     public string OldJobStatusName { get; set; }
+
+    // Courier assignment changes
+    public string NewCourierName { get; set; }
+    public string OldCourierName { get; set; }
 }
 
 public class JobDeliveryJourneyArchiveDto
@@ -39,13 +41,32 @@ public class JobDeliveryJourneyArchiveDto
     public int Id { get; set; }
     public DateTime UpdatedAt { get; set; }
     public string ChangeType { get; set; }
-    public int? OldJobStatusId { get; set; }
-    public int? NewJobStatusId { get; set; }
-    public string UpdatedByType { get; set; }
-    public int? FlightId { get; set; }
-    public int? NewAgentId { get; set; }
-    public int? OldAgentId { get; set; }
+    public string Comments { get; set; }
     public string FieldName { get; set; }
     public string OldValue { get; set; }
     public string NewValue { get; set; }
+    public string UpdatedByType { get; set; }
+
+    // Staff (who made the update)
+    public string StaffFirstName { get; set; }
+    public string StaffLastName { get; set; }
+
+    // Courier (who made the update)
+    public string CourierName { get; set; }
+    public string CourierSurname { get; set; }
+
+    // Flight
+    public string FlightNumber { get; set; }
+
+    // Agent changes
+    public string NewAgentName { get; set; }
+    public string OldAgentName { get; set; }
+
+    // Job Status changes
+    public string NewJobStatusName { get; set; }
+    public string OldJobStatusName { get; set; }
+
+    // Courier assignment changes
+    public string NewCourierName { get; set; }
+    public string OldCourierName { get; set; }
 }

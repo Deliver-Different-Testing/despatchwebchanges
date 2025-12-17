@@ -1,8 +1,10 @@
 ﻿import {Dayjs} from "dayjs";
+import {ISuggestion} from "../../../interfaces/job.interface";
 
 interface ISearchCriteria {
-    client?: number;
-    courier?: number;
+    clients: ISuggestion[];
+    couriers: ISuggestion[];
+    speeds: ISuggestion[];
     date: Dayjs;
     from_date: Dayjs;
     to_date: Dayjs;
@@ -10,7 +12,6 @@ interface ISearchCriteria {
     includeClosed: boolean;
     wild?: string;
     job?: string;
-    speedId?: number;
 }
 
 export default ISearchCriteria;

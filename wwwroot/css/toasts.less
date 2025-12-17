@@ -29,10 +29,15 @@ md-toast {
     }
   }
 
-  &.md-bottom {
+  &.md-bottom.md-center {
     left: 50% !important;
-    right: initial !important;
-    max-width: 80%;
+    right: auto !important;
+    transform: translateX(-50%);
     min-width: 300px;
+    max-width: 500px;
+
+    .md-toast-content {
+      border-radius: 6px;
+    }
   }
 }
