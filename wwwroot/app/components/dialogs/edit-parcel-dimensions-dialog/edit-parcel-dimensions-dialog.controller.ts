@@ -23,6 +23,7 @@ class EditParcelDimensionsDialogController extends BaseController {
     bulkAddCount: number = 1;
 
     dimensionsString: string;
+    dimensionUnit: string;
 
     // Validation state
     validationErrors: { [key: string]: string } = {};
@@ -41,10 +42,11 @@ class EditParcelDimensionsDialogController extends BaseController {
         private bulkJobId?: number,
     ) {
         super();
-        
-        this.dimensionsString = appConfig.US_Customer 
-            ? "inches" 
-            : "cm"
+
+        this.dimensionsString = appConfig.US_Customer
+            ? "inches"
+            : "cm";
+        this.dimensionUnit = appConfig.US_Customer ? "in" : "cm";
     }
 
     $onInit() {
@@ -225,7 +227,7 @@ class EditParcelDimensionsDialogController extends BaseController {
             this.parcels.forEach(parcel => {
                 // Only set dimensions string if all three values are provided
                 if (parcel.length && parcel.depth && parcel.height) {
-                    parcel.dimensions = `${parcel.length} × ${parcel.depth} × ${parcel.height} in`;
+                    parcel.dimensions = `${parcel.length} × ${parcel.depth} × ${parcel.height} ${this.dimensionUnit}`;
                 } else {
                     parcel.dimensions = "";
                 }

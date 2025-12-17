@@ -1,120 +1,89 @@
-﻿<div class="task-history">
-    <!-- Simple Header Bar -->
-    <div class="simple-header" ng-if="ctrl.jobId">
+<div class="task-history" ng-class="{'us-theme': ctrl.isUsCustomer, 'nz-theme': !ctrl.isUsCustomer}">
+    <!-- Header Bar -->
+    <div class="history-header" ng-if="ctrl.jobId">
+        <div flex></div>
         <div class="header-actions">
-            <md-button class="md-icon-button dense-toggle-btn"
+            <md-button class="md-icon-button action-btn"
                        ng-click="ctrl.cycleDensityMode()"
-                       aria-label="Cycle Density Mode"
-                       md-tooltip="{{ctrl.getDensityModeLabel()}} - Click to cycle">
+                       aria-label="Change view density">
                 <md-icon md-font-set="material-symbols-outlined">
                     {{ctrl.getDensityModeIcon()}}
                 </md-icon>
+                <md-tooltip md-direction="bottom">{{ctrl.getDensityModeLabel()}}</md-tooltip>
             </md-button>
 
-            <md-button class="md-icon-button refresh-btn"
+            <md-button class="md-icon-button action-btn"
                        ng-click="ctrl.refreshJourney()"
+                       ng-disabled="ctrl.historyLoading"
                        aria-label="Refresh">
-                <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+                <md-icon md-font-set="material-symbols-outlined"
+                         ng-class="{'spinning': ctrl.historyLoading}">sync</md-icon>
+                <md-tooltip md-direction="bottom">Refresh</md-tooltip>
             </md-button>
         </div>
     </div>
 
-    <div class="journey-widget" ng-class="ctrl.getWidgetClass()" ng-if="ctrl.jobId">
+    <!-- Main Content -->
+    <div class="journey-container" ng-class="ctrl.getWidgetClass()" ng-if="ctrl.jobId">
         <!-- Progress indicator -->
         <md-progress-linear md-mode="indeterminate"
                             ng-show="ctrl.historyLoading"
-                            class="md-primary">
+                            class="md-primary loading-bar">
         </md-progress-linear>
 
-        <!-- Widget Content -->
-        <div class="widget-content" ng-if="ctrl.deliveryEvents.length > 0">
-            <div class="journey-steps">
-                <div class="journey-line"></div>
+        <!-- Journey Events -->
+        <div class="journey-content" ng-if="ctrl.deliveryEvents.length > 0">
+            <div class="timeline">
+                <div class="timeline-track"></div>
 
-                <div ng-repeat="event in ctrl.deliveryEvents track by event.id"
-                     class="{{ctrl.getItemClass(event)}}"
+                <div ng-repeat="item in ctrl.deliveryEvents track by item.id"
+                     class="timeline-event {{item.status}}"
                      ng-class="{'animate-in': ctrl.shouldAnimate}"
-                     ng-style="{'animation-delay': ($index * 0.1) + 's'}"
-                     ng-click="ctrl.handleDeliveryEventClick($event, event)">
+                     ng-style="{'animation-delay': ($index * 0.08) + 's'}"
+                     ng-click="ctrl.handleDeliveryEventClick($event, item)">
 
-                    <!-- Step Icon -->
-                    <div class="step-icon {{::ctrl.getIconColorClass($index)}}">
-                        <md-icon md-font-set="material-symbols-outlined">
-                            {{::event.icon || 'inventory_2' }}
-                        </md-icon>
+                    <!-- Event Marker -->
+                    <div class="event-marker">
+                        <div class="marker-dot {{::ctrl.getIconColorClass($index)}}">
+                            <md-icon md-font-set="material-symbols-outlined">
+                                {{::item.icon || 'circle'}}
+                            </md-icon>
+                        </div>
+                        <div class="marker-connector" ng-if="!$last"></div>
                     </div>
 
-                    <!-- Step Content -->
-                    <div class="step-content">
-                        <div class="step-header">
-                            <div class="step-title">{{::event.title}}</div>
-                            <div class="step-time" ng-if="ctrl.densityMode !== ctrl.DensityMode.UltraDense">
-                                {{::event._dateStr}}
-                                <span ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">{{::ctrl.timeZoneShort}}</span>
-                            </div>
+                    <!-- Event Card -->
+                    <div class="event-card">
+                        <div class="event-header">
+                            <span class="event-title">{{::item.title}}</span>
+                            <span class="event-time" ng-if="ctrl.densityMode !== ctrl.DensityMode.UltraDense">
+                                {{::item._dateStr}}
+                                <span class="tz" ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">{{::ctrl.timeZoneShort}}</span>
+                            </span>
                         </div>
 
-                        <div class="step-description"
-                             ng-if="event.description && ctrl.densityMode === ctrl.DensityMode.Normal">
-                            {{::event.description}}
+                        <p class="event-description"
+                           ng-if="event.description && ctrl.densityMode === ctrl.DensityMode.Normal">
+                            {{::item.description}}
+                        </p>
+
+                        <div class="event-tags" ng-if="::item.tags && item.tags.length > 0">
+                            <span ng-repeat="tag in ::item.tags | limitTo:(ctrl.densityMode === ctrl.DensityMode.UltraDense ? 2 : ctrl.densityMode === ctrl.DensityMode.Dense ? 3 : 10) track by $index"
+                                  class="tag">
+                                {{tag}}
+                            </span>
+                            <span ng-if="ctrl.densityMode !== ctrl.DensityMode.Normal && item.tags.length > (ctrl.densityMode === ctrl.DensityMode.UltraDense ? 2 : 3)"
+                                  class="tag tag-more">
+                                +{{item.tags.length - (ctrl.densityMode === ctrl.DensityMode.UltraDense ? 2 : 3)}}
+                            </span>
                         </div>
 
-                        <div class="step-details" ng-if="::event.tags && event.tags.length > 0">
-                     <span ng-repeat="tag in ::event.tags | limitTo:(ctrl.densityMode === ctrl.DensityMode.UltraDense ? 2 : ctrl.densityMode === ctrl.DensityMode.Dense ? 3 : 10) track by $index"
-                           class="step-tag">
-                            <md-icon style="font-size: 20px;" md-font-set="material-symbols-outlined"
-                                     ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">info</md-icon>
-                             {{tag}}
-                        </span>
-                            <span ng-if="ctrl.densityMode !== ctrl.DensityMode.Normal && event.tags.length > (ctrl.densityMode === ctrl.DensityMode.UltraDense ? 2 : 3)"
-                                  class="step-tag">
-                            +{{event.tags.length - (ctrl.densityMode === ctrl.DensityMode.UltraDense ? 2 : 3)}} more
-                        </span>
+                        <!-- Notes -->
+                        <div class="event-notes"
+                             ng-if="item.notes && item.notes.length > 0 && ctrl.densityMode === ctrl.DensityMode.Normal">
+                            <md-icon md-font-set="material-symbols-outlined">notes</md-icon>
+                            <span>{{::item.notes}}</span>
                         </div>
-
-                        <!-- Notes Section -->
-                        <div class="step-notes"
-                             ng-if="event.notes && event.notes.length > 0 && ctrl.densityMode === ctrl.DensityMode.Normal">
-                            <div class="notes-label">Notes</div>
-                            <div class="notes-content">{{::event.notes}}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Automation Events Summary -->
-            <div class="automation-events"
-                 ng-if="ctrl.config.showSummaryStats !== false && ctrl.densityMode !== ctrl.DensityMode.UltraDense">
-                <div class="events-header">
-                    <div class="events-title">
-                        <md-icon md-font-set="material-symbols-outlined"
-                                 ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">summarize
-                        </md-icon>
-                        Journey Summary
-                    </div>
-                    <div class="events-count">
-                    <span class="summary-item completed">
-                        <md-icon md-font-set="material-symbols-outlined"
-                                 ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">delivery_truck_speed</md-icon>
-                        {{ctrl.getCompletedCount()}}
-                    </span>
-                    </div>
-                </div>
-
-                <div class="summary-stats">
-                    <div class="stat-row">
-                        <span class="stat-label">Next Action:</span>
-                        <span class="stat-value" ng-class="{'urgent': ctrl.hasOverdueActions()}">
-                        {{::ctrl.getNextAction()}}
-                    </span>
-                    </div>
-                    <div class="stat-row" ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">
-                        <span class="stat-label">Completion Rate:</span>
-                        <span class="stat-value">{{::ctrl.getEventCompletionRate()}}%</span>
-                    </div>
-                    <div class="stat-row" ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">
-                        <span class="stat-label">Next Trigger:</span>
-                        <span class="stat-value">{{::ctrl.getNextTrigger()}}</span>
                     </div>
                 </div>
             </div>
@@ -123,28 +92,21 @@
         <!-- Empty State -->
         <div class="empty-state" ng-if="ctrl.deliveryEvents.length === 0 && !ctrl.historyLoading">
             <no-data
-                    title="No Journey Events"
-                    message="No delivery journey events found for this job. Events will appear here as they are created."
-                    icon="package_2"
-                    show-action="false">
+                title="No Journey Events"
+                message="No delivery journey events found for this job."
+                icon="package_2"
+                show-action="false">
             </no-data>
         </div>
     </div>
 
     <!-- No Job Selected State -->
-    <div class="journey-widget" ng-if="!ctrl.jobId">
-        <md-toolbar class="md-accent" ng-if="::ctrl.showFullToolbar">
-            <div class="md-toolbar-tools">
-                <md-icon md-font-set="material-symbols-outlined">rocket_launch</md-icon>
-                <span class="md-headline-title" flex style="margin-left: 8px;"> Delivery Journey</span>
-            </div>
-        </md-toolbar>
-
+    <div class="journey-container no-job" ng-if="!ctrl.jobId">
         <no-data
-                title="Select Job First"
-                message="Select a job to view its delivery journey."
-                icon="task_alt"
-                show-action="false">
+            title="Select a Job"
+            message="Select a job to view its delivery journey."
+            icon="select_all"
+            show-action="false">
         </no-data>
     </div>
 </div>

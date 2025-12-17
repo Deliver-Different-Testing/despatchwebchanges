@@ -22,7 +22,7 @@
                     </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>
-                        <label for="maxPayLoad">Max Weight</label>
+                        <label for="maxPayLoad">Max Weight ({{::ctrl.weightUnit}})</label>
                         <input disabled id="maxPayLoad" ng-model="ctrl.truckCourierStatus.maxPayLoad" type="text">
                     </md-input-container>
 
@@ -39,12 +39,12 @@
                     </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>
-                        <label for="currentWeight">Current Weight</label>
+                        <label for="currentWeight">Current Weight ({{::ctrl.weightUnit}})</label>
                         <input disabled id="currentWeight" ng-model="ctrl.truckCourierStatus.currentWeight" type="text">
                     </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>
-                        <label for="availableWeight">Available Weight</label>
+                        <label for="availableWeight">Available Weight ({{::ctrl.weightUnit}})</label>
                         <input disabled id="availableWeight" ng-model="ctrl.truckCourierStatus.availableWeight" type="text">
                     </md-input-container>
                 </div>

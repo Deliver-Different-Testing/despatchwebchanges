@@ -2,6 +2,7 @@ import BaseController from "../../base-controller";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 import {ITruckCourierStatus} from "../../../interfaces/courier.interface";
+import {IAppConfig} from "../../../interfaces/app-config.interface";
 
 class TruckCourierStatusDialogController extends BaseController {
     static $inject = [
@@ -11,8 +12,12 @@ class TruckCourierStatusDialogController extends BaseController {
         "$scope",
         "$interval",
         "$timeout",
+        "APP_CONFIG",
         "truckCourierStatus"
     ];
+
+    isUsCustomer: boolean;
+    weightUnit: string;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -21,11 +26,14 @@ class TruckCourierStatusDialogController extends BaseController {
         $scope: angular.IScope,
         $interval: angular.IIntervalService,
         $timeout: angular.ITimeoutService,
+        appConfig: IAppConfig,
         public truckCourierStatus: ITruckCourierStatus
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
-        
+        this.isUsCustomer = appConfig.US_Customer;
+        this.weightUnit = appConfig.US_Customer ? "lbs" : "kg";
+
         console.log("TruckCourierStatusDialogController instantiated");
     }
 

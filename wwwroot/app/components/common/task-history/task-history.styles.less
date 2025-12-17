@@ -1,883 +1,507 @@
-﻿@import '../../../../css/variables';
+@import '../../../../css/variables';
+
+// Theme Colors - US (Professional Blue)
+@us-primary: #2196f3;
+@us-primary-light: #e3f2fd;
+@us-primary-dark: #1565c0;
+
+// Theme Colors - NZ (Urgent Yellow)
+@nz-primary: #fddd00;
+@nz-primary-light: #fffbe0;
+@nz-primary-dark: #fcc700;
+
+// Status Colors
+@status-completed: #10b981;
+@status-completed-light: #d1fae5;
+@status-todo: #ef4444;
+@status-todo-light: #fef2f2;
+@status-pending: #f59e0b;
+@status-pending-light: #fef3c7;
+@status-current: #3b82f6;
+@status-current-light: #dbeafe;
+@status-waiting: #9ca3af;
+@status-waiting-light: #f3f4f6;
+
+// Neutral Colors
+@border-color: #e5e7eb;
+@bg-subtle: #f9fafb;
+@text-primary: #1f2937;
+@text-secondary: #6b7280;
+@text-muted: #9ca3af;
 
 .task-history {
-  margin-top: -20px;
-
-  /* Journey Widget Styles */
-
-  .journey-widget {
-    background: white;
-    border: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
+    height: 100%;
+    background: white;
+    border-radius: 8px;
     overflow: hidden;
-    width: 100%;
-    min-height: 400px;
 
-    md-card-content {
-      padding: 0 !important;
-      background: transparent !important;
-    }
-  }
-
-  .dense-toggle-btn {
-    color: rgba(255, 255, 255, 0.87) !important;
-    transition: all 0.3s ease;
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.1) !important;
-    }
-  }
-
-  .refresh-btn {
-    color: rgba(255, 255, 255, 0.87) !important;
-    transition: all 0.3s ease;
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.1) !important;
-    }
-  }
-
-  .widget-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px;
-    position: relative;
-  }
-
-  /* Journey Steps - Vertical Layout */
-
-  .journey-steps {
-    position: relative;
-    padding-left: 20px;
-    overflow-y: auto;
-    overflow-x: hidden;
-  }
-
-  .journey-line {
-    position: absolute;
-    left: 18px;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: linear-gradient(to bottom, #3b82f6 0%, #10b981 50%, #f59e0b 100%);
-    border-radius: 8px;
-  }
-
-  .step-item {
-    position: relative;
-    margin-bottom: 24px;
-    padding-left: 40px;
-    z-index: 10;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-      transform: translateX(4px);
+    // Theme-specific CSS custom properties
+    &.us-theme {
+        --theme-primary: @us-primary;
+        --theme-primary-light: @us-primary-light;
+        --theme-primary-dark: @us-primary-dark;
+        --header-bg: @us-primary;
+        --header-text: white;
     }
 
-    &:last-child {
-      margin-bottom: 0;
-    }
-  }
-
-  .step-icon {
-    position: absolute;
-    left: -16px;
-    top: 0;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    border: 3px solid white;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-
-    md-icon {
-      color: white;
+    &.nz-theme {
+        --theme-primary: @nz-primary;
+        --theme-primary-light: @nz-primary-light;
+        --theme-primary-dark: @nz-primary-dark;
+        --header-bg: @nz-primary;
+        --header-text: rgba(0, 0, 0, 0.87);
     }
 
-    &.icon-color-1 {
-      background: #3b82f6;
-    }
-
-    &.icon-color-2 {
-      background: #10b981;
-    }
-
-    &.icon-color-3 {
-      background: #f59e0b;
-    }
-
-    &.icon-color-4 {
-      background: #ef4444;
-    }
-
-    &.icon-color-5 {
-      background: #8b5cf6;
-    }
-
-    &.icon-color-6 {
-      background: #06b6d4;
-    }
-
-    &.icon-color-7 {
-      background: #84cc16;
-    }
-
-    &.icon-color-8 {
-      background: #ec4899;
-    }
-  }
-
-  // Keep pulse animation for todo status
-  .step-item.todo .step-icon {
-    animation: pulse 2s infinite;
-  }
-
-  // Keep pulse animation for current status
-  .step-item.current .step-icon {
-    animation: pulse 2s infinite;
-  }
-
-  .step-item.completed .step-icon {
-    background: #10b981;
-
-    md-icon {
-      color: white;
-    }
-  }
-
-  .step-item.current .step-icon {
-    background: #3b82f6;
-    animation: pulse 2s infinite;
-
-    md-icon {
-      color: white;
-    }
-  }
-
-  .step-item.todo .step-icon {
-    background: #ef4444;
-    animation: pulse 2s infinite;
-
-    md-icon {
-      color: white;
-    }
-  }
-
-  .step-item.pending .step-icon {
-    background: #f59e0b;
-
-    md-icon {
-      color: white;
-    }
-  }
-
-  .step-item.waiting .step-icon {
-    background: #9ca3af;
-
-    md-icon {
-      color: white;
-    }
-  }
-
-  @keyframes pulse {
-    0%, 100% {
-      transform: scale(1);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-    50% {
-      transform: scale(1.05);
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-    }
-  }
-
-  .step-content {
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 12px;
-    transition: all 0.2s ease;
-  }
-
-  .step-content:hover {
-    border-color: #3b82f6;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
-  }
-
-  .step-item.completed .step-content {
-    background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
-    border-color: #10b981;
-  }
-
-  .step-item.current .step-content {
-    background: linear-gradient(135deg, #dbeafe 0%, #ffffff 100%);
-    border-color: #3b82f6;
-  }
-
-  .step-item.todo .step-content {
-    background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
-    border-color: #ef4444;
-  }
-
-  .step-item.pending .step-content {
-    background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
-    border-color: #f59e0b;
-  }
-
-  .step-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-  }
-
-  .step-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #1f2937;
-  }
-
-  .step-time {
-    font-size: 0.85rem;
-    color: #6b7280;
-    background: #f3f4f6;
-    padding: 2px 6px;
-    border-radius: 4px;
-    white-space: nowrap;
-  }
-
-  .step-description {
-    font-size: 0.9rem;
-    color: #6b7280;
-    margin-bottom: 8px;
-    line-height: 1.4;
-  }
-
-  .step-details {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .step-tag {
-    background: #f3f4f6;
-    color: #4a5568;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    border: 1px solid #e2e8f0;
-    transition: all 0.2s ease;
-  }
-
-  .step-tag:hover {
-    background: #e2e8f0;
-    transform: translateY(-1px);
-  }
-
-  .step-tag.status-completed {
-    background: #d1fae5;
-    color: #065f46;
-    border-color: #10b981;
-  }
-
-  .step-tag.status-todo {
-    background: #fef2f2;
-    color: #991b1b;
-    border-color: #ef4444;
-  }
-
-  .step-tag.status-pending {
-    background: #fef3c7;
-    color: #92400e;
-    border-color: #f59e0b;
-  }
-
-  .step-tag.overdue-tag {
-    background: #fef2f2;
-    color: #991b1b;
-    border-color: #ef4444;
-    animation: pulse-overdue 2s infinite;
-  }
-
-  @keyframes pulse-overdue {
-    0%, 100% {
-      opacity: 1;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 0.8;
-      transform: scale(1.02);
-    }
-  }
-
-  /* Notes Section */
-
-  .step-notes {
-    margin-top: 8px;
-    padding: 8px;
-    background: #f8fafc;
-    border-radius: 4px;
-    border: 1px solid #e2e8f0;
-
-    .notes-label {
-      font-size: 0.8rem;
-      color: #6b7280;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 4px;
-    }
-
-    .notes-content {
-      font-size: 0.85rem;
-      color: #4a5568;
-      line-height: 1.3;
-      font-style: italic;
-    }
-  }
-
-  /* Automation Events Section */
-
-  .automation-events {
-    margin-top: 20px;
-    padding-top: 16px;
-    border-top: 1px solid #e2e8f0;
-  }
-
-  .events-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-  }
-
-  .events-title {
-    font-size: 1.0rem;
-    font-weight: 600;
-    color: #1f2937;
-  }
-
-  .events-count {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .summary-item {
-    font-size: 0.8rem;
-    font-weight: 500;
-    padding: 2px 6px;
-    border-radius: 4px;
-    border: 1px solid transparent;
-  }
-
-  .summary-item.completed {
-    background: #d1fae5;
-    color: #065f46;
-    border-color: #10b981;
-  }
-
-  .summary-item.todo {
-    background: #fef2f2;
-    color: #991b1b;
-    border-color: #ef4444;
-  }
-
-  .summary-item.pending {
-    background: #fef3c7;
-    color: #92400e;
-    border-color: #f59e0b;
-  }
-
-  .summary-stats {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .stat-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 4px 0;
-  }
-
-  .stat-label {
-    font-size: 0.85rem;
-    color: #6b7280;
-    font-weight: 500;
-  }
-
-  .stat-value {
-    font-size: 0.85rem;
-    color: #1f2937;
-    font-weight: 600;
-  }
-
-  .stat-value.urgent {
-    color: #ef4444;
-    animation: pulse-text 2s infinite;
-  }
-
-  @keyframes pulse-text {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.6;
-    }
-  }
-
-  .expand-link {
-    color: #3b82f6;
-    text-decoration: none;
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-  }
-
-  .expand-link:hover {
-    text-decoration: underline;
-    color: #2563eb;
-  }
-
-  /* Loading state */
-
-  .loading-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 200px;
-    color: #6b7280;
-  }
-
-  /* Empty state */
-
-  .empty-state {
-    text-align: center;
-    padding: 40px 20px;
-    color: #6b7280;
-
-    .empty-icon {
-      font-size: 48px;
-      margin-bottom: 16px;
-      opacity: 0.5;
-    }
-
-    .empty-title {
-      font-size: 1.2rem;
-      font-weight: 600;
-      margin-bottom: 8px;
-      color: #374151;
-    }
-
-    .empty-message {
-      font-size: 1.0rem;
-      line-height: 1.5;
-    }
-  }
-
-  /* Dense Mode Styles */
-
-  .journey-widget.dense-mode {
-    .widget-content {
-      padding: 12px;
-    }
-
-    .step-item {
-      margin-bottom: 16px;
-      padding-left: 32px;
-    }
-
-    .step-icon {
-      left: -12px;
-      width: 24px;
-      height: 24px;
-
-      md-icon {
-        font-size: 14px;
-      }
-    }
-
-    .journey-line {
-      left: 20px;
-      width: 2px;
-    }
-
-    .step-content {
-      padding: 8px;
-    }
-
-    .step-title {
-      font-size: 0.85rem;
-    }
-
-    .step-time {
-      font-size: 0.7rem;
-    }
-
-    .step-description {
-      font-size: 0.75rem;
-      margin-bottom: 6px;
-    }
-
-    .step-tag {
-      font-size: 0.65rem;
-      padding: 1px 4px;
-    }
-
-    .step-notes {
-      padding: 6px;
-      margin-top: 6px;
-
-      .notes-content {
-        font-size: 0.7rem;
-      }
-    }
-
-    .automation-events {
-      margin-top: 16px;
-      padding-top: 12px;
-    }
-
-    .events-title {
-      font-size: 0.85rem;
-    }
-
-    .summary-item {
-      font-size: 0.65rem;
-    }
-
-    .stat-label, .stat-value {
-      font-size: 0.7rem;
-    }
-  }
-
-  /* Ultra-Dense Mode Styles */
-
-  .journey-widget.ultra-dense-mode {
-    min-height: 300px;
-
-    .widget-content {
-      padding: 8px;
-    }
-
-    .step-item {
-      margin-bottom: 8px;
-      padding-left: 24px;
-
-      &:hover {
-        transform: translateX(2px);
-      }
-    }
-
-    .step-icon {
-      left: -8px;
-      width: 16px;
-      height: 16px;
-      border: 2px solid white;
-
-      md-icon {
-        font-size: 10px;
-      }
-    }
-
-    .journey-line {
-      left: 16px;
-      width: 2px;
-    }
-
-    .step-content {
-      padding: 4px 6px;
-      border-radius: 4px;
-    }
-
-    .step-header {
-      margin-bottom: 2px;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 2px;
-    }
-
-    .step-title {
-      font-size: 0.75rem;
-      font-weight: 500;
-      line-height: 1.2;
-    }
-
-    .step-time {
-      font-size: 0.6rem;
-      padding: 1px 3px;
-      align-self: flex-end;
-    }
-
-    .step-description {
-      display: none; // Hidden in ultra-dense mode
-    }
-
-    .step-tag {
-      font-size: 0.6rem;
-      padding: 1px 3px;
-      border-radius: 2px;
-    }
-
-    .step-notes {
-      display: none; // Hidden in ultra-dense mode
-    }
-
-    .automation-events {
-      margin-top: 12px;
-      padding-top: 8px;
-    }
-
-    .events-header {
-      margin-bottom: 8px;
-    }
-
-    .events-title {
-      font-size: 0.75rem;
-    }
-
-    .summary-item {
-      font-size: 0.6rem;
-      padding: 1px 4px;
-    }
-
-    .summary-stats {
-      gap: 4px;
-    }
-
-    .stat-row {
-      padding: 2px 0;
-    }
-
-    .stat-label, .stat-value {
-      font-size: 0.65rem;
-    }
-
-    .journey-steps {
-      padding-left: 16px;
-    }
-  }
-
-  /* Responsive Design */
-  @media (max-width: 768px) {
-    .journey-widget {
-      width: 100%;
-
-      .widget-header {
-        padding: 12px;
-
-        .widget-title {
-          font-size: 0.9rem;
+    // Header
+    .history-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 12px;
+        background: var(--header-bg);
+        color: var(--header-text);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: @font-sm;
+            font-weight: @weight-medium;
+
+            md-icon {
+                color: inherit;
+                font-size: 18px;
+            }
         }
 
-        .widget-subtitle {
-          font-size: 0.75rem;
+        .header-actions {
+            display: flex;
+            gap: 2px;
+
+            .action-btn {
+                margin: 0;
+                width: 32px;
+                height: 32px;
+                min-width: 32px;
+
+                md-icon {
+                    color: var(--header-text);
+                    font-size: 18px;
+                }
+
+                &:hover {
+                    background: rgba(255, 255, 255, 0.15);
+                }
+
+                &.spinning md-icon {
+                    animation: spin 1s linear infinite;
+                }
+            }
         }
-      }
+    }
 
-      .widget-content {
-        padding: 12px;
-      }
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
 
-      .step-item {
-        padding-left: 36px;
-      }
-
-      .step-icon {
-        left: -14px; // Adjusted for medium icons
-        width: 28px;
-        height: 28px;
-
-        md-icon {
-          font-size: 16px;
-        }
-      }
-
-      .journey-line {
-        left: 0;
-      }
-
-      .step-header {
+    // Main Container
+    .journey-container {
+        flex: 1;
+        display: flex;
         flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
-      }
+        overflow: hidden;
+        position: relative;
 
-      .step-time {
-        align-self: flex-end;
-      }
-
-      .events-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-      }
-
-      .events-count {
-        align-self: flex-end;
-      }
-    }
-
-    // Ultra-dense mobile adjustments
-    .journey-widget.ultra-dense-mode {
-      .step-item {
-        padding-left: 20px;
-      }
-
-      .step-icon {
-        left: -6px;
-        width: 12px;
-        height: 12px;
-
-        md-icon {
-          font-size: 8px;
+        &.no-job {
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
         }
-      }
 
-      .journey-line {
-        left: 12px;
-        width: 1px;
-      }
-    }
-  }
-
-  @media (max-width: 480px) {
-    .journey-widget {
-      .widget-header {
-        padding: 10px;
-      }
-
-      .widget-content {
-        padding: 10px;
-      }
-
-      .step-item {
-        padding-left: 32px;
-      }
-
-      .step-icon {
-        left: -12px;
-        width: 24px;
-        height: 24px;
-
-        md-icon {
-          font-size: 14px;
+        .loading-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
         }
-      }
-
-      .journey-line {
-        left: 0;
-      }
-
-      .step-title {
-        font-size: 0.85rem;
-      }
-
-      .step-description {
-        font-size: 0.75rem;
-      }
-
-      .step-tag {
-        font-size: 0.65rem;
-      }
-
-      .stat-row {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 2px;
-      }
     }
 
-    // Ultra-dense small mobile adjustments
-    .journey-widget.ultra-dense-mode {
-      .step-item {
-        padding-left: 18px;
-      }
+    // Journey Content
+    .journey-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+    }
 
-      .step-icon {
-        left: -5px;
-        width: 10px;
-        height: 10px;
+    // Timeline
+    .timeline {
+        position: relative;
 
-        md-icon {
-          font-size: 7px;
+        .timeline-track {
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: @border-color;
         }
-      }
-
-      .journey-line {
-        left: 10px;
-        width: 1px;
-      }
-
-      .step-title {
-        font-size: 0.7rem;
-      }
-
-      .step-time {
-        font-size: 0.55rem;
-      }
     }
-  }
 
-  /* Animation for items appearing */
+    // Timeline Event
+    .timeline-event {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 16px;
+        cursor: pointer;
 
-  .step-item.animate-in {
-    animation: slideInLeft 0.6s ease forwards;
-  }
+        &:last-child {
+            margin-bottom: 0;
+        }
 
-  @keyframes slideInLeft {
-    from {
-      opacity: 0;
-      transform: translateX(-20px);
+        &:hover .event-card {
+            border-color: var(--theme-primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        // Event Marker
+        .event-marker {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 5;
+
+            .marker-dot {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: @status-waiting;
+                border: 3px solid white;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+                md-icon {
+                    color: white;
+                }
+
+                // Stage colors - different color for each journey stage
+                &.icon-color-1 { background: #3b82f6; } // Blue
+                &.icon-color-2 { background: #10b981; } // Emerald
+                &.icon-color-3 { background: #f59e0b; } // Amber
+                &.icon-color-4 { background: #ef4444; } // Red
+                &.icon-color-5 { background: #8b5cf6; } // Violet
+                &.icon-color-6 { background: #06b6d4; } // Cyan
+                &.icon-color-7 { background: #84cc16; } // Lime
+                &.icon-color-8 { background: #ec4899; } // Pink
+            }
+
+            .marker-connector {
+                width: 2px;
+                flex: 1;
+                min-height: 16px;
+                background: @border-color;
+                margin-top: -2px;
+            }
+        }
+
+        // Event Card
+        .event-card {
+            flex: 1;
+            background: white;
+            border: 1px solid @border-color;
+            border-radius: 8px;
+            padding: 12px;
+            transition: all 0.2s ease;
+
+            .event-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 8px;
+                margin-bottom: 6px;
+            }
+
+            .event-title {
+                font-size: @font-base;
+                font-weight: @weight-semibold;
+                color: @text-primary;
+                line-height: @line-tight;
+            }
+
+            .event-time {
+                font-size: @font-xs;
+                color: @text-secondary;
+                background: @bg-subtle;
+                padding: 2px 8px;
+                border-radius: 4px;
+                white-space: nowrap;
+                flex-shrink: 0;
+
+                .tz {
+                    color: @text-muted;
+                    margin-left: 2px;
+                }
+            }
+
+            .event-description {
+                font-size: @font-sm;
+                color: @text-secondary;
+                line-height: @line-normal;
+                margin: 0 0 8px 0;
+            }
+
+            .event-tags {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+
+                .tag {
+                    font-size: @font-xs;
+                    color: @text-secondary;
+                    background: @bg-subtle;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    border: 1px solid @border-color;
+
+                    &.tag-more {
+                        color: @text-muted;
+                        font-style: italic;
+                    }
+                }
+            }
+
+            .event-notes {
+                display: flex;
+                align-items: flex-start;
+                gap: 6px;
+                margin-top: 8px;
+                padding: 8px;
+                background: @bg-subtle;
+                border-radius: 4px;
+                font-size: @font-xs;
+                color: @text-secondary;
+                font-style: italic;
+
+                md-icon {
+                    color: @text-muted;
+                    flex-shrink: 0;
+                }
+            }
+        }
+
+        // Status-specific card styles
+        &.completed .event-card {
+            border-left: 3px solid @status-completed;
+            background: linear-gradient(to right, @status-completed-light, white 20%);
+        }
+
+        &.current .event-card {
+            border-left: 3px solid @status-current;
+            background: linear-gradient(to right, @status-current-light, white 20%);
+        }
+
+        &.todo .event-card {
+            border-left: 3px solid @status-todo;
+            background: linear-gradient(to right, @status-todo-light, white 20%);
+        }
+
+        &.pending .event-card {
+            border-left: 3px solid @status-pending;
+            background: linear-gradient(to right, @status-pending-light, white 20%);
+        }
+
+        &.waiting .event-card {
+            border-left: 3px solid @status-waiting;
+        }
     }
-    to {
-      opacity: 1;
-      transform: translateX(0);
+
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        50% {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
     }
-  }
 
-  /* Progress indicator */
-
-  .progress-indicator {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: #e5e7eb;
-
-    .progress-bar {
-      height: 100%;
-      background: linear-gradient(90deg, #10b981 0%, #3b82f6 50%, #8b5cf6 100%);
-      transition: width 0.5s ease;
+    // Empty State
+    .empty-state {
+        padding: 32px 16px;
     }
-  }
 
-  .simple-header {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    padding: 8px 16px;
-    background: rgba(0, 0, 0, 0.02);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  }
-
-  .header-actions {
-    display: flex;
-    gap: 4px;
-
-    .md-icon-button {
-      margin: 0;
-      min-width: 40px;
-      width: 40px;
-      height: 40px;
+    // Animation
+    .timeline-event.animate-in {
+        animation: slideIn 0.4s ease forwards;
+        opacity: 0;
     }
-  }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateX(-16px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    // Dense Mode
+    .journey-container.dense-mode {
+        .journey-content {
+            padding: 12px;
+        }
+
+        .timeline-event {
+            margin-bottom: 12px;
+            gap: 12px;
+
+            .event-marker .marker-dot {
+                width: 24px;
+                height: 24px;
+
+                md-icon {
+                    font-size: 14px;
+                    width: 14px;
+                    height: 14px;
+                    min-width: 14px;
+                    min-height: 14px;
+                }
+            }
+
+            .event-card {
+                padding: 8px 10px;
+
+                .event-title {
+                    font-size: @font-sm;
+                }
+
+                .event-time {
+                    font-size: 10px;
+                    padding: 1px 6px;
+                }
+
+                .event-tags .tag {
+                    font-size: 10px;
+                    padding: 1px 4px;
+                }
+
+                .event-notes md-icon {
+                    font-size: 12px;
+                }
+            }
+        }
+
+        .timeline .timeline-track {
+            left: 11px;
+        }
+    }
+
+    // Ultra-Dense Mode
+    .journey-container.ultra-dense-mode {
+        .journey-content {
+            padding: 8px;
+        }
+
+        .timeline-event {
+            margin-bottom: 8px;
+            gap: 8px;
+
+            .event-marker {
+                .marker-dot {
+                    width: 18px;
+                    height: 18px;
+                    border-width: 2px;
+
+                    md-icon {
+                        font-size: 10px;
+                        width: 10px;
+                        height: 10px;
+                        min-width: 10px;
+                        min-height: 10px;
+                    }
+                }
+
+                .marker-connector {
+                    min-height: 8px;
+                }
+            }
+
+            .event-card {
+                padding: 6px 8px;
+
+                .event-header {
+                    flex-direction: column;
+                    gap: 2px;
+                    margin-bottom: 4px;
+                }
+
+                .event-title {
+                    font-size: @font-xs;
+                    font-weight: @weight-medium;
+                }
+
+                .event-time {
+                    font-size: 9px;
+                    padding: 1px 4px;
+                    align-self: flex-start;
+                }
+
+                .event-tags .tag {
+                    font-size: 9px;
+                    padding: 0 3px;
+                }
+
+                .event-notes md-icon {
+                    font-size: 10px;
+                }
+            }
+        }
+
+        .timeline .timeline-track {
+            left: 8px;
+            width: 1px;
+        }
+    }
+
+    // Responsive
+    @media (max-width: 768px) {
+        .journey-content {
+            padding: 12px;
+        }
+
+        .timeline-event {
+            gap: 12px;
+
+            .event-marker .marker-dot {
+                width: 28px;
+                height: 28px;
+            }
+
+            .event-card {
+                .event-header {
+                    flex-direction: column;
+                    gap: 4px;
+                }
+
+                .event-time {
+                    align-self: flex-start;
+                }
+            }
+        }
+
+        .timeline .timeline-track {
+            left: 13px;
+        }
+    }
 }
