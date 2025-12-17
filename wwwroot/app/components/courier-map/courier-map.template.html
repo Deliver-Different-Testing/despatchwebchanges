@@ -1,21 +1,5 @@
 <div>
-    <md-toolbar class="md-hue-2 md-whiteframe-2dp">
-        <div class="md-toolbar-tools">
-            <img alt="DFRNT" class="toolbar-logo" src="images/dfrnt_logo.png">
-            <md-divider class="vertical-divider"></md-divider>
-            <h2 class="md-title">Courier Map</h2>
-
-            <span flex></span>
-
-            <span style="font-size: medium;">{{::ctrl.greetUser()}}</span>
-
-            <md-button aria-label="Menu" class="md-icon-button" ng-mouseover="ctrl.toggleSidenav()">
-                <md-icon md-font-set="material-symbols-outlined">menu</md-icon>
-            </md-button>
-        </div>
-    </md-toolbar>
-
-    <material-sidenav></material-sidenav>
+    <app-toolbar title="Courier Map"></app-toolbar>
 </div>
 
 <div class="courier-map-container" layout="column" flex>

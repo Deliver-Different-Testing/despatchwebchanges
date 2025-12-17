@@ -69,6 +69,7 @@ import SimplePriceEditDialogService
     from "./components/dialogs/simple-price-edit-dialog/simple-price-edit-dialog.service";
 import SimplePriceEditDialogController
     from "./components/dialogs/simple-price-edit-dialog/simple-price-edit-dialog.controller";
+import AppToolbarComponent from "./components/common/app-toolbar/app-toolbar.component";
 
 const app = (window as any).uDispatchApp;
 
@@ -201,6 +202,7 @@ app.component("dataTable", DataTableComponent);
 app.component("stickyNote", StickyNoteComponent);
 app.component("dateFilterMenu", DateFilterMenuComponent);
 app.component("customDatePicker", DayJsDatePickerComponent);
+app.component("appToolbar", AppToolbarComponent);
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);

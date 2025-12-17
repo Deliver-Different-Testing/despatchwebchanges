@@ -294,6 +294,8 @@ public class BaseJobRepository(
             NationwideWidget.JobList => query.Where(j =>
                 j.InternalStatus == (int)InternalJobStatus.NewJobs
                 || (j.InternalStatus == null && j.UcjbStatus != (int)JobStatus.AwaitingPod)
+                // Keep dispatched jobs visible until courier accepts them
+                || (j.InternalStatus == (int)InternalJobStatus.AwaitingPod && j.UcjbStatus == (int)JobStatus.Dispatched)
             ),
 
             NationwideWidget.Pod => query.Where(j =>

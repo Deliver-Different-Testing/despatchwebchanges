@@ -12,18 +12,22 @@
     {
         manifest = new Dictionary<string, string>
         {
-            ["vendor.js"] = "vendor.js",
+            ["vendor-core.js"] = "vendor-core.js",
+            ["vendor-plugins.js"] = "vendor-plugins.js",
             ["app.js"] = "app.js",
-            ["vendor.css"] = "vendor.css",
+            ["vendor-core.css"] = "vendor-core.css",
+            ["vendor-plugins.css"] = "vendor-plugins.css",
             ["app.css"] = "app.css"
         };
 
         await Console.Error.WriteLineAsync($"Error reading manifest: {ex.Message}");
     }
 
-    var vendorBundleFile = manifest["vendor.js"];
+    var vendorCoreJs = manifest["vendor-core.js"];
+    var vendorPluginsJs = manifest["vendor-plugins.js"];
     var appBundleFile = manifest["app.js"];
-    var vendorStylesFile = manifest["vendor.css"];
+    var vendorCoreCss = manifest.GetValueOrDefault("vendor-core.css", "");
+    var vendorPluginsCss = manifest.GetValueOrDefault("vendor-plugins.css", "");
     var appStylesFile = manifest["app.css"];
 }
 
@@ -101,7 +105,14 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="/dist/@vendorStylesFile" />
+    @if (!string.IsNullOrEmpty(vendorCoreCss))
+    {
+        <link rel="stylesheet" href="/dist/@vendorCoreCss" />
+    }
+    @if (!string.IsNullOrEmpty(vendorPluginsCss))
+    {
+        <link rel="stylesheet" href="/dist/@vendorPluginsCss" />
+    }
     <link rel="stylesheet" href="/dist/@appStylesFile" />
 </head>
 
@@ -132,7 +143,8 @@
     <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
     <script src="https://js.api.here.com/v3/3.1/mapsjs-harp.js"></script>
 
-    <script src="/dist/@vendorBundleFile"></script>
+    <script src="/dist/@vendorCoreJs"></script>
+    <script src="/dist/@vendorPluginsJs"></script>
     <script src="/dist/@appBundleFile"></script>
 
     <script>

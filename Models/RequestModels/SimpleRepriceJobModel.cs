@@ -4,5 +4,6 @@ public class SimpleRepriceJobModel
 {
     public int JobId { get; set; }
     public bool IsPrebook { get; set; }
+    public bool IsBulk { get; set; }
     public decimal NewPrice { get; set; }
 }

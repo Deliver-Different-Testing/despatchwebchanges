@@ -1836,13 +1836,8 @@ class JobDetailController extends BaseController {
 
     async showPricingBreakdown($event: MouseEvent, job: IJob): Promise<void> {
         try {
-            if (job.bulkJob) {
-                this.toastrService.showWarningToast("Price breakdown is not currently available for scheduled jobs.");
-                return;
-            }
-
             if (job.isInvoiced) {
-                this.toastrService.showWarningToast("Job already invoiced to the customer. Cannot edit price.");
+                this.toastrService.showWarningToast(`Job ${job.jobNo} is invoiced and cannot be modified.`);
                 return;
             }
 
@@ -1853,9 +1848,7 @@ class JobDetailController extends BaseController {
             await this.refreshJobDetails(job.id);
         } catch (error) {
             console.error("Error in displayPriceBreakdown:", error);
-            this.toastrService.showErrorToast(
-                "An error occurred while fetching the price breakdown. Please try again."
-            );
+            this.toastrService.showErrorToast("Failed to load pricing breakdown. Please try again.");
         }
     }
 
