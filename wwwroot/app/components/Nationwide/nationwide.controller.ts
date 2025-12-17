@@ -105,6 +105,7 @@ class NationwideControl extends BaseController {
     private readonly SelectedViewsKey: string = `selectedViews-NW-${ContactID}`;
     private readonly NationwideLayoutKey: string = `layoutsNW-${ContactID}`;
     private readonly NationwideLastActiveLayoutKey: string = `lastActiveLayoutNW-${ContactID}`;
+    private readonly BoxVisibilityKey: string = `boxVisibility-${AppPage.Domestic}-${ContactID}`;
 
     readonly nationwideJobList: JobListType = JobListType.NationwideJobList;
     readonly nationwidePodJobList: JobListType = JobListType.NationwidePodJobList;
@@ -429,8 +430,13 @@ class NationwideControl extends BaseController {
             delay: 150,
             forcePlaceholderSize: true,
             distance: 5,
+            disabled: false, // Will be updated when layout changes
 
             start: (e: JQueryEventObject, ui: any) => {
+                // Prevent drag on default layout
+                if (this.isDefaultLayout()) {
+                    return false;
+                }
                 ui.item.addClass('dragging');
 
                 const dragInfo = angular.element('#draggingItems');
@@ -475,6 +481,7 @@ class NationwideControl extends BaseController {
         this.layout = angular.copy(layout.layout);
 
         this.applyLayoutDimensions();
+        this.loadBoxVisibility();
 
         if (Modernizr.localstorage) {
             localStorage.setItem(this.NationwideLastActiveLayoutKey, layout.name);
@@ -664,6 +671,73 @@ class NationwideControl extends BaseController {
                 description: "List of available agents or flights ready for job assignment"
             },
         };
+    }
+
+    private getBoxVisibilityKey(layoutName: string): string {
+        return `${this.BoxVisibilityKey}-${layoutName}`;
+    }
+
+    private saveBoxVisibility(): void {
+        if (!Modernizr.localstorage || !this.boxes || !this.currentLayoutName) return;
+
+        try {
+            const boxState: Record<string, { visible: boolean; collapsed: boolean }> = {};
+            Object.keys(this.boxes).forEach(boxName => {
+                boxState[boxName] = {
+                    visible: this.boxes![boxName].visible ?? true,
+                    collapsed: this.boxes![boxName].collapsed ?? false
+                };
+            });
+            const key = this.getBoxVisibilityKey(this.currentLayoutName);
+            localStorage.setItem(key, JSON.stringify(boxState));
+        } catch (error) {
+            console.error('Error saving box visibility to storage:', error);
+        }
+    }
+
+    private loadBoxVisibility(): void {
+        if (!Modernizr.localstorage || !this.boxes || !this.currentLayoutName) return;
+
+        try {
+            const key = this.getBoxVisibilityKey(this.currentLayoutName);
+            const savedState = localStorage.getItem(key);
+            if (savedState) {
+                const boxState = JSON.parse(savedState);
+                Object.keys(boxState).forEach(boxName => {
+                    if (this.boxes && this.boxes[boxName]) {
+                        // Handle both old format (boolean) and new format (object)
+                        if (typeof boxState[boxName] === 'boolean') {
+                            this.boxes[boxName].visible = boxState[boxName];
+                            this.boxes[boxName].collapsed = false;
+                        } else {
+                            this.boxes[boxName].visible = boxState[boxName].visible ?? true;
+                            this.boxes[boxName].collapsed = boxState[boxName].collapsed ?? false;
+                        }
+                    }
+                });
+            } else {
+                // No saved state for this layout - reset all boxes to visible and expanded
+                Object.keys(this.boxes).forEach(boxName => {
+                    this.boxes![boxName].visible = true;
+                    this.boxes![boxName].collapsed = false;
+                });
+            }
+        } catch (error) {
+            console.error('Error loading box visibility from storage:', error);
+        }
+    }
+
+    toggleBoxCollapse(boxName: string): void {
+        if (!this.boxes || !this.boxes[boxName]) return;
+        if (this.isDefaultLayout()) return; // Don't allow collapse on default layout
+
+        this.boxes[boxName].collapsed = !this.boxes[boxName].collapsed;
+        this.saveBoxVisibility();
+        this.applyScope();
+    }
+
+    isDefaultLayout(): boolean {
+        return this.currentLayoutName === 'Default';
     }
 
     private loadSavedRefreshInterval(): void {
@@ -2317,6 +2391,11 @@ class NationwideControl extends BaseController {
             );
 
             if (!result) return;
+
+            if (result.boxes) {
+                this.boxes = result.boxes;
+                this.saveBoxVisibility();
+            }
 
             this.saveCurrentLayout();
             this.applyScope();

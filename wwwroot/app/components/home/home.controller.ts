@@ -96,6 +96,7 @@ class HomeController extends BaseController {
     private readonly DateFilterKey: string = `dateFilter-${AppPage.Dispatch}-${ContactID}`;
     private readonly LayoutKey: string = `layout-${ContactID}`;
     private readonly LastActiveLayoutKey: string = `lastActiveLayout-${ContactID}`;
+    private readonly BoxVisibilityKey: string = `boxVisibility-${AppPage.Dispatch}-${ContactID}`;
 
     readonly currentWorkListName: JobListType = JobListType.CurrentWorkList;
     readonly dispatchListName: JobListType = JobListType.DispatchJobList;
@@ -434,7 +435,7 @@ class HomeController extends BaseController {
             this.loadLayout(0);
         }
 
-        // Initialize boxSortableOptions for an old system
+        // Initialize boxSortableOptions for drag and drop
         this.boxSortableOptions = {
             handle: '.box-handle',
             connectWith: '.column-sortable',
@@ -447,8 +448,13 @@ class HomeController extends BaseController {
             delay: 150,
             forcePlaceholderSize: true,
             distance: 5,
+            disabled: false, // Will be updated when layout changes
 
             start: (e: JQueryEventObject, ui: any) => {
+                // Prevent drag on default layout
+                if (this.isDefaultLayout()) {
+                    return false;
+                }
                 ui.item.addClass('dragging');
 
                 const dragInfo = angular.element('#draggingItems');
@@ -493,6 +499,7 @@ class HomeController extends BaseController {
         this.layout = angular.copy(layout.layout);
 
         this.applyLayoutDimensions();
+        this.loadBoxVisibility();
 
         if (Modernizr.localstorage) {
             localStorage.setItem(this.LastActiveLayoutKey, layout.name);
@@ -673,6 +680,63 @@ class HomeController extends BaseController {
                 description: "Manage support requests and auxiliary tasks"
             }
         };
+
+    }
+
+    private getBoxVisibilityKey(layoutName: string): string {
+        return `${this.BoxVisibilityKey}-${layoutName}`;
+    }
+
+    private saveBoxVisibility(): void {
+        if (!Modernizr.localstorage || !this.boxes || !this.currentLayoutName) return;
+
+        try {
+            const boxState: Record<string, { visible: boolean; collapsed: boolean }> = {};
+            Object.keys(this.boxes).forEach(boxName => {
+                boxState[boxName] = {
+                    visible: this.boxes![boxName].visible ?? true,
+                    collapsed: this.boxes![boxName].collapsed ?? false
+                };
+            });
+            const key = this.getBoxVisibilityKey(this.currentLayoutName);
+            localStorage.setItem(key, JSON.stringify(boxState));
+        } catch (error) {
+            console.error('Error saving box visibility to storage:', error);
+        }
+    }
+
+    private loadBoxVisibility(): void {
+        if (!Modernizr.localstorage || !this.boxes || !this.currentLayoutName) return;
+
+        try {
+            const key = this.getBoxVisibilityKey(this.currentLayoutName);
+            const savedState = localStorage.getItem(key);
+            if (savedState) {
+                const boxState = JSON.parse(savedState);
+                Object.keys(boxState).forEach(boxName => {
+                    if (this.boxes && this.boxes[boxName]) {
+                        // Handle both old format (boolean) and new format (object)
+                        if (typeof boxState[boxName] === 'boolean') {
+                            // Old format - just visibility
+                            this.boxes[boxName].visible = boxState[boxName];
+                            this.boxes[boxName].collapsed = false;
+                        } else {
+                            // New format - object with visible and collapsed
+                            this.boxes[boxName].visible = boxState[boxName].visible ?? true;
+                            this.boxes[boxName].collapsed = boxState[boxName].collapsed ?? false;
+                        }
+                    }
+                });
+            } else {
+                // No saved state for this layout - reset all boxes to visible and expanded
+                Object.keys(this.boxes).forEach(boxName => {
+                    this.boxes![boxName].visible = true;
+                    this.boxes![boxName].collapsed = false;
+                });
+            }
+        } catch (error) {
+            console.error('Error loading box visibility from storage:', error);
+        }
     }
 
     saveViewsToStorage(views: any): void {
@@ -1658,6 +1722,19 @@ class HomeController extends BaseController {
         }
     }
 
+    toggleBoxCollapse(boxName: string): void {
+        if (!this.boxes || !this.boxes[boxName]) return;
+        if (this.isDefaultLayout()) return; // Don't allow collapse on default layout
+
+        this.boxes[boxName].collapsed = !this.boxes[boxName].collapsed;
+        this.saveBoxVisibility();
+        this.applyScope();
+    }
+
+    isDefaultLayout(): boolean {
+        return this.currentLayoutName === 'Default';
+    }
+
     async refreshJobDetail(): Promise<void> {
         if (!this.currentJobId) {
             console.log("No job selected to refresh");
@@ -2380,7 +2457,10 @@ class HomeController extends BaseController {
                 this.onDriverLocationRefreshIntervalChange(result.selectedDriverLocationRefreshInterval);
             }
 
-            if (result.boxes) this.boxes = result.boxes;
+            if (result.boxes) {
+                this.boxes = result.boxes;
+                this.saveBoxVisibility();
+            }
 
             this.saveCurrentLayout();
             this.applyScope();
