@@ -24,18 +24,18 @@ class JobSearchService implements angular.IServiceProvider {
         toDate: Dayjs,
         page: number,
         pageSize: number,
-        courierId?: number,
-        clientId?: number,
-        speedId?: number,
+        courierIds?: number[],
+        clientIds?: number[],
+        speedIds?: number[],
         wild?: string,
         job?: string,
     ): Promise<IJobSearchResult> {
         const response = await this.$http.get<IJobSearchResultDto>(
             `/Job/PODSearch`, {
                 params: {
-                    courierId,
-                    clientId,
-                    speedId,
+                    courierIds: courierIds?.join(',') || undefined,
+                    clientIds: clientIds?.join(',') || undefined,
+                    speedIds: speedIds?.join(',') || undefined,
                     wild,
                     job,
                     page,
@@ -55,18 +55,18 @@ class JobSearchService implements angular.IServiceProvider {
     getPodJobsDownloadUrl(
         fromDate: Dayjs,
         toDate: Dayjs,
-        courierId?: number,
-        clientId?: number,
-        speedId?: number,
+        courierIds?: number[],
+        clientIds?: number[],
+        speedIds?: number[],
         wild?: string,
         job?: string
     ): string {
         const params = new URLSearchParams();
         params.append('fromDate', formatDateForApiWithTzs(fromDate));
         params.append('toDate', formatDateForApiWithTzs(toDate));
-        if (courierId) params.append('courierId', courierId.toString());
-        if (clientId) params.append('clientId', clientId.toString());
-        if (speedId) params.append('speedId', speedId.toString());
+        if (courierIds?.length) params.append('courierIds', courierIds.join(','));
+        if (clientIds?.length) params.append('clientIds', clientIds.join(','));
+        if (speedIds?.length) params.append('speedIds', speedIds.join(','));
         if (wild) params.append('wild', wild);
         if (job) params.append('job', job);
         return `/Job/PodSearchDownload?${params.toString()}`;
@@ -75,13 +75,13 @@ class JobSearchService implements angular.IServiceProvider {
     getClientJobsReportDownloadUrl(
         fromDate: Dayjs,
         toDate: Dayjs,
-        clientId?: number,
+        clientIds?: number[],
     ): string {
         const params = new URLSearchParams();
         params.append('startDate', formatDateForApiWithTzs(fromDate));
         params.append('endDate', formatDateForApiWithTzs(toDate));
-        if (clientId) {
-            params.append('clientId', clientId.toString());
+        if (clientIds?.length) {
+            params.append('clientIds', clientIds.join(','));
         }
         return `/Job/ClientJobsReportDownload?${params.toString()}`;
     }
@@ -100,17 +100,17 @@ class JobSearchService implements angular.IServiceProvider {
         toDate: Dayjs,
         page: number,
         pageSize: number,
-        courierId?: number,
-        clientId?: number,
-        speedId?: number,
+        courierIds?: number[],
+        clientIds?: number[],
+        speedIds?: number[],
         job?: string,
         wild?: string,
     ): Promise<IJobSearchResult> {
         const response = await this.$http.get<IJobSearchResultDto>(`/Job/BulkSearch`, {
                 params: {
-                    courierId,
-                    clientId,
-                    speedId,
+                    courierIds: courierIds?.join(',') || undefined,
+                    clientIds: clientIds?.join(',') || undefined,
+                    speedIds: speedIds?.join(',') || undefined,
                     job,
                     wild,
                     page,

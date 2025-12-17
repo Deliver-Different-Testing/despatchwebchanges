@@ -78,9 +78,6 @@ class JobSearchController extends BaseController {
     jobDetailFabIsOpen: boolean = false;
     dateSearchRange: JobSearchDateRange;
     searchCriteria: ISearchCriteria;
-    clientSelectedItem?: number;
-    courierSelectedItem?: number;
-    speedSelectedItem?: number;
     clientSearchText: string;
     courierSearchText: string;
     speedSearchText: string;
@@ -153,10 +150,11 @@ class JobSearchController extends BaseController {
             from_date: now.subtract(7, 'day'),
             to_date: now.add(7, 'day'),
             followupClient: "All",
-            includeClosed: true
+            includeClosed: true,
+            clients: [],
+            couriers: [],
+            speeds: []
         };
-        this.clientSelectedItem = this.searchCriteria.client;
-        this.courierSelectedItem = this.searchCriteria.client;
         this.clientSearchText = '';
         this.courierSearchText = '';
         this.speedSearchText = '';
@@ -869,9 +867,9 @@ class JobSearchController extends BaseController {
         const downloadUrl = this.jobSearchService.getPodJobsDownloadUrl(
             this.searchCriteria.from_date,
             this.searchCriteria.to_date,
-            this.searchCriteria.courier,
-            this.searchCriteria.client,
-            this.searchCriteria.speedId,
+            this.getCourierIds(),
+            this.getClientIds(),
+            this.getSpeedIds(),
             this.searchCriteria.wild,
             this.searchCriteria.job
         );
@@ -882,7 +880,7 @@ class JobSearchController extends BaseController {
 
     isClientJobsReportEnabled(): boolean {
         return !!(
-            this.searchCriteria.client &&
+            this.searchCriteria.clients?.length > 0 &&
             this.searchCriteria.from_date &&
             this.searchCriteria.to_date
         );
@@ -892,7 +890,7 @@ class JobSearchController extends BaseController {
         const downloadUrl = this.jobSearchService.getClientJobsReportDownloadUrl(
             this.searchCriteria.from_date,
             this.searchCriteria.to_date,
-            this.searchCriteria.client,
+            this.getClientIds(),
         );
 
         // Open in new window to trigger browser's native download
@@ -994,16 +992,6 @@ class JobSearchController extends BaseController {
         return this.jobSearchService.getActiveClients(searchText);
     }
 
-    async selectedClientChange(item: ISuggestion) {
-        if (!item) {
-            this.searchCriteria.client = undefined;
-            return;
-        }
-
-        this.searchCriteria.client = item.id;
-        await this.refreshAllData();
-    }
-    
     async speedQuerySearch(searchText: string) {
         if (!searchText || searchText.length < 2) return [];
 
@@ -1043,24 +1031,20 @@ class JobSearchController extends BaseController {
         }
     }
 
-    async selectedCourierChange(item: ISuggestion) {
-        if (!item) {
-            this.searchCriteria.courier = undefined;
-            return;
-        }
+    // Helper methods to extract IDs from selected items
+    private getClientIds(): number[] | undefined {
+        const ids = this.searchCriteria.clients?.map(c => c.id) || [];
+        return ids.length > 0 ? ids : undefined;
+    }
 
-        this.searchCriteria.courier = item.id;
-        await this.refreshAllData();
-    }   
-    
-    async selectedSpeedChange(item: ISuggestion) {
-        if (!item) {
-            this.searchCriteria.speedId = undefined;
-            return;
-        }
+    private getCourierIds(): number[] | undefined {
+        const ids = this.searchCriteria.couriers?.map(c => c.id) || [];
+        return ids.length > 0 ? ids : undefined;
+    }
 
-        this.searchCriteria.speedId = item.id;
-        await this.refreshAllData();
+    private getSpeedIds(): number[] | undefined {
+        const ids = this.searchCriteria.speeds?.map(s => s.id) || [];
+        return ids.length > 0 ? ids : undefined;
     }
 
     onSearchRangeChange(dateRangeOption: JobSearchDateRange) {
@@ -1186,9 +1170,9 @@ class JobSearchController extends BaseController {
                 this.searchCriteria.to_date,
                 page,
                 pageSize,
-                this.searchCriteria.courier,
-                this.searchCriteria.client,
-                this.searchCriteria.speedId,
+                this.getCourierIds(),
+                this.getClientIds(),
+                this.getSpeedIds(),
                 this.searchCriteria.job,
                 this.searchCriteria.wild,
             );
@@ -1205,9 +1189,9 @@ class JobSearchController extends BaseController {
                 this.searchCriteria.to_date,
                 page,
                 pageSize,
-                this.searchCriteria.courier,
-                this.searchCriteria.client,
-                this.searchCriteria.speedId,
+                this.getCourierIds(),
+                this.getClientIds(),
+                this.getSpeedIds(),
                 this.searchCriteria.wild,
                 this.searchCriteria.job,
             );
