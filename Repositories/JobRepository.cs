@@ -4000,16 +4000,23 @@ public partial class JobRepository(
 
         if (isLiveJob)
         {
-            var statusUpdateDtos = await context.JobDeliveryJourneys
-                .AsNoTracking()
-                .Where(j => j.JobId == jobId && j.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus))
-                .Select(s => new JobDeliveryJourneyDto
+            // Use explicit JOINs for better query performance instead of correlated subqueries
+            var statusUpdateDtos = await (
+                from s in context.JobDeliveryJourneys.AsNoTracking()
+                where s.JobId == jobId && s.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus)
+                join newCourier in context.TucCouriers on s.NewCourierId equals newCourier.UccrId into newCourierJoin
+                from newCourier in newCourierJoin.DefaultIfEmpty()
+                join oldCourier in context.TucCouriers on s.OldCourierId equals oldCourier.UccrId into oldCourierJoin
+                from oldCourier in oldCourierJoin.DefaultIfEmpty()
+                select new JobDeliveryJourneyDto
                 {
                     Id = s.JourneyId,
                     UpdatedAt = s.UpdatedAt,
                     ChangeType = s.ChangeType,
                     Comments = s.Comments,
                     FieldName = s.FieldName,
+                    OldValue = s.OldValue,
+                    NewValue = s.NewValue,
                     StaffFirstName = s.Staff.UcstFirstName,
                     StaffLastName = s.Staff.UcstLastName,
                     CourierName = s.Courier.UccrName,
@@ -4018,9 +4025,11 @@ public partial class JobRepository(
                     NewAgentName = s.NewAgent.UcagName,
                     OldAgentName = s.OldAgent.UcagName,
                     NewJobStatusName = s.NewJobStatus.UcjsName,
-                    OldJobStatusName = s.OldJobStatus.UcjsName
+                    OldJobStatusName = s.OldJobStatus.UcjsName,
+                    NewCourierName = newCourier != null ? newCourier.UccrName + " " + newCourier.UccrSurname : null,
+                    OldCourierName = oldCourier != null ? oldCourier.UccrName + " " + oldCourier.UccrSurname : null
                 })
-                .TagWith("DeliveryJourney - Live Status Updates")
+                .TagWith("DeliveryJourney - Live Status Updates (Optimized)")
                 .ToListAsync();
 
             return statusUpdateDtos
@@ -4030,35 +4039,57 @@ public partial class JobRepository(
                     Id = Guid.NewGuid(),
                     JobId = jobId,
                     Date = _infoService.ConvertUtcToTenantTimeZone(group.Key),
-                    Title = "Update to Job",
-                    Description = string.Join("; ",
-                        group.Select(s => s.Comments).Where(c => !string.IsNullOrWhiteSpace(c))),
-                    Icon = "update",
+                    Title = GetDeliveryJourneyTitle(group.First()),
+                    Description = GetDeliveryJourneyDescription(group.ToList()),
+                    Icon = GetDeliveryJourneyIcon(group.First().ChangeType, group.First().FieldName),
                     Tags = group.SelectMany(s => new[]
                         {
-                            s.ChangeType,
-                            $"Updated on {_infoService.ConvertUtcToTenantTimeZone(s.UpdatedAt).ToString(dateFormat)}",
+                            // Who made the change
                             !string.IsNullOrEmpty(s.StaffFirstName)
-                                ? $"Updated by {s.StaffFirstName} {s.StaffLastName}"
+                                ? $"By {s.StaffFirstName} {s.StaffLastName}"
                                 : null,
                             !string.IsNullOrEmpty(s.CourierName)
-                                ? $"Updated by {s.CourierName}, {s.CourierSurname}"
+                                ? $"By {s.CourierName} {s.CourierSurname}"
                                 : null,
                             !string.IsNullOrEmpty(s.FlightNumber)
-                                ? $"Flight {s.FlightNumber} assigned"
+                                ? $"Flight: {s.FlightNumber}"
                                 : null,
+                            // Agent changes
                             !string.IsNullOrEmpty(s.NewAgentName) && !string.IsNullOrEmpty(s.OldAgentName)
-                                ? $"Reassigned from Agent {s.OldAgentName} to {s.NewAgentName}"
+                                ? $"Agent: {s.OldAgentName} → {s.NewAgentName}"
                                 : null,
                             !string.IsNullOrEmpty(s.NewAgentName) && string.IsNullOrEmpty(s.OldAgentName)
-                                ? $"Assigned to Agent {s.NewAgentName}"
+                                ? $"Agent: {s.NewAgentName}"
                                 : null,
                             string.IsNullOrEmpty(s.NewAgentName) && !string.IsNullOrEmpty(s.OldAgentName)
-                                ? $"Unassigned from Agent {s.OldAgentName}"
+                                ? $"Removed Agent: {s.OldAgentName}"
                                 : null,
-                            s.FieldName != null ? $"Field {s.FieldName} updated" : null,
+                            // Courier changes
+                            !string.IsNullOrEmpty(s.NewCourierName) && !string.IsNullOrEmpty(s.OldCourierName)
+                                ? $"Courier: {s.OldCourierName} → {s.NewCourierName}"
+                                : null,
+                            !string.IsNullOrEmpty(s.NewCourierName) && string.IsNullOrEmpty(s.OldCourierName)
+                                ? $"Courier: {s.NewCourierName}"
+                                : null,
+                            string.IsNullOrEmpty(s.NewCourierName) && !string.IsNullOrEmpty(s.OldCourierName)
+                                ? $"Removed Courier: {s.OldCourierName}"
+                                : null,
+                            // Status changes
                             !string.IsNullOrEmpty(s.NewJobStatusName) && !string.IsNullOrEmpty(s.OldJobStatusName)
-                                ? $"Status changed from {s.OldJobStatusName} to {s.NewJobStatusName}"
+                                ? $"Status: {s.OldJobStatusName} → {s.NewJobStatusName}"
+                                : null,
+                            !string.IsNullOrEmpty(s.NewJobStatusName) && string.IsNullOrEmpty(s.OldJobStatusName)
+                                ? $"Status: {s.NewJobStatusName}"
+                                : null,
+                            // Field changes (for JobUpdate type) - show old → new values
+                            !string.IsNullOrEmpty(s.FieldName) && !string.IsNullOrEmpty(s.OldValue) && !string.IsNullOrEmpty(s.NewValue)
+                                ? $"{FormatFieldName(s.FieldName)}: {FormatFieldValue(s.FieldName, s.OldValue)} → {FormatFieldValue(s.FieldName, s.NewValue)}"
+                                : null,
+                            !string.IsNullOrEmpty(s.FieldName) && string.IsNullOrEmpty(s.OldValue) && !string.IsNullOrEmpty(s.NewValue)
+                                ? $"{FormatFieldName(s.FieldName)}: {FormatFieldValue(s.FieldName, s.NewValue)}"
+                                : null,
+                            !string.IsNullOrEmpty(s.FieldName) && !string.IsNullOrEmpty(s.OldValue) && string.IsNullOrEmpty(s.NewValue)
+                                ? $"{FormatFieldName(s.FieldName)}: {FormatFieldValue(s.FieldName, s.OldValue)} → (cleared)"
                                 : null
                         })
                         .Where(tag => !string.IsNullOrWhiteSpace(tag))
@@ -4068,25 +4099,57 @@ public partial class JobRepository(
                 .ToList();
         }
 
-        var archivedStatusUpdateDtos = await context.JobDeliveryJourneyArchives
-            .AsNoTracking()
-            .Where(j => j.JobId == jobId && j.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus))
-            .Select(s => new JobDeliveryJourneyArchiveDto
+        // Use explicit JOINs for better query performance instead of correlated subqueries
+        var archivedStatusUpdateDtos = await (
+            from s in context.JobDeliveryJourneyArchives.AsNoTracking()
+            where s.JobId == jobId && s.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus)
+            // Staff (who made the update)
+            join staff in context.TucStaffs on s.StaffId equals staff.UcstId into staffJoin
+            from staff in staffJoin.DefaultIfEmpty()
+            // Courier (who made the update)
+            join courier in context.TucCouriers on s.CourierId equals courier.UccrId into courierJoin
+            from courier in courierJoin.DefaultIfEmpty()
+            // Flight
+            join flight in context.TucJobNationwides on s.FlightId equals flight.UcnwId into flightJoin
+            from flight in flightJoin.DefaultIfEmpty()
+            // Agent changes
+            join newAgent in context.TucAgents on s.NewAgentId equals newAgent.UcagId into newAgentJoin
+            from newAgent in newAgentJoin.DefaultIfEmpty()
+            join oldAgent in context.TucAgents on s.OldAgentId equals oldAgent.UcagId into oldAgentJoin
+            from oldAgent in oldAgentJoin.DefaultIfEmpty()
+            // Job Status changes
+            join newJobStatus in context.TucJobStatuses on s.NewJobStatusId equals newJobStatus.UcjsId into newJobStatusJoin
+            from newJobStatus in newJobStatusJoin.DefaultIfEmpty()
+            join oldJobStatus in context.TucJobStatuses on s.OldJobStatusId equals oldJobStatus.UcjsId into oldJobStatusJoin
+            from oldJobStatus in oldJobStatusJoin.DefaultIfEmpty()
+            // Courier assignment changes
+            join newCourier in context.TucCouriers on s.NewCourierId equals newCourier.UccrId into newCourierJoin
+            from newCourier in newCourierJoin.DefaultIfEmpty()
+            join oldCourier in context.TucCouriers on s.OldCourierId equals oldCourier.UccrId into oldCourierJoin
+            from oldCourier in oldCourierJoin.DefaultIfEmpty()
+            select new JobDeliveryJourneyArchiveDto
             {
                 Id = s.JourneyId,
                 UpdatedAt = s.UpdatedAt,
                 ChangeType = s.ChangeType,
-                OldJobStatusId = s.OldJobStatusId,
-                NewJobStatusId = s.NewJobStatusId,
-                UpdatedByType = s.UpdatedByType,
-                FlightId = s.FlightId,
-                NewAgentId = s.NewAgentId,
-                OldAgentId = s.OldAgentId,
+                Comments = s.Comments,
                 FieldName = s.FieldName,
                 OldValue = s.OldValue,
-                NewValue = s.NewValue
+                NewValue = s.NewValue,
+                UpdatedByType = s.UpdatedByType,
+                StaffFirstName = staff != null ? staff.UcstFirstName : null,
+                StaffLastName = staff != null ? staff.UcstLastName : null,
+                CourierName = courier != null ? courier.UccrName : null,
+                CourierSurname = courier != null ? courier.UccrSurname : null,
+                FlightNumber = flight != null ? flight.UcnwFlightNo : null,
+                NewAgentName = newAgent != null ? newAgent.UcagName : null,
+                OldAgentName = oldAgent != null ? oldAgent.UcagName : null,
+                NewJobStatusName = newJobStatus != null ? newJobStatus.UcjsName : null,
+                OldJobStatusName = oldJobStatus != null ? oldJobStatus.UcjsName : null,
+                NewCourierName = newCourier != null ? newCourier.UccrName + " " + newCourier.UccrSurname : null,
+                OldCourierName = oldCourier != null ? oldCourier.UccrName + " " + oldCourier.UccrSurname : null
             })
-            .TagWith("DeliveryJourney - Archived Status Updates")
+            .TagWith("DeliveryJourney - Archived Status Updates (Optimized)")
             .ToListAsync();
 
         return archivedStatusUpdateDtos
@@ -4096,34 +4159,536 @@ public partial class JobRepository(
                 Id = Guid.NewGuid(),
                 JobId = jobId,
                 Date = _infoService.ConvertUtcToTenantTimeZone(group.Key),
-                Title = "Status Changed",
-                Description = string.Join("; ", group
-                    .Select(s => s.OldJobStatusId != null && s.NewJobStatusId != null
-                        ? $"Status changed from status ID {s.OldJobStatusId} to {s.NewJobStatusId}"
-                        : null)
-                    .Where(d => !string.IsNullOrWhiteSpace(d))),
-                Icon = "update",
+                Title = GetDeliveryJourneyTitle(group.First()),
+                Description = GetDeliveryJourneyDescription(group.ToList(), dateFormat),
+                Icon = GetDeliveryJourneyIcon(group.First().ChangeType, group.First().FieldName),
                 Tags = group.SelectMany(s => new[]
                     {
-                        s.ChangeType,
-                        $"Updated on {_infoService.ConvertUtcToTenantTimeZone(s.UpdatedAt).ToString(dateFormat)}",
-                        s.UpdatedByType != null ? $"Updated by {s.UpdatedByType}" : null,
-                        s.FlightId != null ? $"Flight ID {s.FlightId} assigned" : null,
-                        s.NewAgentId != null && s.OldAgentId != null
-                            ? $"Reassigned from Agent ID {s.OldAgentId} to {s.NewAgentId}"
+                        // Who made the change
+                        !string.IsNullOrEmpty(s.StaffFirstName)
+                            ? $"By {s.StaffFirstName} {s.StaffLastName}"
                             : null,
-                        s.NewAgentId != null && s.OldAgentId == null
-                            ? $"Assigned to Agent ID {s.NewAgentId}"
+                        !string.IsNullOrEmpty(s.CourierName)
+                            ? $"By {s.CourierName} {s.CourierSurname}"
                             : null,
-                        s.FieldName != null ? $"Field {s.FieldName} updated" : null,
-                        s.FieldName != null && s.OldValue != null ? $"Old value: {s.OldValue}" : null,
-                        s.FieldName != null && s.NewValue != null ? $"New value: {s.NewValue}" : null
+                        !string.IsNullOrEmpty(s.FlightNumber)
+                            ? $"Flight: {s.FlightNumber}"
+                            : null,
+                        // Agent changes
+                        !string.IsNullOrEmpty(s.NewAgentName) && !string.IsNullOrEmpty(s.OldAgentName)
+                            ? $"Agent: {s.OldAgentName} → {s.NewAgentName}"
+                            : null,
+                        !string.IsNullOrEmpty(s.NewAgentName) && string.IsNullOrEmpty(s.OldAgentName)
+                            ? $"Agent: {s.NewAgentName}"
+                            : null,
+                        string.IsNullOrEmpty(s.NewAgentName) && !string.IsNullOrEmpty(s.OldAgentName)
+                            ? $"Removed Agent: {s.OldAgentName}"
+                            : null,
+                        // Courier changes
+                        !string.IsNullOrEmpty(s.NewCourierName) && !string.IsNullOrEmpty(s.OldCourierName)
+                            ? $"Courier: {s.OldCourierName} → {s.NewCourierName}"
+                            : null,
+                        !string.IsNullOrEmpty(s.NewCourierName) && string.IsNullOrEmpty(s.OldCourierName)
+                            ? $"Courier: {s.NewCourierName}"
+                            : null,
+                        string.IsNullOrEmpty(s.NewCourierName) && !string.IsNullOrEmpty(s.OldCourierName)
+                            ? $"Removed Courier: {s.OldCourierName}"
+                            : null,
+                        // Status changes
+                        !string.IsNullOrEmpty(s.NewJobStatusName) && !string.IsNullOrEmpty(s.OldJobStatusName)
+                            ? $"Status: {s.OldJobStatusName} → {s.NewJobStatusName}"
+                            : null,
+                        !string.IsNullOrEmpty(s.NewJobStatusName) && string.IsNullOrEmpty(s.OldJobStatusName)
+                            ? $"Status: {s.NewJobStatusName}"
+                            : null,
+                        // Field changes (for JobUpdate type) - show old → new values
+                        !string.IsNullOrEmpty(s.FieldName) && !string.IsNullOrEmpty(s.OldValue) && !string.IsNullOrEmpty(s.NewValue)
+                            ? $"{FormatFieldName(s.FieldName)}: {FormatFieldValue(s.FieldName, s.OldValue)} → {FormatFieldValue(s.FieldName, s.NewValue)}"
+                            : null,
+                        !string.IsNullOrEmpty(s.FieldName) && string.IsNullOrEmpty(s.OldValue) && !string.IsNullOrEmpty(s.NewValue)
+                            ? $"{FormatFieldName(s.FieldName)}: {FormatFieldValue(s.FieldName, s.NewValue)}"
+                            : null,
+                        !string.IsNullOrEmpty(s.FieldName) && !string.IsNullOrEmpty(s.OldValue) && string.IsNullOrEmpty(s.NewValue)
+                            ? $"{FormatFieldName(s.FieldName)}: {FormatFieldValue(s.FieldName, s.OldValue)} → (cleared)"
+                            : null
                     })
                     .Where(tag => !string.IsNullOrWhiteSpace(tag))
                     .Distinct()
                     .ToList()
             })
             .ToList();
+    }
+
+    private static string GetDeliveryJourneyTitle(JobDeliveryJourneyDto dto)
+    {
+        return dto.ChangeType switch
+        {
+            nameof(DeliveryJourneyChangeType.JobStatus) => !string.IsNullOrEmpty(dto.NewJobStatusName)
+                ? $"Status Changed to {dto.NewJobStatusName}"
+                : "Status Changed",
+            nameof(DeliveryJourneyChangeType.CourierAssignment) => !string.IsNullOrEmpty(dto.NewCourierName)
+                ? $"Assigned to {dto.NewCourierName}"
+                : !string.IsNullOrEmpty(dto.OldCourierName)
+                    ? $"Unassigned from {dto.OldCourierName}"
+                    : "Courier Assignment Changed",
+            nameof(DeliveryJourneyChangeType.AgentAssignment) => !string.IsNullOrEmpty(dto.NewAgentName)
+                ? $"Assigned to Agent {dto.NewAgentName}"
+                : !string.IsNullOrEmpty(dto.OldAgentName)
+                    ? $"Unassigned from Agent {dto.OldAgentName}"
+                    : "Agent Assignment Changed",
+            nameof(DeliveryJourneyChangeType.FlightAssignment) => !string.IsNullOrEmpty(dto.FlightNumber)
+                ? $"Flight {dto.FlightNumber} Assigned"
+                : "Flight Assignment Changed",
+            nameof(DeliveryJourneyChangeType.JobUpdate) => !string.IsNullOrEmpty(dto.FieldName)
+                ? $"{FormatFieldName(dto.FieldName)} Updated"
+                : "Job Updated",
+            _ => "Job Updated"
+        };
+    }
+
+    private static string GetDeliveryJourneyTitle(JobDeliveryJourneyArchiveDto dto)
+    {
+        return dto.ChangeType switch
+        {
+            nameof(DeliveryJourneyChangeType.JobStatus) => !string.IsNullOrEmpty(dto.NewJobStatusName)
+                ? $"Status Changed to {dto.NewJobStatusName}"
+                : "Status Changed",
+            nameof(DeliveryJourneyChangeType.CourierAssignment) => !string.IsNullOrEmpty(dto.NewCourierName)
+                ? $"Assigned to {dto.NewCourierName}"
+                : !string.IsNullOrEmpty(dto.OldCourierName)
+                    ? $"Unassigned from {dto.OldCourierName}"
+                    : "Courier Assignment Changed",
+            nameof(DeliveryJourneyChangeType.AgentAssignment) => !string.IsNullOrEmpty(dto.NewAgentName)
+                ? $"Assigned to Agent {dto.NewAgentName}"
+                : !string.IsNullOrEmpty(dto.OldAgentName)
+                    ? $"Unassigned from Agent {dto.OldAgentName}"
+                    : "Agent Assignment Changed",
+            nameof(DeliveryJourneyChangeType.FlightAssignment) => !string.IsNullOrEmpty(dto.FlightNumber)
+                ? $"Flight {dto.FlightNumber} Assigned"
+                : "Flight Assignment Changed",
+            nameof(DeliveryJourneyChangeType.JobUpdate) => !string.IsNullOrEmpty(dto.FieldName)
+                ? $"{FormatFieldName(dto.FieldName)} Updated"
+                : "Job Updated",
+            _ => "Job Updated"
+        };
+    }
+
+    private static string GetDeliveryJourneyDescription(List<JobDeliveryJourneyDto> updates)
+    {
+        var descriptions = new List<string>();
+
+        foreach (var dto in updates)
+        {
+            // Add status change description
+            if (!string.IsNullOrEmpty(dto.OldJobStatusName) && !string.IsNullOrEmpty(dto.NewJobStatusName))
+            {
+                descriptions.Add($"Status: {dto.OldJobStatusName} → {dto.NewJobStatusName}");
+            }
+
+            // Add courier change description
+            if (!string.IsNullOrEmpty(dto.OldCourierName) && !string.IsNullOrEmpty(dto.NewCourierName))
+            {
+                descriptions.Add($"Courier: {dto.OldCourierName} → {dto.NewCourierName}");
+            }
+            else if (!string.IsNullOrEmpty(dto.NewCourierName))
+            {
+                descriptions.Add($"Assigned to courier: {dto.NewCourierName}");
+            }
+            else if (!string.IsNullOrEmpty(dto.OldCourierName))
+            {
+                descriptions.Add($"Removed from courier: {dto.OldCourierName}");
+            }
+
+            // Add agent change description
+            if (!string.IsNullOrEmpty(dto.OldAgentName) && !string.IsNullOrEmpty(dto.NewAgentName))
+            {
+                descriptions.Add($"Agent: {dto.OldAgentName} → {dto.NewAgentName}");
+            }
+            else if (!string.IsNullOrEmpty(dto.NewAgentName))
+            {
+                descriptions.Add($"Assigned to agent: {dto.NewAgentName}");
+            }
+            else if (!string.IsNullOrEmpty(dto.OldAgentName))
+            {
+                descriptions.Add($"Removed from agent: {dto.OldAgentName}");
+            }
+
+            // Add field change description
+            if (!string.IsNullOrEmpty(dto.FieldName))
+            {
+                var fieldDesc = FormatFieldName(dto.FieldName);
+                if (!string.IsNullOrEmpty(dto.OldValue) && !string.IsNullOrEmpty(dto.NewValue))
+                {
+                    descriptions.Add($"{fieldDesc}: {dto.OldValue} → {dto.NewValue}");
+                }
+                else if (!string.IsNullOrEmpty(dto.NewValue))
+                {
+                    descriptions.Add($"{fieldDesc} set to: {dto.NewValue}");
+                }
+                else if (!string.IsNullOrEmpty(dto.OldValue))
+                {
+                    descriptions.Add($"{fieldDesc} cleared (was: {dto.OldValue})");
+                }
+            }
+
+            // Add comments
+            if (!string.IsNullOrEmpty(dto.Comments))
+            {
+                descriptions.Add(dto.Comments);
+            }
+        }
+
+        return string.Join("; ", descriptions.Distinct());
+    }
+
+    private static string GetDeliveryJourneyDescription(List<JobDeliveryJourneyArchiveDto> updates, string dateFormat)
+    {
+        var descriptions = new List<string>();
+
+        foreach (var dto in updates)
+        {
+            // Add status change description
+            if (!string.IsNullOrEmpty(dto.OldJobStatusName) && !string.IsNullOrEmpty(dto.NewJobStatusName))
+            {
+                descriptions.Add($"Status: {dto.OldJobStatusName} → {dto.NewJobStatusName}");
+            }
+
+            // Add courier change description
+            if (!string.IsNullOrEmpty(dto.OldCourierName) && !string.IsNullOrEmpty(dto.NewCourierName))
+            {
+                descriptions.Add($"Courier: {dto.OldCourierName} → {dto.NewCourierName}");
+            }
+            else if (!string.IsNullOrEmpty(dto.NewCourierName))
+            {
+                descriptions.Add($"Assigned to courier: {dto.NewCourierName}");
+            }
+            else if (!string.IsNullOrEmpty(dto.OldCourierName))
+            {
+                descriptions.Add($"Removed from courier: {dto.OldCourierName}");
+            }
+
+            // Add agent change description
+            if (!string.IsNullOrEmpty(dto.OldAgentName) && !string.IsNullOrEmpty(dto.NewAgentName))
+            {
+                descriptions.Add($"Agent: {dto.OldAgentName} → {dto.NewAgentName}");
+            }
+            else if (!string.IsNullOrEmpty(dto.NewAgentName))
+            {
+                descriptions.Add($"Assigned to agent: {dto.NewAgentName}");
+            }
+            else if (!string.IsNullOrEmpty(dto.OldAgentName))
+            {
+                descriptions.Add($"Removed from agent: {dto.OldAgentName}");
+            }
+
+            // Add field change description
+            if (!string.IsNullOrEmpty(dto.FieldName))
+            {
+                var fieldDesc = FormatFieldName(dto.FieldName);
+                if (!string.IsNullOrEmpty(dto.OldValue) && !string.IsNullOrEmpty(dto.NewValue))
+                {
+                    descriptions.Add($"{fieldDesc}: {dto.OldValue} → {dto.NewValue}");
+                }
+                else if (!string.IsNullOrEmpty(dto.NewValue))
+                {
+                    descriptions.Add($"{fieldDesc} set to: {dto.NewValue}");
+                }
+                else if (!string.IsNullOrEmpty(dto.OldValue))
+                {
+                    descriptions.Add($"{fieldDesc} cleared (was: {dto.OldValue})");
+                }
+            }
+
+            // Add comments
+            if (!string.IsNullOrEmpty(dto.Comments))
+            {
+                descriptions.Add(dto.Comments);
+            }
+        }
+
+        return string.Join("; ", descriptions.Distinct());
+    }
+
+    private static string GetDeliveryJourneyIcon(string changeType, string fieldName = null)
+    {
+        // First check for specific change types
+        var icon = changeType switch
+        {
+            nameof(DeliveryJourneyChangeType.JobStatus) => "published_with_changes",
+            nameof(DeliveryJourneyChangeType.InternalStatus) => "swap_horiz",
+            nameof(DeliveryJourneyChangeType.CourierAssignment) => "local_shipping",
+            nameof(DeliveryJourneyChangeType.AgentAssignment) => "support_agent",
+            nameof(DeliveryJourneyChangeType.FlightAssignment) => "flight",
+            nameof(DeliveryJourneyChangeType.JobUpdate) => GetIconForFieldName(fieldName),
+            _ => "update"
+        };
+
+        return icon;
+    }
+
+    private static string GetIconForFieldName(string fieldName)
+    {
+        if (string.IsNullOrEmpty(fieldName)) return "edit_note";
+
+        return fieldName switch
+        {
+            // Status flags
+            "ucjbJobDone" => "check_circle",
+            "ucjbVoid" => "cancel",
+            "ucjbAttention" => "warning",
+            "ucjbLocked" => "lock",
+
+            // Times
+            "PickUpTime" or "ucjbDispTime" or "OutForDelivery" => "schedule",
+            "RequiredDeliveryTime" or "DeliverByTime" or "ucjbComplTime" => "event",
+            "FollowupTime" => "notifications",
+
+            // Addresses
+            "ucjbFromAddr" or "ucjbFrom" or "PickupAddressLine1" or "PickupAddressLine2"
+                or "PickupAddressLine3" or "PickupAddressLine4" => "location_on",
+            "ucjbToAddr" or "ucjbTo" or "DeliveryAddressLine1" or "DeliveryAddressLine2"
+                or "DeliveryAddressLine3" or "DeliveryAddressLine4" => "pin_drop",
+
+            // Contacts
+            "ucjbContact" or "ucjbContactPhone" or "PickupFromContact" or "PickupFromPhone"
+                or "DeliverToContact" or "DeliverToPhone" => "contact_phone",
+
+            // Job details
+            "ucjbWeight" => "scale",
+            "ucjbQty" => "inventory_2",
+            "ucjbSize" or "Cubic" => "straighten",
+            "ucjbKm" => "route",
+            "ucjbSpeed" or "ucjbType" => "speed",
+
+            // Financial
+            "ucjbAmount" or "FuelSurchargeAmount" or "PPDAmount" or "PickupAmount"
+                or "DropoffAmount" or "NWAmount" or "RawAmount" or "RebateAmt" => "payments",
+            "CourierPayment" or "CourierFuel" or "CourierBonus" => "account_balance_wallet",
+
+            // References
+            "ucjbClientRefa" or "ucjbClientRefb" or "ucjbClientRefc" or "ucjbOurRef" => "tag",
+            "Connote" or "Barcode" or "GSSConnote" => "qr_code_2",
+
+            // Notes
+            "ucjbNotes" or "ClientNotes" or "InternalNotes" => "notes",
+
+            // POD
+            "ucjbPODName" or "PickUpName" => "draw",
+
+            // Vehicle flags
+            "ucjbVan" => "airport_shuttle",
+            "Truck" => "local_shipping",
+            "ucjbReturn" => "undo",
+            "RuralDelivery" => "landscape",
+            "SaturdayDelivery" => "calendar_month",
+            "DGClass" => "report_problem",
+            "Direct" => "straight",
+
+            // Client & Operator
+            "ucjbClientID" => "business",
+            "ucjbOpID" or "ucjbDispID" => "person",
+
+            // Locations
+            "DepotId" => "warehouse",
+            "FromAirportId" or "ToAirportId" => "flight",
+
+            // Relationships
+            "ParentID" or "BulkParentID" => "account_tree",
+
+            // Pricing - check if field name starts with "Pricing"
+            "PricingBreakdown" => "paid",
+            _ when fieldName.StartsWith("Pricing") => "attach_money",
+
+            _ => "edit_note"
+        };
+    }
+
+    private static string FormatFieldName(string fieldName)
+    {
+        if (string.IsNullOrEmpty(fieldName)) return fieldName;
+
+        // Map database field names to human-readable labels
+        return fieldName switch
+        {
+            // Status & Key Fields
+            "ucjbStatus" => "Status",
+            "InternalStatus" => "Internal Status",
+            "ucjbCourierID" => "Courier",
+            "AgentID" => "Agent",
+
+            // Status Flags
+            "ucjbJobDone" => "Job Completed",
+            "ucjbVoid" => "Voided",
+            "ucjbAttention" => "Attention Flag",
+            "ucjbLocked" => "Locked",
+
+            // Times & Dates
+            "PickUpTime" => "Pickup Time",
+            "RequiredDeliveryTime" => "Required Delivery Time",
+            "DeliverByTime" => "Deliver By Time",
+            "ucjbComplTime" => "Completion Time",
+            "ucjbDispTime" => "Dispatch Time",
+            "OutForDelivery" => "Out For Delivery",
+            "FollowupTime" => "Followup Time",
+            "ucjbDate" => "Job Date",
+            "ucjbTime" => "Job Time",
+
+            // Addresses
+            "ucjbFromAddr" => "Pickup Address",
+            "ucjbToAddr" => "Delivery Address",
+            "PickupAddressLine1" => "Pickup Address Line 1",
+            "PickupAddressLine2" => "Pickup Address Line 2",
+            "PickupAddressLine3" => "Pickup Address Line 3",
+            "PickupAddressLine4" => "Pickup Address Line 4",
+            "DeliveryAddressLine1" => "Delivery Address Line 1",
+            "DeliveryAddressLine2" => "Delivery Address Line 2",
+            "DeliveryAddressLine3" => "Delivery Address Line 3",
+            "DeliveryAddressLine4" => "Delivery Address Line 4",
+            "ucjbFrom" => "Pickup Location",
+            "ucjbTo" => "Delivery Location",
+
+            // Contacts
+            "ucjbContact" => "Contact Name",
+            "ucjbContactPhone" => "Contact Phone",
+            "PickupFromContact" => "Pickup Contact",
+            "PickupFromPhone" => "Pickup Phone",
+            "DeliverToContact" => "Delivery Contact",
+            "DeliverToPhone" => "Delivery Phone",
+
+            // Job Details
+            "ucjbWeight" => "Weight",
+            "ucjbQty" => "Quantity",
+            "ucjbSize" => "Size",
+            "Cubic" => "Cubic Volume",
+            "ucjbKm" => "Distance (km)",
+            "ucjbSpeed" => "Service Level",
+            "ucjbType" => "Job Type",
+            "ucjbChargeType" => "Charge Type",
+
+            // Financial
+            "ucjbAmount" => "Amount",
+            "FuelSurchargeAmount" => "Fuel Surcharge",
+            "PPDAmount" => "PPD Amount",
+            "PickupAmount" => "Pickup Amount",
+            "DropoffAmount" => "Dropoff Amount",
+            "CourierPayment" => "Courier Payment",
+            "CourierFuel" => "Courier Fuel",
+            "CourierBonus" => "Courier Bonus",
+            "NWAmount" => "Nationwide Amount",
+            "RawAmount" => "Raw Amount",
+            "RebateAmt" => "Rebate Amount",
+            "GSTRate" => "GST Rate",
+
+            // References
+            "ucjbClientRefa" => "Client Ref A",
+            "ucjbClientRefb" => "Client Ref B",
+            "ucjbClientRefc" => "Client Ref C",
+            "ucjbOurRef" => "Our Reference",
+            "Connote" => "Connote",
+            "Barcode" => "Barcode",
+            "GSSConnote" => "GSS Connote",
+            "ucjbNumber" => "Job Number",
+
+            // Notes
+            "ucjbNotes" => "Job Notes",
+            "ClientNotes" => "Client Notes",
+            "InternalNotes" => "Internal Notes",
+
+            // POD
+            "ucjbPODName" => "POD Name",
+            "PickUpName" => "Pickup Signed By",
+
+            // Vehicle & Flags
+            "ucjbVan" => "Van Required",
+            "Truck" => "Truck Required",
+            "ucjbReturn" => "Return Job",
+            "RuralDelivery" => "Rural Delivery",
+            "SaturdayDelivery" => "Saturday Delivery",
+            "DGClass" => "Dangerous Goods Class",
+            "Direct" => "Direct Delivery",
+            "ucjbCBD" => "CBD",
+
+            // Client & Operator
+            "ucjbClientID" => "Client",
+            "ucjbOpID" => "Operator",
+            "ucjbDispID" => "Dispatcher",
+
+            // Locations
+            "DepotId" => "Depot",
+            "FromAirportId" => "From Airport",
+            "ToAirportId" => "To Airport",
+
+            // Relationships
+            "ParentID" => "Parent Job",
+            "BulkParentID" => "Bulk Parent",
+
+            // Pricing
+            "PricingBreakdown" => "Pricing",
+
+            // Default: convert camelCase/PascalCase to Title Case or pass through if already formatted
+            _ => fieldName.StartsWith("Pricing") ? fieldName : ConvertToTitleCase(fieldName)
+        };
+    }
+
+    private static string ConvertToTitleCase(string fieldName)
+    {
+        // Remove common prefixes
+        var cleanName = fieldName;
+        if (cleanName.StartsWith("ucjb", StringComparison.OrdinalIgnoreCase))
+            cleanName = cleanName[4..];
+
+        // Convert camelCase or PascalCase to Title Case with spaces
+        var result = TitleCaseRegex().Replace(cleanName, " $1");
+        return char.ToUpper(result[0]) + result[1..];
+    }
+
+    private static string FormatFieldValue(string fieldName, string value)
+    {
+        if (string.IsNullOrEmpty(value)) return value;
+
+        // Format boolean values
+        if (value.Equals("True", StringComparison.OrdinalIgnoreCase) ||
+            value.Equals("False", StringComparison.OrdinalIgnoreCase))
+        {
+            return value.Equals("True", StringComparison.OrdinalIgnoreCase) ? "Yes" : "No";
+        }
+
+        // Format monetary values
+        if (fieldName is "ucjbAmount" or "FuelSurchargeAmount" or "PPDAmount" or "PickupAmount"
+            or "DropoffAmount" or "CourierPayment" or "CourierFuel" or "CourierBonus"
+            or "NWAmount" or "RawAmount" or "RebateAmt" or "PickupRawAmount" or "DropoffRawAmount"
+            or "NWRawAmount" or "RawBaseAmount" or "GSSAmount" or "PPDExclusiveAmount")
+        {
+            if (decimal.TryParse(value, out var amount))
+            {
+                return amount.ToString("C2");
+            }
+        }
+
+        // Format weight/distance with units
+        if (fieldName is "ucjbWeight")
+        {
+            if (decimal.TryParse(value, out var weight))
+            {
+                return $"{weight:F2} kg";
+            }
+        }
+
+        if (fieldName is "ucjbKm" or "TotalDistance")
+        {
+            if (decimal.TryParse(value, out var distance))
+            {
+                return $"{distance:F1} km";
+            }
+        }
+
+        // Truncate long values (like notes, addresses)
+        if (value.Length > 50)
+        {
+            return value[..47] + "...";
+        }
+
+        return value;
     }
 
     private async Task CloseTasksByJobIdsAsync(List<int> jobIds)
@@ -4669,4 +5234,7 @@ public partial class JobRepository(
                 .SetProperty(j => j.InternalStatus, (int)InternalJobStatus.AwaitingPod)
             );
     }
+
+    [System.Text.RegularExpressions.GeneratedRegex("(\\B[A-Z])")]
+    private static partial System.Text.RegularExpressions.Regex TitleCaseRegex();
 }
