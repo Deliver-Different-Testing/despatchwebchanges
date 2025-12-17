@@ -1,69 +1,51 @@
 <md-content class="md-dense job-search-view">
     <div>
-        <md-toolbar class="md-hue-2 md-whiteframe-2dp">
-            <div class="md-toolbar-tools">
-                <img alt="DFRNT" class="toolbar-logo" src="images/dfrnt_logo.png" ng-click="ctrl.openHubUrl()">
-                <md-divider class="vertical-divider"></md-divider>
-                <h2 class="md-title">Search Dashboard</h2>
+        <app-toolbar title="Search Dashboard">
+            <md-button aria-label="Open messages window" class="md-icon-button button-trigger"
+                       ng-click="ctrl.openMessagingDialog($event)">
+                <md-icon md-font-set="material-symbols-outlined">sms</md-icon>
+                <md-tooltip md-direction="bottom">Messages</md-tooltip>
+            </md-button>
 
-                <span flex></span>
-
-                <md-button aria-label="Open messages window" class="md-icon-button button-trigger"
-                           ng-click="ctrl.openMessagingDialog($event)">
-                    <md-icon md-font-set="material-symbols-outlined">sms</md-icon>
-                    <md-tooltip md-direction="bottom">Messages</md-tooltip>
+            <md-menu>
+                <md-button aria-label="Open layout options menu"
+                           class="md-icon-button button-trigger"
+                           ng-click="$mdMenu.open($event)">
+                    <md-icon md-font-set="material-symbols-outlined">grid_view</md-icon>
+                    <md-tooltip md-direction="bottom">Layouts</md-tooltip>
                 </md-button>
+                <md-menu-content width="2">
+                    <md-menu-item>
+                        <md-button ng-click="ctrl.saveLayout()">
+                            <md-icon md-font-set="material-symbols-outlined">save</md-icon>
+                            Add Layout
+                        </md-button>
+                    </md-menu-item>
+                    <md-divider></md-divider>
+                    <md-menu-item ng-repeat="lo in ctrl.layouts track by $index">
+                        <md-button ng-click="ctrl.loadLayout($index)">
+                            <md-icon md-font-set="material-symbols-outlined"
+                                     ng-click="ctrl.deleteLayout($index); $event.stopPropagation()"
+                                     ng-if="::lo.name != 'Default'">
+                                delete
+                            </md-icon>
+                            <md-icon md-font-set="material-symbols-outlined" ng-if="lo.name == 'Default'">
+                                tune
+                            </md-icon>
+                            <span ng-style="lo.name == ctrl.currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
+                        </md-button>
+                    </md-menu-item>
+                </md-menu-content>
+            </md-menu>
 
-                <md-menu>
-                    <md-button aria-label="Open layout options menu"
-                               class="md-icon-button button-trigger"
-                               ng-click="$mdMenu.open($event)">
-                        <md-icon md-font-set="material-symbols-outlined">grid_view</md-icon>
-                        <md-tooltip md-direction="bottom">Layouts</md-tooltip>
-                    </md-button>
-                    <md-menu-content width="2">
-                        <md-menu-item>
-                            <md-button ng-click="ctrl.saveLayout()">
-                                <md-icon md-font-set="material-symbols-outlined">save</md-icon>
-                                Save Layout
-                            </md-button>
-                        </md-menu-item>
-                        <md-divider></md-divider>
-                        <md-menu-item ng-repeat="lo in ctrl.layouts track by $index">
-                            <md-button ng-click="ctrl.loadLayout($index)">
-                                <md-icon md-font-set="material-symbols-outlined"
-                                         ng-click="ctrl.deleteLayout($index); $event.stopPropagation()"
-                                         ng-if="::lo.name != 'Default'">
-                                    delete
-                                </md-icon>
-                                <md-icon md-font-set="material-symbols-outlined" ng-if="lo.name == 'Default'">
-                                    tune
-                                </md-icon>
-                                <span ng-style="lo.name == ctrl.currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
-                            </md-button>
-                        </md-menu-item>
-                    </md-menu-content>
-                </md-menu>
-
-                <md-button
-                        aria-label="Open settings menu"
-                        class="md-icon-button button-trigger"
-                        ng-click="ctrl.openSettingsDialog($event)">
-                    <md-icon md-font-set="material-symbols-outlined">settings_applications</md-icon>
-                    <md-tooltip md-direction="bottom">Settings</md-tooltip>
-                </md-button>
-
-                <md-divider class="vertical-divider"></md-divider>
-
-                <span style="font-size: medium;">{{::ctrl.greetUser()}}</span>
-
-                <md-button aria-label="Menu" class="md-icon-button" ng-mouseover="ctrl.toggleSidenav()">
-                    <md-icon md-font-set="material-symbols-outlined">menu</md-icon>
-                </md-button>
-
-            </div>
-        </md-toolbar>
-        <material-sidenav></material-sidenav>
+            <md-button
+                    aria-label="Open settings menu"
+                    class="md-icon-button button-trigger"
+                    ng-click="ctrl.openSettingsDialog($event)">
+                <md-icon md-font-set="material-symbols-outlined">settings_applications</md-icon>
+                <md-tooltip md-direction="bottom">Settings</md-tooltip>
+            </md-button>
+        </app-toolbar>
     </div>
 
     <div class="dashboard-padding">

@@ -368,7 +368,8 @@ public partial class JobRepository(
                     j.UcjbDate.Date >= fromDate
                     && j.UcjbDate.Date <= toDate
                     && (!data.ClientSet || (j.UcjbClientId.HasValue && data.ClientIds.Contains(j.UcjbClientId.Value)))
-                    && (!data.CourierSet || (j.UcjbCourierId.HasValue && data.CourierIds.Contains(j.UcjbCourierId.Value)))
+                    && (!data.CourierSet ||
+                        (j.UcjbCourierId.HasValue && data.CourierIds.Contains(j.UcjbCourierId.Value)))
                     && (!data.SpeedSet || (j.UcjbSpeed.HasValue && data.SpeedIds.Contains(j.UcjbSpeed.Value)))
                     && (!data.JobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
                 );
@@ -380,7 +381,8 @@ public partial class JobRepository(
                     && j.UcjbDate.Value.Date >= fromDate
                     && j.UcjbDate.Value.Date <= toDate
                     && (!data.ClientSet || (j.UcjbClientId.HasValue && data.ClientIds.Contains(j.UcjbClientId.Value)))
-                    && (!data.CourierSet || (j.UcjbCourierId.HasValue && data.CourierIds.Contains(j.UcjbCourierId.Value)))
+                    && (!data.CourierSet ||
+                        (j.UcjbCourierId.HasValue && data.CourierIds.Contains(j.UcjbCourierId.Value)))
                     && (!data.SpeedSet || (j.UcjbSpeed.HasValue && data.SpeedIds.Contains(j.UcjbSpeed.Value)))
                     && (!data.JobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
                 );
@@ -1025,7 +1027,8 @@ public partial class JobRepository(
             .ToList();
     }
 
-    public async Task<List<PerformanceSpendReportModel>> GetClientJobsReportDataAsync([FromQuery] ClientJobsReportRequest request)
+    public async Task<List<PerformanceSpendReportModel>> GetClientJobsReportDataAsync(
+        [FromQuery] ClientJobsReportRequest request)
     {
         try
         {
@@ -1102,9 +1105,9 @@ public partial class JobRepository(
                         && !j.UcjbJobDone && !j.UcjbVoid
                         && j.UcjbStatus != (int)JobStatus.Void
                         && j.UcjbStatus != (int)JobStatus.Completed
-                        && j.UcjbDate >= start 
+                        && j.UcjbDate >= start
                         && j.UcjbDate <= end);
-        
+
         // Fetch economy settings in parallel with the main query
         var economyTask = GetEconomySpeedAndDeliveryTimeAsync();
 
@@ -2307,35 +2310,6 @@ public partial class JobRepository(
         return timeZones;
     }
 
-    public async Task<List<DeliveryJourneyViewModel>> GetDeliveryJourneyForJobAsync(int jobId)
-    {
-        await using var tasksDeliveryContext = await _contextFactory.CreateDbContextAsync();
-        await using var messagesDeliveryContext = await _contextFactory.CreateDbContextAsync();
-        await using var notesDeliveryContext = await _contextFactory.CreateDbContextAsync();
-        await using var statusDeliveryContext = await _contextFactory.CreateDbContextAsync();
-
-        var isLiveJob = await Context.IsLiveJobAsync(jobId);
-
-        var tasksTask = GetTasksForDeliveryJourneyAsync(tasksDeliveryContext, jobId);
-        var messagesTask = GetMessagesForDeliveryJourneyAsync(messagesDeliveryContext, jobId);
-        var notesTask = GetNotesForDeliveryJourneyAsync(notesDeliveryContext, jobId, isLiveJob);
-        var statusUpdatesTask = GetStatusUpdatesForDeliveryJourneyAsync(statusDeliveryContext, jobId, isLiveJob);
-
-        await Task.WhenAll(tasksTask, messagesTask, notesTask, statusUpdatesTask);
-
-        var tasks = await tasksTask;
-        var messages = await messagesTask;
-        var notes = await notesTask;
-        var statusUpdates = await statusUpdatesTask;
-
-        return tasks
-            .Concat(messages)
-            .Concat(notes)
-            .Concat(statusUpdates)
-            .OrderByDescending(x => x.Date)
-            .ToList();
-    }
-
     public async Task BulkUpdateReadStatusAsync(BulkReadUpdateRequestModel data)
     {
         var jobIds = data.JobIds;
@@ -3057,7 +3031,8 @@ public partial class JobRepository(
         var query = from bs in Context.TblBulkScans
             join courier in Context.TucCouriers on bs.CourierId equals courier.UccrId into courierJoin
             from courier in courierJoin.DefaultIfEmpty()
-            join runViewerTransferTo in Context.TucCouriers on bs.ToCourierId equals runViewerTransferTo.UccrId into rvtJoin
+            join runViewerTransferTo in Context.TucCouriers on bs.ToCourierId equals runViewerTransferTo.UccrId into
+                rvtJoin
             from runViewerTransferTo in rvtJoin.DefaultIfEmpty()
             where bs.ScanDateTime > cutoffDate && bs.Scan == scan
             orderby bs.ScanDateTime
@@ -3108,37 +3083,27 @@ public partial class JobRepository(
     {
         try
         {
-            int rowsChanged;
-            if (data.IsPrebook)
+            var rowsChanged = data switch
             {
-                rowsChanged = await Context.TucJobBookings
+                { IsBulk: true } => await Context.TblBulkJobs
+                    .Where(j => j.BulkJobId == data.JobId)
+                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.Amount, data.NewPrice)),
+
+                { IsPrebook: true } => await Context.TucJobBookings
                     .Where(j => j.UcbkId == data.JobId)
-                    .ExecuteUpdateAsync(setters => setters
+                    .ExecuteUpdateAsync(s => s
                         .SetProperty(j => j.RatedManually, true)
-                        .SetProperty(j => j.UcbkAmount, data.NewPrice));
+                        .SetProperty(j => j.UcbkAmount, data.NewPrice)),
 
-                if (rowsChanged == 0) throw new NullReferenceException($"No record found for prebook job {data.JobId}");
-                return;
-            }
+                _ => await RepriceRegularOrArchivedJobAsync(data)
+            };
 
-            if (await IsJobArchived(data.JobId))
-            {
-                await Context.TucJobArchives
-                    .Where(j => j.UcjbId == data.JobId)
-                    .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(j => j.RatedManually, true)
-                        .SetProperty(j => j.UcjbAmount, data.NewPrice));
-
-                return;
-            }
-
-            rowsChanged = await Context.TucJobs
-                .Where(j => j.UcjbId == data.JobId)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(j => j.RatedManually, true)
-                    .SetProperty(j => j.UcjbAmount, data.NewPrice));
-
-            if (rowsChanged == 0) throw new NullReferenceException($"No record found for job {data.JobId}");
+            if (rowsChanged == 0)
+                throw new InvalidOperationException($"Job {data.JobId} not found");
+        }
+        catch (InvalidOperationException)
+        {
+            throw;
         }
         catch (Exception e)
         {
@@ -3147,6 +3112,24 @@ public partial class JobRepository(
                     nameof(SimpleRepriceJobManualAsync)));
             throw;
         }
+    }
+
+    private async Task<int> RepriceRegularOrArchivedJobAsync(SimpleRepriceJobModel data)
+    {
+        // Try regular jobs first, fall back to the archive if not found
+        var rowsChanged = await Context.TucJobs
+            .Where(j => j.UcjbId == data.JobId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(j => j.RatedManually, true)
+                .SetProperty(j => j.UcjbAmount, data.NewPrice));
+
+        if (rowsChanged > 0) return rowsChanged;
+
+        return await Context.TucJobArchives
+            .Where(j => j.UcjbId == data.JobId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(j => j.RatedManually, true)
+                .SetProperty(j => j.UcjbAmount, data.NewPrice));
     }
 
     public async Task AssignCourierToJobAsync(List<int> jobIds, int courierId)
@@ -3748,946 +3731,6 @@ public partial class JobRepository(
         return jobNumberOutput.Value;
     }
 
-    private async Task<List<DeliveryJourneyViewModel>> GetTasksForDeliveryJourneyAsync(
-        DespatchContext context,
-        int jobId)
-    {
-        var timezone = _infoService.GetTenantTimeZone();
-
-        var eventDtos = await context.TucEvents
-            .AsNoTracking()
-            .Where(e => e.UcevJobId == jobId)
-            .Select(e => new DeliveryJourneyDto
-            {
-                EventId = e.UcevId,
-                Description = e.UcevDescription,
-                Date = e.UcevDate,
-                Time = e.UcevTime,
-                Closed = e.UcevClosed,
-                Despatcher = e.UcevDespatcher,
-                AssignedToFirstName = e.UcevStaffIdinNavigation.UcstFirstName,
-                AssignedToLastName = e.UcevStaffIdinNavigation.UcstLastName,
-                CompletedByFirstName = e.UcevStaffIdoutNavigation.UcstFirstName,
-                CompletedByLastName = e.UcevStaffIdoutNavigation.UcstLastName,
-                Audits = e.TucEventAudits
-                    .OrderByDescending(a => a.UceaChangedAt)
-                    .Select(a => new EventAuditDto
-                    {
-                        ChangeType = a.UceaChangeType,
-                        ColumnName = a.UceaColumnName,
-                        StaffFirstName = a.UceaStaff.UcstFirstName,
-                        StaffLastName = a.UceaStaff.UcstLastName,
-                        ChangedAt = a.UceaChangedAt
-                    })
-                    .ToList()
-            })
-            .TagWith("DeliveryJourney - Tasks")
-            .ToListAsync();
-
-        return eventDtos.Select(dto => new DeliveryJourneyViewModel
-        {
-            Id = Guid.NewGuid(),
-            JobId = jobId,
-            Title = dto.Description,
-            Icon = "task",
-            Date = TimeZoneHelper.SetDateTimeWithTimeZone(
-                (dto.Date ?? DateTime.MinValue).CombineWithTime(dto.Time),
-                timezone),
-            Tags = new[]
-                {
-                    "Task",
-                    dto.Closed ? "Completed" : "In Progress",
-                    $"Created by {dto.Despatcher}",
-                    !string.IsNullOrEmpty(dto.AssignedToFirstName)
-                        ? $"Assigned to {dto.AssignedToFirstName} {dto.AssignedToLastName}"
-                        : null,
-                    !string.IsNullOrEmpty(dto.CompletedByFirstName)
-                        ? $"Completed by {dto.CompletedByFirstName} {dto.CompletedByLastName}"
-                        : null
-                }
-                .Concat(dto.Audits.Select(a =>
-                    $"{a.ChangeType}: {a.ColumnName} changed by {a.StaffFirstName ?? "Unknown"} {a.StaffLastName ?? string.Empty} at {_infoService.ConvertUtcToTenantTimeZone(a.ChangedAt):g}"))
-                .Where(tag => !string.IsNullOrWhiteSpace(tag))
-                .ToList()
-        }).ToList();
-    }
-
-    private async Task<List<DeliveryJourneyViewModel>> GetNotesForDeliveryJourneyAsync(
-        DespatchContext context,
-        int jobId,
-        bool isLiveJob)
-    {
-        var timezone = _infoService.GetTenantTimeZone();
-        var isUsCustomer = _infoService.IsUsTenant();
-        var dateFormat = isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm";
-
-        if (isLiveJob)
-        {
-            var noteDtos = await context.TucNotes
-                .AsNoTracking()
-                .Where(n => n.JobId == jobId)
-                .Select(n => new NoteDto
-                {
-                    NoteId = n.NoteId,
-                    NoteText = n.NoteText,
-                    CreatedDate = n.CreatedDate,
-                    UpdatedDate = n.UpdatedDate,
-                    CreatedByFirstName = n.CreatedByNavigation.UcstFirstName,
-                    CreatedByLastName = n.CreatedByNavigation.UcstLastName,
-                    UpdatedByFirstName = n.UpdatedByNavigation.UcstFirstName,
-                    UpdatedByLastName = n.UpdatedByNavigation.UcstLastName
-                })
-                .TagWith("DeliveryJourney - Live Notes")
-                .ToListAsync();
-
-            return noteDtos.Select(n => new DeliveryJourneyViewModel
-            {
-                Id = Guid.NewGuid(),
-                JobId = jobId,
-                Title = !string.IsNullOrEmpty(n.CreatedByFirstName)
-                    ? $"Note added by {n.CreatedByFirstName} {n.CreatedByLastName}"
-                    : "Note added by System",
-                Icon = "sticky_note_2",
-                Description = n.NoteText,
-                Date = TimeZoneHelper.SetDateTimeWithTimeZone(n.UpdatedDate ?? n.CreatedDate, timezone),
-                Tags = new[]
-                {
-                    "Note",
-                    !string.IsNullOrEmpty(n.CreatedByFirstName)
-                        ? $"Created by {n.CreatedByFirstName} {n.CreatedByLastName} on {n.CreatedDate.ToString(dateFormat)}"
-                        : null,
-                    !string.IsNullOrEmpty(n.UpdatedByFirstName) && n.UpdatedDate.HasValue
-                        ? $"Updated by {n.UpdatedByFirstName} {n.UpdatedByLastName} on {n.UpdatedDate.Value.ToString(dateFormat)}"
-                        : null
-                }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList()
-            }).ToList();
-        }
-
-        var archivedNoteDtos = await context.TucNoteArchives
-            .AsNoTracking()
-            .Where(n => n.JobId == jobId)
-            .Select(n => new ArchivedNoteDto
-            {
-                NoteId = n.NoteId,
-                NoteText = n.NoteText,
-                CreatedDate = n.CreatedDate,
-                UpdatedDate = n.UpdatedDate
-            })
-            .TagWith("DeliveryJourney - Archived Notes")
-            .ToListAsync();
-
-        return archivedNoteDtos.Select(n => new DeliveryJourneyViewModel
-        {
-            Id = Guid.NewGuid(),
-            JobId = jobId,
-            Title = "Note added by System",
-            Icon = "sticky_note_2",
-            Description = n.NoteText,
-            Date = n.UpdatedDate.HasValue || n.CreatedDate.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(n.UpdatedDate ?? n.CreatedDate.Value, timezone)
-                : TimeZoneHelper.SetDateTimeWithTimeZone(DateTime.MinValue, timezone),
-            Tags = new[]
-            {
-                "Note",
-                n.CreatedDate.HasValue
-                    ? $"Created on {n.CreatedDate.Value.ToString(dateFormat)}"
-                    : null,
-                n.UpdatedDate.HasValue
-                    ? $"Updated on {n.UpdatedDate.Value.ToString(dateFormat)}"
-                    : null
-            }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList()
-        }).ToList();
-    }
-
-    private async Task<List<DeliveryJourneyViewModel>> GetMessagesForDeliveryJourneyAsync(
-        DespatchContext context,
-        int jobId)
-    {
-        var timezone = _infoService.GetTenantTimeZone();
-
-        var messageDtos = await context.TucManualMessages
-            .AsNoTracking()
-            .Where(m => m.JobId == jobId)
-            .Select(m => new ManualMessageDto
-            {
-                MessageId = m.UcmmId,
-                Subject = m.Subject,
-                UcmmDate = m.UcmmDate,
-                UcmmMessage = m.UcmmMessage,
-                UcmmSendToCourierId = m.UcmmSendToCourierId,
-                UcmmSendToStaffId = m.UcmmSendToStaffId,
-                SendToEmailAddress = m.SendToEmailAddress,
-                SendToMobile = m.SendToMobile,
-                TimeRead = m.TimeRead,
-                SendToCourierName = m.UcmmSendToCourier.UccrName,
-                SendToCourierSurname = m.UcmmSendToCourier.UccrSurname,
-                SendToStaffFirstName = m.UcmmSendToStaff.UcstFirstName,
-                SendToStaffLastName = m.UcmmSendToStaff.UcstLastName,
-                SendFromCourierName = m.UcmmSendFromCourier.UccrName,
-                SendFromCourierSurname = m.UcmmSendFromCourier.UccrSurname,
-                SendFromStaffFirstName = m.UcmmSendFromStaff.UcstFirstName,
-                SendFromStaffLastName = m.UcmmSendFromStaff.UcstLastName
-            })
-            .TagWith("DeliveryJourney - Messages")
-            .ToListAsync();
-
-        return messageDtos.Select(m => new DeliveryJourneyViewModel
-        {
-            Id = Guid.NewGuid(),
-            JobId = jobId,
-            Title = m.Subject,
-            Date = TimeZoneHelper.SetDateTimeWithTimeZone(m.UcmmDate, timezone),
-            Description = m.UcmmMessage,
-            Icon = "sms",
-            Tags = new List<string>()
-                .Concat(m.UcmmSendToCourierId.HasValue || m.UcmmSendToStaffId.HasValue
-                    ? new[]
-                    {
-                        "Direct Message",
-                        !string.IsNullOrEmpty(m.SendToCourierName)
-                            ? $"{m.SendToCourierName}, {m.SendToCourierSurname}"
-                            : null,
-                        !string.IsNullOrEmpty(m.SendToStaffFirstName)
-                            ? $"{m.SendToStaffFirstName}, {m.SendToStaffLastName}"
-                            : null,
-                        !string.IsNullOrEmpty(m.SendFromCourierName)
-                            ? $"{m.SendFromCourierName}, {m.SendFromCourierSurname}"
-                            : null,
-                        !string.IsNullOrEmpty(m.SendFromStaffFirstName)
-                            ? $"{m.SendFromStaffFirstName}, {m.SendFromStaffLastName}"
-                            : null,
-                        m.TimeRead.HasValue ? $"Read at {m.TimeRead?.ToString("g")}" : null
-                    }
-                    : Array.Empty<string>())
-                .Concat(!string.IsNullOrEmpty(m.SendToEmailAddress)
-                    ? new[]
-                    {
-                        "Email",
-                        $"Sent to {m.SendToEmailAddress}",
-                        !string.IsNullOrEmpty(m.SendFromCourierName)
-                            ? $"{m.SendFromCourierName}, {m.SendFromCourierSurname}"
-                            : null,
-                        !string.IsNullOrEmpty(m.SendFromStaffFirstName)
-                            ? $"{m.SendFromStaffFirstName}, {m.SendFromStaffLastName}"
-                            : null
-                    }
-                    : Array.Empty<string>())
-                .Concat(!string.IsNullOrEmpty(m.SendToMobile)
-                    ? new[]
-                    {
-                        "SMS",
-                        $"Sent to {m.SendToMobile}",
-                        !string.IsNullOrEmpty(m.SendFromCourierName)
-                            ? $"{m.SendFromCourierName}, {m.SendFromCourierSurname}"
-                            : null,
-                        !string.IsNullOrEmpty(m.SendFromStaffFirstName)
-                            ? $"{m.SendFromStaffFirstName}, {m.SendFromStaffLastName}"
-                            : null
-                    }
-                    : Array.Empty<string>())
-                .Where(tag => !string.IsNullOrWhiteSpace(tag))
-                .ToList()
-        }).ToList();
-    }
-
-    private async Task<List<DeliveryJourneyViewModel>> GetStatusUpdatesForDeliveryJourneyAsync(
-        DespatchContext context,
-        int jobId,
-        bool isLiveJob)
-    {
-        if (isLiveJob)
-        {
-            // Use explicit JOINs for better query performance instead of correlated subqueries
-            var statusUpdateDtos = await (
-                from s in context.JobDeliveryJourneys.AsNoTracking()
-                where s.JobId == jobId && s.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus)
-                join newCourier in context.TucCouriers on s.NewCourierId equals newCourier.UccrId into newCourierJoin
-                from newCourier in newCourierJoin.DefaultIfEmpty()
-                join oldCourier in context.TucCouriers on s.OldCourierId equals oldCourier.UccrId into oldCourierJoin
-                from oldCourier in oldCourierJoin.DefaultIfEmpty()
-                select new JobDeliveryJourneyDto
-                {
-                    Id = s.JourneyId,
-                    UpdatedAt = s.UpdatedAt,
-                    ChangeType = s.ChangeType,
-                    Comments = s.Comments,
-                    FieldName = s.FieldName,
-                    OldValue = s.OldValue,
-                    NewValue = s.NewValue,
-                    StaffFirstName = s.Staff.UcstFirstName,
-                    StaffLastName = s.Staff.UcstLastName,
-                    CourierName = s.Courier.UccrName,
-                    CourierSurname = s.Courier.UccrSurname,
-                    FlightNumber = s.Flight.UcnwFlightNo,
-                    NewAgentName = s.NewAgent.UcagName,
-                    OldAgentName = s.OldAgent.UcagName,
-                    NewJobStatusName = s.NewJobStatus.UcjsName,
-                    OldJobStatusName = s.OldJobStatus.UcjsName,
-                    NewCourierName = newCourier != null ? newCourier.UccrName + " " + newCourier.UccrSurname : null,
-                    OldCourierName = oldCourier != null ? oldCourier.UccrName + " " + oldCourier.UccrSurname : null
-                })
-                .TagWith("DeliveryJourney - Live Status Updates (Optimized)")
-                .ToListAsync();
-
-            return statusUpdateDtos
-                .GroupBy(s => s.UpdatedAt)
-                .Select(group => new DeliveryJourneyViewModel
-                {
-                    Id = Guid.NewGuid(),
-                    JobId = jobId,
-                    Date = _infoService.ConvertUtcToTenantTimeZone(group.Key),
-                    Title = GetDeliveryJourneyTitle(group.First()),
-                    Description = GetDeliveryJourneyDescription(group.ToList()),
-                    Icon = GetDeliveryJourneyIcon(group.First().ChangeType, group.First().FieldName),
-                    Tags = group.SelectMany(s => new[]
-                        {
-                            // Who made the change
-                            !string.IsNullOrEmpty(s.StaffFirstName)
-                                ? $"By {s.StaffFirstName} {s.StaffLastName}"
-                                : null,
-                            !string.IsNullOrEmpty(s.CourierName)
-                                ? $"By {s.CourierName} {s.CourierSurname}"
-                                : null,
-                            !string.IsNullOrEmpty(s.FlightNumber)
-                                ? $"Flight: {s.FlightNumber}"
-                                : null,
-                            // Agent changes
-                            !string.IsNullOrEmpty(s.NewAgentName) && !string.IsNullOrEmpty(s.OldAgentName)
-                                ? $"Agent: {s.OldAgentName} → {s.NewAgentName}"
-                                : null,
-                            !string.IsNullOrEmpty(s.NewAgentName) && string.IsNullOrEmpty(s.OldAgentName)
-                                ? $"Agent: {s.NewAgentName}"
-                                : null,
-                            string.IsNullOrEmpty(s.NewAgentName) && !string.IsNullOrEmpty(s.OldAgentName)
-                                ? $"Removed Agent: {s.OldAgentName}"
-                                : null,
-                            // Courier changes
-                            !string.IsNullOrEmpty(s.NewCourierName) && !string.IsNullOrEmpty(s.OldCourierName)
-                                ? $"Courier: {s.OldCourierName} → {s.NewCourierName}"
-                                : null,
-                            !string.IsNullOrEmpty(s.NewCourierName) && string.IsNullOrEmpty(s.OldCourierName)
-                                ? $"Courier: {s.NewCourierName}"
-                                : null,
-                            string.IsNullOrEmpty(s.NewCourierName) && !string.IsNullOrEmpty(s.OldCourierName)
-                                ? $"Removed Courier: {s.OldCourierName}"
-                                : null,
-                            // Status changes
-                            !string.IsNullOrEmpty(s.NewJobStatusName) && !string.IsNullOrEmpty(s.OldJobStatusName)
-                                ? $"Status: {s.OldJobStatusName} → {s.NewJobStatusName}"
-                                : null,
-                            !string.IsNullOrEmpty(s.NewJobStatusName) && string.IsNullOrEmpty(s.OldJobStatusName)
-                                ? $"Status: {s.NewJobStatusName}"
-                                : null,
-                            // Field changes (for JobUpdate type) - show old → new values
-                            !string.IsNullOrEmpty(s.FieldName) && !string.IsNullOrEmpty(s.OldValue) && !string.IsNullOrEmpty(s.NewValue)
-                                ? $"{FormatFieldName(s.FieldName)}: {FormatFieldValue(s.FieldName, s.OldValue)} → {FormatFieldValue(s.FieldName, s.NewValue)}"
-                                : null,
-                            !string.IsNullOrEmpty(s.FieldName) && string.IsNullOrEmpty(s.OldValue) && !string.IsNullOrEmpty(s.NewValue)
-                                ? $"{FormatFieldName(s.FieldName)}: {FormatFieldValue(s.FieldName, s.NewValue)}"
-                                : null,
-                            !string.IsNullOrEmpty(s.FieldName) && !string.IsNullOrEmpty(s.OldValue) && string.IsNullOrEmpty(s.NewValue)
-                                ? $"{FormatFieldName(s.FieldName)}: {FormatFieldValue(s.FieldName, s.OldValue)} → (cleared)"
-                                : null
-                        })
-                        .Where(tag => !string.IsNullOrWhiteSpace(tag))
-                        .Distinct()
-                        .ToList()
-                })
-                .ToList();
-        }
-
-        // Use explicit JOINs for better query performance instead of correlated subqueries
-        var archivedStatusUpdateDtos = await (
-            from s in context.JobDeliveryJourneyArchives.AsNoTracking()
-            where s.JobId == jobId && s.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus)
-            // Staff (who made the update)
-            join staff in context.TucStaffs on s.StaffId equals staff.UcstId into staffJoin
-            from staff in staffJoin.DefaultIfEmpty()
-            // Courier (who made the update)
-            join courier in context.TucCouriers on s.CourierId equals courier.UccrId into courierJoin
-            from courier in courierJoin.DefaultIfEmpty()
-            // Flight
-            join flight in context.TucJobNationwides on s.FlightId equals flight.UcnwId into flightJoin
-            from flight in flightJoin.DefaultIfEmpty()
-            // Agent changes
-            join newAgent in context.TucAgents on s.NewAgentId equals newAgent.UcagId into newAgentJoin
-            from newAgent in newAgentJoin.DefaultIfEmpty()
-            join oldAgent in context.TucAgents on s.OldAgentId equals oldAgent.UcagId into oldAgentJoin
-            from oldAgent in oldAgentJoin.DefaultIfEmpty()
-            // Job Status changes
-            join newJobStatus in context.TucJobStatuses on s.NewJobStatusId equals newJobStatus.UcjsId into newJobStatusJoin
-            from newJobStatus in newJobStatusJoin.DefaultIfEmpty()
-            join oldJobStatus in context.TucJobStatuses on s.OldJobStatusId equals oldJobStatus.UcjsId into oldJobStatusJoin
-            from oldJobStatus in oldJobStatusJoin.DefaultIfEmpty()
-            // Courier assignment changes
-            join newCourier in context.TucCouriers on s.NewCourierId equals newCourier.UccrId into newCourierJoin
-            from newCourier in newCourierJoin.DefaultIfEmpty()
-            join oldCourier in context.TucCouriers on s.OldCourierId equals oldCourier.UccrId into oldCourierJoin
-            from oldCourier in oldCourierJoin.DefaultIfEmpty()
-            select new JobDeliveryJourneyArchiveDto
-            {
-                Id = s.JourneyId,
-                UpdatedAt = s.UpdatedAt,
-                ChangeType = s.ChangeType,
-                Comments = s.Comments,
-                FieldName = s.FieldName,
-                OldValue = s.OldValue,
-                NewValue = s.NewValue,
-                UpdatedByType = s.UpdatedByType,
-                StaffFirstName = staff != null ? staff.UcstFirstName : null,
-                StaffLastName = staff != null ? staff.UcstLastName : null,
-                CourierName = courier != null ? courier.UccrName : null,
-                CourierSurname = courier != null ? courier.UccrSurname : null,
-                FlightNumber = flight != null ? flight.UcnwFlightNo : null,
-                NewAgentName = newAgent != null ? newAgent.UcagName : null,
-                OldAgentName = oldAgent != null ? oldAgent.UcagName : null,
-                NewJobStatusName = newJobStatus != null ? newJobStatus.UcjsName : null,
-                OldJobStatusName = oldJobStatus != null ? oldJobStatus.UcjsName : null,
-                NewCourierName = newCourier != null ? newCourier.UccrName + " " + newCourier.UccrSurname : null,
-                OldCourierName = oldCourier != null ? oldCourier.UccrName + " " + oldCourier.UccrSurname : null
-            })
-            .TagWith("DeliveryJourney - Archived Status Updates (Optimized)")
-            .ToListAsync();
-
-        return archivedStatusUpdateDtos
-            .GroupBy(s => s.UpdatedAt)
-            .Select(group => new DeliveryJourneyViewModel
-            {
-                Id = Guid.NewGuid(),
-                JobId = jobId,
-                Date = _infoService.ConvertUtcToTenantTimeZone(group.Key),
-                Title = GetDeliveryJourneyTitle(group.First()),
-                Description = GetDeliveryJourneyDescription(group.ToList()),
-                Icon = GetDeliveryJourneyIcon(group.First().ChangeType, group.First().FieldName),
-                Tags = group.SelectMany(s => new[]
-                    {
-                        // Who made the change
-                        !string.IsNullOrEmpty(s.StaffFirstName)
-                            ? $"By {s.StaffFirstName} {s.StaffLastName}"
-                            : null,
-                        !string.IsNullOrEmpty(s.CourierName)
-                            ? $"By {s.CourierName} {s.CourierSurname}"
-                            : null,
-                        !string.IsNullOrEmpty(s.FlightNumber)
-                            ? $"Flight: {s.FlightNumber}"
-                            : null,
-                        // Agent changes
-                        !string.IsNullOrEmpty(s.NewAgentName) && !string.IsNullOrEmpty(s.OldAgentName)
-                            ? $"Agent: {s.OldAgentName} → {s.NewAgentName}"
-                            : null,
-                        !string.IsNullOrEmpty(s.NewAgentName) && string.IsNullOrEmpty(s.OldAgentName)
-                            ? $"Agent: {s.NewAgentName}"
-                            : null,
-                        string.IsNullOrEmpty(s.NewAgentName) && !string.IsNullOrEmpty(s.OldAgentName)
-                            ? $"Removed Agent: {s.OldAgentName}"
-                            : null,
-                        // Courier changes
-                        !string.IsNullOrEmpty(s.NewCourierName) && !string.IsNullOrEmpty(s.OldCourierName)
-                            ? $"Courier: {s.OldCourierName} → {s.NewCourierName}"
-                            : null,
-                        !string.IsNullOrEmpty(s.NewCourierName) && string.IsNullOrEmpty(s.OldCourierName)
-                            ? $"Courier: {s.NewCourierName}"
-                            : null,
-                        string.IsNullOrEmpty(s.NewCourierName) && !string.IsNullOrEmpty(s.OldCourierName)
-                            ? $"Removed Courier: {s.OldCourierName}"
-                            : null,
-                        // Status changes
-                        !string.IsNullOrEmpty(s.NewJobStatusName) && !string.IsNullOrEmpty(s.OldJobStatusName)
-                            ? $"Status: {s.OldJobStatusName} → {s.NewJobStatusName}"
-                            : null,
-                        !string.IsNullOrEmpty(s.NewJobStatusName) && string.IsNullOrEmpty(s.OldJobStatusName)
-                            ? $"Status: {s.NewJobStatusName}"
-                            : null,
-                        // Field changes (for JobUpdate type) - show old → new values
-                        !string.IsNullOrEmpty(s.FieldName) && !string.IsNullOrEmpty(s.OldValue) && !string.IsNullOrEmpty(s.NewValue)
-                            ? $"{FormatFieldName(s.FieldName)}: {FormatFieldValue(s.FieldName, s.OldValue)} → {FormatFieldValue(s.FieldName, s.NewValue)}"
-                            : null,
-                        !string.IsNullOrEmpty(s.FieldName) && string.IsNullOrEmpty(s.OldValue) && !string.IsNullOrEmpty(s.NewValue)
-                            ? $"{FormatFieldName(s.FieldName)}: {FormatFieldValue(s.FieldName, s.NewValue)}"
-                            : null,
-                        !string.IsNullOrEmpty(s.FieldName) && !string.IsNullOrEmpty(s.OldValue) && string.IsNullOrEmpty(s.NewValue)
-                            ? $"{FormatFieldName(s.FieldName)}: {FormatFieldValue(s.FieldName, s.OldValue)} → (cleared)"
-                            : null
-                    })
-                    .Where(tag => !string.IsNullOrWhiteSpace(tag))
-                    .Distinct()
-                    .ToList()
-            })
-            .ToList();
-    }
-
-    private static string GetDeliveryJourneyTitle(JobDeliveryJourneyDto dto)
-    {
-        return dto.ChangeType switch
-        {
-            nameof(DeliveryJourneyChangeType.JobStatus) => !string.IsNullOrEmpty(dto.NewJobStatusName)
-                ? $"Status Changed to {dto.NewJobStatusName}"
-                : "Status Changed",
-            nameof(DeliveryJourneyChangeType.CourierAssignment) => !string.IsNullOrEmpty(dto.NewCourierName)
-                ? $"Assigned to {dto.NewCourierName}"
-                : !string.IsNullOrEmpty(dto.OldCourierName)
-                    ? $"Unassigned from {dto.OldCourierName}"
-                    : "Courier Assignment Changed",
-            nameof(DeliveryJourneyChangeType.AgentAssignment) => !string.IsNullOrEmpty(dto.NewAgentName)
-                ? $"Assigned to Agent {dto.NewAgentName}"
-                : !string.IsNullOrEmpty(dto.OldAgentName)
-                    ? $"Unassigned from Agent {dto.OldAgentName}"
-                    : "Agent Assignment Changed",
-            nameof(DeliveryJourneyChangeType.FlightAssignment) => !string.IsNullOrEmpty(dto.FlightNumber)
-                ? $"Flight {dto.FlightNumber} Assigned"
-                : "Flight Assignment Changed",
-            nameof(DeliveryJourneyChangeType.JobUpdate) => !string.IsNullOrEmpty(dto.FieldName)
-                ? $"{FormatFieldName(dto.FieldName)} Updated"
-                : "Job Updated",
-            _ => "Job Updated"
-        };
-    }
-
-    private static string GetDeliveryJourneyTitle(JobDeliveryJourneyArchiveDto dto)
-    {
-        return dto.ChangeType switch
-        {
-            nameof(DeliveryJourneyChangeType.JobStatus) => !string.IsNullOrEmpty(dto.NewJobStatusName)
-                ? $"Status Changed to {dto.NewJobStatusName}"
-                : "Status Changed",
-            nameof(DeliveryJourneyChangeType.CourierAssignment) => !string.IsNullOrEmpty(dto.NewCourierName)
-                ? $"Assigned to {dto.NewCourierName}"
-                : !string.IsNullOrEmpty(dto.OldCourierName)
-                    ? $"Unassigned from {dto.OldCourierName}"
-                    : "Courier Assignment Changed",
-            nameof(DeliveryJourneyChangeType.AgentAssignment) => !string.IsNullOrEmpty(dto.NewAgentName)
-                ? $"Assigned to Agent {dto.NewAgentName}"
-                : !string.IsNullOrEmpty(dto.OldAgentName)
-                    ? $"Unassigned from Agent {dto.OldAgentName}"
-                    : "Agent Assignment Changed",
-            nameof(DeliveryJourneyChangeType.FlightAssignment) => !string.IsNullOrEmpty(dto.FlightNumber)
-                ? $"Flight {dto.FlightNumber} Assigned"
-                : "Flight Assignment Changed",
-            nameof(DeliveryJourneyChangeType.JobUpdate) => !string.IsNullOrEmpty(dto.FieldName)
-                ? $"{FormatFieldName(dto.FieldName)} Updated"
-                : "Job Updated",
-            _ => "Job Updated"
-        };
-    }
-
-    private static string GetDeliveryJourneyDescription(List<JobDeliveryJourneyDto> updates)
-    {
-        var descriptions = new List<string>();
-
-        foreach (var dto in updates)
-        {
-            // Add status change description
-            if (!string.IsNullOrEmpty(dto.OldJobStatusName) && !string.IsNullOrEmpty(dto.NewJobStatusName))
-            {
-                descriptions.Add($"Status: {dto.OldJobStatusName} → {dto.NewJobStatusName}");
-            }
-
-            // Add courier change description
-            if (!string.IsNullOrEmpty(dto.OldCourierName) && !string.IsNullOrEmpty(dto.NewCourierName))
-            {
-                descriptions.Add($"Courier: {dto.OldCourierName} → {dto.NewCourierName}");
-            }
-            else if (!string.IsNullOrEmpty(dto.NewCourierName))
-            {
-                descriptions.Add($"Assigned to courier: {dto.NewCourierName}");
-            }
-            else if (!string.IsNullOrEmpty(dto.OldCourierName))
-            {
-                descriptions.Add($"Removed from courier: {dto.OldCourierName}");
-            }
-
-            // Add agent change description
-            if (!string.IsNullOrEmpty(dto.OldAgentName) && !string.IsNullOrEmpty(dto.NewAgentName))
-            {
-                descriptions.Add($"Agent: {dto.OldAgentName} → {dto.NewAgentName}");
-            }
-            else if (!string.IsNullOrEmpty(dto.NewAgentName))
-            {
-                descriptions.Add($"Assigned to agent: {dto.NewAgentName}");
-            }
-            else if (!string.IsNullOrEmpty(dto.OldAgentName))
-            {
-                descriptions.Add($"Removed from agent: {dto.OldAgentName}");
-            }
-
-            // Add field change description
-            if (!string.IsNullOrEmpty(dto.FieldName))
-            {
-                var fieldDesc = FormatFieldName(dto.FieldName);
-                if (!string.IsNullOrEmpty(dto.OldValue) && !string.IsNullOrEmpty(dto.NewValue))
-                {
-                    descriptions.Add($"{fieldDesc}: {dto.OldValue} → {dto.NewValue}");
-                }
-                else if (!string.IsNullOrEmpty(dto.NewValue))
-                {
-                    descriptions.Add($"{fieldDesc} set to: {dto.NewValue}");
-                }
-                else if (!string.IsNullOrEmpty(dto.OldValue))
-                {
-                    descriptions.Add($"{fieldDesc} cleared (was: {dto.OldValue})");
-                }
-            }
-
-            // Add comments
-            if (!string.IsNullOrEmpty(dto.Comments))
-            {
-                descriptions.Add(dto.Comments);
-            }
-        }
-
-        return string.Join("; ", descriptions.Distinct());
-    }
-
-    private static string GetDeliveryJourneyDescription(List<JobDeliveryJourneyArchiveDto> updates)
-    {
-        var descriptions = new List<string>();
-
-        foreach (var dto in updates)
-        {
-            // Add status change description
-            if (!string.IsNullOrEmpty(dto.OldJobStatusName) && !string.IsNullOrEmpty(dto.NewJobStatusName))
-            {
-                descriptions.Add($"Status: {dto.OldJobStatusName} → {dto.NewJobStatusName}");
-            }
-
-            // Add courier change description
-            if (!string.IsNullOrEmpty(dto.OldCourierName) && !string.IsNullOrEmpty(dto.NewCourierName))
-            {
-                descriptions.Add($"Courier: {dto.OldCourierName} → {dto.NewCourierName}");
-            }
-            else if (!string.IsNullOrEmpty(dto.NewCourierName))
-            {
-                descriptions.Add($"Assigned to courier: {dto.NewCourierName}");
-            }
-            else if (!string.IsNullOrEmpty(dto.OldCourierName))
-            {
-                descriptions.Add($"Removed from courier: {dto.OldCourierName}");
-            }
-
-            // Add agent change description
-            if (!string.IsNullOrEmpty(dto.OldAgentName) && !string.IsNullOrEmpty(dto.NewAgentName))
-            {
-                descriptions.Add($"Agent: {dto.OldAgentName} → {dto.NewAgentName}");
-            }
-            else if (!string.IsNullOrEmpty(dto.NewAgentName))
-            {
-                descriptions.Add($"Assigned to agent: {dto.NewAgentName}");
-            }
-            else if (!string.IsNullOrEmpty(dto.OldAgentName))
-            {
-                descriptions.Add($"Removed from agent: {dto.OldAgentName}");
-            }
-
-            // Add field change description
-            if (!string.IsNullOrEmpty(dto.FieldName))
-            {
-                var fieldDesc = FormatFieldName(dto.FieldName);
-                if (!string.IsNullOrEmpty(dto.OldValue) && !string.IsNullOrEmpty(dto.NewValue))
-                {
-                    descriptions.Add($"{fieldDesc}: {dto.OldValue} → {dto.NewValue}");
-                }
-                else if (!string.IsNullOrEmpty(dto.NewValue))
-                {
-                    descriptions.Add($"{fieldDesc} set to: {dto.NewValue}");
-                }
-                else if (!string.IsNullOrEmpty(dto.OldValue))
-                {
-                    descriptions.Add($"{fieldDesc} cleared (was: {dto.OldValue})");
-                }
-            }
-
-            // Add comments
-            if (!string.IsNullOrEmpty(dto.Comments))
-            {
-                descriptions.Add(dto.Comments);
-            }
-        }
-
-        return string.Join("; ", descriptions.Distinct());
-    }
-
-    private static string GetDeliveryJourneyIcon(string changeType, string fieldName = null)
-    {
-        // First check for specific change types
-        var icon = changeType switch
-        {
-            nameof(DeliveryJourneyChangeType.JobStatus) => "published_with_changes",
-            nameof(DeliveryJourneyChangeType.InternalStatus) => "swap_horiz",
-            nameof(DeliveryJourneyChangeType.CourierAssignment) => "local_shipping",
-            nameof(DeliveryJourneyChangeType.AgentAssignment) => "support_agent",
-            nameof(DeliveryJourneyChangeType.FlightAssignment) => "flight",
-            nameof(DeliveryJourneyChangeType.JobUpdate) => GetIconForFieldName(fieldName),
-            _ => "update"
-        };
-
-        return icon;
-    }
-
-    private static string GetIconForFieldName(string fieldName)
-    {
-        if (string.IsNullOrEmpty(fieldName)) return "edit_note";
-
-        return fieldName switch
-        {
-            // Status flags
-            "ucjbJobDone" => "check_circle",
-            "ucjbVoid" => "cancel",
-            "ucjbAttention" => "warning",
-            "ucjbLocked" => "lock",
-
-            // Times
-            "PickUpTime" or "ucjbDispTime" or "OutForDelivery" => "schedule",
-            "RequiredDeliveryTime" or "DeliverByTime" or "ucjbComplTime" => "event",
-            "FollowupTime" => "notifications",
-
-            // Addresses
-            "ucjbFromAddr" or "ucjbFrom" or "PickupAddressLine1" or "PickupAddressLine2"
-                or "PickupAddressLine3" or "PickupAddressLine4" => "location_on",
-            "ucjbToAddr" or "ucjbTo" or "DeliveryAddressLine1" or "DeliveryAddressLine2"
-                or "DeliveryAddressLine3" or "DeliveryAddressLine4" => "pin_drop",
-
-            // Contacts
-            "ucjbContact" or "ucjbContactPhone" or "PickupFromContact" or "PickupFromPhone"
-                or "DeliverToContact" or "DeliverToPhone" => "contact_phone",
-
-            // Job details
-            "ucjbWeight" => "scale",
-            "ucjbQty" => "inventory_2",
-            "ucjbSize" or "Cubic" => "straighten",
-            "ucjbKm" => "route",
-            "ucjbSpeed" or "ucjbType" => "speed",
-
-            // Financial
-            "ucjbAmount" or "FuelSurchargeAmount" or "PPDAmount" or "PickupAmount"
-                or "DropoffAmount" or "NWAmount" or "RawAmount" or "RebateAmt" => "payments",
-            "CourierPayment" or "CourierFuel" or "CourierBonus" => "account_balance_wallet",
-
-            // References
-            "ucjbClientRefa" or "ucjbClientRefb" or "ucjbClientRefc" or "ucjbOurRef" => "tag",
-            "Connote" or "Barcode" or "GSSConnote" => "qr_code_2",
-
-            // Notes
-            "ucjbNotes" or "ClientNotes" or "InternalNotes" => "notes",
-
-            // POD
-            "ucjbPODName" or "PickUpName" => "draw",
-
-            // Vehicle flags
-            "ucjbVan" => "airport_shuttle",
-            "Truck" => "local_shipping",
-            "ucjbReturn" => "undo",
-            "RuralDelivery" => "landscape",
-            "SaturdayDelivery" => "calendar_month",
-            "DGClass" => "report_problem",
-            "Direct" => "straight",
-
-            // Client & Operator
-            "ucjbClientID" => "business",
-            "ucjbOpID" or "ucjbDispID" => "person",
-
-            // Locations
-            "DepotId" => "warehouse",
-            "FromAirportId" or "ToAirportId" => "flight",
-
-            // Relationships
-            "ParentID" or "BulkParentID" => "account_tree",
-
-            // Pricing - check if field name starts with "Pricing"
-            "PricingBreakdown" => "paid",
-            _ when fieldName.StartsWith("Pricing") => "attach_money",
-
-            _ => "edit_note"
-        };
-    }
-
-    private static string FormatFieldName(string fieldName)
-    {
-        if (string.IsNullOrEmpty(fieldName)) return fieldName;
-
-        // Map database field names to human-readable labels
-        return fieldName switch
-        {
-            // Status & Key Fields
-            "ucjbStatus" => "Status",
-            "InternalStatus" => "Internal Status",
-            "ucjbCourierID" => "Courier",
-            "AgentID" => "Agent",
-
-            // Status Flags
-            "ucjbJobDone" => "Job Completed",
-            "ucjbVoid" => "Voided",
-            "ucjbAttention" => "Attention Flag",
-            "ucjbLocked" => "Locked",
-
-            // Times & Dates
-            "PickUpTime" => "Pickup Time",
-            "RequiredDeliveryTime" => "Required Delivery Time",
-            "DeliverByTime" => "Deliver By Time",
-            "ucjbComplTime" => "Completion Time",
-            "ucjbDispTime" => "Dispatch Time",
-            "OutForDelivery" => "Out For Delivery",
-            "FollowupTime" => "Followup Time",
-            "ucjbDate" => "Job Date",
-            "ucjbTime" => "Job Time",
-
-            // Addresses
-            "ucjbFromAddr" => "Pickup Address",
-            "ucjbToAddr" => "Delivery Address",
-            "PickupAddressLine1" => "Pickup Address Line 1",
-            "PickupAddressLine2" => "Pickup Address Line 2",
-            "PickupAddressLine3" => "Pickup Address Line 3",
-            "PickupAddressLine4" => "Pickup Address Line 4",
-            "DeliveryAddressLine1" => "Delivery Address Line 1",
-            "DeliveryAddressLine2" => "Delivery Address Line 2",
-            "DeliveryAddressLine3" => "Delivery Address Line 3",
-            "DeliveryAddressLine4" => "Delivery Address Line 4",
-            "ucjbFrom" => "Pickup Location",
-            "ucjbTo" => "Delivery Location",
-
-            // Contacts
-            "ucjbContact" => "Contact Name",
-            "ucjbContactPhone" => "Contact Phone",
-            "PickupFromContact" => "Pickup Contact",
-            "PickupFromPhone" => "Pickup Phone",
-            "DeliverToContact" => "Delivery Contact",
-            "DeliverToPhone" => "Delivery Phone",
-
-            // Job Details
-            "ucjbWeight" => "Weight",
-            "ucjbQty" => "Quantity",
-            "ucjbSize" => "Size",
-            "Cubic" => "Cubic Volume",
-            "ucjbKm" => "Distance (km)",
-            "ucjbSpeed" => "Service Level",
-            "ucjbType" => "Job Type",
-            "ucjbChargeType" => "Charge Type",
-
-            // Financial
-            "ucjbAmount" => "Amount",
-            "FuelSurchargeAmount" => "Fuel Surcharge",
-            "PPDAmount" => "PPD Amount",
-            "PickupAmount" => "Pickup Amount",
-            "DropoffAmount" => "Dropoff Amount",
-            "CourierPayment" => "Courier Payment",
-            "CourierFuel" => "Courier Fuel",
-            "CourierBonus" => "Courier Bonus",
-            "NWAmount" => "Nationwide Amount",
-            "RawAmount" => "Raw Amount",
-            "RebateAmt" => "Rebate Amount",
-            "GSTRate" => "GST Rate",
-
-            // References
-            "ucjbClientRefa" => "Client Ref A",
-            "ucjbClientRefb" => "Client Ref B",
-            "ucjbClientRefc" => "Client Ref C",
-            "ucjbOurRef" => "Our Reference",
-            "Connote" => "Connote",
-            "Barcode" => "Barcode",
-            "GSSConnote" => "GSS Connote",
-            "ucjbNumber" => "Job Number",
-
-            // Notes
-            "ucjbNotes" => "Job Notes",
-            "ClientNotes" => "Client Notes",
-            "InternalNotes" => "Internal Notes",
-
-            // POD
-            "ucjbPODName" => "POD Name",
-            "PickUpName" => "Pickup Signed By",
-
-            // Vehicle & Flags
-            "ucjbVan" => "Van Required",
-            "Truck" => "Truck Required",
-            "ucjbReturn" => "Return Job",
-            "RuralDelivery" => "Rural Delivery",
-            "SaturdayDelivery" => "Saturday Delivery",
-            "DGClass" => "Dangerous Goods Class",
-            "Direct" => "Direct Delivery",
-            "ucjbCBD" => "CBD",
-
-            // Client & Operator
-            "ucjbClientID" => "Client",
-            "ucjbOpID" => "Operator",
-            "ucjbDispID" => "Dispatcher",
-
-            // Locations
-            "DepotId" => "Depot",
-            "FromAirportId" => "From Airport",
-            "ToAirportId" => "To Airport",
-
-            // Relationships
-            "ParentID" => "Parent Job",
-            "BulkParentID" => "Bulk Parent",
-
-            // Pricing
-            "PricingBreakdown" => "Pricing",
-
-            // Default: convert camelCase/PascalCase to Title Case or pass through if already formatted
-            _ => fieldName.StartsWith("Pricing") ? fieldName : ConvertToTitleCase(fieldName)
-        };
-    }
-
-    private static string ConvertToTitleCase(string fieldName)
-    {
-        // Remove common prefixes
-        var cleanName = fieldName;
-        if (cleanName.StartsWith("ucjb", StringComparison.OrdinalIgnoreCase))
-            cleanName = cleanName[4..];
-
-        // Convert camelCase or PascalCase to Title Case with spaces
-        var result = TitleCaseRegex().Replace(cleanName, " $1");
-        return char.ToUpper(result[0]) + result[1..];
-    }
-
-    private static string FormatFieldValue(string fieldName, string value)
-    {
-        if (string.IsNullOrEmpty(value)) return value;
-
-        // Format boolean values
-        if (value.Equals("True", StringComparison.OrdinalIgnoreCase) ||
-            value.Equals("False", StringComparison.OrdinalIgnoreCase))
-        {
-            return value.Equals("True", StringComparison.OrdinalIgnoreCase) ? "Yes" : "No";
-        }
-
-        // Format monetary values
-        if (fieldName is "ucjbAmount" or "FuelSurchargeAmount" or "PPDAmount" or "PickupAmount"
-            or "DropoffAmount" or "CourierPayment" or "CourierFuel" or "CourierBonus"
-            or "NWAmount" or "RawAmount" or "RebateAmt" or "PickupRawAmount" or "DropoffRawAmount"
-            or "NWRawAmount" or "RawBaseAmount" or "GSSAmount" or "PPDExclusiveAmount")
-        {
-            if (decimal.TryParse(value, out var amount))
-            {
-                return amount.ToString("C2");
-            }
-        }
-
-        // Format weight/distance with units
-        if (fieldName is "ucjbWeight")
-        {
-            if (decimal.TryParse(value, out var weight))
-            {
-                return $"{weight:F2} kg";
-            }
-        }
-
-        if (fieldName is "ucjbKm" or "TotalDistance")
-        {
-            if (decimal.TryParse(value, out var distance))
-            {
-                return $"{distance:F1} km";
-            }
-        }
-
-        // Truncate long values (like notes, addresses)
-        if (value.Length > 50)
-        {
-            return value[..47] + "...";
-        }
-
-        return value;
-    }
-
     private async Task CloseTasksByJobIdsAsync(List<int> jobIds)
     {
         await Context.TucEvents
@@ -5231,7 +4274,4 @@ public partial class JobRepository(
                 .SetProperty(j => j.InternalStatus, (int)InternalJobStatus.AwaitingPod)
             );
     }
-
-    [System.Text.RegularExpressions.GeneratedRegex("(\\B[A-Z])")]
-    private static partial System.Text.RegularExpressions.Regex TitleCaseRegex();
 }

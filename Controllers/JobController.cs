@@ -43,7 +43,8 @@ public class JobController(
     IPodExportService podExportService,
     IJobPhotoService jobPhotoService,
     IClientJobsReportService clientJobsReportService,
-    IDispatchJobService dispatchJobService
+    IDispatchJobService dispatchJobService,
+    IDeliveryJourneyService deliveryJourneyService
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -1894,7 +1895,7 @@ public class JobController(
     {
         try
         {
-            var deliveryJourney = await jobRepository.GetDeliveryJourneyForJobAsync(jobId);
+            var deliveryJourney = await deliveryJourneyService.GetDeliveryJourneyForJobAsync(jobId);
             return Json(deliveryJourney);
         }
         catch (Exception ex)

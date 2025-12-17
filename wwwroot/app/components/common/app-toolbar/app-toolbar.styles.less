@@ -1,0 +1,41 @@
+// App Toolbar Styles
+// Shared toolbar styling used across all module pages
+
+app-toolbar {
+    display: block;
+
+    .toolbar-logo {
+        height: 32px;
+        cursor: pointer;
+        transition: opacity 0.2s ease;
+
+        &:hover {
+            opacity: 0.8;
+        }
+    }
+
+    .vertical-divider {
+        height: 24px;
+        margin: 0 12px;
+        border-left: 1px solid rgba(0, 0, 0, 0.12);
+    }
+
+    .md-title {
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    .greeting-message {
+        font-size: medium;
+        white-space: nowrap;
+        margin-right: 8px;
+    }
+
+    .md-toolbar-tools {
+        .md-icon-button {
+            &.button-trigger {
+                margin: 0 4px;
+            }
+        }
+    }
+}

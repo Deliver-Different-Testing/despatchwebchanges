@@ -978,5 +978,6 @@ export interface IDeletePriceComponentRequest {
 export interface ISimpleRepriceJobModel {
     jobId: number;
     isPrebook: boolean;
+    isBulk: boolean;
     newPrice: number
 }

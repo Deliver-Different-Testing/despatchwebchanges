@@ -155,6 +155,7 @@ builder.Services.AddScoped<IJobPhotoService, JobPhotoService>();
 builder.Services.AddScoped<IClearListEnvelopeService, ClearListEnvelopeService>();
 builder.Services.AddScoped<IClientJobsReportService, ClientJobsReportService>();
 builder.Services.AddScoped<IDispatchJobService, DispatchJobService>();
+builder.Services.AddScoped<IDeliveryJourneyService, DeliveryJourneyService>();
 
 // Register DespatchContext with a fake connection string
 builder.Services.AddDbContextFactory<DespatchContext>(options =>

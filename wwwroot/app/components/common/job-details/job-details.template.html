@@ -916,7 +916,7 @@
                                         <h3>{{ ::ctrl.isUsCustomer ? 'Lift Gate Pickup' : 'Tail Lift Pickup'}}</h3>
                                         <p>
                                             <md-checkbox class="md-primary"
-                                                         ng-change="ctrl.onTailLiftPickupClick(job)"
+                                                         ng-change="ctrl.onTailLiftPickupClick(ctrl.job)"
                                                          ng-model="job.tailLiftPu"
                                                          aria-label="tail lift pickup">
                                             </md-checkbox>
@@ -938,7 +938,7 @@
                                         <p>
                                             <md-checkbox class="md-primary"
                                                          ng-model="job.tailLiftDo"
-                                                         ng-change="ctrl.onTailLiftDropOffClick(job)"
+                                                         ng-change="ctrl.onTailLiftDropOffClick(ctrl.job)"
                                                          aria-label="tail lift drop-off">
                                             </md-checkbox>
                                         </p>
@@ -958,7 +958,7 @@
                                         <h3>Deliver To</h3>
                                         <p>
                                             <md-select ng-model="job.deliverToPrivateResString"
-                                                       ng-change="ctrl.updateDeliverToResOption(job.deliverToPrivateResString)"
+                                                       ng-change="ctrl.updateDeliverToResOption(ctrl.job.deliverToPrivateResString)"
                                                        ng-model-options="{ debounce: 300 }">
                                                 <md-option value="residential">Residential</md-option>
                                                 <md-option value="business">Business</md-option>
