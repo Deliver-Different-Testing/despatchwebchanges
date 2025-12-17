@@ -22,13 +22,13 @@ public interface IJobRepository
     Task UpdateManualPriceAsync(List<JobManualPriceModel> data);
 
     Task<List<JobDownloadModel>> PodSearchDownloadAsync(
-        int? courierId,
-        int? speedId,
+        List<int> courierIds,
+        List<int> speedIds,
         string wild,
         string job,
         DateTime fromDate,
         DateTime toDate,
-        int? clientId
+        List<int> clientIds
     );
 
     Task<List<PerformanceSpendReportModel>> GetClientJobsReportDataAsync(ClientJobsReportRequest request);

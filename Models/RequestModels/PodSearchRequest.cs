@@ -1,22 +1,24 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace DespatchWeb.Models.RequestModels;
 
 public class PodSearchRequest
 {
-    public int? CourierId { get; set; }
-    public int? ClientId { get; set; }
-    public int? SpeedId { get; set; }
+    public List<int> CourierIds { get; set; }
+    public List<int> ClientIds { get; set; }
+    public List<int> SpeedIds { get; set; }
     public string Wild { get; set; }
     public string Job { get; set; }
     public DateTimeOffset FromDate { get; set; }
     public DateTimeOffset ToDate { get; set; }
     public int? Page { get; set; }
     public int? PageSize { get; set; }
-    
-    public bool ClientSet => ClientId.HasValue;
-    public bool CourierSet => CourierId.HasValue;
-    public bool SpeedSet => SpeedId.HasValue;
+
+    public bool ClientSet => ClientIds != null && ClientIds.Count != 0;
+    public bool CourierSet => CourierIds != null && CourierIds.Count != 0;
+    public bool SpeedSet => SpeedIds != null && SpeedIds.Count != 0;
     public bool WildSet => !string.IsNullOrWhiteSpace(Wild);
     public bool JobSet => !string.IsNullOrWhiteSpace(Job);
 }

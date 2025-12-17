@@ -202,9 +202,9 @@ public partial class JobRepository(
             where
                 j.BookDate.Date >= data.FromDate.Date
                 && j.BookDate.Date <= data.ToDate.Date
-                && (!data.ClientSet || j.ClientId == data.ClientId)
-                && (!data.CourierSet || j.CourierId == data.CourierId)
-                && (!data.SpeedSet || j.Speed == data.SpeedId)
+                && (!data.ClientSet || data.ClientIds.Contains(j.ClientId))
+                && (!data.CourierSet || (j.CourierId.HasValue && data.CourierIds.Contains(j.CourierId.Value)))
+                && (!data.SpeedSet || data.SpeedIds.Contains(j.Speed))
                 && (!data.JobSet || EF.Functions.Like(j.JobNumber.ToLower(), $"%{jobSearch}%"))
                 && (
                     !data.WildSet
@@ -367,9 +367,9 @@ public partial class JobRepository(
                 .Where(j =>
                     j.UcjbDate.Date >= fromDate
                     && j.UcjbDate.Date <= toDate
-                    && (!data.ClientSet || j.UcjbClientId == data.ClientId)
-                    && (!data.CourierSet || j.UcjbCourierId == data.CourierId)
-                    && (!data.SpeedSet || j.UcjbSpeed == data.SpeedId)
+                    && (!data.ClientSet || (j.UcjbClientId.HasValue && data.ClientIds.Contains(j.UcjbClientId.Value)))
+                    && (!data.CourierSet || (j.UcjbCourierId.HasValue && data.CourierIds.Contains(j.UcjbCourierId.Value)))
+                    && (!data.SpeedSet || (j.UcjbSpeed.HasValue && data.SpeedIds.Contains(j.UcjbSpeed.Value)))
                     && (!data.JobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
                 );
 
@@ -379,9 +379,9 @@ public partial class JobRepository(
                     j.UcjbDate.HasValue
                     && j.UcjbDate.Value.Date >= fromDate
                     && j.UcjbDate.Value.Date <= toDate
-                    && (!data.ClientSet || j.UcjbClientId == data.ClientId)
-                    && (!data.CourierSet || j.UcjbCourierId == data.CourierId)
-                    && (!data.SpeedSet || j.UcjbSpeed == data.SpeedId)
+                    && (!data.ClientSet || (j.UcjbClientId.HasValue && data.ClientIds.Contains(j.UcjbClientId.Value)))
+                    && (!data.CourierSet || (j.UcjbCourierId.HasValue && data.CourierIds.Contains(j.UcjbCourierId.Value)))
+                    && (!data.SpeedSet || (j.UcjbSpeed.HasValue && data.SpeedIds.Contains(j.UcjbSpeed.Value)))
                     && (!data.JobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
                 );
 
@@ -863,18 +863,18 @@ public partial class JobRepository(
     }
 
     public async Task<List<JobDownloadModel>> PodSearchDownloadAsync(
-        int? courierId,
-        int? speedId,
+        List<int> courierIds,
+        List<int> speedIds,
         string wild,
         string job,
         DateTime fromDate,
         DateTime toDate,
-        int? clientId
+        List<int> clientIds
     )
     {
-        var clientSet = clientId.HasValue;
-        var courierSet = courierId.HasValue;
-        var speedSet = speedId.HasValue;
+        var clientSet = clientIds != null && clientIds.Any();
+        var courierSet = courierIds != null && courierIds.Any();
+        var speedSet = speedIds != null && speedIds.Any();
         var jobParam = $"%{job}%";
         var wildParam = $"%{wild}%";
 
@@ -890,9 +890,9 @@ public partial class JobRepository(
             where
                 j.Date >= fromDate
                 && j.Date <= toDate
-                && (!clientSet || j.ClientId == clientId)
-                && (!courierSet || j.CourierId == courierId)
-                && (!speedSet || j.Speed == speedId)
+                && (!clientSet || (j.ClientId.HasValue && clientIds.Contains(j.ClientId.Value)))
+                && (!courierSet || (j.CourierId.HasValue && courierIds.Contains(j.CourierId.Value)))
+                && (!speedSet || (j.Speed.HasValue && speedIds.Contains(j.Speed.Value)))
                 && (job == string.Empty || EF.Functions.Like(j.Number.ToLower(), jobParam))
                 && (
                     wild == string.Empty
@@ -3995,9 +3995,6 @@ public partial class JobRepository(
         int jobId,
         bool isLiveJob)
     {
-        var isUsCustomer = _infoService.IsUsTenant();
-        var dateFormat = isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm";
-
         if (isLiveJob)
         {
             // Use explicit JOINs for better query performance instead of correlated subqueries
@@ -4160,7 +4157,7 @@ public partial class JobRepository(
                 JobId = jobId,
                 Date = _infoService.ConvertUtcToTenantTimeZone(group.Key),
                 Title = GetDeliveryJourneyTitle(group.First()),
-                Description = GetDeliveryJourneyDescription(group.ToList(), dateFormat),
+                Description = GetDeliveryJourneyDescription(group.ToList()),
                 Icon = GetDeliveryJourneyIcon(group.First().ChangeType, group.First().FieldName),
                 Tags = group.SelectMany(s => new[]
                     {
@@ -4341,7 +4338,7 @@ public partial class JobRepository(
         return string.Join("; ", descriptions.Distinct());
     }
 
-    private static string GetDeliveryJourneyDescription(List<JobDeliveryJourneyArchiveDto> updates, string dateFormat)
+    private static string GetDeliveryJourneyDescription(List<JobDeliveryJourneyArchiveDto> updates)
     {
         var descriptions = new List<string>();
 

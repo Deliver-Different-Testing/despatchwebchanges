@@ -33,9 +33,9 @@ class JobSearchService implements angular.IServiceProvider {
         const response = await this.$http.get<IJobSearchResultDto>(
             `/Job/PODSearch`, {
                 params: {
-                    courierIds: courierIds?.join(',') || undefined,
-                    clientIds: clientIds?.join(',') || undefined,
-                    speedIds: speedIds?.join(',') || undefined,
+                    courierIds,
+                    clientIds,
+                    speedIds,
                     wild,
                     job,
                     page,
@@ -108,9 +108,9 @@ class JobSearchService implements angular.IServiceProvider {
     ): Promise<IJobSearchResult> {
         const response = await this.$http.get<IJobSearchResultDto>(`/Job/BulkSearch`, {
                 params: {
-                    courierIds: courierIds?.join(',') || undefined,
-                    clientIds: clientIds?.join(',') || undefined,
-                    speedIds: speedIds?.join(',') || undefined,
+                    courierIds,
+                    clientIds,
+                    speedIds,
                     job,
                     wild,
                     page,
