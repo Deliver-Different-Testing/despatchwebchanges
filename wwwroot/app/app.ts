@@ -106,6 +106,24 @@ app.config(["$mdThemingProvider", "APP_CONFIG",
     }
 ]);
 
+// Set theme CSS custom properties based on customer region
+app.run(["APP_CONFIG", (appConfig: IAppConfig) => {
+    const root = document.documentElement;
+    if (appConfig.US_Customer) {
+        root.style.setProperty('--theme-primary', '#2196f3');
+        root.style.setProperty('--theme-primary-light', 'rgba(33, 150, 243, 0.15)');
+        root.style.setProperty('--theme-primary-medium', 'rgba(33, 150, 243, 0.3)');
+        root.style.setProperty('--theme-primary-strong', 'rgba(33, 150, 243, 0.5)');
+        document.body.classList.add('theme-us');
+    } else {
+        root.style.setProperty('--theme-primary', '#fddd00');
+        root.style.setProperty('--theme-primary-light', 'rgba(253, 221, 0, 0.15)');
+        root.style.setProperty('--theme-primary-medium', 'rgba(253, 221, 0, 0.3)');
+        root.style.setProperty('--theme-primary-strong', 'rgba(253, 221, 0, 0.5)');
+        document.body.classList.add('theme-nz');
+    }
+}]);
+
 // Configs
 app.config(["$qProvider", ($qProvider: angular.IQProvider) => {
     $qProvider.errorOnUnhandledRejections(false);

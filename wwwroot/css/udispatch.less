@@ -17,7 +17,7 @@ html, body {
 }
 
 .dashboard-padding {
-  padding: 8px;
+  padding: 4px;
 }
 
 @scroll-overflow: auto;
@@ -112,23 +112,151 @@ html, body {
 }
 
 .box-handle {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  min-height: 40px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: 6px;
   cursor: grab;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+  margin-right: 4px;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.15);
+    transform: scale(1.05);
   }
 
   &:active {
     cursor: grabbing;
+    background-color: rgba(255, 255, 255, 0.25);
+    transform: scale(0.95);
   }
+
+  md-icon {
+    font-size: 20px !important;
+    opacity: 0.8;
+    transition: opacity 0.15s ease;
+  }
+
+  &:hover md-icon {
+    opacity: 1;
+  }
+}
+
+// Box collapsed state
+.box.box-collapsed {
+  flex: 0 0 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  overflow: hidden !important;
+
+  md-toolbar {
+    border-radius: 8px;
+    min-height: 40px !important;
+    max-height: 40px !important;
+  }
+
+  .box-content {
+    display: none !important;
+    height: 0 !important;
+  }
+
+  .rg-bottom {
+    display: none !important;
+  }
+}
+
+.box-collapse-btn {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  md-icon {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+.box-collapsed .box-collapse-btn md-icon {
+  transform: rotate(180deg);
+}
+
+// Layout locked state - hides resize handles and disables customization on default layout
+.columns.layout-locked {
+  .column.resize-disabled,
+  .box.resize-disabled {
+    .rg-right,
+    .rg-bottom {
+      display: none !important;
+      pointer-events: none !important;
+    }
+  }
+}
+
+// Box dragging states - uses CSS custom properties for theme colors
+.box.dragging {
+  opacity: 0.95;
+  box-shadow: 0 12px 28px var(--theme-primary-medium, rgba(33, 150, 243, 0.3)),
+              0 8px 16px rgba(0, 0, 0, 0.15),
+              0 0 0 2px var(--theme-primary-medium, rgba(33, 150, 243, 0.3)) !important;
+  transform: rotate(0.5deg) scale(1.02);
+  z-index: 100;
+  animation: box-lift 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes box-lift {
+  0% {
+    transform: rotate(0) scale(1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+  100% {
+    transform: rotate(0.5deg) scale(1.02);
+    box-shadow: 0 12px 28px var(--theme-primary-medium, rgba(33, 150, 243, 0.3)),
+                0 8px 16px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.box-placeholder {
+  background: var(--theme-primary-light, rgba(33, 150, 243, 0.15)) !important;
+  border: 2px dashed var(--theme-primary-medium, rgba(33, 150, 243, 0.3)) !important;
+  border-radius: 8px !important;
+  min-height: 80px;
+  animation: placeholder-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes placeholder-pulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.column-sortable.ui-sortable-active {
+  background: var(--theme-primary-light, rgba(33, 150, 243, 0.15));
+  border-radius: 8px;
+  animation: column-highlight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes column-highlight {
+  0% {
+    background: transparent;
+  }
+  100% {
+    background: var(--theme-primary-light, rgba(33, 150, 243, 0.15));
+  }
+}
+
+// Resize in progress state
+.resizable.no-transition .box {
+  transition: none !important;
+}
+
+// Visual indicator during resize
+.box:has(.rg-bottom:active),
+.column:has(.rg-right:active) {
+  z-index: 50;
 }
 
 .vertical-divider {
@@ -180,7 +308,7 @@ html, body {
   flex-flow: row nowrap;
   justify-content: space-around;
   align-content: space-around;
-  gap: 8px;
+  gap: 4px;
 
   .column {
     box-sizing: border-box;
@@ -189,10 +317,33 @@ html, body {
     flex-direction: column;
     height: calc(100vh - 60px);
     min-width: 50px;
-    padding-bottom: 8px;
+    padding-bottom: 4px;
+    transition: flex-basis 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
+    // Column resize handle (horizontal) - uses CSS custom properties for theme colors
     .rg-right {
-      margin-right: -7px !important;
+      width: 8px !important;
+      height: 100% !important;
+      margin-right: -4px !important;
+      background: transparent !important;
+      z-index: 10 !important;
+      cursor: col-resize !important;
+      transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                  box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:hover {
+        background: var(--theme-primary-medium, rgba(33, 150, 243, 0.3)) !important;
+        box-shadow: 0 0 8px var(--theme-primary-medium, rgba(33, 150, 243, 0.3));
+      }
+
+      &:active {
+        background: var(--theme-primary-strong, rgba(33, 150, 243, 0.5)) !important;
+        box-shadow: 0 0 12px var(--theme-primary-strong, rgba(33, 150, 243, 0.5));
+      }
+
+      span {
+        display: none !important;
+      }
     }
 
     &:last-child {
@@ -213,21 +364,56 @@ html, body {
       min-width: 50px;
       margin-left: 0;
       margin-right: 0;
-      gap: 8px;
+      gap: 4px;
+      transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
       .box {
         display: flex;
         flex-direction: column;
-        min-height: 64px;
+        min-height: 0;
         margin-bottom: 0;
         background-color: white;
         border-radius: 8px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
         position: relative;
-        overflow: hidden;
+        overflow: visible;
+        transition: flex-basis 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+                    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
         md-toolbar {
           border-radius: 0;
+          min-height: 40px;
+          flex-shrink: 0;
+        }
+
+        // Box resize handle (vertical) - uses CSS custom properties for theme colors
+        .rg-bottom {
+          width: calc(100% + 8px) !important;
+          height: 12px !important;
+          margin-left: -4px !important;
+          margin-bottom: -6px !important;
+          background: transparent !important;
+          z-index: 20 !important;
+          cursor: row-resize !important;
+          transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                      box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          left: 0 !important;
+          border-radius: 4px;
+
+          &:hover {
+            background: var(--theme-primary-medium, rgba(33, 150, 243, 0.3)) !important;
+            box-shadow: 0 0 8px var(--theme-primary-medium, rgba(33, 150, 243, 0.3));
+          }
+
+          &:active {
+            background: var(--theme-primary-strong, rgba(33, 150, 243, 0.5)) !important;
+            box-shadow: 0 0 12px var(--theme-primary-strong, rgba(33, 150, 243, 0.5));
+          }
+
+          span {
+            display: none !important;
+          }
         }
 
         &:nth-last-child(2) {
@@ -249,10 +435,13 @@ html, body {
         }
 
         .box-content {
-          height: calc(100% - 48px);
+          flex: 1;
+          min-height: 0;
           background-color: whitesmoke;
           font-size: 11px;
           position: relative;
+          overflow: hidden;
+          transition: opacity 0.15s ease;
         }
       }
     }

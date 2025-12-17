@@ -61,6 +61,7 @@ class JobSearchController extends BaseController {
 
     private readonly LayoutKey: string = `layoutsCS-${ContactID}`
     private readonly LastActiveLayoutKey: string = `lastActiveLayoutCS-${ContactID}`
+    private readonly BoxVisibilityKey: string = `boxVisibility-${AppPage.JobSearch}-${ContactID}`
 
     readonly isAdmin: boolean;
 
@@ -248,8 +249,13 @@ class JobSearchController extends BaseController {
             revert: 200,
             delay: 150,
             forcePlaceholderSize: true,
+            disabled: false, // Will be updated when layout changes
 
             start: (e: JQueryEventObject, ui: any) => {
+                // Prevent drag on default layout
+                if (this.isDefaultLayout()) {
+                    return false;
+                }
                 ui.item.addClass('dragging');
 
                 const dragInfo = angular.element('#draggingItems');
@@ -294,6 +300,7 @@ class JobSearchController extends BaseController {
         this.layout = angular.copy(layout.layout);
 
         this.applyLayoutDimensions();
+        this.loadBoxVisibility();
 
         if (Modernizr.localstorage) {
             localStorage.setItem(this.LastActiveLayoutKey, layout.name);
@@ -483,6 +490,73 @@ class JobSearchController extends BaseController {
                 description: "Timeline and history of job delivery progress"
             }
         };
+    }
+
+    private getBoxVisibilityKey(layoutName: string): string {
+        return `${this.BoxVisibilityKey}-${layoutName}`;
+    }
+
+    private saveBoxVisibility(): void {
+        if (!Modernizr.localstorage || !this.boxes || !this.currentLayoutName) return;
+
+        try {
+            const boxState: Record<string, { visible: boolean; collapsed: boolean }> = {};
+            Object.keys(this.boxes).forEach(boxName => {
+                boxState[boxName] = {
+                    visible: this.boxes![boxName].visible ?? true,
+                    collapsed: this.boxes![boxName].collapsed ?? false
+                };
+            });
+            const key = this.getBoxVisibilityKey(this.currentLayoutName);
+            localStorage.setItem(key, JSON.stringify(boxState));
+        } catch (error) {
+            console.error('Error saving box visibility to storage:', error);
+        }
+    }
+
+    private loadBoxVisibility(): void {
+        if (!Modernizr.localstorage || !this.boxes || !this.currentLayoutName) return;
+
+        try {
+            const key = this.getBoxVisibilityKey(this.currentLayoutName);
+            const savedState = localStorage.getItem(key);
+            if (savedState) {
+                const boxState = JSON.parse(savedState);
+                Object.keys(boxState).forEach(boxName => {
+                    if (this.boxes && this.boxes[boxName]) {
+                        // Handle both old format (boolean) and new format (object)
+                        if (typeof boxState[boxName] === 'boolean') {
+                            this.boxes[boxName].visible = boxState[boxName];
+                            this.boxes[boxName].collapsed = false;
+                        } else {
+                            this.boxes[boxName].visible = boxState[boxName].visible ?? true;
+                            this.boxes[boxName].collapsed = boxState[boxName].collapsed ?? false;
+                        }
+                    }
+                });
+            } else {
+                // No saved state for this layout - reset all boxes to visible and expanded
+                Object.keys(this.boxes).forEach(boxName => {
+                    this.boxes![boxName].visible = true;
+                    this.boxes![boxName].collapsed = false;
+                });
+            }
+        } catch (error) {
+            console.error('Error loading box visibility from storage:', error);
+        }
+    }
+
+    toggleBoxCollapse(boxName: string): void {
+        if (!this.boxes || !this.boxes[boxName]) return;
+        if (this.isDefaultLayout()) return; // Don't allow collapse on default layout
+
+        this.boxes[boxName].collapsed = !this.boxes[boxName].collapsed;
+        this.saveBoxVisibility();
+        this.applyScope();
+    }
+
+    isDefaultLayout(): boolean {
+        return this.currentLayoutName === 'Default';
     }
 
     toggleSidenav() {
@@ -1155,6 +1229,11 @@ class JobSearchController extends BaseController {
             );
 
             if (!result) return;
+
+            if (result.boxes) {
+                this.boxes = result.boxes;
+                this.saveBoxVisibility();
+            }
 
             this.saveCurrentLayout();
             this.applyScope();

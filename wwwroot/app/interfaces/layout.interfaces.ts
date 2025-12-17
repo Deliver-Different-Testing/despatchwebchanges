@@ -9,6 +9,7 @@ export interface IBox {
     showDetailButtons?: boolean;
     showFilter?: boolean;
     visible?: boolean;
+    collapsed?: boolean;
     description?: string;
 }
 
