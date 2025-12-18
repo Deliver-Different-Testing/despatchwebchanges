@@ -49,36 +49,8 @@ class DashboardSettingsDialogController extends BaseController {
         this.selectedRefreshInterval = interval;
     }
 
-    isAutoRefreshActive(): boolean {
-        return this.selectedRefreshInterval &&
-            this.selectedRefreshInterval.id !== 0;
-    }
-
-    getCurrentRefreshIntervalText(): string {
-        if (!this.selectedRefreshInterval) {
-            return 'Not set';
-        }
-        return this.isAutoRefreshActive()
-            ? 'Auto-refresh active'
-            : 'Manual refresh only';
-    }
-
     onDriverLocationRefreshIntervalChange(interval: ISuggestion): void {
         this.selectedDriverLocationRefreshInterval = interval;
-    }
-
-    isDriverLocationAutoRefreshActive(): boolean {
-        return this.selectedDriverLocationRefreshInterval &&
-            this.selectedDriverLocationRefreshInterval.id !== 0;
-    }
-
-    getCurrentDriverLocationRefreshIntervalText(): string {
-        if (!this.selectedDriverLocationRefreshInterval) {
-            return 'Not set';
-        }
-        return this.isDriverLocationAutoRefreshActive()
-            ? 'Auto-refresh active'
-            : 'Manual refresh only';
     }
 
     toggleDashboard(box: IBox): void {

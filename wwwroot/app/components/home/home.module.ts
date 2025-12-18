@@ -7,7 +7,6 @@ import InterCourierChargeDialogService
 import InterCourierChargeDialogController
     from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.controller";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
-import {TaskItemComponent} from "../common/task-item-component/task-item.component";
 import {
     FeatureInDevelopmentDialogService
 } from "../dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
@@ -50,7 +49,6 @@ const homeModule = angular.module('uDispatch.home', [
 homeModule
     .component("homeComponent", HomeComponent)
     .component("jobsList", JobsListComponent)
-    .component("taskItemComponent", TaskItemComponent)
     .component("dispatchMap", DispatchMapComponent);
 
 // Register services

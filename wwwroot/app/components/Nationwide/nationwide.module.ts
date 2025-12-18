@@ -12,7 +12,6 @@ import JobsListComponent from "../common/job-list/job-list.component";
 import TasksService from "../../services/tasks.service";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
-import {TaskItemComponent} from "../common/task-item-component/task-item.component";
 import {
     FeatureInDevelopmentDialogService
 } from "../dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
@@ -45,8 +44,7 @@ const nationwideModule = angular.module('uDispatch.nationwide', [
 // Register components
 nationwideModule
     .component("nationwideComponent", NationwideComponent)
-    .component("jobsList", JobsListComponent)
-    .component("taskItemComponent", TaskItemComponent);
+    .component("jobsList", JobsListComponent);
 
 // Register services
 nationwideModule
