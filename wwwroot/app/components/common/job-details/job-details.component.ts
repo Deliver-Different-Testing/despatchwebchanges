@@ -622,7 +622,7 @@ class JobDetailController extends BaseController {
         result: IDialogDateTimeResult
     ): Promise<void> {
         if (result) {
-            if (job.bulkJob) {
+            if (job.isBulkJob) {
                 await this.DispatchData.updateBulkJobDetail(
                     job.id,
                     result.fieldName,
@@ -686,7 +686,7 @@ class JobDetailController extends BaseController {
                         );
                     }
                 } else {
-                    if (job.bulkJob) {
+                    if (job.isBulkJob) {
                         await this.DispatchData.updateBulkJobDetail(
                             job.id,
                             fieldName,
@@ -1435,7 +1435,7 @@ class JobDetailController extends BaseController {
                 console.error("Failed to convert rate to a number");
             }
 
-            if (job.bulkJob) {
+            if (job.isBulkJob) {
                 await this.DispatchData.updateBulkJobDetail(
                     job.id,
                     callData.field,
@@ -2228,7 +2228,7 @@ class JobDetailController extends BaseController {
         }
 
         try {
-            if (this.job?.bulkJob) {
+            if (this.job?.isBulkJob) {
                 this.toastrService.showWarningToast("Tail Lift Pickup is not currently available for scheduled jobs.");
             } else {
                 await this.DispatchData.updateJobDetail(job.id, JobProperty.TailLiftPu, !job.tailLiftPu, job.preBook)
@@ -2245,7 +2245,7 @@ class JobDetailController extends BaseController {
         }
 
         try {
-            if (this.job?.bulkJob) {
+            if (this.job?.isBulkJob) {
                 this.toastrService.showWarningToast("Tail Lift Drop-off is not currently available for scheduled jobs.");
             } else {
                 await this.DispatchData.updateJobDetail(job.id, JobProperty.TailLiftDo, !job.tailLiftDo, job.preBook)
@@ -2259,7 +2259,7 @@ class JobDetailController extends BaseController {
         try {
             job.deliverToPrivateRes = job.deliverToPrivateResString === "residential";
 
-            if (this.job?.bulkJob) {
+            if (this.job?.isBulkJob) {
                 this.toastrService.showWarningToast("Deliver to Private Residential is not currently available for scheduled jobs.");
             } else {
                 await this.DispatchData.updateJobDetail(job.id, JobProperty.DeliverToPrivateRes, job.deliverToPrivateRes, job.preBook)
