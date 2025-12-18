@@ -632,6 +632,139 @@ public partial class JobRepository
         JobProperty property,
         string value)
     {
+        // Try to use ExecuteUpdateAsync for simple single-field updates (no entity loading required)
+        if (await TryExecuteDirectBulkUpdateAsync(bulkJobId, property, value))
+            return;
+
+        // Fall back to entity-based updates for complex cases requiring includes or business logic
+        await UpdateBulkJobWithEntityAsync(bulkJobId, property, value);
+    }
+    
+    private async Task<bool> TryExecuteDirectBulkUpdateAsync(int bulkJobId, JobProperty property, string value)
+    {
+        var baseQuery = Context.TblBulkJobs.Where(j => j.BulkJobId == bulkJobId);
+        int rowsAffected;
+
+        switch (property) 
+        {
+            case JobProperty.Time:
+                var time = DateTimeOffset.Parse(value).DateTime;
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.BookTime, time));
+                break;
+
+            case JobProperty.Date:
+                var date = DateTimeOffset.Parse(value).DateTime;
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.BookDate, date));
+                break;
+
+            case JobProperty.Size:
+                var size = short.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.Size, size));
+                break;
+
+            case JobProperty.Items:
+                var qty = short.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.Qty, qty));
+                break;
+
+            case JobProperty.SpeedID:
+                var speed = int.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.Speed, speed));
+                break;
+
+            case JobProperty.Weight:
+                var weight = decimal.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.Weight, weight));
+                break;
+
+            case JobProperty.ClientID:
+                var clientId = int.Parse(value);
+                var clientCode = await Context.TucClients
+                    .Where(c => c.UcclId == clientId)
+                    .Select(c => c.UcclCode)
+                    .FirstOrDefaultAsync();
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s
+                    .SetProperty(j => j.ClientId, clientId)
+                    .SetProperty(j => j.ClientCode, clientCode));
+                break;
+
+            case JobProperty.RefA:
+                var refA = value[..Math.Min(value.Length, 20)];
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.ClientRefa, refA));
+                break;
+
+            case JobProperty.RefB:
+                var refB = value[..Math.Min(value.Length, 15)];
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.ClientRefb, refB));
+                break;
+
+            case JobProperty.OurRef:
+                var ourRef = value[..Math.Min(value.Length, 20)];
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.OurRef, ourRef));
+                break;
+
+            case JobProperty.FromContactName:
+                var fromContact = value[..Math.Min(value.Length, 100)];
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.Contact, fromContact));
+                break;
+
+            case JobProperty.ToContactName:
+                var toContact = value[..Math.Min(value.Length, 100)];
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.DeliverToContact, toContact));
+                break;
+
+            case JobProperty.ToContactPhone:
+                var toPhone = value[..Math.Min(value.Length, 100)];
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.DeliverToPhone, toPhone));
+                break;
+
+            case JobProperty.DeliverToLeaveID:
+                var leaveId = int.Parse(value);
+                var privateBusiness = leaveId == 1 ? (bool?)null : false;
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s
+                    .SetProperty(j => j.DeliverToLeaveId, leaveId)
+                    .SetProperty(j => j.DeliverToPrivateBusiness, privateBusiness));
+                break;
+
+            case JobProperty.TrackingMethod:
+                var trackingMethod = int.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.TrackingMethod, trackingMethod));
+                break;
+
+            case JobProperty.TrackingMobile:
+                var trackingMobile = value[..Math.Min(value.Length, 100)];
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.TrackingMobile, trackingMobile));
+                break;
+
+            case JobProperty.TrackingEmail:
+                var trackingEmail = value[..Math.Min(value.Length, 100)];
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.TrackingEmail, trackingEmail));
+                break;
+
+            case JobProperty.Amount:
+                var amount = decimal.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.Amount, amount));
+                break;
+
+            case JobProperty.Void:
+                var voidJob = bool.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.Void, voidJob));
+                break;
+
+            default:
+                // Property requires entity-based update
+                return false;
+        }
+
+        if (rowsAffected == 0)
+            throw new ArgumentException($"Bulk job with ID {bulkJobId} not found", nameof(bulkJobId));
+
+        Log.Debug("ExecuteUpdateAsync: Updated {Property} for bulk job {BulkJobId}", property, bulkJobId);
+        return true;
+    }
+    
+    private async Task UpdateBulkJobWithEntityAsync(int bulkJobId, JobProperty property, string value)
+    {
         var query = Context.TblBulkJobs.Where(j => j.BulkJobId == bulkJobId);
         query = AddRequiredBulkJobIncludes(query, property);
 
@@ -640,80 +773,34 @@ public partial class JobRepository
 
         switch (property)
         {
-            case JobProperty.Time:
-                bulkJob.BookTime = DateTimeOffset.Parse(value).DateTime;
-                break;
-            case JobProperty.Date:
-                bulkJob.BookDate = DateTimeOffset.Parse(value).DateTime;
-                break;
-            case JobProperty.Size:
-                bulkJob.Size = short.Parse(value);
-                break;
-            case JobProperty.Items:
-                bulkJob.Qty = short.Parse(value);
-                break;
-            case JobProperty.SpeedID:
-                bulkJob.Speed = int.Parse(value);
-                break;
-            case JobProperty.Weight:
-                bulkJob.Weight = decimal.Parse(value);
-                break;
-            case JobProperty.ClientID:
-                var bulkClientId = int.Parse(value);
-                bulkJob.ClientId = bulkClientId;
-                bulkJob.ClientCode = await Context.TucClients
-                    .Where(c => c.UcclId == bulkClientId)
-                    .Select(c => c.UcclCode)
-                    .FirstOrDefaultAsync();
-                break;
             case JobProperty.ClientCode:
                 bulkJob.ClientCode = value[..Math.Min(value.Length, 5)];
                 bulkJob.Client.UcclCode = value[..Math.Min(value.Length, 50)];
-                break;
-            case JobProperty.RefA:
-                bulkJob.ClientRefa = value[..Math.Min(value.Length, 20)];
-                break;
-            case JobProperty.RefB:
-                bulkJob.ClientRefb = value[..Math.Min(value.Length, 15)];
-                break;
-            case JobProperty.OurRef:
-                bulkJob.OurRef = value[..Math.Min(value.Length, 20)];
-                break;
-            case JobProperty.FromContactName:
-                bulkJob.Contact = value[..Math.Min(value.Length, 100)];
-                break;
-            case JobProperty.ToContactName:
-                bulkJob.DeliverToContact = value[..Math.Min(value.Length, 100)];
-                break;
-            case JobProperty.ToContactPhone:
-                bulkJob.DeliverToPhone = value[..Math.Min(value.Length, 100)];
-                break;
-            case JobProperty.DeliverToLeaveID:
-                var leaveId = int.Parse(value);
-                bulkJob.DeliverToLeaveId = leaveId;
-                bulkJob.DeliverToPrivateBusiness = leaveId == 1 ? null : false;
-                break;
-            case JobProperty.TrackingMethod:
-                var trackingMethodId = int.Parse(value);
-                bulkJob.TrackingMethod = trackingMethodId;
-                break;
-            case JobProperty.TrackingMobile:
-                bulkJob.TrackingMobile = value[..Math.Min(value.Length, 100)];
-                break;
-            case JobProperty.TrackingEmail:
-                bulkJob.TrackingEmail = value[..Math.Min(value.Length, 100)];
-                break;
-            case JobProperty.Amount:
-                bulkJob.Amount = decimal.Parse(value);
-                break;
-            case JobProperty.Void:
-                bulkJob.Void = bool.Parse(value);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
         }
 
-        await Context.SaveChangesAsync();
+        var entries = Context.ChangeTracker.Entries()
+            .Where(e => e.State == EntityState.Modified)
+            .ToList();
+
+        var logMessages = new List<string> { $"Entities to be updated: {entries.Count}" };
+
+        foreach (var entry in entries)
+        {
+            logMessages.Add($"Entity: {entry.Entity.GetType().Name}");
+            logMessages.AddRange(
+                entry.Properties
+                    .Where(p => p.IsModified)
+                    .Select(p => $"  {p.Metadata.Name}: {p.OriginalValue} -> {p.CurrentValue}")
+            );
+        }
+
+        Log.Debug("{ChangeTrackerInfo}", string.Join(", ", logMessages));
+
+        var changeCount = await Context.SaveChangesAsync();
+        Log.Debug("Changes saved: {ChangeCount}", changeCount);
     }
 
     private async Task JobUpdateAddNoteAsync(int jobId, bool isLiveJob, string updateNote)

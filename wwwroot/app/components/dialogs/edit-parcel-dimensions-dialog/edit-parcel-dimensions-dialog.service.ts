@@ -29,8 +29,8 @@ class EditParcelDimensionsDialogService {
             fullscreen: true,
             locals: {
                 parcels: job.parcelDimensions,
-                jobId: job.bulkJob ? undefined : job.id,
-                bulkJobId: job.bulkJob ? job.id : undefined,
+                jobId: job.isBulkJob ? undefined : job.id,
+                bulkJobId: job.isBulkJob ? job.id : undefined,
             },
             bindToController: true,
         });

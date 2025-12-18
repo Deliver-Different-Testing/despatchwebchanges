@@ -135,7 +135,7 @@ export interface IJob {
     sizeId?: number;
     oneOff?: boolean;
     preBook: boolean;
-    bulkJob: boolean;
+    isBulkJob: boolean;
     runName: string;
     scheduleName: string;
     conNote: string;
@@ -320,7 +320,7 @@ export interface IJobDto {
     sizeId?: number;
     oneOff?: boolean;
     preBook: boolean;
-    bulkJob: boolean;
+    isBulkJob: boolean;
     runName: string;
     scheduleName: string;
     conNote: string;

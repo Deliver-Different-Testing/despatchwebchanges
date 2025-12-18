@@ -717,7 +717,7 @@
                             <md-list-item
                                     class="md-2-line md-long-text"
                                     ng-click="!ctrl.job.locked && jdSvc.dgClassClick($event, ctrl.job)"
-                                    ng-if="!ctrl.job.bulkJob">
+                                    ng-if="!ctrl.job.isBulkJob">
                                 <md-icon
                                         class="md-avatar"
                                         aria-label="Documents"
@@ -1231,7 +1231,7 @@
                             <md-list-item
                                     class="md-2-line md-long-text"
                                     ng-click="ctrl.contactClick($event, ctrl.job)"
-                                    ng-if="!ctrl.job.bulkJob && (ctrl.isFieldVisible('fromContactName') || ctrl.isEditMode)">
+                                    ng-if="!ctrl.job.isBulkJob && (ctrl.isFieldVisible('fromContactName') || ctrl.isEditMode)">
                                 <md-icon
                                         class="md-avatar"
                                         aria-label="Contact name"
