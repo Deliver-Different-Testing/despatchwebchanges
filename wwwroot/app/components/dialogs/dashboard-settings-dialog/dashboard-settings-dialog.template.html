@@ -1,195 +1,110 @@
-﻿<md-dialog aria-label="Settings" class="settings-dialog">
+<md-dialog aria-label="Dashboard Settings" class="settings-dialog">
     <md-toolbar class="md-hue-1">
         <div class="md-toolbar-tools">
-            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">settings_applications</md-icon>
+            <md-icon class="toolbar-icon" md-font-set="material-symbols-outlined">settings</md-icon>
             <h2>{{ ctrl.config.title }}</h2>
             <span flex></span>
-            <md-button class="md-icon-button close-dialog-button" ng-click="ctrl.cancel()">
-                <md-tooltip md-direction="bottom">Cancel</md-tooltip>
-                <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
-                    close
-                </md-icon>
+            <md-button class="md-icon-button" ng-click="ctrl.cancel()" aria-label="Close">
+                <md-icon md-font-set="material-symbols-outlined">close</md-icon>
             </md-button>
         </div>
     </md-toolbar>
-    
+
     <md-dialog-content>
-        <md-tabs class="md-primary" md-center-tabs md-dynamic-height md-border-bottom>
-            <!-- Refresh Interval Tab -->
-            <md-tab label="Refresh Interval" ng-if="::ctrl.config.showRefreshInterval">
-                <md-content class="md-padding">
-                    <div class="settings-section">
-                        <label class="settings-label" id="refreshInterval">
-                            <md-icon md-font-set="material-symbols-outlined" class="popup-icon dialog-icon">
-                                timer
-                                <md-tooltip md-direction="bottom">
-                                    Set how often the dashboard lists automatically refresh with new data
-                                </md-tooltip>
-                            </md-icon>
-                            JobList Refresh Interval
-                        </label>
+        <div class="settings-content">
+            <!-- Refresh Intervals Section -->
+            <section class="settings-section" ng-if="::ctrl.config.showRefreshInterval">
+                <h3 class="section-header">
+                    <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
+                    Auto-Refresh
+                </h3>
 
-                        <md-select
-                                ng-model="ctrl.selectedRefreshInterval"
-                                ng-change="ctrl.onRefreshIntervalChange(ctrl.selectedRefreshInterval)"
-                                aria-labelledby="refreshInterval"
-                                placeholder="Select interval"
-                                class="settings-select"
-                                md-container-class="settings-select-container">
-                            <md-option
-                                    ng-repeat="option in ctrl.refreshIntervalOptions track by option.id"
-                                    ng-value="option">
-                                {{option.text}}
-                            </md-option>
-                        </md-select>
-
-                        <!-- Status Indicator -->
-                        <div class="status-indicator">
-                            <div class="status-content">
-                                <div class="status-icon-wrapper">
-                                    <md-icon
-                                            md-font-set="material-symbols-outlined"
-                                            ng-if="ctrl.isAutoRefreshActive()"
-                                            class="status-icon status-active">
-                                        refresh
-                                    </md-icon>
-                                    <md-icon
-                                            md-font-set="material-symbols-outlined"
-                                            ng-if="!ctrl.isAutoRefreshActive()"
-                                            class="status-icon status-inactive">
-                                        pause
-                                    </md-icon>
-                                </div>
-                                <div class="status-text">
-                                    <span class="status-label">Current Status:</span>
-                                    <span class="status-value">{{ctrl.getCurrentRefreshIntervalText()}}</span>
-                                </div>
-                            </div>
-                        </div>
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-label">Job List</span>
+                        <span class="setting-hint">How often the job list refreshes</span>
                     </div>
+                    <md-select
+                            ng-model="ctrl.selectedRefreshInterval"
+                            ng-model-options="{trackBy: '$value.id'}"
+                            ng-change="ctrl.onRefreshIntervalChange(ctrl.selectedRefreshInterval)"
+                            aria-label="Job list refresh interval"
+                            class="setting-select">
+                        <md-option
+                                ng-repeat="option in ctrl.refreshIntervalOptions track by option.id"
+                                ng-value="option">
+                            {{option.text}}
+                        </md-option>
+                    </md-select>
+                </div>
 
-                    <md-divider></md-divider>
-
-                    <!-- Driver Location Refresh Interval Section -->
-                    <div class="settings-section">
-                        <label class="settings-label" id="driverLocationRefreshInterval">
-                            <md-icon md-font-set="material-symbols-outlined" class="popup-icon dialog-icon">
-                                location_on
-                                <md-tooltip md-direction="bottom">
-                                    Set how often driver locations and map automatically refresh
-                                </md-tooltip>
-                            </md-icon>
-                            Driver Locations and Map Refresh Interval
-                        </label>
-
-                        <md-select
-                                ng-model="ctrl.selectedDriverLocationRefreshInterval"
-                                ng-change="ctrl.onDriverLocationRefreshIntervalChange(ctrl.selectedDriverLocationRefreshInterval)"
-                                aria-labelledby="driverLocationRefreshInterval"
-                                placeholder="Select interval"
-                                class="settings-select"
-                                md-container-class="settings-select-container">
-                            <md-option
-                                    ng-repeat="option in ctrl.driverLocationRefreshIntervalOptions track by option.id"
-                                    ng-value="option">
-                                {{option.text}}
-                            </md-option>
-                        </md-select>
-
-                        <!-- Status Indicator -->
-                        <div class="status-indicator">
-                            <div class="status-content">
-                                <div class="status-icon-wrapper">
-                                    <md-icon
-                                            md-font-set="material-symbols-outlined"
-                                            ng-if="ctrl.isDriverLocationAutoRefreshActive()"
-                                            class="status-icon status-active">
-                                        refresh
-                                    </md-icon>
-                                    <md-icon
-                                            md-font-set="material-symbols-outlined"
-                                            ng-if="!ctrl.isDriverLocationAutoRefreshActive()"
-                                            class="status-icon status-inactive">
-                                        pause
-                                    </md-icon>
-                                </div>
-                                <div class="status-text">
-                                    <span class="status-label">Current Status:</span>
-                                    <span class="status-value">{{ctrl.getCurrentDriverLocationRefreshIntervalText()}}</span>
-                                </div>
-                            </div>
-                        </div>
+                <div class="setting-row" ng-if="::ctrl.config.showDriverLocationRefresh">
+                    <div class="setting-info">
+                        <span class="setting-label">Driver Locations</span>
+                        <span class="setting-hint">How often the map updates</span>
                     </div>
-                </md-content>
-            </md-tab>
+                    <md-select
+                            ng-model="ctrl.selectedDriverLocationRefreshInterval"
+                            ng-model-options="{trackBy: '$value.id'}"
+                            ng-change="ctrl.onDriverLocationRefreshIntervalChange(ctrl.selectedDriverLocationRefreshInterval)"
+                            aria-label="Driver location refresh interval"
+                            class="setting-select">
+                        <md-option
+                                ng-repeat="option in ctrl.driverLocationRefreshIntervalOptions track by option.id"
+                                ng-value="option">
+                            {{option.text}}
+                        </md-option>
+                    </md-select>
+                </div>
+            </section>
 
-            <!-- Dashboard Layout Management Tab -->
-            <md-tab label="Dashboard Layout">
-                <md-content class="md-padding" ng-if="::ctrl.config.showDashboards">
-                    <div class="dashboard-layout-section">
-                        <h3 class="section-title">
-                            <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">box</md-icon>
-                            Manage Boxes Visibility
-                        </h3>
-                        <p class="section-description">
-                            Toggle boxes on or off to customize your view
-                        </p>
+            <!-- Dashboard Visibility Section -->
+            <section class="settings-section" ng-if="::ctrl.config.showDashboards">
+                <h3 class="section-header">
+                    <md-icon md-font-set="material-symbols-outlined">dashboard</md-icon>
+                    Dashboard Panels
+                </h3>
+                <p class="section-hint">Toggle panels to show or hide them on your dashboard</p>
 
-                        <div class="dashboard-grid">
-                            <md-card
-                                    ng-repeat="dashboard in ctrl.boxes track by dashboard.name"
-                                    class="dashboard-card"
-                                    ng-class="{'dashboard-visible': ctrl.boxes[dashboard.name].visible, 'dashboard-hidden': !ctrl.boxes[dashboard.name].visible}"
-                                    ng-click="ctrl.toggleDashboard(dashboard)">
-
-                                <!-- Visibility Overlay -->
-                                <div class="visibility-overlay" ng-if="ctrl.boxes[dashboard.name].visible">
-                                    <md-icon md-font-set="material-symbols-outlined" class="check-icon">
-                                        check_circle
-                                    </md-icon>
-                                </div>
-
-                                <md-card-content>
-                                    <div class="dashboard-icon-wrapper">
-                                        <md-icon md-font-set="material-symbols-outlined"
-                                                 class="dashboard-icon dialog-icon">
-                                            {{::ctrl.boxes[dashboard.name].icon || 'dashboard'}}
-                                        </md-icon>
-                                    </div>
-                                    <h4 class="dashboard-name">{{::ctrl.boxes[dashboard.name].title}}</h4>
-                                    <p class="dashboard-description">{{::ctrl.boxes[dashboard.name].description}}</p>
-
-                                    <div class="visibility-status">
-                                        <span ng-if="dashboard.visible" class="status-badge visible-badge">
-                                            Visible
-                                        </span>
-                                        <span ng-if="!dashboard.visible" class="status-badge hidden-badge">
-                                            Hidden
-                                        </span>
-                                    </div>
-                                </md-card-content>
-                            </md-card>
+                <div class="panel-list">
+                    <div class="panel-item"
+                         ng-repeat="dashboard in ctrl.boxes track by dashboard.name"
+                         ng-click="ctrl.toggleDashboard(dashboard)">
+                        <md-icon md-font-set="material-symbols-outlined" class="panel-icon">
+                            {{::ctrl.boxes[dashboard.name].icon || 'widgets'}}
+                        </md-icon>
+                        <div class="panel-info">
+                            <span class="panel-title">{{::ctrl.boxes[dashboard.name].title}}</span>
+                            <span class="panel-desc" ng-if="::ctrl.boxes[dashboard.name].description">
+                                {{::ctrl.boxes[dashboard.name].description}}
+                            </span>
                         </div>
+                        <md-switch
+                                class="md-primary"
+                                ng-model="dashboard.visible"
+                                aria-label="Toggle {{ctrl.boxes[dashboard.name].title}}"
+                                ng-click="$event.stopPropagation()">
+                        </md-switch>
                     </div>
-                </md-content>
-                <md-content class="md-padding" ng-if="!ctrl.config.showDashboards">
-                    <no-data
-                            title="Unable to Hide Box"
-                            message="Boxes cannot be hidden in the default layout. To hide boxes, please create a custom layout first."
-                            icon="block">
-                    </no-data>
-                </md-content>
-            </md-tab>
-        </md-tabs>
+                </div>
+            </section>
+
+            <section class="settings-section" ng-if="!ctrl.config.showDashboards">
+                <h3 class="section-header">
+                    <md-icon md-font-set="material-symbols-outlined">dashboard</md-icon>
+                    Dashboard Panels
+                </h3>
+                <div class="empty-state">
+                    <md-icon md-font-set="material-symbols-outlined" class="empty-icon">info</md-icon>
+                    <p>Panel visibility requires a custom layout. Create a custom layout to manage panel visibility.</p>
+                </div>
+            </section>
+        </div>
     </md-dialog-content>
 
     <md-dialog-actions layout="row">
         <span flex></span>
-        <md-button ng-click="ctrl.cancel()">
-            Cancel
-        </md-button>
-        <md-button ng-click="ctrl.save()" class="md-primary md-raised">
-            Save Changes
-        </md-button>
+        <md-button ng-click="ctrl.cancel()">Cancel</md-button>
+        <md-button ng-click="ctrl.save()" class="md-primary md-raised">Save</md-button>
     </md-dialog-actions>
 </md-dialog>

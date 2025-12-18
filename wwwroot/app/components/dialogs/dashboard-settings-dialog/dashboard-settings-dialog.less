@@ -1,191 +1,176 @@
-﻿.settings-dialog {
-  min-width: 800px;
-  max-width: 1500px;
+.settings-dialog {
+    min-width: 480px;
+    max-width: 560px;
+
+    .toolbar-icon {
+        margin-right: 8px;
+        color: inherit;
+    }
+
+    md-dialog-content {
+        padding: 0;
+    }
 }
 
-// Refresh Interval Tab Styles
+.settings-content {
+    padding: 8px 0;
+}
+
 .settings-section {
-  padding: 16px 0;
+    padding: 16px 24px;
+
+    & + .settings-section {
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+    }
 }
 
-.settings-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 12px;
-  color: rgba(0, 0, 0, 0.87);
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin: 0 0 16px 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.87);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    md-icon {
+        width: 20px;
+        height: 20px;
+        min-width: 20px;
+        min-height: 20px;
+        color: rgba(0, 0, 0, 0.54);
+        margin: 0 5px 0 0;
+    }
 }
 
-.popup-icon {
-  color: rgba(0, 0, 0, 0.54);
+.section-hint {
+    margin: -8px 0 16px 0;
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.54);
+    text-align: center;
 }
 
-.settings-select {
-  width: 100%;
-  margin: 0;
+// Setting rows for refresh intervals
+.setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    gap: 24px;
+
+    & + .setting-row {
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
+    }
 }
 
-.status-indicator {
-  margin-top: 24px;
-  padding: 16px;
-  background: #f5f5f5;
-  border-radius: 4px;
+.setting-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
 }
 
-.status-content {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.setting-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.87);
 }
 
-.status-icon-wrapper {
-  flex-shrink: 0;
+.setting-hint {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.54);
+    margin-top: 2px;
 }
 
-.status-icon {
-  font-size: 32px;
-  width: 32px;
-  height: 32px;
-
-  &.status-active {
-    color: #4caf50;
-  }
-
-  &.status-inactive {
-    color: #9e9e9e;
-  }
+.setting-select {
+    width: 140px;
+    margin: 0;
+    flex-shrink: 0;
 }
 
-.status-text {
-  display: flex;
-  flex-direction: column;
+// Panel list for dashboard visibility
+.panel-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
-.status-label {
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.54);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.panel-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+        background-color: rgba(0, 0, 0, 0.04);
+    }
+
+    &:active {
+        background-color: rgba(0, 0, 0, 0.08);
+    }
 }
 
-.status-value {
-  font-size: 16px;
-  font-weight: 500;
-  color: rgba(0, 0, 0, 0.87);
+.panel-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    color: rgba(0, 0, 0, 0.54);
+    flex-shrink: 0;
 }
 
-// Dashboard Layout Tab Styles
-.dashboard-layout-section {
-  padding: 8px 0;
+.panel-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
 }
 
-.section-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 8px 0;
-  font-size: 18px;
-  font-weight: 500;
-  color: rgba(0, 0, 0, 0.87);
+.panel-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.87);
 }
 
-.section-description {
-  margin: 0 0 24px 0;
-  color: rgba(0, 0, 0, 0.54);
-  font-size: 14px;
+.panel-desc {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.54);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
+// Empty state
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+    text-align: center;
+    color: rgba(0, 0, 0, 0.54);
+
+    .empty-icon {
+        font-size: 40px;
+        width: 40px;
+        height: 40px;
+        margin-bottom: 12px;
+        color: rgba(0, 0, 0, 0.26);
+    }
+
+    p {
+        margin: 0;
+        font-size: 13px;
+        max-width: 280px;
+    }
 }
 
-.dashboard-card {
-  position: relative;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  }
-
-  &.dashboard-visible {
-    border-color: #4caf50;
-  }
-
-  &.dashboard-hidden {
-    opacity: 0.6;
-  }
-}
-
-.visibility-overlay {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 1;
-}
-
-.check-icon {
-  color: #4caf50;
-  font-size: 32px;
-  width: 32px;
-  height: 32px;
-}
-
-.dashboard-icon-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 12px;
-}
-
-.dashboard-icon {
-  font-size: 48px;
-  width: 48px;
-  height: 48px;
-  color: rgba(0, 0, 0, 0.54);
-}
-
-.dashboard-name {
-  margin: 0 0 8px 0;
-  font-size: 16px;
-  font-weight: 500;
-  text-align: center;
-  color: rgba(0, 0, 0, 0.87);
-}
-
-.dashboard-description {
-  margin: 0 0 12px 0;
-  font-size: 12px;
-  text-align: center;
-  color: rgba(0, 0, 0, 0.54);
-  min-height: 32px;
-}
-
-.visibility-status {
-  display: flex;
-  justify-content: center;
-}
-
-.status-badge {
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-
-  &.visible-badge {
-    background: #e8f5e9;
-    color: #2e7d32;
-  }
-
-  &.hidden-badge {
-    background: #f5f5f5;
-    color: #757575;
-  }
+// Override md-switch margins
+.panel-item md-switch {
+    margin: 0;
 }

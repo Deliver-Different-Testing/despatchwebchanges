@@ -70,6 +70,7 @@ import SimplePriceEditDialogService
 import SimplePriceEditDialogController
     from "./components/dialogs/simple-price-edit-dialog/simple-price-edit-dialog.controller";
 import AppToolbarComponent from "./components/common/app-toolbar/app-toolbar.component";
+import {TaskItemComponent} from "./components/common/task-item-component/task-item.component";
 
 const app = (window as any).uDispatchApp;
 
@@ -107,7 +108,7 @@ app.config(["$mdThemingProvider", "APP_CONFIG",
     }
 ]);
 
-// Set theme CSS custom properties based on customer region
+// Set theme CSS custom properties based on the customer region
 app.run(["APP_CONFIG", (appConfig: IAppConfig) => {
     const root = document.documentElement;
     if (appConfig.US_Customer) {
@@ -203,6 +204,7 @@ app.component("stickyNote", StickyNoteComponent);
 app.component("dateFilterMenu", DateFilterMenuComponent);
 app.component("customDatePicker", DayJsDatePickerComponent);
 app.component("appToolbar", AppToolbarComponent);
+app.component("taskItemComponent", TaskItemComponent);
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);

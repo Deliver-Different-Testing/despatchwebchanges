@@ -47,6 +47,7 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
             const config: IDashboardSettingsConfig = {
                 title,
                 showRefreshInterval: appPage === AppPage.Dispatch || appPage === AppPage.Domestic,
+                showDriverLocationRefresh: appPage === AppPage.Dispatch,
                 showDashboards: !this.appConfig.US_Customer && ((appPage === AppPage.Dispatch || appPage === AppPage.Domestic || appPage === AppPage.JobSearch)
                     && currentLayoutName !== "Default")
             };
