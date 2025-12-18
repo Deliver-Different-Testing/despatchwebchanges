@@ -9,7 +9,7 @@
 
         <div class="photo-container">
             <img
-                    ng-src="{{'data:image/png;base64,' + ctrl.photos[ctrl.currentIndex].url}}"
+                    ng-src="{{ctrl.currentPhoto.url}}"
                     alt="POD {{ctrl.currentIndex + 1}}"
                     class="pod-image"
             />
@@ -39,13 +39,11 @@
         </div>
 
         <div class="photo-info">
-            <p class="timestamp">{{ctrl.photos[ctrl.currentIndex].timestamp | momentFormat:'MM/DD/YYYY HH:mm'}}
-                {{ctrl.timeZone | timezoneShort}}
-            </p>
-            <p class="uploader">Delivered by {{ctrl.photos[ctrl.currentIndex].uploadedBy}}</p>
-            <p class="coordinates" ng-if="ctrl.photos[ctrl.currentIndex].coordinates">
-                Location: {{ctrl.photos[ctrl.currentIndex].coordinates.lat}},
-                {{ctrl.photos[ctrl.currentIndex].coordinates.lng}}
+            <p class="timestamp">{{ctrl.currentPhoto.timestamp}} {{ctrl.formattedTimeZone}}</p>
+            <p class="uploader">Delivered by {{ctrl.currentPhoto.uploadedBy}}</p>
+            <p class="coordinates" ng-if="ctrl.currentPhoto.coordinates">
+                Location: {{ctrl.currentPhoto.coordinates.lat}},
+                {{ctrl.currentPhoto.coordinates.lng}}
             </p>
         </div>
     </div>

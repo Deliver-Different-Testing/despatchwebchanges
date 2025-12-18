@@ -1,22 +1,30 @@
-import angular, {IComponentOptions} from "angular";
 import {PodPhoto} from "./pod-photo-viewer.interfaces";
 import "./pod-photo-viewer.styles.less";
 import BaseController from "../../base-controller";
 
 class PODPhotoViewerController extends BaseController {
     photos: PodPhoto[] = [];
-    timeZone?: string;
-    isOpen: boolean = false;
+    isOpen: boolean;
     initialPhotoIndex: number = 0;
     onClose: () => void = () => {};
     currentIndex: number = 0;
 
+    // Cached formatted timezone
+    formattedTimeZone: string = '';
+
     constructor() {
         super();
+
+        this.isOpen = false;
+        this.formattedTimeZone = this.getShortTimeZoneString();
     }
 
     $onInit() {
         this.currentIndex = this.initialPhotoIndex;
+    }
+
+    get currentPhoto(): PodPhoto | undefined {
+        return this.photos?.[this.currentIndex];
     }
 
     nextPhoto() {
@@ -38,7 +46,7 @@ class PODPhotoViewerController extends BaseController {
     }
 }
 
-export const PodPhotoViewerComponent: IComponentOptions = {
+export const PodPhotoViewerComponent: angular.IComponentOptions = {
     template: require("./pod-photo-viewer.template.html"),
     bindings: {
         photos: '<',
