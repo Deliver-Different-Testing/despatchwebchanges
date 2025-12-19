@@ -510,8 +510,8 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error generating jobs report download");
-            return StatusCode(500, "An error occurred while generating the report");
+            Log.Error(ex, "{Message}", ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(PodSearchDownload)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
