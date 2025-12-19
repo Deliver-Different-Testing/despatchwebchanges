@@ -1,23 +1,25 @@
-// Variables
-@panel-width: 300px;
-@panel-bg: #ffffff;
-@panel-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-@toggle-button-size: 32px;
-@animation-duration: 250ms;
-@animation-easing: cubic-bezier(0.4, 0, 0.2, 1);
+@import "../../../css/variables";
 
-@text-primary: #1e293b;
-@text-secondary: #64748b;
-@border-color: #e2e8f0;
-@hover-bg: #f8fafc;
-@active-bg: #f1f5f9;
-@accent-color: #3b82f6;
+// Material Design 3 Variables
+@panel-width: 320px;
+@panel-bg: #ffffff;
+@panel-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.12);
+@panel-shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.1), 0 16px 32px rgba(0, 0, 0, 0.14);
+@toggle-button-size: 36px;
+@animation-duration: 280ms;
+@animation-easing: cubic-bezier(0.2, 0, 0, 1);
+
+@surface-dim: #f1f5f9;
+@surface-container: #f8fafc;
+@outline: #e2e8f0;
+@outline-variant: #cbd5e1;
 
 .courier-map-container {
     position: relative;
     width: 100%;
     height: calc(100vh - 64px);
     overflow: hidden;
+    background: @main-background-color;
 
     .map-wrapper {
         position: relative;
@@ -37,7 +39,7 @@
     }
 }
 
-// Drivers Panel
+// Material Design 3 Drivers Panel
 .drivers-panel {
     position: absolute;
     top: 16px;
@@ -45,17 +47,23 @@
     width: @panel-width;
     max-height: calc(100% - 32px);
     background: @panel-bg;
-    border-radius: 12px;
+    border-radius: 16px;
     box-shadow: @panel-shadow;
     display: flex;
     flex-direction: row;
     overflow: visible;
     z-index: 50;
     transform: translateX(0);
-    transition: transform @animation-duration @animation-easing;
+    transition: transform @animation-duration @animation-easing,
+                box-shadow @animation-duration @animation-easing;
+
+    &:hover {
+        box-shadow: @panel-shadow-elevated;
+    }
 
     &.panel-hidden {
-        transform: translateX(calc(100% - @toggle-button-size + 8px));
+        transform: translateX(calc(100% - @toggle-button-size + 12px));
+        box-shadow: @panel-shadow;
     }
 
     &.panel-animating {
@@ -69,97 +77,126 @@
         min-width: 0;
         overflow: hidden;
         background: @panel-bg;
-        border-radius: 12px;
+        border-radius: 16px;
     }
 
-    // Header
+    // Material Design 3 Header
     .panel-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 12px 16px;
-        border-bottom: 1px solid @border-color;
+        padding: 16px 20px;
+        border-bottom: 1px solid @outline;
         background: @panel-bg;
 
         .header-left {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
 
         .panel-title {
-            font-weight: 600;
-            color: @text-primary;
+            font-size: @font-base;
+            font-weight: @weight-semibold;
+            color: @text-dark;
+            letter-spacing: -0.01em;
         }
 
         .driver-count-badge {
-            background: @accent-color;
+            background: linear-gradient(135deg, @theme-us-primary 0%, darken(@theme-us-primary, 8%) 100%);
             color: white;
-            font-weight: 600;
-            padding: 2px 8px;
-            border-radius: 10px;
-            min-width: 20px;
+            font-size: @font-xs;
+            font-weight: @weight-semibold;
+            padding: 4px 10px;
+            border-radius: 12px;
+            min-width: 24px;
             text-align: center;
+            box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
         }
 
         .refresh-btn {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border: none;
             background: transparent;
-            border-radius: 6px;
+            border-radius: 10px;
             cursor: pointer;
-            transition: background-color 150ms ease;
+            transition: all 200ms @animation-easing;
 
             md-icon {
-                color: @text-secondary;
+                color: @text-muted;
+                transition: color 150ms ease;
             }
 
             &:hover {
-                background: @hover-bg;
+                background: @surface-dim;
+
+                md-icon {
+                    color: @text-dark;
+                }
+            }
+
+            &:active {
+                background: @outline;
+                transform: scale(0.95);
             }
 
             &:disabled {
-                opacity: 0.5;
+                opacity: 0.4;
                 cursor: not-allowed;
+
+                &:hover {
+                    background: transparent;
+                }
             }
         }
     }
 
-    // Search Box
+    // Material Design 3 Search Box
     .search-box {
         display: flex;
         align-items: center;
-        margin: 12px;
-        padding: 0 12px;
-        background: @hover-bg;
-        border: 1px solid @border-color;
-        border-radius: 8px;
-        transition: border-color 150ms ease, box-shadow 150ms ease;
+        margin: 12px 16px;
+        padding: 0 14px;
+        background: @surface-container;
+        border: 1.5px solid transparent;
+        border-radius: 12px;
+        transition: all 200ms @animation-easing;
+
+        &:hover {
+            background: @surface-dim;
+        }
 
         &:focus-within {
-            border-color: @accent-color;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            background: @panel-bg;
+            border-color: @theme-us-primary;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.12);
         }
 
         .search-icon {
-            color: @text-secondary;
-            margin-right: 8px;
+            color: @text-muted;
+            margin-right: 10px;
+            transition: color 150ms ease;
+        }
+
+        &:focus-within .search-icon {
+            color: @theme-us-primary;
         }
 
         input {
             flex: 1;
             border: none;
             background: transparent;
-            padding: 10px 0;
-            color: @text-primary;
+            padding: 12px 0;
+            font-size: @font-sm;
+            color: @text-dark;
             outline: none;
 
             &::placeholder {
-                color: @text-secondary;
+                color: @text-muted;
             }
         }
 
@@ -167,23 +204,24 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 24px;
-            height: 24px;
+            width: 28px;
+            height: 28px;
             border: none;
             background: transparent;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
             margin-left: 4px;
+            transition: all 150ms ease;
 
             md-icon {
-                color: @text-secondary;
+                color: @text-muted;
             }
 
             &:hover {
-                background: @active-bg;
+                background: @outline;
 
                 md-icon {
-                    color: @text-primary;
+                    color: @text-dark;
                 }
             }
         }
@@ -193,7 +231,25 @@
     .driver-list-wrapper {
         flex: 1;
         overflow-y: auto;
-        max-height: 400px;
+        max-height: 420px;
+
+        // Custom scrollbar
+        &::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        &::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: @outline-variant;
+            border-radius: 3px;
+
+            &:hover {
+                background: @text-muted;
+            }
+        }
     }
 
     // State Container (loading, empty, no results)
@@ -202,61 +258,74 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 40px 20px;
+        padding: 48px 24px;
         text-align: center;
+        animation: fadeIn 300ms ease-out;
 
         .state-icon {
-            font-size: 40px;
-            color: @text-secondary;
-            opacity: 0.5;
-            margin-bottom: 12px;
+            color: @text-muted;
+            opacity: 0.4;
+            margin-bottom: 16px;
         }
 
         .state-text {
-            font-size: 13px;
-            color: @text-secondary;
+            font-size: @font-sm;
+            font-weight: @weight-medium;
+            color: @text-muted;
+        }
+
+        md-progress-circular {
+            margin-bottom: 8px;
         }
     }
 
-    // Driver List
+    // Material Design 3 Driver List
     .driver-list {
+        padding: 4px 0;
+
         .driver-row {
             display: flex;
             align-items: center;
-            padding: 10px 16px;
+            padding: 12px 16px;
+            margin: 2px 8px;
             cursor: pointer;
-            transition: background-color 150ms ease;
-            border-bottom: 1px solid @border-color;
-
-            &:last-child {
-                border-bottom: none;
-            }
+            border-radius: 12px;
+            transition: all 180ms @animation-easing;
+            position: relative;
 
             &:hover {
-                background: @hover-bg;
+                background: @surface-dim;
 
                 .locate-btn {
                     opacity: 1;
-                    color: @accent-color;
+                    transform: translateX(0);
                 }
             }
 
             &:active {
-                background: @active-bg;
+                background: @outline;
+                transform: scale(0.99);
             }
         }
 
         .driver-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 600;
+            font-weight: @weight-semibold;
             color: white;
-            margin-right: 12px;
+            margin-right: 14px;
             flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            transition: transform 150ms ease, box-shadow 150ms ease;
+
+            .driver-row:hover & {
+                transform: scale(1.05);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            }
         }
 
         .driver-info {
@@ -265,62 +334,71 @@
         }
 
         .driver-name {
-            font-weight: 500;
-            color: @text-primary;
+            font-size: @font-sm;
+            font-weight: @weight-medium;
+            color: @text-dark;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            line-height: @line-tight;
         }
 
         .driver-meta {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-top: 2px;
+            gap: 10px;
+            margin-top: 4px;
         }
 
         .driver-code {
-            color: @accent-color;
-            font-weight: 500;
+            color: @theme-us-primary;
+            font-size: @font-xs;
+            font-weight: @weight-semibold;
+            background: rgba(33, 150, 243, 0.1);
+            padding: 2px 8px;
+            border-radius: 6px;
         }
 
         .driver-jobs {
             display: flex;
             align-items: center;
-            gap: 2px;
-            color: @text-secondary;
+            gap: 3px;
+            color: @text-muted;
+            font-size: @font-xs;
         }
 
         .locate-btn {
-            color: @text-secondary;
+            color: @theme-us-primary;
             opacity: 0;
-            transition: opacity 150ms ease, color 150ms ease;
+            transform: translateX(-4px);
+            transition: all 180ms @animation-easing;
             margin-left: 8px;
         }
     }
 
-    // Toggle Button
+    // Material Design 3 Toggle Button
     .toggle-btn {
         position: absolute;
-        left: -16px;
+        left: -18px;
         top: 50%;
         transform: translateY(-50%);
         width: @toggle-button-size;
         height: @toggle-button-size;
         border: none;
         background: @panel-bg;
-        box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
-        border-radius: 50%;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
+        border-radius: 12px;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 51;
-        transition: background-color 150ms ease;
+        transition: all 200ms @animation-easing;
 
         md-icon {
-            color: @text-secondary;
-            transition: transform @animation-duration @animation-easing;
+            color: @text-muted;
+            transition: transform @animation-duration @animation-easing,
+                        color 150ms ease;
 
             &.rotated {
                 transform: rotate(180deg);
@@ -328,54 +406,90 @@
         }
 
         &:hover {
-            background: @hover-bg;
+            background: @surface-dim;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+
+            md-icon {
+                color: @text-dark;
+            }
+        }
+
+        &:active {
+            transform: translateY(-50%) scale(0.95);
         }
     }
 }
 
-// Map Controls
+// Material Design 3 Map Controls
 .map-controls {
     position: absolute;
     bottom: 24px;
     right: 16px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     z-index: 49;
 
     .map-control-btn {
-        width: 40px;
-        height: 40px;
+        width: 44px;
+        height: 44px;
         border: none;
         background: @panel-bg;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        border-radius: 14px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: background-color 150ms ease, box-shadow 150ms ease;
+        transition: all 200ms @animation-easing;
 
         md-icon {
-            color: @text-primary;
+            color: @text-dark;
+            transition: color 150ms ease;
         }
 
         &:hover {
-            background: @hover-bg;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            background: @surface-dim;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+
+            md-icon {
+                color: @theme-us-primary;
+            }
+        }
+
+        &:active {
+            transform: translateY(0) scale(0.95);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         }
 
         &:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
+            transform: none;
+
+            &:hover {
+                background: @panel-bg;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
+                transform: none;
+
+                md-icon {
+                    color: @text-dark;
+                }
+            }
         }
     }
 }
 
-// Spin animation
+// Animations
 @keyframes spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .spin {
@@ -388,24 +502,70 @@
         position: absolute;
         left: 16px;
         bottom: 24px;
+
+        .H_btn {
+            border-radius: 10px !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
+            transition: all 150ms ease !important;
+
+            &:hover {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16) !important;
+            }
+        }
+    }
+
+    .H_scalebar {
+        border-radius: 4px;
     }
 }
 
 // Responsive adjustments
 @media (max-width: 768px) {
     .drivers-panel {
-        width: 280px;
-        top: 8px;
-        right: 8px;
-        max-height: calc(100% - 16px);
+        width: 300px;
+        top: 12px;
+        right: 12px;
+        max-height: calc(100% - 24px);
+        border-radius: 14px;
+
+        .panel-content {
+            border-radius: 14px;
+        }
+
+        .panel-header {
+            padding: 14px 16px;
+        }
 
         .driver-list-wrapper {
-            max-height: 300px;
+            max-height: 320px;
+        }
+
+        .driver-list .driver-row {
+            padding: 10px 12px;
+            margin: 2px 6px;
         }
     }
 
     .map-controls {
-        right: 8px;
-        bottom: 16px;
+        right: 12px;
+        bottom: 20px;
+
+        .map-control-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+        }
+    }
+}
+
+// Small mobile
+@media (max-width: 480px) {
+    .drivers-panel {
+        width: calc(100% - 24px);
+        max-width: 320px;
+
+        &.panel-hidden {
+            transform: translateX(calc(100% - @toggle-button-size + 8px));
+        }
     }
 }

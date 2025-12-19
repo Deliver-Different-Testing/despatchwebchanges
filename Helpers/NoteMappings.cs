@@ -21,15 +21,14 @@ public static class NoteMappings
             CreatedDate = note.CreatedDate,
             CreatedBy = note.CreatedBy,
             CreatedByName = note.CreatedBy.HasValue && note.CreatedByNavigation != null
-            ? FormatName(note.CreatedByNavigation.UcstFirstName, note.CreatedByNavigation.UcstLastName)
+                ? FormatName(note.CreatedByNavigation.UcstFirstName, note.CreatedByNavigation.UcstLastName)
                 : "System",
             UpdatedDate = note.UpdatedDate,
             UpdatedBy = note.UpdatedBy,
             UpdatedByName = note.UpdatedBy.HasValue && note.UpdatedByNavigation != null
-            ? FormatName(note.UpdatedByNavigation.UcstFirstName, note.UpdatedByNavigation.UcstLastName)
+                ? FormatName(note.UpdatedByNavigation.UcstFirstName, note.UpdatedByNavigation.UcstLastName)
                 : string.Empty
         };
-    
-    private static string FormatName(string firstName, string lastName) => string.Concat(firstName, " ", lastName);
 
+    private static string FormatName(string firstName, string lastName) => string.Concat(firstName, " ", lastName);
 }

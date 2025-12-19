@@ -456,21 +456,26 @@ public partial class JobRepository(
                     HasMore = false
                 };
 
-            // Get data in parallel
-            var liveJobsTask = liveJobsQuery
-                .OrderBy(j => j.UcjbDate)
-                .ThenBy(j => j.UcjbTime)
-                .ThenBy(j => j.UcjbId)
-                .Take(pageSize * 2) // Take extra to handle pagination across both sources
+            // Determine sort direction
+            var sortDescending = string.Equals(data.SortDirection, "desc", StringComparison.OrdinalIgnoreCase);
+            var sortColumn = data.SortColumn?.ToLowerInvariant();
+
+            // Apply database-level sorting based on sort column
+            // For columns that can be sorted at DB level, apply appropriate ordering
+            var liveJobsOrdered = ApplyLiveJobSorting(liveJobsQuery, sortColumn, sortDescending);
+            var archivedJobsOrdered = ApplyArchivedJobSorting(archivedJobsQuery, sortColumn, sortDescending);
+
+            // Get data in parallel - fetch more when sorting to ensure we have enough records
+            var fetchSize = pageSize * 3; // Fetch extra to handle pagination across both sources
+
+            var liveJobsTask = liveJobsOrdered
+                .Take(fetchSize)
                 .Select(JobMappings.PodSearchMapping(isUsCustomer))
                 .TagWith("PodSearch - Live Jobs")
                 .ToListAsync();
 
-            var archivedJobsTask = archivedJobsQuery
-                .OrderBy(j => j.UcjbDate)
-                .ThenBy(j => j.UcjbTime)
-                .ThenBy(j => j.UcjbId)
-                .Take(pageSize * 2)
+            var archivedJobsTask = archivedJobsOrdered
+                .Take(fetchSize)
                 .Select(JobMappings.PodSearchArchivedMapping(isUsCustomer))
                 .TagWith("PodSearch - Archived Jobs")
                 .ToListAsync();
@@ -481,11 +486,10 @@ public partial class JobRepository(
             var liveJobs = await liveJobsTask;
             var archivedJobs = await archivedJobsTask;
 
-            var allJobs = liveJobs
-                .Concat(archivedJobs)
-                .OrderBy(j => j.Booked)
-                .ThenBy(j => j.Time)
-                .ThenBy(j => j.Id)
+            // Apply sorting to combined results
+            var sortedJobs = ApplyDispatchJobSorting(liveJobs.Concat(archivedJobs), sortColumn, sortDescending);
+
+            var allJobs = sortedJobs
                 .Skip(page * pageSize)
                 .Take(pageSize)
                 .ToList();
@@ -521,6 +525,113 @@ public partial class JobRepository(
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(PodSearchAsync)));
             throw;
         }
+    }
+
+    private static IOrderedQueryable<TucJob> ApplyLiveJobSorting(
+        IQueryable<TucJob> query,
+        string sortColumn,
+        bool descending)
+    {
+        return sortColumn switch
+        {
+            "date" => descending
+                ? query.OrderByDescending(j => j.UcjbDate).ThenByDescending(j => j.UcjbTime).ThenByDescending(j => j.UcjbId)
+                : query.OrderBy(j => j.UcjbDate).ThenBy(j => j.UcjbTime).ThenBy(j => j.UcjbId),
+            "time" => descending
+                ? query.OrderByDescending(j => j.UcjbTime).ThenByDescending(j => j.UcjbDate).ThenByDescending(j => j.UcjbId)
+                : query.OrderBy(j => j.UcjbTime).ThenBy(j => j.UcjbDate).ThenBy(j => j.UcjbId),
+            "jobno" => descending
+                ? query.OrderByDescending(j => j.UcjbNumber).ThenByDescending(j => j.UcjbId)
+                : query.OrderBy(j => j.UcjbNumber).ThenBy(j => j.UcjbId),
+            "client" => descending
+                ? query.OrderByDescending(j => j.UcjbClientCode).ThenByDescending(j => j.UcjbId)
+                : query.OrderBy(j => j.UcjbClientCode).ThenBy(j => j.UcjbId),
+            "status" => descending
+                ? query.OrderByDescending(j => j.UcjbStatus).ThenByDescending(j => j.UcjbId)
+                : query.OrderBy(j => j.UcjbStatus).ThenBy(j => j.UcjbId),
+            "speed" => descending
+                ? query.OrderByDescending(j => j.UcjbSpeedNavigation!.ShortName).ThenByDescending(j => j.UcjbId)
+                : query.OrderBy(j => j.UcjbSpeedNavigation!.ShortName).ThenBy(j => j.UcjbId),
+            "courier" => descending
+                ? query.OrderByDescending(j => j.UcjbCourier!.Code).ThenByDescending(j => j.UcjbId)
+                : query.OrderBy(j => j.UcjbCourier!.Code).ThenBy(j => j.UcjbId),
+            _ => query.OrderBy(j => j.UcjbDate).ThenBy(j => j.UcjbTime).ThenBy(j => j.UcjbId)
+        };
+    }
+
+    private static IOrderedQueryable<TucJobArchive> ApplyArchivedJobSorting(
+        IQueryable<TucJobArchive> query,
+        string sortColumn,
+        bool descending)
+    {
+        return sortColumn switch
+        {
+            "date" => descending
+                ? query.OrderByDescending(j => j.UcjbDate).ThenByDescending(j => j.UcjbTime).ThenByDescending(j => j.UcjbId)
+                : query.OrderBy(j => j.UcjbDate).ThenBy(j => j.UcjbTime).ThenBy(j => j.UcjbId),
+            "time" => descending
+                ? query.OrderByDescending(j => j.UcjbTime).ThenByDescending(j => j.UcjbDate).ThenByDescending(j => j.UcjbId)
+                : query.OrderBy(j => j.UcjbTime).ThenBy(j => j.UcjbDate).ThenBy(j => j.UcjbId),
+            "jobno" => descending
+                ? query.OrderByDescending(j => j.UcjbNumber).ThenByDescending(j => j.UcjbId)
+                : query.OrderBy(j => j.UcjbNumber).ThenBy(j => j.UcjbId),
+            "client" => descending
+                ? query.OrderByDescending(j => j.UcjbClientCode).ThenByDescending(j => j.UcjbId)
+                : query.OrderBy(j => j.UcjbClientCode).ThenBy(j => j.UcjbId),
+            "status" => descending
+                ? query.OrderByDescending(j => j.UcjbStatus).ThenByDescending(j => j.UcjbId)
+                : query.OrderBy(j => j.UcjbStatus).ThenBy(j => j.UcjbId),
+            "speed" => descending
+                ? query.OrderByDescending(j => j.SpeedNavigation!.ShortName).ThenByDescending(j => j.UcjbId)
+                : query.OrderBy(j => j.SpeedNavigation!.ShortName).ThenBy(j => j.UcjbId),
+            "courier" => descending
+                ? query.OrderByDescending(j => j.UcjbCourier!.Code).ThenByDescending(j => j.UcjbId)
+                : query.OrderBy(j => j.UcjbCourier!.Code).ThenBy(j => j.UcjbId),
+            _ => query.OrderBy(j => j.UcjbDate).ThenBy(j => j.UcjbTime).ThenBy(j => j.UcjbId)
+        };
+    }
+
+    private static IEnumerable<DispatchJobViewModel> ApplyDispatchJobSorting(
+        IEnumerable<DispatchJobViewModel> jobs,
+        string sortColumn,
+        bool descending)
+    {
+        var orderedJobs = sortColumn switch
+        {
+            "date" => descending
+                ? jobs.OrderByDescending(j => j.Booked).ThenByDescending(j => j.Time).ThenByDescending(j => j.Id)
+                : jobs.OrderBy(j => j.Booked).ThenBy(j => j.Time).ThenBy(j => j.Id),
+            "time" => descending
+                ? jobs.OrderByDescending(j => j.Time).ThenByDescending(j => j.Booked).ThenByDescending(j => j.Id)
+                : jobs.OrderBy(j => j.Time).ThenBy(j => j.Booked).ThenBy(j => j.Id),
+            "jobno" => descending
+                ? jobs.OrderByDescending(j => j.JobNo).ThenByDescending(j => j.Id)
+                : jobs.OrderBy(j => j.JobNo).ThenBy(j => j.Id),
+            "client" => descending
+                ? jobs.OrderByDescending(j => j.Client).ThenByDescending(j => j.Id)
+                : jobs.OrderBy(j => j.Client).ThenBy(j => j.Id),
+            "status" => descending
+                ? jobs.OrderByDescending(j => j.Status).ThenByDescending(j => j.Id)
+                : jobs.OrderBy(j => j.Status).ThenBy(j => j.Id),
+            "speed" => descending
+                ? jobs.OrderByDescending(j => j.Speed).ThenByDescending(j => j.Id)
+                : jobs.OrderBy(j => j.Speed).ThenBy(j => j.Id),
+            "courier" => descending
+                ? jobs.OrderByDescending(j => j.Courier).ThenByDescending(j => j.Id)
+                : jobs.OrderBy(j => j.Courier).ThenBy(j => j.Id),
+            "pickup" => descending
+                ? jobs.OrderByDescending(j => j.From).ThenByDescending(j => j.Id)
+                : jobs.OrderBy(j => j.From).ThenBy(j => j.Id),
+            "delivery" => descending
+                ? jobs.OrderByDescending(j => j.ToAddress).ThenByDescending(j => j.Id)
+                : jobs.OrderBy(j => j.ToAddress).ThenBy(j => j.Id),
+            "vehicle" => descending
+                ? jobs.OrderByDescending(j => j.Vehicle?.Text).ThenByDescending(j => j.Id)
+                : jobs.OrderBy(j => j.Vehicle?.Text).ThenBy(j => j.Id),
+            _ => jobs.OrderBy(j => j.Booked).ThenBy(j => j.Time).ThenBy(j => j.Id)
+        };
+
+        return orderedJobs;
     }
 
     public async Task UpdateManualPriceAsync(List<JobManualPriceModel> data)
@@ -874,15 +985,14 @@ public partial class JobRepository(
         List<int> clientIds
     )
     {
-        var clientSet = clientIds != null && clientIds.Any();
-        var courierSet = courierIds != null && courierIds.Any();
-        var speedSet = speedIds != null && speedIds.Any();
+        var clientSet = clientIds != null && clientIds.Count != 0;
+        var courierSet = courierIds != null && courierIds.Count != 0;
+        var speedSet = speedIds != null && speedIds.Count != 0;
         var jobParam = $"%{job}%";
         var wildParam = $"%{wild}%";
 
         // Single query approach - directly fetch all job data with filters
         // This avoids the OPENJSON issue from using Contains() with large ID lists
-        // Search logic matches PodSearchAsync for consistent results
         var matchingJobs =
             from j in Context.TblJobs.AsNoTracking()
             join fromSuburb in Context.TucSuburbs on j.FromSuburbId equals fromSuburb.UcsuId into fromJoin
@@ -948,6 +1058,11 @@ public partial class JobRepository(
         // Union matched jobs with their parents
         var allJobIds = matchingJobs.Union(parentJobs);
 
+        // Pre-compute pricing breakdown sums grouped by JobId for efficient joining
+        var pricingBreakdownSums = Context.PricingBreakdowns
+            .GroupBy(pb => pb.JobId)
+            .Select(g => new { JobId = g.Key, Total = g.Sum(pb => pb.ChargeAmount) });
+
         // Main query to fetch complete job details
         var query =
             from jobRef in allJobIds
@@ -966,6 +1081,12 @@ public partial class JobRepository(
             from lic in licJoin.DefaultIfEmpty()
             join co in Context.TucCouriers on j.CourierId equals co.UccrId into courierJoin
             from courier in courierJoin.DefaultIfEmpty()
+            // Left join pricing breakdown sum for parent job
+            join parentPb in pricingBreakdownSums on j.ParentId equals parentPb.JobId into parentPbJoin
+            from parentPricing in parentPbJoin.DefaultIfEmpty()
+            // Left join pricing breakdown sum for job itself
+            join jobPb in pricingBreakdownSums on j.JobId equals jobPb.JobId into jobPbJoin
+            from jobPricing in jobPbJoin.DefaultIfEmpty()
             orderby j.Number
             select new JobDownloadModel
             {
@@ -973,12 +1094,15 @@ public partial class JobRepository(
                 ParentId = j.ParentId,
                 JobNumber = j.Number,
                 CustomerName = client.UcclName,
-                BookDate = j.Date.HasValue && j.Time.HasValue
-                    ? DateTime.Parse($"{j.Date.Value:yyyy-MM-dd} {j.Time.Value:HH:mm:ss}")
+                BookDate = j.Date.HasValue
+                    ? j.Date.Value.CombineWithTime(j.Time)
                     : default,
                 PickedUpDate = j.PickUpTime,
                 DeliveredDate = j.CompletedTime,
-                Amount = j.Amount,
+                // Use pricing breakdowns if available (check parent first, then job itself), otherwise fall back to Amount
+                Amount = parentPricing != null ? parentPricing.Total
+                    : jobPricing != null ? jobPricing.Total
+                    : j.Amount,
                 Fuel = j.FuelSurchargeAmount,
                 Ppd = j.Ppdexclusiveamount,
                 AgentAirlineName = nationwide != null ? nationwide.UcnwAirlineName : agent.UcagName,
@@ -2301,7 +2425,7 @@ public partial class JobRepository(
             .Select(t => new TimeZoneSuggestion
             {
                 Id = t.Id,
-                Text = $"{t.DisplayName} ({t.Code})",
+                Text = t.DisplayName + " " + t.Code,
                 TimeZoneIana = t.Name
             })
             .OrderBy(tz => tz.TimeZoneIana)
@@ -3916,7 +4040,7 @@ public partial class JobRepository(
         foreach (var job in flightJobs)
         {
             var effectiveJobId = job.ParentId ?? job.Id;
-            if (!segmentsByJob.TryGetValue(effectiveJobId, out var segments) || !segments.Any())
+            if (!segmentsByJob.TryGetValue(effectiveJobId, out var segments) || segments.Count == 0)
                 continue;
 
             var flightSegments = segments.Select(s => s.Segment).ToList();

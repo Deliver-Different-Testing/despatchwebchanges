@@ -110,7 +110,7 @@
 
     <!-- Old Dashboard-->
     <div class="dashboard-padding">
-        <div class="columns" ng-class="{'layout-locked': ctrl.isDefaultLayout()}">
+        <div class="columns" ng-class="{'layout-locked': ctrl.isDefaultLayout(), 'us-theme': ctrl.isUsCustomer, 'nz-theme': !ctrl.isUsCustomer}">
             <div class="column" id="co-{{column.id}}" ng-repeat="(colKey,column) in ctrl.layout.columns"
                  r-directions="['right']" r-flex="true" resizable style="flex-basis: {{column.width}}"
                  ng-class="{'resize-disabled': ctrl.isDefaultLayout()}">

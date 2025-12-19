@@ -10,9 +10,10 @@ export interface IPrebookListModel {
     clientId: number | null;
     courier: string;
     speed: string;
+    customJobName?: string;
     pickupAddress: IAddressViewModel;
     deliveryAddress: IAddressViewModel;
-    
+
     // private variables
     _nextDueTimeStr?: string;
     _bookedStr?: string;
@@ -27,6 +28,7 @@ export interface IPrebookListModelDto {
     clientId: number | null;
     courier: string;
     speed: string;
+    customJobName?: string;
     pickupAddress: IAddressViewModel;
     deliveryAddress: IAddressViewModel;
 }

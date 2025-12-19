@@ -1,6 +1,9 @@
 import "./no-data.styles.less";
+import { IAppConfig } from "../../../interfaces/app-config.interface";
 
 class NoDataController implements angular.IController {
+    static $inject = ['APP_CONFIG'];
+
     // Component bindings
     title?: string;
     message?: string;
@@ -8,6 +11,12 @@ class NoDataController implements angular.IController {
     showAction?: string | boolean;
     actionText?: string;
     onAction?: () => void;
+
+    readonly isUsCustomer: boolean;
+
+    constructor(appConfig: IAppConfig) {
+        this.isUsCustomer = appConfig.US_Customer;
+    }
 
     $onInit() {
         // Set default values

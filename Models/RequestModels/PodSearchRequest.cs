@@ -15,6 +15,8 @@ public class PodSearchRequest
     public DateTimeOffset ToDate { get; set; }
     public int? Page { get; set; }
     public int? PageSize { get; set; }
+    public string SortColumn { get; set; }
+    public string SortDirection { get; set; }
 
     public bool ClientSet => ClientIds != null && ClientIds.Count != 0;
     public bool CourierSet => CourierIds != null && CourierIds.Count != 0;

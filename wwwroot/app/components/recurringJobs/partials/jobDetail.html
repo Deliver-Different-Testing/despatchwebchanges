@@ -2,6 +2,7 @@
     <job-detail-widget
             style="height: 100%;"
             job-id="ctrl.currentJobId"
-            is-recurring-job="::true">
+            is-recurring-job="true"
+            on-job-update="ctrl.updateJobInList()">
     </job-detail-widget>
 </div>

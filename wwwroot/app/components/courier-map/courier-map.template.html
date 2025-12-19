@@ -24,7 +24,7 @@
                 <div class="panel-header">
                     <div class="header-left">
                         <span class="panel-title">Active Drivers</span>
-                        <span class="driver-count-badge">{{ctrl.totalActiveDrivers}}</span>
+                        <span class="driver-count-badge" ng-if="ctrl.totalActiveDrivers > 0">{{ctrl.totalActiveDrivers}}</span>
                     </div>
                     <button class="refresh-btn"
                             ng-click="ctrl.refreshData()"
@@ -32,6 +32,7 @@
                             aria-label="Refresh drivers">
                         <md-icon md-font-set="material-symbols-outlined"
                                  ng-class="{'spin': ctrl.dataLoading}">sync</md-icon>
+                        <md-tooltip md-direction="bottom">Refresh driver locations</md-tooltip>
                     </button>
                 </div>
 
@@ -41,7 +42,7 @@
                     <input type="text"
                            ng-model="ctrl.searchTerm"
                            ng-model-options="{ debounce: 150 }"
-                           placeholder="Search..."
+                           placeholder="Search drivers..."
                            aria-label="Search drivers">
                     <button class="clear-btn"
                             ng-if="ctrl.searchTerm"
@@ -55,7 +56,8 @@
                 <div class="driver-list-wrapper">
                     <!-- Loading State -->
                     <div class="state-container" ng-if="ctrl.dataLoading">
-                        <md-progress-circular md-mode="indeterminate" md-diameter="32"></md-progress-circular>
+                        <md-progress-circular md-mode="indeterminate" md-diameter="36"></md-progress-circular>
+                        <span class="state-text">Loading drivers...</span>
                     </div>
 
                     <!-- No Drivers State -->
@@ -85,7 +87,7 @@
                                     <span class="driver-code" ng-if="driver.code">{{driver.code}}</span>
                                     <span class="driver-jobs" ng-if="driver.totalJobs > 0">
                                         <md-icon md-font-set="material-symbols-outlined">work</md-icon>
-                                        {{driver.totalJobs}}
+                                        {{driver.totalJobs}} {{driver.totalJobs === 1 ? 'job' : 'jobs'}}
                                     </span>
                                 </div>
                             </div>
@@ -103,7 +105,7 @@
                          ng-class="{'rotated': ctrl.isPanelHidden}">
                     chevron_right
                 </md-icon>
-                <md-tooltip md-direction="bottom">{{ctrl.isPanelHidden ? 'Show' : 'Hide'}} Active Drivers List</md-tooltip>
+                <md-tooltip md-direction="left">{{ctrl.isPanelHidden ? 'Show' : 'Hide'}} drivers panel</md-tooltip>
             </button>
         </div>
 
@@ -113,7 +115,7 @@
                     ng-click="ctrl.returnToOverview()"
                     aria-label="Return to overview">
                 <md-icon md-font-set="material-symbols-outlined">fit_screen</md-icon>
-                <md-tooltip md-direction="left">Fit all drivers</md-tooltip>
+                <md-tooltip md-direction="left">Fit all drivers in view</md-tooltip>
             </button>
             <button class="map-control-btn"
                     ng-click="ctrl.refreshData()"
@@ -121,7 +123,7 @@
                     aria-label="Refresh data">
                 <md-icon md-font-set="material-symbols-outlined"
                          ng-class="{'spin': ctrl.dataLoading}">sync</md-icon>
-                <md-tooltip md-direction="left">Refresh</md-tooltip>
+                <md-tooltip md-direction="left">Refresh locations</md-tooltip>
             </button>
         </div>
     </div>
