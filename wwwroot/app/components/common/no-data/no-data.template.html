@@ -1,8 +1,12 @@
-<div class="md-padding no-data">
-    <md-icon class="no-data__icon" md-font-set="material-symbols-outlined">{{ctrl.icon}}</md-icon>
-    <h3 class="no-data__title">{{ctrl.title}}</h3>
-    <p class="no-data__message">{{ctrl.message}}</p>
-    <md-button class="md-raised md-primary" ng-if="ctrl.shouldShowAction()" ng-click="ctrl.handleAction()">
+<div class="no-data" ng-class="{'no-data--with-action': ctrl.shouldShowAction(), 'us-theme': ctrl.isUsCustomer, 'nz-theme': !ctrl.isUsCustomer}">
+    <div class="no-data__icon-container">
+        <md-icon class="no-data__icon" md-font-set="material-symbols-outlined">{{ctrl.icon}}</md-icon>
+    </div>
+    <div class="no-data__content">
+        <h3 class="no-data__title">{{ctrl.title}}</h3>
+        <p class="no-data__message">{{ctrl.message}}</p>
+    </div>
+    <md-button class="no-data__action md-raised md-primary" ng-if="ctrl.shouldShowAction()" ng-click="ctrl.handleAction()">
         {{ctrl.actionText}}
     </md-button>
 </div>

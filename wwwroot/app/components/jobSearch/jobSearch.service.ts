@@ -29,6 +29,8 @@ class JobSearchService implements angular.IServiceProvider {
         speedIds?: number[],
         wild?: string,
         job?: string,
+        sortColumn?: string,
+        sortDirection?: string,
     ): Promise<IJobSearchResult> {
         const response = await this.$http.get<IJobSearchResultDto>(
             `/Job/PODSearch`, {
@@ -41,7 +43,9 @@ class JobSearchService implements angular.IServiceProvider {
                     page,
                     pageSize,
                     fromDate: formatDateForApiWithTzs(fromDate),
-                    toDate: formatDateForApiWithTzs(toDate)
+                    toDate: formatDateForApiWithTzs(toDate),
+                    sortColumn,
+                    sortDirection
                 }
             }
         );

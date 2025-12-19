@@ -5,6 +5,7 @@ import IDashboardSettingsConfig from "./interfaces/IDashboardSettingsConfig";
 import DashboardSettingsDialogController from "./dashboard-settings-dialog.controller";
 import ISettingsDialogResult from "./interfaces/IDashboardSettingsDialogResult";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
+import isDefaultLayout from "../../../functions/isDefaultLayout";
 
 class DashboardSettingsDialogService implements angular.IServiceProvider {
     static $inject = [
@@ -44,12 +45,16 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
                     title = "Dashboard Settings";
             }
 
+            const isValidPage = appPage === AppPage.Dispatch || appPage === AppPage.Domestic || appPage === AppPage.JobSearch;
+            const canShowDashboards = !this.appConfig.US_Customer && isValidPage && !isDefaultLayout(currentLayoutName);
+
+            console.log('DashboardSettingsDialog: Opening with layout', currentLayoutName, 'isDefault:', isDefaultLayout(currentLayoutName), 'canShowDashboards:', canShowDashboards);
+
             const config: IDashboardSettingsConfig = {
                 title,
                 showRefreshInterval: appPage === AppPage.Dispatch || appPage === AppPage.Domestic,
                 showDriverLocationRefresh: appPage === AppPage.Dispatch,
-                showDashboards: !this.appConfig.US_Customer && ((appPage === AppPage.Dispatch || appPage === AppPage.Domestic || appPage === AppPage.JobSearch)
-                    && currentLayoutName !== "Default")
+                showDashboards: canShowDashboards
             };
 
             if (selectedRefreshInterval) {

@@ -32,7 +32,7 @@ public class RecurringJobRepository(
             .Where(j => j.UcbkActive == request.Active && j.UcbkOneOff != true);
 
         // US tenants: exclude child jobs (only show parent jobs)
-        if (isUsTenant) query = query.Where(j => !j.ParentId.HasValue || j.ParentId == j.UcbkId);
+        if (isUsTenant) query = query.Where(j => !j.BookingParentId.HasValue || j.BookingParentId == j.UcbkId);
 
         if (!string.IsNullOrWhiteSpace(request.SearchText))
         {
@@ -182,8 +182,9 @@ public class RecurringJobRepository(
                         .AsNoTracking()
                         .Select(c => c.UcclCode)
                         .FirstOrDefaultAsync();
-                    
-                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.BookingParentId == jobId || j.ParentId == jobId)
+
+                    await Context.TucJobBookings.Where(j =>
+                            j.UcbkId == jobId || j.BookingParentId == jobId || j.ParentId == jobId)
                         .ExecuteUpdateAsync(s => s
                             .SetProperty(j => j.UcbkClientId, clientId)
                             .SetProperty(j => j.UcbkClientCode, code));
@@ -346,8 +347,8 @@ public class RecurringJobRepository(
                     var customName = value[..Math.Min(value.Length, 100)];
                     await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.BookingParentId == jobId)
                         .ExecuteUpdateAsync(s => s.SetProperty(j => j.CustomJobName, customName));
-                    return;    
-                
+                    return;
+
                 case JobProperty.ConNote:
                     var conNote = value[..Math.Min(value.Length, 100)];
                     await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.BookingParentId == jobId)
@@ -476,8 +477,9 @@ public class RecurringJobRepository(
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(RecurringJobRepository), nameof(UpdateRecurringJobAsync)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(RecurringJobRepository),
+                    nameof(UpdateRecurringJobAsync)));
             throw;
         }
     }

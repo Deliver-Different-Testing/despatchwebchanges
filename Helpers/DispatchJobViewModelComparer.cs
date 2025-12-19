@@ -11,8 +11,5 @@ public class DispatchJobViewModelComparer : IEqualityComparer<DispatchJobViewMod
         return x.Id == y.Id;
     }
 
-    public int GetHashCode(DispatchJobViewModel obj)
-    {
-        return obj.Id.GetHashCode();
-    }
+    public int GetHashCode(DispatchJobViewModel obj) => obj.Id.GetHashCode();
 }

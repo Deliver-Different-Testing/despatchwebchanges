@@ -99,6 +99,8 @@ class JobSearchController extends BaseController {
     isJobListLoading: boolean = false;
     isBulkJobListLoading: boolean = false;
     totalJobs?: number;
+    currentSortColumn?: string;
+    currentSortDirection?: string;
 
     constructor(
         private jobSearchService: JobSearchService,
@@ -1194,11 +1196,19 @@ class JobSearchController extends BaseController {
                 this.getSpeedIds(),
                 this.searchCriteria.wild,
                 this.searchCriteria.job,
+                this.currentSortColumn,
+                this.currentSortDirection,
             );
         } catch (error) {
             console.error('Error loading jobs:', error);
             throw error;
         }
+    }
+
+    async handleBackendSort(sortData: { column: string, direction: string }): Promise<void> {
+        this.currentSortColumn = sortData.column;
+        this.currentSortDirection = sortData.direction;
+        await this.refreshData();
     }
 
     async openSettingsDialog($event: MouseEvent): Promise<void> {
