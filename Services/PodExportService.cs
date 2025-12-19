@@ -158,12 +158,10 @@ public class PodExportService(
         catch (AmazonS3Exception ex)
         {
             Log.Error(ex, "S3 error when uploading jobs download file with key: {Key}", key);
-            throw;
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Unexpected error when uploading jobs download file to S3 with key: {Key}", key);
-            throw;
         }
     }
 
