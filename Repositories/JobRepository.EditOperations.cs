@@ -627,6 +627,13 @@ public partial class JobRepository
         await Context.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Updates a single property on a bulk job record.
+    /// Uses ExecuteUpdateAsync for simple field updates, falls back to entity tracking for complex cases.
+    /// </summary>
+    /// <param name="bulkJobId">The bulk job ID to update.</param>
+    /// <param name="property">The property to update.</param>
+    /// <param name="value">The new value for the property.</param>
     public async Task UpdateBulkJobAsync(
         int bulkJobId,
         JobProperty property,

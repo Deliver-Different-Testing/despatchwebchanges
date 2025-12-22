@@ -13,6 +13,11 @@ namespace DespatchWeb.Repositories;
 
 public partial class JobRepository
 {
+    /// <summary>
+    /// Retrieves job details required for US tenant rating calculations from the active jobs table.
+    /// </summary>
+    /// <param name="jobId">The job ID to retrieve details for.</param>
+    /// <returns>Job rating details including client, addresses, speed, and dimensional information.</returns>
     public async Task<JobRatingDetailsDto> GetJobDetailsForRatingAsync(int jobId)
     {
         try
@@ -84,6 +89,13 @@ public partial class JobRepository
         }
     }
 
+    /// <summary>
+    /// Retrieves job details required for NZ tenant rating calculations.
+    /// Queries either active or archived jobs table based on the isArchived parameter.
+    /// </summary>
+    /// <param name="jobId">The job ID to retrieve details for.</param>
+    /// <param name="isArchived">True to query archived jobs, false for active jobs.</param>
+    /// <returns>NZ-specific job rating details including addresses, packages, and truck options.</returns>
     public async Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId, bool isArchived)
     {
         try
@@ -316,6 +328,11 @@ public partial class JobRepository
         }
     }
 
+    /// <summary>
+    /// Retrieves prebook job details required for US tenant rating calculations.
+    /// </summary>
+    /// <param name="jobId">The prebook job ID to retrieve details for.</param>
+    /// <returns>Job rating details for the prebook/recurring job.</returns>
     public async Task<JobRatingDetailsDto> GetJobBookingDetailsForRatingAsync(int jobId)
     {
         try
@@ -388,6 +405,11 @@ public partial class JobRepository
         }
     }
 
+    /// <summary>
+    /// Retrieves prebook job details required for NZ tenant rating calculations.
+    /// </summary>
+    /// <param name="jobId">The prebook job ID to retrieve details for.</param>
+    /// <returns>NZ-specific job rating details for the prebook/recurring job.</returns>
     public async Task<JobRatingDetailsDtoNz> GetJobBookingDetailsForRatingNzAsync(int jobId)
     {
         try
@@ -515,6 +537,11 @@ public partial class JobRepository
         }
     }
 
+    /// <summary>
+    /// Rates a US tenant job by calling the rating stored procedure and saving the pricing breakdown.
+    /// Skips update if the calculated price matches the previous rate.
+    /// </summary>
+    /// <param name="dto">The rating parameters including distances, weights, and airport information.</param>
     public async Task RateJobUsAsync(RateJobUsDto dto)
     {
         var rate = new OutputParameter<decimal?>();
@@ -598,6 +625,12 @@ public partial class JobRepository
         return hasMatchingAirport;
     }
 
+    /// <summary>
+    /// Updates the rate amount for an NZ urgent job in the appropriate table based on job type.
+    /// </summary>
+    /// <param name="jobId">The job ID to update.</param>
+    /// <param name="rate">The new rate amount.</param>
+    /// <param name="jobType">The type of job (Active, Recurring, or Archived) determining which table to update.</param>
     public async Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType)
     {
         try
@@ -626,6 +659,12 @@ public partial class JobRepository
         }
     }
 
+    /// <summary>
+    /// Calculates a US tenant job rate without persisting it to the database.
+    /// Used for rate preview functionality.
+    /// </summary>
+    /// <param name="dto">The rating parameters including distances, weights, and airport information.</param>
+    /// <returns>The calculated rate amount.</returns>
     public async Task<decimal> GetJobRateUsAsync(RateJobUsDto dto)
     {
         var rate = new OutputParameter<decimal?>();

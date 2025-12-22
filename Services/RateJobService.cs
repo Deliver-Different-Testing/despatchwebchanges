@@ -26,6 +26,10 @@ public class RateJobService(
 {
     private const string HereMapsApiBaseUrl = "https://router.hereapi.com/v8";
 
+    /// <summary>
+    /// Rates a job for NZ tenant by calling the DFRNT API and updating the job with the calculated rate.
+    /// </summary>
+    /// <param name="jobDetails">The job rating details including client, addresses, speed, and size information.</param>
     public async Task RateJobNzAsync(JobRatingDetailsDtoNz jobDetails)
     {
         try
@@ -54,6 +58,10 @@ public class RateJobService(
         }
     }
 
+    /// <summary>
+    /// Rates a job for US tenant by calculating distances (road or flight) and updating the job with the calculated rate.
+    /// </summary>
+    /// <param name="jobDetails">The job rating details including client, addresses, speed, size, and weight information.</param>
     public async Task RateJobUsAsync(JobRatingDetailsDto jobDetails)
     {
         try
@@ -113,6 +121,12 @@ public class RateJobService(
         }
     }
 
+    /// <summary>
+    /// Calculates distances for US job rating. For non-flight jobs, calculates total road distance.
+    /// For flight jobs, finds closest airports and calculates road distances to/from airports.
+    /// </summary>
+    /// <param name="request">The job rate request containing speed ID and pickup/delivery coordinates.</param>
+    /// <returns>A result containing total miles, from/to miles, and airport information for flight jobs.</returns>
     private async Task<JobRateResult> CalculateJobRateUsAsync(JobRateRequest request)
     {
         var isUsCustomer = infoService.IsUsTenant();
@@ -163,6 +177,14 @@ public class RateJobService(
         return result;
     }
 
+    /// <summary>
+    /// Calculates the road distance in miles between two coordinates using the HERE Maps API.
+    /// </summary>
+    /// <param name="fromLatitude">Origin latitude.</param>
+    /// <param name="fromLongitude">Origin longitude.</param>
+    /// <param name="toLatitude">Destination latitude.</param>
+    /// <param name="toLongitude">Destination longitude.</param>
+    /// <returns>The road distance in miles, or 0 if coordinates are invalid.</returns>
     private async Task<double> CalculateRoadDistance(decimal? fromLatitude, decimal? fromLongitude, decimal? toLatitude,
         decimal? toLongitude)
     {
@@ -176,12 +198,21 @@ public class RateJobService(
         return CalculateMilesFromRoute(routeResponse);
     }
 
+    /// <summary>
+    /// Validates that all coordinate values are present and non-zero.
+    /// </summary>
     private static bool AreValidCoordinates(decimal? fromLat, decimal? fromLong, decimal? toLat, decimal? toLong) =>
         fromLat.HasValue && fromLat != 0 &&
         fromLong.HasValue && fromLong != 0 &&
         toLat.HasValue && toLat != 0 &&
         toLong.HasValue && toLong != 0;
 
+    /// <summary>
+    /// Calls the HERE Maps Routing API v8 to get route information between two points.
+    /// </summary>
+    /// <param name="fromLatLng">Origin coordinates as "latitude,longitude" string.</param>
+    /// <param name="toLatLng">Destination coordinates as "latitude,longitude" string.</param>
+    /// <returns>The route response containing sections with distance summaries.</returns>
     private async Task<HereMapRouteResponseV8> GetHereMapRoute(string fromLatLng, string toLatLng)
     {
         var queryParams = new Dictionary<string, string>
@@ -220,6 +251,11 @@ public class RateJobService(
         }
     }
 
+    /// <summary>
+    /// Extracts the total distance in miles from a HERE Maps route response by summing car transport sections.
+    /// </summary>
+    /// <param name="routeResponse">The HERE Maps route response.</param>
+    /// <returns>The total distance in miles, rounded to the nearest whole number.</returns>
     private static double CalculateMilesFromRoute(HereMapRouteResponseV8 routeResponse)
     {
         if (routeResponse?.Routes == null || routeResponse.Routes.Count == 0)
@@ -232,6 +268,11 @@ public class RateJobService(
         return Math.Round(totalMeters / 1609.344);
     }
 
+    /// <summary>
+    /// Calls the DFRNT API to get a rate for an urgent (NZ) job.
+    /// </summary>
+    /// <param name="jobDetails">The job rating details to send to the API.</param>
+    /// <returns>The rate result from the DFRNT API.</returns>
     public async Task<ApiRerate> RateUrgentJobAsync(JobRatingDetailsDtoNz jobDetails)
     {
         try
@@ -290,6 +331,11 @@ public class RateJobService(
         }
     }
     
+    /// <summary>
+    /// Gets the calculated rate for an NZ job without persisting it to the database.
+    /// </summary>
+    /// <param name="jobDetails">The job rating details including client, addresses, speed, and size information.</param>
+    /// <returns>The calculated rate, or 0 if rating fails.</returns>
     public async Task<decimal> GetJobRateNzAsync(JobRatingDetailsDtoNz jobDetails)
 {
     try
@@ -318,6 +364,11 @@ public class RateJobService(
     }
 }
 
+/// <summary>
+/// Gets the calculated rate for a US job without persisting it to the database.
+/// </summary>
+/// <param name="jobDetails">The job rating details including client, addresses, speed, size, and weight information.</param>
+/// <returns>The calculated rate.</returns>
 public async Task<decimal> GetJobRateUsAsync(JobRatingDetailsDto jobDetails)
 {
     try
@@ -379,6 +430,11 @@ public async Task<decimal> GetJobRateUsAsync(JobRatingDetailsDto jobDetails)
     }
 }
 
+    /// <summary>
+    /// Maps job rating details DTO to the DFRNT API request object format.
+    /// </summary>
+    /// <param name="dto">The job rating details DTO.</param>
+    /// <returns>An UrgentRerateObject ready for the DFRNT API.</returns>
     private static UrgentRerateObject MapToUrgentRerateObject(JobRatingDetailsDtoNz dto)
     {
         ArgumentNullException.ThrowIfNull(dto);
@@ -432,6 +488,11 @@ public async Task<decimal> GetJobRateUsAsync(JobRatingDetailsDto jobDetails)
         };
     }
 
+    /// <summary>
+    /// Maps package details DTOs to the DFRNT API package object format.
+    /// </summary>
+    /// <param name="packages">The list of package details.</param>
+    /// <returns>A collection of UrgentPackageObjects, or empty if packages is null/empty.</returns>
     private static IEnumerable<UrgentPackageObject> MapPackages(List<PackageDetailsDto> packages)
     {
         if (packages == null || packages.Count == 0) return new List<UrgentPackageObject>();
@@ -450,6 +511,11 @@ public async Task<decimal> GetJobRateUsAsync(JobRatingDetailsDto jobDetails)
         });
     }
 
+    /// <summary>
+    /// Creates a truck object for the DFRNT API request with tail lift and timing details.
+    /// </summary>
+    /// <param name="dto">The job rating details DTO containing truck-specific fields.</param>
+    /// <returns>An UrgentTruckObject with truck delivery options.</returns>
     private static UrgentTruckObject CreateTruckObject(JobRatingDetailsDtoNz dto)
     {
         return new UrgentTruckObject
@@ -465,7 +531,6 @@ public async Task<decimal> GetJobRateUsAsync(JobRatingDetailsDto jobDetails)
 
     /// <summary>
     /// Calculates and updates courier payment fields for a job.
-    /// Replaces the SQL trigger: tucJob_InsertUpdate_CalculateCourierPayment
     /// </summary>
     public async Task CalculateCourierPaymentAsync(int jobId, bool isPrebook)
     {
@@ -555,6 +620,12 @@ public async Task<decimal> GetJobRateUsAsync(JobRatingDetailsDto jobDetails)
         };
     }
 
+    /// <summary>
+    /// Calculates the courier percentage using the priority cascade rules.
+    /// </summary>
+    /// <param name="data">The courier payment calculation data.</param>
+    /// <param name="defaultPercentage">The default percentage to use if no overrides are set.</param>
+    /// <returns>The calculated courier percentage (0-1 scale).</returns>
     private static decimal CalculateCourierPercentage(CourierPaymentCalculationData data, decimal defaultPercentage)
     {
         // Rule 1: If PostAmountToCourier is false, return 0
