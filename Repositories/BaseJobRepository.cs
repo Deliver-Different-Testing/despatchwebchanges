@@ -610,6 +610,12 @@ public class BaseJobRepository(
 
             await Context.TucNoteArchives.AddAsync(archivedNote, cancellationToken);
             await Context.SaveChangesAsync(cancellationToken);
+
+            // Also update UcjbNotes so the note syncs to the device
+            await Context.TucJobArchives
+                .Where(j => j.UcjbId == viewModel.JobId.Value)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.UcjbNotes, viewModel.NoteText), cancellationToken);
             return;
         }
 
@@ -634,6 +640,15 @@ public class BaseJobRepository(
 
         await Context.TucNotes.AddAsync(activeNote, cancellationToken);
         await Context.SaveChangesAsync(cancellationToken);
+
+        // Also update UcjbNotes so the note syncs to the device (only for active jobs, not prebooks)
+        if (!isPrebook && viewModel.JobId.HasValue)
+        {
+            await Context.TucJobs
+                .Where(j => j.UcjbId == viewModel.JobId.Value)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.UcjbNotes, viewModel.NoteText), cancellationToken);
+        }
     }
 
     private async Task UpdateNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime,

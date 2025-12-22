@@ -17,6 +17,12 @@ namespace DespatchWeb.Repositories;
 
 public partial class JobRepository
 {
+    /// <summary>
+    /// Retrieves a paginated list of jobs for the overview page with filtering, sorting, and child job data.
+    /// </summary>
+    /// <param name="statusGroup">The job status group filter (Active, Completed, or Inactive).</param>
+    /// <param name="parameters">Request parameters including pagination, search, date range, and filters.</param>
+    /// <returns>Paginated response containing delivery jobs with completion percentages and child jobs.</returns>
     public async Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(
         JobStatusGroup statusGroup,
         OverviewJobsRequest parameters
@@ -224,6 +230,11 @@ public partial class JobRepository
         return query;
     }
 
+    /// <summary>
+    /// Retrieves location coordinates for a job and its children for map display on the overview page.
+    /// </summary>
+    /// <param name="jobId">The job ID to get location data for.</param>
+    /// <returns>Map response containing pickup/delivery coordinates for the job and child jobs.</returns>
     public async Task<OverviewDeliveryMapResponse> GetOverviewLocationDataAsync(int jobId)
     {
         var isUsCustomer = _infoService.IsUsTenant();
@@ -276,6 +287,12 @@ public partial class JobRepository
         return locations;
     }
 
+    /// <summary>
+    /// Retrieves a list of open (non-completed, non-rejected, non-void) jobs with courier completion statistics.
+    /// Uses optimized two-query approach to avoid N+1 issues with courier data.
+    /// </summary>
+    /// <param name="parameters">Request parameters including date range, region, speed, and courier filters.</param>
+    /// <returns>List of open jobs with pickup/delivery details and courier performance metrics.</returns>
     public async Task<IList<OpenJobResponse>> GetOpenJobsAsync(OpenJobsRequest parameters)
     {
         try

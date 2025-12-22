@@ -30,6 +30,11 @@ public partial class JobRepository(
     private readonly ITenantInfoService _infoService = infoService;
 
 
+    /// <summary>
+    /// Retrieves a bulk job and its related family jobs (parent and siblings).
+    /// </summary>
+    /// <param name="bulkJobId">The bulk job ID to retrieve.</param>
+    /// <returns>View model containing the main job and related jobs in the family.</returns>
     public async Task<JobGroupViewModel> GetBulkJobDetailAsync(int bulkJobId)
     {
         try
@@ -76,6 +81,11 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Retrieves detailed dispatch information for a bulk job including addresses, speed, and status.
+    /// </summary>
+    /// <param name="bulkJobId">The bulk job ID to retrieve.</param>
+    /// <returns>Dispatch job view model with full job details.</returns>
     public async Task<DispatchJobViewModel> GetBulkDispatchJobDetailAsync(int bulkJobId)
     {
         var isUsCustomer = _infoService.IsUsTenant();
@@ -179,6 +189,11 @@ public partial class JobRepository(
         return bulkJob;
     }
 
+    /// <summary>
+    /// Searches bulk jobs with filtering by date, client, courier, speed, and wildcard text.
+    /// </summary>
+    /// <param name="data">Search parameters including date range, filters, and pagination.</param>
+    /// <returns>Paginated search results with bulk job details.</returns>
     public async Task<JobSearchResult> BulkSearchAsync(PodSearchRequest data)
     {
         var isUsCustomer = _infoService.IsUsTenant();
@@ -344,6 +359,12 @@ public partial class JobRepository(
         };
     }
 
+    /// <summary>
+    /// Searches both live and archived jobs with filtering and sorting.
+    /// Queries both tables in parallel for improved performance.
+    /// </summary>
+    /// <param name="data">Search parameters including date range, filters, sorting, and pagination.</param>
+    /// <returns>Paginated search results combining live and archived jobs.</returns>
     public async Task<JobSearchResult> PodSearchAsync(PodSearchRequest data)
     {
         try
@@ -527,6 +548,11 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Updates pricing fields (amount, PPD, fuel, courier payment) for multiple jobs manually.
+    /// Handles both active and archived jobs, updates parent job totals, and manages pricing breakdowns.
+    /// </summary>
+    /// <param name="data">List of job pricing updates to apply.</param>
     public async Task UpdateManualPriceAsync(List<JobManualPriceModel> data)
     {
         // Normalize all nullable values to 0 at the beginning
@@ -868,6 +894,18 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Retrieves job data for CSV/Excel download with full details including addresses, pricing, and courier info.
+    /// Uses optimized single query with scalar subqueries for pricing breakdowns.
+    /// </summary>
+    /// <param name="courierIds">Optional filter by courier IDs.</param>
+    /// <param name="speedIds">Optional filter by speed IDs.</param>
+    /// <param name="wild">Wildcard search text.</param>
+    /// <param name="job">Job number search text.</param>
+    /// <param name="fromDate">Start date filter.</param>
+    /// <param name="toDate">End date filter.</param>
+    /// <param name="clientIds">Optional filter by client IDs.</param>
+    /// <returns>List of job models formatted for download export.</returns>
     public async Task<List<JobDownloadModel>> PodSearchDownloadAsync(
         List<int> courierIds,
         List<int> speedIds,
@@ -1032,6 +1070,11 @@ public partial class JobRepository(
             .ToList();
     }
 
+    /// <summary>
+    /// Retrieves performance and spend report data for a client by calling a stored procedure.
+    /// </summary>
+    /// <param name="request">Request containing client ID and date range.</param>
+    /// <returns>List of performance metrics including delivery times, charges, and courier info.</returns>
     public async Task<List<PerformanceSpendReportModel>> GetClientJobsReportDataAsync(
         [FromQuery] ClientJobsReportRequest request)
     {
@@ -1096,6 +1139,13 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Retrieves current active (non-completed, non-void) jobs for a specific courier.
+    /// </summary>
+    /// <param name="courierId">The courier ID to filter by.</param>
+    /// <param name="startDate">Start of date range.</param>
+    /// <param name="endDate">End of date range.</param>
+    /// <returns>Search result with jobs and map items for the courier.</returns>
     public async Task<JobSearchResult> CurrentJobListAsync(int courierId,
         DateTimeOffset startDate,
         DateTimeOffset endDate)
@@ -1151,6 +1201,16 @@ public partial class JobRepository(
         };
     }
 
+    /// <summary>
+    /// Retrieves paginated job list for the dispatch page with full filtering support.
+    /// </summary>
+    /// <param name="queryParams">Query parameters including pagination, filters, and sorting.</param>
+    /// <param name="isInternal">Whether the user is internal staff.</param>
+    /// <param name="isUsTenant">Whether this is a US tenant.</param>
+    /// <param name="clientIds">Comma-separated list of client IDs to filter by.</param>
+    /// <param name="selectedViewIds">List of view IDs to filter by.</param>
+    /// <param name="selectedClearListId">Optional clear list ID to filter by.</param>
+    /// <returns>Paginated job search results.</returns>
     public async Task<JobSearchResult> JobListAsync(
         JobQueryParams queryParams,
         bool isInternal,
@@ -1171,10 +1231,17 @@ public partial class JobRepository(
         );
     }
 
+    /// <summary>
+    /// Swaps POD (proof of delivery) data between two jobs.
+    /// </summary>
     public async Task SwapPodAsync(string job1,
         string job2) =>
         await Context.Procedures.DESWEB_qdfSwapPODAsync(job1, job2);
 
+    /// <summary>
+    /// Restores selected jobs back to dispatch status.
+    /// </summary>
+    /// <param name="jobIds">List of job IDs to redispatch.</param>
     public async Task ReDispatchSelectedJobsAsync(List<int> jobIds)
     {
         try
@@ -1190,6 +1257,10 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Re-sends selected jobs to the courier device.
+    /// </summary>
+    /// <param name="jobIds">Comma-separated list of job IDs to resend.</param>
     public async Task ReSendSelectedJobsAsync(string jobIds)
     {
         if (string.IsNullOrWhiteSpace(jobIds))
@@ -1205,6 +1276,10 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Re-assigns selected jobs to auto-dispatch for courier reassignment.
+    /// </summary>
+    /// <param name="jobIds">Comma-separated list of job IDs to reassign.</param>
     public async Task ReAssignSelectedJobsAsync(string jobIds)
     {
         if (string.IsNullOrWhiteSpace(jobIds))
@@ -1220,10 +1295,17 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Sets a job as the first priority job for a courier.
+    /// </summary>
     public async Task SetFirstJobAsync(int jobId,
         int courierId) =>
         await Context.Procedures.DES_stpJob_AutoDespatchSelectedJobs_FSCourierIDAsync(jobId, courierId);
 
+    /// <summary>
+    /// Updates POD (proof of delivery) details including name, time, and status for a job and its related jobs.
+    /// </summary>
+    /// <param name="data">POD update request with job ID and POD details.</param>
     public async Task UpdatePodDetailsAsync(UpdatePodDetailsRequest data)
     {
         // Find if a job is in active or archive table
@@ -1278,9 +1360,15 @@ public partial class JobRepository(
         await Context.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Re-sends all jobs assigned to a courier to their device.
+    /// </summary>
     public async Task ReSendAllJobsAsync(int courierId) =>
         await Context.Procedures.uspReDespatchJobByCourierIDAsync(courierId);
 
+    /// <summary>
+    /// Gets the maximum auto late pickup alert threshold from system settings.
+    /// </summary>
     public async Task<int> MaxAutoLatePickupAlertAsync()
     {
         var maxAutoLatePickupAlert = new OutputParameter<int?>();
@@ -1288,6 +1376,9 @@ public partial class JobRepository(
         return maxAutoLatePickupAlert.Value ?? 0;
     }
 
+    /// <summary>
+    /// Gets the maximum auto late delivery alert threshold from system settings.
+    /// </summary>
     public async Task<int> MaxAutoLateDeliveryAlertAsync()
     {
         var maxAutoLateDeliveryAlert = new OutputParameter<int?>();
@@ -1295,10 +1386,18 @@ public partial class JobRepository(
         return maxAutoLateDeliveryAlert.Value ?? 0;
     }
 
+    /// <summary>
+    /// Calculates the PPD (Pre-Paid Discount) exclusive amount for a client.
+    /// </summary>
     public async Task<decimal> PpdExclusiveAmountAsync(int clientId,
         decimal amount) =>
         await CalculateAmountAsync(clientId, amount);
 
+    /// <summary>
+    /// Resets the late notification flag for a job's pickup or delivery event.
+    /// </summary>
+    /// <param name="jobId">The job ID.</param>
+    /// <param name="lateEventType">The type of late event (Pickup or Delivery).</param>
     public async Task ResetLateEventAsync(int jobId,
         int lateEventType)
     {
@@ -1319,6 +1418,14 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Marks a job as late for pickup and updates the late pickup time.
+    /// </summary>
+    /// <param name="jobId">The job ID.</param>
+    /// <param name="bookedSpeed">The booked speed short name.</param>
+    /// <param name="notifiedSpeed">The notified speed short name.</param>
+    /// <param name="late">The late time in minutes.</param>
+    /// <param name="calculationRequired">Whether to calculate the late time based on ETA.</param>
     public async Task LatePickupAsync(
         int jobId,
         string bookedSpeed,
@@ -1365,6 +1472,14 @@ public partial class JobRepository(
         await Context.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Marks a job as late for delivery and updates the late delivery time.
+    /// </summary>
+    /// <param name="jobId">The job ID.</param>
+    /// <param name="bookedSpeed">The booked speed short name.</param>
+    /// <param name="notifiedSpeed">The notified speed short name.</param>
+    /// <param name="late">The late time in minutes.</param>
+    /// <param name="calculationRequired">Whether to calculate the late time based on ETA.</param>
     public async Task LateDeliveryAsync(
         int jobId,
         string bookedSpeed,
@@ -1418,6 +1533,10 @@ public partial class JobRepository(
         await Context.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Restores split jobs back to their original state.
+    /// </summary>
+    /// <param name="jobIds">List of job IDs to restore.</param>
     public async Task RestoreSplitJobsAsync(List<int> jobIds)
     {
         if (jobIds == null || jobIds.Count == 0)
@@ -1426,6 +1545,10 @@ public partial class JobRepository(
         foreach (var jobId in jobIds) await Context.Procedures.DES_stpJob_SplitJobRestoreAsync(jobId);
     }
 
+    /// <summary>
+    /// Restores voided or completed jobs back to active dispatch status.
+    /// </summary>
+    /// <param name="jobIds">List of job IDs to restore.</param>
     public async Task RestoreJobsAsync(List<int> jobIds)
     {
         try
@@ -1443,6 +1566,10 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Voids a job and optionally its related jobs, clearing all pricing fields and closing tasks.
+    /// </summary>
+    /// <param name="data">Void request containing job ID, reason, and options for voiding related jobs.</param>
     public async Task VoidJobAsync(VoidJobRequest data)
     {
         try
@@ -1514,6 +1641,10 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Voids a bulk job and optionally its related jobs, updating courier statuses and closing tasks.
+    /// </summary>
+    /// <param name="data">Void request containing bulk job ID, reason, and options for voiding related jobs.</param>
     public async Task VoidBulkJobAsync(VoidBulkJobRequest data)
     {
         try
@@ -1553,6 +1684,11 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Splits a job into multiple child jobs for separate delivery handling.
+    /// </summary>
+    /// <param name="jobId">The job ID to split.</param>
+    /// <param name="user">The username performing the split.</param>
     public async Task SplitJobAsync(int jobId,
         string user)
     {
@@ -1568,6 +1704,11 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Reverses a job split, merging child jobs back into the parent.
+    /// </summary>
+    /// <param name="jobId">The job ID to unsplit.</param>
+    /// <returns>Status message from the unsplit operation.</returns>
     public async Task<string> UnSplitJobAsync(int jobId)
     {
         var message = new OutputParameter<string>();
@@ -1577,6 +1718,14 @@ public partial class JobRepository(
         return message.Value;
     }
 
+    /// <summary>
+    /// Updates the meeting address for a split job handoff point.
+    /// </summary>
+    /// <param name="jobId">The split job ID.</param>
+    /// <param name="toSuburbId">The destination suburb ID.</param>
+    /// <param name="address">The meeting address.</param>
+    /// <param name="deliveryLat">Meeting point latitude.</param>
+    /// <param name="deliveryLng">Meeting point longitude.</param>
     public async Task UpdateSplitJobAddressAsync(
         int jobId,
         int toSuburbId,
@@ -1594,9 +1743,17 @@ public partial class JobRepository(
         );
     }
 
+    /// <summary>
+    /// Re-rates a split job after address changes.
+    /// </summary>
     public async Task ReRateSplitJobAsync(int jobId) =>
         await Context.Procedures.DES_stpJob_SplitJob_ReRateAsync(jobId, false);
 
+    /// <summary>
+    /// Completes the split job process by consolidating information and updating dispatch display.
+    /// </summary>
+    /// <param name="jobId">The split job ID.</param>
+    /// <param name="despatcher">The dispatcher username.</param>
     public async Task FinishSplitJobProcessAsync(int jobId,
         string despatcher)
     {
@@ -1610,6 +1767,9 @@ public partial class JobRepository(
         await UpdateJobDisplayInDespatchAsync(jobId);
     }
 
+    /// <summary>
+    /// Retrieves all suburbs for lookup/autocomplete functionality.
+    /// </summary>
     public async Task<List<SuburbLookup>> GetSuburbsAsync()
     {
         return await Context.TucSuburbs
@@ -1623,6 +1783,9 @@ public partial class JobRepository(
             .ToListAsync();
     }
 
+    /// <summary>
+    /// Retrieves all available job speeds/types.
+    /// </summary>
     public async Task<List<Suggestion>> GetSpeedsAsync()
     {
         return await Context.DesQryAllJobTypes
@@ -1631,6 +1794,10 @@ public partial class JobRepository(
             .ToListAsync();
     }
 
+    /// <summary>
+    /// Searches job speeds/types by name.
+    /// </summary>
+    /// <param name="searchTerm">The search term to filter speeds by.</param>
     public async Task<List<Suggestion>> GetSpeedsBySearchTermAsync(string searchTerm)
     {
         return await Context.DesQryAllJobTypes
@@ -1640,6 +1807,10 @@ public partial class JobRepository(
             .ToListAsync();
     }
 
+    /// <summary>
+    /// Retrieves active contacts for a specific client.
+    /// </summary>
+    /// <param name="clientId">The client ID to get contacts for.</param>
     public async Task<List<Suggestion>> GetContactsByClientIdAsync(int clientId)
     {
         var contacts = await Context.UtlQryContactLookups
@@ -1658,6 +1829,9 @@ public partial class JobRepository(
         return contacts;
     }
 
+    /// <summary>
+    /// Retrieves available locations where parcels can be left if recipient not home.
+    /// </summary>
     public async Task<List<Lookup>> LeaveParcelLocationsAsync()
     {
         return await Context.TblJobLeaveNotHomes
@@ -1667,6 +1841,9 @@ public partial class JobRepository(
             .ToListAsync();
     }
 
+    /// <summary>
+    /// Retrieves available undeliverable location options (e.g., wrong address, refused).
+    /// </summary>
     public async Task<List<UndeliverableLocation>> UndeliverableLocationsAsync()
     {
         return await Context.TblUndeliverableLocations
@@ -1681,6 +1858,9 @@ public partial class JobRepository(
             .ToListAsync();
     }
 
+    /// <summary>
+    /// Retrieves available internal job statuses for dispatch workflow.
+    /// </summary>
     public async Task<List<InternalStatus>> GetInternalStatusListAsync()
     {
         return await Context
@@ -1699,6 +1879,9 @@ public partial class JobRepository(
             .ToListAsync();
     }
 
+    /// <summary>
+    /// Retrieves all available job statuses.
+    /// </summary>
     public async Task<List<Suggestion>> GetStatusListAsync()
     {
         return await Context.TucJobStatuses
@@ -1708,6 +1891,9 @@ public partial class JobRepository(
             .ToListAsync();
     }
 
+    /// <summary>
+    /// Retrieves event types for customer service and general events.
+    /// </summary>
     public async Task<List<Suggestion>> EventTypeListAsync()
     {
         return await Context.TucEventTypes
@@ -1718,6 +1904,12 @@ public partial class JobRepository(
             .ToListAsync();
     }
 
+    /// <summary>
+    /// Retrieves pricing breakdown components for a job or prebook job.
+    /// </summary>
+    /// <param name="jobId">The job or prebook job ID.</param>
+    /// <param name="isPrebook">True if querying a prebook job.</param>
+    /// <returns>List of charge components making up the total price.</returns>
     public async Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId,
         bool isPrebook)
     {
@@ -1759,6 +1951,11 @@ public partial class JobRepository(
         return pricingBreakdowns;
     }
 
+    /// <summary>
+    /// Adds a new pricing breakdown component to a job or prebook job.
+    /// </summary>
+    /// <param name="viewModel">The charge details to add.</param>
+    /// <returns>The ID of the newly created pricing breakdown record.</returns>
     public async Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel)
     {
         try
@@ -1809,6 +2006,10 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Updates an existing pricing breakdown component.
+    /// </summary>
+    /// <param name="viewModel">The updated charge details.</param>
     public async Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel)
     {
         if (viewModel.JobId is null && viewModel.PrebookJobId is null) return;
@@ -1829,6 +2030,10 @@ public partial class JobRepository(
         else if (viewModel.JobId != null) await SetJobAsManuallyPriceAsync(viewModel.JobId.Value, note);
     }
 
+    /// <summary>
+    /// Deletes a pricing breakdown component from a job.
+    /// </summary>
+    /// <param name="chargeId">The pricing breakdown ID to delete.</param>
     public async Task DeleteJobPriceBreakdownAsync(int chargeId)
     {
         var breakdown = await Context.PricingBreakdowns
@@ -1853,6 +2058,10 @@ public partial class JobRepository(
         await Context.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Voids a prebook/recurring job.
+    /// </summary>
+    /// <param name="jobId">The prebook job ID to void.</param>
     public async Task VoidPrebookJobAsync(int jobId)
     {
         var staffInfo = await _infoService.GetStaffInfoAsync();
@@ -1860,12 +2069,19 @@ public partial class JobRepository(
     }
 
 
+    /// <summary>
+    /// Updates the delivery address for a job (active or archived).
+    /// </summary>
+    /// <param name="request">Request containing job ID and new address details.</param>
     public async Task UpdateDeliveryAddressAsync(UpdateAddressRequest request)
     {
         try
         {
             var address = request.Address;
             var isArchived = await IsJobArchived(request.JobId);
+
+            // Combine all address lines for device sync field
+            var fullAddress = CombineAddressLines(address);
 
             // Update archive record if JobId is found
             if (isArchived)
@@ -1881,7 +2097,8 @@ public partial class JobRepository(
                         .SetProperty(j => j.DeliveryAddressLine4, address.AddressLine4)
                         .SetProperty(j => j.DeliveryAddressLine5, address.AddressLine5)
                         .SetProperty(j => j.DeliveryAddressLine6, address.AddressLine6)
-                        .SetProperty(j => j.DeliveryAddressLine7, address.AddressLine7));
+                        .SetProperty(j => j.DeliveryAddressLine7, address.AddressLine7)
+                        .SetProperty(j => j.UcjbToAddr, fullAddress));
 
                 return;
             }
@@ -1897,7 +2114,8 @@ public partial class JobRepository(
                     .SetProperty(j => j.DeliveryAddressLine4, address.AddressLine4)
                     .SetProperty(j => j.DeliveryAddressLine5, address.AddressLine5)
                     .SetProperty(j => j.DeliveryAddressLine6, address.AddressLine6)
-                    .SetProperty(j => j.DeliveryAddressLine7, address.AddressLine7));
+                    .SetProperty(j => j.DeliveryAddressLine7, address.AddressLine7)
+                    .SetProperty(j => j.UcjbToAddr, fullAddress));
 
             if (rowsAffected == 0)
                 throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
@@ -1911,12 +2129,19 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Updates the pickup address for a job (active or archived).
+    /// </summary>
+    /// <param name="request">Request containing job ID and new address details.</param>
     public async Task UpdatePickupAddressAsync(UpdateAddressRequest request)
     {
         try
         {
             var address = request.Address;
             var isArchived = await IsJobArchived(request.JobId);
+
+            // Combine all address lines for device sync field
+            var fullAddress = CombineAddressLines(address);
 
             if (isArchived)
             {
@@ -1931,7 +2156,8 @@ public partial class JobRepository(
                         .SetProperty(j => j.PickupAddressLine4, address.AddressLine4)
                         .SetProperty(j => j.PickupAddressLine5, address.AddressLine5)
                         .SetProperty(j => j.PickupAddressLine6, address.AddressLine6)
-                        .SetProperty(j => j.PickupAddressLine7, address.AddressLine7));
+                        .SetProperty(j => j.PickupAddressLine7, address.AddressLine7)
+                        .SetProperty(j => j.UcjbFromAddr, fullAddress));
 
                 return;
             }
@@ -1947,7 +2173,8 @@ public partial class JobRepository(
                     .SetProperty(j => j.PickupAddressLine4, address.AddressLine4)
                     .SetProperty(j => j.PickupAddressLine5, address.AddressLine5)
                     .SetProperty(j => j.PickupAddressLine6, address.AddressLine6)
-                    .SetProperty(j => j.PickupAddressLine7, address.AddressLine7));
+                    .SetProperty(j => j.PickupAddressLine7, address.AddressLine7)
+                    .SetProperty(j => j.UcjbFromAddr, fullAddress));
 
             if (rowsAffected == 0)
                 throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
@@ -1961,6 +2188,12 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Updates a single property on a job (active or archived).
+    /// </summary>
+    /// <param name="jobId">The job ID to update.</param>
+    /// <param name="field">The property to update.</param>
+    /// <param name="value">The new value.</param>
     public async Task UpdateJobAsync(
         int jobId,
         JobProperty field,
@@ -1986,6 +2219,10 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Releases a bulk job for dispatch, creating the associated run and TUC jobs.
+    /// </summary>
+    /// <param name="bulkJobId">The bulk job ID to release.</param>
     public async Task ReleaseBulkJobByIdAsync(int bulkJobId)
     {
         await using var transaction = await Context.Database.BeginTransactionAsync();
@@ -2105,6 +2342,11 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Creates a new job with minimal required information for quick entry.
+    /// </summary>
+    /// <param name="request">Job creation request with addresses, client, and speed.</param>
+    /// <returns>The ID of the newly created job.</returns>
     public async Task<int> QuickAddJobAsync(JobCreateViewModel request)
     {
         try
@@ -2161,12 +2403,19 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Gets the name of a staff member by ID.
+    /// </summary>
     public async Task<string> GetStaffNameAsync(int staffId) => await Context.TucStaffs
         .AsNoTracking()
         .Where(s => s.UcstId == staffId)
         .Select(s => s.UcstFirstName + " " + s.UcstLastName)
         .FirstOrDefaultAsync();
 
+    /// <summary>
+    /// Creates paired jobs for an inter-courier charge transfer between two couriers.
+    /// </summary>
+    /// <param name="viewModel">The inter-courier charge details including from/to courier and amount.</param>
     public async Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel)
     {
         try
@@ -2244,6 +2493,9 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Checks if a client has any active items available for a specific speed.
+    /// </summary>
     public async Task<bool> HasClientItemsAvailableAsync(int clientId,
         int speedId)
     {
@@ -2258,6 +2510,9 @@ public partial class JobRepository(
             .AnyAsync();
     }
 
+    /// <summary>
+    /// Retrieves paginated client items available for a specific speed, with selection state from a job.
+    /// </summary>
     public async Task<PaginatedResponse<ClientItemsViewModel>> GetClientItemsBySpeedAsync(
         int clientId,
         int speedId,
@@ -2270,6 +2525,9 @@ public partial class JobRepository(
         return await CreatePagedList(clientItemsQuery);
     }
 
+    /// <summary>
+    /// Associates client items with a job and updates the job amount.
+    /// </summary>
     public async Task AddClientsItemToJobAsync(
         int jobId,
         List<int> clientItemIds,
@@ -2288,6 +2546,9 @@ public partial class JobRepository(
                 .SetProperty(j => j.UcjbAmount, totalCost));
     }
 
+    /// <summary>
+    /// Retrieves job details needed for late call notification processing.
+    /// </summary>
     public async Task<JobLateCallDto> GetJobForLateCallAsync(int jobId)
     {
         var job = await Context.TucJobs
@@ -2299,6 +2560,9 @@ public partial class JobRepository(
         return job;
     }
 
+    /// <summary>
+    /// Retrieves all available time zone options for selection.
+    /// </summary>
     public async Task<List<TimeZoneSuggestion>> GetTimeZoneOptions()
     {
         var timeZones = await Context.TimeZones
@@ -2315,6 +2579,10 @@ public partial class JobRepository(
         return timeZones;
     }
 
+    /// <summary>
+    /// Updates the read status for multiple jobs in a single atomic operation.
+    /// </summary>
+    /// <param name="data">Request containing job IDs and whether to mark as read or unread.</param>
     public async Task BulkUpdateReadStatusAsync(BulkReadUpdateRequestModel data)
     {
         var jobIds = data.JobIds;
@@ -2345,9 +2613,15 @@ public partial class JobRepository(
             shouldMarkAsRead, currentTenantTime, staffId);
     }
 
+    /// <summary>
+    /// Checks if a job number already exists in the system.
+    /// </summary>
     public async Task<bool> JobNumberExistsAsync(string jobNumber) =>
         await Context.TucJobs.AnyAsync(j => j.UcjbNumber == jobNumber);
 
+    /// <summary>
+    /// Calculates the raw price for a nationwide service job using the database function.
+    /// </summary>
     public async Task<decimal> GetNationwideServiceRawPriceAsync(int? clientId,
         int? fromSuburbId,
         int? toSuburbId,
@@ -2372,6 +2646,11 @@ public partial class JobRepository(
         return result ?? 0m;
     }
 
+    /// <summary>
+    /// Retrieves detailed dispatch information for a job, checking both active and archived tables.
+    /// </summary>
+    /// <param name="jobId">The job ID to retrieve.</param>
+    /// <returns>Dispatch job view model with full details including addresses, courier, and status.</returns>
     public async Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId)
     {
         var isUsCustomer = _infoService.IsUsTenant();
@@ -2524,6 +2803,10 @@ public partial class JobRepository(
         return await archivedJobQuery.AsNoTracking().FirstOrDefaultAsync();
     }
 
+    /// <summary>
+    /// Creates a new note type for job notes.
+    /// </summary>
+    /// <param name="noteType">The note type details to create.</param>
     public async Task AddNewTucNoteTypeAsync(NoteTypeViewModel noteType)
     {
         var newType = new TucNoteType
@@ -2538,6 +2821,11 @@ public partial class JobRepository(
         await Context.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Determines if a job has a parent (is a child job in a split or family).
+    /// </summary>
+    /// <param name="jobId">The job ID to check.</param>
+    /// <returns>True if the job has a parent.</returns>
     public async Task<bool> IsJobParentAsync(int jobId)
     {
         var jobInfo = await Context.TucJobs
@@ -2558,6 +2846,11 @@ public partial class JobRepository(
         return bookingInfo?.HasParent ?? false;
     }
 
+    /// <summary>
+    /// Determines if a bulk job has a parent (is a child in a family).
+    /// </summary>
+    /// <param name="bulkJobId">The bulk job ID to check.</param>
+    /// <returns>True if the bulk job has a parent.</returns>
     public async Task<bool> IsBulkJobParent(int bulkJobId)
     {
         var isParent = await Context.TblBulkJobs
@@ -2568,6 +2861,9 @@ public partial class JobRepository(
         return isParent;
     }
 
+    /// <summary>
+    /// Retrieves all active note types for job notes.
+    /// </summary>
     public async Task<List<NoteTypeViewModel>> GetNoteTypesAsync()
     {
         var noteTypes = await Context.TucNoteTypes
@@ -2584,6 +2880,11 @@ public partial class JobRepository(
         return noteTypes;
     }
 
+    /// <summary>
+    /// Updates or creates package/parcel items for a job.
+    /// </summary>
+    /// <param name="jobId">The job ID to update packages for.</param>
+    /// <param name="parcels">List of parcel dimensions to add or update.</param>
     public async Task UpdatePackagesForJobAsync(int jobId,
         List<ParcelDimensions> parcels)
     {
@@ -2650,6 +2951,16 @@ public partial class JobRepository(
                         .SetProperty(i => i.Barcode, parcel.Barcode)
                         .SetProperty(i => i.Notes, parcel.ItemName));
             }
+
+            // Update UcjbQty with total parcel count so it syncs to device
+            var totalItemCount = await Context.TucJobItems
+                .Where(i => i.JobId == effectiveJobId)
+                .CountAsync();
+
+            await Context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.UcjbQty, (short)totalItemCount));
         }
         catch (Exception e)
         {
@@ -2660,6 +2971,11 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Updates or creates package/parcel items for a bulk job.
+    /// </summary>
+    /// <param name="bulkJobId">The bulk job ID to update packages for.</param>
+    /// <param name="parcels">List of parcel dimensions to add or update.</param>
     public async Task UpdatePackagesForBulkJobAsync(int bulkJobId,
         List<ParcelDimensions> parcels)
     {
@@ -2736,6 +3052,9 @@ public partial class JobRepository(
     }
 
 
+    /// <summary>
+    /// Adds new package items to a job with sequential item IDs.
+    /// </summary>
     public async Task AddPackagesToJobAsync(int effectiveJobId,
         List<TucJobItem> items)
     {
@@ -2747,6 +3066,9 @@ public partial class JobRepository(
         await Context.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Retrieves all active jobs with location data for the mega map display.
+    /// </summary>
     public async Task<List<MegaMapResponse>> GetJobsForMegaMapAsync()
     {
         var isUsCustomer = _infoService.IsUsTenant();
@@ -2833,6 +3155,11 @@ public partial class JobRepository(
         return jobs;
     }
 
+    /// <summary>
+    /// Updates the notes field for a job.
+    /// </summary>
+    /// <param name="jobId">The job ID to update.</param>
+    /// <param name="note">The new notes content.</param>
     public async Task UpdateJobNoteAsync(int jobId,
         string note)
     {
@@ -2874,6 +3201,11 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Retrieves a job by ID including its related family jobs, marking it as read.
+    /// </summary>
+    /// <param name="jobId">The job ID to retrieve.</param>
+    /// <returns>Job group containing the job and related jobs.</returns>
     public async Task<JobGroupViewModel> GetJobByIdAsync(int jobId)
     {
         try
@@ -2894,6 +3226,11 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Retrieves a single job by ID without related jobs.
+    /// </summary>
+    /// <param name="jobId">The job ID to retrieve.</param>
+    /// <returns>The job view model.</returns>
     public async Task<JobViewModel> GetSingleJobById(int jobId)
     {
         try
@@ -2908,6 +3245,12 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Finds the 3 closest airports to a given coordinate using Haversine distance approximation.
+    /// </summary>
+    /// <param name="latitude">Reference latitude.</param>
+    /// <param name="longitude">Reference longitude.</param>
+    /// <returns>List of closest airports with distance and agent info.</returns>
     public async Task<List<AddressWithAgent>> GetClosestAirportsAsync(
         decimal latitude,
         decimal longitude
@@ -2955,6 +3298,11 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Retrieves a job type/speed by ID including its grouping information.
+    /// </summary>
+    /// <param name="speedId">The job type ID.</param>
+    /// <returns>The job type entity with grouping.</returns>
     public async Task<TucJobType> GetJobTypeByIdAsync(int speedId)
     {
         var jobType = await Context.TucJobTypes
@@ -2965,6 +3313,9 @@ public partial class JobRepository(
         return jobType ?? throw new KeyNotFoundException($"Job type with ID {speedId} not found");
     }
 
+    /// <summary>
+    /// Retrieves aggregate statistics for the overview page (active, completed, inactive counts).
+    /// </summary>
     public async Task<OverviewStatsViewModel> GetOverviewStatsAsync()
     {
         var baseQuery = Context.TucJobs.Where(j => j.InverseParent.Count != 0);
@@ -2996,6 +3347,11 @@ public partial class JobRepository(
                };
     }
 
+    /// <summary>
+    /// Updates the read status for a single job using MERGE for race condition safety.
+    /// </summary>
+    /// <param name="jobId">The job ID.</param>
+    /// <param name="hasBeenRead">Whether to mark as read or unread.</param>
     public async Task UpdateJobReadStatusAsync(int jobId,
         bool hasBeenRead)
     {
@@ -3026,6 +3382,12 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Retrieves scan history for a barcode/scan within the last 3 days.
+    /// </summary>
+    /// <param name="runDate">Reference date for the search window.</param>
+    /// <param name="scan">The barcode/scan value to search for.</param>
+    /// <returns>List of scan events with courier and timestamp details.</returns>
     public async Task<List<ScanDetailResult>> ScanList(DateTimeOffset? runDate,
         string scan)
     {
@@ -3071,6 +3433,11 @@ public partial class JobRepository(
         return results;
     }
 
+    /// <summary>
+    /// Validates that a job exists and was booked today for POD swap operation.
+    /// </summary>
+    /// <param name="jobNumber">The job number to validate.</param>
+    /// <returns>True if the job is valid for POD swap.</returns>
     public async Task<bool> ValidatePodSwapAsync(string jobNumber)
     {
         var today = _infoService.GetCurrentTenantTime();
@@ -3084,6 +3451,10 @@ public partial class JobRepository(
         return isValid;
     }
 
+    /// <summary>
+    /// Manually reprices a job with a new total price.
+    /// </summary>
+    /// <param name="data">Repricing data including job ID and new price.</param>
     public async Task SimpleRepriceJobManualAsync(SimpleRepriceJobModel data)
     {
         try
@@ -3119,6 +3490,11 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Calculates the total job price from a base amount by adding fuel surcharge (preview only, no save).
+    /// </summary>
+    /// <param name="data">Repricing data including job ID and base amount.</param>
+    /// <returns>The calculated total including fuel surcharge.</returns>
     public async Task<decimal> CalculateJobPriceWithBaseAmountAsync(RepriceJobWithBaseAmountModel data)
     {
         try
@@ -3139,6 +3515,11 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Reprices a job using a base amount and calculates the fuel surcharge.
+    /// </summary>
+    /// <param name="data">Repricing data including job ID and base amount.</param>
+    /// <returns>The calculated total including fuel surcharge.</returns>
     public async Task<decimal> RepriceJobWithBaseAmountAsync(RepriceJobWithBaseAmountModel data)
     {
         try
@@ -3217,6 +3598,31 @@ public partial class JobRepository(
         return (totalAmount, fuelSurcharge);
     }
 
+    /// <summary>
+    /// Combines all non-empty address lines into a single comma-separated string for device sync.
+    /// </summary>
+    private static string CombineAddressLines(AddressViewModel address)
+    {
+        var lines = new[]
+        {
+            address.AddressLine1,
+            address.AddressLine2,
+            address.AddressLine3,
+            address.AddressLine4,
+            address.AddressLine5,
+            address.AddressLine6,
+            address.AddressLine7,
+            address.AddressLine8
+        };
+
+        return string.Join(", ", lines.Where(line => !string.IsNullOrWhiteSpace(line)));
+    }
+
+    /// <summary>
+    /// Assigns a courier to one or more jobs.
+    /// </summary>
+    /// <param name="jobIds">List of job IDs to assign.</param>
+    /// <param name="courierId">The courier ID to assign.</param>
     public async Task AssignCourierToJobAsync(List<int> jobIds, int courierId)
     {
         var rowsChanged = await AssignCourierToJobsAsync(jobIds, courierId);
@@ -3224,6 +3630,12 @@ public partial class JobRepository(
             throw new InvalidOperationException($"No records found for jobs: {string.Join(", ", jobIds)}");
     }
 
+    /// <summary>
+    /// Auto-dispatches courier assignment to related child jobs based on parent job assignments.
+    /// Only updates child jobs that have auto-dispatch enabled and no courier assigned.
+    /// </summary>
+    /// <param name="jobIds">List of parent job IDs whose courier assignments should cascade to children.</param>
+    /// <param name="internalStatus">The internal status to set on child jobs.</param>
     public async Task AssignCourierToChildJobsAsync(List<int> jobIds, InternalJobStatus internalStatus)
     {
         if (jobIds == null || jobIds.Count == 0) return;
