@@ -1,6 +1,13 @@
 ﻿import {IJob} from "../../../interfaces/job.interface";
 import SimplePriceEditDialogController from "./simple-price-edit-dialog.controller";
 
+export type PricingMode = 'recalculate' | 'base' | 'gross';
+
+export interface PriceEditResult {
+    mode: PricingMode;
+    amount: number;
+}
+
 class SimplePriceEditDialogService implements angular.IServiceProvider {
     static $inject = [
         '$mdDialog',
@@ -18,7 +25,7 @@ class SimplePriceEditDialogService implements angular.IServiceProvider {
         return this;
     }
 
-    async openSimplePriceEditDialog($event: MouseEvent, job: IJob): Promise<number> {
+    async openSimplePriceEditDialog($event: MouseEvent, job: IJob, isPrebook: boolean = false): Promise<PriceEditResult> {
         return this.$mdDialog.show({
             controller: SimplePriceEditDialogController,
             controllerAs: "ctrl",
@@ -28,7 +35,8 @@ class SimplePriceEditDialogService implements angular.IServiceProvider {
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
-                job
+                job,
+                isPrebook
             },
             bindToController: true,
         });

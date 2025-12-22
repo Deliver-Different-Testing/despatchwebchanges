@@ -1,18 +1,23 @@
 @import "../../../../css/variables.less";
-  
+
+// Neutral selection color
+@neutral-selected: #57534e;
+@neutral-selected-bg: rgba(87, 83, 78, 0.06);
+@neutral-focus-ring: rgba(87, 83, 78, 0.12);
+
 .map-dialog-component {
   width: 90%;
   max-width: 1300px;
   min-width: 600px;
   height: 80vh;
   max-height: 1000px;
-  border-radius: 8px;
+  border-radius: @dialog-border-radius;
   overflow: hidden;
-  
+
   // Dialog Body
   .dialog-body {
     padding: 0;
-    background: #f8f9fa;
+    background: @surface-container-lowest;
     height: calc(100% - 64px);
     overflow: hidden;
 
@@ -27,14 +32,14 @@
   .loading-container {
     min-height: 400px;
     flex-direction: column;
-    gap: 24px;
+    gap: @spacing * 1.5;
 
     .loading-wrapper {
       position: relative;
 
       .map-loader {
         circle {
-          stroke: @primary-blue;
+          stroke: @neutral-selected;
         }
       }
 
@@ -44,15 +49,15 @@
         left: 50%;
         transform: translate(-50%, -50%);
         font-size: 24px;
-        color: @primary-blue;
+        color: @neutral-selected;
         animation: pulse 2s infinite;
       }
     }
 
     .loading-text {
-      color: #6c757d;
-      font-size: 14px;
-      font-weight: 500;
+      color: @text-muted;
+      font-size: @font-base;
+      font-weight: @weight-medium;
       letter-spacing: 0.5px;
       animation: fadeInOut 2s infinite;
     }
@@ -69,7 +74,7 @@
       flex: 1;
       position: relative;
       background: white;
-      border-bottom: 1px solid #e1e4e8;
+      border-bottom: 1px solid @surface-container-high;
 
       // Add padding to compensate for timeline overlay
       padding-bottom: 180px;
@@ -95,38 +100,38 @@
     max-width: 900px;
     background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(10px);
-    border-radius: 12px;
-    border: 2px solid @primary-blue;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), 0 0 80px rgba(102, 126, 234, 0.15);
+    border-radius: @radius-lg;
+    border: 2px solid @neutral-selected;
+    box-shadow: @elevation-3, 0 0 80px @neutral-focus-ring;
     z-index: 1000;
 
     .timeline-header {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 14px 24px 10px;
-      border-bottom: 2px solid rgba(102, 126, 234, 0.15);
-      background: linear-gradient(to right, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
-      border-radius: 12px 12px 0 0;
+      gap: @spacing / 2;
+      padding: 14px @spacing * 1.5 10px;
+      border-bottom: 2px solid @neutral-focus-ring;
+      background: @neutral-selected-bg;
+      border-radius: @radius-lg @radius-lg 0 0;
 
       md-icon {
         font-size: 22px;
-        color: @primary-blue;
+        color: @neutral-selected;
       }
 
       .timeline-title {
         font-size: 15px;
-        font-weight: 700;
-        color: #2c3e50;
+        font-weight: @weight-bold;
+        color: @text-dark;
         text-transform: uppercase;
         letter-spacing: 0.8px;
       }
     }
 
     .timeline-content {
-      padding: 20px 24px 24px;
-      background: rgba(250, 251, 252, 0.95);
-      border-radius: 0 0 12px 12px;
+      padding: 20px @spacing * 1.5 @spacing * 1.5;
+      background: @surface-container-lowest;
+      border-radius: 0 0 @radius-lg @radius-lg;
       display: flex;
       justify-content: center;
     }
@@ -207,44 +212,44 @@
     // Timeline Nodes
     .timeline-node {
       cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all @duration-medium @easing-standard;
       padding: 10px;
-      border-radius: 12px;
+      border-radius: @radius-lg;
       background: rgba(255, 255, 255, 0.9);
       margin: 0 4px;
 
       &:hover {
         background: white;
         transform: translateY(-4px);
-        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.25);
+        box-shadow: 0 8px 20px @neutral-focus-ring;
 
         .node-circle {
-          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+          box-shadow: 0 6px 20px rgba(87, 83, 78, 0.3);
           transform: scale(1.05);
         }
       }
 
       &.active {
         background: white;
-        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+        box-shadow: 0 4px 16px @neutral-focus-ring;
 
         .node-circle {
-          background: linear-gradient(135deg, @primary-blue, #764ba2);
+          background: @neutral-selected;
           color: white;
-          box-shadow: 0 8px 24px rgba(102, 126, 234, 0.5);
+          box-shadow: 0 8px 24px rgba(87, 83, 78, 0.4);
           transform: scale(1.15);
-          border-color: @primary-blue;
+          border-color: @neutral-selected;
         }
 
         .node-label {
           .label-type {
-            color: @primary-blue;
-            font-weight: 700;
+            color: @neutral-selected;
+            font-weight: @weight-bold;
           }
 
           .label-name {
-            color: #2c3e50;
-            font-weight: 600;
+            color: @text-dark;
+            font-weight: @weight-semibold;
           }
         }
       }
@@ -268,15 +273,15 @@
       .node-circle {
         width: 56px;
         height: 56px;
-        border-radius: 50%;
+        border-radius: @radius-full;
         display: flex;
         align-items: center;
         justify-content: center;
         background: white;
-        border: 3px solid @primary-blue;
-        transition: all 0.3s ease;
+        border: 3px solid @neutral-selected;
+        transition: all @duration-medium @easing-standard;
         position: relative;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        box-shadow: @elevation-1;
 
         md-icon {
           font-size: 24px;
@@ -284,9 +289,9 @@
         }
 
         .node-number {
-          font-weight: 700;
-          font-size: 20px;
-          color: @primary-blue;
+          font-weight: @weight-bold;
+          font-size: @font-xl;
+          color: @neutral-selected;
         }
       }
 
@@ -298,22 +303,22 @@
         max-width: 140px;
 
         .label-type {
-          font-size: 12px;
-          color: @primary-blue;
+          font-size: @font-xs;
+          color: @neutral-selected;
           text-transform: uppercase;
           letter-spacing: 0.6px;
-          font-weight: 600;
+          font-weight: @weight-semibold;
         }
 
         .label-name {
-          font-size: 14px;
-          color: #2c3e50;
+          font-size: @font-base;
+          color: @text-dark;
           text-align: center;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
           width: 100%;
-          font-weight: 500;
+          font-weight: @weight-medium;
         }
       }
 
@@ -391,12 +396,12 @@
         width: 70px;
         height: 3px;
         background: linear-gradient(90deg,
-        @primary-blue 0%,
-        @primary-blue 40%,
+        @neutral-selected 0%,
+        @neutral-selected 40%,
         transparent 40%,
         transparent 60%,
-        @primary-blue 60%,
-        @primary-blue 100%);
+        @neutral-selected 60%,
+        @neutral-selected 100%);
         background-size: 10px 3px;
         animation: moveDash 2s linear infinite;
         opacity: 0.8;
@@ -407,7 +412,7 @@
         left: 50%;
         transform: translateX(-50%);
         font-size: 20px;
-        color: @primary-blue;
+        color: @neutral-selected;
         background: white;
         padding: 0 4px;
         font-weight: bold;
@@ -450,21 +455,21 @@
 
     .dialog-header {
       .md-toolbar-tools {
-        padding: 0 16px;
+        padding: 0 @spacing;
       }
 
       .dialog-title {
-        font-size: 18px;
+        font-size: @font-xl;
       }
     }
 
     .job-timeline-wrapper {
       .timeline-header {
-        padding: 8px 16px;
+        padding: @spacing / 2 @spacing;
       }
 
       .timeline-content {
-        padding: 12px 16px;
+        padding: 12px @spacing;
       }
 
       .timeline-node {
@@ -483,7 +488,7 @@
           }
 
           .label-name {
-            font-size: 12px;
+            font-size: @font-xs;
           }
         }
       }
@@ -493,6 +498,58 @@
           width: 40px;
         }
       }
+    }
+  }
+}
+
+// NZ tenant theme overrides
+.nz-tenant .map-dialog-component {
+  .job-timeline-wrapper {
+    border-color: @nz-primary-dark;
+
+    .timeline-header {
+      background: fade(@nz-primary, 8%);
+      border-bottom-color: fade(@nz-primary, 15%);
+
+      md-icon {
+        color: @nz-primary-dark;
+      }
+    }
+  }
+
+  .timeline-node {
+    &.active .node-circle {
+      background: @nz-primary-dark;
+      border-color: @nz-primary-dark;
+    }
+
+    .node-circle {
+      border-color: @nz-primary-dark;
+    }
+
+    .node-label .label-type {
+      color: @nz-primary-dark;
+    }
+
+    .node-number {
+      color: @nz-primary-dark;
+    }
+  }
+
+  .timeline-connection {
+    .connection-line {
+      background: linear-gradient(90deg,
+      @nz-primary-dark 0%,
+      @nz-primary-dark 40%,
+      transparent 40%,
+      transparent 60%,
+      @nz-primary-dark 60%,
+      @nz-primary-dark 100%);
+      background-size: 10px 3px;
+    }
+
+    .connection-icon {
+      color: @nz-primary-dark;
     }
   }
 }

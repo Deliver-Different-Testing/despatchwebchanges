@@ -1952,6 +1952,38 @@ public class JobController(
         }
     }
 
+    [HttpPost]
+    public async Task<IActionResult> CalculateJobPriceWithBaseAmount([FromBody] RepriceJobWithBaseAmountModel data)
+    {
+        try
+        {
+            var calculatedPrice = await jobRepository.CalculateJobPriceWithBaseAmountAsync(data);
+            return Ok(calculatedPrice);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(CalculateJobPriceWithBaseAmount)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> RepriceJobWithBaseAmount([FromBody] RepriceJobWithBaseAmountModel data)
+    {
+        try
+        {
+            var newRate = await jobRepository.RepriceJobWithBaseAmountAsync(data);
+            return Ok(newRate);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(RepriceJobWithBaseAmount)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
     public async Task<IActionResult> RecalculateJobRate(int jobId)
     {
         try
@@ -1963,6 +1995,22 @@ public class JobController(
         {
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(RecalculateJobRate)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ApplyRecalculatedJobRate(int jobId, bool isPrebook = false)
+    {
+        try
+        {
+            await RecalculateJobRateAsync(jobId, isPrebook);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(ApplyRecalculatedJobRate)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }

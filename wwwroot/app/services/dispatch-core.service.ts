@@ -1116,10 +1116,34 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
+    async applyRecalculatedJobRate(jobId: number, isPrebook: boolean): Promise<void> {
+        await this.$http.post('job/ApplyRecalculatedJobRate', null, {
+            params: {jobId, isPrebook}
+        });
+    }
+
     async simpleRepriceJobManual(jobId: number, isPrebook: boolean, isBulk: boolean, newPrice: number) {
         const data: ISimpleRepriceJobModel = {jobId, isPrebook, isBulk, newPrice};
         console.log("SimpleRepriceJobManual", data);
         await this.$http.post("job/SimpleRepriceJobManual", data);
+    }
+
+    async calculateJobPriceWithBaseAmount(jobId: number, isPrebook: boolean, baseAmount: number): Promise<number> {
+        const response = await this.$http.post<number>('job/CalculateJobPriceWithBaseAmount', {
+            jobId,
+            isPrebook,
+            baseAmount
+        });
+        return response.data;
+    }
+
+    async repriceJobWithBaseAmount(jobId: number, isPrebook: boolean, baseAmount: number): Promise<number> {
+        const response = await this.$http.post<number>('job/RepriceJobWithBaseAmount', {
+            jobId,
+            isPrebook,
+            baseAmount
+        });
+        return response.data;
     }
 
     async getExactCourierMatch(courierCode: string): Promise<ISuggestion> {

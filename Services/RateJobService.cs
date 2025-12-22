@@ -462,4 +462,134 @@ public async Task<decimal> GetJobRateUsAsync(JobRatingDetailsDto jobDetails)
             TruckHours = dto.TruckHours ?? (dto.WaitTime > 0 ? dto.WaitTime : null)
         };
     }
+
+    /// <summary>
+    /// Calculates and updates courier payment fields for a job.
+    /// Replaces the SQL trigger: tucJob_InsertUpdate_CalculateCourierPayment
+    /// </summary>
+    public async Task CalculateCourierPaymentAsync(int jobId, bool isPrebook)
+    {
+        try
+        {
+            var data = await jobRepository.GetCourierPaymentCalculationDataAsync(jobId, isPrebook);
+            if (data == null)
+            {
+                Log.Warning("Job not found for courier payment calculation. JobId: {JobId}, IsPrebook: {IsPrebook}",
+                    jobId, isPrebook);
+                return;
+            }
+
+            var result = CalculateCourierPaymentFields(data);
+            await jobRepository.UpdateCourierPaymentFieldsAsync(jobId, isPrebook, result);
+
+            Log.Debug("Courier payment calculated for JobId: {JobId}. Percentage: {Percentage}, Payment: {Payment}",
+                jobId, result.CourierPercentage, result.CourierPayment);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{ErrorMessage}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(RateJobService),
+                    nameof(CalculateCourierPaymentAsync)));
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Calculates courier payment fields based on the priority cascade:
+    /// 1. If PostAmountToCourier = false → 0
+    /// 2. If CourierId is NULL → 0
+    /// 3. If Courier is internal → 0
+    /// 4. CourierPercentageOverride (if set)
+    /// 5. ClientAvailableSpeed.CourierPercentage (if set)
+    /// 6. JobType.CourierPercentage (if set)
+    /// 7. Client.CourierPercentage (if set)
+    /// 8. Courier.uccrPercentage (if set)
+    /// 9. Default: 0.4 (40%)
+    /// </summary>
+    private static CourierPaymentResult CalculateCourierPaymentFields(CourierPaymentCalculationData data)
+    {
+        const decimal defaultPercentage = 0.4m;
+        const int subcontractorCourierTypeId = 3;
+
+        // Calculate courier percentage using priority cascade
+        var courierPercentage = CalculateCourierPercentage(data, defaultPercentage);
+
+        // Calculate courier payment
+        var rawBaseAmount = data.RawBaseAmount ?? 0;
+        var courierPayment = Math.Round(rawBaseAmount * courierPercentage, 4);
+
+        // If courier payment is 0, fuel and bonus are also 0
+        var courierFuel = courierPayment == 0 ? 0 : (data.FuelSurchargeAmount ?? 0);
+        var courierBonus = courierPayment == 0
+            ? 0
+            : Math.Round(rawBaseAmount * (data.CourierBonusPercentage ?? 0), 4);
+
+        // Handle subcontractor fields
+        int? masterCourierId = null;
+        decimal? subContractorPercentage = null;
+        decimal? subContractorFuelPercentage = null;
+        decimal? subContractorBonusPercentage = null;
+
+        if (data.CourierTypeId == subcontractorCourierTypeId)
+        {
+            masterCourierId = data.CourierMasterCourierId;
+
+            if (data.CourierMasterCourierId.HasValue)
+            {
+                subContractorPercentage = data.CourierSubContractorPercentage ?? 0;
+                subContractorFuelPercentage = data.CourierSubContractorFuelPercentage ?? 0;
+                subContractorBonusPercentage = data.CourierSubContractorBonusPercentage ?? 0;
+            }
+        }
+
+        return new CourierPaymentResult
+        {
+            CourierPercentage = courierPercentage,
+            CourierPayment = courierPayment,
+            CourierFuel = courierFuel,
+            CourierBonus = courierBonus,
+            MasterCourierId = masterCourierId,
+            SubContractorPercentage = subContractorPercentage,
+            SubContractorFuelPercentage = subContractorFuelPercentage,
+            SubContractorBonusPercentage = subContractorBonusPercentage
+        };
+    }
+
+    private static decimal CalculateCourierPercentage(CourierPaymentCalculationData data, decimal defaultPercentage)
+    {
+        // Rule 1: If PostAmountToCourier is false, return 0
+        if (data.PostAmountToCourier == false)
+            return 0;
+
+        // Rule 2: If no courier assigned, return 0
+        if (!data.CourierId.HasValue)
+            return 0;
+
+        // Rule 3: If the courier is internal, return 0
+        if (data.CourierIsInternal == true)
+            return 0;
+
+        // Rule 4: CourierPercentageOverride takes priority
+        if (data.CourierPercentageOverride.HasValue)
+            return Math.Round(data.CourierPercentageOverride.Value, 4);
+
+        // Rule 5: ClientAvailableSpeed.CourierPercentage
+        if (data.ClientSpeedCourierPercentage.HasValue)
+            return Math.Round(data.ClientSpeedCourierPercentage.Value, 4);
+
+        // Rule 6: JobType.CourierPercentage
+        if (data.JobTypeCourierPercentage.HasValue)
+            return Math.Round(data.JobTypeCourierPercentage.Value, 4);
+
+        // Rule 7: Client.CourierPercentage
+        if (data.ClientCourierPercentage.HasValue)
+            return Math.Round(data.ClientCourierPercentage.Value, 4);
+
+        // Rule 8: Courier.uccrPercentage
+        if (data.CourierPercentage.HasValue)
+            return Math.Round(data.CourierPercentage.Value, 4);
+
+        // Rule 9: Default 40%
+        return Math.Round(defaultPercentage, 4);
+    }
 }

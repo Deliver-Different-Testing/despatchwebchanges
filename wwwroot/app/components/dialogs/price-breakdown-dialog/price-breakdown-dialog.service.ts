@@ -2,7 +2,7 @@ import {PriceBreakdownDialogController} from "./price-breakdown-dialog.controlle
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import {IJob, PriceBreakdown} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
-import SimplePriceEditDialogService from "../simple-price-edit-dialog/simple-price-edit-dialog.service";
+import SimplePriceEditDialogService, {PriceEditResult} from "../simple-price-edit-dialog/simple-price-edit-dialog.service";
 
 class PriceBreakdownDialogService implements angular.IServiceProvider {
     static $inject = [
@@ -33,6 +33,28 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
         return isUsingOldMethod;
     }
 
+    private async handlePriceEditResult(result: PriceEditResult, job: IJob): Promise<number> {
+        switch (result.mode) {
+            case 'recalculate':
+                // Price was already calculated and applied in the dialog
+                this.toastrService.showSuccessToast(`Price recalculated to $${result.amount.toFixed(2)}`);
+                return result.amount;
+
+            case 'base':
+                // Price was already calculated and applied in the dialog
+                this.toastrService.showSuccessToast(`Price updated to $${result.amount.toFixed(2)} (base + surcharges)`);
+                return result.amount;
+
+            case 'gross':
+                await this.DispatchData.simpleRepriceJobManual(job.id, job.preBook, job.isBulkJob, result.amount);
+                this.toastrService.showSuccessToast(`Price set to $${result.amount.toFixed(2)}`);
+                return result.amount;
+
+            default:
+                throw new Error(`Unknown pricing mode: ${result.mode}`);
+        }
+    }
+
     async openPriceBreakdownDialog($event: MouseEvent,
                                    job: IJob): Promise<number | undefined> {
         try {
@@ -41,9 +63,8 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
             // Check if using the old amount method and just show text
             if(this.isUsingOldAmountMethod(job.charge, priceBreakdowns)) {
                 try {
-                    const newAmount = await this.simplePriceEditDialogService.openSimplePriceEditDialog($event, job);
-                    await this.DispatchData.simpleRepriceJobManual(job.id, job.preBook, newAmount);
-                    return newAmount;
+                    const result = await this.simplePriceEditDialogService.openSimplePriceEditDialog($event, job, job.preBook);
+                    return await this.handlePriceEditResult(result, job);
                 } catch (error) {
                     if(!error) return;
 
