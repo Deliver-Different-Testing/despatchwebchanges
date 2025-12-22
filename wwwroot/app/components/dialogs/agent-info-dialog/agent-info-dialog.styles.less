@@ -1,5 +1,9 @@
 @import "../../../../css/variables.less";
 
+// Neutral selection color
+@neutral-selected: #57534e;
+@neutral-selected-bg: rgba(87, 83, 78, 0.06);
+
 .agent-info-dialog {
   min-width: 800px;
   max-width: 900px;
@@ -15,19 +19,19 @@
     min-width: 95%;
     width: 95%;
   }
-  
+
   // Dialog body
   .dialog-body {
     padding: 0;
-    background-color: #f8fafc;
+    background-color: @surface-container-lowest;
 
     .content-wrapper {
-      padding: 24px;
-      gap: 24px;
+      padding: @spacing * 1.5;
+      gap: @spacing * 1.5;
 
       @media (max-width: 959px) {
-        padding: 16px;
-        gap: 16px;
+        padding: @spacing;
+        gap: @spacing;
       }
     }
   }
@@ -35,8 +39,8 @@
   // Card styling
   .info-card {
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    border-radius: @radius-lg;
+    box-shadow: @elevation-1;
     overflow: hidden;
     height: 100%;
 
@@ -44,12 +48,12 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 20px 24px 16px;
-      border-bottom: 1px solid #e2e8f0;
-      background: linear-gradient(to right, #f8fafc, white);
+      padding: 20px @spacing * 1.5 @spacing;
+      border-bottom: 1px solid @surface-container-high;
+      background: @surface-container-low;
 
       md-icon {
-        color: @primary-blue;
+        color: @neutral-selected;
         font-size: 20px;
         width: 20px;
         height: 20px;
@@ -67,15 +71,15 @@
   // Agent details section
   .agent-details-section {
     .info-grid {
-      padding: 24px;
+      padding: @spacing * 1.5;
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 20px;
 
       @media (max-width: 599px) {
         grid-template-columns: 1fr;
-        padding: 16px;
-        gap: 16px;
+        padding: @spacing;
+        gap: @spacing;
       }
 
       .info-item {
@@ -110,13 +114,13 @@
           &.contact-link {
             display: flex;
             align-items: center;
-            gap: 8px;
-            color: @primary-blue;
+            gap: @spacing / 2;
+            color: @neutral-selected;
             text-decoration: none;
-            transition: color 0.2s ease;
+            transition: color @duration-short @easing-standard;
 
             &:hover {
-              color: darken(@primary-blue, 15%);
+              color: darken(@neutral-selected, 15%);
             }
 
             md-icon {
@@ -129,7 +133,7 @@
           &.address-value {
             display: flex;
             align-items: flex-start;
-            gap: 8px;
+            gap: @spacing / 2;
 
             md-icon {
               color: @text-muted;
@@ -158,18 +162,18 @@
     }
 
     .notes-section {
-      border-top: 1px solid #e2e8f0;
+      border-top: 1px solid @surface-container-high;
 
       .notes-content {
-        padding: 24px;
+        padding: @spacing * 1.5;
         font-size: @font-base;
         line-height: @line-relaxed;
         color: @text-dark;
         white-space: pre-line;
-        background: #f8fafc;
+        background: @surface-container-lowest;
 
         @media (max-width: 599px) {
-          padding: 16px;
+          padding: @spacing;
         }
       }
     }
@@ -187,7 +191,7 @@
         }
 
         &::-webkit-scrollbar-track {
-          background: #f1f5f9;
+          background: @surface-container-low;
         }
 
         &::-webkit-scrollbar-thumb {
@@ -200,12 +204,12 @@
         }
 
         .airport-item {
-          padding: 20px 24px;
-          border-bottom: 1px solid #e2e8f0;
-          transition: background-color 0.2s ease;
+          padding: 20px @spacing * 1.5;
+          border-bottom: 1px solid @surface-container-high;
+          transition: background-color @duration-short @easing-standard;
 
           &:hover {
-            background-color: @hover-color;
+            background-color: @neutral-selected-bg;
           }
 
           &:last-child {
@@ -216,13 +220,13 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 8px;
+            margin-bottom: @spacing / 2;
 
             .airport-code {
-              background: @primary-blue;
+              background: @neutral-selected;
               color: white;
-              padding: 4px 8px;
-              border-radius: 4px;
+              padding: 4px @spacing / 2;
+              border-radius: @radius-sm;
               font-size: @font-sm;
               font-weight: @weight-semibold;
               letter-spacing: 0.5px;
@@ -279,14 +283,14 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 48px 24px;
+        padding: @spacing * 3 @spacing * 1.5;
         color: @text-muted;
 
         md-icon {
           font-size: 48px;
           width: 48px;
           height: 48px;
-          margin-bottom: 16px;
+          margin-bottom: @spacing;
           opacity: 0.5;
         }
 
@@ -296,6 +300,25 @@
           font-style: italic;
         }
       }
+    }
+  }
+}
+
+// NZ tenant theme overrides
+.nz-tenant .agent-info-dialog {
+  .card-header md-icon {
+    color: @nz-primary-dark;
+  }
+
+  .airport-code {
+    background: @nz-primary-dark;
+  }
+
+  .contact-link {
+    color: @nz-primary-dark;
+
+    &:hover {
+      color: darken(@nz-primary-dark, 15%);
     }
   }
 }

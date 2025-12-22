@@ -1,0 +1,208 @@
+@import 'variables';
+
+// ===========================================
+// Global MD Button Styles
+// ===========================================
+
+.md-button {
+  border-radius: @radius-md;
+  font-weight: @weight-medium;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  transition: all @duration-short @easing-standard;
+  min-height: 36px;
+  line-height: 36px;
+  padding: 0 16px;
+
+  // Icon inside button
+  md-icon {
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+  }
+
+  // Disabled state
+  &[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+}
+
+// ===========================================
+// Raised Button (md-raised)
+// ===========================================
+
+.md-button.md-raised {
+  box-shadow: @elevation-1;
+
+  &:hover:not([disabled]) {
+    box-shadow: @elevation-2;
+    transform: translateY(-1px);
+  }
+
+  &:active:not([disabled]) {
+    box-shadow: @elevation-1;
+    transform: translateY(0);
+  }
+
+  &[disabled] {
+    box-shadow: none;
+  }
+}
+
+// ===========================================
+// Icon Button (md-icon-button)
+// ===========================================
+
+.md-button.md-icon-button {
+  border-radius: @radius-full;
+  min-width: 40px;
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  line-height: 40px;
+
+  md-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  // Small icon button variant
+  &.md-icon-button-sm {
+    min-width: 32px;
+    width: 32px;
+    height: 32px;
+    min-height: 32px;
+    line-height: 32px;
+
+    md-icon {
+      width: 20px;
+      height: 20px;
+    }
+  }
+}
+
+// ===========================================
+// FAB Button (md-fab)
+// ===========================================
+
+.md-button.md-fab {
+  border-radius: @radius-full;
+  box-shadow: @elevation-2;
+
+  &:hover:not([disabled]) {
+    box-shadow: @elevation-3;
+    transform: translateY(-2px);
+  }
+
+  &:active:not([disabled]) {
+    box-shadow: @elevation-2;
+    transform: translateY(0);
+  }
+
+  &.md-mini {
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+  }
+}
+
+// ===========================================
+// Button in Toolbars
+// ===========================================
+
+md-toolbar .md-button.md-icon-button {
+  color: inherit;
+}
+
+// ===========================================
+// Button in Dialog Actions
+// ===========================================
+
+md-dialog-actions .md-button {
+  margin-left: 8px;
+
+  &:first-child {
+    margin-left: 0;
+  }
+}
+
+// ===========================================
+// Button Groups
+// ===========================================
+
+.button-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+
+  .md-button {
+    margin: 0;
+  }
+}
+
+// ===========================================
+// Cancel/Secondary Button Style
+// ===========================================
+
+.md-button.cancel-btn,
+.md-button.btn-cancel,
+.md-button.btn-secondary {
+  color: @text-muted;
+
+  &:hover:not([disabled]) {
+    color: @text-dark;
+  }
+}
+
+// ===========================================
+// Button with Icon
+// ===========================================
+
+.md-button {
+  md-icon + span,
+  span + md-icon {
+    margin-left: 6px;
+  }
+
+  // Icon on the left
+  &.btn-icon-left md-icon {
+    margin-right: 6px;
+    margin-left: -4px;
+  }
+
+  // Icon on the right
+  &.btn-icon-right md-icon {
+    margin-left: 6px;
+    margin-right: -4px;
+  }
+}
+
+// ===========================================
+// Button Sizes
+// ===========================================
+
+.md-button.btn-sm {
+  min-height: 28px;
+  line-height: 28px;
+  padding: 0 12px;
+  font-size: @font-sm;
+}
+
+.md-button.btn-lg {
+  min-height: 44px;
+  line-height: 44px;
+  padding: 0 24px;
+  font-size: @font-lg;
+}
+
+// ===========================================
+// Full Width Button
+// ===========================================
+
+.md-button.btn-block {
+  width: 100%;
+  display: block;
+}

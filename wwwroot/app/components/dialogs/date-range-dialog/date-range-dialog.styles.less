@@ -1,31 +1,28 @@
-// Variables (keep at root level)
+@import '../../../../css/variables';
+
+// Local dialog variables
 @dialog-max-width: 1000px;
 @dialog-width: 90%;
 @calendar-min-width: 300px;
 @summary-min-width: 250px;
-@spacing-xs: 7px;
-@spacing-sm: 8px;
-@spacing-md: 16px;
-@spacing-lg: 24px;
-@font-size-small: 12px;
-@font-size-normal: 14px;
-@font-size-medium: 16px;
-@font-size-large: 20px;
 @breakpoint-md: 959px;
-@text-primary: rgba(0, 0, 0, 0.87);
-@text-secondary: rgba(0, 0, 0, 0.54);
-@divider-color: rgba(0, 0, 0, 0.12);
-@background-hover: rgba(0, 0, 0, 0.04);
+
+// Neutral selection color
+@neutral-selected: #57534e;
+@neutral-selected-bg: rgba(87, 83, 78, 0.06);
+@neutral-selected-border: rgba(87, 83, 78, 0.12);
 
 .date-range-dialog-component {
   &.date-range-dialog {
     max-width: @dialog-max-width;
     width: @dialog-width;
+    border-radius: @dialog-border-radius;
+    overflow: hidden;
   }
 
   .md-toolbar-tools {
     .popup-icon {
-      margin-right: @spacing-md;
+      margin-right: @spacing;
     }
   }
 
@@ -34,43 +31,49 @@
     padding-left: 0;
 
     .material-icons {
-      margin-right: @spacing-sm;
+      margin-right: @spacing / 2;
     }
 
     .subheader-text {
-      font-size: @font-size-normal;
-      font-weight: 500;
+      font-size: @font-base;
+      font-weight: @weight-medium;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
   }
 
   .calendar-container {
-    margin: @spacing-sm;
+    margin: @spacing / 2;
     min-width: @calendar-min-width;
 
     @media screen and (max-width: @breakpoint-md) {
-      margin-bottom: @spacing-lg;
+      margin-bottom: @spacing * 1.5;
     }
   }
 
   .date-summary {
-    margin: @spacing-sm;
+    margin: @spacing / 2;
     min-width: @summary-min-width;
 
     .summary-card {
       background: white;
-      margin-top: @spacing-sm;
-      border-radius: 4px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      margin-top: @spacing / 2;
+      border-radius: @radius-md;
+      box-shadow: @elevation-1;
     }
 
     .date-item {
-      padding: @spacing-md;
-      transition: background-color 0.2s ease;
+      padding: @spacing;
+      transition: background-color @duration-short @easing-standard;
+      cursor: pointer;
 
       &:hover {
-        background-color: @background-hover;
+        background-color: @surface-container-low;
+      }
+
+      &.active {
+        background-color: @neutral-selected-bg;
+        border-left: 3px solid @neutral-selected;
       }
 
       .date-content {
@@ -81,33 +84,48 @@
       }
 
       .date-icon {
-        color: @text-secondary;
-        font-size: @spacing-lg;
-        margin-bottom: @spacing-sm;
+        color: @text-muted;
+        font-size: 24px;
+        margin-bottom: @spacing / 2;
       }
 
       .date-label {
-        color: @text-secondary;
-        font-size: @font-size-small;
-        font-weight: 500;
+        color: @text-muted;
+        font-size: @font-xs;
+        font-weight: @weight-medium;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        margin-bottom: @spacing-xs;
+        margin-bottom: 7px;
       }
 
       .date-value {
-        color: @text-primary;
-        font-size: @font-size-medium;
-        font-weight: 400;
+        color: @text-dark;
+        font-size: @font-lg;
+        font-weight: @weight-normal;
 
         &.selected {
-          color: @text-primary;
+          color: @neutral-selected;
+          font-weight: @weight-semibold;
         }
       }
     }
 
     md-divider {
       margin: 0;
+    }
+  }
+
+  // Dialog actions
+  md-dialog-actions {
+    padding: @spacing @spacing * 1.5;
+    border-top: 1px solid @surface-container-high;
+
+    .md-button {
+      border-radius: @radius-md;
+
+      &.md-primary {
+        min-width: 100px;
+      }
     }
   }
 
@@ -118,5 +136,16 @@
 
   &.md-transition-out {
     transition: all 0.2s ease-in;
+  }
+}
+
+// NZ tenant theme overrides
+.nz-tenant .date-range-dialog-component {
+  .date-item.active {
+    border-left-color: @nz-primary;
+  }
+
+  .date-value.selected {
+    color: @nz-primary-dark;
   }
 }

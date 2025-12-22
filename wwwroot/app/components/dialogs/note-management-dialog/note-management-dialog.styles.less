@@ -1,7 +1,14 @@
+@import '../../../../css/variables';
+
+// Neutral selection color
+@neutral-selected: #57534e;
+@neutral-selected-bg: rgba(87, 83, 78, 0.06);
+@neutral-focus-ring: rgba(87, 83, 78, 0.12);
+
 .job-note-editor-dialog {
   min-width: 600px;
   max-width: 900px;
-  border-radius: 8px;
+  border-radius: @dialog-border-radius;
   overflow: hidden;
 
   // Content Wrapper
@@ -10,28 +17,28 @@
   }
 
   .content-wrapper {
-    padding: 32px 32px 24px;
+    padding: @spacing * 2 @spacing * 2 @spacing * 1.5;
   }
 
   // Form Sections
   .form-section {
-    margin-bottom: 32px;
+    margin-bottom: @spacing * 2;
 
     &:last-child {
       margin-bottom: 0;
     }
 
     .section-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: rgba(0, 0, 0, 0.87);
-      margin: 0 0 16px 0;
+      font-size: @font-lg;
+      font-weight: @weight-semibold;
+      color: @text-dark;
+      margin: 0 0 @spacing 0;
       display: flex;
       align-items: center;
 
       md-icon {
-        margin: 0 8px 0 0 !important;
-        color: #1976d2;
+        margin: 0 @spacing / 2 0 0 !important;
+        color: @neutral-selected;
       }
     }
   }
@@ -42,23 +49,24 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
+      margin-bottom: @spacing;
 
       .section-title {
         margin: 0;
       }
 
       .add-type-button {
-        color: #1976d2;
+        color: @neutral-selected;
+        border-radius: @radius-md;
 
         &:hover {
-          background-color: rgba(25, 118, 210, 0.08);
+          background-color: @neutral-selected-bg;
         }
       }
     }
 
     .type-selector {
-      margin-bottom: 16px;
+      margin-bottom: @spacing;
     }
   }
 
@@ -69,39 +77,40 @@
     .description-toggle-button {
       display: flex;
       align-items: center;
-      padding: 8px 12px;
+      padding: @spacing / 2 12px;
       margin: 0;
-      border-radius: 6px;
-      background-color: rgba(25, 118, 210, 0.04);
-      border: 1px solid rgba(25, 118, 210, 0.12);
-      color: #1976d2;
+      border-radius: @radius-md;
+      background-color: @neutral-selected-bg;
+      border: 1px solid @neutral-focus-ring;
+      color: @neutral-selected;
       min-height: 40px;
-      font-size: 14px;
+      font-size: @font-base;
       text-transform: none;
+      transition: background-color @duration-short @easing-standard;
 
       md-icon {
-        margin-right: 8px;
+        margin-right: @spacing / 2;
       }
 
       &:hover {
-        background-color: rgba(25, 118, 210, 0.08);
+        background-color: rgba(87, 83, 78, 0.1);
       }
     }
 
     .description-card {
       margin-top: 12px;
-      border-radius: 6px;
-      border: 1px solid rgba(0, 0, 0, 0.12);
-      background-color: #fafafa;
+      border-radius: @radius-md;
+      border: 1px solid @surface-container-high;
+      background-color: @surface-container-lowest;
 
       .description-content {
-        padding: 16px;
+        padding: @spacing;
 
         p {
           margin: 0;
-          font-size: 14px;
-          line-height: 1.5;
-          color: rgba(0, 0, 0, 0.75);
+          font-size: @font-base;
+          line-height: @line-normal;
+          color: @text-dark;
         }
       }
     }
@@ -110,27 +119,27 @@
   // Creator Section
   .creator-section {
     .creator-card {
-      border: 1px solid rgba(0, 0, 0, 0.12);
-      border-radius: 8px;
-      background-color: #fafafa;
+      border: 1px solid @surface-container-high;
+      border-radius: @radius-lg;
+      background-color: @surface-container-lowest;
       overflow: hidden;
 
       .creator-header {
-        padding: 20px 24px 0;
+        padding: 20px @spacing * 1.5 0;
 
         h3 {
-          font-size: 18px;
-          font-weight: 600;
-          color: rgba(0, 0, 0, 0.87);
+          font-size: @font-xl;
+          font-weight: @weight-semibold;
+          color: @text-dark;
           margin: 0;
         }
       }
 
       .creator-content {
-        padding: 16px 24px;
+        padding: @spacing @spacing * 1.5;
 
         .checkbox-wrapper {
-          margin-top: 8px;
+          margin-top: @spacing / 2;
         }
       }
 
@@ -138,17 +147,20 @@
         display: flex;
         justify-content: flex-end;
         gap: 12px;
-        padding: 16px 24px 20px;
-        background-color: rgba(0, 0, 0, 0.02);
-        border-top: 1px solid rgba(0, 0, 0, 0.06);
+        padding: @spacing @spacing * 1.5 20px;
+        background-color: @surface-container-low;
+        border-top: 1px solid @surface-container;
 
         .cancel-button {
-          color: rgba(0, 0, 0, 0.6);
+          color: @text-muted;
+          border-radius: @radius-md;
         }
 
         .create-button {
+          border-radius: @radius-md;
+
           .button-spinner {
-            margin-right: 8px;
+            margin-right: @spacing / 2;
           }
         }
       }
@@ -158,10 +170,10 @@
   // Note Content Section
   .note-content-section {
     .note-textarea {
-      margin-bottom: 16px;
+      margin-bottom: @spacing;
 
       textarea {
-        line-height: 1.5;
+        line-height: @line-normal;
       }
     }
 
@@ -172,8 +184,8 @@
         margin: 0;
 
         md-icon {
-          margin-right: 8px;
-          color: #ff9800;
+          margin-right: @spacing / 2;
+          color: @primary-warning;
         }
       }
     }
@@ -181,15 +193,15 @@
 
   // Metadata Section
   .metadata-section {
-    background-color: #f8f9fa;
-    border-radius: 8px;
+    background-color: @surface-container-lowest;
+    border-radius: @radius-lg;
     padding: 20px;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: 1px solid @surface-container;
 
     .section-title {
-      color: rgba(0, 0, 0, 0.7);
-      font-size: 14px;
-      margin-bottom: 16px;
+      color: @text-muted;
+      font-size: @font-base;
+      margin-bottom: @spacing;
     }
 
     .metadata-grid {
@@ -208,7 +220,7 @@
         margin-top: 2px;
 
         md-icon {
-          color: rgba(0, 0, 0, 0.54);
+          color: @text-muted;
         }
       }
 
@@ -218,17 +230,17 @@
         gap: 2px;
 
         .metadata-label {
-          font-size: 12px;
-          color: rgba(0, 0, 0, 0.6);
+          font-size: @font-xs;
+          color: @text-muted;
           text-transform: uppercase;
           letter-spacing: 0.5px;
-          font-weight: 500;
+          font-weight: @weight-medium;
         }
 
         .metadata-value {
-          font-size: 14px;
-          color: rgba(0, 0, 0, 0.87);
-          line-height: 1.4;
+          font-size: @font-base;
+          color: @text-dark;
+          line-height: @line-snug;
         }
       }
     }
@@ -239,10 +251,10 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
-    border-radius: 6px;
+    padding: 12px @spacing;
+    border-radius: @radius-md;
     margin-top: 12px;
-    font-size: 14px;
+    font-size: @font-base;
 
     &.alert-info {
       background-color: rgba(33, 150, 243, 0.08);
@@ -260,7 +272,7 @@
       color: #e65100;
 
       md-icon {
-        color: #ff9800;
+        color: @primary-warning;
       }
     }
 
@@ -276,16 +288,22 @@
     }
 
     label {
-      font-weight: 500;
-      color: rgba(0, 0, 0, 0.7);
+      font-weight: @weight-medium;
+      color: @text-muted;
     }
 
     input, textarea {
-      font-size: 14px;
+      font-size: @font-base;
+      transition: border-color @duration-short @easing-standard, box-shadow @duration-short @easing-standard;
 
       &::placeholder {
         color: rgba(0, 0, 0, 0.4);
         font-style: italic;
+      }
+
+      &:focus {
+        border-color: @neutral-selected;
+        box-shadow: 0 0 0 3px @neutral-focus-ring;
       }
     }
 
@@ -293,26 +311,26 @@
       margin-top: 4px;
 
       div {
-        font-size: 12px;
-        color: #f44336;
+        font-size: @font-xs;
+        color: @error-red;
       }
     }
   }
 
   md-checkbox {
-    margin: 8px 0;
+    margin: @spacing / 2 0;
 
     .md-label {
-      font-size: 14px;
-      color: rgba(0, 0, 0, 0.87);
+      font-size: @font-base;
+      color: @text-dark;
     }
   }
 
   // Dialog Actions
   .dialog-actions {
-    padding: 16px 32px 24px;
-    background-color: #fafafa;
-    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    padding: @spacing @spacing * 2 @spacing * 1.5;
+    background-color: @surface-container-lowest;
+    border-top: 1px solid @surface-container;
     gap: 12px;
   }
 
@@ -328,16 +346,16 @@
     max-width: 95vw;
 
     .content-wrapper {
-      padding: 24px 20px 16px;
+      padding: @spacing * 1.5 20px @spacing;
     }
 
     .dialog-actions {
-      padding: 12px 20px 16px;
+      padding: 12px 20px @spacing;
     }
 
     .creator-section .creator-card {
       .creator-header {
-        padding: 16px 20px 0;
+        padding: @spacing 20px 0;
       }
 
       .creator-content {
@@ -345,8 +363,25 @@
       }
 
       .creator-actions {
-        padding: 12px 20px 16px;
+        padding: 12px 20px @spacing;
       }
     }
+  }
+}
+
+// NZ tenant theme overrides
+.nz-tenant .job-note-editor-dialog {
+  .section-title md-icon {
+    color: @nz-primary-dark;
+  }
+
+  .add-type-button {
+    color: @nz-primary-dark;
+  }
+
+  .description-toggle-button {
+    background-color: fade(@nz-primary, 8%);
+    border-color: fade(@nz-primary, 15%);
+    color: @nz-primary-dark;
   }
 }

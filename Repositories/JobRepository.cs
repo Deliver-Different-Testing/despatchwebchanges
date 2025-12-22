@@ -3119,6 +3119,104 @@ public partial class JobRepository(
         }
     }
 
+    public async Task<decimal> CalculateJobPriceWithBaseAmountAsync(RepriceJobWithBaseAmountModel data)
+    {
+        try
+        {
+            // Get fuel percentage using compiled query
+            var fuelPercentage = data.IsPrebook
+                ? await Context.GetJobBookingFuelPercentageAsync(data.JobId)
+                : await Context.GetJobFuelPercentageAsync(data.JobId);
+
+            return CalculateTotalWithFuelSurcharge(data.BaseAmount, fuelPercentage);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository),
+                    nameof(CalculateJobPriceWithBaseAmountAsync)));
+            throw;
+        }
+    }
+
+    public async Task<decimal> RepriceJobWithBaseAmountAsync(RepriceJobWithBaseAmountModel data)
+    {
+        try
+        {
+            // Get fuel percentage using compiled query
+            var fuelPercentage = data.IsPrebook
+                ? await Context.GetJobBookingFuelPercentageAsync(data.JobId)
+                : await Context.GetJobFuelPercentageAsync(data.JobId);
+
+            var (totalAmount, fuelSurcharge) = CalculatePriceComponents(data.BaseAmount, fuelPercentage);
+
+            if (data.IsPrebook)
+            {
+                var rowsChanged = await Context.TucJobBookings
+                    .Where(j => j.UcbkId == data.JobId)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(j => j.RatedManually, true)
+                        .SetProperty(j => j.UcbkAmount, totalAmount));
+
+                if (rowsChanged == 0)
+                    throw new InvalidOperationException($"Job booking {data.JobId} not found");
+            }
+            else
+            {
+                // Try regular jobs first
+                var rowsChanged = await Context.TucJobs
+                    .Where(j => j.UcjbId == data.JobId)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(j => j.RatedManually, true)
+                        .SetProperty(j => j.UcjbAmount, totalAmount)
+                        .SetProperty(j => j.FuelSurchargeAmount, fuelSurcharge)
+                        .SetProperty(j => j.RawBaseAmount, data.BaseAmount));
+
+                // Fall back to archived jobs if not found
+                if (rowsChanged == 0)
+                {
+                    rowsChanged = await Context.TucJobArchives
+                        .Where(j => j.UcjbId == data.JobId)
+                        .ExecuteUpdateAsync(s => s
+                            .SetProperty(j => j.RatedManually, true)
+                            .SetProperty(j => j.UcjbAmount, totalAmount)
+                            .SetProperty(j => j.FuelSurchargeAmount, fuelSurcharge)
+                            .SetProperty(j => j.RawBaseAmount, data.BaseAmount));
+                }
+
+                if (rowsChanged == 0)
+                    throw new InvalidOperationException($"Job {data.JobId} not found");
+            }
+
+            return totalAmount;
+        }
+        catch (InvalidOperationException)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository),
+                    nameof(RepriceJobWithBaseAmountAsync)));
+            throw;
+        }
+    }
+
+    private static decimal CalculateTotalWithFuelSurcharge(decimal baseAmount, decimal? fuelPercentage)
+    {
+        var fuelSurcharge = baseAmount * (fuelPercentage ?? 0);
+        var totalAmount = baseAmount + fuelSurcharge;
+        return Math.Round(totalAmount, 2, MidpointRounding.AwayFromZero);
+    }
+
+    private static (decimal TotalAmount, decimal FuelSurcharge) CalculatePriceComponents(decimal baseAmount, decimal? fuelPercentage)
+    {
+        var fuelSurcharge = Math.Round(baseAmount * (fuelPercentage ?? 0), 2, MidpointRounding.AwayFromZero);
+        var totalAmount = Math.Round(baseAmount + fuelSurcharge, 2, MidpointRounding.AwayFromZero);
+        return (totalAmount, fuelSurcharge);
+    }
+
     public async Task AssignCourierToJobAsync(List<int> jobIds, int courierId)
     {
         var rowsChanged = await AssignCourierToJobsAsync(jobIds, courierId);
@@ -3890,7 +3988,7 @@ public partial class JobRepository(
         var staffId = _infoService.GetStaffId();
         var currentTenantTime = _infoService.GetCurrentTenantTime();
 
-        // Single query: insert only if job exists in TucJobs and no tracker exists yet
+        // Single query: insert only if a job exists in TucJobs and no tracker exists yet
         await Context.Database.ExecuteSqlInterpolatedAsync($@"
             INSERT INTO tucJobReadTracker (JobId, HasBeenRead, ReadByStaffId, ReadTimestamp)
             SELECT {jobId}, 1, {staffId}, {currentTenantTime}
@@ -4389,5 +4487,100 @@ public partial class JobRepository(
                 .SetProperty(j => j.UcjbStatus, j => j.UcjbStatus < 1 ? (int)JobStatus.Dispatched : j.UcjbStatus)
                 .SetProperty(j => j.InternalStatus, (int)InternalJobStatus.AwaitingPod)
             );
+    }
+
+    public async Task<CourierPaymentCalculationData> GetCourierPaymentCalculationDataAsync(int jobId, bool isPrebook)
+    {
+        try
+        {
+            // Note: Courier payment calculation is only applicable to actual jobs (TucJob),
+            // not to prebook/recurring jobs (TucJobBooking) since the SQL trigger only fires on tucJob.
+            // The TucJobBooking table doesn't have all the required fields (RawBaseAmount, CourierBonus, etc.)
+            if (isPrebook)
+            {
+                Log.Debug("Courier payment calculation not applicable for prebook jobs. JobId: {JobId}", jobId);
+                return null;
+            }
+
+            return await Context.TucJobs
+                .AsNoTracking()
+                .Where(j => j.UcjbId == jobId)
+                .Select(j => new CourierPaymentCalculationData
+                {
+                    JobId = j.UcjbId,
+                    RawBaseAmount = j.RawBaseAmount,
+                    FuelSurchargeAmount = j.FuelSurchargeAmount,
+                    CourierPercentageOverride = j.CourierPercentageOverride,
+                    CourierId = j.UcjbCourierId,
+                    ClientId = j.UcjbClientId,
+                    SpeedId = j.UcjbSpeed,
+                    JobRelationshipTypeId = j.JobRelationshipTypeId,
+
+                    // Job Relationship Type
+                    PostAmountToCourier = j.JobRelationshipType != null && j.JobRelationshipType.PostAmountToCourier,
+
+                    // Courier fields
+                    CourierIsInternal = j.UcjbCourier != null && j.UcjbCourier.UccrInternal,
+                    CourierPercentage = j.UcjbCourier != null ? (decimal?)j.UcjbCourier.UccrPercentage : null,
+                    CourierBonusPercentage = j.UcjbCourier != null ? j.UcjbCourier.BonusPercentage : null,
+                    CourierTypeId = j.UcjbCourier != null ? j.UcjbCourier.CourierTypeId : (int?)null,
+                    CourierMasterCourierId = j.UcjbCourier != null ? j.UcjbCourier.MasterCourierId : null,
+                    CourierSubContractorPercentage = j.UcjbCourier != null ? j.UcjbCourier.SubContractorPercentage : null,
+                    CourierSubContractorFuelPercentage = j.UcjbCourier != null ? j.UcjbCourier.SubContractorFuelPercentage : null,
+                    CourierSubContractorBonusPercentage = j.UcjbCourier != null ? j.UcjbCourier.SubContractorBonusPercentage : null,
+
+                    // Client-Available Speed
+                    ClientSpeedCourierPercentage = Context.TblClientAvailableSpeeds
+                        .Where(cas => cas.ClientId == j.UcjbClientId && cas.SpeedId == j.UcjbSpeed)
+                        .Select(cas => cas.CourierPercentage)
+                        .FirstOrDefault(),
+
+                    // Job Type (Speed)
+                    JobTypeCourierPercentage = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.CourierPercentage : null,
+
+                    // Client
+                    ClientCourierPercentage = j.UcjbClient != null ? j.UcjbClient.CourierPercentage : null
+                })
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository),
+                    nameof(GetCourierPaymentCalculationDataAsync)));
+            throw;
+        }
+    }
+
+    public async Task UpdateCourierPaymentFieldsAsync(int jobId, bool isPrebook, CourierPaymentResult result)
+    {
+        try
+        {
+            if (isPrebook)
+            {
+                Log.Debug("Courier payment update not applicable for prebook jobs. JobId: {JobId}", jobId);
+                return;
+            }
+
+            await Context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.CourierPercentage, result.CourierPercentage)
+                    .SetProperty(j => j.CourierPayment, result.CourierPayment)
+                    .SetProperty(j => j.CourierFuel, result.CourierFuel)
+                    .SetProperty(j => j.CourierBonus, result.CourierBonus)
+                    .SetProperty(j => j.MasterCourierId, result.MasterCourierId)
+                    .SetProperty(j => j.SubContractorPercentage, result.SubContractorPercentage)
+                    .SetProperty(j => j.SubContractorFuelPercentage, result.SubContractorFuelPercentage)
+                    .SetProperty(j => j.SubContractorBonusPercentage, result.SubContractorBonusPercentage)
+                );
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository),
+                    nameof(UpdateCourierPaymentFieldsAsync)));
+            throw;
+        }
     }
 }

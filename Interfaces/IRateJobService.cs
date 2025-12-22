@@ -9,4 +9,5 @@ public interface IRateJobService
     Task RateJobUsAsync(JobRatingDetailsDto jobDetails);
     Task<decimal> GetJobRateNzAsync(JobRatingDetailsDtoNz jobDetails);
     Task<decimal> GetJobRateUsAsync(JobRatingDetailsDto jobDetails);
+    Task CalculateCourierPaymentAsync(int jobId, bool isPrebook);
 }
