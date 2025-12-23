@@ -1,4 +1,4 @@
-﻿<md-dialog class="price-edit-dialog" aria-label="Edit Price">
+<md-dialog class="price-edit-dialog" aria-label="Edit Price">
 
     <md-toolbar class="md-hue-1">
         <div class="md-toolbar-tools">
@@ -15,48 +15,49 @@
         <!-- Loading State -->
         <div class="loading-overlay" ng-if="ctrl.isLoading">
             <md-progress-circular md-mode="indeterminate" md-diameter="48"></md-progress-circular>
-            <span class="loading-text">Calculating price...</span>
+            <span class="loading-text">Saving price...</span>
         </div>
 
-        <!-- Confirmation Panel -->
-        <div class="confirmation-panel" ng-if="ctrl.showConfirmation && !ctrl.isLoading">
+        <!-- Result Panel -->
+        <div class="confirmation-panel" ng-if="ctrl.showResult && !ctrl.isLoading">
             <div class="confirmation-icon">
-                <md-icon md-font-set="material-symbols-outlined">check_circle</md-icon>
+                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">check_circle</md-icon>
             </div>
-            <h3 class="confirmation-title">Price Calculated</h3>
+            <h3 class="confirmation-title">Price Updated</h3>
             <p class="confirmation-subtitle">
-                <span ng-if="ctrl.selectedMode === 'recalculate'">Based on current job details and rates</span>
-                <span ng-if="ctrl.selectedMode === 'base'">Base amount with surcharges applied</span>
+                <span ng-if="ctrl.selectedMode === 'recalculate'">Recalculated based on job details</span>
+                <span ng-if="ctrl.selectedMode === 'base'">Raw base amount applied</span>
+                <span ng-if="ctrl.selectedMode === 'gross'">Gross amount applied</span>
             </p>
 
             <div class="calculated-amount-display">
                 <span class="amount-label">New Price</span>
-                <span class="amount-value">${{ctrl.calculatedAmount.toFixed(2)}}</span>
+                <span class="amount-value">${{ctrl.savedAmount.toFixed(2)}}</span>
             </div>
 
-            <div class="price-comparison" ng-if="ctrl.job.charge !== ctrl.calculatedAmount">
+            <div class="price-comparison" ng-if="ctrl.job.charge !== ctrl.savedAmount">
                 <div class="comparison-item">
-                    <span class="comparison-label">Current Price</span>
+                    <span class="comparison-label">Previous Price</span>
                     <span class="comparison-value">${{ctrl.job.charge.toFixed(2)}}</span>
                 </div>
                 <md-icon md-font-set="material-symbols-outlined" class="comparison-arrow">arrow_forward</md-icon>
                 <div class="comparison-item new">
                     <span class="comparison-label">New Price</span>
-                    <span class="comparison-value">${{ctrl.calculatedAmount.toFixed(2)}}</span>
+                    <span class="comparison-value">${{ctrl.savedAmount.toFixed(2)}}</span>
                 </div>
             </div>
 
             <p class="confirmation-hint">
-                <md-icon md-font-set="material-symbols-outlined">info</md-icon>
-                Click confirm to apply this price to job {{ctrl.job.jobNo}}
+                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">info</md-icon>
+                Job {{ctrl.job.jobNo}} has been updated
             </p>
         </div>
 
         <!-- Main Edit Panel -->
-        <div class="dialog-body" ng-if="!ctrl.showConfirmation && !ctrl.isLoading">
+        <div class="dialog-body" ng-if="!ctrl.showResult && !ctrl.isLoading">
             <!-- Job Reference Badge -->
             <div class="job-badge">
-                <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
+                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">local_shipping</md-icon>
                 <span>{{ctrl.job.jobNo}}</span>
             </div>
 
@@ -72,7 +73,7 @@
                         </div>
                     </div>
                     <div class="option-icon recalculate">
-                        <md-icon md-font-set="material-symbols-outlined" ng-class="{'md-primary': ctrl.selectedMode === 'recalculate'}">sync</md-icon>
+                        <md-icon class="dialog-icon" md-font-set="material-symbols-outlined" ng-class="{'md-primary': ctrl.selectedMode === 'recalculate'}">sync</md-icon>
                     </div>
                     <div class="option-details">
                         <span class="option-title">Recalculate</span>
@@ -80,7 +81,7 @@
                     </div>
                 </div>
 
-                <!-- Base Amount Option -->
+                <!-- Raw Base Amount Option -->
                 <div class="option-card"
                      ng-class="{'selected': ctrl.selectedMode === 'base'}"
                      ng-click="ctrl.selectedMode = 'base'">
@@ -90,11 +91,11 @@
                         </div>
                     </div>
                     <div class="option-icon base">
-                        <md-icon md-font-set="material-symbols-outlined">add_circle</md-icon>
+                        <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">add_circle</md-icon>
                     </div>
                     <div class="option-details">
-                        <span class="option-title">Base Amount</span>
-                        <span class="option-desc">Surcharges added automatically</span>
+                        <span class="option-title">Raw Base Amount</span>
+                        <span class="option-desc">Set the base price directly</span>
                     </div>
                 </div>
 
@@ -108,7 +109,7 @@
                         </div>
                     </div>
                     <div class="option-icon gross">
-                        <md-icon md-font-set="material-symbols-outlined">edit_note</md-icon>
+                        <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">edit_note</md-icon>
                     </div>
                     <div class="option-details">
                         <span class="option-title">Gross Amount</span>
@@ -121,7 +122,7 @@
             <div class="amount-section" ng-if="ctrl.selectedMode === 'base' || ctrl.selectedMode === 'gross'">
                 <label for="amountInput"
                         class="amount-label">
-                    {{ctrl.selectedMode === 'base' ? 'Enter Base Amount' : 'Enter Final Amount'}}
+                    {{ctrl.selectedMode === 'base' ? 'Enter Raw Base Amount' : 'Enter Final Amount'}}
                 </label>
                 <div class="amount-input-wrapper">
                     <span class="currency-symbol">$</span>
@@ -135,31 +136,21 @@
                            placeholder="0.00"
                            autofocus>
                 </div>
-                <span class="amount-hint" ng-if="ctrl.selectedMode === 'base'">
-                    <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">info</md-icon>
-                    Fuel surcharge will be calculated and added
-                </span>
             </div>
         </div>
     </md-dialog-content>
 
-    <!-- Actions for confirmation state -->
-    <md-dialog-actions ng-if="ctrl.showConfirmation">
-        <md-button class="cancel-btn" ng-click="ctrl.backToEdit()" ng-disabled="ctrl.isLoading">
-            <md-icon md-font-set="material-symbols-outlined">arrow_back</md-icon>
-            Back
-        </md-button>
+    <!-- Actions for result state -->
+    <md-dialog-actions ng-if="ctrl.showResult">
         <md-button class="md-raised md-primary submit-btn"
-                   ng-click="ctrl.confirmPrice()"
-                   ng-disabled="ctrl.isLoading">
-            <md-progress-circular ng-if="ctrl.isLoading" md-mode="indeterminate" md-diameter="20" class="button-spinner"></md-progress-circular>
-            <md-icon ng-if="!ctrl.isLoading" md-font-set="material-symbols-outlined">check</md-icon>
-            {{ctrl.isLoading ? 'Applying...' : 'Confirm Price'}}
+                   ng-click="ctrl.done()">
+            <md-icon md-font-set="material-symbols-outlined">check</md-icon>
+            Done
         </md-button>
     </md-dialog-actions>
 
     <!-- Actions for edit state -->
-    <md-dialog-actions ng-if="!ctrl.showConfirmation && !ctrl.isLoading">
+    <md-dialog-actions ng-if="!ctrl.showResult && !ctrl.isLoading">
         <md-button class="cancel-btn" ng-click="ctrl.cancel()">
             Cancel
         </md-button>

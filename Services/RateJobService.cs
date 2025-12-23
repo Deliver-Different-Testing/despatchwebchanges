@@ -11,17 +11,22 @@ using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
+using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.AspNetCore.Http;
 using Serilog;
 
 namespace DespatchWeb.Services;
 
+/// <summary>
+/// Service for calculating job rates for NZ and US tenants, including distance calculations, DFRNT API integration, and courier payment processing.
+/// </summary>
 public class RateJobService(
     IJobRepository jobRepository,
     HttpClient httpClient,
     ITenantInfoService infoService,
-    IHttpContextAccessor contextAccessor)
+    IHttpContextAccessor contextAccessor,
+    IJobReportService jobReportService)
     : IRateJobService
 {
     private const string HereMapsApiBaseUrl = "https://router.hereapi.com/v8";
@@ -530,137 +535,172 @@ public async Task<decimal> GetJobRateUsAsync(JobRatingDetailsDto jobDetails)
     }
 
     /// <summary>
-    /// Calculates and updates courier payment fields for a job.
+    /// Applies bulk price updates from an uploaded spreadsheet and returns the results.
+    /// Supports recalculate, base amount, and gross amount pricing modes.
     /// </summary>
-    public async Task CalculateCourierPaymentAsync(int jobId, bool isPrebook)
+    /// <param name="file">The uploaded spreadsheet file (xls, xlsx, or csv).</param>
+    /// <param name="pricingMode">The pricing mode: 'recalculate', 'base', or 'gross'.</param>
+    /// <returns>Response containing updated job prices and summary statistics.</returns>
+    public async Task<BulkPricePreviewResponse> ApplyBulkPriceUpdateAsync(IFormFile file, string pricingMode)
     {
-        try
+        // Parse the file using JobReportService
+        var parsedData = await jobReportService.ParseBulkPriceFileAsync(file);
+        if (parsedData.Count == 0)
+            return new BulkPricePreviewResponse();
+
+        // Get current amounts for all jobs before update
+        var jobIds = parsedData.Select(d => d.Id).Distinct().ToList();
+        var currentAmounts = await jobRepository.GetJobCurrentAmountsAsync(jobIds);
+
+        var resultRows = new List<BulkPricePreviewRow>();
+        decimal totalOldAmount = 0;
+        decimal totalNewAmount = 0;
+
+        switch (pricingMode)
         {
-            var data = await jobRepository.GetCourierPaymentCalculationDataAsync(jobId, isPrebook);
-            if (data == null)
+            // Apply updates based on mode
+            case "recalculate":
             {
-                Log.Warning("Job not found for courier payment calculation. JobId: {JobId}, IsPrebook: {IsPrebook}",
-                    jobId, isPrebook);
-                return;
+                foreach (var data in parsedData)
+                {
+                    if (!currentAmounts.TryGetValue(data.Id, out var jobInfo))
+                        continue;
+
+                    var oldAmount = jobInfo.Amount;
+                    var newAmount = oldAmount;
+
+                    try
+                    {
+                        await RecalculateJobRateInternalAsync(data.Id, jobInfo.IsPrebook);
+                        // Get the new amount after recalculation
+                        var updatedAmounts = await jobRepository.GetJobCurrentAmountsAsync([data.Id]);
+                        if (updatedAmounts.TryGetValue(data.Id, out var updated))
+                            newAmount = updated.Amount;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "Failed to recalculate rate for job {JobId}", data.Id);
+                    }
+
+                    resultRows.Add(new BulkPricePreviewRow
+                    {
+                        JobId = data.Id,
+                        JobNo = jobInfo.JobNo,
+                        Field = "Amount",
+                        OldAmount = oldAmount,
+                        NewAmount = newAmount,
+                        IsPrebook = jobInfo.IsPrebook
+                    });
+
+                    totalOldAmount += oldAmount;
+                    totalNewAmount += newAmount;
+                }
+
+                break;
             }
-
-            var result = CalculateCourierPaymentFields(data);
-            await jobRepository.UpdateCourierPaymentFieldsAsync(jobId, isPrebook, result);
-
-            Log.Debug("Courier payment calculated for JobId: {JobId}. Percentage: {Percentage}, Payment: {Payment}",
-                jobId, result.CourierPercentage, result.CourierPayment);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "{ErrorMessage}",
-                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(RateJobService),
-                    nameof(CalculateCourierPaymentAsync)));
-            throw;
-        }
-    }
-
-    /// <summary>
-    /// Calculates courier payment fields based on the priority cascade:
-    /// 1. If PostAmountToCourier = false → 0
-    /// 2. If CourierId is NULL → 0
-    /// 3. If Courier is internal → 0
-    /// 4. CourierPercentageOverride (if set)
-    /// 5. ClientAvailableSpeed.CourierPercentage (if set)
-    /// 6. JobType.CourierPercentage (if set)
-    /// 7. Client.CourierPercentage (if set)
-    /// 8. Courier.uccrPercentage (if set)
-    /// 9. Default: 0.4 (40%)
-    /// </summary>
-    private static CourierPaymentResult CalculateCourierPaymentFields(CourierPaymentCalculationData data)
-    {
-        const decimal defaultPercentage = 0.4m;
-        const int subcontractorCourierTypeId = 3;
-
-        // Calculate courier percentage using priority cascade
-        var courierPercentage = CalculateCourierPercentage(data, defaultPercentage);
-
-        // Calculate courier payment
-        var rawBaseAmount = data.RawBaseAmount ?? 0;
-        var courierPayment = Math.Round(rawBaseAmount * courierPercentage, 4);
-
-        // If courier payment is 0, fuel and bonus are also 0
-        var courierFuel = courierPayment == 0 ? 0 : (data.FuelSurchargeAmount ?? 0);
-        var courierBonus = courierPayment == 0
-            ? 0
-            : Math.Round(rawBaseAmount * (data.CourierBonusPercentage ?? 0), 4);
-
-        // Handle subcontractor fields
-        int? masterCourierId = null;
-        decimal? subContractorPercentage = null;
-        decimal? subContractorFuelPercentage = null;
-        decimal? subContractorBonusPercentage = null;
-
-        if (data.CourierTypeId == subcontractorCourierTypeId)
-        {
-            masterCourierId = data.CourierMasterCourierId;
-
-            if (data.CourierMasterCourierId.HasValue)
+            case "base":
             {
-                subContractorPercentage = data.CourierSubContractorPercentage ?? 0;
-                subContractorFuelPercentage = data.CourierSubContractorFuelPercentage ?? 0;
-                subContractorBonusPercentage = data.CourierSubContractorBonusPercentage ?? 0;
+                // For base mode, save the raw base amount directly to ucjbamount
+                foreach (var data in parsedData)
+                {
+                    if (!currentAmounts.TryGetValue(data.Id, out var jobInfo))
+                        continue;
+
+                    var oldAmount = jobInfo.Amount;
+                    var newAmount = data.Amount ?? oldAmount;
+
+                    try
+                    {
+                        newAmount = await jobRepository.RepriceJobWithBaseAmountAsync(
+                            new RepriceJobWithBaseAmountModel
+                            {
+                                JobId = data.Id,
+                                IsPrebook = jobInfo.IsPrebook,
+                                BaseAmount = data.Amount ?? 0
+                            });
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "Failed to reprice job with base amount for job {JobId}", data.Id);
+                    }
+
+                    resultRows.Add(new BulkPricePreviewRow
+                    {
+                        JobId = data.Id,
+                        JobNo = jobInfo.JobNo,
+                        Field = "Amount",
+                        OldAmount = oldAmount,
+                        NewAmount = newAmount,
+                        IsPrebook = jobInfo.IsPrebook
+                    });
+
+                    totalOldAmount += oldAmount;
+                    totalNewAmount += newAmount;
+                }
+
+                break;
+            }
+            default:
+            {
+                // For gross mode, use existing UpdateManualPriceAsync and track results
+                foreach (var data in parsedData)
+                {
+                    if (!currentAmounts.TryGetValue(data.Id, out var jobInfo))
+                        continue;
+
+                    var oldAmount = jobInfo.Amount;
+                    var newAmount = data.Amount ?? oldAmount;
+
+                    resultRows.Add(new BulkPricePreviewRow
+                    {
+                        JobId = data.Id,
+                        JobNo = jobInfo.JobNo,
+                        Field = "Amount",
+                        OldAmount = oldAmount,
+                        NewAmount = newAmount,
+                        IsPrebook = jobInfo.IsPrebook
+                    });
+
+                    totalOldAmount += oldAmount;
+                    totalNewAmount += newAmount;
+                }
+
+                await jobRepository.UpdateManualPriceAsync(parsedData);
+                break;
             }
         }
 
-        return new CourierPaymentResult
+        return new BulkPricePreviewResponse
         {
-            CourierPercentage = courierPercentage,
-            CourierPayment = courierPayment,
-            CourierFuel = courierFuel,
-            CourierBonus = courierBonus,
-            MasterCourierId = masterCourierId,
-            SubContractorPercentage = subContractorPercentage,
-            SubContractorFuelPercentage = subContractorFuelPercentage,
-            SubContractorBonusPercentage = subContractorBonusPercentage
+            Rows = resultRows,
+            TotalJobs = resultRows.Count,
+            TotalOldAmount = totalOldAmount,
+            TotalNewAmount = totalNewAmount
         };
     }
 
     /// <summary>
-    /// Calculates the courier percentage using the priority cascade rules.
+    /// Internal method to recalculate job rate based on tenant type.
     /// </summary>
-    /// <param name="data">The courier payment calculation data.</param>
-    /// <param name="defaultPercentage">The default percentage to use if no overrides are set.</param>
-    /// <returns>The calculated courier percentage (0-1 scale).</returns>
-    private static decimal CalculateCourierPercentage(CourierPaymentCalculationData data, decimal defaultPercentage)
+    private async Task RecalculateJobRateInternalAsync(int jobId, bool isBooking)
     {
-        // Rule 1: If PostAmountToCourier is false, return 0
-        if (data.PostAmountToCourier == false)
-            return 0;
+        var isArchived = !isBooking && await jobRepository.IsJobArchived(jobId);
+        var isUsCustomer = infoService.IsUsTenant();
 
-        // Rule 2: If no courier assigned, return 0
-        if (!data.CourierId.HasValue)
-            return 0;
+        if (isUsCustomer)
+        {
+            var jobDetailsUs = isBooking
+                ? await jobRepository.GetJobBookingDetailsForRatingAsync(jobId)
+                : await jobRepository.GetJobDetailsForRatingAsync(jobId);
 
-        // Rule 3: If the courier is internal, return 0
-        if (data.CourierIsInternal == true)
-            return 0;
+            await RateJobUsAsync(jobDetailsUs);
+            return;
+        }
 
-        // Rule 4: CourierPercentageOverride takes priority
-        if (data.CourierPercentageOverride.HasValue)
-            return Math.Round(data.CourierPercentageOverride.Value, 4);
+        var jobDetailsNz = isBooking
+            ? await jobRepository.GetJobBookingDetailsForRatingNzAsync(jobId)
+            : await jobRepository.GetJobDetailsForRatingNzAsync(jobId, isArchived);
 
-        // Rule 5: ClientAvailableSpeed.CourierPercentage
-        if (data.ClientSpeedCourierPercentage.HasValue)
-            return Math.Round(data.ClientSpeedCourierPercentage.Value, 4);
-
-        // Rule 6: JobType.CourierPercentage
-        if (data.JobTypeCourierPercentage.HasValue)
-            return Math.Round(data.JobTypeCourierPercentage.Value, 4);
-
-        // Rule 7: Client.CourierPercentage
-        if (data.ClientCourierPercentage.HasValue)
-            return Math.Round(data.ClientCourierPercentage.Value, 4);
-
-        // Rule 8: Courier.uccrPercentage
-        if (data.CourierPercentage.HasValue)
-            return Math.Round(data.CourierPercentage.Value, 4);
-
-        // Rule 9: Default 40%
-        return Math.Round(defaultPercentage, 4);
+        await RateJobNzAsync(jobDetailsNz);
     }
 }

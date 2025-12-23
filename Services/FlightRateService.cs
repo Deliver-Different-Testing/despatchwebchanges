@@ -10,8 +10,19 @@ using Serilog;
 
 namespace DespatchWeb.Services;
 
+/// <summary>
+/// Service for calculating air freight rates based on carrier, weight, zones, and additional charges.
+/// </summary>
 public class FlightRateService(INationwideJobRepository repository, ITenantInfoService infoService) : IFlightRateService
 {
+    /// <summary>
+    /// Calculates the flight rate for a job based on carrier, route, weight, and booking time.
+    /// </summary>
+    /// <param name="jobId">The job ID to get rate calculation data for.</param>
+    /// <param name="carrierCode">The airline carrier code.</param>
+    /// <param name="extraStopOffs">Whether extra stop-offs are included.</param>
+    /// <param name="bookTime">Optional booking time for holiday/after-hours rate adjustments.</param>
+    /// <returns>The calculated flight rate, or 0 if no rate is available.</returns>
     public async Task<decimal> GetCarrierFlightRateByJobIdAsync(int jobId, string carrierCode, bool extraStopOffs,
         DateTime? bookTime)
     {
@@ -21,6 +32,12 @@ public class FlightRateService(INationwideJobRepository repository, ITenantInfoS
         return rates.Count != 0 ? rates.First().Rate : 0;
     }
 
+    /// <summary>
+    /// Calculates available flight rates based on zones, weight breaks, cargo surcharges, and extra charges.
+    /// Handles holiday and after-hours rate adjustments.
+    /// </summary>
+    /// <param name="dto">The flight rate calculation data containing route, weight, and quantity information.</param>
+    /// <returns>A list of available flight rate options with pricing details.</returns>
     private async Task<List<FlightRateDto>> CalculateFlightRatesAsync(FlightRateCalculationDto dto)
     {
         var bookTime = dto.BookTime ?? infoService.GetCurrentTenantTime();

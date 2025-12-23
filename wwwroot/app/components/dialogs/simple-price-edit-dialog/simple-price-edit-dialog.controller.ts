@@ -1,7 +1,8 @@
-﻿import './simple-price-edit-dialog.styles.less';
+import './simple-price-edit-dialog.styles.less';
 import {IJob} from "../../../interfaces/job.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
+import BaseController from "../../base-controller";
 
 type PricingMode = 'recalculate' | 'base' | 'gross';
 
@@ -10,11 +11,14 @@ interface PriceEditResult {
     amount: number;
 }
 
-class SimplePriceEditDialogController implements angular.IController {
+class SimplePriceEditDialogController extends BaseController {
     static $inject = [
         '$mdDialog',
         'DispatchData',
         'toastrService',
+        '$timeout',
+        '$filter',
+        '$scope',
         'job',
         'isPrebook'
     ];
@@ -22,22 +26,25 @@ class SimplePriceEditDialogController implements angular.IController {
     amount: number = 0;
     selectedMode: PricingMode = 'recalculate';
 
-    // Loading and confirmation states
+    // Loading and result states
     isLoading: boolean = false;
-    showConfirmation: boolean = false;
-    calculatedAmount: number = 0;
+    showResult: boolean = false;
+    savedAmount: number = 0;
     errorMessage: string = '';
-
-    // Store base amount for confirm step (for 'base' mode)
-    private pendingBaseAmount: number = 0;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
+        $scope: angular.IScope,
         public job: IJob,
         public isPrebook: boolean
     ) {
+        super();
+        this.initServices($timeout, $interval, $scope);
+        
         console.log('SimplePriceEditDialogController: Controller instantiated');
         this.amount = Math.round(job.charge * 100) / 100;
     }
@@ -52,99 +59,70 @@ class SimplePriceEditDialogController implements angular.IController {
 
     getSubmitButtonText(): string {
         if (this.isLoading) {
-            return 'Calculating...';
+            return 'Saving...';
         }
         switch (this.selectedMode) {
             case 'recalculate':
-                return 'Calculate';
+                return 'Recalculate & Save';
             case 'base':
-                return 'Calculate Total';
+                return 'Apply Raw Base';
             case 'gross':
-                return 'Apply Gross Amount';
+                return 'Apply Amount';
             default:
                 return 'Apply';
         }
     }
 
     async submit(): Promise<void> {
-        // For gross amount, just close with the result (no API call needed)
-        if (this.selectedMode === 'gross') {
-            const dialogResult: PriceEditResult = {
-                mode: this.selectedMode,
-                amount: this.amount
-            };
-            this.$mdDialog.hide(dialogResult);
-            return;
-        }
-
-        // For recalculate and base amount, call the preview API and show confirmation
         this.isLoading = true;
         this.errorMessage = '';
+        this.applyScope();
 
         try {
             if (this.selectedMode === 'recalculate') {
-                // Preview only - doesn't save
-                this.calculatedAmount = await this.DispatchData.recalculateJobRate(
-                    this.job.id,
-                    this.isPrebook
-                );
-            } else if (this.selectedMode === 'base') {
-                // Preview only - doesn't save
-                this.pendingBaseAmount = this.amount;
-                this.calculatedAmount = await this.DispatchData.calculateJobPriceWithBaseAmount(
-                    this.job.id,
-                    this.isPrebook,
-                    this.amount
-                );
-            }
-
-            this.showConfirmation = true;
-        } catch (error: any) {
-            console.error('Error calculating price:', error);
-            this.errorMessage = error?.data?.message || error?.message || 'Failed to calculate price. Please try again.';
-            this.toastrService.showErrorToast(this.errorMessage);
-        } finally {
-            this.isLoading = false;
-        }
-    }
-
-    async confirmPrice(): Promise<void> {
-        this.isLoading = true;
-        this.errorMessage = '';
-
-        try {
-            // Actually save the calculated price
-            if (this.selectedMode === 'recalculate') {
+                // Recalculate and save
                 await this.DispatchData.applyRecalculatedJobRate(
                     this.job.id,
                     this.isPrebook
                 );
+                // Get the new rate to display
+                this.savedAmount = await this.DispatchData.recalculateJobRate(
+                    this.job.id,
+                    this.isPrebook
+                );
             } else if (this.selectedMode === 'base') {
-                await this.DispatchData.repriceJobWithBaseAmount(
+                this.savedAmount = await this.DispatchData.repriceJobWithBaseAmount(
                     this.job.id,
                     this.isPrebook,
-                    this.pendingBaseAmount
+                    this.amount
                 );
+            } else if (this.selectedMode === 'gross') {
+                await this.DispatchData.simpleRepriceJobManual(
+                    this.job.id,
+                    this.isPrebook,
+                    false,
+                    this.amount
+                );
+                this.savedAmount = this.amount;
             }
 
-            const dialogResult: PriceEditResult = {
-                mode: this.selectedMode,
-                amount: this.calculatedAmount
-            };
-            this.$mdDialog.hide(dialogResult);
+            this.showResult = true;
         } catch (error: any) {
-            console.error('Error applying price:', error);
-            this.errorMessage = error?.data?.message || error?.message || 'Failed to apply price. Please try again.';
+            console.error('Error saving price:', error);
+            this.errorMessage = error?.data?.message || error?.message || 'Failed to save price. Please try again.';
             this.toastrService.showErrorToast(this.errorMessage);
         } finally {
             this.isLoading = false;
+            this.applyScope();
         }
     }
 
-    backToEdit(): void {
-        this.showConfirmation = false;
-        this.calculatedAmount = 0;
-        this.errorMessage = '';
+    done(): void {
+        const dialogResult: PriceEditResult = {
+            mode: this.selectedMode,
+            amount: this.savedAmount
+        };
+        this.$mdDialog.hide(dialogResult);
     }
 
     cancel(): void {

@@ -6,8 +6,18 @@ using DespatchWeb.Models.MessageModels;
 
 namespace DespatchWeb.Services;
 
+/// <summary>
+/// Service for processing messaging data and determining message participants.
+/// </summary>
 public class MessageHelperService(ITenantInfoService infoService) : IMessageHelperService
 {
+    /// <summary>
+    /// Determines the other party in a message conversation based on the current staff member.
+    /// Identifies whether the other party is a courier or staff member and returns their details.
+    /// </summary>
+    /// <param name="message">The message to analyze.</param>
+    /// <param name="currentStaffId">The ID of the current staff member viewing the message.</param>
+    /// <returns>A MessageParticipant object containing the other party's details.</returns>
     public MessageParticipant GetOtherParty(TucManualMessage message, int currentStaffId)
     {
         var now = infoService.GetCurrentTenantTime();
@@ -69,8 +79,14 @@ public class MessageHelperService(ITenantInfoService infoService) : IMessageHelp
         return new MessageParticipant { Id = 0, Type = OtherMessagePartyType.Staff, Name = "Unknown", Initials = "??" };
     }
 
+    /// <summary>
+    /// Determines if a message is incoming (sent to the specified staff member).
+    /// </summary>
     public bool IsIncomingMessage(TucManualMessage message, int staffId) => message.UcmmSendToStaffId == staffId;
 
+    /// <summary>
+    /// Gets the full name of a participant (courier or staff member).
+    /// </summary>
     private static string GetParticipantName(TucCourier courier = null, TucStaff staff = null)
     {
         if (courier != null)
@@ -90,6 +106,9 @@ public class MessageHelperService(ITenantInfoService infoService) : IMessageHelp
         return "Unknown";
     }
 
+    /// <summary>
+    /// Gets the initials of a participant (courier or staff member).
+    /// </summary>
     private static string GetParticipantInitials(TucCourier courier = null, TucStaff staff = null)
     {
         if (courier != null)
@@ -109,6 +128,12 @@ public class MessageHelperService(ITenantInfoService infoService) : IMessageHelp
         return "??";
     }
     
+    /// <summary>
+    /// Determines the online/offline status of a courier based on their login state.
+    /// </summary>
+    /// <param name="courier">The courier to check.</param>
+    /// <param name="currentDate">The current date/time for comparison.</param>
+    /// <returns>"online" if the courier is logged in and not logged out, otherwise "offline".</returns>
     public string GetCourierStatus(TucCourier courier, DateTime currentDate)
     {
         if (courier?.CourierLogInOut == null)

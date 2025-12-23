@@ -24,6 +24,7 @@ import JobListType from "../common/job-list/enums/jobListType";
 import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
+import BulkPriceUploadDialogService from "../dialogs/bulk-price-upload-dialog/bulk-price-upload-dialog.service";
 import IScanDetailResult from "./interfaces/IScanDetailResult";
 import InterCourierChargeDialogService
     from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
@@ -51,6 +52,7 @@ class JobSearchController extends BaseController {
         "createJobDialogService",
         "additionalServicesDialogService",
         "jobFileUploadDialogService",
+        "bulkPriceUploadDialogService",
         'interCourierChargeDialogService',
         'dashboardSettingsDialogService',
         'APP_CONFIG',
@@ -116,6 +118,7 @@ class JobSearchController extends BaseController {
         private createJobDialogService: CreateJobDialogService,
         private additionalServicesDialogService: AdditionalServicesDialogService,
         private jobFileUploadDialogService: JobFileUploadDialogService,
+        private bulkPriceUploadDialogService: BulkPriceUploadDialogService,
         private interCourierChargeDialogService: InterCourierChargeDialogService,
         private dashboardSettingsDialog: DashboardSettingsDialogService,
         appConfig: IAppConfig,
@@ -899,34 +902,15 @@ class JobSearchController extends BaseController {
         window.open(downloadUrl, '_blank');
     }
 
-    uploadJobList() {
-        const element: any = angular.element("#jobListUpload");
-        element.trigger('click');
-    }
-
-    async onUploadJobList() {
-        const fileElement: any = angular.element("#jobListUpload");
-        const files = fileElement[0].files;
-        if (!files || files.length !== 1) {
-            fileElement.val(null);
-            return;
-        }
-        // Check right file extension
-        const file = files[0];
-        const index = file.name.lastIndexOf(".");
-        if (index < 1 || !['.xls', '.xlsx', '.csv'].includes(file.name.substring(index, file.name.length).toLowerCase())) {
-            fileElement.val(null);
-            console.error("Please upload correct file type, file extension should be .xls, .xlsx or .csv");
-            return;
-        }
-
+    async uploadJobList($event: MouseEvent) {
         try {
-            await this.jobSearchService.uploadJobList(file);
-            this.toastrService.showSuccessToast("Job list uploaded successfully.");
+            const result = await this.bulkPriceUploadDialogService.openBulkPriceUploadDialog($event);
+            if (result) {
+                // Refresh the job list after successful upload
+                await this.refreshAllData();
+            }
         } catch {
-            this.toastrService.showErrorToast("Job list uploaded unsuccessfully.");
-        } finally {
-            fileElement.val(null);
+            // Dialog was cancelled, do nothing
         }
     }
 

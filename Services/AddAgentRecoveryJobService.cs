@@ -8,11 +8,20 @@ using Serilog;
 
 namespace DespatchWeb.Services;
 
+/// <summary>
+/// Service for creating recovery agent jobs as child jobs linked to parent deliveries.
+/// </summary>
 public class AddAgentRecoveryJobService(
     IJobRepository repository,
     INationwideJobRepository nationwideJobRepository,
     ITenantInfoService infoService) : IAddAgentRecoveryJobService
 {
+    /// <summary>
+    /// Creates a new recovery agent job as a child of an existing job.
+    /// Copies relevant data from the parent job, assigns a recovery agent, and creates associated notes and records.
+    /// </summary>
+    /// <param name="request">The request containing the job ID, agent ID, airport ID, and primary agent flag.</param>
+    /// <returns>The ID of the newly created recovery job.</returns>
     public async Task<int> AddRecoveryAgentJobAsync(AddAgentRecoveryRequest request)
     {
         try
@@ -155,6 +164,11 @@ public class AddAgentRecoveryJobService(
         }
     }
 
+    /// <summary>
+    /// Generates a unique job number for a recovery job by appending R1, R2, etc. to the base job number.
+    /// </summary>
+    /// <param name="baseJobNumber">The parent job number to use as a base.</param>
+    /// <returns>A unique job number with recovery suffix.</returns>
     private async Task<string> GenerateNewStopJobNumberAsync(string baseJobNumber)
     {
         var number = 1;
@@ -169,8 +183,14 @@ public class AddAgentRecoveryJobService(
         throw new InvalidOperationException("Unable to generate unique job number - all suffixes exhausted");
     }
 
+    /// <summary>
+    /// Cleans a shop reference string by trimming whitespace or returning null if empty.
+    /// </summary>
     private static string CleanShopRef(string shopRef) => string.IsNullOrWhiteSpace(shopRef) ? null : shopRef.Trim();
 
+    /// <summary>
+    /// Creates a note entity recording the addition of a recovery agent to a job.
+    /// </summary>
     private static TucNote CreateNote(int jobId, string newAgent, int staffId, DateTime currentDate)
     {
         return new TucNote
@@ -185,6 +205,9 @@ public class AddAgentRecoveryJobService(
         };
     }
 
+    /// <summary>
+    /// Creates a JobRecoveryAgent entity linking a recovery agent to a job at a specific airport.
+    /// </summary>
     private static JobRecoveryAgent CreateJobRecoveryAgent(int jobId, int agentId, int airportId, int staffId,
         bool isPrimaryRecoveryAgent)
     {

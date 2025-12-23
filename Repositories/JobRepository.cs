@@ -1071,64 +1071,91 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Retrieves performance and spend report data for a client by calling a stored procedure.
+    /// Retrieves performance and spend report data for multiple clients.
+    /// Optimized with database-side ordering and direct projection.
     /// </summary>
-    /// <param name="request">Request containing client ID and date range.</param>
-    /// <returns>List of performance metrics including delivery times, charges, and courier info.</returns>
     public async Task<List<PerformanceSpendReportModel>> GetClientJobsReportDataAsync(
         [FromQuery] ClientJobsReportRequest request)
     {
         try
         {
-            var results = await Context.Procedures.REP_qryPerformance_Summary_PerformanceSpendAsync(
-                request.ClientId ?? 0,
-                request.StartDate.Date,
-                request.EndDate.Date
-            );
+            var clientIds = request.ClientIds;
+            var startDate = request.StartDate.Date;
+            var endDate = request.EndDate.Date;
 
-            return results.Select(r => new PerformanceSpendReportModel
-            {
-                JobNumber = r.JobNumber,
-                ucjbType = r.ucjbType,
-                Date = r.Date?.ToString("yyyy-MM-dd"),
-                Booked = r.Booked?.ToString("yyyy-MM-dd HH:mm:ss"),
-                BookedBy = r.BookedBy,
-                PickedUpTime = r.Pickeduptime?.ToString("yyyy-MM-dd HH:mm:ss"),
-                Delivered = r.Delivered?.ToString("yyyy-MM-dd HH:mm:ss"),
-                TotalTime = r.TotalTime?.ToString(),
-                DeliveryMins = r.DeliveryMins?.ToString(),
-                PODName = r.PODName,
-                Booker = r.Booker,
-                AchievedSpeed = r.AchievedSpeed,
-                From = r.From,
-                FromPostcode = r.FromPostcode,
-                To = r.To,
-                ToPostcode = r.ToPostcode,
-                ucjbFromAddr = r.ucjbFromAddr,
-                Address = r.Address,
-                Courier = r.Courier?.ToString(),
-                LatePickup = r.LatePickup?.ToString(),
-                LateDelivery = r.LateDelivery?.ToString(),
-                ucclLegalName = r.ucclLegalName,
-                ucjbSpeed = r.ucjbSpeed?.ToString(),
-                Notes = r.Notes,
-                ChargeExclGST = r.ChargeExclGST?.ToString("F2"),
-                RefA = r.RefA,
-                RefB = r.RefB,
-                UrgentRef = r.UrgentRef,
-                Weight = r.Weight?.ToString(),
-                Vehicle = r.Vehicle,
-                Quantity = r.Quantity?.ToString(),
-                ucjbYear = r.ucjbYear?.ToString(),
-                ucjbMonth = r.ucjbMonth?.ToString(),
-                Code = r.Code,
-                uccrName = r.uccrName,
-                ucjbInvoiceNo = r.ucjbInvoiceNo?.ToString(),
-                ucjbLocked = r.ucjbLocked?.ToString(),
-                ucjbClientID = r.ucjbClientID?.ToString(),
-                ucclNote = r.ucclNote,
-                Minutes = r.Minutes?.ToString()
-            }).ToList();
+            // Query with database-side ordering using CASE expression for job type priority
+            var results = await Context.TucJobArchives
+                .AsNoTracking()
+                .AsSplitQuery()
+                .Where(job => job.UcjbDate >= startDate
+                              && job.UcjbDate <= endDate
+                              && (job.JobRelationshipType == null || job.JobRelationshipType.DisplayStatement == true)
+                              && clientIds.Contains(job.UcjbClientId ?? 0)
+                              && job.UcjbVoid == false
+                              && job.UcjbJobDone == true)
+                .OrderBy(job => job.SpeedNavigation == null ? 100 :
+                    job.SpeedNavigation.UcjtDescription == "15 Minute" ? 1 :
+                    job.SpeedNavigation.UcjtDescription == "30 Minute" ? 2 :
+                    job.SpeedNavigation.UcjtDescription == "45 Minute" ? 3 :
+                    job.SpeedNavigation.UcjtDescription == "1 Hour" ? 4 :
+                    job.SpeedNavigation.UcjtDescription == "75 Minute" ? 5 :
+                    job.SpeedNavigation.UcjtDescription == "90 Minute" ? 6 :
+                    job.SpeedNavigation.UcjtDescription == "2 Hour" ? 7 :
+                    job.SpeedNavigation.UcjtDescription == "3 Hour" ? 8 :
+                    job.SpeedNavigation.UcjtDescription == "Baggage" ? 10 :
+                    job.SpeedNavigation.UcjtDescription == "Truck Super" ? 11 :
+                    job.SpeedNavigation.UcjtDescription == "Truck Express" ? 12 :
+                    job.SpeedNavigation.UcjtDescription == "Truck Standard" ? 13 :
+                    job.SpeedNavigation.UcjtDescription == "Truck Economy" ? 14 : 100)
+                .ThenBy(job => job.UcjbDate)
+                .ThenBy(job => job.UcjbTime)
+                .ThenBy(job => job.UcjbCourierId)
+                .ThenBy(job => job.SpeedNavigation != null ? job.SpeedNavigation.Minutes : null)
+                .Select(job => new ClientJobsReportRow
+                {
+                    JobNumber = job.UcjbNumber,
+                    JobType = (int?)job.UcjbType,
+                    Date = job.UcjbDate,
+                    Booked = job.UcjbTime,
+                    BookedBy = job.UcjbContact,
+                    PickedUpTime = job.PickUpTime,
+                    Delivered = job.UcjbComplTime,
+                    JobTypeDescription = job.SpeedNavigation != null ? job.SpeedNavigation.UcjtDescription : null,
+                    Minutes = job.SpeedNavigation != null ? job.SpeedNavigation.Minutes : null,
+                    PODName = job.UcjbPodname,
+                    FromSuburb = job.UcjbFromNavigation != null ? job.UcjbFromNavigation.UcsuName : null,
+                    FromPostcode = job.UcjbFromNavigation != null ? job.UcjbFromNavigation.PostCode : null,
+                    ToSuburb = job.UcjbToNavigation != null ? job.UcjbToNavigation.UcsuName : null,
+                    ToPostcode = job.UcjbToNavigation != null ? job.UcjbToNavigation.PostCode : null,
+                    ToSuburbFromAddress = job.AddressDetail != null ? job.AddressDetail.ToSuburb : null,
+                    FromAddr = job.UcjbFromAddr,
+                    ToAddr = job.UcjbToAddr,
+                    CourierId = job.UcjbCourierId,
+                    LatePickup = job.UcjbLatePick == 1,
+                    LateDelivery = job.UcjbLateDel == 1,
+                    ClientLegalName = job.UcjbClient != null ? job.UcjbClient.UcclLegalName : null,
+                    Speed = job.UcjbSpeed,
+                    Notes = job.UcjbNotes,
+                    Amount = job.UcjbAmount,
+                    RefA = job.UcjbClientRefa,
+                    RefB = job.UcjbClientRefb,
+                    OurRef = job.UcjbOurRef,
+                    Weight = (decimal?)job.UcjbWeight,
+                    Size = job.UcjbSize,
+                    Quantity = job.UcjbQty,
+                    Year = job.UcjbYear,
+                    Month = job.UcjbMonth,
+                    CourierCode = job.UcjbCourier != null ? job.UcjbCourier.Code : null,
+                    CourierName = job.UcjbCourier != null ? job.UcjbCourier.UccrName : null,
+                    InvoiceNo = job.UcjbInvoiceNo,
+                    Locked = job.UcjbLocked == 1,
+                    ClientId = job.UcjbClientId,
+                    ClientNote = job.UcjbClient != null ? job.UcjbClient.UcclNote : null
+                })
+                .ToListAsync();
+
+            // Map to final DTO with string formatting (must be done in-memory)
+            return results.ConvertAll(MapToPerformanceSpendReportModel);
         }
         catch (Exception e)
         {
@@ -1137,6 +1164,57 @@ public partial class JobRepository(
                     nameof(GetClientJobsReportDataAsync)));
             throw;
         }
+    }
+
+    private static PerformanceSpendReportModel MapToPerformanceSpendReportModel(ClientJobsReportRow row)
+    {
+        var totalTime = row.Booked != null && row.Delivered != null
+            ? (int?)Math.Round((row.Delivered.Value.TimeOfDay - row.Booked.Value.TimeOfDay).TotalMinutes)
+            : null;
+
+        return new PerformanceSpendReportModel
+        {
+            JobNumber = row.JobNumber,
+            ucjbType = row.JobType switch { 1 => "Pick up from us", 2 => "Deliver to us", 3 => "3rd party", _ => null },
+            Date = row.Date?.ToString("yyyy-MM-dd"),
+            Booked = row.Booked?.ToString("yyyy-MM-dd HH:mm:ss"),
+            BookedBy = row.BookedBy,
+            PickedUpTime = row.PickedUpTime?.ToString("yyyy-MM-dd HH:mm:ss"),
+            Delivered = row.Delivered?.ToString("yyyy-MM-dd HH:mm:ss"),
+            TotalTime = totalTime?.ToString(),
+            DeliveryMins = totalTime != null && row.Minutes != null ? (totalTime - row.Minutes)?.ToString() : null,
+            PODName = row.PODName,
+            Booker = row.BookedBy,
+            AchievedSpeed = row.JobTypeDescription,
+            From = row.FromSuburb,
+            FromPostcode = row.FromPostcode,
+            To = string.IsNullOrEmpty(row.ToSuburb) || row.ToSuburb == "Unknown" ? row.ToSuburbFromAddress ?? "Unknown" : row.ToSuburb,
+            ToPostcode = row.ToPostcode,
+            ucjbFromAddr = row.FromAddr,
+            Address = row.ToAddr,
+            Courier = row.CourierId?.ToString(),
+            LatePickup = row.LatePickup?.ToString(),
+            LateDelivery = row.LateDelivery?.ToString(),
+            ucclLegalName = row.ClientLegalName,
+            ucjbSpeed = row.Speed?.ToString(),
+            Notes = row.Notes,
+            ChargeExclGST = row.Amount?.ToString("F2"),
+            RefA = row.RefA,
+            RefB = row.RefB,
+            UrgentRef = row.OurRef,
+            Weight = row.Weight?.ToString(),
+            Vehicle = row.Size switch { 1 or 2 => "Car", 3 => "Van", 4 => "Truck", _ => null },
+            Quantity = row.Quantity?.ToString(),
+            ucjbYear = row.Year?.ToString(),
+            ucjbMonth = row.Month?.ToString(),
+            Code = row.CourierCode,
+            uccrName = row.CourierName,
+            ucjbInvoiceNo = row.InvoiceNo?.ToString(),
+            ucjbLocked = row.Locked?.ToString(),
+            ucjbClientID = row.ClientId?.ToString(),
+            ucclNote = row.ClientNote,
+            Minutes = row.Minutes?.ToString()
+        };
     }
 
     /// <summary>
@@ -1765,22 +1843,6 @@ public partial class JobRepository(
         );
 
         await UpdateJobDisplayInDespatchAsync(jobId);
-    }
-
-    /// <summary>
-    /// Retrieves all suburbs for lookup/autocomplete functionality.
-    /// </summary>
-    public async Task<List<SuburbLookup>> GetSuburbsAsync()
-    {
-        return await Context.TucSuburbs
-            .AsNoTracking()
-            .Select(s => new SuburbLookup
-            {
-                Id = s.UcsuId,
-                Text = s.UcsuName,
-                Alias = s.GoogleSuburbAlias
-            })
-            .ToListAsync();
     }
 
     /// <summary>
@@ -3491,32 +3553,8 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Calculates the total job price from a base amount by adding fuel surcharge (preview only, no save).
-    /// </summary>
-    /// <param name="data">Repricing data including job ID and base amount.</param>
-    /// <returns>The calculated total including fuel surcharge.</returns>
-    public async Task<decimal> CalculateJobPriceWithBaseAmountAsync(RepriceJobWithBaseAmountModel data)
-    {
-        try
-        {
-            // Get fuel percentage using compiled query
-            var fuelPercentage = data.IsPrebook
-                ? await Context.GetJobBookingFuelPercentageAsync(data.JobId)
-                : await Context.GetJobFuelPercentageAsync(data.JobId);
-
-            return CalculateTotalWithFuelSurcharge(data.BaseAmount, fuelPercentage);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository),
-                    nameof(CalculateJobPriceWithBaseAmountAsync)));
-            throw;
-        }
-    }
-
-    /// <summary>
     /// Reprices a job using a base amount and calculates the fuel surcharge.
+    /// Uses the UTL_fncJob_RawBaseToAmount database function to calculate the total.
     /// </summary>
     /// <param name="data">Repricing data including job ID and base amount.</param>
     /// <returns>The calculated total including fuel surcharge.</returns>
@@ -3524,12 +3562,10 @@ public partial class JobRepository(
     {
         try
         {
-            // Get fuel percentage using compiled query
-            var fuelPercentage = data.IsPrebook
-                ? await Context.GetJobBookingFuelPercentageAsync(data.JobId)
-                : await Context.GetJobFuelPercentageAsync(data.JobId);
-
-            var (totalAmount, fuelSurcharge) = CalculatePriceComponents(data.BaseAmount, fuelPercentage);
+            // Call the database function to calculate total with fuel surcharge
+            var totalAmount = await Context.TucJobs
+                .Select(_ => DespatchContext.UTL_fncJob_RawBaseToAmount(data.JobId, data.BaseAmount))
+                .FirstOrDefaultAsync() ?? 0m;
 
             if (data.IsPrebook)
             {
@@ -3549,9 +3585,7 @@ public partial class JobRepository(
                     .Where(j => j.UcjbId == data.JobId)
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(j => j.RatedManually, true)
-                        .SetProperty(j => j.UcjbAmount, totalAmount)
-                        .SetProperty(j => j.FuelSurchargeAmount, fuelSurcharge)
-                        .SetProperty(j => j.RawBaseAmount, data.BaseAmount));
+                        .SetProperty(j => j.UcjbAmount, totalAmount));
 
                 // Fall back to archived jobs if not found
                 if (rowsChanged == 0)
@@ -3560,9 +3594,7 @@ public partial class JobRepository(
                         .Where(j => j.UcjbId == data.JobId)
                         .ExecuteUpdateAsync(s => s
                             .SetProperty(j => j.RatedManually, true)
-                            .SetProperty(j => j.UcjbAmount, totalAmount)
-                            .SetProperty(j => j.FuelSurchargeAmount, fuelSurcharge)
-                            .SetProperty(j => j.RawBaseAmount, data.BaseAmount));
+                            .SetProperty(j => j.UcjbAmount, totalAmount));
                 }
 
                 if (rowsChanged == 0)
@@ -3571,8 +3603,10 @@ public partial class JobRepository(
 
             return totalAmount;
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException e)
         {
+            Log.Error(e, "{Message}", ErrorMessageStringFormatter.FormatForLogging(e,
+                nameof(JobRepository), nameof(RepriceJobWithBaseAmountAsync)));
             throw;
         }
         catch (Exception e)
@@ -3582,20 +3616,6 @@ public partial class JobRepository(
                     nameof(RepriceJobWithBaseAmountAsync)));
             throw;
         }
-    }
-
-    private static decimal CalculateTotalWithFuelSurcharge(decimal baseAmount, decimal? fuelPercentage)
-    {
-        var fuelSurcharge = baseAmount * (fuelPercentage ?? 0);
-        var totalAmount = baseAmount + fuelSurcharge;
-        return Math.Round(totalAmount, 2, MidpointRounding.AwayFromZero);
-    }
-
-    private static (decimal TotalAmount, decimal FuelSurcharge) CalculatePriceComponents(decimal baseAmount, decimal? fuelPercentage)
-    {
-        var fuelSurcharge = Math.Round(baseAmount * (fuelPercentage ?? 0), 2, MidpointRounding.AwayFromZero);
-        var totalAmount = Math.Round(baseAmount + fuelSurcharge, 2, MidpointRounding.AwayFromZero);
-        return (totalAmount, fuelSurcharge);
     }
 
     /// <summary>
@@ -4856,7 +4876,7 @@ public partial class JobRepository(
                 }
             }
 
-            // Bulk update using ExecuteUpdateAsync - no entity loading needed
+            // Bulk update using ExecuteUpdateAsync
             if (couriersToSetRejected.Count > 0)
             {
                 await Context.TblClearListAreaOrders
@@ -4899,100 +4919,5 @@ public partial class JobRepository(
                 .SetProperty(j => j.UcjbStatus, j => j.UcjbStatus < 1 ? (int)JobStatus.Dispatched : j.UcjbStatus)
                 .SetProperty(j => j.InternalStatus, (int)InternalJobStatus.AwaitingPod)
             );
-    }
-
-    public async Task<CourierPaymentCalculationData> GetCourierPaymentCalculationDataAsync(int jobId, bool isPrebook)
-    {
-        try
-        {
-            // Note: Courier payment calculation is only applicable to actual jobs (TucJob),
-            // not to prebook/recurring jobs (TucJobBooking) since the SQL trigger only fires on tucJob.
-            // The TucJobBooking table doesn't have all the required fields (RawBaseAmount, CourierBonus, etc.)
-            if (isPrebook)
-            {
-                Log.Debug("Courier payment calculation not applicable for prebook jobs. JobId: {JobId}", jobId);
-                return null;
-            }
-
-            return await Context.TucJobs
-                .AsNoTracking()
-                .Where(j => j.UcjbId == jobId)
-                .Select(j => new CourierPaymentCalculationData
-                {
-                    JobId = j.UcjbId,
-                    RawBaseAmount = j.RawBaseAmount,
-                    FuelSurchargeAmount = j.FuelSurchargeAmount,
-                    CourierPercentageOverride = j.CourierPercentageOverride,
-                    CourierId = j.UcjbCourierId,
-                    ClientId = j.UcjbClientId,
-                    SpeedId = j.UcjbSpeed,
-                    JobRelationshipTypeId = j.JobRelationshipTypeId,
-
-                    // Job Relationship Type
-                    PostAmountToCourier = j.JobRelationshipType != null && j.JobRelationshipType.PostAmountToCourier,
-
-                    // Courier fields
-                    CourierIsInternal = j.UcjbCourier != null && j.UcjbCourier.UccrInternal,
-                    CourierPercentage = j.UcjbCourier != null ? (decimal?)j.UcjbCourier.UccrPercentage : null,
-                    CourierBonusPercentage = j.UcjbCourier != null ? j.UcjbCourier.BonusPercentage : null,
-                    CourierTypeId = j.UcjbCourier != null ? j.UcjbCourier.CourierTypeId : (int?)null,
-                    CourierMasterCourierId = j.UcjbCourier != null ? j.UcjbCourier.MasterCourierId : null,
-                    CourierSubContractorPercentage = j.UcjbCourier != null ? j.UcjbCourier.SubContractorPercentage : null,
-                    CourierSubContractorFuelPercentage = j.UcjbCourier != null ? j.UcjbCourier.SubContractorFuelPercentage : null,
-                    CourierSubContractorBonusPercentage = j.UcjbCourier != null ? j.UcjbCourier.SubContractorBonusPercentage : null,
-
-                    // Client-Available Speed
-                    ClientSpeedCourierPercentage = Context.TblClientAvailableSpeeds
-                        .Where(cas => cas.ClientId == j.UcjbClientId && cas.SpeedId == j.UcjbSpeed)
-                        .Select(cas => cas.CourierPercentage)
-                        .FirstOrDefault(),
-
-                    // Job Type (Speed)
-                    JobTypeCourierPercentage = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.CourierPercentage : null,
-
-                    // Client
-                    ClientCourierPercentage = j.UcjbClient != null ? j.UcjbClient.CourierPercentage : null
-                })
-                .FirstOrDefaultAsync();
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository),
-                    nameof(GetCourierPaymentCalculationDataAsync)));
-            throw;
-        }
-    }
-
-    public async Task UpdateCourierPaymentFieldsAsync(int jobId, bool isPrebook, CourierPaymentResult result)
-    {
-        try
-        {
-            if (isPrebook)
-            {
-                Log.Debug("Courier payment update not applicable for prebook jobs. JobId: {JobId}", jobId);
-                return;
-            }
-
-            await Context.TucJobs
-                .Where(j => j.UcjbId == jobId)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(j => j.CourierPercentage, result.CourierPercentage)
-                    .SetProperty(j => j.CourierPayment, result.CourierPayment)
-                    .SetProperty(j => j.CourierFuel, result.CourierFuel)
-                    .SetProperty(j => j.CourierBonus, result.CourierBonus)
-                    .SetProperty(j => j.MasterCourierId, result.MasterCourierId)
-                    .SetProperty(j => j.SubContractorPercentage, result.SubContractorPercentage)
-                    .SetProperty(j => j.SubContractorFuelPercentage, result.SubContractorFuelPercentage)
-                    .SetProperty(j => j.SubContractorBonusPercentage, result.SubContractorBonusPercentage)
-                );
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository),
-                    nameof(UpdateCourierPaymentFieldsAsync)));
-            throw;
-        }
     }
 }

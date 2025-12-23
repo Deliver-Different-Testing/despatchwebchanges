@@ -67,28 +67,6 @@ public partial class DespatchContext
                 .Select(j => j.ParentId)
                 .FirstOrDefault());
 
-    private static readonly Func<DespatchContext, int, Task<decimal?>> GetJobFuelPercentageCompiled =
-        EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
-            context.TucJobs
-                .AsNoTracking()
-                .Where(j => j.UcjbId == jobId)
-                .Join(context.TblClientAvailableSpeeds,
-                    job => new { ClientId = job.UcjbClientId ?? 0, SpeedId = job.UcjbSpeed ?? 0 },
-                    cas => new { ClientId = cas.ClientId, SpeedId = cas.SpeedId },
-                    (job, cas) => cas.FuelPercentage)
-                .FirstOrDefault());
-
-    private static readonly Func<DespatchContext, int, Task<decimal?>> GetJobBookingFuelPercentageCompiled =
-        EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
-            context.TucJobBookings
-                .AsNoTracking()
-                .Where(j => j.UcbkId == jobId)
-                .Join(context.TblClientAvailableSpeeds,
-                    job => new { ClientId = job.UcbkClientId ?? 0, SpeedId = job.UcbkSpeed ?? 0 },
-                    cas => new { ClientId = cas.ClientId, SpeedId = cas.SpeedId },
-                    (job, cas) => cas.FuelPercentage)
-                .FirstOrDefault());
-
     private static readonly Func<DespatchContext, Task<int?>> GetEconomySpeedIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context) =>
             context.TucJobTypes
@@ -213,7 +191,7 @@ public partial class DespatchContext
                 .Where(m => m.UcmmSendToStaffId == staffId &&
                             !m.Read &&
                             m.UcmmSendFromCourierId == courierId)
-                .ExecuteUpdate(setters => setters
+                .ExecuteUpdate(s => s
                     .SetProperty(m => m.Read, true)
                     .SetProperty(m => m.TimeRead, readTime))
         );
@@ -224,7 +202,7 @@ public partial class DespatchContext
                 .Where(m => m.UcmmSendToStaffId == staffId &&
                             !m.Read &&
                             m.UcmmSendFromStaffId == fromStaffId)
-                .ExecuteUpdate(setters => setters
+                .ExecuteUpdate(s => s
                     .SetProperty(m => m.Read, true)
                     .SetProperty(m => m.TimeRead, readTime))
         );
@@ -295,8 +273,6 @@ public partial class DespatchContext
 
     public async Task<bool> IsJobArchivedAsync(int jobId) => await IsJobArchivedCompiled(this, jobId);
     public async Task<int?> GetJobParentIdAsync(int jobId) => await GetJobParentIdCompiled(this, jobId);
-    public async Task<decimal?> GetJobFuelPercentageAsync(int jobId) => await GetJobFuelPercentageCompiled(this, jobId);
-    public async Task<decimal?> GetJobBookingFuelPercentageAsync(int jobId) => await GetJobBookingFuelPercentageCompiled(this, jobId);
     public async Task<int?> GetEconomySpeedIdAsync() => await GetEconomySpeedIdCompiled(this);
     public async Task<DateTime?> GetEcoDeliveryTimeAsync() => await GetEcoDeliveryTimeCompiled(this);
 
@@ -324,6 +300,12 @@ public partial class DespatchContext
                 .WithMany()
                 .HasForeignKey(d => d.BulkParentId)
                 .HasPrincipalKey(b => b.BulkJobId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.AddressDetail)
+                .WithOne()
+                .HasForeignKey<TucJobAddressDeatil>(ad => ad.JobId)
+                .HasPrincipalKey<TucJob>(j => j.UcjbId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -457,6 +439,12 @@ public partial class DespatchContext
             entity.HasOne(d => d.JobRelationshipType)
                 .WithMany()
                 .HasForeignKey(d => d.JobRelationshipTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.AddressDetail)
+                .WithOne()
+                .HasForeignKey<TucJobAddressDeatil>(ad => ad.JobId)
+                .HasPrincipalKey<TucJobArchive>(j => j.UcjbId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

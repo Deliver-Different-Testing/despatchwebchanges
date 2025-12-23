@@ -13,6 +13,9 @@ using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Services;
 
+/// <summary>
+/// Service for retrieving tenant-specific information including timezone, culture, and staff details from the current HTTP context.
+/// </summary>
 public class TenantInfoService(
     IHttpContextAccessor contextAccessor,
     IDbContextFactory<DespatchContext> contextFactory,
@@ -28,12 +31,21 @@ public class TenantInfoService(
     private TimeZoneInfo _cachedTimeZoneInfo;
     private CultureInfo _cachedCultureInfo;
 
+    /// <summary>
+    /// Gets the tenant's timezone from user claims.
+    /// </summary>
     private string GetTimeZone() => _cachedTimeZone ??= contextAccessor.HttpContext?.User.Claims
         .FirstOrDefault(x => x.Type == "TimeZone")?.Value;
 
+    /// <summary>
+    /// Gets the tenant's country code from user claims.
+    /// </summary>
     private string GetCountryCode() => _cachedCountryCode ??= contextAccessor.HttpContext?.User.Claims
         .FirstOrDefault(x => x.Type == "CountryCode")?.Value;
 
+    /// <summary>
+    /// Gets the TimeZoneInfo for the tenant's timezone.
+    /// </summary>
     private TimeZoneInfo GetTimeZoneInfo()
     {
         if (_cachedTimeZoneInfo != null) return _cachedTimeZoneInfo;
@@ -42,6 +54,9 @@ public class TenantInfoService(
         return _cachedTimeZoneInfo;
     }
 
+    /// <summary>
+    /// Gets the CultureInfo for the tenant's country (US, GB, AU, NZ).
+    /// </summary>
     private CultureInfo GetCultureInfo()
     {
         if (_cachedCultureInfo != null) return _cachedCultureInfo;
@@ -58,12 +73,21 @@ public class TenantInfoService(
         return _cachedCultureInfo;
     }
 
+    /// <summary>
+    /// Gets the current date/time converted to the tenant's timezone.
+    /// </summary>
+    /// <returns>The current time in the tenant's timezone.</returns>
     public DateTime GetCurrentTenantTime()
     {
         var tenantTimeZoneInfo = GetTimeZoneInfo();
         return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tenantTimeZoneInfo);
     }
 
+    /// <summary>
+    /// Gets the current time in a specific timezone, falling back to tenant timezone if null.
+    /// </summary>
+    /// <param name="timeZone">The timezone to convert to, or null to use tenant timezone.</param>
+    /// <returns>The current time in the specified timezone.</returns>
     public DateTime GetCurrentTimeFromTimeZone(TimeZone timeZone)
     {
         if (timeZone is null)
@@ -79,6 +103,11 @@ public class TenantInfoService(
         return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZoneInfo);
     }
 
+    /// <summary>
+    /// Formats a date/time using the tenant's culture-specific format.
+    /// </summary>
+    /// <param name="dateTime">The date/time to format.</param>
+    /// <returns>A culture-specific formatted date string, or empty if null.</returns>
     public string FormatDateForTenant(DateTime? dateTime)
     {
         if (!dateTime.HasValue)
@@ -89,6 +118,10 @@ public class TenantInfoService(
     }
 
 
+    /// <summary>
+    /// Gets the current staff member's ID from user claims.
+    /// </summary>
+    /// <returns>The staff ID, or 0 if not found.</returns>
     public int GetStaffId()
     {
         if (_cachedStaffId.HasValue) return _cachedStaffId.Value;
@@ -98,6 +131,10 @@ public class TenantInfoService(
         return _cachedStaffId.Value;
     }
 
+    /// <summary>
+    /// Gets the current contact's ID from user claims.
+    /// </summary>
+    /// <returns>The contact ID, or 0 if not found.</returns>
     public int GetContactId()
     {
         if (_cachedContactId.HasValue) return _cachedContactId.Value;
@@ -107,6 +144,10 @@ public class TenantInfoService(
         return _cachedContactId.Value;
     }
 
+    /// <summary>
+    /// Determines if the current tenant is a US-based tenant.
+    /// </summary>
+    /// <returns>True if the tenant's country code is "US".</returns>
     public bool IsUsTenant()
     {
         var countryCode = GetCountryCode();
@@ -114,6 +155,10 @@ public class TenantInfoService(
         return countryCode?.ToUpper().Equals(usa) ?? false;
     }
 
+    /// <summary>
+    /// Gets the current staff member's information (ID and full name) with 8-hour caching.
+    /// </summary>
+    /// <returns>A Suggestion object with staff ID and name.</returns>
     public async Task<Suggestion> GetStaffInfoAsync()
     {
         var staffId = GetStaffId();
@@ -139,8 +184,16 @@ public class TenantInfoService(
         });
     }
     
+    /// <summary>
+    /// Gets the tenant's timezone ID string, defaulting to UTC if not set.
+    /// </summary>
     public string GetTenantTimeZone() => GetTimeZone() ?? "UTC";
-    
+
+    /// <summary>
+    /// Converts a UTC DateTime to a DateTimeOffset in the tenant's timezone.
+    /// </summary>
+    /// <param name="utcDateTime">The UTC date/time to convert.</param>
+    /// <returns>A DateTimeOffset with the tenant's timezone offset applied.</returns>
     public DateTimeOffset ConvertUtcToTenantTimeZone(DateTime utcDateTime)
     {
         var tenantTimeZoneInfo = GetTimeZoneInfo();

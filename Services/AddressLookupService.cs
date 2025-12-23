@@ -10,6 +10,9 @@ using Log = Serilog.Log;
 
 namespace DespatchWeb.Services;
 
+/// <summary>
+/// Service for address lookup and geocoding operations using the HERE Maps API.
+/// </summary>
 public class AddressLookupService(
     HttpClient httpClient,
     ITenantInfoService infoService) : IAddressLookupService
@@ -19,6 +22,12 @@ public class AddressLookupService(
     private const string UsCoordinates = "37.09024,-95.712891";
     private const string NzCoordinates = "-40.900557,174.885971";
     
+    /// <summary>
+    /// Searches for address suggestions based on partial text input using HERE Maps autosuggest API.
+    /// Filters results by tenant country (US or NZ) and excludes category/chain queries.
+    /// </summary>
+    /// <param name="text">The partial address text to search for (minimum 3 characters).</param>
+    /// <returns>A list of matching location results with address labels and coordinates.</returns>
     public async Task<List<HereMapsLocationResult>> AutocompleteAddressSearchAsync(string text)
     {
         if (string.IsNullOrWhiteSpace(text) || text.Length < 3) return [];
@@ -68,6 +77,11 @@ public class AddressLookupService(
         }
     }
 
+    /// <summary>
+    /// Retrieves detailed location information for a specific HERE Maps place ID.
+    /// </summary>
+    /// <param name="id">The HERE Maps place ID to look up.</param>
+    /// <returns>Detailed location information including address, country info, and street details.</returns>
     public async Task<HereMapsLookupResponse> GetLocationDetailsByIdAsync(string id)
     {
         try
@@ -101,6 +115,12 @@ public class AddressLookupService(
         }
     }
 
+    /// <summary>
+    /// Performs reverse geocoding to find the nearest address for given coordinates.
+    /// </summary>
+    /// <param name="lat">The latitude coordinate.</param>
+    /// <param name="lng">The longitude coordinate.</param>
+    /// <returns>A list containing the nearest address result.</returns>
     public async Task<List<HereMapsLocationResult>> FetchNearestAddressAsync(double lat, double lng)
     {
         try

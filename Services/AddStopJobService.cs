@@ -11,6 +11,9 @@ using Serilog;
 
 namespace DespatchWeb.Services;
 
+/// <summary>
+/// Service for creating additional stop jobs (extra pickups or deliveries) as child jobs linked to parent jobs.
+/// </summary>
 public class AddStopJobService(IJobRepository repository, ITenantInfoService infoService) : IAddStopJobService
 {
     private const decimal ExtraStopAmount = 20m;
@@ -19,6 +22,12 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
     private const int JobRelationshipTypeId = 13;
     private const decimal ExtraStopFuel = 0m;
 
+    /// <summary>
+    /// Creates a new stop job as a child of an existing live job.
+    /// Copies relevant data from the parent job, adds packages, notes, and pricing breakdown.
+    /// </summary>
+    /// <param name="request">The request containing job ID and pickup/delivery address details.</param>
+    /// <returns>The ID of the newly created stop job.</returns>
     public async Task<int> AddStopInsertJobAsync(AddStopRequest request)
     {
         try
@@ -165,6 +174,12 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
         }
     }
 
+    /// <summary>
+    /// Creates a new stop job as a child of an existing recurring (prebook) job.
+    /// Copies relevant data from the parent booking, adds notes and pricing breakdown.
+    /// </summary>
+    /// <param name="request">The request containing job ID and pickup/delivery address details.</param>
+    /// <returns>The ID of the newly created stop job booking.</returns>
     public async Task<int> AddStopInsertRecurringJobAsync(AddStopRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -287,6 +302,11 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
         return newStopJob.UcbkId;
     }
 
+    /// <summary>
+    /// Generates a unique job number for a stop job by appending a-z suffix to the base job number.
+    /// </summary>
+    /// <param name="baseJobNumber">The parent job number to use as a base.</param>
+    /// <returns>A unique job number with alphabetic suffix.</returns>
     private async Task<string> GenerateNewStopJobNumberAsync(string baseJobNumber)
     {
         var letter = 'a';
@@ -303,6 +323,9 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
         throw new InvalidOperationException("Unable to generate unique job number - all suffixes exhausted");
     }
 
+    /// <summary>
+    /// Calculates the raw amount for a stop job based on the parent job's client and service parameters.
+    /// </summary>
     private async Task<decimal> CalculateRawAmountAsync(TucJob job)
     {
         return await repository.GetNationwideServiceRawPriceAsync(
@@ -317,8 +340,14 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
         );
     }
 
+    /// <summary>
+    /// Cleans a shop reference string by trimming whitespace or returning null if empty.
+    /// </summary>
     private static string CleanShopRef(string shopRef) => string.IsNullOrWhiteSpace(shopRef) ? null : shopRef.Trim();
 
+    /// <summary>
+    /// Creates a note entity for a live job.
+    /// </summary>
     private static TucNote CreateNote(int jobId, string noteText, int staffId, DateTime currentDate)
     {
         return new TucNote
@@ -333,6 +362,9 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
         };
     }
 
+    /// <summary>
+    /// Creates a note entity for a recurring job booking.
+    /// </summary>
     private static TucNote CreateBookingNote(int jobBookingId, string noteText, int staffId, DateTime currentDate)
     {
         return new TucNote
@@ -347,12 +379,21 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
         };
     }
 
+    /// <summary>
+    /// Creates a pricing breakdown for a live job stop.
+    /// </summary>
     private static PricingBreakdown CreatePricingBreakdown(int stopJobId) =>
         CreatePricingBreakdownCore(stopJobId, isRecurring: false);
 
+    /// <summary>
+    /// Creates a pricing breakdown for a recurring job booking stop.
+    /// </summary>
     private static PricingBreakdown CreateBookingPricingBreakdown(int stopJobId) =>
         CreatePricingBreakdownCore(stopJobId, isRecurring: true);
 
+    /// <summary>
+    /// Creates a pricing breakdown with extra stop charges.
+    /// </summary>
     private static PricingBreakdown CreatePricingBreakdownCore(int stopJobId, bool isRecurring)
     {
         var breakdown = new PricingBreakdown
@@ -371,6 +412,9 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
         return breakdown;
     }
     
+    /// <summary>
+    /// Creates package entities for the stop job based on the shipment details quantity.
+    /// </summary>
     private async Task CreateAndAddPackagesToJob(int effectiveJobId, int stopJobId, ShipmentDetails extras)
     {
         var quantity = extras.Quantity ?? 0;

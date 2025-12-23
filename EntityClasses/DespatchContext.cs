@@ -159,6 +159,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TucJob> TucJobs { get; set; }
 
+    public virtual DbSet<TucJobAddressDeatil> TucJobAddressDeatils { get; set; }
+
     public virtual DbSet<TucJobArchive> TucJobArchives { get; set; }
 
     public virtual DbSet<TucJobBooking> TucJobBookings { get; set; }
@@ -241,9 +243,7 @@ public partial class DespatchContext : DbContext
                 .HasAnnotation("Relational:DefaultConstraintName", "DF__AgentVehi__LastM__6CAED6EF")
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
-            entity.Property(e => e.MarkupOrMargin).HasDefaultValue(false);
             entity.Property(e => e.VehicleSizeId).HasColumnName("VehicleSizeID");
-            entity.Property(e => e.ZoneRateCardMarkup).HasColumnType("decimal(18, 4)");
 
             entity.HasOne(d => d.Agent).WithMany(p => p.AgentVehicles)
                 .HasForeignKey(d => d.AgentId)
@@ -262,9 +262,7 @@ public partial class DespatchContext : DbContext
         {
             entity.HasKey(e => e.AirFreightRateId).HasName("PK__AirFreig__19F7CB686B1AD212");
 
-            entity.HasIndex(e => new { e.AirFreightRateId, e.Active }, "IX_AirFreightRates_ActiveLookup")
-                .HasFilter("([Active]=(1))")
-                .HasFillFactor(90);
+            entity.HasIndex(e => new { e.Active, e.AirFreightRateId }, "IX_AirFreightRates_ActiveLookup").HasFillFactor(90);
 
             entity.Property(e => e.AirFreightRateId).HasColumnName("AirFreightRateID");
             entity.Property(e => e.Active)
@@ -741,14 +739,12 @@ public partial class DespatchContext : DbContext
         {
             entity.HasKey(e => e.FlightCarrierId).HasName("PK__FlightCa__8DE59C8F1A1745CD");
 
-            entity.HasIndex(e => e.IsActive, "IX_FlightCarriers_Active")
-                .HasFilter("([IsActive]=(1))")
-                .HasFillFactor(90);
+            entity.HasIndex(e => e.IsActive, "IX_FlightCarriers_Active").HasFillFactor(90);
 
             entity.HasIndex(e => e.CarrierCode, "IX_FlightCarriers_CarrierCode").HasFillFactor(90);
 
             entity.Property(e => e.FlightCarrierId).HasColumnName("FlightCarrierID");
-            entity.Property(e => e.CarrierCode).HasMaxLength(2);
+            entity.Property(e => e.CarrierCode).HasMaxLength(5);
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
@@ -804,9 +800,7 @@ public partial class DespatchContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PK__FlightWe__3214EC079BC35BAC");
 
-            entity.HasIndex(e => new { e.IsActive, e.IsEnabled }, "IX_FlightWebhookEventTypes_ActiveEnabled")
-                .HasFilter("([IsActive]=(1) AND [IsEnabled]=(1))")
-                .HasFillFactor(90);
+            entity.HasIndex(e => new { e.IsActive, e.IsEnabled }, "IX_FlightWebhookEventTypes_ActiveEnabled").HasFillFactor(90);
 
             entity.HasIndex(e => e.EventCode, "UQ__FlightWe__640F67164EC148F8").IsUnique();
 
@@ -1063,7 +1057,13 @@ public partial class DespatchContext : DbContext
         {
             entity.HasKey(e => e.PricingBreakdownId).HasName("PK__PricingB__BC8C3D8BE9445FEE");
 
-            entity.ToTable("PricingBreakdown", tb => tb.HasTrigger("TR_PricingBreakdown_tucJob_Sync"));
+            entity.ToTable("PricingBreakdown", tb =>
+                {
+                    tb.HasTrigger("TR_PricingBreakdown_tucJob_Sync");
+                    tb.HasTrigger("trg_PricingBreakdown_Delete");
+                    tb.HasTrigger("trg_PricingBreakdown_Insert");
+                    tb.HasTrigger("trg_PricingBreakdown_Update");
+                });
 
             entity.HasIndex(e => e.ChildJobId, "IX_PricingBreakdown_ChildJobID").HasFilter("([ChildJobID] IS NOT NULL)");
 
@@ -1127,9 +1127,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.DayName, "DayName");
 
-            entity.HasIndex(e => new { e.ClientId, e.Active, e.JobEntryType, e.CanBook }, "IX_TblAfterHours_ClientActiveLookup")
-                .HasFilter("([Active]=(1))")
-                .HasFillFactor(90);
+            entity.HasIndex(e => new { e.ClientId, e.Active, e.JobEntryType, e.CanBook }, "IX_TblAfterHours_ClientActiveLookup").HasFillFactor(90);
 
             entity.HasIndex(e => e.JobEntryType, "JobEntryType");
 
@@ -1211,9 +1209,7 @@ public partial class DespatchContext : DbContext
 
             entity.ToTable("tblAirport");
 
-            entity.HasIndex(e => e.Active, "IX_TblAirports_ActiveWithCoordinates")
-                .HasFilter("([Active]=(1))")
-                .HasFillFactor(90);
+            entity.HasIndex(e => e.Active, "IX_TblAirports_ActiveWithCoordinates").HasFillFactor(90);
 
             entity.Property(e => e.AirportId).HasColumnName("AirportID");
             entity.Property(e => e.AddressLine1).HasMaxLength(255);
@@ -4367,9 +4363,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => new { e.CourierFleetId, e.UccrDangerousGoods, e.DriversLicenseExpiry }, "IX_TucCourier_Compliance").HasFillFactor(90);
 
-            entity.HasIndex(e => e.UccrEmail, "IX_TucCourier_Email")
-                .HasFilter("([UccrEmail] IS NOT NULL)")
-                .HasFillFactor(90);
+            entity.HasIndex(e => e.UccrEmail, "IX_TucCourier_Email").HasFillFactor(90);
 
             entity.HasIndex(e => e.XeroId, "IX_XeroId");
 
@@ -5001,6 +4995,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PpdItemCode).HasMaxLength(50);
             entity.Property(e => e.PpdTax).HasColumnType("numeric(18, 2)");
             entity.Property(e => e.ProcessId).HasColumnName("ProcessID");
+            entity.Property(e => e.ReportId).HasColumnName("ReportID");
             entity.Property(e => e.Sent).HasPrecision(3);
             entity.Property(e => e.StatementId).HasColumnName("StatementID");
             entity.Property(e => e.Subtotal).HasColumnType("numeric(18, 2)");
@@ -5140,25 +5135,35 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
 
+            entity.HasIndex(e => new { e.UcjbVoid, e.UcjbJobDone, e.UcjbCourierId, e.UcjbDate }, "IX_TucJob_ActiveJobs").HasFillFactor(90);
+
             entity.HasIndex(e => e.ContactId, "IX_TucJob_ContactID");
 
             entity.HasIndex(e => new { e.UcjbCourierId, e.UcjbVoid, e.UcjbJobDone, e.UcjbDate }, "IX_TucJob_CourierStatus_Date").HasFillFactor(90);
 
             entity.HasIndex(e => e.UcjbSpeed, "IX_TucJob_Speed");
 
+            entity.HasIndex(e => new { e.ParentId, e.UcjbCourierId }, "IX_TucJobs_ChildJobAssignment").HasFillFactor(90);
+
             entity.HasIndex(e => e.UcjbCourierId, "IX_TucJobs_CourierId");
 
             entity.HasIndex(e => new { e.UcjbDate, e.UcjbTime }, "IX_TucJobs_Date_Time");
 
+            entity.HasIndex(e => e.UcjbId, "IX_TucJobs_DeliveryCoordinates").HasFillFactor(90);
+
             entity.HasIndex(e => e.UcjbId, "IX_TucJobs_Lookup");
 
             entity.HasIndex(e => e.UcjbId, "IX_TucJobs_NationwideFlightQueries").HasFillFactor(90);
+
+            entity.HasIndex(e => e.UcjbId, "IX_TucJobs_PickupCoordinates").HasFillFactor(90);
 
             entity.HasIndex(e => new { e.UcjbStatus, e.UcjbDate }, "IX_TucJobs_Status_Date");
 
             entity.HasIndex(e => e.AgentId, "IX_tucJob_AgentID");
 
             entity.HasIndex(e => new { e.UcjbStatus, e.UcjbJobDone, e.UcjbVoid }, "IX_tucJob_Archive_Status");
+
+            entity.HasIndex(e => new { e.UcjbJobDone, e.UcjbVoid, e.UcjbCourierId }, "IX_tucJob_CourierClearListBuild");
 
             entity.HasIndex(e => e.DeliverToLeaveId, "IX_tucJob_DeliverToLeaveID");
 
@@ -5173,6 +5178,8 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.UcjbDispId, "IX_tucJob_ucjbDispID");
 
             entity.HasIndex(e => e.UcjbNumber, "IX_tucJob_ucjbNumber_Covering");
+
+            entity.HasIndex(e => e.UcjbSendTime, "IX_tucJob_ucjbSendTime");
 
             entity.HasIndex(e => e.InformationParentId, "InformationParentID");
 
@@ -5609,6 +5616,35 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.UndeliverableLocation).WithMany(p => p.TucJobs)
                 .HasForeignKey(d => d.UndeliverableLocationId)
                 .HasConstraintName("FK_tucJob_tblUndeliverableLocation");
+        });
+
+        modelBuilder.Entity<TucJobAddressDeatil>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__tucJobAd__3214EC271995C0A8");
+
+            entity.ToTable("tucJobAddressDeatil");
+
+            entity.Property(e => e.Id).HasColumnName("ID");
+            entity.Property(e => e.DeliveryReference).HasMaxLength(60);
+            entity.Property(e => e.FromBuildingName).HasMaxLength(60);
+            entity.Property(e => e.FromCity).HasMaxLength(60);
+            entity.Property(e => e.FromContact).HasMaxLength(60);
+            entity.Property(e => e.FromCountryCode).HasMaxLength(2);
+            entity.Property(e => e.FromName).HasMaxLength(60);
+            entity.Property(e => e.FromPhoneNumber).HasMaxLength(200);
+            entity.Property(e => e.FromPostCode).HasMaxLength(10);
+            entity.Property(e => e.FromStreetAddress).HasMaxLength(60);
+            entity.Property(e => e.FromSuburb).HasMaxLength(60);
+            entity.Property(e => e.JobId).HasColumnName("JobID");
+            entity.Property(e => e.ToBuildingName).HasMaxLength(60);
+            entity.Property(e => e.ToCity).HasMaxLength(60);
+            entity.Property(e => e.ToContact).HasMaxLength(60);
+            entity.Property(e => e.ToCountryCode).HasMaxLength(2);
+            entity.Property(e => e.ToName).HasMaxLength(60);
+            entity.Property(e => e.ToPhoneNumber).HasMaxLength(200);
+            entity.Property(e => e.ToPostCode).HasMaxLength(10);
+            entity.Property(e => e.ToStreetAddress).HasMaxLength(60);
+            entity.Property(e => e.ToSuburb).HasMaxLength(60);
         });
 
         modelBuilder.Entity<TucJobArchive>(entity =>
@@ -6756,11 +6792,11 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => new { e.UcmmSendToStaffId, e.Read }, "IX_TucManualMessage_Unread").HasFillFactor(90);
 
-            entity.HasIndex(e => new { e.UcmmSendToStaffId, e.Read, e.UcmmSendFromCourierId }, "IX_tucManualMessage_UnreadByCourier").HasFilter("([Read]=(0))");
+            entity.HasIndex(e => new { e.UcmmSendToStaffId, e.Read, e.UcmmSendFromCourierId }, "IX_tucManualMessage_UnreadByCourier").HasFillFactor(90);
 
-            entity.HasIndex(e => new { e.UcmmSendToStaffId, e.Read, e.UcmmSendFromStaffId }, "IX_tucManualMessage_UnreadByStaff").HasFilter("([Read]=(0))");
+            entity.HasIndex(e => new { e.UcmmSendToStaffId, e.Read, e.UcmmSendFromStaffId }, "IX_tucManualMessage_UnreadByStaff").HasFillFactor(90);
 
-            entity.HasIndex(e => new { e.UcmmSendToStaffId, e.Read }, "IX_tucManualMessage_UnreadCount").HasFilter("([Read]=(0))");
+            entity.HasIndex(e => new { e.UcmmSendToStaffId, e.Read }, "IX_tucManualMessage_UnreadCount").HasFillFactor(90);
 
             entity.Property(e => e.UcmmId).HasColumnName("ucmmID");
             entity.Property(e => e.FileName).HasMaxLength(255);

@@ -1127,16 +1127,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         console.log("SimpleRepriceJobManual", data);
         await this.$http.post("job/SimpleRepriceJobManual", data);
     }
-
-    async calculateJobPriceWithBaseAmount(jobId: number, isPrebook: boolean, baseAmount: number): Promise<number> {
-        const response = await this.$http.post<number>('job/CalculateJobPriceWithBaseAmount', {
-            jobId,
-            isPrebook,
-            baseAmount
-        });
-        return response.data;
-    }
-
+    
     async repriceJobWithBaseAmount(jobId: number, isPrebook: boolean, baseAmount: number): Promise<number> {
         const response = await this.$http.post<number>('job/RepriceJobWithBaseAmount', {
             jobId,

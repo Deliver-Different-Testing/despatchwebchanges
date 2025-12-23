@@ -34,4 +34,5 @@ public partial class TucJobArchive
     public virtual TucSource Source { get; set; }
     public virtual TucCourier ClosestCourier { get; set; }
     public virtual TblJobRelationshipType JobRelationshipType { get; set; }
+    public virtual TucJobAddressDeatil AddressDetail { get; set; }
 }
