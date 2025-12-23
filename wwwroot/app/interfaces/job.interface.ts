@@ -885,7 +885,7 @@ export interface IDispatchJobDto {
     searchText?: string;
     relatedJobs?: ISuggestion[];
 
-    assignedFlight?: IAssignedFlight;
+    assignedFlight?: IAssignedFlightDto;
     assignedAgent?: IAgent;
 
     conNote?: string;

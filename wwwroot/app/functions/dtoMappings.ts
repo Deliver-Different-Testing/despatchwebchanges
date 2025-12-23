@@ -154,6 +154,21 @@ export function transformDispatchJobDTO(dto: IDispatchJobDto): IDispatchJob {
         _deliveryDateString: dto.booked ? formatShortDate(dto.booked) : undefined,
         _pickUpTimeZoneStr: dto.pickUpTimeZone ? timezoneShortFilter(dto.pickUpTimeZone.text) : undefined,
         _deliveryTimeZoneStr: dto.deliveryTimeZone ? timezoneShortFilter(dto.deliveryTimeZone.text) : undefined,
+        // Transform assignedFlight with helper fields for display
+        assignedFlight: dto.assignedFlight ? {
+            ...dto.assignedFlight,
+            expectedArrival: dto.assignedFlight.expectedArrival ? formatDateFromApi(dto.assignedFlight.expectedArrival) : undefined,
+            expectedDeparture: dto.assignedFlight.expectedDeparture ? formatDateFromApi(dto.assignedFlight.expectedDeparture) : undefined,
+            flightSegments: dto.assignedFlight.flightSegments?.map(segment => ({
+                ...segment,
+                departureTime: formatDateFromApi(segment.departureTime),
+                arrivalTime: formatDateFromApi(segment.arrivalTime),
+                _departureTimeStr: formatLongDateTime(segment.departureTime),
+                _arrivalTimeStr: formatLongDateTime(segment.arrivalTime),
+                _arrivalTimeZoneStr: timezoneShortFilter(segment.arrivalAirportTimeZone),
+                _departureTimeZoneStr: timezoneShortFilter(segment.departureAirportTimeZone),
+            })) ?? []
+        } : undefined,
         // Map backend children to _groupChildren for the UI
         children: children,
         _groupChildren: children,

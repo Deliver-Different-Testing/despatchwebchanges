@@ -1,18 +1,20 @@
 import './bulk-price-upload-dialog.styles.less';
 import {
     PricingMode,
-    BulkPricePreviewRow,
-    BulkPricePreviewResponse
+    BulkPricePreviewRow
 } from "./bulk-price-upload-dialog.interfaces";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
+import BaseController from "../../base-controller";
 
 type DialogState = 'upload' | 'mode-select' | 'result' | 'loading';
 
-class BulkPriceUploadDialogController implements angular.IController {
+class BulkPriceUploadDialogController extends BaseController {
     static $inject = [
         '$mdDialog',
-        '$http',
+        '$timeout',
+        '$interval',
+        '$scope',
         'DispatchData',
         'toastrService'
     ];
@@ -42,10 +44,15 @@ class BulkPriceUploadDialogController implements angular.IController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private $http: angular.IHttpService,
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
+        $scope: angular.IScope,
         private DispatchData: DispatchCoreService,
         private toastrService: ToastrService
-    ) {}
+    ) {
+        super();
+        this.initServices($timeout, $interval, $scope);
+    }
 
     // File Upload Methods
     onDragOver(event: DragEvent): void {
@@ -89,12 +96,14 @@ class BulkPriceUploadDialogController implements angular.IController {
 
         if (!validExtensions.includes(extension)) {
             this.errorMessage = 'Invalid file format. Please upload an Excel (.xls, .xlsx) or CSV file.';
+            this.applyScope();
             return;
         }
 
         this.uploadedFile = file;
         this.errorMessage = '';
         this.currentState = 'mode-select';
+        this.applyScope();
     }
 
     // Mode Selection Methods
@@ -137,25 +146,13 @@ class BulkPriceUploadDialogController implements angular.IController {
         this.errorMessage = '';
 
         try {
-            const formData = new FormData();
-            formData.append('file', this.uploadedFile);
+            const response = await this.DispatchData.applyBulkPriceUpdate(this.uploadedFile, this.selectedMode);
 
-            // Apply the prices and get the results
-            const response = await this.$http.post<BulkPricePreviewResponse>(
-                '/job/ApplyBulkPriceUpdate',
-                formData,
-                {
-                    params: { pricingMode: this.selectedMode },
-                    transformRequest: angular.identity,
-                    headers: { 'Content-Type': undefined }
-                }
-            );
-
-            this.resultRows = response.data.rows;
+            this.resultRows = response.rows;
             this.filteredRows = [...this.resultRows];
-            this.totalJobs = response.data.totalJobs;
-            this.totalOldAmount = response.data.totalOldAmount;
-            this.totalNewAmount = response.data.totalNewAmount;
+            this.totalJobs = response.totalJobs;
+            this.totalOldAmount = response.totalOldAmount;
+            this.totalNewAmount = response.totalNewAmount;
             this.currentState = 'result';
             this.toastrService.showSuccessToast(`Successfully updated prices for ${this.totalJobs} jobs.`);
         } catch (error: any) {
@@ -166,6 +163,7 @@ class BulkPriceUploadDialogController implements angular.IController {
         } finally {
             this.isLoading = false;
             this.loadingMessage = '';
+            this.applyScope();
         }
     }
 
