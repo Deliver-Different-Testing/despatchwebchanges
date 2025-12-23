@@ -916,117 +916,105 @@ public partial class JobRepository(
         List<int> clientIds
     )
     {
-        var clientSet = clientIds is { Count: > 0 };
-        var courierSet = courierIds is { Count: > 0 };
-        var speedSet = speedIds is { Count: > 0 };
-        var jobParam = $"%{job}%";
-        var wildParam = $"%{wild}%";
-
-        // Subquery for matching job IDs based on all filter criteria
-        var matchingJobIds = Context.TblJobs
+        var baseQuery = Context.TblJobs
             .AsNoTracking()
-            .Where(j =>
-                j.Date >= fromDate
-                && j.Date <= toDate
-                && (!clientSet || (j.ClientId.HasValue && clientIds.Contains(j.ClientId.Value)))
-                && (!courierSet || (j.CourierId.HasValue && courierIds.Contains(j.CourierId.Value)))
-                && (!speedSet || (j.Speed.HasValue && speedIds.Contains(j.Speed.Value)))
-                && (job == string.Empty || EF.Functions.Like(j.Number!.ToLower(), jobParam))
-                && (wild == string.Empty
-                    // Nationwide fields search
-                    || Context.TucJobNationwides
-                        .Where(nw => nw.UcnwJobId == j.JobId)
-                        .Any(nw => EF.Functions.Like(
-                            (nw.UcnwFlightNo ?? string.Empty)
-                            + Space + (nw.AircraftName ?? string.Empty)
-                            + Space + (nw.CarrierFsCode ?? string.Empty)
-                            + Space + (nw.DepartureAirportName ?? string.Empty)
-                            + Space + (nw.ArrivalAirportName ?? string.Empty),
-                            wildParam))
-                    // Job and suburb fields search using scalar subqueries
-                    || EF.Functions.Like(
-                        (j.FromAddress ?? string.Empty)
-                        + Space + (j.PickupFromContact ?? string.Empty)
-                        + Space + (Context.TucSuburbs
-                            .Where(s => s.UcsuId == j.FromSuburbId)
-                            .Select(s => s.UcsuName).FirstOrDefault() ?? string.Empty)
-                        + Space + (j.ToAddress ?? string.Empty)
-                        + Space + (j.DeliverToContact ?? string.Empty)
-                        + Space + (Context.TucSuburbs
-                            .Where(s => s.UcsuId == j.ToSuburbId)
-                            .Select(s => s.UcsuName).FirstOrDefault() ?? string.Empty)
-                        + Space + (j.ClientReferenceA ?? string.Empty)
-                        + Space + (j.ClientReferenceB ?? string.Empty)
-                        + Space + (j.OurRef ?? string.Empty)
-                        + Space + (j.Number ?? string.Empty).ToLower()
-                        + Space + (j.Barcode ?? string.Empty).ToLower(),
-                        wildParam)))
-            .Select(j => j.JobId);
+            .Where(j => j.Date >= fromDate && j.Date <= toDate);
 
-        // Get parent IDs for matched child jobs (to include them in results)
-        var parentIds = Context.TblJobs
-            .AsNoTracking()
-            .Where(j => matchingJobIds.Contains(j.JobId) && j.ParentId.HasValue)
+        // Apply optional filters conditionally
+        if (clientIds is { Count: > 0 })
+            baseQuery = baseQuery.Where(j => j.ClientId.HasValue && clientIds.Contains(j.ClientId.Value));
+
+        if (courierIds is { Count: > 0 })
+            baseQuery = baseQuery.Where(j => j.CourierId.HasValue && courierIds.Contains(j.CourierId.Value));
+
+        if (speedIds is { Count: > 0 })
+            baseQuery = baseQuery.Where(j => j.Speed.HasValue && speedIds.Contains(j.Speed.Value));
+
+        if (!string.IsNullOrEmpty(job))
+        {
+            var jobParam = $"%{job}%";
+            baseQuery = baseQuery.Where(j => EF.Functions.Like(j.Number!, jobParam));
+        }
+
+        // Apply wildcard search with separate LIKE conditions (more index-friendly than concatenation)
+        if (!string.IsNullOrEmpty(wild))
+        {
+            var wildParam = $"%{wild}%";
+            baseQuery = baseQuery.Where(j =>
+                // Job fields
+                EF.Functions.Like(j.FromAddress!, wildParam)
+                || EF.Functions.Like(j.PickupFromContact!, wildParam)
+                || EF.Functions.Like(j.ToAddress!, wildParam)
+                || EF.Functions.Like(j.DeliverToContact!, wildParam)
+                || EF.Functions.Like(j.ClientReferenceA!, wildParam)
+                || EF.Functions.Like(j.ClientReferenceB!, wildParam)
+                || EF.Functions.Like(j.OurRef!, wildParam)
+                || EF.Functions.Like(j.Number!, wildParam)
+                || EF.Functions.Like(j.Barcode!, wildParam)
+                // Suburb names via navigation
+                || (j.FromSuburb != null && EF.Functions.Like(j.FromSuburb.UcsuName!, wildParam))
+                || (j.ToSuburb != null && EF.Functions.Like(j.ToSuburb.UcsuName!, wildParam))
+                // Nationwide fields via subquery (TblJob is keyless, can't use navigation)
+                || Context.TucJobNationwides.Any(nw =>
+                    nw.UcnwJobId == j.JobId && (
+                        EF.Functions.Like(nw.UcnwFlightNo!, wildParam)
+                        || EF.Functions.Like(nw.AircraftName!, wildParam)
+                        || EF.Functions.Like(nw.CarrierFsCode!, wildParam)
+                        || EF.Functions.Like(nw.DepartureAirportName!, wildParam)
+                        || EF.Functions.Like(nw.ArrivalAirportName!, wildParam))));
+        }
+
+        // Get matching job IDs and their parent IDs in a single subquery
+        var matchingJobIds = baseQuery.Select(j => j.JobId);
+        var parentIdsOfMatches = baseQuery
+            .Where(j => j.ParentId.HasValue)
             .Select(j => j.ParentId!.Value);
 
-        // Combined set of all job IDs to fetch (matched + their parents)
-        var allJobIds = matchingJobIds.Union(parentIds);
-
-        // Single combined query with all joins - executes as one SQL statement
-        var query =
-            from j in Context.TblJobs.AsNoTracking()
-            where allJobIds.Contains(j.JobId)
-            join c in Context.TucClients on j.ClientId equals c.UcclId into clientJoin
-            from client in clientJoin.DefaultIfEmpty()
-            join s in Context.TucJobStatuses on j.Status equals s.UcjsId into statusJoin
-            from status in statusJoin.DefaultIfEmpty()
-            join nj in Context.TucJobNationwides on j.JobId equals nj.UcnwJobId into nationwideJoin
-            from nationwide in nationwideJoin.DefaultIfEmpty()
-            join a in Context.TucAgents on j.AgentId equals a.UcagId into agentJoin
-            from agent in agentJoin.DefaultIfEmpty()
-            join inv in Context.TucInvoiceNos on j.InvoiceNo equals inv.UcinId into invoiceJoin
-            from invoice in invoiceJoin.DefaultIfEmpty()
-            join lic in Context.TucClientContacts on j.LoggedInContactId equals lic.UcctId into licJoin
-            from loggedInContact in licJoin.DefaultIfEmpty()
-            join co in Context.TucCouriers on j.CourierId equals co.UccrId into courierJoin
-            from courier in courierJoin.DefaultIfEmpty()
-            // Use scalar subqueries for pricing - EF Core translates to efficient SQL
-            let jobPricingSum = Context.PricingBreakdowns
-                .Where(pb => pb.JobId == j.JobId)
-                .Sum(pb => (decimal?)pb.ChargeAmount)
-            let parentPricingSum = j.ParentId.HasValue
-                ? Context.PricingBreakdowns
-                    .Where(pb => pb.JobId == j.ParentId)
-                    .Sum(pb => (decimal?)pb.ChargeAmount)
-                : null
-            orderby j.Number
-            select new JobDownloadModel
+        // Single query: fetch jobs that match OR are parents of matches
+        var query = Context.TblJobs
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Where(j => matchingJobIds.Contains(j.JobId) || parentIdsOfMatches.Contains(j.JobId))
+            .OrderBy(j => j.Number)
+            .Select(j => new JobDownloadModel
             {
                 Id = j.JobId,
                 ParentId = j.ParentId,
                 JobNumber = j.Number,
-                CustomerName = client != null ? client.UcclName : null,
-                BookDate = j.Date.HasValue
-                    ? j.Date.Value.CombineWithTime(j.Time)
-                    : default,
+                CustomerName = j.Client != null ? j.Client.UcclName : null,
+                BookDate = j.Date.HasValue ? j.Date.Value.CombineWithTime(j.Time) : default,
                 PickedUpDate = j.PickUpTime,
                 DeliveredDate = j.CompletedTime,
-                Amount = parentPricingSum ?? jobPricingSum ?? j.Amount,
+                // Pricing: parent's breakdown sum ?? own breakdown sum ?? Amount field
+                // TblJob is keyless, so use Context subqueries instead of navigation properties
+                Amount = (j.ParentId.HasValue
+                        ? Context.PricingBreakdowns
+                            .Where(pb => pb.JobId == j.ParentId)
+                            .Sum(pb => (decimal?)pb.ChargeAmount)
+                        : null)
+                    ?? Context.PricingBreakdowns
+                        .Where(pb => pb.JobId == j.JobId)
+                        .Sum(pb => (decimal?)pb.ChargeAmount)
+                    ?? j.Amount,
                 Fuel = j.FuelSurchargeAmount,
                 Ppd = j.Ppdexclusiveamount,
-                AgentAirlineName = nationwide != null
-                    ? nationwide.UcnwAirlineName
-                    : agent != null
-                        ? agent.UcagName
-                        : null,
-                AWB = nationwide != null ? nationwide.UcnwFlightNo : null,
+                // Nationwide via subquery (TblJob is keyless)
+                AgentAirlineName = Context.TucJobNationwides
+                        .Where(nw => nw.UcnwJobId == j.JobId)
+                        .Select(nw => nw.UcnwAirlineName)
+                        .FirstOrDefault()
+                    ?? (j.Agent != null ? j.Agent.UcagName : null),
+                AWB = Context.TucJobNationwides
+                    .Where(nw => nw.UcnwJobId == j.JobId)
+                    .Select(nw => nw.UcnwFlightNo)
+                    .FirstOrDefault(),
                 CourierPayment = j.CourierPayment,
                 CourierFuel = j.CourierFuel,
                 CourierBonus = j.CourierBonus,
                 Quantity = j.Quantity,
                 Weight = j.Weight,
                 Size = j.Size,
-                StatusName = status != null ? status.UcjsName : null,
+                StatusName = j.StatusNavigation != null ? j.StatusNavigation.UcjsName : null,
                 PickupAddressLine1 = j.PickupAddressLine1,
                 PickupAddressLine2 = j.PickupAddressLine2,
                 PickupAddressLine3 = j.PickupAddressLine3,
@@ -1047,26 +1035,25 @@ public partial class JobRepository(
                 ClientReferenceB = j.ClientReferenceB,
                 ClientReferenceC = j.ClientReferenceC,
                 InvoiceNumber = j.InvoiceNo,
-                InvoiceDate = invoice != null ? invoice.Created : null,
+                InvoiceDate = j.Invoice != null ? j.Invoice.Created : null,
                 IsArchived = j.Archived ?? false,
-                LoggedInContact = loggedInContact != null
-                    ? loggedInContact.UcctFirstname + Space + loggedInContact.UcctSurname
+                LoggedInContact = j.LoggedInContact != null
+                    ? j.LoggedInContact.UcctFirstname + Space + j.LoggedInContact.UcctSurname
                     : null,
                 RawBaseAmount = j.RawBaseAmount,
-                CourierCode = courier != null ? courier.Code : null
-            };
+                CourierCode = j.Courier != null ? j.Courier.Code : null
+            });
 
         var result = await query.ToListAsync();
 
-        // Return single jobs and child jobs only, ignore parent of child jobs
-        // Build HashSet of parent IDs for O(1) lookup instead of O(n) Any()
-        var parentIdsWithChildren = new HashSet<int>(
-            result.Where(j => j.ParentId.HasValue && j.ParentId != j.Id)
-                  .Select(j => j.ParentId!.Value));
+        // Filter out parent jobs that have children in results (keep children only)
+        var parentIdsWithChildren = result
+            .Where(j => j.ParentId.HasValue && j.ParentId != j.Id)
+            .Select(j => j.ParentId!.Value)
+            .ToHashSet();
 
         return result
-            .Where(j =>
-                j.Id != (j.ParentId ?? j.Id) || !parentIdsWithChildren.Contains(j.Id))
+            .Where(j => j.Id != (j.ParentId ?? j.Id) || !parentIdsWithChildren.Contains(j.Id))
             .ToList();
     }
 

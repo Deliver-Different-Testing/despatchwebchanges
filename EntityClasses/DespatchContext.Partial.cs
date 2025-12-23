@@ -282,6 +282,44 @@ public partial class DespatchContext
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {
+        // TblJob is a keyless view - can only configure relationships where TblJob is dependent
+        // Navigation properties for Nationwide, PricingBreakdowns, Parent/Children require
+        // manual subqueries in LINQ since keyless entities can't be principals
+        modelBuilder.Entity<TblJob>(entity =>
+        {
+            entity.HasOne(d => d.Client)
+                .WithMany()
+                .HasForeignKey(d => d.ClientId);
+
+            entity.HasOne(d => d.StatusNavigation)
+                .WithMany()
+                .HasForeignKey(d => d.Status);
+
+            entity.HasOne(d => d.Agent)
+                .WithMany()
+                .HasForeignKey(d => d.AgentId);
+
+            entity.HasOne(d => d.Invoice)
+                .WithMany()
+                .HasForeignKey(d => d.InvoiceNo);
+
+            entity.HasOne(d => d.LoggedInContact)
+                .WithMany()
+                .HasForeignKey(d => d.LoggedInContactId);
+
+            entity.HasOne(d => d.Courier)
+                .WithMany()
+                .HasForeignKey(d => d.CourierId);
+
+            entity.HasOne(d => d.FromSuburb)
+                .WithMany()
+                .HasForeignKey(d => d.FromSuburbId);
+
+            entity.HasOne(d => d.ToSuburb)
+                .WithMany()
+                .HasForeignKey(d => d.ToSuburbId);
+        });
+
         // Tuc Job
         modelBuilder.Entity<TucJob>(entity =>
         {

@@ -1385,11 +1385,10 @@ class NationwideControl extends BaseController {
 
             await this.getJobList(Array.from(listsToRefresh));
 
-            const updatedJob = this.jobListPOD?.find(j => j.id === job.id);
-
-            if (updatedJob) {
-                await this.selectJob(updatedJob);
-            }
+            // Clear current job and fetch fresh data to ensure flight info is loaded
+            this.currentJob = undefined;
+            const freshJobData = await this.DispatchData.getDispatchJobDetail(job.id);
+            await this.selectJob(freshJobData);
 
             const successMessage = `Successfully assigned flight ${flight.flightNumber} to job ${job.jobNo}`;
             this.toastrService.showSuccessToast(successMessage);
@@ -1450,10 +1449,10 @@ class NationwideControl extends BaseController {
 
             await this.getJobList([JobDataType.NEW, JobDataType.POD]);
 
-            const updatedJob = this.findJobInLocalLists(job.id);
-            if (updatedJob) {
-                await this.selectJob(updatedJob);
-            }
+            // Clear current job and fetch fresh data to ensure agent info is loaded
+            this.currentJob = undefined;
+            const freshJobData = await this.DispatchData.getDispatchJobDetail(job.id);
+            await this.selectJob(freshJobData);
 
             this.isDataLoading = false;
 

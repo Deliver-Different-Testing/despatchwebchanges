@@ -58,6 +58,7 @@ import {
 } from "../functions/dtoMappings";
 import {transformJobQueryParamsToDTO} from "../functions/toDtoMappings";
 import {IAppConfig} from "../interfaces/app-config.interface";
+import {BulkPricePreviewResponse, PricingMode} from "../components/dialogs/bulk-price-upload-dialog/bulk-price-upload-dialog.interfaces";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = [
@@ -1157,6 +1158,22 @@ class DispatchCoreService implements angular.IServiceProvider {
     
     async getDriverWorkOverview(): Promise<IDriverWorkOverview[]> {
         const response = await this.$http.get<IDriverWorkOverview[]>('courier/GetDriverWorkOverview');
+        return response.data;
+    }
+
+    async applyBulkPriceUpdate(file: File, pricingMode: PricingMode): Promise<BulkPricePreviewResponse> {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await this.$http.post<BulkPricePreviewResponse>(
+            '/job/ApplyBulkPriceUpdate',
+            formData,
+            {
+                params: {pricingMode},
+                transformRequest: angular.identity,
+                headers: {'Content-Type': undefined}
+            }
+        );
         return response.data;
     }
 }
