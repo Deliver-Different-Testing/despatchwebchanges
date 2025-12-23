@@ -93,7 +93,6 @@ public interface IJobRepository
 
     Task ReRateSplitJobAsync(int jobId);
     Task FinishSplitJobProcessAsync(int jobId, string despatcher);
-    Task<List<SuburbLookup>> GetSuburbsAsync();
     Task<List<Suggestion>> GetSpeedsAsync();
     Task<List<Suggestion>> GetSpeedsBySearchTermAsync(string searchTerm);
     Task<List<Suggestion>> GetContactsByClientIdAsync(int clientId);
@@ -204,14 +203,11 @@ public interface IJobRepository
     Task<string> GetStaffNameAsync(int staffId);
     Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType);
     Task SimpleRepriceJobManualAsync(SimpleRepriceJobModel data);
-    Task<decimal> CalculateJobPriceWithBaseAmountAsync(RepriceJobWithBaseAmountModel data);
     Task<decimal> RepriceJobWithBaseAmountAsync(RepriceJobWithBaseAmountModel data);
     Task<decimal> GetJobRateUsAsync(RateJobUsDto dto);
     Task AssignCourierToJobAsync(List<int> jobIds, int courierId);
     Task AssignCourierToChildJobsAsync(List<int> jobIds, InternalJobStatus internalStatus);
     Task<List<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived);
     Task<int?> GetJobParentIdAsync(int jobId);
-    
-    Task<CourierPaymentCalculationData> GetCourierPaymentCalculationDataAsync(int jobId, bool isPrebook);
-    Task UpdateCourierPaymentFieldsAsync(int jobId, bool isPrebook, CourierPaymentResult result);
+    Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(List<int> jobIds);
 }

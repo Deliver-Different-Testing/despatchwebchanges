@@ -63,6 +63,8 @@ public partial class TucInvoiceNo
 
     public decimal? CourierFuel { get; set; }
 
+    public int ReportId { get; set; }
+
     public virtual TucInvoiceProcess Process { get; set; }
 
     public virtual TucClient UcinClient { get; set; }

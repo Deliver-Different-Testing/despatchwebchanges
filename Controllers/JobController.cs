@@ -1,26 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Mail;
 using System.Text;
-using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using Amazon.S3;
-using Amazon.S3.Model;
 using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
-using ExcelDataReader;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -34,15 +27,13 @@ public class JobController(
     IJobRepository jobRepository,
     ITaskRepository taskRepository,
     IClientAccessValidatorService clientAccessValidator,
-    IAmazonS3 s3Client,
     HttpClient httpClient,
     IRateJobService rateJobService,
     IRecurringJobRepository recurringJobRepository,
     ITenantInfoService infoService,
     IAddStopJobService addStopJobService,
-    IPodExportService podExportService,
+    IJobReportService jobReportService,
     IJobPhotoService jobPhotoService,
-    IClientJobsReportService clientJobsReportService,
     IDispatchJobService dispatchJobService,
     IDeliveryJourneyService deliveryJourneyService
 ) : Controller
@@ -171,7 +162,7 @@ public class JobController(
         }
         catch (Exception e)
         {
-            Log.Error(e, $"an error occured getting jobs by clear list");
+            Log.Error(e, "an error occured getting jobs by clear list");
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -292,13 +283,14 @@ public class JobController(
             ArgumentNullException.ThrowIfNull(courierId);
             ArgumentNullException.ThrowIfNull(startDate);
             ArgumentNullException.ThrowIfNull(endDate);
-            
+
             var result = await jobRepository.CurrentJobListAsync(courierId, startDate, endDate);
             return Json(result);
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(GetCurrentWorkList)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(GetCurrentWorkList)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -352,25 +344,6 @@ public class JobController(
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController),
                     nameof(DeleteJobDeliveryPhotoOrSignature)));
-            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
-        }
-    }
-
-    [HttpDelete]
-    public async Task<IActionResult> DeleteJobPickupPhotoOrSignature(int jobId, string key)
-    {
-        try
-        {
-            var success = await jobPhotoService.DeleteJobPhotoOrSignatureAsync(jobId, key);
-            if (!success) return BadRequest("Failed to delete file or file key is required");
-
-            return Json(new { success = true, message = "File deleted successfully" });
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController),
-                    nameof(DeleteJobPickupPhotoOrSignature)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -505,182 +478,80 @@ public class JobController(
     {
         try
         {
-            var result = await podExportService.GenerateJobsReportAsync(requestData);
+            var result = await jobReportService.GenerateJobsReportAsync(requestData);
             return File(result.FileBytes, "text/csv", result.FileName);
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "{Message}", ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(PodSearchDownload)));
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(PodSearchDownload)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
-    [HttpGet]
+
     public async Task<IActionResult> ClientJobsReportDownload([FromQuery] ClientJobsReportRequest request)
     {
         try
         {
-            var (fileBytes, fileName) = await clientJobsReportService.GenerateClientJobsReportCsvAsync(request);
+            var (fileBytes, fileName) = await jobReportService.GenerateClientJobsReportCsvAsync(request);
             return File(fileBytes, "text/csv", fileName);
         }
         catch (InvalidOperationException ex)
         {
-            // Return 404 Not Found when no data matches the criteria
             Log.Warning(ex, "Client jobs report - no data found: {@Request}", request);
             return NotFound(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController),
+                    nameof(ClientJobsReportDownload)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
     [HttpPost]
     public async Task<IActionResult> Upload(IFormFile file)
     {
-        var currentDate = infoService.GetCurrentTenantTime();
-
-        if (
-            file == null
-            || string.IsNullOrWhiteSpace(file.FileName)
-            || !new[] { ".xls", ".xlsx", ".csv" }.Contains(
-                file.FileName.Trim()[
-                        file.FileName.Trim().LastIndexOf('.')..].Trim()
-                    .ToLower()
-            )
-        )
-            return BadRequest("Invalid file format.");
-
-        var folder = currentDate.ToString("yyyyMM");
-        var fileExtension = file
-            .FileName.Trim()
-            .ToLower()[file.FileName.Trim().LastIndexOf('.')..];
-
-        using var memoryStream = new MemoryStream();
-        await file.CopyToAsync(memoryStream);
-        var byteArray = memoryStream.ToArray();
-
-        var timestamp = currentDate.ToString("yyyyMMddHHmmss");
-        var key = $"Jobs/{folder}/Jobs-{timestamp}";
-
-        using var ms = new MemoryStream(byteArray);
         try
         {
-            var putRequest = new PutObjectRequest
-            {
-                BucketName = Environment
-                    .GetEnvironmentVariable("S3Bucket")
-                    //.GetEnvironmentVariable("S3BucketMars")
-                    ?.Replace("downloads", "uploads"),
-                Key = key,
-                ContentType = file.ContentType,
-                InputStream = ms
-            };
-            putRequest.Metadata.Add("FileName", file.FileName);
-            await s3Client.PutObjectAsync(putRequest);
+            await jobReportService.ProcessJobPriceUploadAsync(file);
+            return Ok();
         }
-        catch (AmazonS3Exception e)
+        catch (ArgumentException ex)
         {
-            Log.Error(
-                e,
-                $"{nameof(UploadFile)} Error encountered when writing job file upload object to S3: "
-            );
+            return BadRequest(ex.Message);
         }
         catch (Exception e)
         {
-            Log.Error(
-                e,
-                $"{nameof(UploadFile)} Error encountered when writing file upload object to S3: "
-            );
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(Upload)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
+    }
 
-        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-        string sResult;
-
-        using (
-            var reader = fileExtension == ".csv"
-                ? ExcelReaderFactory.CreateCsvReader(memoryStream)
-                : ExcelReaderFactory.CreateReader(memoryStream)
-        )
-        {
-            var output = reader
-                .AsDataSet(
-                    new ExcelDataSetConfiguration
-                    {
-                        ConfigureDataTable = _ =>
-                            new ExcelDataTableConfiguration { UseHeaderRow = true }
-                    }
-                )
-                .Tables[0]; //Only ready from the first sheet
-
-            // Log the column names from the DataTable
-            Log.Debug(
-                "DataTable Columns: {@Columns}",
-                output.Columns.Cast<DataColumn>().Select(c => c.ColumnName).ToList()
-            );
-
-            // Convert DataTable to a List of Dictionary
-            var rows = new List<Dictionary<string, object>>();
-            foreach (DataRow row in output.Rows)
-            {
-                var dict = new Dictionary<string, object>();
-                foreach (DataColumn col in output.Columns)
-                {
-                    // Handle DBNull conversion
-                    var value = row[col];
-                    dict[col.ColumnName] = value == DBNull.Value ? null : value;
-                }
-
-                rows.Add(dict);
-            }
-
-            // Log the first row as a sample
-            if (rows.Count != 0) Log.Debug("Sample Row Data: {@FirstRow}", rows.First());
-
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                WriteIndented = true,
-                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                NumberHandling = JsonNumberHandling.AllowReadingFromString,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-            };
-
-            sResult = JsonSerializer.Serialize(rows, options);
-            Log.Debug(
-                "Serialized JSON (first 500 chars): {JsonSample}",
-                sResult.Length > 500 ? sResult[..500] + "..." : sResult
-            );
-        }
-
-        // Replace empty strings with null before deserializing
-        sResult = sResult.Replace("\"\"", "null");
-
-        var deserializeOptions = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            NumberHandling = JsonNumberHandling.AllowReadingFromString |
-                             JsonNumberHandling.AllowNamedFloatingPointLiterals,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-        };
-
+    /// <summary>
+    /// Applies bulk price updates from an uploaded spreadsheet and returns the results.
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> ApplyBulkPriceUpdate(IFormFile file, [FromQuery] string pricingMode)
+    {
         try
         {
-            var result = JsonSerializer.Deserialize<List<JobManualPriceModel>>(
-                sResult,
-                deserializeOptions);
-
-            if (result.Count == 0)
-                return Ok();
-
-            await jobRepository.UpdateManualPriceAsync(result);
+            var result = await rateJobService.ApplyBulkPriceUpdateAsync(file, pricingMode);
+            return Ok(result);
         }
-        catch (JsonException ex)
+        catch (ArgumentException ex)
         {
-            // Log the specific error and the problematic JSON
-            Console.WriteLine($"Error deserializing JSON: {ex.Message}");
-            Console.WriteLine($"JSON content: {sResult}");
+            return BadRequest(ex.Message);
         }
-
-        return Ok();
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(ApplyBulkPriceUpdate)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
     }
 
     public async Task<IActionResult> ValidateSwapPod(string job)
@@ -1135,18 +1006,6 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddPriceSuburbChangeEvent(int jobId)
-    {
-        await taskRepository.AddEventAsync(
-            jobId,
-            "Changed Price or Suburb",
-            (int)EventType.ChangePrice
-        );
-
-        return Ok();
-    }
-
-    [HttpPost]
     public async Task<IActionResult> AddEvent([FromBody] JobEventDataRequest data)
     {
         try
@@ -1209,12 +1068,6 @@ public class JobController(
             $"Exsalerate Activity Failed {responseContent} {Environment.NewLine} CurrentBody= {body}"
         );
         throw e;
-    }
-
-    public async Task<IActionResult> SuburbList()
-    {
-        var data = await jobRepository.GetSuburbsAsync();
-        return Json(data);
     }
 
     public async Task<IActionResult> SpeedList()
@@ -1920,7 +1773,7 @@ public class JobController(
         }
     }
 
-    [HttpGet]
+
     public async Task<IActionResult> ScanJobDetail(DateTimeOffset runDate, string scan)
     {
         try
@@ -1953,22 +1806,6 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> CalculateJobPriceWithBaseAmount([FromBody] RepriceJobWithBaseAmountModel data)
-    {
-        try
-        {
-            var calculatedPrice = await jobRepository.CalculateJobPriceWithBaseAmountAsync(data);
-            return Ok(calculatedPrice);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(CalculateJobPriceWithBaseAmount)));
-            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
-        }
-    }
-
-    [HttpPost]
     public async Task<IActionResult> RepriceJobWithBaseAmount([FromBody] RepriceJobWithBaseAmountModel data)
     {
         try
@@ -1979,7 +1816,8 @@ public class JobController(
         catch (Exception e)
         {
             Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(RepriceJobWithBaseAmount)));
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController),
+                    nameof(RepriceJobWithBaseAmount)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -2010,7 +1848,8 @@ public class JobController(
         catch (Exception e)
         {
             Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(ApplyRecalculatedJobRate)));
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController),
+                    nameof(ApplyRecalculatedJobRate)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }

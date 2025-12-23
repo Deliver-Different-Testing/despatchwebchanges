@@ -146,18 +146,10 @@
                 <md-icon md-font-set="material-symbols-outlined">description</md-icon>
                 <md-tooltip>Client Report</md-tooltip>
             </md-button>
-            <md-button class="md-icon-button" ng-click="ctrl.uploadJobList()" aria-label="Upload">
+            <md-button class="md-icon-button" ng-click="ctrl.uploadJobList($event)" aria-label="Upload">
                 <md-icon md-font-set="material-symbols-outlined">upload</md-icon>
-                <md-tooltip>Upload</md-tooltip>
+                <md-tooltip>Upload Prices</md-tooltip>
             </md-button>
         </div>
     </div>
-
-    <input type="file"
-           name="jobListUpload"
-           id="jobListUpload"
-           file-model="myFile"
-           style="display: none;"
-           accept=".xlsx,.xls,.csv"
-           onchange="angular.element(this).scope().ctrl.onUploadJobList()">
 </div>

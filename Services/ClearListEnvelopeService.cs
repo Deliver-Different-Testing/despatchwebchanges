@@ -9,6 +9,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Services;
 
+/// <summary>
+/// Service for calculating map envelope boundaries for clear list areas, including courier and job locations.
+/// </summary>
 public class ClearListEnvelopeService(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService infoService) : IClearListEnvelopeService
@@ -17,6 +20,13 @@ public class ClearListEnvelopeService(
 
     private DespatchContext Context => _context ??= contextFactory.CreateDbContext();
 
+    /// <summary>
+    /// Calculates the bounding envelope (min/max lat/long) for a clear list area, optionally including courier and job positions.
+    /// </summary>
+    /// <param name="clearListAreaId">The ID of the clear list area.</param>
+    /// <param name="country">The country (NZ or US) to determine which polygon/location strategy to use.</param>
+    /// <param name="includeCouriers">Whether to include courier and unassigned job locations in the envelope calculation.</param>
+    /// <returns>The bounding envelope with min/max coordinates.</returns>
     public async Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(
         int clearListAreaId,
         Country country,
@@ -36,6 +46,9 @@ public class ClearListEnvelopeService(
         };
     }
 
+    /// <summary>
+    /// Calculates the envelope for a US clear list area using zip polygon boundaries.
+    /// </summary>
     private async Task<ClearListEnvelopeViewModel> GetClearListEnvelopeUsAsync(
         int clearListAreaId,
         bool includeCouriers)
@@ -55,6 +68,9 @@ public class ClearListEnvelopeService(
         return await CalculateEnvelopeAsync(query);
     }
 
+    /// <summary>
+    /// Calculates the envelope for a NZ clear list area using suburb polygon boundaries.
+    /// </summary>
     private async Task<ClearListEnvelopeViewModel> GetClearListEnvelopeNzAsync(
         int clearListAreaId,
         bool includeCouriers)
@@ -74,6 +90,9 @@ public class ClearListEnvelopeService(
         return await CalculateEnvelopeAsync(query);
     }
 
+    /// <summary>
+    /// Gets the boundary coordinates query for a US clear list area using zip polygons.
+    /// </summary>
     private IQueryable<EnvelopeCoordinate> GetClearListAreaBoundariesQuery(int clearListAreaId)
     {
         return Context.TblClearListAreas
@@ -87,6 +106,9 @@ public class ClearListEnvelopeService(
             });
     }
 
+    /// <summary>
+    /// Gets GPS coordinates of logged-in couriers with active jobs in the US clear list area.
+    /// </summary>
     private IQueryable<EnvelopeCoordinate> GetCourierLocationsQueryUs(int clearListAreaId)
     {
         var currentDate = infoService.GetCurrentTenantTime();
@@ -110,6 +132,9 @@ public class ClearListEnvelopeService(
             });
     }
 
+    /// <summary>
+    /// Gets delivery coordinates of unassigned jobs in the US clear list area.
+    /// </summary>
     private IQueryable<EnvelopeCoordinate> GetUnassignedJobLocationsQueryUs(int clearListAreaId)
     {
         return Context.TucJobs
@@ -126,6 +151,9 @@ public class ClearListEnvelopeService(
                     })));
     }
 
+    /// <summary>
+    /// Gets the polygon GPS coordinates for a NZ clear list area.
+    /// </summary>
     private IQueryable<EnvelopeCoordinate> GetAreaPolygonsQueryNz(int clearListAreaId)
     {
         return Context.TblClearListAreas
@@ -139,6 +167,9 @@ public class ClearListEnvelopeService(
                     })));
     }
 
+    /// <summary>
+    /// Gets GPS coordinates of logged-in couriers with active jobs in the NZ clear list area.
+    /// </summary>
     private IQueryable<EnvelopeCoordinate> GetCourierLocationsQueryNz(int clearListAreaId)
     {
         return Context.TucCouriers
@@ -157,6 +188,9 @@ public class ClearListEnvelopeService(
                         }))));
     }
 
+    /// <summary>
+    /// Gets delivery coordinates of unassigned jobs in the NZ clear list area.
+    /// </summary>
     private IQueryable<EnvelopeCoordinate> GetUnassignedJobLocationsQueryNz(int clearListAreaId)
     {
         return Context.TucJobs
@@ -171,6 +205,9 @@ public class ClearListEnvelopeService(
                     })));
     }
 
+    /// <summary>
+    /// Calculates the min/max bounding envelope from a set of coordinates.
+    /// </summary>
     private static async Task<ClearListEnvelopeViewModel> CalculateEnvelopeAsync(
         IQueryable<EnvelopeCoordinate> query)
     {
@@ -188,6 +225,9 @@ public class ClearListEnvelopeService(
         return result ?? new ClearListEnvelopeViewModel();
     }
 
+    /// <summary>
+    /// Disposes the database context if it was created.
+    /// </summary>
     public void Dispose()
     {
         _context?.Dispose();

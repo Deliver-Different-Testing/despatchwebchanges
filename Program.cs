@@ -150,10 +150,9 @@ builder.Services.AddScoped<IAddStopJobService, AddStopJobService>();
 builder.Services.AddScoped<IMessageHelperService, MessageHelperService>();
 builder.Services.AddScoped<IAddAgentRecoveryJobService, AddAgentRecoveryJobService>();
 builder.Services.AddScoped<IAddressLookupService, AddressLookupService>();
-builder.Services.AddScoped<IPodExportService, PodExportService>();
+builder.Services.AddScoped<IJobReportService, JobReportService>();
 builder.Services.AddScoped<IJobPhotoService, JobPhotoService>();
 builder.Services.AddScoped<IClearListEnvelopeService, ClearListEnvelopeService>();
-builder.Services.AddScoped<IClientJobsReportService, ClientJobsReportService>();
 builder.Services.AddScoped<IDispatchJobService, DispatchJobService>();
 builder.Services.AddScoped<IDeliveryJourneyService, DeliveryJourneyService>();
 

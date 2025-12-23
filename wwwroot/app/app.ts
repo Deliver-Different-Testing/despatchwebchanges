@@ -69,6 +69,8 @@ import SimplePriceEditDialogService
     from "./components/dialogs/simple-price-edit-dialog/simple-price-edit-dialog.service";
 import SimplePriceEditDialogController
     from "./components/dialogs/simple-price-edit-dialog/simple-price-edit-dialog.controller";
+import BulkPriceUploadDialogService
+    from "./components/dialogs/bulk-price-upload-dialog/bulk-price-upload-dialog.service";
 import AppToolbarComponent from "./components/common/app-toolbar/app-toolbar.component";
 import {TaskItemComponent} from "./components/common/task-item-component/task-item.component";
 
@@ -246,5 +248,6 @@ app.service("messagingDialogService", MessagingDialogService);
 app.service('customUrlService', CustomUrlService);
 app.service('voidJobConfirmationDialogService', VoidJobConfirmationDialogService);
 app.service('simplePriceEditDialogService', SimplePriceEditDialogService);
+app.service('bulkPriceUploadDialogService', BulkPriceUploadDialogService);
 
 export default app;

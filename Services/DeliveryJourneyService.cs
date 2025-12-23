@@ -13,10 +13,19 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Services;
 
+/// <summary>
+/// Service for building delivery journey timelines showing all events, notes, messages, and status changes for a job.
+/// </summary>
 public partial class DeliveryJourneyService(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService infoService) : IDeliveryJourneyService
 {
+    /// <summary>
+    /// Retrieves the complete delivery journey timeline for a job, including tasks, notes, messages, and status updates.
+    /// Queries are executed in parallel for performance.
+    /// </summary>
+    /// <param name="jobId">The job ID to get the journey for.</param>
+    /// <returns>A chronologically sorted list of journey events.</returns>
     public async Task<List<DeliveryJourneyViewModel>> GetDeliveryJourneyForJobAsync(int jobId)
     {
         await using var mainContext = await contextFactory.CreateDbContextAsync();
@@ -42,6 +51,9 @@ public partial class DeliveryJourneyService(
             .ToList();
     }
 
+    /// <summary>
+    /// Retrieves task/event records associated with a job, including audit history.
+    /// </summary>
     private async Task<List<DeliveryJourneyViewModel>> GetTasksAsync(DespatchContext context, int jobId)
     {
         var timezone = infoService.GetTenantTimeZone();
@@ -104,6 +116,9 @@ public partial class DeliveryJourneyService(
         }).ToList();
     }
 
+    /// <summary>
+    /// Retrieves notes for a job from live or archived tables based on job status.
+    /// </summary>
     private async Task<List<DeliveryJourneyViewModel>> GetNotesAsync(
         DespatchContext context,
         int jobId,
@@ -191,6 +206,9 @@ public partial class DeliveryJourneyService(
         }).ToList();
     }
 
+    /// <summary>
+    /// Retrieves manual messages associated with a job including direct messages, emails, and SMS.
+    /// </summary>
     private async Task<List<DeliveryJourneyViewModel>> GetMessagesAsync(DespatchContext context, int jobId)
     {
         var timezone = infoService.GetTenantTimeZone();
@@ -280,6 +298,9 @@ public partial class DeliveryJourneyService(
         }).ToList();
     }
 
+    /// <summary>
+    /// Retrieves status updates for a job from live or archived tables, including courier, agent, and field changes.
+    /// </summary>
     private async Task<List<DeliveryJourneyViewModel>> GetStatusUpdatesAsync(
         DespatchContext context,
         int jobId,
@@ -370,6 +391,9 @@ public partial class DeliveryJourneyService(
         return MapArchivedStatusUpdatesToViewModels(archivedStatusUpdateDtos, jobId);
     }
 
+    /// <summary>
+    /// Maps live status update DTOs to view models, grouping by timestamp.
+    /// </summary>
     private List<DeliveryJourneyViewModel> MapStatusUpdatesToViewModels(
         List<JobDeliveryJourneyDto> dtos,
         int jobId)
@@ -389,6 +413,9 @@ public partial class DeliveryJourneyService(
             .ToList();
     }
 
+    /// <summary>
+    /// Maps archived status update DTOs to view models, grouping by timestamp.
+    /// </summary>
     private List<DeliveryJourneyViewModel> MapArchivedStatusUpdatesToViewModels(
         List<JobDeliveryJourneyArchiveDto> dtos,
         int jobId)
@@ -408,6 +435,9 @@ public partial class DeliveryJourneyService(
             .ToList();
     }
 
+    /// <summary>
+    /// Builds tag strings from live status update DTOs for display in the journey timeline.
+    /// </summary>
     private static IEnumerable<string> BuildTags(IGrouping<DateTime, JobDeliveryJourneyDto> group)
     {
         return group.SelectMany(s => new[]
@@ -424,6 +454,9 @@ public partial class DeliveryJourneyService(
             .Distinct();
     }
 
+    /// <summary>
+    /// Builds tag strings from archived status update DTOs for display in the journey timeline.
+    /// </summary>
     private static IEnumerable<string> BuildTags(IGrouping<DateTime, JobDeliveryJourneyArchiveDto> group)
     {
         return group.SelectMany(s => new[]
@@ -440,6 +473,9 @@ public partial class DeliveryJourneyService(
             .Distinct();
     }
 
+    /// <summary>
+    /// Builds a display tag for agent assignment changes.
+    /// </summary>
     private static string BuildAgentTag(string oldAgent, string newAgent)
     {
         if (!string.IsNullOrEmpty(newAgent) && !string.IsNullOrEmpty(oldAgent))
@@ -451,6 +487,9 @@ public partial class DeliveryJourneyService(
         return null;
     }
 
+    /// <summary>
+    /// Builds a display tag for courier assignment changes.
+    /// </summary>
     private static string BuildCourierTag(string oldCourier, string newCourier)
     {
         if (!string.IsNullOrEmpty(newCourier) && !string.IsNullOrEmpty(oldCourier))
@@ -462,6 +501,9 @@ public partial class DeliveryJourneyService(
         return null;
     }
 
+    /// <summary>
+    /// Builds a display tag for job status changes.
+    /// </summary>
     private static string BuildStatusTag(string oldStatus, string newStatus)
     {
         if (!string.IsNullOrEmpty(newStatus) && !string.IsNullOrEmpty(oldStatus))
@@ -471,6 +513,9 @@ public partial class DeliveryJourneyService(
         return null;
     }
 
+    /// <summary>
+    /// Builds a display tag for generic field value changes.
+    /// </summary>
     private static string BuildFieldTag(string fieldName, string oldValue, string newValue)
     {
         if (string.IsNullOrEmpty(fieldName)) return null;
@@ -485,6 +530,9 @@ public partial class DeliveryJourneyService(
         return null;
     }
 
+    /// <summary>
+    /// Gets a human-readable title for a live status update based on change type.
+    /// </summary>
     private static string GetTitle(JobDeliveryJourneyDto dto)
     {
         return dto.ChangeType switch
@@ -512,6 +560,9 @@ public partial class DeliveryJourneyService(
         };
     }
 
+    /// <summary>
+    /// Gets a human-readable title for an archived status update based on change type.
+    /// </summary>
     private static string GetTitle(JobDeliveryJourneyArchiveDto dto)
     {
         return dto.ChangeType switch
@@ -539,6 +590,9 @@ public partial class DeliveryJourneyService(
         };
     }
 
+    /// <summary>
+    /// Builds a detailed description from a list of live status updates.
+    /// </summary>
     private static string GetDescription(List<JobDeliveryJourneyDto> updates)
     {
         var descriptions = new List<string>();
@@ -580,6 +634,9 @@ public partial class DeliveryJourneyService(
         return string.Join("; ", descriptions.Distinct());
     }
 
+    /// <summary>
+    /// Builds a detailed description from a list of archived status updates.
+    /// </summary>
     private static string GetDescription(List<JobDeliveryJourneyArchiveDto> updates)
     {
         var descriptions = new List<string>();
@@ -621,6 +678,9 @@ public partial class DeliveryJourneyService(
         return string.Join("; ", descriptions.Distinct());
     }
 
+    /// <summary>
+    /// Gets a Material Design icon name based on the change type and field.
+    /// </summary>
     private static string GetIcon(string changeType, string fieldName = null)
     {
         return changeType switch
@@ -635,6 +695,9 @@ public partial class DeliveryJourneyService(
         };
     }
 
+    /// <summary>
+    /// Gets a specific Material Design icon based on field name.
+    /// </summary>
     private static string GetIconForFieldName(string fieldName)
     {
         if (string.IsNullOrEmpty(fieldName)) return "edit_note";
@@ -684,6 +747,9 @@ public partial class DeliveryJourneyService(
         };
     }
 
+    /// <summary>
+    /// Converts a database field name to a human-readable display name.
+    /// </summary>
     private static string FormatFieldName(string fieldName)
     {
         if (string.IsNullOrEmpty(fieldName)) return fieldName;
@@ -779,6 +845,9 @@ public partial class DeliveryJourneyService(
         };
     }
 
+    /// <summary>
+    /// Converts a camelCase or PascalCase field name to title case with spaces.
+    /// </summary>
     private static string ConvertToTitleCase(string fieldName)
     {
         var cleanName = fieldName;
@@ -789,6 +858,9 @@ public partial class DeliveryJourneyService(
         return char.ToUpper(result[0]) + result[1..];
     }
 
+    /// <summary>
+    /// Formats a field value for display, applying appropriate formatting based on field type (currency, boolean, etc.).
+    /// </summary>
     private static string FormatFieldValue(string fieldName, string value)
     {
         if (string.IsNullOrEmpty(value)) return value;

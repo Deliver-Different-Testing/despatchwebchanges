@@ -706,12 +706,6 @@ public class BaseJobRepository(
     }
 
     // Query Methods
-    private async Task<TucNoteViewModel> GetActiveNoteByIdAsync(int noteId)
-    {
-        var note = await Context.GetActiveNotesByNoteIdAsync(noteId);
-        UpdateNoteDate(note, infoService.GetTenantTimeZone());
-        return note;
-    }
 
     private async Task<List<TucNoteViewModel>> GetActiveNotesByJobIdAsync(int jobId)
     {
@@ -966,4 +960,56 @@ public class BaseJobRepository(
 
     public async Task<int?> GetJobParentIdAsync(int jobId) =>
         await Context.GetJobParentIdAsync(jobId);
+
+    /// <summary>
+    /// Gets current amounts for a list of jobs for bulk price preview/comparison.
+    /// </summary>
+    public async Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(List<int> jobIds)
+    {
+        // Check live jobs
+        var liveJobs = await Context.TucJobs
+            .AsNoTracking()
+            .Where(j => jobIds.Contains(j.UcjbId))
+            .Select(j => new JobCurrentAmountInfo
+            {
+                JobId = j.UcjbId,
+                JobNo = j.UcjbNumber,
+                Amount = j.UcjbAmount ?? 0,
+                Fuel = j.FuelSurchargeAmount,
+                Ppd = j.Ppdamount ?? 0,
+                CourierPayment = j.CourierPayment ?? 0,
+                CourierFuel = j.CourierFuel ?? 0,
+                CourierBonus = j.CourierBonus ?? 0,
+                IsPrebook = false
+            })
+            .ToListAsync();
+
+        // Check prebook jobs for any IDs not found in live
+        var foundIds = liveJobs.Select(j => j.JobId).ToHashSet();
+        var missingIds = jobIds.Where(id => !foundIds.Contains(id)).ToList();
+
+        if (missingIds.Count > 0)
+        {
+            var prebookJobs = await Context.TucJobBookings
+                .AsNoTracking()
+                .Where(j => missingIds.Contains(j.UcbkId))
+                .Select(j => new JobCurrentAmountInfo
+                {
+                    JobId = j.UcbkId,
+                    JobNo = j.UcbkJobNumber,
+                    Amount = j.UcbkAmount ?? 0,
+                    Fuel = j.FuelSurchargeAmount ?? 0,
+                    Ppd = 0, // TucJobBooking doesn't have PPD
+                    CourierPayment = j.CourierPayment ?? 0,
+                    CourierFuel = j.CourierFuel ?? 0,
+                    CourierBonus = 0, // TucJobBooking doesn't have CourierBonus
+                    IsPrebook = true
+                })
+                .ToListAsync();
+
+            liveJobs.AddRange(prebookJobs);
+        }
+
+        return liveJobs.ToDictionary(j => j.JobId);
+    }
 }

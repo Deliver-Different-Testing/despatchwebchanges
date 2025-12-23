@@ -15,6 +15,9 @@ using Serilog;
 
 namespace DespatchWeb.Services;
 
+/// <summary>
+/// Service for integrating with the FlightStats API to search flights and manage flight alerts.
+/// </summary>
 public class FlightStatsService(
     HttpClient httpClient,
     IHttpContextAccessor contextAccessor,
@@ -29,6 +32,13 @@ public class FlightStatsService(
     private readonly string _appKey = Environment.GetEnvironmentVariable("FlightStatusApiAppKey");
     private readonly string _webhookUrl = Environment.GetEnvironmentVariable("FlightWebhook");
 
+    /// <summary>
+    /// Creates a flight alert rule to receive webhook notifications for flight status changes.
+    /// </summary>
+    /// <param name="completeFlightNumber">The complete flight number (e.g., "AA1234").</param>
+    /// <param name="departureTime">The departure date and time.</param>
+    /// <param name="departureAirportCode">The departure airport IATA code.</param>
+    /// <returns>The created rule ID, or null if creation fails.</returns>
     public async Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber,
         DateTimeOffset departureTime,
         string departureAirportCode)
@@ -128,6 +138,10 @@ public class FlightStatsService(
         }
     }
 
+    /// <summary>
+    /// Deletes an existing flight alert rule by its ID.
+    /// </summary>
+    /// <param name="webhookId">The ID of the flight rule/webhook to delete.</param>
     public async Task DeleteFlightRuleById(string webhookId)
     {
         if (string.IsNullOrEmpty(webhookId)) return;
@@ -156,6 +170,19 @@ public class FlightStatsService(
             throw new Exception($"Failed to disconnect alert alert: {response.ReasonPhrase}");
     }
 
+    /// <summary>
+    /// Searches for available flights between airports using the FlightStats connections API.
+    /// Filters by active airlines and maps results to view models with segment details.
+    /// </summary>
+    /// <param name="jobId">The job ID for logging purposes.</param>
+    /// <param name="departureDateTime">The desired departure date/time.</param>
+    /// <param name="airlineId">Optional specific airline ID to filter by.</param>
+    /// <param name="departureAirportId">The departure airport ID.</param>
+    /// <param name="arrivalAirportId">The arrival airport ID.</param>
+    /// <param name="codeType">Optional code type filter.</param>
+    /// <param name="extendedOptions">Optional extended search options.</param>
+    /// <param name="minimumLayoverMinutes">Minimum layover time for connecting flights (default 60 minutes).</param>
+    /// <returns>A list of available flight options sorted by arrival time.</returns>
     public async Task<List<FlightViewModel>> GetFlightsAsync(
         int jobId,
         DateTimeOffset? departureDateTime = null,
@@ -358,6 +385,9 @@ public class FlightStatsService(
         return flightOptions.OrderBy(flight => flight.ArrivalTime).ToList();
     }
 
+    /// <summary>
+    /// Calculates the effective start time for flight search, applying the airport's buffer time.
+    /// </summary>
     private DateTime CalculateFlightSearchStartTime(DateTimeOffset? departureDateTime, int flightBuffer)
     {
         var currentTenantTime = infoService.GetCurrentTenantTime();
@@ -369,13 +399,22 @@ public class FlightStatsService(
         return flightsFrom.DateTime;
     }
 
+    /// <summary>
+    /// Splits a DateTimeOffset into individual date/time components.
+    /// </summary>
     private static (int year, int month, int day, int hour, int min) SplitDate(DateTimeOffset effectiveDateTime) =>
         (effectiveDateTime.Year, effectiveDateTime.Month, effectiveDateTime.Day, effectiveDateTime.Hour,
             effectiveDateTime.Minute);
 
+    /// <summary>
+    /// Splits a flight number into carrier code (first 2 chars) and flight number.
+    /// </summary>
     private static (string carrierCode, string flightNumber) SplitFlightCode(string completeFlightNumber) =>
         (completeFlightNumber?[..2], completeFlightNumber?[2..]);
 
+    /// <summary>
+    /// Adjusts arrival time when flight crosses midnight (overnight flight).
+    /// </summary>
     private static DateTimeOffset AdjustArrivalTimeForOvernightFlight(DateTimeOffset departureTime,
         DateTimeOffset arrivalTime)
     {
@@ -389,6 +428,9 @@ public class FlightStatsService(
         return arrivalTime.AddDays(daysDifference);
     }
 
+    /// <summary>
+    /// Converts a flight datetime string to a DateTimeOffset using the airport's timezone.
+    /// </summary>
     private static DateTimeOffset CalculateCorrectDateTimeOffset(string flightDateTime, Airport airport)
     {
         // Parse the datetime string

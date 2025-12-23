@@ -8,9 +8,18 @@ using Serilog;
 
 namespace DespatchWeb.Services;
 
+/// <summary>
+/// Service for dispatching jobs to couriers and managing courier assignments.
+/// </summary>
 public class DispatchJobService(IJobRepository jobRepository, ICourierRepository courierRepository)
     : IDispatchJobService
 {
+    /// <summary>
+    /// Dispatches one or more jobs to a courier, updating job assignments and resetting clear list ordering.
+    /// Also dispatches associated child jobs.
+    /// </summary>
+    /// <param name="jobIds">The list of job IDs to dispatch.</param>
+    /// <param name="courierId">The courier ID to assign the jobs to.</param>
     public async Task DispatchJobsToCourierAsync(List<int> jobIds, int courierId)
     {
         ArgumentNullException.ThrowIfNull(jobIds);
@@ -21,6 +30,9 @@ public class DispatchJobService(IJobRepository jobRepository, ICourierRepository
         await DispatchJobsInternalAsync(jobIds, courierId);
     }
 
+    /// <summary>
+    /// Internal implementation that assigns courier to jobs, resets clear list order, and dispatches child jobs.
+    /// </summary>
     private async Task DispatchJobsInternalAsync(List<int> jobIds, int courierId)
     {
         try

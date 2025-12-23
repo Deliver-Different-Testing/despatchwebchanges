@@ -29,6 +29,12 @@ namespace DespatchWeb.EntityClasses
             return FromExpression(() => UTL_fncJob_ExtraRate(TotalWeight, Quantity, Cubic, TotalPallets, ExtraStopOffs, VehicleSizeID, DangerousGoods, DryIceWeight, WaitTime, ExtraChargeID, Holiday, Afterhours, FromZoneCongestionID, ToZoneCongestionID, MFV, PPD));
         }
 
+        [DbFunction("UTL_fncJob_RawBaseToAmount", "dbo")]
+        public static decimal? UTL_fncJob_RawBaseToAmount(int? JobID, decimal? RawBaseAmount)
+        {
+            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
+        }
+
         [DbFunction("UTL_fncS_GetNationwideService_RawPrice", "dbo")]
         public static decimal? UTL_fncS_GetNationwideService_RawPrice(int? ClientID, int? FromSuburbID, int? ToSuburbID, int? Speed, int? Size, double? Weight, int? Quantity, int? Type)
         {

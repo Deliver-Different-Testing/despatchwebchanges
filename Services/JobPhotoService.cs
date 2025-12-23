@@ -16,8 +16,18 @@ using System.Linq;
 
 namespace DespatchWeb.Services;
 
+/// <summary>
+/// Service for managing job photos, signatures, and file attachments stored in Amazon S3.
+/// </summary>
 public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
 {
+    /// <summary>
+    /// Retrieves delivery photos and signatures for a job from S3 storage.
+    /// </summary>
+    /// <param name="jobId">The job ID to get photos for.</param>
+    /// <param name="year">The year folder to search in.</param>
+    /// <param name="month">The month folder to search in.</param>
+    /// <returns>A list of photo information including base64 encoded image data.</returns>
     public async Task<List<S3PhotoInfo>> GetDeliveryPhotosAsync(int jobId, int year, int month)
     {
         var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
@@ -33,6 +43,13 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         return [];
     }
 
+    /// <summary>
+    /// Retrieves pickup photos and scanned documents for a job from S3 storage.
+    /// </summary>
+    /// <param name="jobId">The job ID to get photos for.</param>
+    /// <param name="year">The year folder to search in.</param>
+    /// <param name="month">The month folder to search in.</param>
+    /// <returns>A list of photo information including base64 encoded image data.</returns>
     public async Task<List<S3PhotoInfo>> GetPickupPhotosAsync(int jobId, int year, int month)
     {
         var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
@@ -48,6 +65,15 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         return [];
     }
 
+    /// <summary>
+    /// Uploads a photo or signature file to S3 for a job.
+    /// </summary>
+    /// <param name="jobId">The job ID to associate the file with.</param>
+    /// <param name="file">The file to upload.</param>
+    /// <param name="photoType">Whether this is a delivery or pickup photo.</param>
+    /// <param name="isPod">Whether this is a POD photo (true) or signature (false).</param>
+    /// <param name="podDescription">Optional description for POD photos.</param>
+    /// <returns>The upload result including success status and S3 key.</returns>
     public async Task<AwsUploadResult> UploadJobPhotoOrSignatureAsync(
         int jobId,
         IFormFile file,
@@ -132,6 +158,12 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
     }
 
+    /// <summary>
+    /// Deletes a photo or signature file from S3.
+    /// </summary>
+    /// <param name="jobId">The job ID the file belongs to.</param>
+    /// <param name="key">The S3 key of the file to delete.</param>
+    /// <returns>True if deletion was successful, false otherwise.</returns>
     public async Task<bool> DeleteJobPhotoOrSignatureAsync(int jobId, string key)
     {
         if (string.IsNullOrEmpty(key))
@@ -167,6 +199,11 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
     }
 
+    /// <summary>
+    /// Retrieves all file attachments for a job from S3.
+    /// </summary>
+    /// <param name="jobId">The job ID to get attachments for.</param>
+    /// <returns>A list of file information including filename and size.</returns>
     public async Task<List<S3FileInfo>> GetAttachedFilesAsync(int jobId)
     {
         var s3Files = new List<S3FileInfo>();
@@ -224,7 +261,13 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
     }
 
     private static readonly HashSet<string> AllowedTypes = ["image/jpeg", "image/png", "image/gif", "application/pdf"];
-    
+
+    /// <summary>
+    /// Uploads a file attachment for a job to S3. Only allows images and PDFs up to 10MB.
+    /// </summary>
+    /// <param name="jobId">The job ID to attach the file to.</param>
+    /// <param name="file">The file to upload.</param>
+    /// <returns>The upload result including success status and S3 key.</returns>
     public async Task<AwsUploadResult> UploadJobAttachmentAsync(int jobId, IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -292,6 +335,11 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
     }
 
+    /// <summary>
+    /// Downloads a file from S3 by its key.
+    /// </summary>
+    /// <param name="key">The S3 key of the file to download.</param>
+    /// <returns>The download result including file bytes, content type, and filename.</returns>
     public async Task<AwsFileDownloadResult> DownloadFileAsync(string key)
     {
         if (string.IsNullOrEmpty(key))
@@ -335,6 +383,11 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
     }
 
+    /// <summary>
+    /// Deletes a file from S3 by its key.
+    /// </summary>
+    /// <param name="key">The S3 key of the file to delete.</param>
+    /// <returns>True if deletion was successful, false otherwise.</returns>
     public async Task<bool> DeleteFileAsync(string key)
     {
         if (string.IsNullOrEmpty(key))
@@ -367,6 +420,12 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
     }
 
+    /// <summary>
+    /// Searches for S3 objects matching a prefix pattern.
+    /// </summary>
+    /// <param name="bucketName">The S3 bucket to search in.</param>
+    /// <param name="pattern">The key prefix pattern to match.</param>
+    /// <returns>A list of matching S3 objects.</returns>
     public async Task<List<S3Object>> SearchFilesByPatternAsync(string bucketName, string pattern)
     {
         var allResults = new List<S3Object>();
@@ -402,6 +461,16 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         return allResults;
     }
 
+    /// <summary>
+    /// Searches for S3 objects matching a pattern within specific year/month folders based on photo type.
+    /// Searches both the specified month and the following month to handle edge cases.
+    /// </summary>
+    /// <param name="bucketName">The S3 bucket to search in.</param>
+    /// <param name="pattern">The key prefix pattern to match.</param>
+    /// <param name="year">The year folder to search in.</param>
+    /// <param name="month">The month folder to search in.</param>
+    /// <param name="photoType">The type of photo to determine folder locations.</param>
+    /// <returns>A list of matching S3 objects.</returns>
     public async Task<List<S3Object>> SearchFilesByPatternAsync(
         string bucketName,
         string pattern,
@@ -458,7 +527,9 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         return allResults;
     }
 
-    // Helper method for batch operations
+    /// <summary>
+    /// Searches for attachment files matching a pattern prefix.
+    /// </summary>
     private async Task<List<S3Object>> SearchAttachmentFilesByPatternAsync(string bucketName, string pattern)
     {
         var allResults = new List<S3Object>();
@@ -490,6 +561,9 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
     }
     
     
+    /// <summary>
+    /// Retrieves detailed photo information from S3 objects including base64 encoded image data.
+    /// </summary>
     private async Task<List<S3PhotoInfo>> GetPhotoInfoFromS3ObjectsAsync(List<S3Object> s3Objects, string bucketName)
     {
         var photoInfos = new List<S3PhotoInfo>();
@@ -539,6 +613,9 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         return photoInfos;
     }
 
+    /// <summary>
+    /// Gets the S3 folder names for a photo type (signatures/documents and photos).
+    /// </summary>
     private static string[] GetFoldersByPhotoType(JobPhotoType photoType)
     {
         return photoType switch
@@ -549,12 +626,18 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         };
     }
 
+    /// <summary>
+    /// Gets the appropriate upload folder based on photo type and whether it's a POD photo or signature.
+    /// </summary>
     private static string GetUploadFolder(JobPhotoType photoType, bool isPod)
     {
         var folders = GetFoldersByPhotoType(photoType);
         return isPod ? folders[1] : folders[0];
     }
 
+    /// <summary>
+    /// Determines the MIME content type based on file extension.
+    /// </summary>
     private static string DetermineContentType(string fileExtension)
     {
         return fileExtension.ToLower() switch

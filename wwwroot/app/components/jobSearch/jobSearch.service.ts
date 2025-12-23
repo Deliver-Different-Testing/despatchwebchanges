@@ -85,7 +85,7 @@ class JobSearchService implements angular.IServiceProvider {
         params.append('startDate', formatDateForApiWithTzs(fromDate));
         params.append('endDate', formatDateForApiWithTzs(toDate));
         if (clientIds?.length) {
-            params.append('clientIds', clientIds.join(','));
+            clientIds.forEach(id => params.append('clientIds', id.toString()));
         }
         return `/Job/ClientJobsReportDownload?${params.toString()}`;
     }
