@@ -20,6 +20,7 @@ public interface IJobRepository
     Task<JobSearchResult> PodSearchAsync(PodSearchRequest data);
 
     Task UpdateManualPriceAsync(List<JobManualPriceModel> data);
+    Task UpdateJobVoidStatusAsync(List<int> jobIds);
 
     Task<List<JobDownloadModel>> PodSearchDownloadAsync(
         List<int> courierIds,

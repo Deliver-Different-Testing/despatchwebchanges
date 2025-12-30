@@ -670,6 +670,14 @@ public async Task<decimal> GetJobRateUsAsync(JobRatingDetailsDto jobDetails)
             }
         }
 
+        // Handle Void field for all pricing modes - apply void status regardless of pricing mode selected
+        var jobsToVoid = parsedData.Where(d => d.Void == true).Select(d => d.Id).ToList();
+        if (jobsToVoid.Count > 0)
+        {
+            await jobRepository.UpdateJobVoidStatusAsync(jobsToVoid);
+            Log.Information("Voided {Count} jobs via bulk upload", jobsToVoid.Count);
+        }
+
         return new BulkPricePreviewResponse
         {
             Rows = resultRows,

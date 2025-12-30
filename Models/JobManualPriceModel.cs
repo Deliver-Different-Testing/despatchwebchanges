@@ -1,4 +1,7 @@
-﻿namespace DespatchWeb.Models;
+﻿using System.Text.Json.Serialization;
+using DespatchWeb.Helpers;
+
+namespace DespatchWeb.Models;
 
 public class JobManualPriceModel
 {
@@ -11,5 +14,7 @@ public class JobManualPriceModel
     public decimal? CourierBonus { get; set; }
     public string StatusName { get; set; }
     public string CourierCode { get; set; }
+
+    [JsonConverter(typeof(StringToBooleanConverter))]
     public bool? Void { get; set; }
 }

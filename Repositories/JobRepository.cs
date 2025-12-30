@@ -903,6 +903,56 @@ public partial class JobRepository(
     }
 
     /// <summary>
+    /// Updates the void status for multiple jobs. Sets UcjbVoid = true and UcjbStatus = 1000.
+    /// </summary>
+    /// <param name="jobIds">List of job IDs to void.</param>
+    public async Task UpdateJobVoidStatusAsync(List<int> jobIds)
+    {
+        if (jobIds.Count == 0)
+            return;
+
+        // Get jobs from both active and archived tables
+        await using var activeContext = CreateNewContext();
+        await using var archiveContext = CreateNewContext();
+
+        var activeJobsTask = activeContext.TucJobs
+            .Where(j => jobIds.Contains(j.UcjbId))
+            .ToListAsync();
+
+        var archivedJobsTask = archiveContext.TucJobArchives
+            .Where(j => jobIds.Contains(j.UcjbId))
+            .ToListAsync();
+
+        await Task.WhenAll(activeJobsTask, archivedJobsTask);
+
+        var activeJobs = await activeJobsTask;
+        var archivedJobs = await archivedJobsTask;
+
+        // Update active jobs
+        foreach (var job in activeJobs)
+        {
+            job.UcjbVoid = true;
+            job.UcjbStatus = 1000;
+            Log.Information("Job {JobId} marked as voided via bulk upload", job.UcjbId);
+        }
+
+        // Update archived jobs
+        foreach (var job in archivedJobs)
+        {
+            job.UcjbVoid = true;
+            job.UcjbStatus = 1000;
+            Log.Information("Archived job {JobId} marked as voided via bulk upload", job.UcjbId);
+        }
+
+        // Save changes
+        if (activeJobs.Count > 0)
+            await activeContext.SaveChangesAsync();
+
+        if (archivedJobs.Count > 0)
+            await archiveContext.SaveChangesAsync();
+    }
+
+    /// <summary>
     /// Retrieves job data for CSV/Excel download with full details including addresses, pricing, and courier info.
     /// Uses optimized single query with scalar subqueries for pricing breakdowns.
     /// </summary>
