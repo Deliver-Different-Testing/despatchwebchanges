@@ -11,4 +11,5 @@ public class JobManualPriceModel
     public decimal? CourierBonus { get; set; }
     public string StatusName { get; set; }
     public string CourierCode { get; set; }
+    public bool? Void { get; set; }
 }

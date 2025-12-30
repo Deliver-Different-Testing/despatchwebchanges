@@ -121,7 +121,8 @@ public class JobReportService(
         ["InvoiceNumber"] = x => x.InvoiceNumber?.ToString(),
         ["InvoiceDate"] = x => ((DateTime?)x.InvoiceDate)?.ToString("yyyy-MM-dd HH:mm:ss"),
         ["IsArchived"] = x => x.IsArchived?.ToString(),
-        ["LoggedInContact"] = x => FormatCsvField(x.LoggedInContact)
+        ["LoggedInContact"] = x => FormatCsvField(x.LoggedInContact),
+        ["Void"] = x => x.Void?.ToString()
     };
 
     #endregion
