@@ -48,4 +48,5 @@ public class JobDownloadModel
     public string LoggedInContact { get; set; }
     public decimal? RawBaseAmount { get; set; }
     public string CourierCode { get; set; }
+    public bool Void { get; set; }
 }

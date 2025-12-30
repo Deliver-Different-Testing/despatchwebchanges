@@ -700,6 +700,14 @@ public partial class JobRepository(
                 match.CourierFuel = Math.Round(d.CourierFuel.Value, 4, MidpointRounding.AwayFromZero);
                 match.CourierBonus = Math.Round(d.CourierBonus.Value, 4, MidpointRounding.AwayFromZero);
 
+                // Handle Void field - when Void is true, set UcjbVoid = true and UcjbStatus = 1000
+                if (d.Void == true)
+                {
+                    match.UcjbVoid = true;
+                    match.UcjbStatus = 1000;
+                    Log.Information("Job {DId} marked as voided - setting UcjbVoid=true and UcjbStatus=1000", d.Id);
+                }
+
                 processedJobIds.Add(d.Id);
 
                 // Save changes for this specific job immediately
@@ -1041,7 +1049,8 @@ public partial class JobRepository(
                     ? j.LoggedInContact.UcctFirstname + Space + j.LoggedInContact.UcctSurname
                     : null,
                 RawBaseAmount = j.RawBaseAmount,
-                CourierCode = j.Courier != null ? j.Courier.Code : null
+                CourierCode = j.Courier != null ? j.Courier.Code : null,
+                Void = j.Void
             });
 
         var result = await query.ToListAsync();
