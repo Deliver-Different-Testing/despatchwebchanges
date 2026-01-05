@@ -47,9 +47,12 @@ public class RateJobService(
             ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
 
             var rateResult = await RateUrgentJobAsync(jobDetails);
-            if (rateResult is { Rate: > 0 }) {
+            if (rateResult is { Rate: > 0 })
+            {
                 await jobRepository.UpdateUrgentJobRateAsync(jobDetails.JobId, rateResult.Rate, jobDetails.JobType);
-            } else {
+            }
+            else
+            {
                 Log.Warning("Job rating failed or returned invalid rate for JobId: {JobId}. Rate: {Rate}",
                     jobDetails.JobId,
                     rateResult?.Rate ?? 0);
@@ -124,6 +127,264 @@ public class RateJobService(
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(RateJobService), nameof(RateJobUsAsync)));
             throw;
         }
+    }
+
+    /// <summary>
+    /// Gets the calculated rate for an NZ job without persisting it to the database.
+    /// </summary>
+    /// <param name="jobDetails">The job rating details including client, addresses, speed, and size information.</param>
+    /// <returns>The calculated rate, or 0 if rating fails.</returns>
+    public async Task<decimal> GetJobRateNzAsync(JobRatingDetailsDtoNz jobDetails)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(jobDetails);
+            ArgumentNullException.ThrowIfNull(jobDetails.ClientId);
+            ArgumentNullException.ThrowIfNull(jobDetails.FromId);
+            ArgumentNullException.ThrowIfNull(jobDetails.ToId);
+            ArgumentNullException.ThrowIfNull(jobDetails.SpeedId);
+            ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
+
+            var rateResult = await RateUrgentJobAsync(jobDetails);
+            if (rateResult is { Rate: > 0 }) return rateResult.Rate;
+
+            Log.Warning("Job rating failed or returned invalid rate for JobId: {JobId}. Rate: {Rate}",
+                jobDetails.JobId,
+                rateResult?.Rate ?? 0);
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{ErrorMessage}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(RateJobService), nameof(GetJobRateNzAsync)));
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets the calculated rate for a US job without persisting it to the database.
+    /// </summary>
+    /// <param name="jobDetails">The job rating details including client, addresses, speed, size, and weight information.</param>
+    /// <returns>The calculated rate.</returns>
+    public async Task<decimal> GetJobRateUsAsync(JobRatingDetailsDto jobDetails)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(jobDetails);
+            ArgumentNullException.ThrowIfNull(jobDetails.SpeedId);
+            ArgumentNullException.ThrowIfNull(jobDetails.ClientId);
+            ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
+
+            // Get distances and airport info
+            var distanceResult = await CalculateJobRateUsAsync(
+                new JobRateRequest
+                {
+                    SpeedId = jobDetails.SpeedId.Value,
+                    PickupLat = jobDetails.PickupLat,
+                    PickupLong = jobDetails.PickupLong,
+                    DeliveryLat = jobDetails.DeliveryLat,
+                    DeliveryLong = jobDetails.DeliveryLong
+                }
+            );
+
+            // Get the rate without saving
+            var rate = await jobRepository.GetJobRateUsAsync(new RateJobUsDto
+            {
+                JobId = jobDetails.JobId,
+                ClientId = jobDetails.ClientId.Value,
+                Speed = jobDetails.SpeedId.Value,
+                FromZip = jobDetails.FromZip,
+                ToZip = jobDetails.ToZip,
+                TotalMiles = (decimal)distanceResult.TotalMiles,
+                FromMiles = (decimal)distanceResult.FromMiles,
+                ToMiles = (decimal)distanceResult.ToMiles,
+                Weight = jobDetails.Weight.HasValue ? (int)jobDetails.Weight : 0,
+                Booked = jobDetails.BookedDate,
+                Size = jobDetails.SizeId.Value,
+                DangerousGoods = jobDetails.DangerousGoods,
+                TotalPallets = jobDetails.TotalPallets,
+                ExtraStopOffs = jobDetails.ExtraStopOffs,
+                DryIceWeight = (int)jobDetails.DryIceWeight,
+                WaitTime = jobDetails.WaitTime,
+                FromAgentId = distanceResult.FromAirport?.AgentId ?? jobDetails.FromAgentId,
+                FromAirportId = distanceResult.FromAirport?.AirportId ?? jobDetails.FromAirportId,
+                ToAgentId = distanceResult.ToAirport?.AgentId ?? jobDetails.ToAgentId,
+                ToAirportId = distanceResult.ToAirport?.AirportId ?? jobDetails.ToAirportId,
+                Quantity = jobDetails.Quantity,
+                Cubic = jobDetails.Cubic,
+                IsPrebook = jobDetails.IsPrebook ?? false,
+                CalculateDimsOncePerJob = jobDetails.CalculateDimsOncePerJob,
+                PreviousRate = jobDetails.PreviousRate
+            });
+
+            return rate;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{ErrorMessage}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(RateJobService), nameof(GetJobRateUsAsync)));
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Applies bulk price updates from an uploaded spreadsheet and returns the results.
+    /// Supports recalculate, base amount, and gross amount pricing modes.
+    /// </summary>
+    /// <param name="file">The uploaded spreadsheet file (xls, xlsx, or csv).</param>
+    /// <param name="pricingMode">The pricing mode: 'recalculate', 'base', or 'gross'.</param>
+    /// <returns>Response containing updated job prices and summary statistics.</returns>
+    public async Task<BulkPricePreviewResponse> ApplyBulkPriceUpdateAsync(IFormFile file, string pricingMode)
+    {
+        // Parse the file using JobReportService
+        var parsedData = await jobReportService.ParseBulkPriceFileAsync(file);
+        if (parsedData.Count == 0)
+            return new BulkPricePreviewResponse();
+
+        // Get current amounts for all jobs before update
+        var jobIds = parsedData.Select(d => d.Id).Distinct().ToList();
+        var currentAmounts = await jobRepository.GetJobCurrentAmountsAsync(jobIds);
+
+        var resultRows = new List<BulkPricePreviewRow>();
+        decimal totalOldAmount = 0;
+        decimal totalNewAmount = 0;
+
+        switch (pricingMode)
+        {
+            // Apply updates based on mode
+            case "recalculate":
+            {
+                foreach (var data in parsedData)
+                {
+                    if (!currentAmounts.TryGetValue(data.Id, out var jobInfo))
+                        continue;
+
+                    var oldAmount = jobInfo.Amount;
+                    var newAmount = oldAmount;
+
+                    try
+                    {
+                        await RecalculateJobRateInternalAsync(data.Id, jobInfo.IsPrebook);
+                        // Get the new amount after recalculation
+                        var updatedAmounts = await jobRepository.GetJobCurrentAmountsAsync([data.Id]);
+                        if (updatedAmounts.TryGetValue(data.Id, out var updated))
+                            newAmount = updated.Amount;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "Failed to recalculate rate for job {JobId}", data.Id);
+                    }
+
+                    resultRows.Add(new BulkPricePreviewRow
+                    {
+                        JobId = data.Id,
+                        JobNo = jobInfo.JobNo,
+                        Field = "Amount",
+                        OldAmount = oldAmount,
+                        NewAmount = newAmount,
+                        IsPrebook = jobInfo.IsPrebook
+                    });
+
+                    totalOldAmount += oldAmount;
+                    totalNewAmount += newAmount;
+                }
+
+                break;
+            }
+            case "base":
+            {
+                // For base mode, save the raw base amount directly to ucjbamount
+                foreach (var data in parsedData)
+                {
+                    if (!currentAmounts.TryGetValue(data.Id, out var jobInfo))
+                        continue;
+
+                    var oldAmount = jobInfo.RawBaseAmount;
+                    var newAmount = data.RawBaseAmount ?? oldAmount;
+
+                    try
+                    {
+                        newAmount = await jobRepository.RepriceJobWithBaseAmountAsync(
+                            new RepriceJobWithBaseAmountModel
+                            {
+                                JobId = data.Id,
+                                IsPrebook = jobInfo.IsPrebook,
+                                BaseAmount = data.Amount ?? 0
+                            });
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "Failed to reprice job with base amount for job {JobId}", data.Id);
+                    }
+
+                    resultRows.Add(new BulkPricePreviewRow
+                    {
+                        JobId = data.Id,
+                        JobNo = jobInfo.JobNo,
+                        Field = "Amount",
+                        OldAmount = oldAmount,
+                        NewAmount = newAmount,
+                        IsPrebook = jobInfo.IsPrebook
+                    });
+
+                    totalOldAmount += oldAmount;
+                    totalNewAmount += newAmount;
+                }
+
+                break;
+            }
+            default:
+            {
+                // For gross mode, use existing UpdateManualPriceAsync and track results
+                foreach (var data in parsedData)
+                {
+                    if (!currentAmounts.TryGetValue(data.Id, out var jobInfo))
+                        continue;
+
+                    var oldAmount = jobInfo.Amount;
+                    var newAmount = data.Amount ?? oldAmount;
+
+                    resultRows.Add(new BulkPricePreviewRow
+                    {
+                        JobId = data.Id,
+                        JobNo = jobInfo.JobNo,
+                        Field = "Amount",
+                        OldAmount = oldAmount,
+                        NewAmount = newAmount,
+                        IsPrebook = jobInfo.IsPrebook
+                    });
+
+                    totalOldAmount += oldAmount;
+                    totalNewAmount += newAmount;
+                }
+
+                await jobRepository.UpdateManualPriceAsync(parsedData);
+                break;
+            }
+        }
+
+        // Handle Void field for all pricing modes - apply void status regardless of pricing mode selected
+        var jobsToVoid = parsedData.Where(d => d.Void == true).Select(d => d.Id).ToList();
+        if (jobsToVoid.Count <= 0)
+            return new BulkPricePreviewResponse
+            {
+                Rows = resultRows,
+                TotalJobs = resultRows.Count,
+                TotalOldAmount = totalOldAmount,
+                TotalNewAmount = totalNewAmount
+            };
+
+        await jobRepository.UpdateJobVoidStatusAsync(jobsToVoid);
+        Log.Information("Voided {Count} jobs via bulk upload", jobsToVoid.Count);
+
+        return new BulkPricePreviewResponse
+        {
+            Rows = resultRows,
+            TotalJobs = resultRows.Count,
+            TotalOldAmount = totalOldAmount,
+            TotalNewAmount = totalNewAmount
+        };
     }
 
     /// <summary>
@@ -335,105 +596,6 @@ public class RateJobService(
             throw;
         }
     }
-    
-    /// <summary>
-    /// Gets the calculated rate for an NZ job without persisting it to the database.
-    /// </summary>
-    /// <param name="jobDetails">The job rating details including client, addresses, speed, and size information.</param>
-    /// <returns>The calculated rate, or 0 if rating fails.</returns>
-    public async Task<decimal> GetJobRateNzAsync(JobRatingDetailsDtoNz jobDetails)
-{
-    try
-    {
-        ArgumentNullException.ThrowIfNull(jobDetails);
-        ArgumentNullException.ThrowIfNull(jobDetails.ClientId);
-        ArgumentNullException.ThrowIfNull(jobDetails.FromId);
-        ArgumentNullException.ThrowIfNull(jobDetails.ToId);
-        ArgumentNullException.ThrowIfNull(jobDetails.SpeedId);
-        ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
-
-        var rateResult = await RateUrgentJobAsync(jobDetails);
-        if (rateResult is { Rate: > 0 }) return rateResult.Rate;
-        
-        Log.Warning("Job rating failed or returned invalid rate for JobId: {JobId}. Rate: {Rate}",
-            jobDetails.JobId,
-            rateResult?.Rate ?? 0);
-        
-        return 0;
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "{ErrorMessage}",
-            ErrorMessageStringFormatter.FormatForLogging(ex, nameof(RateJobService), nameof(GetJobRateNzAsync)));
-        throw;
-    }
-}
-
-/// <summary>
-/// Gets the calculated rate for a US job without persisting it to the database.
-/// </summary>
-/// <param name="jobDetails">The job rating details including client, addresses, speed, size, and weight information.</param>
-/// <returns>The calculated rate.</returns>
-public async Task<decimal> GetJobRateUsAsync(JobRatingDetailsDto jobDetails)
-{
-    try
-    {
-        ArgumentNullException.ThrowIfNull(jobDetails);
-        ArgumentNullException.ThrowIfNull(jobDetails.SpeedId);
-        ArgumentNullException.ThrowIfNull(jobDetails.ClientId);
-        ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
-
-        // Get distances and airport info
-        var distanceResult = await CalculateJobRateUsAsync(
-            new JobRateRequest
-            {
-                SpeedId = jobDetails.SpeedId.Value,
-                PickupLat = jobDetails.PickupLat,
-                PickupLong = jobDetails.PickupLong,
-                DeliveryLat = jobDetails.DeliveryLat,
-                DeliveryLong = jobDetails.DeliveryLong
-            }
-        );
-
-        // Get the rate without saving
-        var rate = await jobRepository.GetJobRateUsAsync(new RateJobUsDto
-        {
-            JobId = jobDetails.JobId,
-            ClientId = jobDetails.ClientId.Value,
-            Speed = jobDetails.SpeedId.Value,
-            FromZip = jobDetails.FromZip,
-            ToZip = jobDetails.ToZip,
-            TotalMiles = (decimal)distanceResult.TotalMiles,
-            FromMiles = (decimal)distanceResult.FromMiles,
-            ToMiles = (decimal)distanceResult.ToMiles,
-            Weight = jobDetails.Weight.HasValue ? (int)jobDetails.Weight : 0,
-            Booked = jobDetails.BookedDate,
-            Size = jobDetails.SizeId.Value,
-            DangerousGoods = jobDetails.DangerousGoods,
-            TotalPallets = jobDetails.TotalPallets,
-            ExtraStopOffs = jobDetails.ExtraStopOffs,
-            DryIceWeight = (int)jobDetails.DryIceWeight,
-            WaitTime = jobDetails.WaitTime,
-            FromAgentId = distanceResult.FromAirport?.AgentId ?? jobDetails.FromAgentId,
-            FromAirportId = distanceResult.FromAirport?.AirportId ?? jobDetails.FromAirportId,
-            ToAgentId = distanceResult.ToAirport?.AgentId ?? jobDetails.ToAgentId,
-            ToAirportId = distanceResult.ToAirport?.AirportId ?? jobDetails.ToAirportId,
-            Quantity = jobDetails.Quantity,
-            Cubic = jobDetails.Cubic,
-            IsPrebook = jobDetails.IsPrebook ?? false,
-            CalculateDimsOncePerJob = jobDetails.CalculateDimsOncePerJob,
-            PreviousRate = jobDetails.PreviousRate
-        });
-
-        return rate;
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "{ErrorMessage}",
-            ErrorMessageStringFormatter.FormatForLogging(ex, nameof(RateJobService), nameof(GetJobRateUsAsync)));
-        throw;
-    }
-}
 
     /// <summary>
     /// Maps job rating details DTO to the DFRNT API request object format.
@@ -531,159 +693,6 @@ public async Task<decimal> GetJobRateUsAsync(JobRatingDetailsDto jobDetails)
             HasDgDocuments = dto.HasDgDocuments,
             TruckStartTime = dto.TruckStartTime,
             TruckHours = dto.TruckHours ?? (dto.WaitTime > 0 ? dto.WaitTime : null)
-        };
-    }
-
-    /// <summary>
-    /// Applies bulk price updates from an uploaded spreadsheet and returns the results.
-    /// Supports recalculate, base amount, and gross amount pricing modes.
-    /// </summary>
-    /// <param name="file">The uploaded spreadsheet file (xls, xlsx, or csv).</param>
-    /// <param name="pricingMode">The pricing mode: 'recalculate', 'base', or 'gross'.</param>
-    /// <returns>Response containing updated job prices and summary statistics.</returns>
-    public async Task<BulkPricePreviewResponse> ApplyBulkPriceUpdateAsync(IFormFile file, string pricingMode)
-    {
-        // Parse the file using JobReportService
-        var parsedData = await jobReportService.ParseBulkPriceFileAsync(file);
-        if (parsedData.Count == 0)
-            return new BulkPricePreviewResponse();
-
-        // Get current amounts for all jobs before update
-        var jobIds = parsedData.Select(d => d.Id).Distinct().ToList();
-        var currentAmounts = await jobRepository.GetJobCurrentAmountsAsync(jobIds);
-
-        var resultRows = new List<BulkPricePreviewRow>();
-        decimal totalOldAmount = 0;
-        decimal totalNewAmount = 0;
-
-        switch (pricingMode)
-        {
-            // Apply updates based on mode
-            case "recalculate":
-            {
-                foreach (var data in parsedData)
-                {
-                    if (!currentAmounts.TryGetValue(data.Id, out var jobInfo))
-                        continue;
-
-                    var oldAmount = jobInfo.Amount;
-                    var newAmount = oldAmount;
-
-                    try
-                    {
-                        await RecalculateJobRateInternalAsync(data.Id, jobInfo.IsPrebook);
-                        // Get the new amount after recalculation
-                        var updatedAmounts = await jobRepository.GetJobCurrentAmountsAsync([data.Id]);
-                        if (updatedAmounts.TryGetValue(data.Id, out var updated))
-                            newAmount = updated.Amount;
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Warning(ex, "Failed to recalculate rate for job {JobId}", data.Id);
-                    }
-
-                    resultRows.Add(new BulkPricePreviewRow
-                    {
-                        JobId = data.Id,
-                        JobNo = jobInfo.JobNo,
-                        Field = "Amount",
-                        OldAmount = oldAmount,
-                        NewAmount = newAmount,
-                        IsPrebook = jobInfo.IsPrebook
-                    });
-
-                    totalOldAmount += oldAmount;
-                    totalNewAmount += newAmount;
-                }
-
-                break;
-            }
-            case "base":
-            {
-                // For base mode, save the raw base amount directly to ucjbamount
-                foreach (var data in parsedData)
-                {
-                    if (!currentAmounts.TryGetValue(data.Id, out var jobInfo))
-                        continue;
-
-                    var oldAmount = jobInfo.Amount;
-                    var newAmount = data.Amount ?? oldAmount;
-
-                    try
-                    {
-                        newAmount = await jobRepository.RepriceJobWithBaseAmountAsync(
-                            new RepriceJobWithBaseAmountModel
-                            {
-                                JobId = data.Id,
-                                IsPrebook = jobInfo.IsPrebook,
-                                BaseAmount = data.Amount ?? 0
-                            });
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Warning(ex, "Failed to reprice job with base amount for job {JobId}", data.Id);
-                    }
-
-                    resultRows.Add(new BulkPricePreviewRow
-                    {
-                        JobId = data.Id,
-                        JobNo = jobInfo.JobNo,
-                        Field = "Amount",
-                        OldAmount = oldAmount,
-                        NewAmount = newAmount,
-                        IsPrebook = jobInfo.IsPrebook
-                    });
-
-                    totalOldAmount += oldAmount;
-                    totalNewAmount += newAmount;
-                }
-
-                break;
-            }
-            default:
-            {
-                // For gross mode, use existing UpdateManualPriceAsync and track results
-                foreach (var data in parsedData)
-                {
-                    if (!currentAmounts.TryGetValue(data.Id, out var jobInfo))
-                        continue;
-
-                    var oldAmount = jobInfo.Amount;
-                    var newAmount = data.Amount ?? oldAmount;
-
-                    resultRows.Add(new BulkPricePreviewRow
-                    {
-                        JobId = data.Id,
-                        JobNo = jobInfo.JobNo,
-                        Field = "Amount",
-                        OldAmount = oldAmount,
-                        NewAmount = newAmount,
-                        IsPrebook = jobInfo.IsPrebook
-                    });
-
-                    totalOldAmount += oldAmount;
-                    totalNewAmount += newAmount;
-                }
-
-                await jobRepository.UpdateManualPriceAsync(parsedData);
-                break;
-            }
-        }
-
-        // Handle Void field for all pricing modes - apply void status regardless of pricing mode selected
-        var jobsToVoid = parsedData.Where(d => d.Void == true).Select(d => d.Id).ToList();
-        if (jobsToVoid.Count > 0)
-        {
-            await jobRepository.UpdateJobVoidStatusAsync(jobsToVoid);
-            Log.Information("Voided {Count} jobs via bulk upload", jobsToVoid.Count);
-        }
-
-        return new BulkPricePreviewResponse
-        {
-            Rows = resultRows,
-            TotalJobs = resultRows.Count,
-            TotalOldAmount = totalOldAmount,
-            TotalNewAmount = totalNewAmount
         };
     }
 

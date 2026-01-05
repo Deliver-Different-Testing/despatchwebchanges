@@ -142,6 +142,16 @@ class DispatchMapController extends BaseController {
         this.toggleAutoZoom = this.toggleAutoZoom.bind(this);
     }
 
+    /**
+     * Escapes HTML special characters to prevent XSS attacks in tooltip content.
+     */
+    private escapeHtml(text: string | null | undefined): string {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
     private waitForMapElement(): Promise<google.maps.Map> {
         const maxRetries = 10;
         let retryCount = 0;
@@ -614,8 +624,8 @@ class DispatchMapController extends BaseController {
             marker.setIcon(hoverIcon);
             const content = `
         <div style="padding: 8px;">
-            <strong>Job ${job.jobNo}</strong>${isCurrentJob ? ' <span style="color: #1976D2;">(Current Job)</span>' : ''}<br>
-            ${locationType} Location<br>
+            <strong>Job ${this.escapeHtml(job.jobNo)}</strong>${isCurrentJob ? ' <span style="color: #1976D2;">(Current Job)</span>' : ''}<br>
+            ${this.escapeHtml(locationType)} Location<br>
             <small style="color: #666;">Click to open job details</small>
         </div>
     `;
@@ -742,9 +752,9 @@ class DispatchMapController extends BaseController {
 
             const content = `
         <div style="padding: 8px;">
-            <strong>${courier.courierName}</strong><br>
+            <strong>${this.escapeHtml(courier.courierName)}</strong><br>
             ${courier.isUrgentArmyDriver ? `Fleet: UA<br>` : ''}
-            ${courier.vehicleType ? `Vehicle: ${courier.vehicleType}<br>` : ''}
+            ${courier.vehicleType ? `Vehicle: ${this.escapeHtml(courier.vehicleType)}<br>` : ''}
             <strong>Total Jobs: ${courier.totalJobs}</strong><br>
             ${overdueJobsText}
         </div>

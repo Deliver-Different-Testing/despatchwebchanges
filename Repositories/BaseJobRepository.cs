@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
@@ -223,6 +224,13 @@ public class BaseJobRepository(
 
         if (viewFilters.Count == 0) return Context.TucJobs.Where(j => false).Select(j => j.UcjbId);
 
+        // Validate each filter to prevent SQL injection
+        foreach (var filter in viewFilters.Where(filter => !IsValidWhereCondition(filter)))
+        {
+            Log.Warning("Invalid WhereCondition detected and rejected: {Filter}", filter);
+            throw new InvalidOperationException("Invalid filter condition detected in view configuration.");
+        }
+
         // Case 3: Build combined filter
         var combinedFilters = string.Join(" OR ", viewFilters.Select(filter => $"({filter})"));
 
@@ -233,6 +241,28 @@ public class BaseJobRepository(
                     : $"SELECT UcjbId FROM DESWEB_qryDespatch WHERE {combinedFilters}"
             )
             .Select(x => x.UcjbId);
+    }
+
+    /// <summary>
+    /// Validates that a WhereCondition from the database doesn't contain SQL injection patterns.
+    /// </summary>
+    private static bool IsValidWhereCondition(string condition)
+    {
+        if (string.IsNullOrWhiteSpace(condition))
+            return false;
+
+        // Reject dangerous SQL keywords and patterns (case-insensitive)
+        // Note: XP_ and SP_ use only leading word boundary to catch prefixed procedures like xp_cmdshell, sp_executesql
+        var dangerousPatterns = new[]
+        {
+            @"\bDROP\b", @"\bDELETE\b", @"\bTRUNCATE\b", @"\bALTER\b", @"\bCREATE\b",
+            @"\bINSERT\b", @"\bUPDATE\b", @"\bEXEC\b", @"\bEXECUTE\b", @"\bXP_",
+            @"\bSP_", @"\bINTO\b", @"\bUNION\b", @"\bGRANT\b", @"\bREVOKE\b",
+            @"--", @"/\*", @"\*/", @"\bSHUTDOWN\b", @"\bWAITFOR\b", @"\bDELAY\b",
+            @"\bOPENROWSET\b", @"\bOPENQUERY\b", @"\bBULK\b", @"\bDBCC\b"
+        };
+
+        return dangerousPatterns.All(pattern => !Regex.IsMatch(condition, pattern, RegexOptions.IgnoreCase));
     }
 
     private static IQueryable<TucJob> ApplyGeographicFilters(
@@ -975,6 +1005,7 @@ public class BaseJobRepository(
                 JobId = j.UcjbId,
                 JobNo = j.UcjbNumber,
                 Amount = j.UcjbAmount ?? 0,
+                RawBaseAmount = j.RawBaseAmount ?? 0,
                 Fuel = j.FuelSurchargeAmount,
                 Ppd = j.Ppdamount ?? 0,
                 CourierPayment = j.CourierPayment ?? 0,
@@ -983,32 +1014,6 @@ public class BaseJobRepository(
                 IsPrebook = false
             })
             .ToListAsync();
-
-        // Check prebook jobs for any IDs not found in live
-        var foundIds = liveJobs.Select(j => j.JobId).ToHashSet();
-        var missingIds = jobIds.Where(id => !foundIds.Contains(id)).ToList();
-
-        if (missingIds.Count > 0)
-        {
-            var prebookJobs = await Context.TucJobBookings
-                .AsNoTracking()
-                .Where(j => missingIds.Contains(j.UcbkId))
-                .Select(j => new JobCurrentAmountInfo
-                {
-                    JobId = j.UcbkId,
-                    JobNo = j.UcbkJobNumber,
-                    Amount = j.UcbkAmount ?? 0,
-                    Fuel = j.FuelSurchargeAmount ?? 0,
-                    Ppd = 0, // TucJobBooking doesn't have PPD
-                    CourierPayment = j.CourierPayment ?? 0,
-                    CourierFuel = j.CourierFuel ?? 0,
-                    CourierBonus = 0, // TucJobBooking doesn't have CourierBonus
-                    IsPrebook = true
-                })
-                .ToListAsync();
-
-            liveJobs.AddRange(prebookJobs);
-        }
 
         return liveJobs.ToDictionary(j => j.JobId);
     }

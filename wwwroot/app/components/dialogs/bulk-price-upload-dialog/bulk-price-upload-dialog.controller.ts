@@ -1,8 +1,5 @@
 import './bulk-price-upload-dialog.styles.less';
-import {
-    PricingMode,
-    BulkPricePreviewRow
-} from "./bulk-price-upload-dialog.interfaces";
+import {BulkPricePreviewRow, PricingMode} from "./bulk-price-upload-dialog.interfaces";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 import BaseController from "../../base-controller";
@@ -116,7 +113,7 @@ class BulkPriceUploadDialogController extends BaseController {
             case 'recalculate':
                 return 'Prices will be recalculated based on job details and current rates';
             case 'base':
-                return 'Raw base amounts from file will be saved directly';
+                return 'Raw base amounts from file will be saved with PPD and Fuel added';
             case 'gross':
                 return 'Amounts from file will be applied directly as final prices';
             default:

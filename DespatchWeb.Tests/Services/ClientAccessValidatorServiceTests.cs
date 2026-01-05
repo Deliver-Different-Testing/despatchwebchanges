@@ -76,7 +76,7 @@ public class ClientAccessValidatorServiceTests
     public async Task ValidateClientAccessAsync_NullString_ReturnsEarly()
     {
         // Arrange
-        var contactId = 1;
+        const int contactId = 1;
         string clientIds = null!;
 
         // Act
