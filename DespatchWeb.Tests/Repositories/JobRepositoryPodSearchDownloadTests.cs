@@ -497,10 +497,10 @@ internal class TestAsyncQueryProvider<TEntity> : IAsyncQueryProvider
             .First(m => m.Name == nameof(IQueryProvider.Execute) && m.IsGenericMethodDefinition)
             .MakeGenericMethod(resultType);
 
-        var result = executeMethod.Invoke(_inner, new object[] { expression });
+        var result = executeMethod.Invoke(_inner, [expression]);
         return (TResult)typeof(Task).GetMethod(nameof(Task.FromResult))!
             .MakeGenericMethod(resultType)
-            .Invoke(null, new[] { result })!;
+            .Invoke(null, [result])!;
     }
 }
 
