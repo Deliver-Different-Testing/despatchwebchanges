@@ -151,7 +151,7 @@ public class RateJobServiceBulkPriceTests
         _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
-                [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 100m, IsPrebook = false }
+                [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 100m, RawBaseAmount = 100m, IsPrebook = false }
             });
 
         _jobRepositoryMock.Setup(x => x.RepriceJobWithBaseAmountAsync(It.IsAny<RepriceJobWithBaseAmountModel>()))
@@ -182,7 +182,7 @@ public class RateJobServiceBulkPriceTests
         _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
-                [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 100m, IsPrebook = false }
+                [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 100m, RawBaseAmount = 100m, IsPrebook = false }
             });
 
         _jobRepositoryMock.Setup(x => x.RepriceJobWithBaseAmountAsync(It.IsAny<RepriceJobWithBaseAmountModel>()))
@@ -193,10 +193,10 @@ public class RateJobServiceBulkPriceTests
         // Act - should not throw, just log the error
         var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
 
-        // Assert - still returns row with old amount as new amount (fallback)
+        // Assert - still returns row with old amount as new amount (fallback when RawBaseAmount is null)
         result.Rows.Should().HaveCount(1);
         result.Rows[0].OldAmount.Should().Be(100m);
-        result.Rows[0].NewAmount.Should().Be(150m); // Falls back to parsed amount
+        result.Rows[0].NewAmount.Should().Be(100m); // Falls back to old amount when reprice fails
     }
 
     [Fact]

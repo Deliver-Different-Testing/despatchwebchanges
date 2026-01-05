@@ -9,6 +9,7 @@ using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
 using FluentAssertions;
 using Moq;
+using Xunit.Abstractions;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -19,12 +20,14 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class JobReportServiceLargeDataTests
 {
+    private readonly ITestOutputHelper _testOutputHelper;
     private readonly Mock<IJobRepository> _jobRepositoryMock = new();
     private readonly Mock<IAmazonS3> _s3ClientMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
 
-    public JobReportServiceLargeDataTests()
+    public JobReportServiceLargeDataTests(ITestOutputHelper testOutputHelper)
     {
+        _testOutputHelper = testOutputHelper;
         _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime()).Returns(DateTime.Now);
     }
 
@@ -82,8 +85,8 @@ public class JobReportServiceLargeDataTests
         result.FileBytes.Should().NotBeEmpty();
 
         // Log memory usage for diagnostics
-        Console.WriteLine($"Memory used for {recordCount} records: {memoryUsedMb:F2} MB");
-        Console.WriteLine($"CSV file size: {result.FileBytes.Length / 1024.0:F2} KB");
+        _testOutputHelper.WriteLine($"Memory used for {recordCount} records: {memoryUsedMb:F2} MB");
+        _testOutputHelper.WriteLine($"CSV file size: {result.FileBytes.Length / 1024.0:F2} KB");
     }
 
     #endregion
@@ -314,7 +317,7 @@ public class JobReportServiceLargeDataTests
                 It.IsAny<DateTime>(),
                 It.IsAny<DateTime>(),
                 It.IsAny<List<int>>()))
-            .ReturnsAsync(new List<JobDownloadModel>());
+            .ReturnsAsync([]);
 
         _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), CancellationToken.None))
             .ReturnsAsync(new PutObjectResponse());
@@ -399,11 +402,11 @@ public class JobReportServiceLargeDataTests
     }
 
     [Fact]
-    public async Task GenerateClientJobsReportCsvAsync_NoData_ThrowsInvalidOperationException()
+    public async Task GenerateClientJobsReportCsvAsync_NoData_ReturnsHeaderOnly()
     {
         // Arrange
         _jobRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
-            .ReturnsAsync(new List<PerformanceSpendReportModel>());
+            .ReturnsAsync([]);
 
         var service = CreateService();
         var request = new ClientJobsReportRequest
@@ -413,10 +416,14 @@ public class JobReportServiceLargeDataTests
             ClientIds = [1]
         };
 
-        // Act & Assert
-        var act = async () => await service.GenerateClientJobsReportCsvAsync(request);
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*No data*");
+        // Act
+        var result = await service.GenerateClientJobsReportCsvAsync(request);
+
+        // Assert
+        result.FileBytes.Should().NotBeEmpty();
+        var csvContent = Encoding.UTF8.GetString(result.FileBytes);
+        var lines = csvContent.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        lines.Length.Should().Be(1); // Header only
     }
 
     #endregion
@@ -428,7 +435,7 @@ public class JobReportServiceLargeDataTests
         var jobs = new List<JobDownloadModel>(count);
         var baseDate = DateTime.Now.AddMonths(-1);
 
-        for (int i = 0; i < count; i++)
+        for (var i = 0; i < count; i++)
         {
             jobs.Add(new JobDownloadModel
             {
@@ -439,17 +446,17 @@ public class JobReportServiceLargeDataTests
                 BookDate = baseDate.AddDays(i % 30),
                 PickedUpDate = baseDate.AddDays(i % 30).AddHours(1),
                 DeliveredDate = baseDate.AddDays(i % 30).AddHours(3),
-                Amount = 100m + (i % 1000),
-                Fuel = 10m + (i % 50),
+                Amount = 100m + i % 1000,
+                Fuel = 10m + i % 50,
                 Ppd = 5m,
-                CourierPayment = 50m + (i % 200),
+                CourierPayment = 50m + i % 200,
                 CourierFuel = 5m,
                 CourierBonus = i % 10 == 0 ? 10m : 0m,
-                RawBaseAmount = 90m + (i % 500),
+                RawBaseAmount = 90m + i % 500,
                 AgentAirlineName = i % 5 == 0 ? $"Airline {i % 10}" : null,
                 AWB = i % 5 == 0 ? $"AWB{i:D8}" : null,
-                Quantity = (short)((i % 10) + 1),
-                Weight = (i % 50) + 0.5,
+                Quantity = (short)(i % 10 + 1),
+                Weight = i % 50 + 0.5,
                 Size = i % 5,
                 StatusName = i % 3 == 0 ? "Completed" : i % 3 == 1 ? "In Progress" : "Pending",
                 PickupAddressLine1 = $"{i + 100} Pickup Street",
@@ -487,7 +494,7 @@ public class JobReportServiceLargeDataTests
         var reports = new List<PerformanceSpendReportModel>(count);
         var baseDate = DateTime.Now.AddMonths(-1);
 
-        for (int i = 0; i < count; i++)
+        for (var i = 0; i < count; i++)
         {
             reports.Add(new PerformanceSpendReportModel
             {
@@ -497,7 +504,7 @@ public class JobReportServiceLargeDataTests
                 Booker = $"Booker{i % 20}",
                 RefA = $"REF-A-{i:D6}",
                 RefB = $"REF-B-{i:D6}",
-                ChargeExclGST = (100m + (i % 1000)).ToString("F2"),
+                ChargeExclGST = (100m + i % 1000).ToString("F2"),
                 From = $"Suburb {i % 50}",
                 FromPostcode = $"{1000 + i % 100}",
                 ucjbFromAddr = $"{i + 100} Pickup Street",
@@ -510,11 +517,11 @@ public class JobReportServiceLargeDataTests
                 PODName = $"Recipient {i % 100}",
                 AchievedSpeed = i % 3 == 0 ? "1 Hour" : i % 3 == 1 ? "2 Hour" : "3 Hour",
                 Notes = i % 5 == 0 ? $"Note for job {i}" : null,
-                Quantity = ((i % 10) + 1).ToString(),
-                Weight = ((i % 50) + 0.5).ToString("F2"),
+                Quantity = (i % 10 + 1).ToString(),
+                Weight = (i % 50 + 0.5).ToString("F2"),
                 ucjbType = i % 3 == 0 ? "Pick up from us" : i % 3 == 1 ? "Deliver to us" : "3rd party",
                 Vehicle = $"Vehicle {i % 10}",
-                ucjbMonth = (baseDate.AddDays(i % 30).Month).ToString(),
+                ucjbMonth = baseDate.AddDays(i % 30).Month.ToString(),
                 ucjbYear = baseDate.Year.ToString(),
                 Code = $"C{i % 50:D3}",
                 uccrName = $"Courier {i % 50}",
