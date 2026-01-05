@@ -1,0 +1,389 @@
+using System.Security.Claims;
+using DespatchWeb.Interfaces;
+using DespatchWeb.Models.Dto;
+using DespatchWeb.Models.FlightStats;
+using DespatchWeb.Services;
+using FluentAssertions;
+using Microsoft.AspNetCore.Http;
+using Moq;
+using Moq.Protected;
+using System.Net;
+using System.Text.Json;
+
+namespace DespatchWeb.Tests.Services;
+
+/// <summary>
+/// Unit tests for FlightStatsService - tests FlightStats API integration for flight search and alerts.
+/// </summary>
+public class FlightStatsServiceTests
+{
+    private readonly Mock<HttpMessageHandler> _httpHandlerMock = new();
+    private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock = new();
+    private readonly Mock<INationwideJobRepository> _nationwideJobRepositoryMock = new();
+    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+
+    private FlightStatsService CreateService()
+    {
+        var httpClient = new HttpClient(_httpHandlerMock.Object);
+        return new FlightStatsService(
+            httpClient,
+            _httpContextAccessorMock.Object,
+            _nationwideJobRepositoryMock.Object,
+            _tenantInfoServiceMock.Object);
+    }
+
+    #region CreateFlightRuleByDepartureAsync Validation Tests
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public async Task CreateFlightRuleByDepartureAsync_NullOrEmptyFlightNumber_ThrowsArgumentException(string flightNumber)
+    {
+        // Arrange
+        var service = CreateService();
+
+        // Act
+        var act = async () => await service.CreateFlightRuleByDepartureAsync(
+            flightNumber, DateTimeOffset.Now, "AKL");
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public async Task CreateFlightRuleByDepartureAsync_NullOrEmptyAirportCode_ThrowsArgumentException(string airportCode)
+    {
+        // Arrange
+        var service = CreateService();
+
+        // Act
+        var act = async () => await service.CreateFlightRuleByDepartureAsync(
+            "NZ123", DateTimeOffset.Now, airportCode);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task CreateFlightRuleByDepartureAsync_MissingConnectionClaim_ThrowsArgumentException()
+    {
+        // Arrange
+        SetupHttpContextWithClaims((ClaimTypes.Name, "TestUser"));
+        var service = CreateService();
+
+        // Act
+        var act = async () => await service.CreateFlightRuleByDepartureAsync(
+            "NZ123", DateTimeOffset.Now, "AKL");
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    #endregion
+
+    #region DeleteFlightRuleById Tests
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public async Task DeleteFlightRuleById_NullOrEmptyWebhookId_ReturnsWithoutCalling(string webhookId)
+    {
+        // Arrange
+        var service = CreateService();
+
+        // Act
+        await service.DeleteFlightRuleById(webhookId);
+
+        // Assert - verify no HTTP call was made
+        _httpHandlerMock.Protected().Verify(
+            "SendAsync",
+            Times.Never(),
+            ItExpr.IsAny<HttpRequestMessage>(),
+            ItExpr.IsAny<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeleteFlightRuleById_ValidWebhookId_CallsFlightStatsApi()
+    {
+        // Arrange
+        SetupHttpResponse(new { success = true });
+        var service = CreateService();
+
+        // Act
+        await service.DeleteFlightRuleById("webhook-123");
+
+        // Assert
+        _httpHandlerMock.Protected().Verify(
+            "SendAsync",
+            Times.Once(),
+            ItExpr.Is<HttpRequestMessage>(req =>
+                req.RequestUri.ToString().Contains("json/delete/webhook-123")),
+            ItExpr.IsAny<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeleteFlightRuleById_ApiError_ThrowsException()
+    {
+        // Arrange
+        SetupHttpError(HttpStatusCode.InternalServerError);
+        var service = CreateService();
+
+        // Act
+        var act = async () => await service.DeleteFlightRuleById("webhook-123");
+
+        // Assert
+        await act.Should().ThrowAsync<Exception>()
+            .WithMessage("*Failed to disconnect alert*");
+    }
+
+    #endregion
+
+    #region GetFlightsAsync Validation Tests
+
+    [Fact]
+    public async Task GetFlightsAsync_NullDepartureAirport_ThrowsArgumentNullException()
+    {
+        // Arrange
+        SetupAirportMocks(departureAirportExists: false, arrivalAirportExists: true);
+        var service = CreateService();
+
+        // Act
+        var act = async () => await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: DateTimeOffset.Now,
+            departureAirportId: 999,
+            arrivalAirportId: 2);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentNullException>();
+    }
+
+    [Fact]
+    public async Task GetFlightsAsync_NullArrivalAirport_ThrowsArgumentNullException()
+    {
+        // Arrange
+        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: false);
+        var service = CreateService();
+
+        // Act
+        var act = async () => await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: DateTimeOffset.Now,
+            departureAirportId: 1,
+            arrivalAirportId: 999);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentNullException>();
+    }
+
+    #endregion
+
+    #region GetFlightsAsync Response Tests
+
+    [Fact]
+    public async Task GetFlightsAsync_NoConnections_ReturnsEmptyList()
+    {
+        // Arrange
+        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
+        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
+            .ReturnsAsync(["NZ", "QF"]);
+        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
+            .Returns(DateTime.Now);
+
+        var response = new FlightConnectionsRoot { Connections = null };
+        SetupHttpResponse(response);
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: DateTimeOffset.Now.AddHours(2),
+            departureAirportId: 1,
+            arrivalAirportId: 2);
+
+        // Assert
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetFlightsAsync_WithConnections_ReturnsMappedFlights()
+    {
+        // Arrange
+        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
+        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
+            .ReturnsAsync(["NZ", "QF"]);
+        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
+            .Returns(DateTime.Now);
+
+        var response = CreateFlightConnectionsResponse();
+        SetupHttpResponse(response);
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: DateTimeOffset.Now.AddHours(2),
+            departureAirportId: 1,
+            arrivalAirportId: 2);
+
+        // Assert
+        result.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task GetFlightsAsync_WithSpecificAirline_FiltersResults()
+    {
+        // Arrange
+        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
+        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
+            .ReturnsAsync(["NZ", "QF"]);
+        _nationwideJobRepositoryMock.Setup(x => x.GetAirlineCodeByIdAsync(5))
+            .ReturnsAsync("NZ");
+        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
+            .Returns(DateTime.Now);
+
+        var response = CreateFlightConnectionsResponse();
+        SetupHttpResponse(response);
+        var service = CreateService();
+
+        // Act
+        await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: DateTimeOffset.Now.AddHours(2),
+            airlineId: 5,
+            departureAirportId: 1,
+            arrivalAirportId: 2);
+
+        // Assert
+        _httpHandlerMock.Protected().Verify(
+            "SendAsync",
+            Times.Once(),
+            ItExpr.Is<HttpRequestMessage>(req =>
+                req.RequestUri.ToString().Contains("includeAirlines=NZ")),
+            ItExpr.IsAny<CancellationToken>());
+    }
+
+    #endregion
+
+    #region Helper Methods
+
+    private void SetupHttpContextWithClaims(params (string type, string value)[] claims)
+    {
+        var claimsList = claims.Select(c => new Claim(c.type, c.value)).ToList();
+        var identity = new ClaimsIdentity(claimsList, "TestAuth");
+        var principal = new ClaimsPrincipal(identity);
+        var httpContext = new DefaultHttpContext { User = principal };
+        _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(httpContext);
+    }
+
+    private void SetupHttpResponse<T>(T responseObject)
+    {
+        var jsonResponse = JsonSerializer.Serialize(responseObject);
+        var httpResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(jsonResponse)
+        };
+
+        _httpHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+    }
+
+    private void SetupHttpError(HttpStatusCode statusCode)
+    {
+        var httpResponse = new HttpResponseMessage(statusCode)
+        {
+            ReasonPhrase = "Error"
+        };
+
+        _httpHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+    }
+
+    private void SetupAirportMocks(bool departureAirportExists, bool arrivalAirportExists)
+    {
+        var airports = new List<GetAirportsDto>();
+
+        if (departureAirportExists)
+        {
+            airports.Add(new GetAirportsDto
+            {
+                AirportId = 1,
+                AirportCode = "AKL",
+                FlightBufferMinutes = 60,
+                Timezone = "Pacific/Auckland"
+            });
+        }
+
+        if (arrivalAirportExists)
+        {
+            airports.Add(new GetAirportsDto
+            {
+                AirportId = 2,
+                AirportCode = "SYD",
+                FlightBufferMinutes = 60,
+                Timezone = "Australia/Sydney"
+            });
+        }
+
+        _nationwideJobRepositoryMock.Setup(x => x.GetAllActiveAirportsAsync())
+            .ReturnsAsync(airports);
+    }
+
+    private static FlightConnectionsRoot CreateFlightConnectionsResponse() => new()
+    {
+        Connections =
+        [
+            new Connection
+            {
+                ScheduledFlight =
+                [
+                    new ScheduledFlight
+                    {
+                        CarrierFsCode = "NZ",
+                        FlightNumber = "123",
+                        DepartureTime = DateTime.Now.AddHours(3).ToString("O"),
+                        ArrivalTime = DateTime.Now.AddHours(6).ToString("O"),
+                        DepartureAirportFsCode = "AKL",
+                        ArrivalAirportFsCode = "SYD",
+                        FlightEquipmentIataCode = "787",
+                        ElapsedTime = 180,
+                        Stops = 0
+                    }
+                ],
+                ElapsedTime = 180,
+                Score = 95
+            }
+        ],
+        Appendix = new Appendix
+        {
+            Airlines = [new Airline { Fs = "NZ", Name = "Air New Zealand" }],
+            Airports =
+            [
+                new Airport
+                {
+                    Fs = "AKL", Name = "Auckland Airport", City = "Auckland",
+                    TimeZoneRegionName = "Pacific/Auckland"
+                },
+
+                new Airport
+                {
+                    Fs = "SYD", Name = "Sydney Airport", City = "Sydney",
+                    TimeZoneRegionName = "Australia/Sydney"
+                }
+            ],
+            Equipments = [new Equipment { Iata = "787", Name = "Boeing 787 Dreamliner", Jet = true }]
+        }
+    };
+
+    #endregion
+}
