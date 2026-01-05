@@ -180,6 +180,7 @@ public class RecurringJobRepository(
                     var clientId = int.Parse(value);
                     var code = await Context.TucClients
                         .AsNoTracking()
+                        .Where(c => c.UcclId == clientId)
                         .Select(c => c.UcclCode)
                         .FirstOrDefaultAsync();
 

@@ -1085,13 +1085,16 @@ class JobsListController extends BaseController {
 
         this.saveSortState();
 
-        if (this.setBackendFilter && this.totalJobsCount != (this.filteredJobs?.length || 0)) {
+        // Always refresh from backend when sort changes - partial datasets can't be correctly re-sorted client-side
+        if (this.setBackendFilter) {
             await this.setBackendFilter({
                 column: this.sortState.column,
                 direction: this.sortState.direction ?? "desc"
             });
+        } else {
+            // Only apply client-side sort if no backend filter is available
+            this.applyFilters();
         }
-        this.applyFilters();
     }
 
     getSortIcon(column: string): string {
