@@ -1,7 +1,6 @@
 import { IFlightViewModel, IFlightSegment } from "../../Nationwide/nationwide.interfaces";
 import "./flight-details-dialog.styles.less";
 import BaseController from "../../base-controller";
-import dayjs from "dayjs";
 import {getIanaTimezone} from "../../../functions/formatDates";
 
 class FlightDetailsDialogController extends BaseController {
@@ -39,9 +38,15 @@ class FlightDetailsDialogController extends BaseController {
                 arrivalTime: this.flight.arrivalTime,
                 departureAirportFsCode: this.flight.departureAirport,
                 arrivalAirportFsCode: this.flight.arrivalAirport,
+                departureAirportTimeZone: this.flight.departureTimeZone,
+                arrivalAirportTimeZone: this.flight.arrivalTimeZone,
                 flightEquipmentIataCode: '',
                 elapsedTime: this.flight.elapsedTime || 0,
-                stopsInSegment: 0
+                stopsInSegment: 0,
+                _departureTimeStr: this.flight._departureTimeStr,
+                _arrivalTimeStr: this.flight._arrivalTimeStr,
+                _departureTimeZoneStr: this.flight._departureTimeZoneStr,
+                _arrivalTimeZoneStr: this.flight._arrivalTimeZoneStr
             };
         }
     }

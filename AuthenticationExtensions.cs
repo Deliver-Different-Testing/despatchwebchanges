@@ -14,13 +14,27 @@ namespace DespatchWeb;
 
 public static class AuthenticationExtensions
 {
+    private const int MinimumKeyLengthBytes = 32; // 256 bits minimum for HMAC-SHA256
+
     public static JwtSecurityToken CreateApiToken(string name, int tenantId, string connection, string timeZone, int? clientId = null)
     {
         try
         {
-            var symmetricSecurityKey =
-                new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSecretKey") ?? string.Empty));
+            var jwtSecretKey = Environment.GetEnvironmentVariable("JWTSecretKey");
+            if (string.IsNullOrEmpty(jwtSecretKey))
+            {
+                throw new InvalidOperationException(
+                    "JWTSecretKey environment variable is not set. Cannot create secure tokens.");
+            }
+
+            var keyBytes = Encoding.UTF8.GetBytes(jwtSecretKey);
+            if (keyBytes.Length < MinimumKeyLengthBytes)
+            {
+                throw new InvalidOperationException(
+                    $"JWTSecretKey must be at least {MinimumKeyLengthBytes} bytes (256 bits) for secure token signing.");
+            }
+
+            var symmetricSecurityKey = new SymmetricSecurityKey(keyBytes);
 
             var sensitiveClaims = new Dictionary<string, string>
             {
@@ -49,8 +63,7 @@ public static class AuthenticationExtensions
                 issuer: Environment.GetEnvironmentVariable("Issuer"),
                 audience: Environment.GetEnvironmentVariable("Audience"),
                 claims: claims,
-                expires: DateTime.UtcNow
-                    .AddDays(7), // expires in 7 days by default, but we don't validate the expiry date
+                expires: DateTime.UtcNow.AddDays(7), // Token expires in 7 days - expiry is validated by JWT middleware
                 signingCredentials: new SigningCredentials(symmetricSecurityKey, SecurityAlgorithms.HmacSha256)
             );
         }

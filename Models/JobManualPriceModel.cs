@@ -7,6 +7,7 @@ public class JobManualPriceModel
 {
     public int Id { get; set; }
     public decimal? Amount { get; set; }
+    public decimal? RawBaseAmount { get; set; }
     public decimal? Fuel { get; set; }
     public decimal? Ppd { get; set; }
     public decimal? CourierPayment { get; set; }

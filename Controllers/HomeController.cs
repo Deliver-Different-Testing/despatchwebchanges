@@ -19,6 +19,7 @@ public partial class HomeController(
     ITenantInfoService infoService,
     IConnectionStringManager connectionStringManager) : Controller
 {
+    [Authorize]
     public async Task<IActionResult> Index()
     {
         try
@@ -82,6 +83,7 @@ public partial class HomeController(
         }
     }
 
+    [Authorize]
     public async Task<IActionResult> GetPageViews(int pageId)
     {
         var page = (AppPage)pageId;
