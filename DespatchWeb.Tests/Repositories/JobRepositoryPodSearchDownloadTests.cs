@@ -1,8 +1,11 @@
+using System.Linq.Expressions;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
+using MockQueryable;
 using MockQueryable.Moq;
 using Moq;
 
@@ -22,15 +25,15 @@ public class JobRepositoryPodSearchDownloadTests
         List<TucJobArchive> archivedJobs)
     {
         // Create mock DbSets using MockQueryable
-        var liveJobsMock = liveJobs.AsQueryable().BuildMockDbSet();
-        var archivedJobsMock = archivedJobs.AsQueryable().BuildMockDbSet();
+        var liveJobsDbSet = liveJobs.BuildMockDbSet();
+        var archivedJobsDbSet = archivedJobs.BuildMockDbSet();
 
         // Create two separate mock contexts (the repository uses separate contexts for parallel queries)
         var liveContextMock = new Mock<DespatchContext>(new DbContextOptions<DespatchContext>());
         var archivedContextMock = new Mock<DespatchContext>(new DbContextOptions<DespatchContext>());
 
-        liveContextMock.Setup(c => c.TucJobs).Returns(liveJobsMock.Object);
-        archivedContextMock.Setup(c => c.TucJobArchives).Returns(archivedJobsMock.Object);
+        liveContextMock.Setup(c => c.TucJobs).Returns(liveJobsDbSet.Object);
+        archivedContextMock.Setup(c => c.TucJobArchives).Returns(archivedJobsDbSet.Object);
 
         // Setup factory to return contexts in sequence
         var callCount = 0;
@@ -455,3 +458,86 @@ public class JobRepositoryPodSearchDownloadTests
 
     #endregion
 }
+
+#region Async Query Helpers
+
+internal class TestAsyncQueryProvider<TEntity> : IAsyncQueryProvider
+{
+    private readonly IQueryProvider _inner;
+
+    internal TestAsyncQueryProvider(IQueryProvider inner)
+    {
+        _inner = inner;
+    }
+
+    public IQueryable CreateQuery(Expression expression)
+    {
+        return new TestAsyncEnumerable<TEntity>(expression);
+    }
+
+    public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
+    {
+        return new TestAsyncEnumerable<TElement>(expression);
+    }
+
+    public object? Execute(Expression expression)
+    {
+        return _inner.Execute(expression);
+    }
+
+    public TResult Execute<TResult>(Expression expression)
+    {
+        return _inner.Execute<TResult>(expression);
+    }
+
+    public TResult ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken = default)
+    {
+        var resultType = typeof(TResult).GetGenericArguments()[0];
+        var executeMethod = typeof(IQueryProvider).GetMethods()
+            .First(m => m.Name == nameof(IQueryProvider.Execute) && m.IsGenericMethodDefinition)
+            .MakeGenericMethod(resultType);
+
+        var result = executeMethod.Invoke(_inner, new object[] { expression });
+        return (TResult)typeof(Task).GetMethod(nameof(Task.FromResult))!
+            .MakeGenericMethod(resultType)
+            .Invoke(null, new[] { result })!;
+    }
+}
+
+internal class TestAsyncEnumerable<T> : EnumerableQuery<T>, IAsyncEnumerable<T>, IQueryable<T>
+{
+    public TestAsyncEnumerable(IEnumerable<T> enumerable) : base(enumerable) { }
+    public TestAsyncEnumerable(Expression expression) : base(expression) { }
+
+    public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+    {
+        return new TestAsyncEnumerator<T>(this.AsEnumerable().GetEnumerator());
+    }
+
+    IQueryProvider IQueryable.Provider => new TestAsyncQueryProvider<T>(this);
+}
+
+internal class TestAsyncEnumerator<T> : IAsyncEnumerator<T>
+{
+    private readonly IEnumerator<T> _inner;
+
+    public TestAsyncEnumerator(IEnumerator<T> inner)
+    {
+        _inner = inner;
+    }
+
+    public T Current => _inner.Current;
+
+    public ValueTask<bool> MoveNextAsync()
+    {
+        return ValueTask.FromResult(_inner.MoveNext());
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        _inner.Dispose();
+        return ValueTask.CompletedTask;
+    }
+}
+
+#endregion
