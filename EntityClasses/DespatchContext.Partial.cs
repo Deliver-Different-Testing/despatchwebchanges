@@ -434,6 +434,11 @@ public partial class DespatchContext
                 .HasPrincipalKey(cc => cc.UcipId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            entity.HasOne(d => d.Invoice)
+                .WithMany()
+                .HasForeignKey(d => d.UcjbInvoiceNo)
+                .OnDelete(DeleteBehavior.Restrict);
+
             entity.HasOne(d => d.AcceptedJobType)
                 .WithMany()
                 .HasForeignKey(d => d.AcceptedJobTypeId)

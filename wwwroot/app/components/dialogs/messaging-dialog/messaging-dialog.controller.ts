@@ -541,8 +541,19 @@ class MessagingDialogController extends BaseController {
     
     highlightSearchTerm(text: string, searchTerm: string): string {
         if (!searchTerm || !text) return text;
-        const regex = new RegExp(`(${searchTerm})`, 'gi');
-        return text.replace(regex, '<span class="highlight">$1</span>');
+        // Escape HTML entities in the text first to prevent XSS
+        const escapeHtml = (str: string) => str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        // Escape special regex characters to prevent regex injection
+        const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const escapedText = escapeHtml(text);
+        const escapedSearchTerm = escapeRegex(searchTerm);
+        const regex = new RegExp(`(${escapedSearchTerm})`, 'gi');
+        return escapedText.replace(regex, '<span class="highlight">$1</span>');
     }
 
     getInitials(name: string): string {

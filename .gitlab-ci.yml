@@ -2,3 +2,30 @@ include:
   - project: 'urgent-couriers/ci-templates'
     file: 'ci-template.yml'
     ref: 'main'
+
+# Test jobs - run on staging and master branches (before deploy)
+test:backend:
+  stage: .pre
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  allow_failure: false
+  script:
+    - dotnet restore
+    - dotnet test DespatchWeb.Tests --verbosity normal --no-restore
+  rules:
+    - if: $CI_COMMIT_BRANCH == "staging"
+    - if: $CI_COMMIT_BRANCH == "master"
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "staging"
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
+
+test:frontend:
+  stage: .pre
+  image: node:20
+  allow_failure: false
+  script:
+    - npm ci
+    - npm test
+  rules:
+    - if: $CI_COMMIT_BRANCH == "staging"
+    - if: $CI_COMMIT_BRANCH == "master"
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "staging"
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"

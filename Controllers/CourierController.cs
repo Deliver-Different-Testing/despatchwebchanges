@@ -36,14 +36,7 @@ public class CourierController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
-
-    //[HttpGet("debug-sql")]
-    //public  IActionResult GetDebugSql([FromQuery] List<int> despatchViewIds)
-    //{
-    //    var sql =  courierRepository.GetClearListsDebugSql(despatchViewIds);
-    //    return Content(sql, "text/plain");
-    //}
-
+    
     public async Task<IActionResult> ClearListEnvelope(int clearListId)
     {
         try

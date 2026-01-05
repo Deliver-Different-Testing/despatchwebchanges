@@ -48,6 +48,7 @@ import dayjs from "dayjs";
 import 'dayjs/locale/en';
 import 'dayjs/locale/en-nz';
 import NoDataComponent from "./components/common/no-data/no-data.component";
+import ErrorPageComponent from "./components/common/error-page/error-page.component";
 import TablePaginationComponent from "./components/common/table-pagination/table-pagination.component";
 import DataTableComponent from "./components/common/data-table/data-table.component";
 import TruckCourierStatusDialogController
@@ -128,6 +129,20 @@ app.run(["APP_CONFIG", (appConfig: IAppConfig) => {
     }
 }]);
 
+// Security Configuration
+app.config(["$httpProvider", ($httpProvider: angular.IHttpProvider) => {
+    // Add header to identify AJAX requests (helps backend distinguish from form submissions)
+    if ($httpProvider.defaults.headers) {
+        $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+    }
+}]);
+
+app.config(["$sceProvider", ($sceProvider: angular.ISCEProvider) => {
+    // Strict Contextual Escaping is enabled by default - this explicitly documents it
+    // SCE provides automatic XSS protection by requiring trusted values for dangerous contexts
+    $sceProvider.enabled(true);
+}]);
+
 // Configs
 app.config(["$qProvider", ($qProvider: angular.IQProvider) => {
     $qProvider.errorOnUnhandledRejections(false);
@@ -200,6 +215,7 @@ app.component("jobDetailWidget", JobDetailComponent);
 app.component("materialSidenav", MaterialSidenavComponent);
 app.component("podPhotoViewer", PodPhotoViewerComponent);
 app.component("noData", NoDataComponent);
+app.component("errorPage", ErrorPageComponent);
 app.component("tablePagination", TablePaginationComponent);
 app.component("dataTable", DataTableComponent);
 app.component("stickyNote", StickyNoteComponent);

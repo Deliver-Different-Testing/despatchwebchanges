@@ -23,6 +23,7 @@ public partial class TucJobArchive
     public virtual TucClientContact LoggedInContact { get; set; }
 
     public virtual TucInvoiceProcess InvoiceProcess { get; set; }
+    public virtual TucInvoiceNo Invoice { get; set; }
 
     // Additional navigation properties matching TucJob
     public virtual TucJobType AcceptedJobType { get; set; }

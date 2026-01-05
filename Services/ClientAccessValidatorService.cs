@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.Interfaces;
@@ -21,7 +22,19 @@ public class ClientAccessValidatorService(IClientRepository clientRepo) : IClien
         if (string.IsNullOrEmpty(clientIds)) return;
 
         var clientContacts = await clientRepo.ClientContactsAsync(contactId);
-        var requestedClientIds = clientIds.Split(',').Select(int.Parse).ToHashSet();
+
+        // Safely parse client IDs with validation to prevent exceptions from malformed input
+        var requestedClientIds = new HashSet<int>();
+        foreach (var idString in clientIds.Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (int.TryParse(idString.Trim(), out var id))
+            {
+                requestedClientIds.Add(id);
+            }
+            // Silently ignore non-numeric values to prevent DoS through malformed input
+        }
+
+        if (requestedClientIds.Count == 0) return;
 
         var hasAccess = clientContacts?
             .Select(c => c.Id)
