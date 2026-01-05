@@ -17,6 +17,14 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
+  <!-- Exclude test project from compilation -->
+  <ItemGroup>
+    <Compile Remove="DespatchWeb.Tests\**" />
+    <Content Remove="DespatchWeb.Tests\**" />
+    <None Remove="DespatchWeb.Tests\**" />
+    <EmbeddedResource Remove="DespatchWeb.Tests\**" />
+  </ItemGroup>
+
 	<PropertyGroup>
 		<!-- Makes the TypeScript compilation task a no-op -->
 		<TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>

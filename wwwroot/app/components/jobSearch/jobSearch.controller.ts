@@ -262,7 +262,7 @@ class JobSearchController extends BaseController {
                 ui.item.addClass('dragging');
 
                 const dragInfo = angular.element('#draggingItems');
-                dragInfo.html(`Moving: ${ui.item.find('.md-headline-title').text().trim()}`);
+                dragInfo.text(`Moving: ${ui.item.find('.md-headline-title').text().trim()}`);
                 dragInfo.css({
                     display: 'block',
                     top: e.pageY + 20 + 'px',

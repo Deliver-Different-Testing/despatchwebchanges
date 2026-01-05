@@ -9,7 +9,7 @@ class RouterConfig {
     }
 
     private configureRoutes(): void {
-        this.$urlRouterProvider.otherwise("/");
+        this.$urlRouterProvider.otherwise("/not-found");
 
         // Configure routes
         this.configureHomeState()
@@ -21,7 +21,8 @@ class RouterConfig {
             // .configureMegaMapState() // Hidden temporarily
             .configureTaskDashboardState()
             .configureDriverManagementState()
-            .configureCourierMapState();
+            .configureCourierMapState()
+            .configureErrorStates();
     }
 
     private configureHomeState(): this {
@@ -306,6 +307,34 @@ class RouterConfig {
             },
             component: "courierMapComponent",
         });
+        return this;
+    }
+
+    private configureErrorStates(): this {
+        // 404 Not Found
+        this.$stateProvider.state("notFound", {
+            url: "/not-found",
+            template: '<error-page error-type="notFound"></error-page>'
+        });
+
+        // General Error
+        this.$stateProvider.state("error", {
+            url: "/error",
+            template: '<error-page error-type="error"></error-page>'
+        });
+
+        // Access Denied
+        this.$stateProvider.state("forbidden", {
+            url: "/forbidden",
+            template: '<error-page error-type="forbidden"></error-page>'
+        });
+
+        // Server Error
+        this.$stateProvider.state("serverError", {
+            url: "/server-error",
+            template: '<error-page error-type="serverError"></error-page>'
+        });
+
         return this;
     }
 }

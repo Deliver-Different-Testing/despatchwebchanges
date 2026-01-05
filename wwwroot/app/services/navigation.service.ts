@@ -54,6 +54,9 @@ class NavigationService implements angular.IServiceProvider {
         console.log(`${urlType} opened successfully:`, url);
     }
 
+    // Allowed window targets to prevent window opener attacks
+    private static readonly ALLOWED_TARGETS = ['_blank', '_self', '_parent', '_top'] as const;
+
     openJobDetail(jobId: string | number, options: IOpenJobOptions = {}): boolean {
         const {
             stateName = "home",
@@ -65,9 +68,12 @@ class NavigationService implements angular.IServiceProvider {
             return false;
         }
 
+        // Validate target against whitelist to prevent window opener attacks
+        const safeTarget = NavigationService.ALLOWED_TARGETS.includes(target as any) ? target : '_blank';
+
         try {
             const url = this.$state.href(stateName, {jobId});
-            this.$window.open(url, target);
+            this.$window.open(url, safeTarget);
             return true;
         } catch (error: any) {
             this.toastrService.showErrorToast(`Error opening job details: ${error.message}`);

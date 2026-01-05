@@ -104,29 +104,30 @@ builder.Services.AddSingleton<IAmazonS3>(serviceProvider =>
     });
 });
 
-
-
 builder.Services.Configure<CookiePolicyOptions>(options =>
 {
     // This lambda determines whether user consent for non-essential cookies is needed for a given request.
     options.CheckConsentNeeded = _ => true;
-    options.MinimumSameSitePolicy = SameSiteMode.None;
+    options.MinimumSameSitePolicy = SameSiteMode.Lax; // Changed from None to prevent CSRF
+    options.Secure = CookieSecurePolicy.Always; // Ensure cookies only sent over HTTPS
 });
 
+// Set reasonable file upload limits (100MB max)
+const long maxFileSize = 100 * 1024 * 1024; // 100MB
 builder.Services.Configure<FormOptions>(x =>
 {
-    x.ValueLengthLimit = int.MaxValue;
-    x.MultipartBodyLengthLimit = int.MaxValue;
-    x.MultipartHeadersLengthLimit = int.MaxValue;
+    x.ValueLengthLimit = (int)maxFileSize;
+    x.MultipartBodyLengthLimit = maxFileSize;
+    x.MultipartHeadersLengthLimit = 32768; // 32KB for headers
 });
 builder.Services.Configure<IISServerOptions>(options =>
 {
-    if (options != null) options.MaxRequestBodySize = int.MaxValue;
+    if (options != null) options.MaxRequestBodySize = maxFileSize;
 });
 
 builder.Services.Configure<KestrelServerOptions>(options =>
 {
-    if (options != null) options.Limits.MaxRequestBodySize = int.MaxValue;
+    if (options != null) options.Limits.MaxRequestBodySize = maxFileSize;
 });
 
 builder.Services.AddHttpClient();
@@ -234,7 +235,6 @@ app.MapHealthChecks("/healthz", new HealthCheckOptions
 // Configure the HTTP request pipeline.
 var provider = new FileExtensionContentTypeProvider {
     Mappings = {
-        [".tpl"] = "text/plain",
         [".map"] = "application/json" 
     }
 };
@@ -250,6 +250,66 @@ app.UseStaticFiles(new StaticFileOptions
         Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "dist")),
     RequestPath = "/dist",
     ContentTypeProvider = provider  // Make sure to use the same provider here
+});
+
+// CSRF protection for API requests - verify X-Requested-With header
+// Combined with SameSite cookies, this prevents CSRF attacks
+app.Use(async (context, next) =>
+{
+    var method = context.Request.Method;
+    var isStateChangingRequest = method is "POST" or "PUT" or "PATCH" or "DELETE";
+
+    if (isStateChangingRequest && !context.Request.Path.StartsWithSegments("/healthz"))
+    {
+        var hasXhrHeader = context.Request.Headers.XRequestedWith == "XMLHttpRequest";
+        if (!hasXhrHeader)
+        {
+            context.Response.StatusCode = 400;
+            await context.Response.WriteAsync("Invalid request - missing required header");
+            return;
+        }
+    }
+
+    await next();
+});
+
+// Security headers middleware
+app.Use(async (context, next) =>
+{
+    var headers = context.Response.Headers;
+
+    // Prevent MIME type sniffing
+    headers.XContentTypeOptions = "nosniff";
+
+    // Prevent clickjacking
+    headers.XFrameOptions = "DENY";
+
+    // XSS filter (legacy browsers)
+    headers.XXSSProtection = "1; mode=block";
+
+    // Control referrer information
+    headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+
+    // Restrict browser features
+    headers["Permissions-Policy"] = "geolocation=(self), microphone=()";
+
+    // HSTS - Force HTTPS for 1 year, include subdomains
+    headers.StrictTransportSecurity = "max-age=31536000; includeSubDomains";
+
+    // Content Security Policy - restrict resource loading
+    // Note: 'unsafe-inline' and 'unsafe-eval' required for AngularJS
+    headers.ContentSecurityPolicy =
+        "default-src 'self'; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com https://maps.google.com https://js.api.here.com https://ajax.googleapis.com https://cdnjs.cloudflare.com; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://ajax.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; " +
+        "img-src 'self' data: blob: https: http:; " +
+        "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; " +
+        "connect-src 'self' https://*.here.com https://*.googleapis.com https://*.hereapi.com https://cdn.jsdelivr.net wss: ws:; " +
+        "frame-ancestors 'none'; " +
+        "base-uri 'self'; " +
+        "form-action 'self';";
+
+    await next();
 });
 
 app.UseCookiePolicy();
@@ -272,7 +332,9 @@ static AWSCredentials LoadSsoCredentials(string profile)
     var chain = new CredentialProfileStoreChain();
     if (chain.TryGetAWSCredentials(profile, out var credentials)) return credentials;
     // If the SSO credentials are not found, use FallbackCredentialsFactory to get credentials
+#pragma warning disable CS0618 // Type or member is obsolete
     credentials = FallbackCredentialsFactory.GetCredentials();
+#pragma warning restore CS0618 // Type or member is obsolete
     return credentials ?? throw new Exception($"Failed to find the {profile} profile or any fallback credentials");
 }
 

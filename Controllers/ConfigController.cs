@@ -1,11 +1,13 @@
 using System;
 using DespatchWeb.Models.Response;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
 
 namespace DespatchWeb.Controllers;
 
+[Authorize]
 public class ConfigController(IWebHostEnvironment environment) : Controller
 {
     public IActionResult GetHereMapsKey()

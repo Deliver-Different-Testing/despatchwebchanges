@@ -1047,6 +1047,14 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async downloadFile(s3Key: string, fileName: string): Promise<void> {
+        // Basic client-side validation (defense in depth - backend must also validate)
+        if (!s3Key || s3Key.includes('..') || s3Key.includes('\0')) {
+            throw new Error('Invalid file key');
+        }
+        if (!fileName || fileName.includes('..') || fileName.includes('\0') || fileName.includes('/') || fileName.includes('\\')) {
+            throw new Error('Invalid file name');
+        }
+
         try {
             const endpoint = "/job/DownloadFile";
 

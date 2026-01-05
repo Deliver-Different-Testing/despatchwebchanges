@@ -1,0 +1,165 @@
+@import "../../../../css/variables.less";
+
+.error-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background-color: @main-background-color;
+    padding: 24px;
+
+    &__card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        background-color: white;
+        border-radius: @dialog-border-radius;
+        padding: 48px 40px;
+        max-width: 420px;
+        width: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    &__code {
+        position: absolute;
+        top: -20px;
+        right: -10px;
+        font-size: 120px;
+        font-weight: @weight-bold;
+        opacity: 0.05;
+        line-height: 1;
+        pointer-events: none;
+        user-select: none;
+    }
+
+    &__icon-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        background-color: @surface-container-low;
+        margin-bottom: 24px;
+    }
+
+    &__icon {
+        font-size: 48px !important;
+        height: 48px;
+        width: 48px;
+        color: @text-muted;
+    }
+
+    &__content {
+        margin-bottom: 32px;
+    }
+
+    &__title {
+        font-size: @font-xl;
+        font-weight: @weight-semibold;
+        color: @text-dark;
+        margin: 0 0 12px;
+    }
+
+    &__message {
+        font-size: @font-base;
+        font-weight: @weight-normal;
+        color: @text-muted;
+        margin: 0;
+        line-height: @line-relaxed;
+        max-width: 320px;
+    }
+
+    &__actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+
+        .md-button {
+            margin: 0;
+            min-width: 120px;
+            border-radius: @radius-md;
+            text-transform: none;
+            font-weight: @weight-medium;
+
+            md-icon {
+                margin-right: 8px;
+                font-size: 18px;
+                height: 18px;
+                width: 18px;
+            }
+        }
+    }
+
+    // US Theme (blue primary)
+    &.us-theme {
+        .error-page__icon-container {
+            background-color: fade(@theme-us-primary, 10%);
+        }
+
+        .error-page__icon {
+            color: @theme-us-primary;
+        }
+
+        .error-page__code {
+            color: @theme-us-primary;
+        }
+    }
+
+    // NZ Theme (yellow primary)
+    &.nz-theme {
+        .error-page__icon-container {
+            background-color: fade(@nz-primary, 15%);
+        }
+
+        .error-page__icon {
+            color: @nz-primary-dark;
+        }
+
+        .error-page__code {
+            color: @nz-primary;
+        }
+    }
+}
+
+// Responsive adjustments
+@media (max-width: 480px) {
+    .error-page {
+        padding: 16px;
+
+        &__card {
+            padding: 32px 24px;
+        }
+
+        &__code {
+            font-size: 80px;
+        }
+
+        &__icon-container {
+            width: 72px;
+            height: 72px;
+        }
+
+        &__icon {
+            font-size: 40px !important;
+            height: 40px;
+            width: 40px;
+        }
+
+        &__title {
+            font-size: @font-lg;
+        }
+
+        &__actions {
+            flex-direction: column;
+            width: 100%;
+
+            .md-button {
+                width: 100%;
+            }
+        }
+    }
+}

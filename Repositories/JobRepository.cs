@@ -700,14 +700,6 @@ public partial class JobRepository(
                 match.CourierFuel = Math.Round(d.CourierFuel.Value, 4, MidpointRounding.AwayFromZero);
                 match.CourierBonus = Math.Round(d.CourierBonus.Value, 4, MidpointRounding.AwayFromZero);
 
-                // Handle Void field - when Void is true, set UcjbVoid = true and UcjbStatus = 1000
-                if (d.Void == true)
-                {
-                    match.UcjbVoid = true;
-                    match.UcjbStatus = 1000;
-                    Log.Information("Job {DId} marked as voided - setting UcjbVoid=true and UcjbStatus=1000", d.Id);
-                }
-
                 processedJobIds.Add(d.Id);
 
                 // Save changes for this specific job immediately
@@ -954,7 +946,8 @@ public partial class JobRepository(
 
     /// <summary>
     /// Retrieves job data for CSV/Excel download with full details including addresses, pricing, and courier info.
-    /// Uses optimized single query with scalar subqueries for pricing breakdowns.
+    /// Uses the same query logic as PodSearchAsync to ensure consistent results between search and download.
+    /// Queries both live (TucJobs) and archived (TucJobArchives) tables in parallel.
     /// </summary>
     /// <param name="courierIds">Optional filter by courier IDs.</param>
     /// <param name="speedIds">Optional filter by speed IDs.</param>
@@ -974,144 +967,124 @@ public partial class JobRepository(
         List<int> clientIds
     )
     {
-        var baseQuery = Context.TblJobs
-            .AsNoTracking()
-            .Where(j => j.Date >= fromDate && j.Date <= toDate);
+        // Use same date handling as PodSearchAsync - strip time component
+        var fromDateOnly = fromDate.Date;
+        var toDateOnly = toDate.Date;
 
-        // Apply optional filters conditionally
-        if (clientIds is { Count: > 0 })
-            baseQuery = baseQuery.Where(j => j.ClientId.HasValue && clientIds.Contains(j.ClientId.Value));
+        var jobSearch = $"%{job ?? string.Empty}%";
+        var wildSearch = $"%{wild ?? string.Empty}%";
 
-        if (courierIds is { Count: > 0 })
-            baseQuery = baseQuery.Where(j => j.CourierId.HasValue && courierIds.Contains(j.CourierId.Value));
+        var clientSet = clientIds is { Count: > 0 };
+        var courierSet = courierIds is { Count: > 0 };
+        var speedSet = speedIds is { Count: > 0 };
+        var jobSet = !string.IsNullOrEmpty(job);
+        var wildSet = !string.IsNullOrEmpty(wild);
 
-        if (speedIds is { Count: > 0 })
-            baseQuery = baseQuery.Where(j => j.Speed.HasValue && speedIds.Contains(j.Speed.Value));
+        // Use separate contexts for parallel queries (same pattern as PodSearchAsync)
+        await using var liveJobsContext = await _contextFactory.CreateDbContextAsync();
+        await using var archivedJobsContext = await _contextFactory.CreateDbContextAsync();
 
-        if (!string.IsNullOrEmpty(job))
-        {
-            var jobParam = $"%{job}%";
-            baseQuery = baseQuery.Where(j => EF.Functions.Like(j.Number!, jobParam));
-        }
-
-        // Apply wildcard search with separate LIKE conditions (more index-friendly than concatenation)
-        if (!string.IsNullOrEmpty(wild))
-        {
-            var wildParam = $"%{wild}%";
-            baseQuery = baseQuery.Where(j =>
-                // Job fields
-                EF.Functions.Like(j.FromAddress!, wildParam)
-                || EF.Functions.Like(j.PickupFromContact!, wildParam)
-                || EF.Functions.Like(j.ToAddress!, wildParam)
-                || EF.Functions.Like(j.DeliverToContact!, wildParam)
-                || EF.Functions.Like(j.ClientReferenceA!, wildParam)
-                || EF.Functions.Like(j.ClientReferenceB!, wildParam)
-                || EF.Functions.Like(j.OurRef!, wildParam)
-                || EF.Functions.Like(j.Number!, wildParam)
-                || EF.Functions.Like(j.Barcode!, wildParam)
-                // Suburb names via navigation
-                || (j.FromSuburb != null && EF.Functions.Like(j.FromSuburb.UcsuName!, wildParam))
-                || (j.ToSuburb != null && EF.Functions.Like(j.ToSuburb.UcsuName!, wildParam))
-                // Nationwide fields via subquery (TblJob is keyless, can't use navigation)
-                || Context.TucJobNationwides.Any(nw =>
-                    nw.UcnwJobId == j.JobId && (
-                        EF.Functions.Like(nw.UcnwFlightNo!, wildParam)
-                        || EF.Functions.Like(nw.AircraftName!, wildParam)
-                        || EF.Functions.Like(nw.CarrierFsCode!, wildParam)
-                        || EF.Functions.Like(nw.DepartureAirportName!, wildParam)
-                        || EF.Functions.Like(nw.ArrivalAirportName!, wildParam))));
-        }
-
-        // Get matching job IDs and their parent IDs in a single subquery
-        var matchingJobIds = baseQuery.Select(j => j.JobId);
-        var parentIdsOfMatches = baseQuery
-            .Where(j => j.ParentId.HasValue)
-            .Select(j => j.ParentId!.Value);
-
-        // Single query: fetch jobs that match OR are parents of matches
-        var query = Context.TblJobs
+        // Build live jobs query with SAME filters as PodSearchAsync
+        var liveJobsQuery = liveJobsContext.TucJobs
             .AsNoTracking()
             .AsSplitQuery()
-            .Where(j => matchingJobIds.Contains(j.JobId) || parentIdsOfMatches.Contains(j.JobId))
-            .OrderBy(j => j.Number)
-            .Select(j => new JobDownloadModel
-            {
-                Id = j.JobId,
-                ParentId = j.ParentId,
-                JobNumber = j.Number,
-                CustomerName = j.Client != null ? j.Client.UcclName : null,
-                BookDate = j.Date.HasValue ? j.Date.Value.CombineWithTime(j.Time) : default,
-                PickedUpDate = j.PickUpTime,
-                DeliveredDate = j.CompletedTime,
-                // Pricing: parent's breakdown sum ?? own breakdown sum ?? Amount field
-                // TblJob is keyless, so use Context subqueries instead of navigation properties
-                Amount = (j.ParentId.HasValue
-                        ? Context.PricingBreakdowns
-                            .Where(pb => pb.JobId == j.ParentId)
-                            .Sum(pb => (decimal?)pb.ChargeAmount)
-                        : null)
-                    ?? Context.PricingBreakdowns
-                        .Where(pb => pb.JobId == j.JobId)
-                        .Sum(pb => (decimal?)pb.ChargeAmount)
-                    ?? j.Amount,
-                Fuel = j.FuelSurchargeAmount,
-                Ppd = j.Ppdexclusiveamount,
-                // Nationwide via subquery (TblJob is keyless)
-                AgentAirlineName = Context.TucJobNationwides
-                        .Where(nw => nw.UcnwJobId == j.JobId)
-                        .Select(nw => nw.UcnwAirlineName)
-                        .FirstOrDefault()
-                    ?? (j.Agent != null ? j.Agent.UcagName : null),
-                AWB = Context.TucJobNationwides
-                    .Where(nw => nw.UcnwJobId == j.JobId)
-                    .Select(nw => nw.UcnwFlightNo)
-                    .FirstOrDefault(),
-                CourierPayment = j.CourierPayment,
-                CourierFuel = j.CourierFuel,
-                CourierBonus = j.CourierBonus,
-                Quantity = j.Quantity,
-                Weight = j.Weight,
-                Size = j.Size,
-                StatusName = j.StatusNavigation != null ? j.StatusNavigation.UcjsName : null,
-                PickupAddressLine1 = j.PickupAddressLine1,
-                PickupAddressLine2 = j.PickupAddressLine2,
-                PickupAddressLine3 = j.PickupAddressLine3,
-                PickupAddressLine4 = j.PickupAddressLine4,
-                PickupAddressLine5 = j.PickupAddressLine5,
-                PickupAddressLine6 = j.PickupAddressLine6,
-                PickupAddressLine7 = j.PickupAddressLine7,
-                PickupAddressLine8 = j.PickupAddressLine8,
-                DeliveryAddressLine1 = j.DeliveryAddressLine1,
-                DeliveryAddressLine2 = j.DeliveryAddressLine2,
-                DeliveryAddressLine3 = j.DeliveryAddressLine3,
-                DeliveryAddressLine4 = j.DeliveryAddressLine4,
-                DeliveryAddressLine5 = j.DeliveryAddressLine5,
-                DeliveryAddressLine6 = j.DeliveryAddressLine6,
-                DeliveryAddressLine7 = j.DeliveryAddressLine7,
-                DeliveryAddressLine8 = j.DeliveryAddressLine8,
-                ClientReferenceA = j.ClientReferenceA,
-                ClientReferenceB = j.ClientReferenceB,
-                ClientReferenceC = j.ClientReferenceC,
-                InvoiceNumber = j.InvoiceNo,
-                InvoiceDate = j.Invoice != null ? j.Invoice.Created : null,
-                IsArchived = j.Archived ?? false,
-                LoggedInContact = j.LoggedInContact != null
-                    ? j.LoggedInContact.UcctFirstname + Space + j.LoggedInContact.UcctSurname
-                    : null,
-                RawBaseAmount = j.RawBaseAmount,
-                CourierCode = j.Courier != null ? j.Courier.Code : null,
-                Void = j.Void
-            });
+            .Where(j =>
+                j.UcjbDate.Date >= fromDateOnly
+                && j.UcjbDate.Date <= toDateOnly
+                && (!clientSet || (j.UcjbClientId.HasValue && clientIds.Contains(j.UcjbClientId.Value)))
+                && (!courierSet || (j.UcjbCourierId.HasValue && courierIds.Contains(j.UcjbCourierId.Value)))
+                && (!speedSet || (j.UcjbSpeed.HasValue && speedIds.Contains(j.UcjbSpeed.Value)))
+                && (!jobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
+            );
 
-        var result = await query.ToListAsync();
+        // Build archived jobs query with SAME filters as PodSearchAsync
+        var archivedJobsQuery = archivedJobsContext.TucJobArchives
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Where(j =>
+                j.UcjbDate.HasValue
+                && j.UcjbDate.Value.Date >= fromDateOnly
+                && j.UcjbDate.Value.Date <= toDateOnly
+                && (!clientSet || (j.UcjbClientId.HasValue && clientIds.Contains(j.UcjbClientId.Value)))
+                && (!courierSet || (j.UcjbCourierId.HasValue && courierIds.Contains(j.UcjbCourierId.Value)))
+                && (!speedSet || (j.UcjbSpeed.HasValue && speedIds.Contains(j.UcjbSpeed.Value)))
+                && (!jobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
+            );
+
+        // Apply SAME wildcard search as PodSearchAsync
+        if (wildSet)
+        {
+            liveJobsQuery = liveJobsQuery.Where(j =>
+                j.TucJobNationwides.Any(nw => EF.Functions.Like(
+                    (nw.UcnwFlightNo ?? string.Empty) + " " +
+                    (nw.AircraftName ?? string.Empty) + " " +
+                    (nw.CarrierFsCode ?? string.Empty) + " " +
+                    (nw.DepartureAirportName ?? string.Empty) + " " +
+                    (nw.ArrivalAirportName ?? string.Empty),
+                    wildSearch))
+                ||
+                EF.Functions.Like(
+                    (j.UcjbFromAddr ?? string.Empty) + " " +
+                    (j.PickupFromContact ?? string.Empty) + " " +
+                    (j.UcjbFromNavigation.UcsuName ?? string.Empty) + " " +
+                    (j.UcjbToAddr ?? string.Empty) + " " +
+                    (j.DeliverToContact ?? string.Empty) + " " +
+                    (j.UcjbToNavigation.UcsuName ?? string.Empty) + " " +
+                    (j.UcjbClientRefa ?? string.Empty) + " " +
+                    (j.UcjbClientRefb ?? string.Empty) + " " +
+                    (j.UcjbOurRef ?? string.Empty) + " " +
+                    j.UcjbNumber + " " +
+                    (j.Barcode ?? string.Empty) + " " +
+                    (j.CustomJobName ?? string.Empty),
+                    wildSearch
+                )
+            );
+
+            archivedJobsQuery = archivedJobsQuery.Where(j =>
+                EF.Functions.Like(
+                    (j.UcjbFromAddr ?? string.Empty) + " " +
+                    (j.PickUpFromContact ?? string.Empty) + " " +
+                    (j.UcjbToAddr ?? string.Empty) + " " +
+                    (j.DeliverToContact ?? string.Empty) + " " +
+                    (j.UcjbClientRefa ?? string.Empty) + " " +
+                    (j.UcjbClientRefb ?? string.Empty) + " " +
+                    (j.UcjbOurRef ?? string.Empty) + " " +
+                    j.UcjbNumber + " " +
+                    (j.Barcode ?? string.Empty) + " " +
+                    (j.CustomJobName ?? string.Empty),
+                    wildSearch
+                )
+            );
+        }
+
+        // Execute both queries in parallel with direct mapping to JobDownloadModel
+        var liveJobsTask = liveJobsQuery
+            .OrderBy(j => j.UcjbNumber)
+            .Select(JobMappings.LiveJobDownloadMapping)
+            .TagWith("PodSearchDownload - Live Jobs")
+            .ToListAsync();
+
+        var archivedJobsTask = archivedJobsQuery
+            .OrderBy(j => j.UcjbNumber)
+            .Select(JobMappings.ArchivedJobDownloadMapping)
+            .TagWith("PodSearchDownload - Archived Jobs")
+            .ToListAsync();
+
+        await Task.WhenAll(liveJobsTask, archivedJobsTask);
+
+        // Combine and sort by job number
+        var allJobs = (await liveJobsTask)
+            .Concat(await archivedJobsTask)
+            .OrderBy(j => j.JobNumber)
+            .ToList();
 
         // Filter out parent jobs that have children in results (keep children only)
-        var parentIdsWithChildren = result
+        var parentIdsWithChildren = allJobs
             .Where(j => j.ParentId.HasValue && j.ParentId != j.Id)
             .Select(j => j.ParentId!.Value)
             .ToHashSet();
 
-        return result
+        return allJobs
             .Where(j => j.Id != (j.ParentId ?? j.Id) || !parentIdsWithChildren.Contains(j.Id))
             .ToList();
     }
@@ -2700,8 +2673,13 @@ public partial class JobRepository(
         var staffId = _infoService.GetStaffId();
         var shouldMarkAsRead = data.ShouldMarkAsRead;
 
-        // Build comma-separated list of job IDs for SQL IN clause
-        var jobIdList = string.Join(",", jobIds);
+        // Build parameterized IN clause to prevent SQL injection
+        // Generate parameter placeholders: @p3, @p4, @p5, etc. (p0-p2 are used for other params)
+        var parameterPlaceholders = string.Join(",", jobIds.Select((_, i) => $"@p{i + 3}"));
+
+        // Build parameter array: shouldMarkAsRead, currentTenantTime, staffId, then all job IDs
+        var parameters = new List<object> { shouldMarkAsRead, currentTenantTime, staffId };
+        parameters.AddRange(jobIds.Cast<object>());
 
         // Use a single atomic SQL statement to handle both update and insert
         // This prevents the race condition where multiple pods try to insert the same JobId
@@ -2709,16 +2687,16 @@ public partial class JobRepository(
             -- Update existing tracker records
             UPDATE tucJobReadTracker
             SET HasBeenRead = @p0, ReadTimestamp = @p1, ReadByStaffId = @p2
-            WHERE JobId IN ({jobIdList});
+            WHERE JobId IN ({parameterPlaceholders});
 
             -- Insert new tracker records only for jobs that exist in tucJob and don't have a tracker yet
             -- Uses NOT EXISTS to prevent PK violation race condition
             INSERT INTO tucJobReadTracker (JobId, HasBeenRead, ReadByStaffId, ReadTimestamp)
             SELECT j.UcjbId, @p0, @p2, @p1
             FROM tucJob j
-            WHERE j.UcjbId IN ({jobIdList})
+            WHERE j.UcjbId IN ({parameterPlaceholders})
               AND NOT EXISTS (SELECT 1 FROM tucJobReadTracker t WHERE t.JobId = j.UcjbId);",
-            shouldMarkAsRead, currentTenantTime, staffId);
+            parameters.ToArray());
     }
 
     /// <summary>
