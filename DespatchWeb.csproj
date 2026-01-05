@@ -1,5 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
-  <Target Name="NpmBuild" BeforeTargets="Build">
+  <Target Name="NpmBuild" BeforeTargets="Build" Condition="'$(CI)' != 'true'">
     <Exec Command="npm run build" WorkingDirectory="$(ProjectDir)" />
   </Target>
   <PropertyGroup Label="Globals">
