@@ -46,7 +46,7 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
             }
 
             const isValidPage = appPage === AppPage.Dispatch || appPage === AppPage.Domestic || appPage === AppPage.JobSearch;
-            const canShowDashboards = !this.appConfig.US_Customer && isValidPage && !isDefaultLayout(currentLayoutName);
+            const canShowDashboards = isValidPage && !isDefaultLayout(currentLayoutName);
 
             console.log('DashboardSettingsDialog: Opening with layout', currentLayoutName, 'isDefault:', isDefaultLayout(currentLayoutName), 'canShowDashboards:', canShowDashboards);
 
