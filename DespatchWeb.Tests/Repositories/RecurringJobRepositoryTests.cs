@@ -1,6 +1,7 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Repositories;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
@@ -328,6 +329,230 @@ public class RecurringJobRepositoryTests : IDisposable
 
     #endregion
 
+    #region GetRecurringJobsListAsync - Timezone Conversion Tests
+
+    [Fact]
+    public async Task GetRecurringJobsListAsync_WithValidDates_AppliesTimezoneConversion()
+    {
+        // Arrange
+        var validDate = new DateTime(2024, 6, 15, 10, 0, 0);
+        var validTime = new DateTime(1900, 1, 1, 14, 30, 0);
+        const string timezone = "New Zealand Standard Time";
+
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        _context.TucJobBookings.Add(CreateJobBookingWithDates(
+            id: 100,
+            date: validDate,
+            time: validTime,
+            nextDue: validDate.AddDays(7),
+            active: true,
+            oneOff: false
+        ));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+        var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };
+
+        // Act
+        var result = await repository.GetRecurringJobsListAsync(request);
+
+        // Assert
+        result.Items.Should().HaveCount(1);
+        var item = result.Items.First();
+
+        // The booked date should have timezone offset applied (NZ is +12 or +13)
+        item.Booked.Offset.Should().NotBe(TimeSpan.Zero);
+    }
+
+    [Fact]
+    public async Task GetRecurringJobsListAsync_WithNullDates_DoesNotApplyTimezoneConversion()
+    {
+        // Arrange - Job with null date/time will use SqlMinDateTime (1753-01-01) as fallback
+        const string timezone = "New Zealand Standard Time";
+
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        _context.TucJobBookings.Add(CreateJobBookingWithDates(
+            id: 100,
+            date: null,
+            time: null,
+            nextDue: null,
+            active: true,
+            oneOff: false
+        ));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+        var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };
+
+        // Act - Should NOT throw exception for null dates
+        var result = await repository.GetRecurringJobsListAsync(request);
+
+        // Assert
+        result.Items.Should().HaveCount(1);
+        var item = result.Items.First();
+
+        // Booked should be the fallback SqlMinDateTime (1753-01-01), not converted
+        item.Booked.Year.Should().Be(1753);
+    }
+
+    [Fact]
+    public async Task GetRecurringJobsListAsync_WithMinValueDates_DoesNotThrowException()
+    {
+        // Arrange - This tests the fix for the DateTimeOffset conversion error
+        // DateTime.MinValue (0001-01-01) would cause "UTC time must be between year 0 and 10,000"
+        // when converted to DateTimeOffset with positive timezone offset (like NZ +12/+13)
+        const string timezone = "New Zealand Standard Time";
+
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        // Add job with dates that would result in SqlMinDateTime fallback
+        _context.TucJobBookings.Add(CreateJobBookingWithDates(
+            id: 100,
+            date: null,
+            time: null,
+            nextDue: null,
+            active: true,
+            oneOff: false
+        ));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+        var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };
+
+        // Act & Assert - Should not throw ArgumentOutOfRangeException
+        var act = async () => await repository.GetRecurringJobsListAsync(request);
+        await act.Should().NotThrowAsync<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public async Task GetRecurringJobsListAsync_WithValidNextDueTime_AppliesTimezoneConversion()
+    {
+        // Arrange
+        var validDate = new DateTime(2024, 6, 15, 10, 0, 0);
+        var validTime = new DateTime(1900, 1, 1, 14, 30, 0);
+        var nextDue = new DateTime(2024, 6, 22, 9, 0, 0);
+        const string timezone = "New Zealand Standard Time";
+
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        _context.TucJobBookings.Add(CreateJobBookingWithDates(
+            id: 100,
+            date: validDate,
+            time: validTime,
+            nextDue: nextDue,
+            active: true,
+            oneOff: false
+        ));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+        var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };
+
+        // Act
+        var result = await repository.GetRecurringJobsListAsync(request);
+
+        // Assert
+        result.Items.Should().HaveCount(1);
+        var item = result.Items.First();
+
+        // NextDueTime should have timezone offset applied
+        item.NextDueTime.Should().NotBeNull();
+        item.NextDueTime!.Value.Offset.Should().NotBe(TimeSpan.Zero);
+    }
+
+    [Fact]
+    public async Task GetRecurringJobsListAsync_WithNullNextDueTime_HandlesGracefully()
+    {
+        // Arrange
+        var validDate = new DateTime(2024, 6, 15, 10, 0, 0);
+        var validTime = new DateTime(1900, 1, 1, 14, 30, 0);
+        const string timezone = "New Zealand Standard Time";
+
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        _context.TucJobBookings.Add(CreateJobBookingWithDates(
+            id: 100,
+            date: validDate,
+            time: validTime,
+            nextDue: null, // Null NextDueTime
+            active: true,
+            oneOff: false
+        ));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+        var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };
+
+        // Act
+        var result = await repository.GetRecurringJobsListAsync(request);
+
+        // Assert
+        result.Items.Should().HaveCount(1);
+        var item = result.Items.First();
+        item.NextDueTime.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetRecurringJobsListAsync_EmptyResult_ReturnsEmptyList()
+    {
+        // Arrange
+        const string timezone = "New Zealand Standard Time";
+
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        // No jobs added
+        var repository = CreateRepository();
+        var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };
+
+        // Act
+        var result = await repository.GetRecurringJobsListAsync(request);
+
+        // Assert
+        result.Items.Should().BeEmpty();
+        result.Total.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task GetRecurringJobsListAsync_MixedValidAndNullDates_HandlesAllCorrectly()
+    {
+        // Arrange - Mix of jobs with valid dates and null dates
+        var validDate = new DateTime(2024, 6, 15, 10, 0, 0);
+        var validTime = new DateTime(1900, 1, 1, 14, 30, 0);
+        const string timezone = "New Zealand Standard Time";
+
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        _context.TucJobBookings.AddRange(
+            CreateJobBookingWithDates(100, validDate, validTime, validDate.AddDays(7), true, false),
+            CreateJobBookingWithDates(101, null, null, null, true, false),
+            CreateJobBookingWithDates(102, validDate, validTime, null, true, false)
+        );
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+        var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };
+
+        // Act - Should not throw for mixed dates
+        var act = async () => await repository.GetRecurringJobsListAsync(request);
+        await act.Should().NotThrowAsync();
+
+        var result = await repository.GetRecurringJobsListAsync(request);
+
+        // Assert
+        result.Items.Should().HaveCount(3);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private static TucClient CreateClient(int id, string code) => new()
@@ -364,6 +589,24 @@ public class RecurringJobRepositoryTests : IDisposable
         UcbkCbd = cbd,
         UcbkAttention = attention ?? false,
         UcbkJobNumber = $"JOB{id}"
+    };
+
+    private static TucJobBooking CreateJobBookingWithDates(
+        int id,
+        DateTime? date,
+        DateTime? time,
+        DateTime? nextDue,
+        bool active,
+        bool oneOff) => new()
+    {
+        UcbkId = id,
+        UcbkDate = date,
+        UcbkTime = time,
+        UcbkNextDue = nextDue,
+        UcbkActive = active,
+        UcbkOneOff = oneOff,
+        UcbkJobNumber = $"JOB{id}",
+        UcbkAttention = false
     };
 
     #endregion

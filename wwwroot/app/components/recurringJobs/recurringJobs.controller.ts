@@ -17,7 +17,6 @@ import timezone from "dayjs/plugin/timezone";
 import {getIanaTimezone} from "../../functions/formatDates";
 import {IPaginatedResponse} from "../../interfaces/paginated-response.interface";
 import {IDataTableColumn, IDataTableSort, IDataTableConfig} from "../common/data-table/data-table.interfaces";
-import DispatchCoreService from "../../services/dispatch-core.service";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -33,7 +32,6 @@ class RecurringJobsController extends BaseController {
         '$interval',
         '$scope',
         'APP_CONFIG',
-        'DispatchData',
     ];
 
     private readonly RecurringJobsLayoutKey: string = `layouts-${AppPage.Recurring}-${ContactID}`;
@@ -107,7 +105,6 @@ class RecurringJobsController extends BaseController {
         $interval: angular.IIntervalService,
         $scope: angular.IScope,
         appConfig: IAppConfig,
-        private dispatchCoreService: DispatchCoreService,
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
@@ -362,50 +359,12 @@ class RecurringJobsController extends BaseController {
     }
 
     async updateJobInList(): Promise<void> {
-        if (!this.currentJobId) return;
+        const selectedJobId = this.currentJobId;
+        await this.refreshData();
 
-        try {
-            const jobGroup = await this.dispatchCoreService.getRecurringJobDetail(this.currentJobId);
-            if (!jobGroup || !jobGroup.job) return;
-
-            const updatedJob = jobGroup.job;
-            const jobIndex = this.jobList.findIndex(j => j.id === this.currentJobId);
-
-            if (jobIndex !== -1) {
-                // Update the job in the list with the new data from detail
-                this.jobList[jobIndex].client = updatedJob.clientName || '';
-                this.jobList[jobIndex].clientId = updatedJob.clientId || null;
-                this.jobList[jobIndex].courier = updatedJob.courierData?.courierName || '';
-                this.jobList[jobIndex].speed = updatedJob.speedName || '';
-                this.jobList[jobIndex].customJobName = updatedJob.customJobName || '';
-
-                // Update addresses
-                if (updatedJob.pickupAddress) {
-                    this.jobList[jobIndex].pickupAddress = updatedJob.pickupAddress;
-                }
-                if (updatedJob.deliveryAddress) {
-                    this.jobList[jobIndex].deliveryAddress = updatedJob.deliveryAddress;
-                }
-
-                // Update date fields
-                if (updatedJob.createdDate) {
-                    this.jobList[jobIndex].booked = updatedJob.createdDate;
-                    this.jobList[jobIndex]._bookedStr = dayjs(updatedJob.createdDate)
-                        .tz(this.timeZone)
-                        .format("DD/MM/YYYY HH:mm");
-                }
-                if (updatedJob.nextDue) {
-                    this.jobList[jobIndex].nextDueTime = updatedJob.nextDue;
-                    this.jobList[jobIndex]._nextDueTimeStr = dayjs(updatedJob.nextDue)
-                        .tz(this.timeZone)
-                        .format("DD/MM/YYYY HH:mm");
-                }
-
-                console.log(`Updated job ${this.currentJobId} in list`);
-                this.applyScope();
-            }
-        } catch (error) {
-            console.error("Error updating job in list:", error);
+        // Restore selection if the job still exists in the list
+        if (selectedJobId && this.jobList.some(j => j.id === selectedJobId)) {
+            this.currentJobId = selectedJobId;
         }
     }
 
@@ -520,12 +479,12 @@ class RecurringJobsController extends BaseController {
         await this.refreshData();
     }
 
-    onSort(sort: IDataTableSort): void {
+    async onSort(sort: IDataTableSort): Promise<void> {
         this.tableSort = sort;
         this.jobQuery.order = sort.column;
         this.jobQuery.orderDirection = sort.direction;
         this.jobQuery.page = 1;
-        this.refreshData();
+        await this.refreshData();
     }
 
     getAddressPrimary(address: IAddressViewModel): string {
@@ -577,10 +536,10 @@ class RecurringJobsController extends BaseController {
         await this.refreshData();
     }
 
-    onPaginate(page: number, limit: number): void {
+    async onPaginate(page: number, limit: number): Promise<void> {
         this.jobQuery.page = page;
         this.jobQuery.limit = limit;
-        this.refreshData();
+        await this.refreshData();
     }
 
     exportToCSV(jobList: IPrebookListModel[] = this.jobList): void {

@@ -19,7 +19,7 @@ public class ConnectionStringManager(
     ILogger<ConnectionStringManager> logger)
     : IConnectionStringManager
 {
-    private static readonly SemaphoreSlim _semaphore = new(1, 1);
+    private static readonly SemaphoreSlim Semaphore = new(1, 1);
 
     // Cache settings - using sliding expiration so active users stay cached
     private static readonly TimeSpan CacheSlidingExpiry = TimeSpan.FromHours(8);
@@ -36,7 +36,7 @@ public class ConnectionStringManager(
         // Always set in memory cache first (fast, reliable)
         SetMemoryCache(tenantAppCacheKey, connectionString);
 
-        await _semaphore.WaitAsync();
+        await Semaphore.WaitAsync();
         try
         {
             var options = new DistributedCacheEntryOptions
@@ -54,7 +54,7 @@ public class ConnectionStringManager(
         }
         finally
         {
-            _semaphore.Release();
+            Semaphore.Release();
         }
     }
 
@@ -88,7 +88,7 @@ public class ConnectionStringManager(
 
         for (var attempt = 1; attempt <= MaxRetryAttempts; attempt++)
         {
-            await _semaphore.WaitAsync();
+            await Semaphore.WaitAsync();
             try
             {
                 var connectionString = await distributedCache.GetStringAsync(tenantAppCacheKey);
@@ -125,7 +125,7 @@ public class ConnectionStringManager(
             }
             finally
             {
-                _semaphore.Release();
+                Semaphore.Release();
             }
         }
 

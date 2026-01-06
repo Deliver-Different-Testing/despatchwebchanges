@@ -111,15 +111,17 @@ public class RecurringJobRepository(
             };
 
         var tenantTimeZone = _infoService.GetTenantTimeZone();
+        var minValidDate = new DateTimeOffset(1753, 1, 2, 0, 0, 0, TimeSpan.Zero);
+
         foreach (var item in items)
         {
-            // Only apply timezone if Booked has a meaningful value
-            if (item.Booked != default(DateTime) && item.Booked > DateTime.MinValue)
-                item.Booked = TimeZoneHelper.SetDateTimeWithTimeZone(item.Booked, tenantTimeZone);
+            // Only apply timezone if Booked has a meaningful value (after SQL min date)
+            if (item.Booked > minValidDate)
+                item.Booked = TimeZoneHelper.SetDateTimeWithTimeZone(item.Booked.DateTime, tenantTimeZone);
 
-            // NextDueTime already has null-check but also check for default/MinValue
-            if (item.NextDueTime.HasValue && item.NextDueTime.Value > DateTime.MinValue)
-                item.NextDueTime = TimeZoneHelper.SetDateTimeWithTimeZone(item.NextDueTime.Value, tenantTimeZone);
+            // NextDueTime: check for meaningful value before timezone conversion
+            if (item.NextDueTime.HasValue && item.NextDueTime.Value > minValidDate)
+                item.NextDueTime = TimeZoneHelper.SetDateTimeWithTimeZone(item.NextDueTime.Value.DateTime, tenantTimeZone);
         }
 
         return new PaginatedResponse<PrebookListViewModel>
