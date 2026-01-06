@@ -300,8 +300,8 @@ public class RateJobService(
                     if (!currentAmounts.TryGetValue(data.Id, out var jobInfo))
                         continue;
 
-                    var oldAmount = jobInfo.RawBaseAmount;
-                    var newAmount = data.RawBaseAmount ?? oldAmount;
+                    var oldAmount = jobInfo.Amount;
+                    var newAmount = data.Amount ?? oldAmount; //set these as ucjbAmounts for final comparison
 
                     try
                     {
@@ -310,7 +310,7 @@ public class RateJobService(
                             {
                                 JobId = data.Id,
                                 IsPrebook = jobInfo.IsPrebook,
-                                BaseAmount = data.Amount ?? 0
+                                BaseAmount = data.RawBaseAmount ?? 0 //Pass RBA here to get new amount
                             });
                     }
                     catch (Exception ex)
