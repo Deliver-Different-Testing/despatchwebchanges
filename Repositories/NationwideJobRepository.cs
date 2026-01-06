@@ -397,21 +397,6 @@ public class NationwideJobRepository(
             .ToList();
     }
 
-    public async Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId)
-    {
-        var airportCodes = await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .Select(j => new
-            {
-                ToAirport = j.ToAirport.AirportCode,
-                FromAirport = j.FromAirport.AirportCode
-            })
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
-
-        return (airportCodes?.ToAirport, airportCodes?.FromAirport);
-    }
-
     public async Task<List<AgentViewModel>> GetAgentsAsync(int jobId)
     {
         var job = await GetJobDetailsAsync(jobId);

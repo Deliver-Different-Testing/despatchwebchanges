@@ -2322,7 +2322,8 @@ class HomeController extends BaseController {
                     const parsedDateFilter = JSON.parse(savedDateFilter);
                     this.dateFilterData = {
                         startDate: dayjs(parsedDateFilter.startDate),
-                        endDate: dayjs(parsedDateFilter.endDate)
+                        endDate: dayjs(parsedDateFilter.endDate),
+                        useTime: parsedDateFilter.useTime ?? false
                     };
                 }
             } catch (error) {
