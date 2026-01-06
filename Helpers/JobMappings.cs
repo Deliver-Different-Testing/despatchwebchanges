@@ -879,6 +879,8 @@ public static class JobMappings
 
             // Job characteristics
             Weight = j.UcbkWeight,
+            Speed = j.UcbkSpeedNavigation != null ?  j.UcbkSpeedNavigation.UcjtName : null,
+            SpeedName = j.UcbkSpeedNavigation != null ? j.UcbkSpeedNavigation.UcjtName : null,
             CalculateDimsOncePerJob = j.DimensionsType == 1,
             ToAddress = j.UcbkToAddr,
             JobType = j.UcbkType,
@@ -1073,7 +1075,7 @@ public static class JobMappings
             Id = j.UcbkId,
             Booked = j.UcbkDate.HasValue && j.UcbkTime.HasValue
                 ? j.UcbkDate.Value.CombineWithTime(j.UcbkTime)
-                : DateTime.MinValue,
+                : SqlMinDateTime,
             NextDueTime = j.UcbkNextDue,
             Client = j.UcbkClientCode,
             JobNo = j.UcbkJobNumber,
