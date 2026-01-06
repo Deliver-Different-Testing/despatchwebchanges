@@ -145,7 +145,7 @@ public class RateJobServiceBulkPriceTests
         // Arrange
         var fileMock = CreateMockFile("test.xlsx", string.Empty);
         _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([new JobManualPriceModel { Id = 1, Amount = 150m }]);
+            .ReturnsAsync([new JobManualPriceModel { Id = 1, Amount = 150m, RawBaseAmount = 150m }]);
 
         _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
@@ -176,7 +176,7 @@ public class RateJobServiceBulkPriceTests
         // Arrange
         var fileMock = CreateMockFile("test.xlsx", "");
         _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([new JobManualPriceModel { Id = 1, Amount = 150m }]);
+            .ReturnsAsync([new JobManualPriceModel { Id = 1, RawBaseAmount = 150m }]);
 
         _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
