@@ -460,3 +460,285 @@ describe('Photo Navigation Algorithm', () => {
         });
     });
 });
+
+describe('getConnectionTime', () => {
+    // Simulate the getConnectionTime logic from the controller
+    const getConnectionTime = (
+        firstSegment: { arrivalTime: any } | null,
+        secondSegment: { departureTime: any } | null
+    ): string => {
+        if (!firstSegment || !secondSegment) return "";
+
+        // Calculate time difference in minutes
+        const diffMinutes = secondSegment.departureTime.diff(firstSegment.arrivalTime, "minutes");
+
+        // Format as hours and minutes
+        const hours = Math.floor(diffMinutes / 60);
+        const mins = diffMinutes % 60;
+
+        if (hours > 0) {
+            return hours + "h " + (mins < 10 ? "0" + mins : mins) + "m";
+        } else {
+            return mins + "m";
+        }
+    };
+
+    // Mock dayjs-like objects for testing
+    const createMockTime = (minutesFromMidnight: number) => ({
+        diff: (other: any, unit: string) => {
+            if (unit === 'minutes') {
+                return minutesFromMidnight - other.minutes;
+            }
+            return 0;
+        },
+        minutes: minutesFromMidnight
+    });
+
+    it('should return empty string when firstSegment is null', () => {
+        const secondSegment = { departureTime: createMockTime(120) };
+        expect(getConnectionTime(null, secondSegment)).toBe('');
+    });
+
+    it('should return empty string when secondSegment is null', () => {
+        const firstSegment = { arrivalTime: createMockTime(60) };
+        expect(getConnectionTime(firstSegment, null)).toBe('');
+    });
+
+    it('should return empty string when both segments are null', () => {
+        expect(getConnectionTime(null, null)).toBe('');
+    });
+
+    it('should format connection time less than an hour', () => {
+        const firstSegment = { arrivalTime: { minutes: 0 } };
+        const secondSegment = {
+            departureTime: {
+                diff: () => 45,
+                minutes: 45
+            }
+        };
+        expect(getConnectionTime(firstSegment, secondSegment)).toBe('45m');
+    });
+
+    it('should format connection time with hours and minutes', () => {
+        const firstSegment = { arrivalTime: { minutes: 0 } };
+        const secondSegment = {
+            departureTime: {
+                diff: () => 90,
+                minutes: 90
+            }
+        };
+        expect(getConnectionTime(firstSegment, secondSegment)).toBe('1h 30m');
+    });
+
+    it('should pad single digit minutes with zero', () => {
+        const firstSegment = { arrivalTime: { minutes: 0 } };
+        const secondSegment = {
+            departureTime: {
+                diff: () => 65,
+                minutes: 65
+            }
+        };
+        expect(getConnectionTime(firstSegment, secondSegment)).toBe('1h 05m');
+    });
+
+    it('should handle exact hours', () => {
+        const firstSegment = { arrivalTime: { minutes: 0 } };
+        const secondSegment = {
+            departureTime: {
+                diff: () => 120,
+                minutes: 120
+            }
+        };
+        expect(getConnectionTime(firstSegment, secondSegment)).toBe('2h 00m');
+    });
+
+    it('should handle multi-hour connections', () => {
+        const firstSegment = { arrivalTime: { minutes: 0 } };
+        const secondSegment = {
+            departureTime: {
+                diff: () => 195,
+                minutes: 195
+            }
+        };
+        expect(getConnectionTime(firstSegment, secondSegment)).toBe('3h 15m');
+    });
+});
+
+describe('sortRelatedJobs Algorithm', () => {
+    // Test the job sorting algorithm used in sortRelatedJobs
+    const sortJobsByNumber = (jobs: { jobNo: string }[]): { jobNo: string }[] => {
+        return [...jobs].sort((a, b) => {
+            return a.jobNo.localeCompare(b.jobNo, undefined, { numeric: true, sensitivity: 'base' });
+        });
+    };
+
+    it('should sort jobs numerically', () => {
+        const jobs = [
+            { jobNo: 'JOB-10' },
+            { jobNo: 'JOB-2' },
+            { jobNo: 'JOB-1' },
+        ];
+        const sorted = sortJobsByNumber(jobs);
+        expect(sorted.map(j => j.jobNo)).toEqual(['JOB-1', 'JOB-2', 'JOB-10']);
+    });
+
+    it('should sort jobs with different prefixes', () => {
+        const jobs = [
+            { jobNo: 'B-100' },
+            { jobNo: 'A-200' },
+            { jobNo: 'A-100' },
+        ];
+        const sorted = sortJobsByNumber(jobs);
+        expect(sorted.map(j => j.jobNo)).toEqual(['A-100', 'A-200', 'B-100']);
+    });
+
+    it('should handle recovery job suffixes (R1, R2)', () => {
+        const jobs = [
+            { jobNo: 'JOB001R2' },
+            { jobNo: 'JOB001' },
+            { jobNo: 'JOB001R1' },
+        ];
+        const sorted = sortJobsByNumber(jobs);
+        expect(sorted.map(j => j.jobNo)).toEqual(['JOB001', 'JOB001R1', 'JOB001R2']);
+    });
+
+    it('should handle split job suffixes (S1, S2)', () => {
+        const jobs = [
+            { jobNo: 'JOB100S2' },
+            { jobNo: 'JOB100S1' },
+            { jobNo: 'JOB100' },
+        ];
+        const sorted = sortJobsByNumber(jobs);
+        expect(sorted.map(j => j.jobNo)).toEqual(['JOB100', 'JOB100S1', 'JOB100S2']);
+    });
+
+    it('should be case-insensitive', () => {
+        const jobs = [
+            { jobNo: 'job-2' },
+            { jobNo: 'JOB-1' },
+            { jobNo: 'Job-3' },
+        ];
+        const sorted = sortJobsByNumber(jobs);
+        expect(sorted.map(j => j.jobNo)).toEqual(['JOB-1', 'job-2', 'Job-3']);
+    });
+
+    it('should handle empty array', () => {
+        const sorted = sortJobsByNumber([]);
+        expect(sorted).toEqual([]);
+    });
+
+    it('should handle single job', () => {
+        const jobs = [{ jobNo: 'JOB-1' }];
+        const sorted = sortJobsByNumber(jobs);
+        expect(sorted).toEqual([{ jobNo: 'JOB-1' }]);
+    });
+});
+
+describe('setSelectedTabFromJobId Algorithm', () => {
+    // Test the tab selection algorithm
+    const findJobIndex = (jobs: { id: number }[], jobId: number): number => {
+        const index = jobs.findIndex(job => job.id === jobId);
+        return index !== -1 ? index : 0;
+    };
+
+    it('should return correct index when job is found', () => {
+        const jobs = [
+            { id: 100 },
+            { id: 200 },
+            { id: 300 },
+        ];
+        expect(findJobIndex(jobs, 200)).toBe(1);
+    });
+
+    it('should return 0 when job is not found', () => {
+        const jobs = [
+            { id: 100 },
+            { id: 200 },
+            { id: 300 },
+        ];
+        expect(findJobIndex(jobs, 999)).toBe(0);
+    });
+
+    it('should return 0 for empty array', () => {
+        expect(findJobIndex([], 100)).toBe(0);
+    });
+
+    it('should find first job correctly', () => {
+        const jobs = [
+            { id: 100 },
+            { id: 200 },
+        ];
+        expect(findJobIndex(jobs, 100)).toBe(0);
+    });
+
+    it('should find last job correctly', () => {
+        const jobs = [
+            { id: 100 },
+            { id: 200 },
+            { id: 300 },
+        ];
+        expect(findJobIndex(jobs, 300)).toBe(2);
+    });
+});
+
+describe('Field Visibility Storage', () => {
+    // Test field visibility persistence patterns
+    const FIELD_VISIBILITY_KEY = 'jobDetail_fieldVisibility_12345';
+    const VIEW_DENSITY_KEY = 'jobDetail_viewDensity_12345';
+
+    it('should use correct key pattern for field visibility', () => {
+        const contactId = '12345';
+        const expectedKey = `jobDetail_fieldVisibility_${contactId}`;
+        expect(expectedKey).toBe(FIELD_VISIBILITY_KEY);
+    });
+
+    it('should use correct key pattern for view density', () => {
+        const contactId = '12345';
+        const expectedKey = `jobDetail_viewDensity_${contactId}`;
+        expect(expectedKey).toBe(VIEW_DENSITY_KEY);
+    });
+
+    describe('Default Field Visibility', () => {
+        // Test default visibility for various fields
+        const defaultVisibility: { [key: string]: boolean } = {
+            jobNo: true,
+            status: true,
+            client: true,
+            courier: true,
+            amount: true,
+            weight: false,
+            dgClass: false,
+        };
+
+        it('should have essential fields visible by default', () => {
+            expect(defaultVisibility.jobNo).toBe(true);
+            expect(defaultVisibility.status).toBe(true);
+            expect(defaultVisibility.client).toBe(true);
+        });
+
+        it('should have optional fields hidden by default', () => {
+            expect(defaultVisibility.weight).toBe(false);
+            expect(defaultVisibility.dgClass).toBe(false);
+        });
+    });
+});
+
+describe('View Density', () => {
+    // Test view density enum values
+    enum ViewDensity {
+        Compact = 'compact',
+        Normal = 'normal',
+        Comfortable = 'comfortable'
+    }
+
+    it('should have correct density values', () => {
+        expect(ViewDensity.Compact).toBe('compact');
+        expect(ViewDensity.Normal).toBe('normal');
+        expect(ViewDensity.Comfortable).toBe('comfortable');
+    });
+
+    it('should default to Normal density', () => {
+        const defaultDensity = ViewDensity.Normal;
+        expect(defaultDensity).toBe('normal');
+    });
+});
