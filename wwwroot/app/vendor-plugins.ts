@@ -11,11 +11,10 @@ import "ng-material-datetimepicker/css/material-datetimepicker.css";
 import "angular-material-data-table/dist/md-data-table.css";
 import "angular-hotkeys/build/hotkeys.css";
 
-// Bootstrap
-import "bootstrap";
+// Bootstrap (CSS only - JS not needed, using Angular Material for UI)
+import "bootstrap/dist/css/bootstrap.css";
 
 // Third-party Angular plugins
-import "angular-ui-bootstrap/dist/ui-bootstrap-tpls";
 import "ngmap";
 import "ng-file-upload";
 import "angular-ui-sortable/dist/sortable";
@@ -44,8 +43,6 @@ const app = angular.module("uDispatch", [
     "oc.lazyLoad",
     "angularResizable",
     "ui.sortable",
-    "ui.bootstrap",
-    "ui.bootstrap.pagination",
     "ui.bootstrap.contextMenu",
     "cfp.hotkeys",
     "ngMap",

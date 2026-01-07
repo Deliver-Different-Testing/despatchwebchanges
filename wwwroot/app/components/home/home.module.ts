@@ -32,8 +32,6 @@ const homeModule = angular.module('uDispatch.home', [
     'ngSanitize',
     'md.data.table',
     'ui.sortable',
-    'ui.bootstrap',
-    'ui.bootstrap.pagination',
     'ui.bootstrap.contextMenu',
     'cfp.hotkeys',
     'angularResizable',
