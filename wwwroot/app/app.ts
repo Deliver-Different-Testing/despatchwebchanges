@@ -145,7 +145,7 @@ app.config(["$compileProvider", ($compileProvider: angular.ICompileProvider) => 
 
     // Only allow safe protocols and trusted data URIs for image sources
     // Allows: http/https URLs, and data URIs for common image formats only
-    $compileProvider.imgSrcSanitizationTrustedUrlList(/^\s*(https?|data:image\/(png|jpg|jpeg|gif|webp|svg\+xml));base64,/);
+    $compileProvider.imgSrcSanitizationTrustedUrlList(/^\s*(https?:|data:image\/(png|jpg|jpeg|gif|webp|svg\+xml);base64,)/);
 
     // Disable debug info in production for better performance and security
     // Debug info exposes scope data on DOM elements which could leak sensitive data

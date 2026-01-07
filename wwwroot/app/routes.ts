@@ -9,7 +9,7 @@ class RouterConfig {
     }
 
     private configureRoutes(): void {
-        this.$urlRouterProvider.otherwise("/not-found");
+        this.$urlRouterProvider.otherwise("/");
 
         // Configure routes
         this.configureHomeState()
