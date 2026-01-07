@@ -2,7 +2,10 @@ import {PriceBreakdownDialogController} from "./price-breakdown-dialog.controlle
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import {IJob, PriceBreakdown} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
-import SimplePriceEditDialogService, {PriceEditResult} from "../simple-price-edit-dialog/simple-price-edit-dialog.service";
+import SimplePriceEditDialogService, {
+    PriceEditResult
+} from "../simple-price-edit-dialog/simple-price-edit-dialog.service";
+import {IAppConfig} from "../../../interfaces/app-config.interface";
 
 class PriceBreakdownDialogService implements angular.IServiceProvider {
     static $inject = [
@@ -10,17 +13,22 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
         'DispatchData',
         '$document',
         'toastrService',
+        'APP_CONFIG',
         "simplePriceEditDialogService",
     ];
+
+    private readonly isUsCustomer: boolean;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private DispatchData: DispatchCoreService,
         private $document: angular.IDocumentService,
         private toastrService: ToastrService,
+        appConfig: IAppConfig,
         private simplePriceEditDialogService: SimplePriceEditDialogService
     ) {
         console.debug('PriceBreakdownDialogService: Service instantiated');
+        this.isUsCustomer = appConfig.US_Customer;
     }
 
     $get(): this {
@@ -28,6 +36,9 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
     }
 
     private isUsingOldAmountMethod(jobAmount?: number, priceBreakdowns?: PriceBreakdown[]): boolean {
+        // US Customers always get pricing breakdown
+        if (this.isUsCustomer) return false;
+        
         const isUsingOldMethod = !!jobAmount && jobAmount > 0 && (!priceBreakdowns || priceBreakdowns.length === 0);
         console.log('Job isUsingOldAmountMethod', isUsingOldMethod);
         return isUsingOldMethod;

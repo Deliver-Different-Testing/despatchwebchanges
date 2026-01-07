@@ -6,7 +6,7 @@
     padding: 0;
 
     .date-filter-wrapper {
-        background: white;
+        background: @card-background;
     }
 
     // Header
@@ -15,22 +15,22 @@
         align-items: center;
         gap: 8px;
         padding: 12px 16px;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        border-bottom: 1px solid @surface-container-high;
 
         md-icon {
             color: var(--theme-primary, @primary-color);
         }
 
         .header-title {
-            font-size: 14px;
-            font-weight: 500;
-            color: rgba(0, 0, 0, 0.87);
+            font-size: @font-base;
+            font-weight: @weight-medium;
+            color: @text-dark;
         }
 
         .timezone {
             margin-left: auto;
-            font-size: 11px;
-            color: rgba(0, 0, 0, 0.54);
+            font-size: @font-xs;
+            color: @text-muted;
         }
     }
 
@@ -59,7 +59,7 @@
     .custom-section {
         margin-top: 16px;
         padding-top: 16px;
-        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        border-top: 1px solid @surface-container-high;
     }
 
     // Date pickers
@@ -71,9 +71,9 @@
         .date-field {
             label {
                 display: block;
-                font-size: 12px;
-                font-weight: 500;
-                color: rgba(0, 0, 0, 0.54);
+                font-size: @font-sm;
+                font-weight: @weight-medium;
+                color: @text-muted;
                 margin-bottom: 6px;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
@@ -81,9 +81,10 @@
 
             custom-date-picker {
                 display: block;
-                border: 1px solid rgba(0, 0, 0, 0.12);
-                border-radius: 4px;
+                border: 1px solid @surface-container-high;
+                border-radius: @radius-sm;
                 padding: 4px;
+                transition: border-color @duration-short @easing-standard;
 
                 &:focus-within {
                     border-color: var(--theme-primary, @primary-color);
@@ -106,10 +107,10 @@
     .range-summary {
         margin-top: 12px;
         padding: 10px 12px;
-        background: rgba(0, 0, 0, 0.04);
-        border-radius: 4px;
-        font-size: 13px;
-        color: rgba(0, 0, 0, 0.87);
+        background: @surface-container-low;
+        border-radius: @radius-sm;
+        font-size: @font-base;
+        color: @text-dark;
         text-align: center;
     }
 
@@ -119,13 +120,31 @@
         justify-content: flex-end;
         gap: 8px;
         padding: 12px 16px;
-        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        border-top: 1px solid @surface-container-high;
     }
 }
 
 // Trigger button
 .date-filter-trigger {
+    border-radius: @radius-full;
+    transition: background-color @duration-short @easing-standard;
+
     &:hover {
-        background: rgba(0, 0, 0, 0.04);
+        background: @surface-container-low;
     }
+}
+
+// NZ tenant theme overrides
+.nz-tenant .date-filter-menu {
+    .date-filter-header md-icon {
+        color: @nz-primary-dark;
+    }
+
+    .date-pickers .date-field custom-date-picker:focus-within {
+        border-color: @nz-primary;
+    }
+}
+
+.nz-tenant .date-filter-trigger:hover {
+    background: fade(@nz-primary, 15%);
 }

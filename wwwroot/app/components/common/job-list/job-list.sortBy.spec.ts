@@ -7,12 +7,12 @@ describe('JobListComponent sortBy', () => {
     // Simplified sortBy implementation that mirrors the actual component
     interface SortState {
         column: string;
-        direction: 'asc' | 'desc';
+        direction: 'asc' | 'desc' | null;
     }
 
     interface SortByContext {
         sortState: SortState;
-        setBackendFilter?: (data: { column: string; direction: string }) => Promise<void>;
+        setBackendFilter?: (params: { data: { column: string; direction: string } }) => Promise<void>;
         applyFilters: () => void;
         saveSortState: () => void;
     }
@@ -27,6 +27,10 @@ describe('JobListComponent sortBy', () => {
                 case 'desc':
                     context.sortState.direction = 'asc';
                     break;
+                default:
+                    // Handle null/undefined direction (e.g., from restored state)
+                    context.sortState.direction = 'asc';
+                    break;
             }
         } else {
             context.sortState.column = column;
@@ -37,9 +41,12 @@ describe('JobListComponent sortBy', () => {
 
         // After fix: Always refresh from backend when sort changes
         if (context.setBackendFilter) {
+            // AngularJS expression binding requires wrapping params
             await context.setBackendFilter({
-                column: context.sortState.column,
-                direction: context.sortState.direction ?? "desc"
+                data: {
+                    column: context.sortState.column,
+                    direction: context.sortState.direction ?? "desc"
+                }
             });
         } else {
             context.applyFilters();
@@ -69,8 +76,10 @@ describe('JobListComponent sortBy', () => {
 
             expect(mockSetBackendFilter).toHaveBeenCalledTimes(1);
             expect(mockSetBackendFilter).toHaveBeenCalledWith({
-                column: 'amount',
-                direction: 'asc'
+                data: {
+                    column: 'amount',
+                    direction: 'asc'
+                }
             });
         });
 

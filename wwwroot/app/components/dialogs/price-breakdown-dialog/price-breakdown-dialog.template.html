@@ -70,82 +70,92 @@
                             </md-button>
                         </div>
 
-                        <!-- Enhanced Table -->
+                        <!-- Data Table -->
                         <div class="table-container">
-                            <table class="data-table" ng-if="ctrl.priceBreakdown.length > 0">
-                                <thead>
-                                <tr>
-                                    <th class="col-name">Item Name</th>
-                                    <th class="col-numeric">Revenue</th>
-                                    <th class="col-numeric">Cost</th>
-                                    <th class="col-numeric">Profit</th>
-                                    <th class="col-numeric">Margin</th>
-                                    <th class="col-actions">Actions</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr ng-repeat="item in ctrl.priceBreakdown" class="data-row"
-                                    ng-class="{'is-jobs-item': item.isJobsItem(item)}">
-                                    <td class="item-name">
-                                        <div class="item-info">
-                                            <md-icon md-font-set="material-symbols-outlined"
-                                                     class="item-icon dialog-icon">
-                                                inventory_2
-                                            </md-icon>
-                                            <div class="item-text">
-                                                <span class="item-name-text">{{item.name}}</span>
-                                                <span class="jobs-badge" ng-if="ctrl.isJobsItem(item)">
-                                                        <md-icon md-font-set="material-symbols-outlined">work</md-icon>
-                                                        Component of this Job
-                                                    </span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="col-numeric revenue">
-                                        <span class="amount-value">{{item.amount | currency}}</span>
-                                    </td>
-                                    <td class="col-numeric cost">
-                                        <span class="amount-value">{{item.costAmount | currency}}</span>
-                                    </td>
-                                    <td class="col-numeric profit">
-                                            <span class="amount-value profit-value"
-                                                  ng-class="{'positive': (item.amount - item.costAmount) >= 0, 'negative': (item.amount - item.costAmount) < 0}">
-                                                {{(item.amount - item.costAmount) | currency}}
-                                            </span>
-                                    </td>
-                                    <td class="col-numeric margin">
-                                            <span class="margin-badge"
-                                                  ng-if="item.amount > 0"
-                                                  ng-class="{'high-margin': ((item.amount - item.costAmount) / item.amount * 100) >= 40, 
-                                                            'medium-margin': ((item.amount - item.costAmount) / item.amount * 100) >= 20 && ((item.amount - item.costAmount) / item.amount * 100) < 40,
-                                                            'low-margin': ((item.amount - item.costAmount) / item.amount * 100) < 20}">
-                                                {{((item.amount - item.costAmount) / item.amount * 100) | number:0}}%
-                                            </span>
-                                    </td>
-                                    <td class="col-actions">
-                                        <div class="action-buttons">
-                                            <md-button class="md-icon-button action-btn" ng-click="ctrl.editItem(item)">
-                                                <md-tooltip md-direction="bottom">Edit Item</md-tooltip>
-                                                <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
-                                            </md-button>
-                                            <md-button class="md-icon-button action-btn delete-btn"
-                                                       ng-click="ctrl.deleteItem(item)">
-                                                <md-tooltip md-direction="bottom">Delete Item</md-tooltip>
-                                                <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
-                                            </md-button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
+                            <div class="data-table data-table--hover">
+                                <!-- Table container -->
+                                <div class="data-table__container">
+                                    <table class="data-table__table" ng-if="ctrl.priceBreakdown.length > 0">
+                                        <!-- Header -->
+                                        <thead class="data-table__head">
+                                            <tr class="data-table__header-row">
+                                                <th class="data-table__header-cell">Item Name</th>
+                                                <th class="data-table__header-cell align-right">Revenue</th>
+                                                <th class="data-table__header-cell align-right">Cost</th>
+                                                <th class="data-table__header-cell align-right">Profit</th>
+                                                <th class="data-table__header-cell align-right">Margin</th>
+                                                <th class="data-table__header-cell data-table__actions-cell">Actions</th>
+                                            </tr>
+                                        </thead>
 
-                            <!-- Empty State -->
-                            <no-data ng-if="ctrl.priceBreakdown.length === 0"
-                                     title="No price items yet"
-                                     message="Start by adding your first price breakdown item"
-                                     icon="receipt_long"
-                                     show-action="false">
-                            </no-data>
+                                        <!-- Body -->
+                                        <tbody class="data-table__body">
+                                            <tr class="data-table__row" ng-repeat="item in ctrl.priceBreakdown track by item.chargeId">
+                                                <!-- Item Name -->
+                                                <td class="data-table__cell">
+                                                    <div class="item-info">
+                                                        <md-icon class="item-icon dialog-icon" md-font-set="material-symbols-outlined">inventory_2</md-icon>
+                                                        <span class="item-name-text">{{item.name}}</span>
+                                                        <md-chip class="jobs-chip" ng-if="item.childJobId === ctrl.jobId">
+                                                            <md-icon md-font-set="material-symbols-outlined">work</md-icon>
+                                                            <md-tooltip md-direction="bottom">Component of this Job</md-tooltip>
+                                                        </md-chip>
+                                                    </div>
+                                                </td>
+                                                <!-- Revenue -->
+                                                <td class="data-table__cell align-right revenue">
+                                                    {{item.amount | currency}}
+                                                </td>
+                                                <!-- Cost -->
+                                                <td class="data-table__cell align-right cost">
+                                                    {{item.costAmount | currency}}
+                                                </td>
+                                                <!-- Profit -->
+                                                <td class="data-table__cell align-right">
+                                                    <span class="profit-value"
+                                                          ng-class="{'positive': (item.amount - item.costAmount) >= 0, 'negative': (item.amount - item.costAmount) < 0}">
+                                                        {{(item.amount - item.costAmount) | currency}}
+                                                    </span>
+                                                </td>
+                                                <!-- Margin -->
+                                                <td class="data-table__cell align-right">
+                                                    <span class="margin-badge"
+                                                          ng-if="item.amount > 0"
+                                                          ng-class="{
+                                                              'high-margin': ((item.amount - item.costAmount) / item.amount * 100) >= 40,
+                                                              'medium-margin': ((item.amount - item.costAmount) / item.amount * 100) >= 20 && ((item.amount - item.costAmount) / item.amount * 100) < 40,
+                                                              'low-margin': ((item.amount - item.costAmount) / item.amount * 100) < 20
+                                                          }">
+                                                        {{((item.amount - item.costAmount) / item.amount * 100) | number:0}}%
+                                                    </span>
+                                                </td>
+                                                <!-- Actions -->
+                                                <td class="data-table__cell data-table__actions-cell">
+                                                    <div class="action-buttons">
+                                                        <md-button class="md-icon-button action-btn" ng-click="ctrl.editItem(item)">
+                                                            <md-tooltip md-direction="bottom">Edit Item</md-tooltip>
+                                                            <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
+                                                        </md-button>
+                                                        <md-button class="md-icon-button action-btn delete-btn" ng-click="ctrl.deleteItem(item)">
+                                                            <md-tooltip md-direction="bottom">Delete Item</md-tooltip>
+                                                            <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
+                                                        </md-button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Empty state -->
+                                <div class="data-table__empty" ng-if="ctrl.priceBreakdown.length === 0">
+                                    <div class="data-table__empty-default">
+                                        <md-icon class="data-table__empty-icon" md-font-set="material-symbols-outlined">receipt_long</md-icon>
+                                        <p class="data-table__empty-message">No price items yet</p>
+                                        <p class="data-table__empty-submessage">Start by adding your first price breakdown item</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

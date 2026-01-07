@@ -1,41 +1,46 @@
+@import "../../../../css/variables.less";
+
 .parcel-dimensions-dialog-component {
     // Empty state card styling
     .empty-state-card {
         max-width: 500px;
         text-align: center;
+        border-radius: @radius-md;
 
         .bulk-input-empty {
             input {
                 text-align: center;
-                font-weight: 500;
+                font-weight: @weight-medium;
             }
         }
     }
 
     // Current parcel header styling
     .current-parcel-header {
-        transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        transition: all @duration-medium @easing-standard;
+        border-radius: @radius-md;
 
         .bulk-input-header {
             input {
                 text-align: center;
-                font-weight: 500;
-                font-size: 14px;
+                font-weight: @weight-medium;
+                font-size: @font-base;
             }
 
             label {
-                font-size: 12px;
+                font-size: @font-sm;
             }
         }
 
         &:hover {
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: @elevation-1;
         }
     }
 
     // Timeline card styling
     .timeline-card {
-        transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        transition: all @duration-medium @easing-standard;
+        border-radius: @radius-md;
     }
 
     .timeline-container {
@@ -49,18 +54,18 @@
         }
 
         &::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.05);
-            border-radius: 4px;
+            background: @surface-container-low;
+            border-radius: @radius-sm;
         }
 
         &::-webkit-scrollbar-thumb {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 4px;
-            transition: background 0.2s;
+            background: @surface-container-high;
+            border-radius: @radius-sm;
+            transition: background @duration-short @easing-standard;
         }
 
         &::-webkit-scrollbar-thumb:hover {
-            background: rgba(0, 0, 0, 0.3);
+            background: @standard-grey;
         }
     }
 
@@ -71,14 +76,14 @@
         cursor: pointer;
         padding: 0 12px;
         position: relative;
-        transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+        transition: transform @duration-short @easing-standard;
         min-width: 80px;
 
         &:hover {
             transform: translateY(-2px);
 
             .step-circle {
-                box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+                box-shadow: @elevation-2 !important;
             }
         }
 
@@ -86,16 +91,16 @@
             position: relative;
             width: 40px;
             height: 40px;
-            border-radius: 50%;
+            border-radius: @radius-full;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 500;
-            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            font-weight: @weight-medium;
+            transition: all @duration-medium @easing-standard;
 
             &.add-button {
                 border: 2px dashed rgba(0, 0, 0, 0.3);
-                background: white;
+                background: @card-background;
 
                 &:hover {
                     border-color: rgba(63, 81, 181, 0.6);
@@ -167,7 +172,25 @@
         top: 0;
         line-height: 36px;
         padding-right: 8px;
-        font-weight: 500;
+        font-weight: @weight-medium;
         opacity: 0.7;
+    }
+}
+
+// NZ tenant theme overrides
+.nz-tenant .parcel-dimensions-dialog-component {
+    .timeline-step {
+        .step-circle.md-accent {
+            background-color: @nz-primary !important;
+            color: black !important;
+        }
+
+        &.md-accent .step-label {
+            color: @nz-primary-dark;
+        }
+    }
+
+    .timeline-connector.md-accent {
+        background-color: @nz-primary !important;
     }
 }

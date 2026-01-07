@@ -8,7 +8,7 @@
     min-height: 200px;
     width: 100%;
   }
-  
+
   .note-list-container {
     padding: 0;
     position: relative;
@@ -23,8 +23,8 @@
     justify-content: space-between;
     padding: 0 16px;
     height: 48px;
-    background-color: #f5f5f5;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    background-color: @surface-container-low;
+    border-bottom: 1px solid @surface-container-high;
 
     span {
       color: rgba(0, 0, 0, 0.54);
@@ -49,7 +49,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 16px;
-    background-color: #f8f8f8;
+    background-color: @surface-container-lowest;
     min-height: 120px;
   }
 
@@ -61,14 +61,15 @@
     box-sizing: border-box;
     position: relative;
     min-height: 120px;
-    box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.15);
-    transition: all 0.2s ease;
+    box-shadow: @elevation-1;
+    transition: all @duration-short @easing-standard;
     margin-bottom: 16px;
+    border-radius: @radius-sm;
 
     // Hover effect
     &:hover {
       transform: scale(1.02) rotate(0deg) !important;
-      box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2);
+      box-shadow: @elevation-2;
       z-index: 2;
     }
 
@@ -163,7 +164,7 @@
       bottom: 8px;
       right: 8px;
       opacity: 0;
-      transition: opacity 0.2s ease;
+      transition: opacity @duration-short @easing-standard;
 
       .md-button {
         margin: 0;
@@ -206,13 +207,15 @@
   .note-dialog {
     min-width: 400px;
     max-width: 800px;
+    border-radius: @dialog-border-radius;
+    box-shadow: @elevation-3;
 
     .note-metadata {
       margin-top: 24px;
       padding-top: 16px;
-      border-top: 1px solid rgba(0, 0, 0, 0.12);
-      font-size: 12px;
-      color: rgba(0, 0, 0, 0.54);
+      border-top: 1px solid @surface-container-high;
+      font-size: @font-sm;
+      color: @text-muted;
     }
 
     .metadata-item {
@@ -229,6 +232,25 @@
   @media (max-width: 599px) {
     .sticky-note {
       width: 100%;
+    }
+  }
+}
+
+// NZ tenant theme overrides
+.nz-tenant .sticky-notes {
+  .note-list-header {
+    border-bottom-color: fade(@nz-primary, 30%);
+  }
+
+  .sticky-note {
+    &.internal::before {
+      background-color: fade(@nz-primary, 40%);
+    }
+  }
+
+  .note-dialog {
+    .metadata-label {
+      color: @nz-primary-dark;
     }
   }
 }

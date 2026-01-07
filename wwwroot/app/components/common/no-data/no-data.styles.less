@@ -8,32 +8,51 @@
   text-align: center;
   min-height: 200px;
   background-color: transparent;
+  padding: 24px;
 
   &__icon {
     font-size: 48px !important;
     height: 48px;
     width: 48px;
     margin-bottom: 16px;
+    color: @standard-grey;
     opacity: 0.7;
   }
 
   &__title {
     font-size: @font-lg;
     font-weight: @weight-semibold;
-    color: rgba(0, 0, 0, 0.87);
+    color: @text-dark;
     margin: 0 0 8px;
   }
 
   &__message {
-    font-size: @font-sm; 
+    font-size: @font-sm;
     font-weight: @weight-normal;
-    color: rgba(0, 0, 0, 0.6);
+    color: @text-muted;
     margin: 0 0 16px;
     max-width: 240px;
-    line-height: 1.4;
+    line-height: @line-normal;
   }
 
   .md-button {
     margin: 0;
+    border-radius: @radius-md;
+  }
+}
+
+// NZ tenant theme overrides
+.nz-tenant .no-data {
+  &__icon {
+    color: @nz-primary-dark;
+  }
+
+  .md-button.md-primary {
+    background-color: @nz-primary;
+    color: black;
+
+    &:hover {
+      background-color: @nz-primary-dark;
+    }
   }
 }

@@ -1,3 +1,5 @@
+@import "../../../../css/variables.less";
+
 // App Toolbar Styles
 // Shared toolbar styling used across all module pages
 
@@ -7,7 +9,7 @@ app-toolbar {
     .toolbar-logo {
         height: 32px;
         cursor: pointer;
-        transition: opacity 0.2s ease;
+        transition: opacity @duration-short @easing-standard;
 
         &:hover {
             opacity: 0.8;
@@ -17,25 +19,41 @@ app-toolbar {
     .vertical-divider {
         height: 24px;
         margin: 0 12px;
-        border-left: 1px solid rgba(0, 0, 0, 0.12);
+        border-left: 1px solid @surface-container-high;
     }
 
     .md-title {
-        font-weight: 500;
+        font-weight: @weight-medium;
         white-space: nowrap;
     }
 
     .greeting-message {
-        font-size: medium;
+        font-size: @font-base;
         white-space: nowrap;
         margin-right: 8px;
     }
 
     .md-toolbar-tools {
         .md-icon-button {
+            border-radius: @radius-full;
+            transition: background-color @duration-short @easing-standard;
+
             &.button-trigger {
                 margin: 0 4px;
             }
+
+            &:hover {
+                background-color: rgba(0, 0, 0, 0.08);
+            }
+        }
+    }
+}
+
+// NZ tenant theme overrides
+.nz-tenant app-toolbar {
+    .md-toolbar-tools {
+        .md-icon-button:hover {
+            background-color: fade(@nz-primary, 15%);
         }
     }
 }

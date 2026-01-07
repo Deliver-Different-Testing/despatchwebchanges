@@ -16,7 +16,7 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import {getIanaTimezone} from "../../functions/formatDates";
 import {IPaginatedResponse} from "../../interfaces/paginated-response.interface";
-import {IDataTableColumn, IDataTableSort, IDataTableConfig} from "../common/data-table/data-table.interfaces";
+import {IDataTableColumn, IDataTableConfig, IDataTableSort} from "../common/data-table/data-table.interfaces";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -366,6 +366,8 @@ class RecurringJobsController extends BaseController {
         if (selectedJobId && this.jobList.some(j => j.id === selectedJobId)) {
             this.currentJobId = selectedJobId;
         }
+
+        this.applyScope();
     }
 
     async voidAllSelectPrebookJobs(jobIds: number[]): Promise<void> {

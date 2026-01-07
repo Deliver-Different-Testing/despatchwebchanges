@@ -42,7 +42,7 @@
 
   .expand-arrow {
     margin-left: 16px;
-    transition: transform 0.3s ease;
+    transition: transform @duration-medium @easing-standard;
 
     &.rotated {
       transform: rotate(90deg);
@@ -102,7 +102,7 @@
 
     &-card {
       margin: 16px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+      box-shadow: @elevation-1;
     }
 
     &-header {
@@ -271,7 +271,7 @@
     display: inline-flex;
     align-items: center;
     padding: 4px 8px;
-    border-radius: 16px;
+    border-radius: @radius-lg;
     font-size: 12px;
     font-weight: 500;
   }

@@ -1144,6 +1144,9 @@ public class JobController(
         {
             await recurringJobRepository.UpdateRecurringJobAsync(jobId, field, value);
 
+            // Skip re-reate if debugging
+            if (Debugger.IsAttached) return Ok();
+
             // Recalculate the job
             var shouldRecalculateRate = ShouldRecalculateRate(field);
             if (!shouldRecalculateRate) return Ok();
@@ -1187,12 +1190,14 @@ public class JobController(
         {
             await jobRepository.UpdateJobAsync(jobId, field, value);
 
-            // Skip rating if a job is archived
-            var isArchived = await jobRepository.IsJobArchived(jobId);
+            // Skip rerating if debug
+            if (Debugger.IsAttached) return Ok();
 
             // Recalculate a job
             var shouldRecalculateRate = ShouldRecalculateRate(field);
             if (!shouldRecalculateRate) return Ok();
+
+            var isArchived = await jobRepository.IsJobArchived(jobId);
 
             var isUsTenant = infoService.IsUsTenant();
             if (isUsTenant)

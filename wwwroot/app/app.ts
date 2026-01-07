@@ -34,11 +34,7 @@ import RouterConfig from "./routes";
 import ThemeConfig from "./materialTheme";
 import AddEventDialogController from "./components/dialogs/add-event-dialog/add-event-dialog.controller";
 import AddEventDialogService from "./components/dialogs/add-event-dialog/add-event-dialog.service";
-import {
-    bytesFilter,
-    momentFormatFilter,
-    replaceFilter, timezoneLongFilter, timezoneShortFilter
-} from "./filters";
+import {bytesFilter, momentFormatFilter, replaceFilter, timezoneLongFilter, timezoneShortFilter} from "./filters";
 import StickyNoteComponent from "./components/common/sticky-notes/sticky-notes.component";
 import EditParcelDimensionsDialogService
     from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
@@ -138,9 +134,24 @@ app.config(["$httpProvider", ($httpProvider: angular.IHttpProvider) => {
 }]);
 
 app.config(["$sceProvider", ($sceProvider: angular.ISCEProvider) => {
-    // Strict Contextual Escaping is enabled by default - this explicitly documents it
     // SCE provides automatic XSS protection by requiring trusted values for dangerous contexts
     $sceProvider.enabled(true);
+}]);
+
+// CVE-2025-0716 Mitigation: Stricter URL sanitization for href and img sources
+app.config(["$compileProvider", ($compileProvider: angular.ICompileProvider) => {
+    // Only allow safe protocols for href attributes (blocks javascript:, data: URIs in links)
+    $compileProvider.aHrefSanitizationTrustedUrlList(/^\s*(https?|mailto|tel):/);
+
+    // Only allow safe protocols and trusted data URIs for image sources
+    // Allows: http/https URLs, and data URIs for common image formats only
+    $compileProvider.imgSrcSanitizationTrustedUrlList(/^\s*(https?|data:image\/(png|jpg|jpeg|gif|webp|svg\+xml));base64,/);
+
+    // Disable debug info in production for better performance and security
+    // Debug info exposes scope data on DOM elements which could leak sensitive data
+    if ((window as any).serverConfig?.isProduction) {
+        $compileProvider.debugInfoEnabled(false);
+    }
 }]);
 
 // Configs

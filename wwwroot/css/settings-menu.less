@@ -20,8 +20,8 @@
   width: 250px !important;
   max-width: 90vw;
   overflow: hidden;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px @shadow-medium;
+  border-radius: @radius-md;
+  box-shadow: @elevation-3;
   border: 1px solid @shadow-light;
 }
 
@@ -42,14 +42,6 @@
   margin-bottom: 8px;
   letter-spacing: -0.005em;
   line-height: @line-normal;
-}
-
-md-menu {
-  z-index: 9999 !important;
-}
-
-md-menu-content {
-  z-index: 9999 !important;
 }
 
 .settings-select {
@@ -104,7 +96,7 @@ md-backdrop.md-select-backdrop {
 .status-indicator {
   background: @bg-light;
   border: 1px solid @border-light;
-  border-radius: 6px;
+  border-radius: @radius-md;
   padding: (@spacing - 2px);
   margin-top: 8px;
 }
@@ -202,5 +194,24 @@ md-backdrop.md-select-backdrop {
 
   .settings-header {
     padding: @spacing (@spacing + 2px) (@spacing - 4px);
+  }
+}
+
+// NZ tenant theme overrides
+.nz-tenant {
+  .settings-select {
+    &.md-focused .md-select-value {
+      border-bottom-color: @nz-primary;
+    }
+  }
+
+  .md-select-menu-container md-option.md-selected {
+    background-color: fade(@nz-primary, 10%);
+    color: @nz-primary-dark;
+  }
+
+  .settings-select:focus-within,
+  .md-select.md-focused {
+    outline-color: fade(@nz-primary, 25%);
   }
 }

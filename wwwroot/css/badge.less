@@ -1,13 +1,15 @@
-﻿// Variables
+@import "variables";
+
+// Variables (using MD3 tokens where applicable)
 @badge-primary-color: #f44336;
 @badge-primary-hover: #d32f2f;
 @badge-text-color: white;
-@badge-border-radius: 12px;
-@badge-shadow: 0 2px 4px rgba(0,0,0,0.2);
-@badge-shadow-hover: 0 4px 8px rgba(0,0,0,0.3);
-@badge-transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-@badge-enter-transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-@badge-leave-transition: all 0.2s ease-in;
+@badge-border-radius: @radius-lg;
+@badge-shadow: @elevation-1;
+@badge-shadow-hover: @elevation-2;
+@badge-transition: all @duration-medium @easing-standard;
+@badge-enter-transition: all @duration-medium cubic-bezier(0.175, 0.885, 0.32, 1.275);
+@badge-leave-transition: all @duration-short ease-in;
 
 // Mixins
 .badge-base() {
@@ -96,7 +98,7 @@
 .demo-content {
   padding: 40px;
   text-align: center;
-  background-color: #fafafa;
+  background-color: @surface-container-lowest;
   min-height: 200px;
 }
 
@@ -139,6 +141,18 @@
 
     &:hover {
       background-color: #757575;
+    }
+  }
+}
+
+// NZ tenant theme overrides
+.nz-tenant .custom-badge {
+  &.badge-warning {
+    background-color: @nz-primary;
+    color: black;
+
+    &:hover {
+      background-color: @nz-primary-dark;
     }
   }
 }

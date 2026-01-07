@@ -1,5 +1,7 @@
-@text-color: rgba(0, 0, 0, 0.87);
-@text-color-secondary: rgba(0, 0, 0, 0.54);
+@import "../../../../css/variables.less";
+
+@text-color: @text-dark;
+@text-color-secondary: @text-muted;
 @disabled-color: rgba(0, 0, 0, 0.38);
 
 .table-pagination {
@@ -8,9 +10,9 @@
     align-items: center;
     padding: 0 8px;
     min-height: 56px;
-    font-size: 12px;
+    font-size: @font-sm;
     color: @text-color-secondary;
-    border-top: 1px solid rgba(0, 0, 0, 0.12);
+    border-top: 1px solid @surface-container-high;
     background: inherit;
 
     .pagination-controls {
@@ -76,6 +78,8 @@
         min-width: 36px;
         width: 36px;
         height: 36px;
+        border-radius: @radius-full;
+        transition: background-color @duration-short @easing-standard;
 
         md-icon {
             color: @text-color-secondary;
@@ -83,6 +87,8 @@
         }
 
         &:hover:not([disabled]) {
+            background-color: @surface-container-low;
+
             md-icon {
                 color: @text-color;
             }
@@ -101,11 +107,18 @@
 
         .md-select-value {
             border-bottom-color: transparent;
-            font-size: 12px;
+            font-size: @font-sm;
         }
 
         &:not([disabled]):focus .md-select-value {
             border-bottom-color: transparent;
         }
+    }
+}
+
+// NZ tenant theme overrides
+.nz-tenant .table-pagination {
+    .pagination-btn:hover:not([disabled]) {
+        background-color: fade(@nz-primary, 15%);
     }
 }

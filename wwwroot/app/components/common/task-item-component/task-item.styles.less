@@ -657,3 +657,20 @@
     }
   }
 }
+
+// NZ tenant theme overrides
+.nz-tenant .task-item {
+  &.clickable:hover .task-title {
+    color: @nz-primary-dark;
+  }
+
+  .job-id-chip {
+    background-color: fade(@nz-primary, 15%);
+    border-color: fade(@nz-primary, 30%);
+    color: @nz-primary-dark;
+  }
+
+  .priority-indicator.high {
+    background-color: @nz-primary;
+  }
+}

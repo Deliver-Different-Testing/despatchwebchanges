@@ -1,11 +1,11 @@
 <div class="data-table"
      ng-class="{
-        'data-table--bordered': ctrl.config.bordered,
-        'data-table--dense': ctrl.config.dense,
-        'data-table--hover': ctrl.config.hoverEffect,
-        'data-table--sticky-header': ctrl.config.stickyHeader,
+        'data-table--bordered': ctrl.config && ctrl.config.bordered,
+        'data-table--dense': ctrl.config && ctrl.config.dense,
+        'data-table--hover': ctrl.config && ctrl.config.hoverEffect,
+        'data-table--sticky-header': ctrl.config && ctrl.config.stickyHeader,
         'data-table--loading': ctrl.isLoading,
-        'data-table--selectable': ctrl.config.selectable
+        'data-table--selectable': ctrl.config && ctrl.config.selectable
      }">
 
     <!-- Loading overlay -->
@@ -21,7 +21,7 @@
                 <tr class="data-table__header-row">
                     <!-- Selection checkbox column -->
                     <th class="data-table__header-cell data-table__checkbox-cell"
-                        ng-if="ctrl.config.selectable && ctrl.config.multiSelect">
+                        ng-if="ctrl.config && ctrl.config.selectable && ctrl.config.multiSelect">
                         <md-checkbox class="data-table__checkbox"
                                      ng-checked="ctrl.allSelected"
                                      ng-indeterminate="ctrl.someSelected"
@@ -32,7 +32,7 @@
 
                     <!-- Selection placeholder for single select -->
                     <th class="data-table__header-cell data-table__checkbox-cell"
-                        ng-if="ctrl.config.selectable && !ctrl.config.multiSelect">
+                        ng-if="ctrl.config && ctrl.config.selectable && !ctrl.config.multiSelect">
                     </th>
 
                     <!-- Column headers -->
@@ -52,9 +52,15 @@
                         </div>
                     </th>
 
-                    <!-- Actions column header (transcluded) -->
+                    <!-- Actions column header -->
                     <th class="data-table__header-cell data-table__actions-cell"
-                        ng-if="ctrl.hasTranscludedContent"
+                        ng-if="ctrl.hasRowActions">
+                        Actions
+                    </th>
+
+                    <!-- Actions column header (transcluded) - fallback -->
+                    <th class="data-table__header-cell data-table__actions-cell"
+                        ng-if="ctrl.hasTranscludedContent && !ctrl.hasRowActions"
                         ng-transclude="headerActions">
                     </th>
                 </tr>
@@ -71,7 +77,7 @@
 
                     <!-- Selection checkbox -->
                     <td class="data-table__cell data-table__checkbox-cell"
-                        ng-if="ctrl.config.selectable">
+                        ng-if="ctrl.config && ctrl.config.selectable">
                         <md-checkbox class="data-table__checkbox"
                                      ng-checked="ctrl.isRowSelected(row)"
                                      ng-click="ctrl.toggleRowSelection(row, $event)"
@@ -82,20 +88,40 @@
                     <!-- Data cells -->
                     <td class="data-table__cell"
                         ng-repeat="column in ctrl.visibleColumns track by column.key"
-                        ng-class="ctrl.getColumnClasses(column)"
+                        ng-class="ctrl.getCellClasses(row, column)"
                         ng-style="ctrl.getColumnStyle(column)">
                         <div class="data-table__cell-content"
                              ng-class="{'truncate': column.truncate}">
-                            <!-- Default cell content -->
-                            <span ng-if="!column.templateId">
-                                {{ctrl.getCellValue(row, column)}}
+                            <!-- Custom HTML render -->
+                            <span ng-if="column.render"
+                                  ng-bind-html="ctrl.trustAsHtml(ctrl.getFormattedCellValue(row, column))">
+                            </span>
+                            <!-- Default cell content with formatting -->
+                            <span ng-if="!column.render">
+                                {{ctrl.getFormattedCellValue(row, column)}}
                             </span>
                         </div>
                     </td>
 
-                    <!-- Row actions (transcluded) -->
+                    <!-- Row actions from binding -->
                     <td class="data-table__cell data-table__actions-cell"
-                        ng-if="ctrl.hasTranscludedContent"
+                        ng-if="ctrl.hasRowActions">
+                        <div class="data-table__action-buttons">
+                            <md-button ng-repeat="action in ctrl.rowActions track by action.key"
+                                       ng-if="!ctrl.isActionHidden(action, row)"
+                                       class="md-icon-button data-table__action-btn"
+                                       ng-class="action.cssClass"
+                                       ng-click="ctrl.handleRowAction(action, row, $parent.$index, $event)"
+                                       ng-disabled="ctrl.isActionDisabled(action, row)">
+                                <md-tooltip ng-if="action.tooltip" md-direction="bottom">{{action.tooltip}}</md-tooltip>
+                                <md-icon md-font-set="material-symbols-outlined">{{action.icon}}</md-icon>
+                            </md-button>
+                        </div>
+                    </td>
+
+                    <!-- Row actions (transcluded) - fallback if rowActions binding not used -->
+                    <td class="data-table__cell data-table__actions-cell"
+                        ng-if="ctrl.hasTranscludedContent && !ctrl.hasRowActions"
                         ng-transclude="rowActions">
                     </td>
                 </tr>
@@ -110,9 +136,9 @@
             <div class="data-table__empty-default">
                 <md-icon class="data-table__empty-icon"
                          md-font-set="material-symbols-outlined">
-                    {{ctrl.config.emptyIcon}}
+                    {{ctrl.config ? ctrl.config.emptyIcon : 'inbox'}}
                 </md-icon>
-                <p class="data-table__empty-message">{{ctrl.config.emptyMessage}}</p>
+                <p class="data-table__empty-message">{{ctrl.config ? ctrl.config.emptyMessage : 'No data available'}}</p>
             </div>
         </div>
     </div>

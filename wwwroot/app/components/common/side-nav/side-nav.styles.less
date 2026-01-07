@@ -32,7 +32,7 @@
       .account-avatar {
         width: 64px;
         height: 64px;
-        border-radius: 32px;
+        border-radius: @radius-full;
         background-color: rgba(255, 255, 255, 0.2);
         display: inline-flex;
         align-items: center;
@@ -71,7 +71,7 @@
         margin-top: 12px;
         padding: 6px 14px;
         background-color: rgba(255, 255, 255, 0.2);
-        border-radius: 16px;
+        border-radius: @radius-lg;
         font-size: @font-xs;
         font-weight: @weight-medium;
         color: inherit;
@@ -93,10 +93,10 @@
 
     .nav-item {
       margin: 2px 0;
-      border-radius: 6px;
+      border-radius: @radius-md;
       min-height: 40px;
       position: relative;
-      transition: all 0.15s ease;
+      transition: all @duration-short @easing-standard;
       cursor: pointer;
 
       &:hover:not(.active) {
@@ -142,7 +142,7 @@
           height: 20px;
           width: 20px;
           margin-right: 12px;
-          transition: color 0.15s ease;
+          transition: color @duration-short @easing-standard;
           flex-shrink: 0;
         }
 
@@ -151,7 +151,7 @@
           font-size: @font-sm;
           font-weight: @weight-medium;
           margin: 0;
-          transition: all 0.15s ease;
+          transition: all @duration-short @easing-standard;
           line-height: @line-normal;
         }
       }
@@ -188,7 +188,7 @@
         align-items: center;
         justify-content: center;
         background-color: fade(@primary-blue, 10%);
-        border-radius: 16px;
+        border-radius: @radius-lg;
         padding: 6px 12px;
         margin-top: 8px;
 
@@ -260,6 +260,37 @@
 // Ripple effect
 .nav-item {
   .md-ripple-container {
-    border-radius: 6px;
+    border-radius: @radius-md;
+  }
+}
+
+// NZ tenant theme overrides
+.nz-tenant .side-nav-component {
+  .nav-item {
+    &.active {
+      background-color: fade(@nz-primary, 12%);
+
+      &::before {
+        background-color: @nz-primary;
+      }
+
+      .nav-item-content {
+        md-icon, p {
+          color: @nz-primary-dark;
+        }
+      }
+    }
+
+    &:hover:not(.active) {
+      background-color: fade(@nz-primary, 8%);
+    }
+  }
+
+  .nav-footer .copyright-text .nz-made {
+    background-color: fade(@nz-primary, 15%);
+
+    md-icon, span {
+      color: @nz-primary-dark;
+    }
   }
 }

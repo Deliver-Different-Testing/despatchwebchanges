@@ -8,9 +8,9 @@
   .driverLocations-list {
     margin-bottom: 10px;
     background: #bfbfbf;
-    border-radius: 2px;
+    border-radius: @radius-sm;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    box-shadow: @elevation-1;
 
     .driverLocations-list-title {
       background: #5d5d5d;
@@ -22,7 +22,7 @@
       display: flex;
       align-items: center;
       font-weight: 500;
-      transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: background-color @duration-medium @easing-standard;
 
       &:hover {
         background-color: #707070;
@@ -66,7 +66,7 @@
         align-items: center;
         background-color: #bae1ff;
         border-bottom: 1px solid #a4d2f5;
-        transition: background-color 0.15s ease-in-out;
+        transition: background-color @duration-short @easing-standard;
 
         &:hover {
           background-color: darken(#bae1ff, 5%);
@@ -91,10 +91,10 @@
         .driverLocations-list-items-item-dest {
           padding: 2px 4px;
           display: inline-block;
-          background: #efefef;
-          border: 1px solid #CCC;
+          background: @surface-container-low;
+          border: 1px solid @surface-container-high;
           margin: 2px 0 2px 4px;
-          border-radius: 2px;
+          border-radius: @radius-sm;
           flex-grow: 1;
         }
       }
