@@ -9,7 +9,11 @@ class RouterConfig {
     }
 
     private configureRoutes(): void {
-        this.$urlRouterProvider.otherwise("/");
+        // Redirect empty URL to home
+        this.$urlRouterProvider.when('', '/');
+
+        // Unknown routes go to not-found
+        this.$urlRouterProvider.otherwise("/not-found");
 
         // Configure routes
         this.configureHomeState()

@@ -7,6 +7,7 @@ import RouterConfig from './routes';
 
 describe('RouterConfig', () => {
     let mockUrlRouterProvider: {
+        when: jest.Mock;
         otherwise: jest.Mock;
     };
     let mockStateProvider: {
@@ -18,6 +19,7 @@ describe('RouterConfig', () => {
         registeredStates = new Map();
 
         mockUrlRouterProvider = {
+            when: jest.fn(),
             otherwise: jest.fn()
         };
 
@@ -30,22 +32,31 @@ describe('RouterConfig', () => {
     });
 
     describe('Default Route Configuration', () => {
-        it('should redirect unmatched routes to home page ("/")', () => {
+        it('should redirect empty URL to home page ("/")', () => {
             new RouterConfig(
                 mockUrlRouterProvider as any,
                 mockStateProvider as any
             );
 
-            expect(mockUrlRouterProvider.otherwise).toHaveBeenCalledWith('/');
+            expect(mockUrlRouterProvider.when).toHaveBeenCalledWith('', '/');
         });
 
-        it('should NOT redirect unmatched routes to not-found page', () => {
+        it('should redirect unknown routes to not-found page', () => {
             new RouterConfig(
                 mockUrlRouterProvider as any,
                 mockStateProvider as any
             );
 
-            expect(mockUrlRouterProvider.otherwise).not.toHaveBeenCalledWith('/not-found');
+            expect(mockUrlRouterProvider.otherwise).toHaveBeenCalledWith('/not-found');
+        });
+
+        it('should call when exactly once for empty URL redirect', () => {
+            new RouterConfig(
+                mockUrlRouterProvider as any,
+                mockStateProvider as any
+            );
+
+            expect(mockUrlRouterProvider.when).toHaveBeenCalledTimes(1);
         });
 
         it('should call otherwise exactly once', () => {
@@ -269,18 +280,27 @@ describe('Base URL Behavior', () => {
             // So "/" alone will match the home state
         });
 
-        it('should redirect unknown routes to "/" which loads home', () => {
+        it('should use when() to redirect empty URL to home', () => {
             // This documents the expected behavior:
-            // 1. User navigates to https://example.com (no path)
-            // 2. $urlRouterProvider.otherwise("/") redirects to "/"
+            // 1. User navigates to https://example.com (no path, empty URL)
+            // 2. $urlRouterProvider.when('', '/') redirects empty to "/"
             // 3. "/" matches the home state URL pattern "/?jobId"
             // 4. Home component loads
 
-            const otherwiseTarget = '/';
+            const whenSource = '';
+            const whenTarget = '/';
             const homeStateUrl = '/?jobId';
 
-            // The otherwise target "/" matches the home state
-            expect(homeStateUrl.startsWith(otherwiseTarget)).toBe(true);
+            // Empty URL redirects to "/" which matches home state
+            expect(whenSource).toBe('');
+            expect(homeStateUrl.startsWith(whenTarget)).toBe(true);
+        });
+
+        it('should use otherwise() for truly unknown routes', () => {
+            // Unknown routes like "/unknown-page" go to not-found
+            // This preserves proper 404 behavior for invalid URLs
+            const otherwiseTarget = '/not-found';
+            expect(otherwiseTarget).toBe('/not-found');
         });
     });
 });
