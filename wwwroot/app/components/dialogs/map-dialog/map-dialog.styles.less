@@ -73,7 +73,7 @@
     .map-container {
       flex: 1;
       position: relative;
-      background: white;
+      background: @card-background;
       border-bottom: 1px solid @surface-container-high;
 
       // Add padding to compensate for timeline overlay
@@ -219,7 +219,7 @@
       margin: 0 4px;
 
       &:hover {
-        background: white;
+        background: @card-background;
         transform: translateY(-4px);
         box-shadow: 0 8px 20px @neutral-focus-ring;
 
@@ -230,7 +230,7 @@
       }
 
       &.active {
-        background: white;
+        background: @card-background;
         box-shadow: 0 4px 16px @neutral-focus-ring;
 
         .node-circle {
@@ -277,7 +277,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: white;
+        background: @card-background;
         border: 3px solid @neutral-selected;
         transition: all @duration-medium @easing-standard;
         position: relative;
@@ -346,7 +346,7 @@
         cursor: pointer;
 
         &:hover {
-          background: white;
+          background: @card-background;
           transform: translateY(-4px);
           box-shadow: 0 8px 20px rgba(235, 59, 90, 0.25);
 
@@ -357,7 +357,7 @@
         }
 
         &.active {
-          background: white;
+          background: @card-background;
           box-shadow: 0 4px 16px rgba(235, 59, 90, 0.2);
 
           .node-circle {
@@ -413,7 +413,7 @@
         transform: translateX(-50%);
         font-size: 20px;
         color: @neutral-selected;
-        background: white;
+        background: @card-background;
         padding: 0 4px;
         font-weight: bold;
       }

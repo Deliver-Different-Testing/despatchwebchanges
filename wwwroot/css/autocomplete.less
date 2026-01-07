@@ -10,9 +10,9 @@
 @hover-color: rgba(0,0,0,0.04);
 @shadow-color: rgba(0,0,0,0.15);
 
-// Transitions
-@transition-duration: 0.2s;
-@fast-transition: 0.15s;
+// Transitions (using MD3 tokens)
+@transition-duration: @duration-short;
+@fast-transition: @duration-short;
 
 // Spacing
 @table-cell-padding: 4px 8px;
@@ -66,7 +66,7 @@ td.md-cell {
 
   // Material Design underline effect
   border-bottom: 1px solid transparent;
-  transition: border-color @transition-duration cubic-bezier(0.4, 0.0, 0.2, 1);
+  transition: border-color @transition-duration @easing-standard;
 
   // Hover state
   &:hover:not(:disabled) {
@@ -104,13 +104,10 @@ td.md-cell {
 // Dropdown styling optimized for Material Design
 .dropdown-menu.uib-typeahead-match {
   // Material Design elevation
-  background: white;
+  background: @card-background;
   border: none;
-  border-radius: 4px;
-  box-shadow:
-          0 2px 4px rgba(0,0,0,0.14),
-          0 3px 4px rgba(0,0,0,0.12),
-          0 1px 5px rgba(0,0,0,0.20);
+  border-radius: @radius-sm;
+  box-shadow: @elevation-2;
 
   // Positioning
   margin-top: 4px;
@@ -160,7 +157,7 @@ td.md-cell {
 
       // Material Design ripple-like effect
       position: relative;
-      transition: background-color @fast-transition cubic-bezier(0.4, 0.0, 0.2, 1);
+      transition: background-color @fast-transition @easing-standard;
 
       // Hover state
       &:hover,
@@ -187,11 +184,38 @@ td.md-cell {
 
   // Highlight matching text
   .uib-typeahead-match {
-    font-weight: 500;
+    font-weight: @weight-medium;
     color: @primary-color;
     background-color: @primary-color-light;
     padding: 1px 2px;
-    border-radius: 2px;
+    border-radius: @radius-sm;
+  }
+}
+
+// NZ tenant theme overrides
+.nz-tenant {
+  .dropdown-menu.uib-typeahead-match {
+    > li {
+      &.active > a,
+      &.active > a:hover,
+      &.active > a:focus {
+        background-color: fade(@nz-primary, 15%);
+        color: @nz-primary-dark;
+      }
+    }
+
+    .uib-typeahead-match {
+      color: @nz-primary-dark;
+      background-color: fade(@nz-primary, 15%);
+    }
+  }
+
+  .material-typeahead-input:focus {
+    border-bottom-color: @nz-primary;
+  }
+
+  .material-typeahead-input:focus-visible {
+    outline-color: @nz-primary;
   }
 }
 
@@ -290,7 +314,7 @@ td.md-cell {
 }
 
 .dropdown-menu.uib-typeahead-match {
-  animation: slideDown @fast-transition cubic-bezier(0.4, 0.0, 0.2, 1);
+  animation: slideDown @fast-transition @easing-standard;
 }
 
 // Focus ring for accessibility

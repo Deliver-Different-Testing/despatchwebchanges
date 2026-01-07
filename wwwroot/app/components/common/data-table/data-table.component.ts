@@ -1,13 +1,13 @@
 import "./data-table.styles.less";
-import {IDataTableColumn, IDataTableConfig, IDataTableSort} from "./data-table.interfaces";
+import {IDataTableColumn, IDataTableConfig, IDataTableSort, IDataTableRowAction} from "./data-table.interfaces";
 
 class DataTableController implements angular.IController {
-    static $inject = ['$element', '$scope', '$transclude'];
+    static $inject = ['$element', '$scope', '$transclude', '$filter', '$sce'];
 
     // Bindings
     columns!: IDataTableColumn[];
     data!: any[];
-    config?: IDataTableConfig;
+    config: IDataTableConfig = {};
     sort?: IDataTableSort;
     loading?: boolean;
     selectedRows?: any[];
@@ -28,15 +28,25 @@ class DataTableController implements angular.IController {
     onPaginate?: (params: { page: number; pageSize: number }) => void;
     onRowContext?: (params: { row: any; index: number; $event: MouseEvent }) => void;
 
+    // Row actions
+    rowActions?: IDataTableRowAction[];
+    onRowAction?: (params: { action: string; row: any; index: number }) => void;
+
     // Internal state
     private _selectedRowsMap: Map<any, boolean> = new Map();
     private _allSelected: boolean = false;
+    private _processedColumns: IDataTableColumn[] = [];
     hasTranscludedContent: boolean = false;
+
+    // Callbacks for row actions
+    rowActionsCallback?: (params: { row: any; index: number }) => any[];
 
     constructor(
         private $element: angular.IAugmentedJQuery,
         private $scope: angular.IScope,
-        private $transclude: angular.ITranscludeFunction
+        private $transclude: angular.ITranscludeFunction,
+        private $filter: angular.IFilterService,
+        private $sce: angular.ISCEService
     ) {}
 
     $onInit(): void {
@@ -45,6 +55,15 @@ class DataTableController implements angular.IController {
     }
 
     $onChanges(changes: angular.IOnChangesObject): void {
+        if (changes.columns) {
+            this._processedColumns = (this.columns || []).map(col => ({
+                visible: true,
+                sortable: false,
+                truncate: false,
+                align: 'left',
+                ...col
+            }));
+        }
         if (changes.data && !changes.data.isFirstChange()) {
             this.syncSelectedRows();
         }
@@ -61,7 +80,7 @@ class DataTableController implements angular.IController {
             striped: false,
             bordered: false,
             dense: false,
-            stickyHeader: true,
+            stickyHeader: false,
             loading: false,
             emptyMessage: 'No data available',
             emptyIcon: 'inbox',
@@ -69,7 +88,7 @@ class DataTableController implements angular.IController {
             ...this.config
         };
 
-        this.columns = (this.columns || []).map(col => ({
+        this._processedColumns = (this.columns || []).map(col => ({
             visible: true,
             sortable: false,
             truncate: false,
@@ -119,7 +138,7 @@ class DataTableController implements angular.IController {
 
     // Public methods
     get visibleColumns(): IDataTableColumn[] {
-        return (this.columns || []).filter(col => col.visible !== false);
+        return (this._processedColumns || []).filter(col => col.visible !== false);
     }
 
     get isLoading(): boolean {
@@ -148,6 +167,51 @@ class DataTableController implements angular.IController {
     getCellValue(row: any, column: IDataTableColumn): any {
         const field = column.field || column.key;
         return this.getNestedValue(row, field);
+    }
+
+    getFormattedCellValue(row: any, column: IDataTableColumn): string {
+        const value = this.getCellValue(row, column);
+
+        // Use custom render function if provided
+        if (column.render) {
+            return column.render(value, row, column);
+        }
+
+        // Apply format if specified
+        if (column.format && value !== null && value !== undefined) {
+            const decimals = column.decimals ?? 2;
+            switch (column.format) {
+                case 'currency':
+                    return this.$filter('currency')(value);
+                case 'percent':
+                    return this.$filter('number')(value, decimals) + '%';
+                case 'number':
+                    return this.$filter('number')(value, decimals);
+                case 'date':
+                    return this.$filter('date')(value, 'short');
+            }
+        }
+
+        return value?.toString() ?? '';
+    }
+
+    getCellClasses(row: any, column: IDataTableColumn): string {
+        const classes = this.getColumnClasses(column);
+
+        // Add dynamic cell class if provided
+        if (column.cellClass) {
+            const value = this.getCellValue(row, column);
+            const dynamicClass = column.cellClass(value, row);
+            if (dynamicClass) {
+                classes.push(dynamicClass);
+            }
+        }
+
+        return classes.join(' ');
+    }
+
+    trustAsHtml(html: string): any {
+        return this.$sce.trustAsHtml(html);
     }
 
     getColumnStyle(column: IDataTableColumn): { [key: string]: string } {
@@ -225,6 +289,32 @@ class DataTableController implements angular.IController {
         if (this.onRowContext) {
             this.onRowContext({ row, index, $event: event });
         }
+    }
+
+    // Row action methods
+    handleRowAction(action: IDataTableRowAction, row: any, index: number, event: MouseEvent): void {
+        event.stopPropagation();
+        if (this.onRowAction) {
+            this.onRowAction({ action: action.key, row, index });
+        }
+    }
+
+    isActionDisabled(action: IDataTableRowAction, row: any): boolean {
+        if (typeof action.disabled === 'function') {
+            return action.disabled(row);
+        }
+        return action.disabled || false;
+    }
+
+    isActionHidden(action: IDataTableRowAction, row: any): boolean {
+        if (action.hidden) {
+            return action.hidden(row);
+        }
+        return false;
+    }
+
+    get hasRowActions(): boolean {
+        return !!(this.rowActions && this.rowActions.length > 0);
     }
 
     // Selection methods
@@ -331,7 +421,11 @@ const DataTableComponent: angular.IComponentOptions = {
         onRowSelect: '&?',
         onSort: '&?',
         onPaginate: '&?',
-        onRowContext: '&?'
+        onRowContext: '&?',
+
+        // Row actions binding
+        rowActions: '<?',
+        onRowAction: '&?'
     },
     controller: DataTableController,
     controllerAs: 'ctrl'

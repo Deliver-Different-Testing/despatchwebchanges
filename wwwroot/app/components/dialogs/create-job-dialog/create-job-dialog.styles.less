@@ -30,7 +30,8 @@
   &__close {
     color: @text-light;
     opacity: 0.9;
-    transition: opacity 0.2s ease;
+    transition: opacity @duration-short @easing-standard;
+    border-radius: @radius-full;
 
     &:hover {
       opacity: 1;
@@ -73,15 +74,15 @@
 
   // Section Styling
   &__section {
-    background-color: white;
-    border-radius: 8px;
+    background-color: @card-background;
+    border-radius: @radius-md;
     padding: @spacing * 2;
     margin-bottom: @spacing * 1.5;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    transition: box-shadow 0.2s ease;
+    box-shadow: @elevation-1;
+    transition: box-shadow @duration-short @easing-standard;
 
     &:hover {
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+      box-shadow: @elevation-2;
     }
 
     &--last {
@@ -217,13 +218,13 @@
   // Autocomplete dropdown styling
   md-autocomplete {
     .md-autocomplete-suggestions-container {
-      border-radius: 4px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border-radius: @radius-sm;
+      box-shadow: @elevation-2;
 
       li {
         font-size: @font-sm;
         padding: @spacing;
-        transition: background-color 0.15s ease;
+        transition: background-color @duration-short @easing-standard;
 
         &:hover,
         &.selected {
@@ -239,8 +240,8 @@
 
   // Actions
   &__actions {
-    background-color: white;
-    border-top: 1px solid #e0e0e0;
+    background-color: @card-background;
+    border-top: 1px solid @surface-container-high;
     padding: @spacing * 1.5 @spacing * 2;
     display: flex;
     justify-content: flex-end;
@@ -309,6 +310,24 @@
         flex: 1;
         min-width: 120px;
       }
+    }
+  }
+}
+
+// NZ tenant theme overrides
+.nz-tenant .create-job-dialog {
+  &__section-title {
+    border-bottom-color: @nz-primary;
+  }
+
+  &__field {
+    md-input-container input:focus,
+    md-input-container textarea:focus {
+      border-color: @nz-primary;
+    }
+
+    md-autocomplete md-autocomplete-wrap.md-focused {
+      border-bottom-color: @nz-primary;
     }
   }
 }

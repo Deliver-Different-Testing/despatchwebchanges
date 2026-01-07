@@ -71,7 +71,7 @@
   border-radius: @card-border-radius;
   margin-bottom: 24px;
   border-left: 4px solid;
-  background: #fff;
+  background: @card-background;
   box-shadow: @box-shadow-light;
 
   &.parent-job-alert {
@@ -109,7 +109,7 @@
   margin-bottom: 32px;
 
   .summary-card {
-    background: white;
+    background: @card-background;
     border-radius: @card-border-radius;
     padding: 20px;
     box-shadow: @box-shadow-light;
@@ -230,211 +230,216 @@
 
 // Table Styles
 .table-container {
-  background: white;
+  background: @card-background;
   border-radius: @card-border-radius;
   border: 1px solid @border-color;
   overflow: hidden;
 
+  // Data table integration styles
   .data-table {
-    width: 100%;
-    border-collapse: collapse;
-
-    thead {
+    // Header styling
+    .data-table__head {
       background: @main-background-color;
-      border-bottom: 1px solid @border-color;
 
-      tr th {
+      .data-table__header-cell {
         padding: 14px 16px;
-        text-align: left;
         font-size: @font-xs;
         font-weight: @weight-semibold;
         color: @text-secondary;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        white-space: nowrap;
 
-        &.col-numeric {
-          text-align: right;
-        }
-
-        &.col-actions {
+        &.data-table__actions-cell {
           text-align: center;
           width: 120px;
-        }
-
-        &.col-name {
-          min-width: 200px;
         }
       }
     }
 
-    tbody {
-      .data-row {
-        border-bottom: 1px solid @border-color;
-        transition: background-color @transition-speed ease;
+    // Row styling
+    .data-table__row {
+      border-bottom: 1px solid @border-color;
+      transition: background-color @transition-speed ease;
 
-        &:hover {
-          background: @main-background-color;
-        }
+      &:hover {
+        background: @main-background-color;
+      }
 
-        &:last-child {
-          border-bottom: none;
-        }
+      &:last-child {
+        border-bottom: none;
+      }
+    }
 
-        &.is-jobs-item {
-          background: @jobs-item-bg;
+    // Cell styling
+    .data-table__cell {
+      padding: 16px;
+      font-size: @font-base;
+      color: @text-primary;
+      vertical-align: middle;
 
-          &:hover {
-            background: darken(@jobs-item-bg, 3%);
-          }
-        }
+      &.col-numeric {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
 
-        td {
-          padding: 16px;
-          font-size: @font-base;
+      &.revenue {
+        color: @revenue-color;
+        font-weight: @weight-semibold;
+      }
+
+      &.cost {
+        color: @cost-color;
+        font-weight: @weight-semibold;
+      }
+
+      &.data-table__actions-cell {
+        text-align: center;
+      }
+    }
+
+    // Action buttons
+    .action-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .action-btn {
+      margin: 0;
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      min-height: 36px;
+      padding: 0;
+      transition: all @transition-speed ease;
+
+      md-icon {
+        color: @text-secondary;
+      }
+
+      &:hover {
+        background: @main-background-color;
+
+        md-icon {
           color: @text-primary;
-          vertical-align: middle;
-
-          &.col-numeric {
-            text-align: right;
-            font-variant-numeric: tabular-nums;
-
-            .amount-value {
-              font-weight: @weight-medium;
-            }
-          }
-
-          &.revenue {
-            color: @revenue-color;
-            font-weight: @weight-semibold;
-          }
-
-          &.cost {
-            color: @cost-color;
-            font-weight: @weight-semibold;
-          }
-
-          &.col-actions {
-            text-align: center;
-
-            .action-buttons {
-              display: flex;
-              justify-content: center;
-              gap: 4px;
-            }
-
-            .action-btn {
-              margin: 0;
-              width: 36px;
-              height: 36px;
-              transition: all @transition-speed ease;
-
-              md-icon {
-                color: @text-secondary;
-              }
-
-              &:hover {
-                background: @main-background-color;
-
-                md-icon {
-                  color: @text-primary;
-                }
-              }
-
-              &.delete-btn:hover {
-                background: @status-undeliverable-bg;
-
-                md-icon {
-                  color: @negative-color;
-                }
-              }
-            }
-          }
-        }
-
-        .item-name {
-          .item-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-
-            .item-icon {
-              color: @text-muted-light;
-              font-size: 20px;
-              width: 20px;
-              height: 20px;
-              flex-shrink: 0;
-            }
-
-            .item-text {
-              display: flex;
-              flex-direction: column;
-              gap: 6px;
-              min-width: 0;
-
-              .item-name-text {
-                font-weight: @weight-medium;
-                color: @text-primary;
-              }
-
-              .jobs-badge {
-                display: inline-flex;
-                align-items: center;
-                gap: 4px;
-                padding: 4px 10px;
-                background: @jobs-item-color;
-                color: white;
-                border-radius: 12px;
-                font-size: @font-xs;
-                font-weight: @weight-semibold;
-                text-transform: uppercase;
-                letter-spacing: 0.03em;
-                width: fit-content;
-
-                md-icon {
-                  width: 14px;
-                  height: 14px;
-                }
-              }
-            }
-          }
-        }
-
-        .profit-value {
-          font-weight: @weight-semibold;
-
-          &.positive {
-            color: @positive-color;
-          }
-
-          &.negative {
-            color: @negative-color;
-          }
-        }
-
-        .margin-badge {
-          display: inline-block;
-          padding: 4px 10px;
-          border-radius: 12px;
-          font-size: @font-sm;
-          font-weight: @weight-semibold;
-
-          &.high-margin {
-            background: #d1fae5;
-            color: #065f46;
-          }
-
-          &.medium-margin {
-            background: #fed7aa;
-            color: #92400e;
-          }
-
-          &.low-margin {
-            background: @status-undeliverable-bg;
-            color: @status-undeliverable-text;
-          }
         }
       }
+
+      &.delete-btn:hover {
+        background: @status-undeliverable-bg;
+
+        md-icon {
+          color: @negative-color;
+        }
+      }
+    }
+  }
+
+  // Custom cell content styles (rendered via column.render)
+  .item-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .item-icon {
+      color: @text-muted-light;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      font-style: normal;
+    }
+
+    .item-name-text {
+      font-weight: @weight-medium;
+      color: @text-primary;
+    }
+
+    md-chip.jobs-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      height: 24px;
+      padding: 0;
+      margin: 0 0 0 8px;
+      background: @jobs-item-color !important;
+      color: white;
+      border-radius: 50%;
+      flex-shrink: 0;
+
+      .md-chip-content {
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      md-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+        min-width: 14px;
+        min-height: 14px;
+        color: white;
+        margin: 0;
+      }
+    }
+  }
+
+  .amount-value {
+    font-weight: @weight-medium;
+  }
+
+  .profit-value {
+    font-weight: @weight-semibold;
+
+    &.positive {
+      color: @positive-color;
+    }
+
+    &.negative {
+      color: @negative-color;
+    }
+  }
+
+  .margin-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: @font-sm;
+    font-weight: @weight-semibold;
+
+    &.high-margin {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    &.medium-margin {
+      background: #fed7aa;
+      color: #92400e;
+    }
+
+    &.low-margin {
+      background: @status-undeliverable-bg;
+      color: @status-undeliverable-text;
+    }
+  }
+
+  // Empty state styling
+  .data-table__empty {
+    padding: 48px 24px;
+    text-align: center;
+
+    .data-table__empty-icon {
+      font-size: 48px;
+      color: @text-muted-light;
+      margin-bottom: 16px;
+    }
+
+    .data-table__empty-message {
+      color: @text-secondary;
+      font-size: @font-base;
     }
   }
 }
@@ -442,7 +447,7 @@
 // Edit Form
 .edit-form-section {
   .form-card {
-    background: white;
+    background: @card-background;
     border-radius: @card-border-radius;
     border: 1px solid @border-color;
     box-shadow: @box-shadow-light;
@@ -649,6 +654,21 @@
 
         .footer-actions {
           justify-content: stretch;
+        }
+      }
+    }
+  }
+}
+
+// NZ tenant theme overrides
+.nz-tenant .price-breakdown-dialog {
+  .summary-section {
+    .summary-card.profit-card {
+      .card-icon-wrapper {
+        background: fade(@nz-primary, 15%);
+
+        md-icon {
+          color: @nz-primary-dark;
         }
       }
     }

@@ -200,7 +200,7 @@
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    background: #fff;
+    background: @card-background;
 
     &:hover {
       border-color: rgba(0, 0, 0, 0.18);
@@ -339,7 +339,7 @@
     transition: all 0.2s ease;
 
     &:focus-within {
-      background: #fff;
+      background: @card-background;
       border-color: #57534e;
       box-shadow: 0 0 0 3px rgba(87, 83, 78, 0.12);
     }
@@ -426,6 +426,31 @@
       &[disabled] {
         opacity: 0.7;
       }
+    }
+  }
+}
+
+// NZ tenant theme overrides
+.nz-tenant .price-edit-dialog {
+  .confirmation-panel {
+    .calculated-amount-display {
+      background: fade(@nz-primary, 15%);
+      border-color: fade(@nz-primary, 30%);
+
+      .amount-value {
+        color: @nz-primary-dark;
+      }
+    }
+
+    .confirmation-icon md-icon {
+      color: @nz-primary-dark;
+    }
+  }
+
+  .option-card.selected {
+    .option-icon.base {
+      background: fade(@nz-primary, 15%);
+      color: @nz-primary-dark;
     }
   }
 }

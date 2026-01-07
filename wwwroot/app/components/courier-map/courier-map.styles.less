@@ -47,7 +47,7 @@
     width: @panel-width;
     max-height: calc(100% - 32px);
     background: @panel-bg;
-    border-radius: 16px;
+    border-radius: @radius-lg;
     box-shadow: @panel-shadow;
     display: flex;
     flex-direction: row;
@@ -77,7 +77,7 @@
         min-width: 0;
         overflow: hidden;
         background: @panel-bg;
-        border-radius: 16px;
+        border-radius: @radius-lg;
     }
 
     // Material Design 3 Header
@@ -108,7 +108,7 @@
             font-size: @font-xs;
             font-weight: @weight-semibold;
             padding: 4px 10px;
-            border-radius: 12px;
+            border-radius: @radius-lg;
             min-width: 24px;
             text-align: center;
             box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
@@ -289,7 +289,7 @@
             padding: 12px 16px;
             margin: 2px 8px;
             cursor: pointer;
-            border-radius: 12px;
+            border-radius: @radius-lg;
             transition: all 180ms @animation-easing;
             position: relative;
 
@@ -311,7 +311,7 @@
         .driver-avatar {
             width: 40px;
             height: 40px;
-            border-radius: 12px;
+            border-radius: @radius-lg;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -553,7 +553,7 @@
         .map-control-btn {
             width: 40px;
             height: 40px;
-            border-radius: 12px;
+            border-radius: @radius-lg;
         }
     }
 }

@@ -29,6 +29,14 @@ export interface IDataTableColumn {
     sticky?: 'left' | 'right';
     /** Column is visible */
     visible?: boolean;
+    /** Format type for automatic formatting (e.g., 'currency', 'percent', 'number') */
+    format?: 'currency' | 'percent' | 'number' | 'date';
+    /** Number of decimal places for numeric formats */
+    decimals?: number;
+    /** Custom render function for cell content */
+    render?: (value: any, row: any, column: IDataTableColumn) => string;
+    /** Custom CSS class function for cell content */
+    cellClass?: (value: any, row: any) => string;
 }
 
 export interface IDataTableSort {
@@ -84,4 +92,19 @@ export interface IDataTableEvents {
     onRowSelect?: (selectedRows: any[]) => void;
     onSort?: (sort: IDataTableSort) => void;
     onPaginate?: (pagination: { page: number; pageSize: number }) => void;
+}
+
+export interface IDataTableRowAction {
+    /** Unique identifier for the action */
+    key: string;
+    /** Icon name (material-symbols-outlined) */
+    icon: string;
+    /** Tooltip text */
+    tooltip?: string;
+    /** CSS class for the button */
+    cssClass?: string;
+    /** Whether the action is disabled */
+    disabled?: boolean | ((row: any) => boolean);
+    /** Whether to hide this action for certain rows */
+    hidden?: (row: any) => boolean;
 }

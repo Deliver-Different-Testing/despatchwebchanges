@@ -1,4 +1,6 @@
-﻿.custom-date-picker {
+﻿@import "../../../../css/variables.less";
+
+.custom-date-picker {
   width: 100%; // Add this to ensure the component itself fills available space
 
   .input-section {
@@ -24,28 +26,28 @@
 
   md-input-container {
     width: 100%; // Add this to ensure inputs fill their containers
-    background: white;
-    border-radius: 8px;
+    background: @card-background;
+    border-radius: @radius-md;
     padding: 8px 16px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e0e0e0;
-    transition: all 0.2s ease;
+    box-shadow: @elevation-1;
+    border: 1px solid @surface-container-high;
+    transition: all @duration-medium @easing-standard;
 
     &.md-input-focused {
-      border-color: #1976d2;
-      box-shadow: 0 2px 8px rgba(25, 118, 210, 0.15);
+      border-color: @primary-blue;
+      box-shadow: @elevation-2;
       transform: translateY(-1px);
     }
 
     label {
-      font-weight: 500;
-      color: #424242;
-      font-size: 14px;
+      font-weight: @weight-medium;
+      color: @text-dark;
+      font-size: @font-sm;
     }
 
     input {
-      font-size: 16px;
-      color: #212121;
+      font-size: @font-base;
+      color: @text-dark;
       border: none;
       background: transparent;
 
@@ -60,10 +62,27 @@
         cursor: pointer;
 
         &::-webkit-calendar-picker-indicator {
-          color: #1976d2;
+          color: @primary-blue;
           cursor: pointer;
           filter: brightness(0) saturate(100%) invert(27%) sepia(96%) saturate(1028%) hue-rotate(201deg) brightness(95%) contrast(87%);
         }
+      }
+    }
+  }
+}
+
+// NZ tenant theme overrides
+.nz-tenant .custom-date-picker {
+  md-input-container {
+    &.md-input-focused {
+      border-color: @nz-primary;
+      box-shadow: 0 2px 8px fade(@nz-primary, 25%);
+    }
+
+    input[type="date"],
+    input[type="time"] {
+      &::-webkit-calendar-picker-indicator {
+        filter: brightness(0) saturate(100%) invert(80%) sepia(50%) saturate(1000%) hue-rotate(10deg);
       }
     }
   }

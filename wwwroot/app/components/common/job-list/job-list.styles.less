@@ -2,24 +2,25 @@
 
 .job-list-component {
   margin: -15px 0 0;
-  padding: 0;
+  padding: 2px;
   box-sizing: border-box;
-  background: #f8fafc;
-  color: #1e293b;
-  line-height: 1.4;
+  background: @surface-container-low;
+  color: @text-dark;
+  line-height: @line-normal;
   height: 100%;
   display: flex;
   flex-direction: column;
 
   .stats-header {
-    background: white;
-    border-bottom: 1px solid #e2e8f0;
-    padding: 12px 20px;
+    background: @card-background;
+    border-bottom: 1px solid @surface-container-high;
+    padding: 10px 16px;
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: @elevation-1;
     flex-shrink: 0;
+    border-radius: @radius-lg @radius-lg 0 0;
 
     .stats {
       display: flex;
@@ -72,7 +73,7 @@
     position: sticky;
     top: 0;
     z-index: 50;
-    background: white;
+    background: @card-background;
     color: black;
 
     .md-toolbar-tools {
@@ -85,7 +86,7 @@
   }
   
   .controls-header {
-    background: white;
+    background: @card-background;
     border-bottom: 1px solid #e2e8f0;
     padding: 12px 20px;
     display: flex;
@@ -128,13 +129,13 @@
 
         .tab {
           padding: 6px 12px;
-          border: 1px solid #e2e8f0;
-          background: white;
+          border: 1px solid @surface-container-high;
+          background: @card-background;
           cursor: pointer;
-          font-size: 12px;
-          font-weight: 500;
-          transition: all 0.2s;
-          border-radius: 0;
+          font-size: @font-sm;
+          font-weight: @weight-medium;
+          transition: all @duration-short @easing-standard;
+          border-radius: @radius-full;
           white-space: nowrap;
 
           &.active {
@@ -144,7 +145,7 @@
           }
 
           &:hover:not(.active) {
-            background: #f8fafc;
+            background: @surface-container-low;
           }
         }
       }
@@ -155,20 +156,21 @@
 
         .search-input {
           padding: 8px 12px;
-          border: 1px solid #e2e8f0;
-          border-radius: 6px;
-          font-size: 13px;
+          border: 1px solid @surface-container-high;
+          border-radius: @radius-md;
+          font-size: @font-base;
           width: 280px;
-          background: white;
-          transition: border-color 0.2s;
+          background: @surface-container-lowest;
+          transition: border-color @duration-short @easing-standard, box-shadow @duration-short @easing-standard;
 
           &:focus {
             outline: none;
-            border-color: #10b981;
+            border-color: @primary-blue;
+            box-shadow: 0 0 0 3px fade(@primary-blue, 15%);
           }
 
           &::placeholder {
-            color: #64748b;
+            color: @text-muted;
           }
         }
       }
@@ -181,7 +183,7 @@
         .view-btn {
           padding: 6px 10px;
           border: 1px solid #e2e8f0;
-          background: white;
+          background: @card-background;
           font-size: 11px;
           cursor: pointer;
           transition: all 0.2s;
@@ -208,7 +210,7 @@
         .reset-columns-btn {
           padding: 6px 10px;
           border: 1px solid #e2e8f0;
-          background: white;
+          background: @card-background;
           font-size: 11px;
           cursor: pointer;
           transition: all 0.2s;
@@ -247,7 +249,7 @@
           font-weight: 600;
           text-transform: uppercase;
           color: #64748b;
-          background: white;
+          background: @card-background;
           position: sticky;
           top: 0;
           z-index: 49 !important;
@@ -265,7 +267,7 @@
             position: relative;
             border-right: 1px solid #e2e8f0;
             min-height: 36px;
-            background: white;
+            background: @card-background;
             box-sizing: border-box;
 
             &:last-child {
@@ -317,11 +319,11 @@
           display: grid;
           gap: 0;
           padding: 10px 0;
-          border-bottom: 1px solid #f1f5f9;
+          border-bottom: 1px solid @surface-container-low;
           align-items: start;
-          background: white;
-          transition: background-color 0.2s;
-          font-size: 13px;
+          background: @card-background;
+          transition: background-color @duration-short @easing-standard;
+          font-size: @font-base;
           cursor: pointer;
           position: relative;
           z-index: 1;
@@ -464,17 +466,17 @@
 
           &.selected {
             background: #bbdefb !important;
-            border-left: 4px solid #2563eb !important;
-            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.15) !important;
+            border-left: 4px solid @primary-blue !important;
+            box-shadow: @elevation-1 !important;
 
             &:hover {
               background: #90caf9 !important;
-              box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25) !important;
+              box-shadow: @elevation-2 !important;
             }
           }
 
           &.unread {
-            background: white;
+            background: @card-background;
 
             .job-id {
               font-weight: 900;
@@ -832,7 +834,7 @@
             .assign-btn {
               padding: 6px 12px;
               border: 1px solid #e2e8f0;
-              background: white;
+              background: @card-background;
               border-radius: 4px;
               font-size: 11px;
               font-weight: 500;
@@ -866,7 +868,7 @@
                   border: 1px solid #e2e8f0 !important;
                   border-radius: 4px !important;
                   font-size: 11px !important;
-                  background: white !important;
+                  background: @card-background !important;
                   transition: border-color 0.2s !important;
                   box-sizing: border-box !important;
 
@@ -893,7 +895,7 @@
                   border: 1px solid #e2e8f0;
                   border-radius: 4px;
                   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                  background: white;
+                  background: @card-background;
                   margin-top: 2px;
 
                   /* Style individual suggestions */
@@ -962,7 +964,7 @@
 
   .footer {
     padding: 12px 20px;
-    background: white;
+    background: @card-background;
     border-top: 1px solid #e2e8f0;
     display: flex;
     justify-content: space-between;
@@ -1443,7 +1445,7 @@
     .job-row {
       padding: 2px 0 !important;
       min-height: 28px !important;
-      border-bottom: 1px solid #b5b5b5 !important;
+      border-bottom: 1px solid @surface-container-high !important;
 
       .job-cell {
         min-height: 28px !important;
@@ -1456,6 +1458,23 @@
       .route-cell.delivery-cell {
         flex-direction: row !important;
         align-items: center !important;
+      }
+
+      &.selected {
+        border-left-color: @nz-primary !important;
+      }
+    }
+
+    .controls-header .controls {
+      .filter-tabs .tab.active {
+        background: @nz-primary-dark;
+        border-color: @nz-primary-dark;
+        color: white;
+      }
+
+      .search-input:focus {
+        border-color: @nz-primary;
+        box-shadow: 0 0 0 3px fade(@nz-primary, 20%);
       }
     }
   }

@@ -49,7 +49,7 @@ class JobsListController extends BaseController {
         totalCount: number,
         hasMore: boolean
     }>;
-    setBackendFilter?: (data: { column: string, direction: string }) => Promise<void>;
+    setBackendFilter?: (params: { data: { column: string, direction: string } }) => Promise<void>;
     defaultCategory?: JobCategory; // Allow parent to set an initial category
     isUsCustomer?: boolean;
     timeZoneShort: string;
@@ -1076,6 +1076,10 @@ class JobsListController extends BaseController {
                 case 'desc':
                     this.sortState.direction = 'asc';
                     break;
+                default:
+                    // Handle null/undefined direction (e.g., from restored state)
+                    this.sortState.direction = 'asc';
+                    break;
             }
         } else {
             // New column, start with ascending
@@ -1087,9 +1091,12 @@ class JobsListController extends BaseController {
 
         // Always refresh from backend when sort changes - partial datasets can't be correctly re-sorted client-side
         if (this.setBackendFilter) {
+            // AngularJS expression binding requires wrapping params to match template: set-backend-filter="ctrl.handleBackendSort(data)"
             await this.setBackendFilter({
-                column: this.sortState.column,
-                direction: this.sortState.direction ?? "desc"
+                data: {
+                    column: this.sortState.column,
+                    direction: this.sortState.direction ?? "desc"
+                }
             });
         } else {
             // Only apply client-side sort if no backend filter is available
