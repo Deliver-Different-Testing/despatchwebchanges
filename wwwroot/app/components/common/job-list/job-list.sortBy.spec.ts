@@ -117,14 +117,18 @@ describe('JobListComponent sortBy', () => {
             // Initial: date desc
             await sortBy(context, 'date'); // Toggle to asc
             expect(mockSetBackendFilter).toHaveBeenLastCalledWith({
-                column: 'date',
-                direction: 'asc'
+                data: {
+                    column: 'date',
+                    direction: 'asc'
+                }
             });
 
             await sortBy(context, 'date'); // Toggle to desc
             expect(mockSetBackendFilter).toHaveBeenLastCalledWith({
-                column: 'date',
-                direction: 'desc'
+                data: {
+                    column: 'date',
+                    direction: 'desc'
+                }
             });
         });
     });
@@ -238,8 +242,10 @@ describe('JobListComponent sortBy', () => {
             await sortBy(context, 'date');
 
             expect(mockBackend).toHaveBeenCalledWith({
-                column: 'date',
-                direction: 'asc'
+                data: {
+                    column: 'date',
+                    direction: 'asc'
+                }
             });
         });
     });
