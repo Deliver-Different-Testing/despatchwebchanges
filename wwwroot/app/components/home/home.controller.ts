@@ -47,7 +47,7 @@ import TasksService from "../../services/tasks.service";
 import JobListType from "../common/job-list/enums/jobListType";
 import IContextMenuOption from "../../interfaces/context-menu-option.interface";
 import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
-import IDateFilterData from "../common/date-filter-menu/IDateFilterData";
+import IDateFilterData from "../../interfaces/date-filter-data.interface";
 import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
 import utc from "dayjs/plugin/utc";
 import {getMinsSelectionOptions} from "../../functions/MinsSelectionOptions";
@@ -512,10 +512,10 @@ class HomeController extends BaseController {
         this.$mdDialog
             .show(this.$mdDialog
                 .prompt()
-                .title("Save Layout")
+                .title("Add Layout")
                 .textContent("Please enter a name for this layout.")
                 .required(true)
-                .ok("Save")
+                .ok("Add")
                 .cancel("Cancel"))
             .then((name) => {
                 if (!name) return;

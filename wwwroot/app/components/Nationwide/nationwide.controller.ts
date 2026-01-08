@@ -56,7 +56,7 @@ import RecoveryAgentManagementService
     from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.service";
 import {formatDateForApiWithTzs, getIanaTimezone} from "../../functions/formatDates";
 import IContextMenuOption from "../../interfaces/context-menu-option.interface";
-import IDateFilterData from "../common/date-filter-menu/IDateFilterData";
+import IDateFilterData from "../../interfaces/date-filter-data.interface";
 import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
 import timezone from "dayjs/plugin/timezone";
 import {transformFlightToDTO} from "../../functions/toDtoMappings";
@@ -494,10 +494,10 @@ class NationwideControl extends BaseController {
         this.$mdDialog
             .show(this.$mdDialog
                 .prompt()
-                .title("Save Layout")
+                .title("Add Layout")
                 .textContent("Please enter a name for this layout.")
                 .required(true)
-                .ok("Save")
+                .ok("Add")
                 .cancel("Cancel"))
             .then((name) => {
                 if (!name) return;
@@ -1876,7 +1876,8 @@ class NationwideControl extends BaseController {
         try {
             const url = "nationwideJob/GetAllAgentsSearch";
             const selectedAgent = await this.autoCompleteDialogService.showAutocompleteDialog($event, url, "Search all Agents", "Agent", "Agents", undefined);
-
+            if(!selectedAgent) return;
+            
             await this.addSelectedAgentToJob($event, selectedAgent, job);
         } catch (error) {
             this.handleError(error);

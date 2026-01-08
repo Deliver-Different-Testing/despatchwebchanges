@@ -318,25 +318,25 @@ class RouterConfig {
         // 404 Not Found
         this.$stateProvider.state("notFound", {
             url: "/not-found",
-            template: '<error-page error-type="notFound"></error-page>'
+            template: '<react-error-page error-type="notFound"></react-error-page>'
         });
 
         // General Error
         this.$stateProvider.state("error", {
             url: "/error",
-            template: '<error-page error-type="error"></error-page>'
+            template: '<react-error-page error-type="error"></react-error-page>'
         });
 
         // Access Denied
         this.$stateProvider.state("forbidden", {
             url: "/forbidden",
-            template: '<error-page error-type="forbidden"></error-page>'
+            template: '<react-error-page error-type="forbidden"></react-error-page>'
         });
 
         // Server Error
         this.$stateProvider.state("serverError", {
             url: "/server-error",
-            template: '<error-page error-type="serverError"></error-page>'
+            template: '<react-error-page error-type="serverError"></react-error-page>'
         });
 
         return this;

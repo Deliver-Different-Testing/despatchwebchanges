@@ -125,9 +125,9 @@ describe('RouterConfig', () => {
             expect(notFoundState.url).toBe('/not-found');
         });
 
-        it('should configure notFound state with error-page template', () => {
+        it('should configure notFound state with react-error-page template', () => {
             const notFoundState = registeredStates.get('notFound');
-            expect(notFoundState.template).toBe('<error-page error-type="notFound"></error-page>');
+            expect(notFoundState.template).toBe('<react-error-page error-type="notFound"></react-error-page>');
         });
 
         it('should register error state', () => {

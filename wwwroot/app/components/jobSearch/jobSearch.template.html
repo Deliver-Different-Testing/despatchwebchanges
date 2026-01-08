@@ -1,52 +1,16 @@
 <md-content class="md-dense job-search-view">
-    <div>
-        <app-toolbar title="Search Dashboard">
-            <md-button aria-label="Open messages window" class="md-icon-button button-trigger"
-                       ng-click="ctrl.openMessagingDialog($event)">
-                <md-icon md-font-set="material-symbols-outlined">sms</md-icon>
-                <md-tooltip md-direction="bottom">Messages</md-tooltip>
-            </md-button>
-
-            <md-menu>
-                <md-button aria-label="Open layout options menu"
-                           class="md-icon-button button-trigger"
-                           ng-click="$mdMenu.open($event)">
-                    <md-icon md-font-set="material-symbols-outlined">grid_view</md-icon>
-                    <md-tooltip md-direction="bottom">Layouts</md-tooltip>
-                </md-button>
-                <md-menu-content width="2">
-                    <md-menu-item>
-                        <md-button ng-click="ctrl.saveLayout()">
-                            <md-icon md-font-set="material-symbols-outlined">save</md-icon>
-                            Add Layout
-                        </md-button>
-                    </md-menu-item>
-                    <md-divider></md-divider>
-                    <md-menu-item ng-repeat="lo in ctrl.layouts track by $index">
-                        <md-button ng-click="ctrl.loadLayout($index)">
-                            <md-icon md-font-set="material-symbols-outlined"
-                                     ng-click="ctrl.deleteLayout($index); $event.stopPropagation()"
-                                     ng-if="::lo.name != 'Default'">
-                                delete
-                            </md-icon>
-                            <md-icon md-font-set="material-symbols-outlined" ng-if="lo.name == 'Default'">
-                                tune
-                            </md-icon>
-                            <span ng-style="lo.name == ctrl.currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
-                        </md-button>
-                    </md-menu-item>
-                </md-menu-content>
-            </md-menu>
-
-            <md-button
-                    aria-label="Open settings menu"
-                    class="md-icon-button button-trigger"
-                    ng-click="ctrl.openSettingsDialog($event)">
-                <md-icon md-font-set="material-symbols-outlined">settings_applications</md-icon>
-                <md-tooltip md-direction="bottom">Settings</md-tooltip>
-            </md-button>
-        </app-toolbar>
-    </div>
+    <!-- React App Shell (Toolbar + Side Navigation) -->
+    <react-app-shell
+            title="Search Dashboard"
+            messages-count="0"
+            on-messages-click="ctrl.openMessagingDialog($event)"
+            layouts="ctrl.layouts"
+            current-layout-name="ctrl.currentLayoutName"
+            on-save-layout="ctrl.saveLayout()"
+            on-load-layout="ctrl.loadLayout(index)"
+            on-delete-layout="ctrl.deleteLayout(index)"
+            on-settings-click="ctrl.openSettingsDialog($event)">
+    </react-app-shell>
 
     <div class="dashboard-padding">
         <div class="columns" ng-class="{'layout-locked': ctrl.isDefaultLayout(), 'us-theme': ctrl.isUsCustomer, 'nz-theme': !ctrl.isUsCustomer}">

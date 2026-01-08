@@ -1,108 +1,23 @@
 <md-content class="md-dense home-view">
-    <div>
-        <app-toolbar title="Dispatch Dashboard">
-            <md-button aria-label="Open messages window" class="md-icon-button button-trigger"
-                       ng-click="ctrl.openMessagingDialog($event)">
-                <md-icon md-font-set="material-symbols-outlined">sms</md-icon>
-                <span class="custom-badge"
-                      ng-show="ctrl.unReadMessageCount > 0"
-                      ng-class="{'large-count': ctrl.unReadMessageCount > 99}"
-                      md-tooltip="{{ctrl.unReadMessageCount}} Unread Messages"
-                      md-tooltip-direction="bottom">
-                    {{ ctrl.unReadMessageCount > 99 ? '99+' : ctrl.unReadMessageCount }}
-                </span>
-                <md-tooltip md-direction="bottom">Messages</md-tooltip>
-            </md-button>
-
-            <date-filter-menu
-                    date-filter-data="ctrl.dateFilterData"
-                    app-page="ctrl.currentAppPage"
-                    on-refresh-data="ctrl.refreshDataTimeSpan(dateFilterData)">
-            </date-filter-menu>
-
-            <md-menu>
-                <md-button aria-label="Open views menu"
-                           class="md-icon-button button-trigger"
-                           ng-click="$mdMenu.open($event)">
-                    <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.views">view_list</md-icon>
-                    <md-tooltip md-direction="bottom">Views</md-tooltip>
-                    <md-progress-circular md-diameter="18"
-                                          md-mode="indeterminate"
-                                          ng-if="!ctrl.views"></md-progress-circular>
-                </md-button>
-                <md-menu-content class="professional-menu-content" width="4">
-                    <div ng-if="ctrl.views && ctrl.views.length === 0" class="empty-state">
-                        <md-icon class="empty-icon" md-font-set="material-symbols-outlined">visibility_off</md-icon>
-                        <p class="empty-text">No views available to display</p>
-                    </div>
-
-                    <div ng-if="ctrl.views && ctrl.views.length > 0">
-                        <div class="menu-header">
-                            <div class="button-row">
-                                <md-button aria-label="Clear all views" class="md-raised"
-                                           ng-click="ctrl.clearAllViews()">
-                                    <md-icon class="clear-icon" md-font-set="material-symbols-outlined">clear_all
-                                    </md-icon>
-                                    Unselect All
-                                </md-button>
-                            </div>
-                        </div>
-
-                        <div class="view-list">
-                            <md-menu-item class="view-item" ng-repeat="view in ctrl.views track by view.id">
-                                <md-checkbox
-                                        class="md-primary"
-                                        aria-label="Toggle {{view.name}} view"
-                                        ng-change="ctrl.toggleView(view)"
-                                        ng-model="view.selected">
-                                    {{view.name}}
-                                </md-checkbox>
-                            </md-menu-item>
-                        </div>
-                    </div>
-                </md-menu-content>
-            </md-menu>
-
-            <md-menu>
-                <md-button aria-label="Open layout options menu"
-                           class="md-icon-button button-trigger"
-                           ng-click="$mdMenu.open($event)">
-                    <md-icon md-font-set="material-symbols-outlined">grid_view</md-icon>
-                    <md-tooltip md-direction="bottom">Layouts</md-tooltip>
-                </md-button>
-                <md-menu-content width="2">
-                    <md-menu-item>
-                        <md-button ng-click="ctrl.saveLayout()">
-                            <md-icon md-font-set="material-symbols-outlined">save</md-icon>
-                            Add Layout
-                        </md-button>
-                    </md-menu-item>
-                    <md-divider></md-divider>
-                    <md-menu-item ng-repeat="lo in ctrl.layouts track by $index">
-                        <md-button ng-click="ctrl.loadLayout($index)">
-                            <md-icon md-font-set="material-symbols-outlined"
-                                     ng-click="ctrl.deleteLayout($index); $event.stopPropagation()"
-                                     ng-if="lo.name != 'Default'">
-                                delete
-                            </md-icon>
-                            <md-icon md-font-set="material-symbols-outlined" ng-if="lo.name == 'Default'">
-                                tune
-                            </md-icon>
-                            <span ng-style="lo.name == ctrl.currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
-                        </md-button>
-                    </md-menu-item>
-                </md-menu-content>
-            </md-menu>
-
-            <md-button
-                    aria-label="Open settings menu"
-                    class="md-icon-button button-trigger"
-                    ng-click="ctrl.openSettingsDialog($event)">
-                <md-icon md-font-set="material-symbols-outlined">settings_applications</md-icon>
-                <md-tooltip md-direction="bottom">Settings</md-tooltip>
-            </md-button>
-        </app-toolbar>
-    </div>
+    <!-- React App Shell (Toolbar + Side Navigation) -->
+    <react-app-shell
+            title="Dispatch Dashboard"
+            messages-count="ctrl.unReadMessageCount"
+            on-messages-click="ctrl.openMessagingDialog($event)"
+            views="ctrl.views"
+            views-loading="!ctrl.viewsInitialized"
+            on-toggle-view="ctrl.toggleView(view)"
+            on-clear-all-views="ctrl.clearAllViews()"
+            layouts="ctrl.layouts"
+            current-layout-name="ctrl.currentLayoutName"
+            on-save-layout="ctrl.saveLayout()"
+            on-load-layout="ctrl.loadLayout(index)"
+            on-delete-layout="ctrl.deleteLayout(index)"
+            on-settings-click="ctrl.openSettingsDialog($event)"
+            date-filter-data="ctrl.dateFilterData"
+            app-page="home"
+            on-date-filter-refresh="ctrl.refreshDataTimeSpan(dateFilterData)">
+    </react-app-shell>
 
     <div ng-if="ctrl.isDataLoading">
         <md-progress-linear md-mode="indeterminate" class="md-primary" style="padding: 10px;"></md-progress-linear>

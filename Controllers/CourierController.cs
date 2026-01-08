@@ -1,4 +1,7 @@
-﻿using DespatchWeb.Enums;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -6,9 +9,6 @@ using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace DespatchWeb.Controllers;
 
@@ -36,7 +36,7 @@ public class CourierController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
-    
+
     public async Task<IActionResult> ClearListEnvelope(int clearListId)
     {
         try
@@ -274,6 +274,7 @@ public class CourierController(
         }
     }
 
+    [HttpPost]
     public async Task<IActionResult> GetCourierDailyEarnings([FromBody] PaginatedRequest request)
     {
         try

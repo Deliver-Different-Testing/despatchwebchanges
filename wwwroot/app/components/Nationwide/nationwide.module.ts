@@ -24,8 +24,6 @@ import RecoveryAgentManagementController
 import RecoveryAgentManagementService
     from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.service";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
-import DashboardSettingsDialogController
-    from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.controller";
 
 const nationwideModule = angular.module('uDispatch.nationwide', [
     'ngMap',
@@ -67,7 +65,6 @@ nationwideModule
     .controller("flightAgentConformationDialogController", FlightAgentConformationDialogController)
     .controller("agentInfoDialogController", AgentInfoDialogController)
     .controller("AdditionalServicesDialogController", AdditionalServicesDialogController)
-    .controller("recoveryAgentManagementController", RecoveryAgentManagementController)
-    .controller("DashboardSettingsDialogController", DashboardSettingsDialogController);
+    .controller("recoveryAgentManagementController", RecoveryAgentManagementController);
 
 export default nationwideModule;

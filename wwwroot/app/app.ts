@@ -1,8 +1,6 @@
 import {IAppConfig} from "./interfaces/app-config.interface";
 import {AppPage} from "./enums/app-pages.enum";
 import {PodPhotoViewerComponent} from "./components/common/pod-photo-viewer/pod-photo-viewer.component";
-import {MaterialSidenavComponent} from "./components/common/side-nav/side-nav.component";
-import {AutoCompleteDialogController} from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.controller";
 import EditParcelDimensionsDialogController
     from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.controller";
 import {
@@ -45,7 +43,7 @@ import dayjs from "dayjs";
 import 'dayjs/locale/en';
 import 'dayjs/locale/en-nz';
 import NoDataComponent from "./components/common/no-data/no-data.component";
-import ErrorPageComponent from "./components/common/error-page/error-page.component";
+import reactErrorPageDirective from "./components/error-page/react-error-page.directive";
 import TablePaginationComponent from "./components/common/table-pagination/table-pagination.component";
 import DataTableComponent from "./components/common/data-table/data-table.component";
 import TruckCourierStatusDialogController
@@ -60,7 +58,6 @@ import VoidJobConfirmationDialogController
     from "./components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.controller";
 import VoidJobConfirmationDialogService
     from "./components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
-import DateFilterMenuComponent from "./components/common/date-filter-menu/date-filter-menu.component";
 import DayJsDatePickerComponent from "./components/common/dayjs-date-picker/dayjs-date-picker.component";
 import {minutesToTimeFilter} from "./components/Nationwide/filters/minutesToTimeFilter";
 import SimplePriceEditDialogService
@@ -69,8 +66,8 @@ import SimplePriceEditDialogController
     from "./components/dialogs/simple-price-edit-dialog/simple-price-edit-dialog.controller";
 import BulkPriceUploadDialogService
     from "./components/dialogs/bulk-price-upload-dialog/bulk-price-upload-dialog.service";
-import AppToolbarComponent from "./components/common/app-toolbar/app-toolbar.component";
 import {TaskItemComponent} from "./components/common/task-item-component/task-item.component";
+import reactAppShellDirective from "./components/common/react-app-shell/react-app-shell.directive";
 
 const app = (window as any).uDispatchApp;
 
@@ -223,21 +220,18 @@ app.filter('minutesToTime', () => minutesToTimeFilter);
 
 // Components
 app.component("jobDetailWidget", JobDetailComponent);
-app.component("materialSidenav", MaterialSidenavComponent);
 app.component("podPhotoViewer", PodPhotoViewerComponent);
 app.component("noData", NoDataComponent);
-app.component("errorPage", ErrorPageComponent);
 app.component("tablePagination", TablePaginationComponent);
 app.component("dataTable", DataTableComponent);
 app.component("stickyNote", StickyNoteComponent);
-app.component("dateFilterMenu", DateFilterMenuComponent);
 app.component("customDatePicker", DayJsDatePickerComponent);
-app.component("appToolbar", AppToolbarComponent);
 app.component("taskItemComponent", TaskItemComponent);
+app.directive("reactAppShell", reactAppShellDirective);
+app.directive("reactErrorPage", reactErrorPageDirective);
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);
-app.controller("AutoCompleteDialogController", AutoCompleteDialogController);
 app.controller("EditParcelDimensionsDialogController", EditParcelDimensionsDialogController);
 app.controller("FeatureInDevelopmentDialogController", FeatureInDevelopmentDialogController);
 app.controller("SelectDialogController", SelectDialogController);
