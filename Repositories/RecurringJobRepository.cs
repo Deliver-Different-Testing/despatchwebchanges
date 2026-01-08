@@ -436,6 +436,7 @@ public class RecurringJobRepository(
                 case JobProperty.DaysOfWeek:
                     var dayEnum = (DaysOfWeek)int.Parse(value);
                     var daysInt = (int)dayEnum;
+                    var daysString = dayEnum.ToBinaryString();
 
                     // Get parent ID if this is a child's job
                     var effectiveBookingId = await Context.GetEffectiveJobBookingIdAsync(jobId);
@@ -443,7 +444,9 @@ public class RecurringJobRepository(
                     // Update this job, its children, and if it's a child, also parent and siblings
                     await Context.TucJobBookings
                         .Where(j => j.UcbkId == effectiveBookingId || j.BookingParentId == effectiveBookingId)
-                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkDaysInt, daysInt));
+                        .ExecuteUpdateAsync(s => s
+                            .SetProperty(j => j.UcbkDaysInt, daysInt)
+                            .SetProperty(j => j.UcbkDays, daysString));
 
                     noteText = $"Days of recurring jobs set to: {dayEnum.ToDisplayString()}";
                     break;
