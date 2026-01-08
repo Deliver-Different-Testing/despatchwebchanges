@@ -1,10 +1,29 @@
 import esbuild from "esbuild";
 import fs from "fs";
 import path from "path";
-import { lessLoader } from "esbuild-plugin-less";
+import {lessLoader} from "esbuild-plugin-less";
 
 // Type definitions
-type EntryPointName = 'vendor-core' | 'vendor-plugins' | 'app' | 'home' | 'nationwide' | 'overview' | 'jobSearch' | 'megaMap' | 'taskDashboard' | 'recurringJobs' | 'driverManagement' | 'courierMap';
+type EntryPointName =
+    'vendor-core'
+    | 'vendor-plugins'
+    | 'vendor-react'
+    | 'app'
+    | 'home'
+    | 'nationwide'
+    | 'overview'
+    | 'jobSearch'
+    | 'megaMap'
+    | 'taskDashboard'
+    | 'recurringJobs'
+    | 'driverManagement'
+    | 'courierMap'
+    | 'dateRangeDialogReact'
+    | 'priceBreakdownDialogReact'
+    | 'dashboardSettingsDialogReact'
+    | 'autoCompleteDialogReact'
+    | 'appShellReact'
+    | 'errorPageReact';
 type EntryPoints = Record<EntryPointName, string>;
 
 // Configuration
@@ -17,6 +36,7 @@ const distPath = path.join(rootDir, "wwwroot/dist");
 const entryPoints: EntryPoints = {
     "vendor-core": path.join(rootDir, "wwwroot/app/index.ts"),
     "vendor-plugins": path.join(rootDir, "wwwroot/app/vendor-plugins.ts"),
+    "vendor-react": path.join(rootDir, "wwwroot/app/vendor-react.ts"),
     app: path.join(rootDir, "wwwroot/app/app.ts"),
     home: path.join(rootDir, "wwwroot/app/components/home/home.module.ts"),
     nationwide: path.join(rootDir, "wwwroot/app/components/Nationwide/nationwide.module.ts"),
@@ -27,6 +47,12 @@ const entryPoints: EntryPoints = {
     recurringJobs: path.join(rootDir, "wwwroot/app/components/recurringJobs/recurringJobs.module.ts"),
     driverManagement: path.join(rootDir, "wwwroot/app/components/driver-management-dashboard/driver-management.module.ts"),
     courierMap: path.join(rootDir, "wwwroot/app/components/courier-map/courier-map.module.ts"),
+    dateRangeDialogReact: path.join(rootDir, "wwwroot/app/components/dialogs-react/date-range-dialog/date-range-dialog-react.module.tsx"),
+    priceBreakdownDialogReact: path.join(rootDir, "wwwroot/app/components/dialogs-react/price-breakdown-dialog/price-breakdown-dialog-react.module.tsx"),
+    dashboardSettingsDialogReact: path.join(rootDir, "wwwroot/app/components/dialogs-react/dashboard-settings-dialog/dashboard-settings-dialog-react.module.tsx"),
+    autoCompleteDialogReact: path.join(rootDir, "wwwroot/app/components/dialogs-react/auto-complete-dialog/auto-complete-dialog-react.module.tsx"),
+    appShellReact: path.join(rootDir, "wwwroot/app/components/common-react/app-shell/app-shell-react.module.tsx"),
+    errorPageReact: path.join(rootDir, "wwwroot/app/components/error-page/error-page-react.module.tsx"),
 };
 
 // Lazy-load html-minifier-terser only when needed (production builds)
@@ -184,6 +210,127 @@ function createGlobalShimPlugin(includeAngular: boolean): esbuild.Plugin {
     };
 }
 
+// Plugin to redirect React imports to window globals (for react-module bundles)
+function createReactGlobalShimPlugin(): esbuild.Plugin {
+    return {
+        name: "react-global-shim",
+        setup(build) {
+            // Shim React to use window.React
+            build.onResolve({filter: /^react$/}, () => ({
+                path: "react",
+                namespace: "react-shim",
+            }));
+
+            build.onLoad({filter: /.*/, namespace: "react-shim"}, () => ({
+                contents: `
+                    const React = window.React;
+                    export default React;
+                    // Core hooks
+                    export const useState = React.useState;
+                    export const useEffect = React.useEffect;
+                    export const useCallback = React.useCallback;
+                    export const useMemo = React.useMemo;
+                    export const useRef = React.useRef;
+                    export const useContext = React.useContext;
+                    export const useReducer = React.useReducer;
+                    export const useLayoutEffect = React.useLayoutEffect;
+                    export const useImperativeHandle = React.useImperativeHandle;
+                    export const useDebugValue = React.useDebugValue;
+                    // React 18 hooks
+                    export const useId = React.useId;
+                    export const useTransition = React.useTransition;
+                    export const useDeferredValue = React.useDeferredValue;
+                    export const useSyncExternalStore = React.useSyncExternalStore;
+                    export const useInsertionEffect = React.useInsertionEffect;
+                    // Core APIs
+                    export const createContext = React.createContext;
+                    export const createElement = React.createElement;
+                    export const Fragment = React.Fragment;
+                    export const Children = React.Children;
+                    export const cloneElement = React.cloneElement;
+                    export const isValidElement = React.isValidElement;
+                    export const memo = React.memo;
+                    export const forwardRef = React.forwardRef;
+                    export const lazy = React.lazy;
+                    export const Suspense = React.Suspense;
+                    export const StrictMode = React.StrictMode;
+                    // Additional APIs
+                    export const Component = React.Component;
+                    export const PureComponent = React.PureComponent;
+                    export const createRef = React.createRef;
+                    export const version = React.version;
+                    export const startTransition = React.startTransition;
+                `,
+                loader: "js",
+            }));
+
+            // Shim react-dom to use window.ReactDOM
+            build.onResolve({filter: /^react-dom$/}, () => ({
+                path: "react-dom",
+                namespace: "react-dom-shim",
+            }));
+
+            build.onLoad({filter: /.*/, namespace: "react-dom-shim"}, () => ({
+                contents: `
+                    const ReactDOM = window.ReactDOM;
+                    export default ReactDOM;
+                    export const createRoot = ReactDOM.createRoot;
+                    export const createPortal = ReactDOM.createPortal;
+                    export const flushSync = ReactDOM.flushSync;
+                `,
+                loader: "js",
+            }));
+
+            // Shim react-dom/client
+            build.onResolve({filter: /^react-dom\/client$/}, () => ({
+                path: "react-dom/client",
+                namespace: "react-dom-client-shim",
+            }));
+
+            build.onLoad({filter: /.*/, namespace: "react-dom-client-shim"}, () => ({
+                contents: `
+                    const ReactDOM = window.ReactDOM;
+                    export const createRoot = ReactDOM.createRoot;
+                    export const hydrateRoot = ReactDOM.hydrateRoot;
+                `,
+                loader: "js",
+            }));
+
+            // Shim react/jsx-runtime - use the actual jsx-runtime from vendor
+            build.onResolve({filter: /^react\/jsx-runtime$/}, () => ({
+                path: "react/jsx-runtime",
+                namespace: "jsx-runtime-shim",
+            }));
+
+            build.onLoad({filter: /.*/, namespace: "jsx-runtime-shim"}, () => ({
+                contents: `
+                    const jsxRuntime = window.ReactJsxRuntime;
+                    export const jsx = jsxRuntime.jsx;
+                    export const jsxs = jsxRuntime.jsxs;
+                    export const Fragment = jsxRuntime.Fragment;
+                `,
+                loader: "js",
+            }));
+
+            // Shim @tanstack/react-query
+            build.onResolve({filter: /^@tanstack\/react-query$/}, () => ({
+                path: "@tanstack/react-query",
+                namespace: "react-query-shim",
+            }));
+
+            build.onLoad({filter: /.*/, namespace: "react-query-shim"}, () => ({
+                contents: `
+                    export const QueryClientProvider = window.QueryClientProvider;
+                    export const useQuery = window.useQuery;
+                    export const useMutation = window.useMutation;
+                    export const useQueryClient = window.useQueryClient;
+                `,
+                loader: "js",
+            }));
+        },
+    };
+}
+
 // Base build options (shared between vendor and modules)
 const baseBuildOptions: esbuild.BuildOptions = {
     bundle: true,
@@ -192,6 +339,9 @@ const baseBuildOptions: esbuild.BuildOptions = {
     mainFields: ["browser", "module", "main"],
     loader: {
         ".js": "js",
+        ".ts": "ts",
+        ".tsx": "tsx",
+        ".jsx": "jsx",
         ".html": "text",
         ".css": "css",
         ".less": "css",
@@ -202,7 +352,7 @@ const baseBuildOptions: esbuild.BuildOptions = {
 };
 
 // Bundle types for different shim configurations
-type BundleType = "vendor-core" | "vendor-plugins" | "modules";
+type BundleType = "vendor-core" | "vendor-plugins" | "vendor-react" | "modules" | "react-modules";
 
 // Build configuration for a specific entry or set of entries
 function getBuildConfig(
@@ -223,7 +373,12 @@ function getBuildConfig(
     } else if (bundleType === "modules") {
         // Modules use dayjs/windows-iana from the vendor, no Angular shim needed
         plugins.unshift(createGlobalShimPlugin(false));
+    } else if (bundleType === "react-modules") {
+        // React modules use React/ReactDOM from vendor-react + dayjs from vendor-core
+        plugins.unshift(createGlobalShimPlugin(false));
+        plugins.unshift(createReactGlobalShimPlugin());
     }
+    // vendor-react and vendor-core don't need shims - they bundle their own dependencies
 
     const define: Record<string, string> = {
         "process.env.NODE_ENV": forProduction ? '"production"' : '"development"',
@@ -299,7 +454,11 @@ function generateSimpleManifest(): Record<string, string> {
     const manifest: Record<string, string> = {};
     for (const entryName of Object.keys(entryPoints) as EntryPointName[]) {
         manifest[`${entryName}.js`] = `${entryName}.js`;
-        manifest[`${entryName}.css`] = `${entryName}.css`;
+        // Only include CSS if the file actually exists
+        const cssPath = path.join(distPath, `${entryName}.css`);
+        if (fs.existsSync(cssPath)) {
+            manifest[`${entryName}.css`] = `${entryName}.css`;
+        }
     }
     return manifest;
 }
@@ -340,13 +499,25 @@ function analyzeBundle(metafile: esbuild.Metafile): void {
     }
 }
 
-// Split entry points into vendor (core + plugins) and modules
+// Split entry points into vendor (core + plugins + react) and modules
 const vendorEntries = {
     "vendor-core": entryPoints["vendor-core"],
     "vendor-plugins": entryPoints["vendor-plugins"],
+    "vendor-react": entryPoints["vendor-react"],
 };
+
+// Angular modules (not React-based)
 const moduleEntries = Object.fromEntries(
-    Object.entries(entryPoints).filter(([name]) => !name.startsWith("vendor"))
+    Object.entries(entryPoints).filter(([name]) =>
+        !name.startsWith("vendor") && !name.includes("React")
+    )
+) as Record<string, string>;
+
+// React modules (use React global shims)
+const reactModuleEntries = Object.fromEntries(
+    Object.entries(entryPoints).filter(([name]) =>
+        name.includes("React") && !name.startsWith("vendor")
+    )
 ) as Record<string, string>;
 
 // Build functions
@@ -354,14 +525,18 @@ async function buildDev(): Promise<void> {
     console.log("[DEV] Building development bundles...");
 
     // Build all bundle types with watch contexts
-    const [vendorCoreCtx, vendorPluginsCtx, modulesCtx] = await Promise.all([
+    const contexts = await Promise.all([
         esbuild.context(getBuildConfig(false, { "vendor-core": vendorEntries["vendor-core"] }, "vendor-core")),
         esbuild.context(getBuildConfig(false, { "vendor-plugins": vendorEntries["vendor-plugins"] }, "vendor-plugins")),
+        esbuild.context(getBuildConfig(false, {"vendor-react": vendorEntries["vendor-react"]}, "vendor-react")),
         esbuild.context(getBuildConfig(false, moduleEntries, "modules")),
+        ...(Object.keys(reactModuleEntries).length > 0
+            ? [esbuild.context(getBuildConfig(false, reactModuleEntries, "react-modules"))]
+            : []),
     ]);
 
     // Initial builds
-    await Promise.all([vendorCoreCtx.rebuild(), vendorPluginsCtx.rebuild(), modulesCtx.rebuild()]);
+    await Promise.all(contexts.map(ctx => ctx.rebuild()));
 
     // Write manifest
     const manifest = generateSimpleManifest();
@@ -371,7 +546,7 @@ async function buildDev(): Promise<void> {
     );
 
     // Start watching
-    await Promise.all([vendorCoreCtx.watch(), vendorPluginsCtx.watch(), modulesCtx.watch()]);
+    await Promise.all(contexts.map(ctx => ctx.watch()));
 
     console.log("[DEV] Build complete. Watching for changes...");
     console.log(`[DEV] Output: ${distPath}`);
@@ -392,28 +567,33 @@ async function buildProd(): Promise<void> {
     }
 
     // Build all bundle types in parallel
-    const [vendorCoreResult, vendorPluginsResult, modulesResult] = await Promise.all([
+    const buildPromises = [
         esbuild.build(getBuildConfig(true, { "vendor-core": vendorEntries["vendor-core"] }, "vendor-core")),
         esbuild.build(getBuildConfig(true, { "vendor-plugins": vendorEntries["vendor-plugins"] }, "vendor-plugins")),
+        esbuild.build(getBuildConfig(true, {"vendor-react": vendorEntries["vendor-react"]}, "vendor-react")),
         esbuild.build(getBuildConfig(true, moduleEntries, "modules")),
-    ]);
+    ];
 
-    if (!vendorCoreResult.metafile || !vendorPluginsResult.metafile || !modulesResult.metafile) {
-        throw new Error("Metafile not generated");
+    // Add React modules build if there are any
+    if (Object.keys(reactModuleEntries).length > 0) {
+        buildPromises.push(
+            esbuild.build(getBuildConfig(true, reactModuleEntries, "react-modules"))
+        );
+    }
+
+    const results = await Promise.all(buildPromises);
+
+    // Verify all metafiles exist
+    for (const result of results) {
+        if (!result.metafile) {
+            throw new Error("Metafile not generated");
+        }
     }
 
     // Merge metafiles for analysis and manifest
     const mergedMetafile: esbuild.Metafile = {
-        inputs: {
-            ...vendorCoreResult.metafile.inputs,
-            ...vendorPluginsResult.metafile.inputs,
-            ...modulesResult.metafile.inputs
-        },
-        outputs: {
-            ...vendorCoreResult.metafile.outputs,
-            ...vendorPluginsResult.metafile.outputs,
-            ...modulesResult.metafile.outputs
-        },
+        inputs: Object.assign({}, ...results.map(r => r.metafile!.inputs)),
+        outputs: Object.assign({}, ...results.map(r => r.metafile!.outputs)),
     };
 
     // Show bundle analysis if requested

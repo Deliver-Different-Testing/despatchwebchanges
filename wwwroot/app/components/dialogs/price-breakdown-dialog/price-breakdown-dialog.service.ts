@@ -1,4 +1,3 @@
-import {PriceBreakdownDialogController} from "./price-breakdown-dialog.controller";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import {IJob, PriceBreakdown} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
@@ -6,6 +5,24 @@ import SimplePriceEditDialogService, {
     PriceEditResult
 } from "../simple-price-edit-dialog/simple-price-edit-dialog.service";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
+
+// Type declaration for the React dialog on window
+declare global {
+    interface Window {
+        ReactPriceBreakdownDialog?: {
+            open: (
+                priceBreakdowns: PriceBreakdown[],
+                jobId: number,
+                isPrebook: boolean,
+                apiService: {
+                    addPriceBreakdown: (breakdown: Omit<PriceBreakdown, 'chargeId'>) => Promise<number>;
+                    updatePriceBreakdown: (breakdown: PriceBreakdown) => Promise<void>;
+                    deletePriceBreakdown: (chargeId: number, jobId: number) => Promise<void>;
+                }
+            ) => Promise<number | null>;
+        };
+    }
+}
 
 class PriceBreakdownDialogService implements angular.IServiceProvider {
     static $inject = [
@@ -15,6 +32,8 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
         'toastrService',
         'APP_CONFIG',
         "simplePriceEditDialogService",
+        '$ocLazyLoad',
+        '$http',
     ];
 
     private readonly isUsCustomer: boolean;
@@ -25,7 +44,9 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
         private $document: angular.IDocumentService,
         private toastrService: ToastrService,
         appConfig: IAppConfig,
-        private simplePriceEditDialogService: SimplePriceEditDialogService
+        private simplePriceEditDialogService: SimplePriceEditDialogService,
+        private $ocLazyLoad: oc.ILazyLoad,
+        private $http: angular.IHttpService,
     ) {
         console.debug('PriceBreakdownDialogService: Service instantiated');
         this.isUsCustomer = appConfig.US_Customer;
@@ -38,7 +59,7 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
     private isUsingOldAmountMethod(jobAmount?: number, priceBreakdowns?: PriceBreakdown[]): boolean {
         // US Customers always get pricing breakdown
         if (this.isUsCustomer) return false;
-        
+
         const isUsingOldMethod = !!jobAmount && jobAmount > 0 && (!priceBreakdowns || priceBreakdowns.length === 0);
         console.log('Job isUsingOldAmountMethod', isUsingOldMethod);
         return isUsingOldMethod;
@@ -66,6 +87,38 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
         }
     }
 
+    /**
+     * Load the React price breakdown dialog module on demand
+     */
+    private async loadReactPriceBreakdownDialog(): Promise<void> {
+        // Check if already loaded
+        if (window.ReactPriceBreakdownDialog) {
+            return;
+        }
+
+        try {
+            // Load the manifest to get hashed filenames
+            const manifestResponse = await this.$http.get<Record<string, string>>('dist/manifest.json');
+            const manifest = manifestResponse.data;
+
+            const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
+
+            // Load vendor-react first (if not already loaded)
+            if (!(window as any).React) {
+                await this.$ocLazyLoad.load(getAssetPath('vendor-react.js'));
+            }
+
+            // Load the price breakdown dialog React module
+            await this.$ocLazyLoad.load({
+                name: 'uDispatch.priceBreakdownDialogReact',
+                files: [getAssetPath('priceBreakdownDialogReact.js')]
+            });
+        } catch (error) {
+            console.error('[PriceBreakdownDialogService] Failed to load React dialog:', error);
+            throw error;
+        }
+    }
+
     async openPriceBreakdownDialog($event: MouseEvent,
                                    job: IJob): Promise<number | undefined> {
         try {
@@ -85,25 +138,34 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
                 }
             }
 
-            const newAmount: number = await this.$mdDialog.show({
-                controller: PriceBreakdownDialogController,
-                controllerAs: 'ctrl',
-                template: require("./price-breakdown-dialog.template.html"),
-                parent: this.$document.parent(),
-                targetEvent: $event,
-                clickOutsideToClose: false,
-                escapeToClose: true,
-                locals: {
-                    priceBreakdowns,
-                    jobId: job.id,
-                    isPrebook: job.preBook,
-                },
-                bindToController: true,
-            });
-            
+            // Load the React dialog module on demand
+            await this.loadReactPriceBreakdownDialog();
+
+            if (!window.ReactPriceBreakdownDialog) {
+                throw new Error('React price breakdown dialog not loaded');
+            }
+
+            // Create API service wrapper
+            const apiService = {
+                addPriceBreakdown: (breakdown: Omit<PriceBreakdown, 'chargeId'>) =>
+                    this.DispatchData.addPriceBreakdown(breakdown as PriceBreakdown),
+                updatePriceBreakdown: (breakdown: PriceBreakdown) =>
+                    this.DispatchData.updatePriceBreakdown(breakdown),
+                deletePriceBreakdown: (chargeId: number, jobId: number) =>
+                    this.DispatchData.deletePriceBreakdown(chargeId, jobId),
+            };
+
+            // Open the React dialog
+            const newAmount = await window.ReactPriceBreakdownDialog.open(
+                priceBreakdowns,
+                job.id,
+                job.preBook,
+                apiService
+            );
+
             console.debug('PriceBreakdownDialogService: Dialog closed!');
 
-            return newAmount;
+            return newAmount ?? undefined;
         } catch (error) {
             if(!error) {
                 console.debug('User closed dialog');

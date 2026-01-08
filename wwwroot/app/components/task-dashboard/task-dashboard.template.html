@@ -1,24 +1,14 @@
-<div>
-    <app-toolbar title="Task Dashboard">
-        <md-button aria-label="Open messages window" class="md-icon-button"
-                   ng-click="ctrl.openMessagingDialog($event)">
-            <md-icon md-font-set="material-symbols-outlined">sms</md-icon>
-            <md-tooltip md-direction="bottom">Messages</md-tooltip>
-        </md-button>
-
-        <md-button aria-label="Refresh tasks" class="md-icon-button"
-                   ng-click="ctrl.refreshTasks()">
-            <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
-            <md-tooltip md-direction="bottom">Refresh Tasks</md-tooltip>
-        </md-button>
-
-        <date-filter-menu
-                ng-if="!ctrl.showFullCalendar"
-                date-filter-data="ctrl.dateFilterData"
-                on-refresh-data="ctrl.refreshDataTimeSpan(dateFilterData)">
-        </date-filter-menu>
-    </app-toolbar>
-</div>
+<!-- React App Shell (Toolbar + Side Navigation) -->
+<react-app-shell
+        title="Task Dashboard"
+        messages-count="0"
+        on-messages-click="ctrl.openMessagingDialog($event)"
+        on-refresh-click="ctrl.refreshTasks()"
+        refresh-loading="ctrl.isLoading"
+        date-filter-data="ctrl.showFullCalendar ? null : ctrl.dateFilterData"
+        app-page="task-dashboard"
+        on-date-filter-refresh="ctrl.refreshDataTimeSpan(dateFilterData)">
+</react-app-shell>
 
 <div class="md-padding dfrnt-task-dashboard">
     <md-card class="dashboard-header-card">

@@ -431,9 +431,16 @@ public partial class JobRepository(
                         (j.UcjbOurRef ?? string.Empty) + " " +
                         j.UcjbNumber + " " +
                         (j.Barcode ?? string.Empty) + " " +
+                        (j.UcjbContact ?? string.Empty) + " " +
                         (j.CustomJobName ?? string.Empty),
                         wildSearch
                     )
+                    ||
+                    j.UcjbClient.TblClientContacts.Any(cc =>
+                        EF.Functions.Like(
+                            (cc.Contact.UcctFirstname ?? string.Empty) + " " +
+                            (cc.Contact.UcctSurname ?? string.Empty),
+                            wildSearch))
                 );
 
                 archivedJobsQuery = archivedJobsQuery.Where(j =>
@@ -447,6 +454,7 @@ public partial class JobRepository(
                         (j.UcjbOurRef ?? string.Empty) + " " +
                         j.UcjbNumber + " " +
                         (j.Barcode ?? string.Empty) + " " +
+                        (j.UcjbContact ?? string.Empty) + " " +
                         (j.CustomJobName ?? string.Empty),
                         wildSearch
                     )
@@ -1035,9 +1043,16 @@ public partial class JobRepository(
                     (j.UcjbOurRef ?? string.Empty) + " " +
                     j.UcjbNumber + " " +
                     (j.Barcode ?? string.Empty) + " " +
+                    (j.UcjbContact ?? string.Empty) + " " +
                     (j.CustomJobName ?? string.Empty),
                     wildSearch
                 )
+                ||
+                j.UcjbClient.TblClientContacts.Any(cc =>
+                    EF.Functions.Like(
+                        (cc.Contact.UcctFirstname ?? string.Empty) + " " +
+                        (cc.Contact.UcctSurname ?? string.Empty),
+                        wildSearch))
             );
 
             archivedJobsQuery = archivedJobsQuery.Where(j =>
@@ -1051,6 +1066,7 @@ public partial class JobRepository(
                     (j.UcjbOurRef ?? string.Empty) + " " +
                     j.UcjbNumber + " " +
                     (j.Barcode ?? string.Empty) + " " +
+                    (j.UcjbContact ?? string.Empty) + " " +
                     (j.CustomJobName ?? string.Empty),
                     wildSearch
                 )
@@ -1665,6 +1681,7 @@ public partial class JobRepository(
 
     /// <summary>
     /// Voids a job and optionally its related jobs, clearing all pricing fields and closing tasks.
+    /// If the job is a parent, all children are also voided regardless of VoidSingleJobOnly.
     /// </summary>
     /// <param name="data">Void request containing job ID, reason, and options for voiding related jobs.</param>
     public async Task VoidJobAsync(VoidJobRequest data)
@@ -1675,7 +1692,7 @@ public partial class JobRepository(
             var jobsToVoid = data.SelectedJobIds is { Count: > 0 }
                 ? data.SelectedJobIds
                 : data.VoidSingleJobOnly
-                    ? [data.JobId]
+                    ? await GetJobWithChildrenAsync(data.JobId)
                     : await GetAllRelatedJobIdsIncludingParentAsync(data.JobId);
 
             if (jobsToVoid.Count == 0) return;
@@ -4074,6 +4091,21 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Gets the job ID along with all its children IDs (if any).
+    /// </summary>
+    private async Task<List<int>> GetJobWithChildrenAsync(int jobId)
+    {
+        var childIds = await Context.TucJobs
+            .Where(j => j.ParentId == jobId)
+            .Select(j => j.UcjbId)
+            .TagWith($"GetJobWithChildren - Get children for job {jobId}")
+            .ToListAsync();
+
+        childIds.Add(jobId);
+        return childIds;
+    }
+
     private async Task<List<int>> GetAllRelatedJobIdsIncludingParentAsync(int jobId)
     {
         // Single query to get both parent ID and all related job IDs
@@ -4508,6 +4540,33 @@ public partial class JobRepository(
         var jobItemFlagsTask = BatchLoadJobItemFlagsAsync(flagsContext, jobIds, jobs);
 
         await Task.WhenAll(flightInfoTask, pricingTask, parcelDimensionsTask, jobItemFlagsTask);
+
+        // Apply tenant timezone to date fields
+        ApplyTimezoneToJobDates(jobs, _infoService.GetTenantTimeZone());
+    }
+
+    private static void ApplyTimezoneToJobDates(List<JobViewModel> jobs, string tenantTimeZone)
+    {
+        foreach (var job in jobs)
+        {
+            if (job.DispatchTime.HasValue)
+                job.DispatchTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.DispatchTime.Value, tenantTimeZone);
+
+            if (job.PuTime.HasValue)
+                job.PuTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.PuTime.Value, tenantTimeZone);
+
+            if (job.FollowupTime.HasValue)
+                job.FollowupTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.FollowupTime.Value, tenantTimeZone);
+
+            if (job.CompletedTime.HasValue)
+                job.CompletedTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.CompletedTime.Value, tenantTimeZone);
+
+            if (job.CreatedDate.HasValue)
+                job.CreatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(job.CreatedDate.Value, tenantTimeZone);
+
+            if (job.DeliverByTime.HasValue)
+                job.DeliverByTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.DeliverByTime.Value, tenantTimeZone);
+        }
     }
 
     private static async Task BatchLoadFlightInfoAsync(

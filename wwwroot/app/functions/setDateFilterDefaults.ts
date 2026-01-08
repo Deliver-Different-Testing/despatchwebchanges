@@ -1,4 +1,4 @@
-﻿import IDateFilterData from "../components/common/date-filter-menu/IDateFilterData";
+﻿import IDateFilterData from "../interfaces/date-filter-data.interface";
 import dayjs from "dayjs";
 import {getIanaTimezone} from "./formatDates";
 import {TimeZone} from "../contants";

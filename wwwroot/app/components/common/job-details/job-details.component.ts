@@ -527,6 +527,9 @@ class JobDetailController extends BaseController {
                     existingItem,
                     showRerateOption
                 );
+            
+            if(!result) return;
+            
             const callData: CallData = {
                 field,
                 value: result.id,

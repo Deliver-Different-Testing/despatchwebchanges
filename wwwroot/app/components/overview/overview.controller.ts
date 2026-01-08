@@ -13,11 +13,19 @@ import BaseController from "../base-controller";
 import {ISuggestion} from "../../interfaces/job.interface";
 import greetUser from "../../functions/greetUser";
 import {Dayjs} from "dayjs";
-import {DateRangeDialogController} from "../dialogs/date-range-dialog/date-range-dialog.controller";
 import MapDialogService from "../dialogs/map-dialog/map-dialog.service";
 import {IPaginatedResponse} from "../../interfaces/paginated-response.interface";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import {IDataTableColumn, IDataTableSort} from "../common/data-table/data-table.interfaces";
+
+// Type declaration for the React dialog on window
+declare global {
+    interface Window {
+        ReactDateRangeDialog?: {
+            open: (initialRange?: { start?: Date; end?: Date }) => Promise<{ start: Date; end: Date } | null>;
+        };
+    }
+}
 
 class OverviewController extends BaseController {
     static $inject = [
@@ -33,6 +41,8 @@ class OverviewController extends BaseController {
         "$scope",
         "$timeout",
         "$interval",
+        "$ocLazyLoad",
+        "$http",
     ];
 
     private readonly OverviewJobLimitDisplay: string = `overviewJobLimitDisplay-${ContactID}`;
@@ -83,6 +93,8 @@ class OverviewController extends BaseController {
         $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
+        private $ocLazyLoad: oc.ILazyLoad,
+        private $http: angular.IHttpService,
     ) {
         super();
         this.initServices($timeout, $interval, $scope)
@@ -343,27 +355,62 @@ class OverviewController extends BaseController {
         return "md-high"; // Gray for high progress
     }
 
+    /**
+     * Load the React date range dialog module on demand
+     */
+    private async loadReactDateRangeDialog(): Promise<void> {
+        // Check if already loaded
+        if (window.ReactDateRangeDialog) {
+            return;
+        }
+
+        try {
+            // Load the manifest to get hashed filenames
+            const manifestResponse = await this.$http.get<Record<string, string>>('dist/manifest.json');
+            const manifest = manifestResponse.data;
+
+            const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
+
+            // Load vendor-react first (if not already loaded)
+            if (!(window as any).React) {
+                await this.$ocLazyLoad.load(getAssetPath('vendor-react.js'));
+            }
+
+            // Load the date range dialog React module
+            await this.$ocLazyLoad.load({
+                name: 'uDispatch.dateRangeDialogReact',
+                files: [getAssetPath('dateRangeDialogReact.js')]
+            });
+        } catch (error) {
+            console.error('[Overview] Failed to load React date range dialog:', error);
+            throw error;
+        }
+    }
+
     async showDateRangeDialog($event: MouseEvent) {
         try {
+            // Load the React dialog module on demand
+            await this.loadReactDateRangeDialog();
+
+            if (!window.ReactDateRangeDialog) {
+                throw new Error('React date range dialog not loaded');
+            }
+
+            // Convert Dayjs to Date for the React dialog
             const dialogDateRange = {
-                start: this.dateRange.start,
-                end: this.dateRange.end
+                start: this.dateRange.start?.toDate?.() ?? this.dateRange.start as Date | undefined,
+                end: this.dateRange.end?.toDate?.() ?? this.dateRange.end as Date | undefined
             };
 
-            const result = await this.$mdDialog.show({
-                controller: DateRangeDialogController,
-                controllerAs: "ctrl",
-                targetEvent: $event,
-                template: require("../dialogs/date-range-dialog/date-range-dialog.html"),
-                parent: this.$document.parent(),
-                clickOutsideToClose: true,
-                fullscreen: false,
-                bindToController: true,
-                locals: {
-                    dateRange: dialogDateRange,
-                },
-            });
+            // Open the React dialog
+            const result = await window.ReactDateRangeDialog.open(dialogDateRange);
 
+            // Dialog was cancelled
+            if (!result) {
+                return;
+            }
+
+            // Update the date range with the result
             this.dateRange = {
                 start: result.start,
                 end: result.end
@@ -374,6 +421,7 @@ class OverviewController extends BaseController {
             });
 
             await this.refreshData();
+            this.applyScope();
         } catch (error) {
             if (error !== undefined) {
                 console.error("Error selecting date range:", error);

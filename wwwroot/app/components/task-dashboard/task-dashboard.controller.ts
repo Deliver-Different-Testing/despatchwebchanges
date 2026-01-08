@@ -14,7 +14,7 @@ import timezone from 'dayjs/plugin/timezone';
 import {IDeliveryHistoryConfig} from "../common/task-history/task-history.interfaces";
 import DensityMode from "../../enums/densityMode";
 import {AppPage} from "../../enums/app-pages.enum";
-import IDateFilterData from "../common/date-filter-menu/IDateFilterData";
+import IDateFilterData from "../../interfaces/date-filter-data.interface";
 import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
 import {formatDateForApiWithTzs} from "../../functions/formatDates";
 

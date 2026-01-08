@@ -2,24 +2,73 @@
 import {ISuggestion} from "../../../interfaces/job.interface";
 import {IBox} from "../../../interfaces/layout.interfaces";
 import IDashboardSettingsConfig from "./interfaces/IDashboardSettingsConfig";
-import DashboardSettingsDialogController from "./dashboard-settings-dialog.controller";
 import ISettingsDialogResult from "./interfaces/IDashboardSettingsDialogResult";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
 import isDefaultLayout from "../../../functions/isDefaultLayout";
+
+// Type declaration for the React dialog on window
+declare global {
+    interface Window {
+        ReactDashboardSettingsDialog?: {
+            open: (
+                config: IDashboardSettingsConfig,
+                boxes: Record<string, IBox>,
+                selectedRefreshInterval?: ISuggestion,
+                selectedDriverLocationRefreshInterval?: ISuggestion
+            ) => Promise<ISettingsDialogResult | null>;
+        };
+    }
+}
 
 class DashboardSettingsDialogService implements angular.IServiceProvider {
     static $inject = [
         "$mdDialog",
         "$document",
         'APP_CONFIG',
+        '$ocLazyLoad',
+        '$http',
     ];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private $document: angular.IDocumentService,
         private appConfig: IAppConfig,
+        private $ocLazyLoad: oc.ILazyLoad,
+        private $http: angular.IHttpService,
     ) {
         console.log('DashboardSettingsDialogService: Service instantiated');
+    }
+
+    /**
+     * Load the React dashboard settings dialog module on demand
+     */
+    private async loadReactDashboardSettingsDialog(): Promise<void> {
+        // Check if already loaded
+        if (window.ReactDashboardSettingsDialog) {
+            return;
+        }
+
+        try {
+            // Load the manifest to get hashed filenames
+            const manifestResponse = await this.$http.get<Record<string, string>>('dist/manifest.json');
+            const manifest = manifestResponse.data;
+
+            const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
+
+            // Load vendor-react first (if not already loaded)
+            if (!(window as any).React) {
+                await this.$ocLazyLoad.load(getAssetPath('vendor-react.js'));
+            }
+
+            // Load the dashboard settings dialog React module
+            await this.$ocLazyLoad.load({
+                name: 'uDispatch.dashboardSettingsDialogReact',
+                files: [getAssetPath('dashboardSettingsDialogReact.js')]
+            });
+        } catch (error) {
+            console.error('[DashboardSettingsDialogService] Failed to load React dialog:', error);
+            throw error;
+        }
     }
 
     $get() {
@@ -57,33 +106,37 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
                 showDashboards: canShowDashboards
             };
 
-            if (selectedRefreshInterval) {
+            if (!selectedRefreshInterval) {
                 selectedRefreshInterval = {id: 0, text: "Disabled"};
             }
 
-            if (selectedDriverLocationRefreshInterval) {
+            if (!selectedDriverLocationRefreshInterval) {
                 selectedDriverLocationRefreshInterval = {id: 0, text: "Disabled"};
             }
 
-            return await this.$mdDialog.show({
-                controller: DashboardSettingsDialogController,
-                controllerAs: 'ctrl',
-                targetEvent: $event,
-                template: require("./dashboard-settings-dialog.template.html"),
-                parent: this.$document.parent(),
-                clickOutsideToClose: false,
-                escapeToClose: true,
-                locals: {
-                    selectedRefreshInterval,
-                    selectedDriverLocationRefreshInterval,
-                    boxes,
-                    config
-                },
-                bindToController: true,
-                fullscreen: true,
-            });
+            // Load the React dialog module on demand
+            await this.loadReactDashboardSettingsDialog();
+
+            if (!window.ReactDashboardSettingsDialog) {
+                throw new Error('React dashboard settings dialog not loaded');
+            }
+
+            // Open the React dialog
+            const result = await window.ReactDashboardSettingsDialog.open(
+                config,
+                boxes,
+                selectedRefreshInterval,
+                selectedDriverLocationRefreshInterval
+            );
+
+            console.debug('DashboardSettingsDialogService: Dialog closed!');
+
+            return result ?? undefined;
         } catch (error) {
-            if (!error) return;
+            if (!error) {
+                console.debug('User closed dialog');
+                return;
+            }
             console.error('DashboardSettingsDialogService: Error in openSettingsDialog', error);
             throw error;
         }

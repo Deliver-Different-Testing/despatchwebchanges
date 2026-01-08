@@ -169,7 +169,7 @@ public static class JobMappings
         Booked = j.UcjbDate.CombineWithTime(j.UcjbTime),
         DispatchTime = j.UcjbDispTime,
         CreatedDate = j.UcjbDate,
-        ScheduleName = j.ScheduleName,
+        ScheduleName = j.ScheduleName ?? "-",
         FollowupTime = j.FollowupTime,
         Void = j.UcjbVoid,
         IsInvoiced = false,

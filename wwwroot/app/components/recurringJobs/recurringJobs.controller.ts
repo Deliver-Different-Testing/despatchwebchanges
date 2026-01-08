@@ -140,10 +140,10 @@ class RecurringJobsController extends BaseController {
         this.$mdDialog
             .show(this.$mdDialog
                 .prompt()
-                .title("Save Layout")
+                .title("Add Layout")
                 .textContent("Please enter a name for this layout.")
                 .required(true)
-                .ok("Save")
+                .ok("Add")
                 .cancel("Cancel"))
             .then((name) => {
                 if (!name) return;

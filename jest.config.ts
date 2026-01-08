@@ -4,10 +4,10 @@ const config: JestConfigWithTsJest = {
     preset: 'ts-jest',
     testEnvironment: 'jsdom',
     roots: ['<rootDir>/wwwroot'],
-    testMatch: ['**/*.spec.ts', '**/*.test.ts'],
-    moduleFileExtensions: ['ts', 'js', 'json'],
+    testMatch: ['**/*.spec.ts', '**/*.test.ts', '**/*.spec.tsx', '**/*.test.tsx'],
+    moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
     transform: {
-        '^.+\\.ts$': ['ts-jest', {
+        '^.+\\.(ts|tsx)$': ['ts-jest', {
             tsconfig: {
                 target: 'es6',
                 module: 'commonjs',
@@ -16,6 +16,7 @@ const config: JestConfigWithTsJest = {
                 strict: false, // Relaxed for tests
                 skipLibCheck: true,
                 moduleResolution: 'node',
+                jsx: 'react-jsx',
             }
         }]
     },
@@ -27,9 +28,13 @@ const config: JestConfigWithTsJest = {
         // Mock HTML template imports
         '\\.html$': '<rootDir>/wwwroot/app/tests/mocks/templateMock.ts',
     },
-    setupFilesAfterEnv: ['<rootDir>/wwwroot/app/tests/setup.ts'],
+    setupFilesAfterEnv: [
+        '<rootDir>/wwwroot/app/tests/setup.ts',
+        '<rootDir>/wwwroot/app/tests/setupReact.ts'
+    ],
     collectCoverageFrom: [
         'wwwroot/app/**/*.ts',
+        'wwwroot/app/**/*.tsx',
         '!wwwroot/app/**/*.d.ts',
         '!wwwroot/app/tests/**'
     ],

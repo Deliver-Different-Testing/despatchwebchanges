@@ -17,8 +17,6 @@ import JobContextMenuService from "../../services/job-context-menu.service";
 import JobHighlightService from "../common/job-list/job-highlight.service";
 import {CreateJobDialogController} from "../dialogs/create-job-dialog/create-job-dialog.controller";
 import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
-import DashboardSettingsDialogController
-    from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.controller";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 
 const homeModule = angular.module('uDispatch.home', [
@@ -63,7 +61,6 @@ homeModule
 homeModule
     .controller("InterCourierChargeDialog", InterCourierChargeDialogController)
     .controller("AdditionalServicesDialogController", AdditionalServicesDialogController)
-    .controller("CreateJobDialogController", CreateJobDialogController)
-    .controller("DashboardSettingsDialogController", DashboardSettingsDialogController);
+    .controller("CreateJobDialogController", CreateJobDialogController);
 
 export default homeModule;

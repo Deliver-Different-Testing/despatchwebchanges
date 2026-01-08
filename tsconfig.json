@@ -9,12 +9,14 @@
     "allowJs": true,
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "node",
+    "jsx": "react-jsx",
     "typeRoots": [
       "./node_modules/@types"
     ]
   },
   "include": [
     "wwwroot/**/*.ts",
+    "wwwroot/**/*.tsx",
     "wwwroot/**/*.js",
     "wwwroot/types/*.d.ts",
     "*.ts"

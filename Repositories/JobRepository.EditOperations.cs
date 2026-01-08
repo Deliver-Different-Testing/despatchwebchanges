@@ -273,9 +273,19 @@ public partial class JobRepository
                     .Where(c => c.UcclId == newClientId)
                     .Select(c => c.UcclCode)
                     .FirstOrDefaultAsync();
-                
+
                 job.UcjbClientId = newClientId;
                 job.UcjbClientCode = clientCode;
+
+                // If this is a parent job, update all child jobs to the same client
+                if (job.InverseParent != null && job.InverseParent.Count != 0)
+                {
+                    foreach (var childJob in job.InverseParent)
+                    {
+                        childJob.UcjbClientId = newClientId;
+                        childJob.UcjbClientCode = clientCode;
+                    }
+                }
                 break;
             case JobProperty.ContactID:
                 var contactId = int.Parse(value);
@@ -911,7 +921,7 @@ public partial class JobRepository
             JobProperty.Weight => query.Include(j => j.Parent)
                 .ThenInclude(p => p.InverseParent)
                 .Include(j => j.InverseParent),
-            JobProperty.ClientID => query.Include(j => j.UcjbClient),
+            JobProperty.ClientID => query.Include(j => j.UcjbClient).Include(j => j.InverseParent),
             JobProperty.ContactID => query.Include(j => j.Contact),
             JobProperty.DeliverToLeaveID => query.Include(j => j.DeliverToLeave),
             JobProperty.UndeliverableLocationID => query.Include(j => j.UndeliverableLocation),
