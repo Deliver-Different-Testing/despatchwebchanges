@@ -1835,18 +1835,8 @@ END CATCH");
             CourierId = c.CourierId,
             CourierName = c.CourierName,
             CourierCode = c.CourierCode,
-            Days = c.Days.Select(d => d switch
-                {
-                    0 => "Sunday",
-                    1 => "Monday",
-                    2 => "Tuesday",
-                    3 => "Wednesday",
-                    4 => "Thursday",
-                    5 => "Friday",
-                    6 => "Saturday",
-                    7 => "Sunday",
-                    _ => "Unknown"
-                }).OrderBy(day =>
+            Days = c.Days.Select(DayOfWeekHelper.SqlIntToDayName)
+                .OrderBy(day =>
                     Array.IndexOf(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], day))
                 .ToList(),
             StartTime = TimeZoneHelper.SetDateTimeWithTimeZone(c.StartTime, tenantTimezone),
@@ -2361,20 +2351,7 @@ END CATCH");
         await Context.SaveChangesAsync();
     }
 
-    private static int GetDayOfWeekAsInt(string dayOfWeek)
-    {
-        return dayOfWeek switch
-        {
-            "Monday" => 1,
-            "Tuesday" => 2,
-            "Wednesday" => 3,
-            "Thursday" => 4,
-            "Friday" => 5,
-            "Saturday" => 6,
-            "Sunday" => 7,
-            _ => 0
-        };
-    }
+    private static int GetDayOfWeekAsInt(string dayOfWeek) => DayOfWeekHelper.DayNameToSqlInt(dayOfWeek);
 
     public async Task UpdateAfterHoursCourierScheduleAsync(AfterHoursCourierScheduleViewModel request)
     {

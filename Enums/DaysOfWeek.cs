@@ -37,4 +37,22 @@ public static class DaysOfWeekExtensions
             .Where(d => days.HasFlag(d))
             .ToArray();
     }
+
+    /// <summary>
+    /// Converts the DaysOfWeek flags to a 7-character binary string in MTWTFSS order.
+    /// Each position is '1' if the day is selected, '0' if not.
+    /// Example: Monday + Tuesday + Wednesday = "1110000"
+    /// </summary>
+    public static string ToBinaryString(this DaysOfWeek days)
+    {
+        return string.Concat(
+            days.HasFlag(DaysOfWeek.Monday) ? '1' : '0',
+            days.HasFlag(DaysOfWeek.Tuesday) ? '1' : '0',
+            days.HasFlag(DaysOfWeek.Wednesday) ? '1' : '0',
+            days.HasFlag(DaysOfWeek.Thursday) ? '1' : '0',
+            days.HasFlag(DaysOfWeek.Friday) ? '1' : '0',
+            days.HasFlag(DaysOfWeek.Saturday) ? '1' : '0',
+            days.HasFlag(DaysOfWeek.Sunday) ? '1' : '0'
+        );
+    }
 }
