@@ -42,9 +42,9 @@ describe('AppShell', () => {
             expect(screen.getByText('Test Dashboard')).toBeInTheDocument();
         });
 
-        it('should render user avatar', () => {
+        it('should render menu button', () => {
             renderWithTheme(<AppShell {...defaultProps} />);
-            expect(screen.getByText('J')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /navigation menu/i})).toBeInTheDocument();
         });
 
         it('should render logo', () => {
