@@ -4860,11 +4860,154 @@ public partial class JobRepository(
         ArgumentNullException.ThrowIfNull(archivedJob);
         var archivedJobRelatedJobs = allJobsInFamily.Where(j => j.Id != jobId).ToList();
 
+        var allJobs = new List<JobViewModel> { archivedJob };
+        allJobs.AddRange(archivedJobRelatedJobs);
+
+        await EnrichArchivedJobsWithCollectionsAsync(allJobs);
+
         return new JobGroupViewModel
         {
             Job = archivedJob,
             RelatedJobs = archivedJobRelatedJobs
         };
+    }
+
+    private async Task EnrichArchivedJobsWithCollectionsAsync(List<JobViewModel> jobs)
+    {
+        if (jobs.Count == 0) return;
+
+        var jobIds = jobs.Select(j => j.Id).ToList();
+        var effectiveJobIds = jobs.Select(j => j.ParentId ?? j.Id).Distinct().ToList();
+
+        await using var flightContext = await _contextFactory.CreateDbContextAsync();
+        await using var pricingContext = await _contextFactory.CreateDbContextAsync();
+        await using var parcelContext = await _contextFactory.CreateDbContextAsync();
+        await using var flagsContext = await _contextFactory.CreateDbContextAsync();
+
+        var flightInfoTask = BatchLoadFlightInfoAsync(flightContext, _infoService, jobs);
+        var pricingTask = BatchLoadPricingBreakdownAsync(pricingContext, effectiveJobIds, jobs);
+        var parcelDimensionsTask = BatchLoadArchivedParcelDimensionsAsync(parcelContext, jobIds, effectiveJobIds, jobs);
+        var jobItemFlagsTask = BatchLoadArchivedJobItemFlagsAsync(flagsContext, jobIds, jobs);
+
+        await Task.WhenAll(flightInfoTask, pricingTask, parcelDimensionsTask, jobItemFlagsTask);
+
+        // Apply tenant timezone to date fields
+        ApplyTimezoneToJobDates(jobs, _infoService.GetTenantTimeZone());
+    }
+
+    private static async Task BatchLoadArchivedParcelDimensionsAsync(
+        DespatchContext context,
+        List<int> jobIds,
+        List<int> effectiveJobIds,
+        List<JobViewModel> jobs)
+    {
+        var allChildItems = await context.TucJobItemsArchives
+            .AsNoTracking()
+            .Where(i => i.ChildJobId.HasValue && jobIds.Contains(i.ChildJobId.Value))
+            .Select(i => new
+            {
+                ChildJobId = i.ChildJobId.Value,
+                Parcel = new ParcelDimensions
+                {
+                    ItemId = i.ItemId,
+                    ItemName = i.Notes,
+                    Height = i.Height,
+                    Depth = i.Depth,
+                    Length = i.Length,
+                    Barcode = i.Barcode
+                }
+            })
+            .TagWith("BatchLoadArchivedParcels - Child Items")
+            .ToListAsync();
+
+        var childItemsByJob = allChildItems
+            .GroupBy(x => x.ChildJobId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Parcel).ToList());
+
+        var allParentItems = await context.TucJobItemsArchives
+            .AsNoTracking()
+            .Where(i => effectiveJobIds.Contains(i.JobId) && i.ChildJobId == null)
+            .Select(i => new
+            {
+                i.JobId,
+                Parcel = new ParcelDimensions
+                {
+                    ItemId = i.ItemId,
+                    ItemName = i.Notes,
+                    Height = i.Height,
+                    Depth = i.Depth,
+                    Length = i.Length,
+                    Barcode = i.Barcode
+                },
+                Pallet = new PalletInfo
+                {
+                    Id = i.JobId,
+                    Quantity = i.Items,
+                    ItemId = i.ItemId,
+                    Weight = i.Weight,
+                    Length = i.Length ?? 0,
+                    Depth = i.Depth ?? 0,
+                    Height = i.Height ?? 0,
+                    Pu = i.Pu,
+                    Do = i.Do,
+                    DgClass = i.Dgclass,
+                    Notes = i.Notes
+                }
+            })
+            .TagWith("BatchLoadArchivedParcels - Parent Items")
+            .ToListAsync();
+
+        var parentItemsByJob = allParentItems
+            .GroupBy(x => x.JobId)
+            .ToDictionary(g => g.Key, g => (
+                Parcels: g.Select(x => x.Parcel).ToList(),
+                Pallets: g.Select(x => x.Pallet).ToList()
+            ));
+
+        foreach (var job in jobs)
+        {
+            if (childItemsByJob.TryGetValue(job.Id, out var childItems))
+            {
+                job.ParcelDimensions = childItems;
+                continue;
+            }
+
+            var effectiveJobId = job.ParentId ?? job.Id;
+            if (!parentItemsByJob.TryGetValue(effectiveJobId, out var parentItems)) continue;
+            job.ParcelDimensions = parentItems.Parcels;
+            if (parentItems.Pallets.Count != 0)
+                job.PalletInfo = parentItems.Pallets;
+        }
+    }
+
+    private static async Task BatchLoadArchivedJobItemFlagsAsync(
+        DespatchContext context,
+        List<int> jobIds,
+        List<JobViewModel> jobs)
+    {
+        var allFlags = await context.TucJobItemsArchives
+            .AsNoTracking()
+            .Where(i => jobIds.Contains(i.JobId))
+            .Select(i => new { i.JobId, i.Pu, i.Do, i.PrivateRes })
+            .TagWith("BatchLoadArchivedFlags - All Jobs")
+            .ToListAsync();
+
+        var flagsByJob = allFlags
+            .GroupBy(f => f.JobId)
+            .ToDictionary(g => g.Key, g => new
+            {
+                TailLiftPu = g.Any(f => f.Pu == true),
+                TailLiftDo = g.Any(f => f.Do == true),
+                DeliverToPrivateRes = g.Any(f => f.PrivateRes == true)
+            });
+
+        foreach (var job in jobs)
+        {
+            if (!flagsByJob.TryGetValue(job.Id, out var flags)) continue;
+            job.TailLiftPu = flags.TailLiftPu;
+            job.TailLiftDo = flags.TailLiftDo;
+            job.DeliverToPrivateRes = flags.DeliverToPrivateRes;
+        }
     }
 
     private static string GetScanDetail(int scanType)

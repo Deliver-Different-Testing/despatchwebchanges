@@ -649,4 +649,598 @@ public class JobMappingsTests
     }
 
     #endregion
+
+    #region JobArchiveMapping Tests
+
+    [Fact]
+    public void JobArchiveMapping_SetsDefaultValuesForCollections()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbNumber = "TEST-001",
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PricingBreakdowns = new List<PricingBreakdownArchive>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert - Collections should have default values for later enrichment
+        result.TailLiftPu.Should().BeFalse();
+        result.TailLiftDo.Should().BeFalse();
+        result.DeliverToPrivateRes.Should().BeFalse();
+        result.ParcelDimensions.Should().BeNull();
+        result.PalletInfo.Should().BeNull();
+        result.AssignedFlight.Should().BeNull();
+    }
+
+    [Fact]
+    public void JobArchiveMapping_SetsIsArchivedTrue()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            PricingBreakdowns = new List<PricingBreakdownArchive>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        result.IsArchived.Should().BeTrue();
+    }
+
+    [Fact]
+    public void JobArchiveMapping_MapsBasicFieldsCorrectly()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 123,
+            UcjbNumber = "ARCH-123",
+            ParentId = 100,
+            RootParentId = 100,
+            UcjbDate = new DateTime(2024, 6, 15),
+            UcjbTime = new DateTime(2024, 6, 15, 14, 30, 0),
+            UcjbDispTime = new DateTime(2024, 6, 15, 14, 35, 0),
+            ScheduleName = "Daily Schedule",
+            UcjbVoid = false,
+            Barcode = "BARCODE123",
+            UcjbWeight = 25.5,
+            UcjbQty = 3,
+            UcjbClientRefa = "REF-A",
+            UcjbClientRefb = "REF-B",
+            UcjbOurRef = "OUR-REF",
+            UcjbAmount = 150m,
+            Direct = true,
+            UcjbVan = true,
+            VanOk = true,
+            Truck = false,
+            Dgclass = 3,
+            UcjbJobDone = true,
+            UcjbLatePick = 1,
+            UcjbLateDel = 0,
+            UcjbAttention = true,
+            CustomJobName = "Custom Job",
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            UcjbClient = new TucClient { UcclName = "Test Client" },
+            UcjbStatusNavigation = new TucJobStatus { UcjsCode = "DEL", UcjsName = "Delivered" }
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        result.Id.Should().Be(123);
+        result.JobNo.Should().Be("ARCH-123");
+        result.ParentId.Should().Be(100);
+        result.RootParentId.Should().Be(100);
+        result.ScheduleName.Should().Be("Daily Schedule");
+        result.Void.Should().BeFalse();
+        result.Barcode.Should().Be("BARCODE123");
+        result.Weight.Should().Be(25.5);
+        result.Items.Should().Be(3);
+        result.RefA.Should().Be("REF-A");
+        result.RefB.Should().Be("REF-B");
+        result.OurRef.Should().Be("OUR-REF");
+        result.Direct.Should().BeTrue();
+        result.Van.Should().BeTrue();
+        result.VanOk.Should().BeTrue();
+        result.Truck.Should().BeFalse();
+        result.DgClass.Should().Be(3);
+        result.Done.Should().BeTrue();
+        result.Lp.Should().Be(1);
+        result.Ld.Should().Be(0);
+        result.Attention.Should().BeTrue();
+        result.CustomJobName.Should().Be("Custom Job");
+        result.ClientName.Should().Be("Test Client");
+        result.Status.Should().Be("DEL");
+        result.StatusName.Should().Be("Delivered");
+        result.IsArchived.Should().BeTrue();
+        result.PreBook.Should().BeFalse();
+    }
+
+    [Fact]
+    public void JobArchiveMapping_MapsAddressesCorrectly()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            PickupAddressLine1 = "123 Pickup St",
+            PickupAddressLine2 = "Unit 1",
+            PickupAddressLine3 = "Suburb",
+            PickupAddressLine4 = "City",
+            PickupAddressLine5 = "State",
+            PickupAddressLine6 = "Country",
+            PickupAddressLine7 = "12345",
+            PickupAddressLine8 = "Extra",
+            PickUpLatitude = -36.8485m,
+            PickUpLongitude = 174.7633m,
+            DeliveryAddressLine1 = "456 Delivery Ave",
+            DeliveryAddressLine2 = "Suite 200",
+            DeliveryAddressLine3 = "Delivery Suburb",
+            DeliveryAddressLine4 = "Delivery City",
+            DeliveryAddressLine5 = "Delivery State",
+            DeliveryAddressLine6 = "Delivery Country",
+            DeliveryAddressLine7 = "67890",
+            DeliveryAddressLine8 = "Extra 2",
+            DeliveryLatitude = -36.8600m,
+            DeliveryLongitude = 174.7700m,
+            PricingBreakdowns = new List<PricingBreakdownArchive>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert - Pickup Address
+        result.PickupAddress.AddressLine1.Should().Be("123 Pickup St");
+        result.PickupAddress.AddressLine2.Should().Be("Unit 1");
+        result.PickupAddress.Latitude.Should().Be(-36.8485m);
+        result.PickupAddress.Longitude.Should().Be(174.7633m);
+
+        // Assert - Delivery Address
+        result.DeliveryAddress.AddressLine1.Should().Be("456 Delivery Ave");
+        result.DeliveryAddress.AddressLine2.Should().Be("Suite 200");
+        result.DeliveryAddress.Latitude.Should().Be(-36.8600m);
+        result.DeliveryAddress.Longitude.Should().Be(174.7700m);
+
+        // Assert - Direct location properties
+        result.PickUpLatitude.Should().Be(-36.8485m);
+        result.PickUpLongitude.Should().Be(174.7633m);
+        result.DeliveryLatitude.Should().Be(-36.8600m);
+        result.DeliveryLongitude.Should().Be(174.7700m);
+    }
+
+    [Fact]
+    public void JobArchiveMapping_MapsCourierCorrectly()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbCourierId = 42,
+            UcjbCourier = new TucCourier
+            {
+                UccrId = 42,
+                Code = "C042",
+                UccrName = "John",
+                UccrSurname = "Courier",
+                UccrMobile = "021-123-4567"
+            },
+            PricingBreakdowns = new List<PricingBreakdownArchive>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        result.Courier.Should().Be("C042");
+        result.CourierData.Should().NotBeNull();
+        result.CourierData!.Courier.Should().Be("C042");
+        result.CourierData.CourierId.Should().Be(42);
+        result.CourierData.CourierMobile.Should().Be("021-123-4567");
+        result.CourierData.CourierName.Should().Be("John Courier");
+        result.AssignedCourier.Should().NotBeNull();
+        result.AssignedCourier!.Id.Should().Be(42);
+        result.AssignedCourier.Text.Should().Be("John Courier");
+    }
+
+    [Fact]
+    public void JobArchiveMapping_MapsAgentCorrectly()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            Agent = new TucAgent
+            {
+                UcagId = 10,
+                UcagName = "Test Agent",
+                UcagFax = "agent@test.com",
+                UcagPhone = "09-123-4567"
+            },
+            PricingBreakdowns = new List<PricingBreakdownArchive>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        result.AssignedAgent.Should().NotBeNull();
+        result.AssignedAgent!.AgentId.Should().Be(10);
+        result.AssignedAgent.AgentName.Should().Be("Test Agent");
+        result.AssignedAgent.AgentEmail.Should().Be("agent@test.com");
+        result.AssignedAgent.AgentPhone.Should().Be("09-123-4567");
+    }
+
+    [Fact]
+    public void JobArchiveMapping_MapsSpeedInfoCorrectly()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbSpeed = 5,
+            SpeedNavigation = new TucJobType
+            {
+                UcjtId = 5,
+                ShortName = "2HR",
+                UcjtName = "2 Hour Delivery",
+                PickupTime = 30,
+                DeliveryTime = 120
+            },
+            NotifiedJobTypeId = 6,
+            NotifiedJobType = new TucJobType { UcjtName = "Notified Speed" },
+            AcceptedJobTypeId = 7,
+            AcceptedJobType = new TucJobType { UcjtName = "Accepted Speed" },
+            PricingBreakdowns = new List<PricingBreakdownArchive>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        result.SpeedId.Should().Be(5);
+        result.Speed.Should().Be("2HR");
+        result.SpeedName.Should().Be("2 Hour Delivery");
+        result.PickupTime.Should().Be(30);
+        result.DeliveryTime.Should().Be(120);
+        result.NotifiedJobTypeId.Should().Be(6);
+        result.NotifiedName.Should().Be("Notified Speed");
+        result.AcceptedJobTypeId.Should().Be(7);
+        result.AcceptedName.Should().Be("Accepted Speed");
+    }
+
+    [Fact]
+    public void JobArchiveMapping_MapsPricingFromPricingBreakdowns()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbAmount = 100m, // Should be ignored when pricing breakdowns exist
+            PricingBreakdowns = new List<PricingBreakdownArchive>
+            {
+                new() { ChargeAmount = 150m },
+                new() { ChargeAmount = 50m }
+            }
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert - Should sum pricing breakdowns (150 + 50 = 200)
+        result.Charge.Should().Be(200m);
+    }
+
+    [Fact]
+    public void JobArchiveMapping_MapsPricingFromParentWhenAvailable()
+    {
+        // Arrange
+        var parentJob = new TucJobArchive
+        {
+            UcjbId = 100,
+            PricingBreakdowns = new List<PricingBreakdownArchive>
+            {
+                new() { ChargeAmount = 300m },
+                new() { ChargeAmount = 100m }
+            }
+        };
+
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            ParentId = 100,
+            Parent = parentJob,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbAmount = 50m, // Should be ignored
+            PricingBreakdowns = new List<PricingBreakdownArchive>
+            {
+                new() { ChargeAmount = 25m } // Should be ignored when parent has pricing
+            }
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert - Should use parent's pricing (300 + 100 = 400)
+        result.Charge.Should().Be(400m);
+    }
+
+    [Fact]
+    public void JobArchiveMapping_MapsPricingFallsBackToUcjbAmount()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbAmount = 250m,
+            PricingBreakdowns = new List<PricingBreakdownArchive>() // Empty
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert - Should fall back to UcjbAmount
+        result.Charge.Should().Be(250m);
+    }
+
+    [Fact]
+    public void JobArchiveMapping_MapsTrackingInfoCorrectly()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            TrackingMethod = 1, // 1 = Email
+            TrackingMobile = "021-555-1234",
+            TrackingEmail = "track@test.com",
+            PricingBreakdowns = new List<PricingBreakdownArchive>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        result.TrackingMethod.Should().Be(1);
+        result.TrackingMobile.Should().Be("021-555-1234");
+        result.TrackingEmail.Should().Be("track@test.com");
+    }
+
+    [Fact]
+    public void JobArchiveMapping_MapsTimezonesSuggestions()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            PickupTimeZone = new EntityClasses.TimeZone { Id = 1, Name = "Pacific/Auckland" },
+            DeliverByTimeZone = new EntityClasses.TimeZone { Id = 2, Name = "America/Los_Angeles" },
+            PricingBreakdowns = new List<PricingBreakdownArchive>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        result.PickUpTimeZone.Should().NotBeNull();
+        result.PickUpTimeZone!.Id.Should().Be(1);
+        result.PickUpTimeZone.Text.Should().Be("Pacific/Auckland");
+        result.DeliveryTimeZone.Should().NotBeNull();
+        result.DeliveryTimeZone!.Id.Should().Be(2);
+        result.DeliveryTimeZone.Text.Should().Be("America/Los_Angeles");
+    }
+
+    [Fact]
+    public void JobArchiveMapping_MapsLockedStatusCorrectly()
+    {
+        // Arrange - Locked job
+        var lockedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbLocked = 1,
+            PricingBreakdowns = new List<PricingBreakdownArchive>()
+        };
+
+        var unlockedJob = new TucJobArchive
+        {
+            UcjbId = 2,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbLocked = 0,
+            PricingBreakdowns = new List<PricingBreakdownArchive>()
+        };
+
+        var nullLockedJob = new TucJobArchive
+        {
+            UcjbId = 3,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbLocked = null,
+            PricingBreakdowns = new List<PricingBreakdownArchive>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var lockedResult = mapping(lockedJob);
+        var unlockedResult = mapping(unlockedJob);
+        var nullResult = mapping(nullLockedJob);
+
+        // Assert
+        lockedResult.Locked.Should().BeTrue();
+        unlockedResult.Locked.Should().BeFalse();
+        nullResult.Locked.Should().BeFalse();
+    }
+
+    [Fact]
+    public void JobArchiveMapping_MapsDeliveryDetailsCorrectly()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            DeliverToPrivateBusiness = 1,
+            UcjbReturn = true,
+            SaturdayDelivery = true,
+            UcjbComplTime = new DateTime(2024, 1, 15, 16, 30, 0),
+            DeliverToContact = "John Smith",
+            DeliverToPhone = "09-555-1234",
+            DeliverToLeaveId = 2,
+            DeliverToLeave = new TblJobLeaveNotHome { Name = "Leave at door" },
+            UndeliverableLocation = new TblUndeliverableLocation { Name = "Returned to depot" },
+            PricingBreakdowns = new List<PricingBreakdownArchive>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        result.PrivateRes.Should().BeTrue();
+        result.Return.Should().BeTrue();
+        result.SaturdayDelivery.Should().BeTrue();
+        result.CompletedTime.Should().NotBeNull();
+        result.DeliverToContact.Should().Be("John Smith");
+        result.ToContactPhone.Should().Be("09-555-1234");
+        result.DeliverToLeaveId.Should().Be(2);
+        result.SigNotRequired.Should().Be("Leave at door");
+        result.UdStatus.Should().Be("Returned to depot");
+    }
+
+    [Fact]
+    public void JobArchiveMapping_MapsContactInfoCorrectly()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            PickUpFromContact = "Pickup Person",
+            PickUpFromPhone = "09-111-2222",
+            DeliverToContact = "Delivery Person",
+            DeliverToPhone = "09-333-4444",
+            LoggedInContact = new TucClientContact
+            {
+                UcctFirstname = "Admin",
+                UcctSurname = "User"
+            },
+            PricingBreakdowns = new List<PricingBreakdownArchive>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        result.FromContactName.Should().Be("Pickup Person");
+        result.FromContactNumber.Should().Be("09-111-2222");
+        result.DeliverToContact.Should().Be("Delivery Person");
+        result.ToContactPhone.Should().Be("09-333-4444");
+        result.LoggedInContactName.Should().Be("Admin User");
+    }
+
+    [Fact]
+    public void JobArchiveMapping_HandlesNullNavigationProperties()
+    {
+        // Arrange - Minimal job with no navigation properties
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbNumber = "TEST-001",
+            PricingBreakdowns = new List<PricingBreakdownArchive>()
+            // All navigation properties are null
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert - Should not throw and should have sensible defaults
+        result.Id.Should().Be(1);
+        result.JobNo.Should().Be("TEST-001");
+        result.Courier.Should().BeNull();
+        result.CourierData.Should().BeNull();
+        result.AssignedCourier.Should().BeNull();
+        result.AssignedAgent.Should().BeNull();
+        result.Speed.Should().BeNull();
+        result.SpeedName.Should().BeNull();
+        result.Status.Should().BeNull();
+        result.StatusName.Should().BeNull();
+        result.ClientName.Should().Be(string.Empty);
+        result.LoggedInContactName.Should().Be(string.Empty);
+        result.PickUpTimeZone.Should().BeNull();
+        result.DeliveryTimeZone.Should().BeNull();
+    }
+
+    #endregion
+
+    #region JobMappingCore vs JobArchiveMapping Consistency Tests
+
+    [Fact]
+    public void JobArchiveMapping_HasSameCollectionDefaults_AsJobMappingCore()
+    {
+        // Arrange
+        var liveJob = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            UcjbNumber = "LIVE-001"
+        };
+
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            UcjbNumber = "ARCH-001",
+            PricingBreakdowns = new List<PricingBreakdownArchive>()
+        };
+
+        // Act
+        var liveMapping = JobMappings.JobMappingCore.Compile();
+        var archiveMapping = JobMappings.JobArchiveMapping.Compile();
+        var liveResult = liveMapping(liveJob);
+        var archiveResult = archiveMapping(archivedJob);
+
+        // Assert - Both should have same default values for collections
+        liveResult.TailLiftPu.Should().Be(archiveResult.TailLiftPu);
+        liveResult.TailLiftDo.Should().Be(archiveResult.TailLiftDo);
+        liveResult.DeliverToPrivateRes.Should().Be(archiveResult.DeliverToPrivateRes);
+        liveResult.ParcelDimensions.Should().BeNull();
+        archiveResult.ParcelDimensions.Should().BeNull();
+        liveResult.PalletInfo.Should().BeNull();
+        archiveResult.PalletInfo.Should().BeNull();
+        liveResult.AssignedFlight.Should().BeNull();
+        archiveResult.AssignedFlight.Should().BeNull();
+    }
+
+    #endregion
 }
