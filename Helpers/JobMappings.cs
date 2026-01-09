@@ -769,6 +769,13 @@ public static class JobMappings
 
         Locked = j.UcjbLocked != null && j.UcjbLocked != 0,
 
+        // Collections will be loaded separately by EnrichArchivedJobsWithCollectionsAsync
+        TailLiftPu = false,
+        TailLiftDo = false,
+        DeliverToPrivateRes = false,
+        ParcelDimensions = null,
+        PalletInfo = null,
+
         CustomJobName = j.CustomJobName
     };
 
