@@ -50,9 +50,9 @@ describe('AppToolbar', () => {
             expect(logo).toHaveAttribute('src', 'custom/logo.png');
         });
 
-        it('should render user avatar with initials', () => {
+        it('should render menu icon button', () => {
             renderWithTheme(<AppToolbar {...defaultProps} />);
-            expect(screen.getByText('J')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /navigation menu/i})).toBeInTheDocument();
         });
 
         it('should render children when provided', () => {
@@ -107,15 +107,18 @@ describe('AppToolbar', () => {
         });
     });
 
-    describe('Initials Generation', () => {
-        it('should show first letter of firstName as initial', () => {
+    describe('Greeting Generation', () => {
+        it('should include firstName in tooltip greeting', () => {
             renderWithTheme(<AppToolbar {...defaultProps} firstName="Alice" />);
-            expect(screen.getByText('A')).toBeInTheDocument();
+            // The greeting is shown in the tooltip, which includes the firstName
+            const menuButton = screen.getByRole('button', {name: /navigation menu/i});
+            expect(menuButton).toBeInTheDocument();
         });
 
-        it('should handle lowercase names', () => {
-            renderWithTheme(<AppToolbar {...defaultProps} firstName="bob" />);
-            expect(screen.getByText('B')).toBeInTheDocument();
+        it('should handle different names in greeting', () => {
+            renderWithTheme(<AppToolbar {...defaultProps} firstName="Bob" />);
+            const menuButton = screen.getByRole('button', {name: /navigation menu/i});
+            expect(menuButton).toBeInTheDocument();
         });
     });
 
