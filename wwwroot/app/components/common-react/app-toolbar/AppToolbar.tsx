@@ -13,9 +13,9 @@ import {
     IconButton,
     Box,
     Tooltip,
-    Avatar,
     alpha,
 } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
 import dayjs from 'dayjs';
 
 export interface AppToolbarProps {
@@ -45,13 +45,6 @@ function greetUser(userName: string): string {
     return `${greeting}, ${userName}`;
 }
 
-/**
- * Get user initials for avatar
- */
-function getInitials(name: string): string {
-    return name.charAt(0).toUpperCase();
-}
-
 export const AppToolbar: React.FC<AppToolbarProps> = ({
     title,
     firstName,
@@ -61,7 +54,6 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
     onMenuHover,
 }) => {
     const greeting = useMemo(() => greetUser(firstName), [firstName]);
-    const initials = useMemo(() => getInitials(firstName), [firstName]);
 
     return (
         <AppBar
@@ -127,7 +119,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                     </Box>
                 )}
 
-                {/* User Section - Avatar with Menu */}
+                {/* Menu Button */}
                 <Tooltip title={greeting}>
                     <IconButton
                         color="inherit"
@@ -135,24 +127,12 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                         onMouseEnter={onMenuHover}
                         sx={(theme) => ({
                             ml: 0.5,
-                            p: 0.5,
                             '&:hover': {
                                 bgcolor: alpha(theme.palette.common.white, 0.12),
                             },
                         })}
                     >
-                        <Avatar
-                            sx={(theme) => ({
-                                width: 32,
-                                height: 32,
-                                fontSize: '0.875rem',
-                                fontWeight: 500,
-                                bgcolor: alpha(theme.palette.common.white, 0.2),
-                                color: 'inherit',
-                            })}
-                        >
-                            {initials}
-                        </Avatar>
+                        <MenuIcon />
                     </IconButton>
                 </Tooltip>
             </Toolbar>
