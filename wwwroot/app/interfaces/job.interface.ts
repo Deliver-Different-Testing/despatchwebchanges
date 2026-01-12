@@ -571,6 +571,7 @@ export interface PriceBreakdown {
     prebookJobId?: number;
     costAmount?: number;
     childJobId?: number;
+    isArchived?: boolean;
 }
 
 export interface DfrntEvent {
@@ -973,6 +974,7 @@ export interface IDispatchMapItem {
 export interface IDeletePriceComponentRequest {
     jobId: number;
     chargeId: number;
+    isArchived?: boolean;
 }
 
 export interface ISimpleRepriceJobModel {

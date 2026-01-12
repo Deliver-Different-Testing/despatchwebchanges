@@ -16,7 +16,7 @@ import greetUser from "../../functions/greetUser";
 import {AppPage} from "../../enums/app-pages.enum";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import JobSearchBoxes from "./enums/jobSearchBoxes";
-import {IDeliveryHistoryConfig} from "../common/task-history/task-history.interfaces";
+import {IDeliveryHistoryConfig} from "../../react/components/common/task-history/TaskHistory.interfaces";
 import DensityMode from "../../enums/densityMode";
 import ISearchCriteria from "./interfaces/ISearchCriteria";
 import dayjs, {Dayjs} from "dayjs";

@@ -3,7 +3,6 @@ import {
     IAddressViewModel,
     IBulkReadUpdateRequest,
     IClearListViewModel,
-    IDeletePriceComponentRequest,
     IDispatchJob,
     IDispatchJobDto,
     IEditAddressDialogViewModel,
@@ -21,7 +20,6 @@ import {
     ISuggestion,
     ITimeZoneSuggestion,
     JobCreateViewModelDto,
-    PriceBreakdown,
     UpdateBulkJobPackagesRequest,
     UpdateJobPackagesRequest,
     VoidBulkJobRequest,
@@ -45,7 +43,7 @@ import {
     UpdatePodDetailsRequest
 } from "../interfaces/requests.interfaces";
 import {JobEventData} from "../components/dialogs/add-event-dialog/add-event-dialog.interfaces";
-import {IDeliveryJourney, IDeliveryJourneyDto} from "../components/common/task-history/task-history.interfaces";
+import {IDeliveryJourney, IDeliveryJourneyDto} from "../react/components/common/task-history/TaskHistory.interfaces";
 import {formatDateForApiWithTzs} from "../functions/formatDates";
 import IInterCourierData from "../components/dialogs/inter-courier-charge-dialog/interfaces/IInterCourierData";
 import {Is3PhotoInfo} from "../interfaces/aws.interfaces";
@@ -810,46 +808,6 @@ class DispatchCoreService implements angular.IServiceProvider {
             console.error("Error updating packages:", error);
             throw error;
         }
-    }
-
-    async getPriceBreakdown(jobId: number, isPrebook: boolean): Promise<PriceBreakdown[]> {
-        const response = await this.$http.get<PriceBreakdown[]>(`job/GetPricingBreakdown`, {
-            params: {
-                jobId,
-                isPrebook,
-            },
-        });
-        return response.data;
-    }
-
-    async addPriceBreakdown(breakdown: PriceBreakdown): Promise<any> {
-        try {
-            const response = await this.$http.post<number>(
-                'job/AddPriceComponent', breakdown);
-
-            return response.data;
-        } catch (error) {
-            console.error("Error adding price component:", error);
-            throw error;
-        }
-    }
-
-    async updatePriceBreakdown(breakdown: PriceBreakdown): Promise<void> {
-        try {
-            await this.$http.post('job/UpdatePriceComponent', breakdown);
-        } catch (error) {
-            console.error("Error updating price breakdown:", error);
-            throw error;
-        }
-    }
-
-    async deletePriceBreakdown(chargeId: number, jobId: number): Promise<void> {
-        const data: IDeletePriceComponentRequest = {
-            jobId,
-            chargeId
-        };
-
-        await this.$http.post('job/DeletePriceComponent', data);
     }
 
     async getJobPickupPhotos(jobId: number, year: number, month: number): Promise<Is3PhotoInfo[]> {

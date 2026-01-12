@@ -10,13 +10,13 @@ import {createRoot, Root} from 'react-dom/client';
 import {ThemeProvider, CssBaseline} from '@mui/material';
 import {PriceBreakdownDialog, PriceBreakdown} from './PriceBreakdownDialog';
 import {getTheme} from '../../../theme/muiTheme';
-import DispatchCoreService from "../../../../services/dispatch-core.service";
+import {pricingBreakdownApi} from '../../../services/pricingBreakdownApi';
 
 // API interface for making requests
 interface ApiService {
     addPriceBreakdown: (breakdown: Omit<PriceBreakdown, 'chargeId'>) => Promise<number>;
     updatePriceBreakdown: (breakdown: PriceBreakdown) => Promise<void>;
-    deletePriceBreakdown: (chargeId: number, jobId: number) => Promise<void>;
+    deletePriceBreakdown: (chargeId: number, jobId: number, isArchived: boolean) => Promise<void>;
 }
 
 // State management for the dialog
@@ -25,6 +25,7 @@ interface DialogState {
     priceBreakdowns: PriceBreakdown[];
     jobId: number;
     isPrebook: boolean;
+    isArchived: boolean;
     apiService: ApiService | null;
     resolve?: (value: number | null) => void;
 }
@@ -36,6 +37,7 @@ let dialogState: DialogState = {
     priceBreakdowns: [],
     jobId: 0,
     isPrebook: false,
+    isArchived: false,
     apiService: null,
 };
 
@@ -69,9 +71,9 @@ function renderDialog(): void {
         return dialogState.apiService.updatePriceBreakdown(item);
     };
 
-    const handleDeleteItem = async (chargeId: number, jobId: number): Promise<void> => {
+    const handleDeleteItem = async (chargeId: number, jobId: number, isArchived: boolean): Promise<void> => {
         if (!dialogState.apiService) throw new Error('API service not available');
-        return dialogState.apiService.deletePriceBreakdown(chargeId, jobId);
+        return dialogState.apiService.deletePriceBreakdown(chargeId, jobId, isArchived);
     };
 
     // Get theme dynamically based on customer region
@@ -85,6 +87,7 @@ function renderDialog(): void {
                 priceBreakdowns={dialogState.priceBreakdowns}
                 jobId={dialogState.jobId}
                 isPrebook={dialogState.isPrebook}
+                isArchived={dialogState.isArchived}
                 onClose={handleClose}
                 onSave={handleSave}
                 onAddItem={handleAddItem}
@@ -108,19 +111,33 @@ function initializeDialogRoot(): void {
 }
 
 /**
+ * Creates the default API service using the React pricingBreakdownApi
+ */
+function createDefaultApiService(): ApiService {
+    return {
+        addPriceBreakdown: (breakdown) => pricingBreakdownApi.addPriceBreakdown(breakdown),
+        updatePriceBreakdown: (breakdown) => pricingBreakdownApi.updatePriceBreakdown(breakdown),
+        deletePriceBreakdown: (chargeId, jobId, isArchived) =>
+            pricingBreakdownApi.deletePriceBreakdown({chargeId, jobId, isArchived}),
+    };
+}
+
+/**
  * Opens the price breakdown dialog
  *
  * @param priceBreakdowns - Initial price breakdown items
  * @param jobId - The job ID
  * @param isPrebook - Whether this is a prebook job
- * @param apiService - API service for CRUD operations
+ * @param isArchived - Whether this is an archived job
+ * @param apiService - Optional API service for CRUD operations (uses default React service if not provided)
  * @returns Promise that resolves with the total amount, or null if cancelled
  */
 export function openPriceBreakdownDialog(
     priceBreakdowns: PriceBreakdown[],
     jobId: number,
     isPrebook: boolean,
-    apiService: ApiService
+    isArchived: boolean,
+    apiService?: ApiService
 ): Promise<number | null> {
     initializeDialogRoot();
 
@@ -130,7 +147,8 @@ export function openPriceBreakdownDialog(
             priceBreakdowns: [...priceBreakdowns], // Clone the array
             jobId,
             isPrebook,
-            apiService,
+            isArchived,
+            apiService: apiService ?? createDefaultApiService(),
             resolve,
         };
         renderDialog();
@@ -148,31 +166,23 @@ const priceBreakdownDialogReactModule = (window as any).angular.module(
     []
 );
 
-// Register a service that wraps the React dialog
+// Register a service that wraps the React dialog (no longer depends on DispatchData)
 priceBreakdownDialogReactModule.service('priceBreakdownDialogReactService', [
-    'DispatchData',
-    (DispatchData: DispatchCoreService) => ({
+    () => ({
         /**
          * Opens the React price breakdown dialog
          * @param priceBreakdowns - Initial price breakdown items
          * @param jobId - The job ID
          * @param isPrebook - Whether this is a prebook job
+         * @param isArchived - Whether this is an archived job
          * @returns Promise resolving to total amount or null if cancelled
          */
         openPriceBreakdownDialog: (
             priceBreakdowns: PriceBreakdown[],
             jobId: number,
-            isPrebook: boolean
-        ) => {
-            // Create API service wrapper using AngularJS DispatchData
-            const apiService: ApiService = {
-                addPriceBreakdown: (breakdown) => DispatchData.addPriceBreakdown(breakdown as PriceBreakdown),
-                updatePriceBreakdown: (breakdown) => DispatchData.updatePriceBreakdown(breakdown),
-                deletePriceBreakdown: (chargeId, jId) => DispatchData.deletePriceBreakdown(chargeId, jId),
-            };
-
-            return openPriceBreakdownDialog(priceBreakdowns, jobId, isPrebook, apiService);
-        }
+            isPrebook: boolean,
+            isArchived: boolean = false
+        ) => openPriceBreakdownDialog(priceBreakdowns, jobId, isPrebook, isArchived)
     })
 ]);
 

@@ -4,7 +4,7 @@
  * A modern replacement for the AngularJS side-nav component using MUI Drawer.
  */
 
-import React, {useMemo} from 'react';
+import React from 'react';
 import {
     Drawer,
     Box,
@@ -53,90 +53,107 @@ export interface SideNavProps {
 
 const drawerWidth = 280;
 
-export const SideNav: React.FC<SideNavProps> = ({
-    open,
-    userName,
-    companyName = 'DFRNT',
-    isUsCustomer,
-    currentState,
-    onClose,
-    onNavigate,
-    onMouseEnter,
-    onMouseLeave,
-}) => {
-    const currentYear = useMemo(() => dayjs().year(), []);
-    const currentDate = useMemo(() => {
-        const locale = isUsCustomer ? 'en' : 'en-nz';
+export class SideNav extends React.Component<SideNavProps> {
+    static defaultProps: Partial<SideNavProps> = {
+        companyName: 'DFRNT',
+    };
+
+    private get currentYear(): number {
+        return dayjs().year();
+    }
+
+    private get currentDate(): string {
+        const locale = this.props.isUsCustomer ? 'en' : 'en-nz';
         return dayjs().locale(locale).format('dddd, MMMM D, YYYY');
-    }, [isUsCustomer]);
+    }
 
-    const navItems: NavItem[] = useMemo(() => [
-        {
-            id: 'dashboard',
-            label: 'Dashboard',
-            icon: <DashboardIcon />,
-            state: 'home',
-        },
-        {
-            id: 'shipping',
-            label: isUsCustomer ? 'Domestic' : 'Nationwide',
-            icon: <LocalShippingIcon />,
-            state: 'nw',
-        },
-        {
-            id: 'overview',
-            label: 'Overview',
-            icon: <AssessmentIcon />,
-            state: 'overview',
-        },
-        {
-            id: 'tasks',
-            label: 'Tasks',
-            icon: <TaskAltIcon />,
-            state: 'taskDashboard',
-        },
-        {
-            id: 'jobSearch',
-            label: 'Job Search',
-            icon: <SearchIcon />,
-            state: 'cs',
-        },
-        {
-            id: 'recurringJobs',
-            label: 'Recurring Jobs',
-            icon: <ScheduleIcon />,
-            state: 'recurringJobs',
-        },
-        {
-            id: 'courierMap',
-            label: 'Courier Map',
-            icon: <MapIcon />,
-            state: 'courierMap',
-        },
-        {
-            id: 'driverManagement',
-            label: 'Driver Management',
-            icon: <ManageAccountsIcon />,
-            state: 'driverManagement',
-            nzOnly: true,
-        },
-    ], [isUsCustomer]);
+    private get navItems(): NavItem[] {
+        const {isUsCustomer} = this.props;
+        return [
+            {
+                id: 'dashboard',
+                label: 'Dashboard',
+                icon: <DashboardIcon />,
+                state: 'home',
+            },
+            {
+                id: 'shipping',
+                label: isUsCustomer ? 'Domestic' : 'Nationwide',
+                icon: <LocalShippingIcon />,
+                state: 'nw',
+            },
+            {
+                id: 'overview',
+                label: 'Overview',
+                icon: <AssessmentIcon />,
+                state: 'overview',
+            },
+            {
+                id: 'tasks',
+                label: 'Tasks',
+                icon: <TaskAltIcon />,
+                state: 'taskDashboard',
+            },
+            {
+                id: 'jobSearch',
+                label: 'Job Search',
+                icon: <SearchIcon />,
+                state: 'cs',
+            },
+            {
+                id: 'recurringJobs',
+                label: 'Recurring Jobs',
+                icon: <ScheduleIcon />,
+                state: 'recurringJobs',
+            },
+            {
+                id: 'courierMap',
+                label: 'Courier Map',
+                icon: <MapIcon />,
+                state: 'courierMap',
+            },
+            {
+                id: 'driverManagement',
+                label: 'Driver Management',
+                icon: <ManageAccountsIcon />,
+                state: 'driverManagement',
+                nzOnly: true,
+            },
+        ];
+    }
 
-    const filteredNavItems = useMemo(() => {
-        return navItems.filter(item => {
+    private get filteredNavItems(): NavItem[] {
+        const {isUsCustomer} = this.props;
+        return this.navItems.filter(item => {
             if (item.usOnly && !isUsCustomer) return false;
             return !(item.nzOnly && isUsCustomer);
         });
-    }, [navItems, isUsCustomer]);
+    }
 
-    const handleNavClick = (state: string) => {
+    private handleNavClick = (state: string): void => {
+        const {onNavigate, onClose} = this.props;
         onNavigate(state);
         onClose();
     };
 
-    return (
-        <Drawer
-            anchor="right"
+    render(): React.ReactNode {
+        const {
+            open,
+            userName,
+            companyName,
+            isUsCustomer,
+            currentState,
+            onClose,
+            onMouseEnter,
+            onMouseLeave,
+        } = this.props;
+        const currentYear = this.currentYear;
+        const currentDate = this.currentDate;
+        const filteredNavItems = this.filteredNavItems;
+
+        return (
+            <Drawer
+                anchor="right"
             open={open}
             onClose={onClose}
             variant="temporary"
@@ -196,7 +213,7 @@ export const SideNav: React.FC<SideNavProps> = ({
                         return (
                             <ListItem key={item.id} disablePadding>
                                 <ListItemButton
-                                    onClick={() => handleNavClick(item.state)}
+                                    onClick={() => this.handleNavClick(item.state)}
                                     sx={(theme) => ({
                                         py: 1.5,
                                         px: 2,
@@ -264,7 +281,8 @@ export const SideNav: React.FC<SideNavProps> = ({
                 )}
             </Box>
         </Drawer>
-    );
-};
+        );
+    }
+}
 
 export default SideNav;

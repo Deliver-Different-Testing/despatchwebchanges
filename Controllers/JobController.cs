@@ -167,12 +167,12 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> GetPricingBreakdown(int jobId, bool isPrebook)
+    public async Task<IActionResult> GetPricingBreakdown(int jobId, bool isPrebook, bool isArchived = false)
     {
         try
         {
-            Log.Information("Getting price breakdown for job {JobId} (prebook {isPrebook})", jobId, isPrebook);
-            var priceComponents = await jobRepository.GetJobPriceBreakdownAsync(jobId, isPrebook);
+            Log.Information("Getting price breakdown for job {JobId} (prebook: {isPrebook}, archived: {isArchived})", jobId, isPrebook, isArchived);
+            var priceComponents = await jobRepository.GetJobPriceBreakdownAsync(jobId, isPrebook, isArchived);
             return Json(priceComponents);
         }
         catch (Exception ex)
@@ -191,11 +191,11 @@ public class JobController(
             var jobId = breakdown.ChildJobId ?? breakdown.PrebookJobId;
             ArgumentNullException.ThrowIfNull(jobId);
 
-            Log.Information("Adding price breakdown for job {JobId}", jobId);
+            Log.Information("Adding price breakdown for job {JobId} (archived: {IsArchived})", jobId, breakdown.IsArchived);
 
-            var chargeId = await jobRepository.AddJobPriceBreakdownAsync(breakdown);
+            var chargeId = await jobRepository.AddJobPriceBreakdownAsync(breakdown, breakdown.IsArchived);
 
-            if (breakdown.JobId.HasValue)
+            if (breakdown.JobId.HasValue && !breakdown.IsArchived)
             {
                 await taskRepository.AddEventAsync(
                     (int)jobId,
@@ -221,12 +221,12 @@ public class JobController(
             var jobId = breakdown.JobId ?? breakdown.PrebookJobId;
             ArgumentNullException.ThrowIfNull(jobId);
 
-            Log.Information("Updating price breakdown for job {JobId}",
-                breakdown.JobId ?? breakdown.PrebookJobId);
+            Log.Information("Updating price breakdown for job {JobId} (archived: {IsArchived})",
+                breakdown.JobId ?? breakdown.PrebookJobId, breakdown.IsArchived);
 
-            await jobRepository.UpdateJobPriceBreakdownAsync(breakdown);
+            await jobRepository.UpdateJobPriceBreakdownAsync(breakdown, breakdown.IsArchived);
 
-            if (breakdown.JobId.HasValue)
+            if (breakdown.JobId.HasValue && !breakdown.IsArchived)
             {
                 await taskRepository.AddEventAsync(
                     jobId ?? 0,
@@ -249,20 +249,24 @@ public class JobController(
     {
         try
         {
-            Log.Information("Deleting price breakdown for charge {chargeId}", request.ChargeId);
+            Log.Information("Deleting price breakdown for charge {ChargeId} (archived: {IsArchived})",
+                request.ChargeId, request.IsArchived);
 
-            await jobRepository.DeleteJobPriceBreakdownAsync(request.ChargeId);
+            await jobRepository.DeleteJobPriceBreakdownAsync(request.ChargeId, request.IsArchived);
 
-            await taskRepository.AddEventAsync(
-                request.JobId,
-                "Manually rated price",
-                (int)EventType.ChangePrice);
+            if (!request.IsArchived)
+            {
+                await taskRepository.AddEventAsync(
+                    request.JobId,
+                    "Manually rated price",
+                    (int)EventType.ChangePrice);
+            }
 
             return Ok();
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error deleting price breakdown for charge {chargeId}",
+            Log.Error(ex, "Error deleting price breakdown for charge {ChargeId}",
                 request.ChargeId);
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }

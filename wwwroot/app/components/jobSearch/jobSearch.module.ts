@@ -6,7 +6,7 @@ import AdditionalServicesDialogController
     from "../dialogs/additional-services-dialog/additional-services-dialog.controller";
 import DispatchMapComponent from "../common/dispatch-map/dispatch-map.component";
 import JobContextMenuService from "../../services/job-context-menu.service";
-import {TaskHistoryComponent} from "../common/task-history/task-history.component";
+import {TaskHistoryReactComponent} from "../../react/components/common/task-history/task-history-react.module";
 import JobsListComponent from "../common/job-list/job-list.component";
 import JobHighlightService from "../common/job-list/job-highlight.service";
 import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
@@ -35,7 +35,7 @@ const jobSearchModule = angular.module('uDispatch.jobSearch', [
 jobSearchModule
     .component("jobSearchComponent", JobSearchComponent)
     .component("dispatchMap", DispatchMapComponent)
-    .component("taskHistory", TaskHistoryComponent)
+    .component("taskHistoryReact", TaskHistoryReactComponent)
     .component("jobsList", JobsListComponent);
 
 jobSearchModule

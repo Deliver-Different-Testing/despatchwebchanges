@@ -329,11 +329,9 @@
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\job-highlight.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\job-list.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\pod-photo-viewer\pod-photo-viewer.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\common\sticky-notes\sticky-notes.component.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\common\task-history\task-history.component.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\common\task-history\task-history.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\common\task-item-component\task-item.component.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\common\task-item-component\task-item.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\StickyNotes.tsx" />
+    <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\StickyNotes.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\sticky-notes-react.module.tsx" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-event-dialog\add-event-dialog.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\agent-info-dialog\agent-info-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\agent-info-dialog\agent-info-dialog.service.ts" />

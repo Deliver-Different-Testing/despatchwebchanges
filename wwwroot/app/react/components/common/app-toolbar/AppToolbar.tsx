@@ -5,7 +5,7 @@
  * Layout: Logo | Title | Spacer | Actions | User Menu
  */
 
-import React, {useMemo} from 'react';
+import React from 'react';
 import {
     AppBar,
     Toolbar,
@@ -45,17 +45,20 @@ function greetUser(userName: string): string {
     return `${greeting}, ${userName}`;
 }
 
-export const AppToolbar: React.FC<AppToolbarProps> = ({
-    title,
-    firstName,
-    logoUrl = 'images/dfrnt_logo.png',
-    children,
-    onLogoClick,
-    onMenuHover,
-}) => {
-    const greeting = useMemo(() => greetUser(firstName), [firstName]);
+export class AppToolbar extends React.Component<AppToolbarProps> {
+    static defaultProps: Partial<AppToolbarProps> = {
+        logoUrl: 'images/dfrnt_logo.png',
+    };
 
-    return (
+    private get greeting(): string {
+        return greetUser(this.props.firstName);
+    }
+
+    render(): React.ReactNode {
+        const {title, logoUrl, children, onLogoClick, onMenuHover} = this.props;
+        const greeting = this.greeting;
+
+        return (
         <AppBar
             position="static"
             elevation={1}
@@ -137,7 +140,8 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                 </Tooltip>
             </Toolbar>
         </AppBar>
-    );
-};
+        );
+    }
+}
 
 export default AppToolbar;

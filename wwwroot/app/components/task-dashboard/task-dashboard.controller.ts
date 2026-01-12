@@ -3,7 +3,7 @@ import {ExtendedTask, TaskTableFiltersRequest, ITask} from "./task-dashboard.int
 import {IDispatchJob, ISuggestion} from "../../interfaces/job.interface";
 import {ViewMode} from "./enums/view-mode";
 import BaseController from "../base-controller";
-import {ITaskListItemConfig} from "../common/task-item-component/task-item.interfaces";
+import {ITaskListItemConfig} from "../../react/components/common/task-item/TaskItem.interfaces";
 import {StatusFilter} from "./enums/status-filter";
 import greetUser from "../../functions/greetUser";
 import dayjs, {Dayjs} from "dayjs";
@@ -11,7 +11,7 @@ import {ContactID} from "../../contants";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import timezone from 'dayjs/plugin/timezone';
-import {IDeliveryHistoryConfig} from "../common/task-history/task-history.interfaces";
+import {IDeliveryHistoryConfig} from "../../react/components/common/task-history/TaskHistory.interfaces";
 import DensityMode from "../../enums/densityMode";
 import {AppPage} from "../../enums/app-pages.enum";
 import IDateFilterData from "../../interfaces/date-filter-data.interface";

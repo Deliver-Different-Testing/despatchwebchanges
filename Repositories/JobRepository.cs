@@ -2009,17 +2009,17 @@ public partial class JobRepository(
     /// </summary>
     /// <param name="jobId">The job or prebook job ID.</param>
     /// <param name="isPrebook">True if querying a prebook job.</param>
+    /// <param name="isArchived">True if querying an archived job (skips live table lookup).</param>
     /// <returns>List of charge components making up the total price.</returns>
     public async Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId,
-        bool isPrebook)
+        bool isPrebook, bool isArchived = false)
     {
-        int effectivePrebookId;
         if (isPrebook)
         {
-            effectivePrebookId = await Context.GetEffectiveJobBookingIdAsync(jobId);
+            var effectivePrebookId = await Context.GetEffectiveJobBookingIdAsync(jobId);
             return await Context.PricingBreakdowns
                 .AsNoTracking()
-                .Where(p => p.PrebookJobId == effectivePrebookId)
+                .Where(p => p.PrebookJobId == effectivePrebookId || p.PrebookJobId == jobId)
                 .Select(p => new ChargeViewModel
                 {
                     ChargeId = p.PricingBreakdownId,
@@ -2032,10 +2032,59 @@ public partial class JobRepository(
                 .ToListAsync();
         }
 
+        // Query archive table directly if we know the job is archived
+        if (isArchived)
+        {
+            var effectiveArchiveJobId = await Context.GetEffectiveArchiveJobIdAsync(jobId);
+            if (effectiveArchiveJobId == 0)
+                return [];
+
+            return await Context.PricingBreakdownArchives
+                .AsNoTracking()
+                .Where(p => p.JobId == effectiveArchiveJobId || p.JobId == jobId)
+                .Select(p => new ChargeViewModel
+                {
+                    ChargeId = p.PricingBreakdownId,
+                    Amount = p.ChargeAmount,
+                    Name = p.ChargeName,
+                    JobId = p.JobId,
+                    PrebookJobId = p.PrebookJobId,
+                    CostAmount = p.CostAmount
+                })
+                .ToListAsync();
+        }
+
+        // Try live jobs
         var effectiveJobId = await Context.GetEffectiveJobIdAsync(jobId);
-        var pricingBreakdowns = await Context.PricingBreakdowns
+        if (effectiveJobId != 0)
+        {
+            var pricingBreakdowns = await Context.PricingBreakdowns
+                .AsNoTracking()
+                .Where(p => p.JobId == effectiveJobId || p.JobId == jobId)
+                .Select(p => new ChargeViewModel
+                {
+                    ChargeId = p.PricingBreakdownId,
+                    Amount = p.ChargeAmount,
+                    Name = p.ChargeName,
+                    JobId = p.JobId,
+                    PrebookJobId = p.PrebookJobId,
+                    CostAmount = p.CostAmount,
+                    ChildJobId = p.ChildJobId
+                })
+                .ToListAsync();
+
+            if (pricingBreakdowns.Count != 0)
+                return pricingBreakdowns;
+        }
+
+        // Fall back to archive table if live query returned no results
+        var archiveJobId = await Context.GetEffectiveArchiveJobIdAsync(jobId);
+        if (archiveJobId == 0)
+            return [];
+
+        return await Context.PricingBreakdownArchives
             .AsNoTracking()
-            .Where(p => p.JobId == effectiveJobId)
+            .Where(p => p.JobId == archiveJobId)
             .Select(p => new ChargeViewModel
             {
                 ChargeId = p.PricingBreakdownId,
@@ -2043,20 +2092,18 @@ public partial class JobRepository(
                 Name = p.ChargeName,
                 JobId = p.JobId,
                 PrebookJobId = p.PrebookJobId,
-                CostAmount = p.CostAmount,
-                ChildJobId = p.ChildJobId
+                CostAmount = p.CostAmount
             })
             .ToListAsync();
-
-        return pricingBreakdowns;
     }
 
     /// <summary>
     /// Adds a new pricing breakdown component to a job or prebook job.
     /// </summary>
     /// <param name="viewModel">The charge details to add.</param>
+    /// <param name="isArchived">True if adding to an archived job.</param>
     /// <returns>The ID of the newly created pricing breakdown record.</returns>
-    public async Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel)
+    public async Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel, bool isArchived = false)
     {
         try
         {
@@ -2067,8 +2114,33 @@ public partial class JobRepository(
 
             int effectiveJobId;
             if (!isPrebook && viewModel.ChildJobId.HasValue)
-                effectiveJobId = await Context.GetEffectiveJobIdAsync(viewModel.ChildJobId.Value);
-            else effectiveJobId = await Context.GetEffectiveJobBookingIdAsync(viewModel.PrebookJobId ?? 0);
+            {
+                effectiveJobId = isArchived
+                    ? await Context.GetEffectiveArchiveJobIdAsync(viewModel.ChildJobId.Value)
+                    : await Context.GetEffectiveJobIdAsync(viewModel.ChildJobId.Value);
+            }
+            else
+            {
+                effectiveJobId = await Context.GetEffectiveJobBookingIdAsync(viewModel.PrebookJobId ?? 0);
+            }
+
+            var note = $"Added price component: {viewModel.Name} for ${viewModel.Amount:F2}";
+
+            if (isArchived && !isPrebook)
+            {
+                var archiveItem = new PricingBreakdownArchive
+                {
+                    ChargeAmount = viewModel.Amount,
+                    ChargeName = viewModel.Name,
+                    JobId = effectiveJobId,
+                    CostAmount = viewModel.CostAmount
+                };
+
+                await Context.PricingBreakdownArchives.AddAsync(archiveItem);
+                await Context.SaveChangesAsync();
+
+                return archiveItem.PricingBreakdownId;
+            }
 
             var item = new PricingBreakdown
             {
@@ -2080,7 +2152,6 @@ public partial class JobRepository(
                 ChildJobId = viewModel.ChildJobId
             };
 
-            var note = $"Added price component: {viewModel.Name} for ${viewModel.Amount:F2}";
             switch (isPrebook)
             {
                 case true:
@@ -2110,16 +2181,30 @@ public partial class JobRepository(
     /// Updates an existing pricing breakdown component.
     /// </summary>
     /// <param name="viewModel">The updated charge details.</param>
-    public async Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel)
+    /// <param name="isArchived">True if updating an archived job's pricing breakdown.</param>
+    public async Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel, bool isArchived = false)
     {
         if (viewModel.JobId is null && viewModel.PrebookJobId is null) return;
 
-        var rowsAffected = await Context.PricingBreakdowns
-            .Where(p => p.PricingBreakdownId == viewModel.ChargeId)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(p => p.ChargeAmount, viewModel.Amount)
-                .SetProperty(p => p.ChargeName, viewModel.Name)
-                .SetProperty(p => p.CostAmount, viewModel.CostAmount));
+        int rowsAffected;
+        if (isArchived)
+        {
+            rowsAffected = await Context.PricingBreakdownArchives
+                .Where(p => p.PricingBreakdownId == viewModel.ChargeId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(p => p.ChargeAmount, viewModel.Amount)
+                    .SetProperty(p => p.ChargeName, viewModel.Name)
+                    .SetProperty(p => p.CostAmount, viewModel.CostAmount));
+        }
+        else
+        {
+            rowsAffected = await Context.PricingBreakdowns
+                .Where(p => p.PricingBreakdownId == viewModel.ChargeId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(p => p.ChargeAmount, viewModel.Amount)
+                    .SetProperty(p => p.ChargeName, viewModel.Name)
+                    .SetProperty(p => p.CostAmount, viewModel.CostAmount));
+        }
 
         if (rowsAffected == 0) return;
 
@@ -2127,15 +2212,28 @@ public partial class JobRepository(
 
         if (viewModel.PrebookJobId != null)
             await SetPrebookJobAsManuallyPriceAsync(viewModel.PrebookJobId.Value, note);
-        else if (viewModel.JobId != null) await SetJobAsManuallyPriceAsync(viewModel.JobId.Value, note);
+        else if (viewModel.JobId != null && !isArchived)
+            await SetJobAsManuallyPriceAsync(viewModel.JobId.Value, note);
     }
 
     /// <summary>
     /// Deletes a pricing breakdown component from a job.
     /// </summary>
     /// <param name="chargeId">The pricing breakdown ID to delete.</param>
-    public async Task DeleteJobPriceBreakdownAsync(int chargeId)
+    /// <param name="isArchived">True if deleting from an archived job.</param>
+    public async Task DeleteJobPriceBreakdownAsync(int chargeId, bool isArchived = false)
     {
+        if (isArchived)
+        {
+            var archiveBreakdown = await Context.PricingBreakdownArchives
+                .FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
+            if (archiveBreakdown == null) return;
+
+            Context.PricingBreakdownArchives.Remove(archiveBreakdown);
+            await Context.SaveChangesAsync();
+            return;
+        }
+
         var breakdown = await Context.PricingBreakdowns
             .FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
         if (breakdown == null) return;
@@ -2150,7 +2248,8 @@ public partial class JobRepository(
                     await SetPrebookJobAsManuallyPriceAsync(breakdown.PrebookJobId.Value, note);
                 break;
             default:
-                if (breakdown.JobId != null) await SetJobAsManuallyPriceAsync(breakdown.JobId.Value, note);
+                if (breakdown.JobId != null)
+                    await SetJobAsManuallyPriceAsync(breakdown.JobId.Value, note);
                 break;
         }
 

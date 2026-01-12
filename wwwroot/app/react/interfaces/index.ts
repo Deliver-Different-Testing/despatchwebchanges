@@ -10,3 +10,4 @@ export * from './afterhours';
 export * from './job';
 export * from './address';
 export * from './recurringJobs';
+export * from './notes';

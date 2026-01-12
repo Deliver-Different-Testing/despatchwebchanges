@@ -25,7 +25,7 @@ import {IPrebookListModel, IPrebookListModelDto} from "../components/recurringJo
 import {
     IDeliveryJourney,
     IDeliveryJourneyDto
-} from "../components/common/task-history/task-history.interfaces";
+} from "../react/components/common/task-history/TaskHistory.interfaces";
 import {
     ITodayActiveDrivers,
     ITodayActiveDriversDto
@@ -199,6 +199,7 @@ export function transformDeliveryJourneyDTO(dto: IDeliveryJourneyDto): IDelivery
     return {
         ...dto,
         date: formatDateFromApi(dto.date),
+        status: dto.status as IDeliveryJourney['status'],
         _dateStr: formatInfoLogDateTimeString(dto.date)
     }
 }

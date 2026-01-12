@@ -1,7 +1,7 @@
 ﻿import TaskDashboardComponent from "./task-dashboard.controller";
 import TaskCalendarViewComponent from "./task-calendar-view/task-calendar-view.component";
 import TasksService from "../../services/tasks.service";
-import {TaskHistoryComponent} from "../common/task-history/task-history.component";
+import {TaskHistoryReactComponent} from "../../react/components/common/task-history/task-history-react.module";
 
 const taskDashboardModule = angular.module('uDispatch.taskDashboard', [
     'ngMap',
@@ -21,7 +21,7 @@ const taskDashboardModule = angular.module('uDispatch.taskDashboard', [
 taskDashboardModule
     .component("taskDashboardComponent", TaskDashboardComponent)
     .component("taskCalendarView", TaskCalendarViewComponent)
-    .component("taskHistory", TaskHistoryComponent);
+    .component("taskHistoryReact", TaskHistoryReactComponent);
 
 // Services
 taskDashboardModule
