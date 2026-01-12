@@ -390,7 +390,6 @@ public static class JobMappings
         CustomJobName = j.CustomJobName
     };
 
-
     public static readonly Expression<Func<TblBulkJob, JobViewModel>> BulkJobMapping = j => new JobViewModel
     {
         AngularId = Guid.NewGuid(),

@@ -29,7 +29,6 @@ import "angular-heremaps/dist/angular-heremaps";
 import "../lib/ModernizerLocalStorage";
 import "../lib/ng-material-floating-button/src/mfb-directive";
 import "../lib/ng-material-floating-button/mfb/dist/mfb";
-import "../lib/angular-fixed-table-header/fixed-table-header";
 import "../lib/google-maps-label/label";
 
 // Custom here maps
@@ -56,7 +55,6 @@ const app = angular.module("uDispatch", [
     "ngFileUpload",
     "hereMapTracking.services",
     "hereMapTracking.components",
-    "fixed.table.header",
     "ngMaterialDatePicker"
 ]);
 

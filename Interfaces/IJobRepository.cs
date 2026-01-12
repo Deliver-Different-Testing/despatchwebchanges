@@ -103,11 +103,11 @@ public interface IJobRepository
     Task<List<Suggestion>> GetStatusListAsync();
     Task<List<Suggestion>> EventTypeListAsync();
 
-    Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId, bool isPrebook);
+    Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId, bool isPrebook, bool isArchived = false);
 
-    Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel);
-    Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel);
-    Task DeleteJobPriceBreakdownAsync(int chargeId);
+    Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel, bool isArchived = false);
+    Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel, bool isArchived = false);
+    Task DeleteJobPriceBreakdownAsync(int chargeId, bool isArchived = false);
 
     Task VoidPrebookJobAsync(int jobId);
 

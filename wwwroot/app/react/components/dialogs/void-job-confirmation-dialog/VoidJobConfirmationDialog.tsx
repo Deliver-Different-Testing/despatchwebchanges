@@ -5,7 +5,7 @@
  * Allows users to void a single job or multiple related jobs with a required reason.
  */
 
-import React, {useState, useCallback, useEffect} from 'react';
+import React from 'react';
 import {
     Dialog,
     DialogContent,
@@ -49,75 +49,115 @@ export interface VoidJobConfirmationDialogProps {
     showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
 }
 
-export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps> = ({
-    open,
-    job,
-    onClose,
-    onConfirm,
-    onLoadRelatedJobs,
-    onVoidJob,
-    onVoidBulkJob,
-    showToast,
-}) => {
-    const [voidReasonText, setVoidReasonText] = useState('');
-    const [voidSingleJobOnly, setVoidSingleJobOnly] = useState(true);
-    const [relatedJobs, setRelatedJobs] = useState<RelatedJob[]>([]);
-    const [isLoadingRelatedJobs, setIsLoadingRelatedJobs] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+interface VoidJobConfirmationDialogState {
+    voidReasonText: string;
+    voidSingleJobOnly: boolean;
+    relatedJobs: RelatedJob[];
+    isLoadingRelatedJobs: boolean;
+    isSubmitting: boolean;
+}
 
-    // Reset state when dialog opens
-    useEffect(() => {
-        if (open) {
-            setVoidReasonText('');
-            setVoidSingleJobOnly(true);
-            setRelatedJobs([]);
-            setIsLoadingRelatedJobs(false);
-            setIsSubmitting(false);
+export class VoidJobConfirmationDialog extends React.Component<VoidJobConfirmationDialogProps, VoidJobConfirmationDialogState> {
+    constructor(props: VoidJobConfirmationDialogProps) {
+        super(props);
+        this.state = {
+            voidReasonText: '',
+            voidSingleJobOnly: true,
+            relatedJobs: [],
+            isLoadingRelatedJobs: false,
+            isSubmitting: false,
+        };
+    }
+
+    componentDidUpdate(prevProps: VoidJobConfirmationDialogProps): void {
+        // Reset state when dialog opens
+        if (this.props.open && !prevProps.open) {
+            this.setState({
+                voidReasonText: '',
+                voidSingleJobOnly: true,
+                relatedJobs: [],
+                isLoadingRelatedJobs: false,
+                isSubmitting: false,
+            });
         }
-    }, [open]);
+    }
 
-    // Load related jobs when toggling multi-void
-    const handleToggleMultiVoid = useCallback(async (checked: boolean) => {
-        setVoidSingleJobOnly(checked);
+    private get selectedCount(): number {
+        return this.state.relatedJobs.filter(j => j.selected).length;
+    }
+
+    private get selectedJobIds(): number[] {
+        return this.state.relatedJobs.filter(j => j.selected).map(j => j.id);
+    }
+
+    private get isConfirmDisabled(): boolean {
+        const {voidReasonText, voidSingleJobOnly, isSubmitting} = this.state;
+        return (
+            !voidReasonText ||
+            voidReasonText.trim().length === 0 ||
+            (!voidSingleJobOnly && this.selectedCount === 0) ||
+            isSubmitting
+        );
+    }
+
+    private get confirmButtonText(): string {
+        const {voidSingleJobOnly} = this.state;
+        if (voidSingleJobOnly) {
+            return 'Void Job';
+        }
+        const count = this.selectedCount;
+        return `Void ${count} Job${count !== 1 ? 's' : ''}`;
+    }
+
+    private handleReasonChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+        this.setState({voidReasonText: event.target.value});
+    };
+
+    private handleToggleMultiVoid = async (checked: boolean): Promise<void> => {
+        const {job, onLoadRelatedJobs, showToast} = this.props;
+        const {relatedJobs} = this.state;
+
+        this.setState({voidSingleJobOnly: checked});
 
         if (!checked && relatedJobs.length === 0 && job) {
-            setIsLoadingRelatedJobs(true);
+            this.setState({isLoadingRelatedJobs: true});
             try {
                 const jobs = await onLoadRelatedJobs(job.id, job.isArchived ?? false);
-                setRelatedJobs(jobs);
+                this.setState({relatedJobs: jobs});
             } catch (error) {
                 console.error('Error loading related jobs:', error);
                 showToast('Failed to load related jobs.', 'error');
-                setRelatedJobs([]);
+                this.setState({relatedJobs: []});
             } finally {
-                setIsLoadingRelatedJobs(false);
+                this.setState({isLoadingRelatedJobs: false});
             }
         }
-    }, [job, relatedJobs.length, onLoadRelatedJobs, showToast]);
+    };
 
-    const toggleJobSelection = useCallback((jobId: number) => {
-        setRelatedJobs(prev =>
-            prev.map(j => j.id === jobId ? {...j, selected: !j.selected} : j)
-        );
-    }, []);
+    private toggleJobSelection = (jobId: number): void => {
+        this.setState(prevState => ({
+            relatedJobs: prevState.relatedJobs.map(j =>
+                j.id === jobId ? {...j, selected: !j.selected} : j
+            ),
+        }));
+    };
 
-    const selectAllJobs = useCallback(() => {
-        setRelatedJobs(prev => prev.map(j => ({...j, selected: true})));
-    }, []);
+    private selectAllJobs = (): void => {
+        this.setState(prevState => ({
+            relatedJobs: prevState.relatedJobs.map(j => ({...j, selected: true})),
+        }));
+    };
 
-    const deselectAllJobs = useCallback(() => {
-        setRelatedJobs(prev => prev.map(j => ({...j, selected: false})));
-    }, []);
+    private deselectAllJobs = (): void => {
+        this.setState(prevState => ({
+            relatedJobs: prevState.relatedJobs.map(j => ({...j, selected: false})),
+        }));
+    };
 
-    const getSelectedJobIds = useCallback((): number[] => {
-        return relatedJobs.filter(j => j.selected).map(j => j.id);
-    }, [relatedJobs]);
+    private handleConfirm = async (): Promise<void> => {
+        const {job, onVoidJob, onVoidBulkJob, showToast, onConfirm} = this.props;
+        const {voidReasonText, voidSingleJobOnly} = this.state;
 
-    const getSelectedJobCount = useCallback((): number => {
-        return relatedJobs.filter(j => j.selected).length;
-    }, [relatedJobs]);
-
-    const handleConfirm = async () => {
         if (!job) return;
 
         if (!voidReasonText || voidReasonText.trim() === '') {
@@ -125,14 +165,14 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
             return;
         }
 
-        const selectedJobIds = voidSingleJobOnly ? undefined : getSelectedJobIds();
+        const selectedJobIds = voidSingleJobOnly ? undefined : this.selectedJobIds;
 
         if (!voidSingleJobOnly && (!selectedJobIds || selectedJobIds.length === 0)) {
             showToast('Please select at least one job to void.', 'warning');
             return;
         }
 
-        setIsSubmitting(true);
+        this.setState({isSubmitting: true});
 
         try {
             if (job.isBulkJob) {
@@ -160,24 +200,20 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
             onConfirm({success: true, voidedCount});
         } catch (error) {
             showToast('An error occurred while voiding the job. Please try again later.', 'error');
-            setIsSubmitting(false);
+            this.setState({isSubmitting: false});
         }
     };
 
-    const selectedCount = getSelectedJobCount();
-    const isConfirmDisabled =
-        !voidReasonText ||
-        voidReasonText.trim().length === 0 ||
-        (!voidSingleJobOnly && selectedCount === 0) ||
-        isSubmitting;
+    render(): React.ReactNode {
+        const {open, job, onClose} = this.props;
+        const {voidReasonText, voidSingleJobOnly, relatedJobs, isLoadingRelatedJobs, isSubmitting} = this.state;
+        const selectedCount = this.selectedCount;
+        const isConfirmDisabled = this.isConfirmDisabled;
+        const confirmButtonText = this.confirmButtonText;
 
-    const confirmButtonText = voidSingleJobOnly
-        ? 'Void Job'
-        : `Void ${selectedCount} Job${selectedCount !== 1 ? 's' : ''}`;
+        if (!job) return null;
 
-    if (!job) return null;
-
-    return (
+        return (
         <Dialog
             open={open}
             onClose={onClose}
@@ -266,7 +302,7 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                         label="Reason for voiding (required)"
                         placeholder="Please provide a reason for voiding this job"
                         value={voidReasonText}
-                        onChange={(e) => setVoidReasonText(e.target.value)}
+                        onChange={this.handleReasonChange}
                         disabled={isSubmitting}
                         inputProps={{maxLength: 500}}
                         helperText={`${voidReasonText.length}/500 characters`}
@@ -292,7 +328,7 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                         control={
                             <Switch
                                 checked={voidSingleJobOnly}
-                                onChange={(e) => handleToggleMultiVoid(e.target.checked)}
+                                onChange={(e) => this.handleToggleMultiVoid(e.target.checked)}
                                 disabled={isSubmitting}
                                 color="primary"
                             />
@@ -341,7 +377,7 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                             <Box sx={{display: 'flex', gap: 1}}>
                                 <Button
                                     size="small"
-                                    onClick={selectAllJobs}
+                                    onClick={this.selectAllJobs}
                                     disabled={isLoadingRelatedJobs || isSubmitting}
                                     sx={{textTransform: 'none', minWidth: 'auto', px: 1}}
                                 >
@@ -349,7 +385,7 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                                 </Button>
                                 <Button
                                     size="small"
-                                    onClick={deselectAllJobs}
+                                    onClick={this.deselectAllJobs}
                                     disabled={isLoadingRelatedJobs || isSubmitting}
                                     sx={{textTransform: 'none', minWidth: 'auto', px: 1}}
                                 >
@@ -393,7 +429,7 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                                                 })}
                                             >
                                                 <ListItemButton
-                                                    onClick={() => toggleJobSelection(relatedJob.id)}
+                                                    onClick={() => this.toggleJobSelection(relatedJob.id)}
                                                     disabled={isSubmitting}
                                                     dense
                                                 >
@@ -468,7 +504,7 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                     Cancel
                 </Button>
                 <Button
-                    onClick={handleConfirm}
+                    onClick={this.handleConfirm}
                     variant="contained"
                     color="error"
                     disabled={isConfirmDisabled}
@@ -479,7 +515,8 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                 </Button>
             </DialogActions>
         </Dialog>
-    );
-};
+        );
+    }
+}
 
 export default VoidJobConfirmationDialog;

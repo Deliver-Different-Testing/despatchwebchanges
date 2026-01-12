@@ -184,14 +184,13 @@
                             </div>
                         </md-toolbar>
                         <md-card-content class="overdue-list">
-                            <task-item-component
+                            <task-item-react
                                     ng-repeat="task in ctrl.getOverdueTasks() track by task.id"
                                     task="task"
                                     config="ctrl.calendarTaskConfig"
-                                    on-status-change="ctrl.handleTaskStatusChange({task: task})"
                                     on-task-updated="ctrl.handleTaskUpdate()"
                                     on-task-click="ctrl.handleTaskClick(task)">
-                            </task-item-component>
+                            </task-item-react>
                         </md-card-content>
                     </md-card>
                 </div>

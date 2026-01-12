@@ -9,4 +9,5 @@ public class ChargeViewModel
     public int? PrebookJobId { get; set; }
     public decimal? CostAmount { get; set; }
     public int? ChildJobId { get; set; }
+    public bool IsArchived { get; set; }
 }

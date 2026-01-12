@@ -85,6 +85,19 @@ export const queryKeys = {
         }) => ['recurringJobs', 'list', query] as const,
         speeds: ['recurringJobs', 'speeds'] as const,
     },
+    notes: {
+        all: ['notes'] as const,
+        types: ['notes', 'types'] as const,
+        job: (jobId: number, isRecurring: boolean) =>
+            ['notes', 'job', jobId, isRecurring] as const,
+        bulkJob: (bulkJobId: number) =>
+            ['notes', 'bulkJob', bulkJobId] as const,
+    },
+    priceBreakdowns: {
+        all: ['priceBreakdowns'] as const,
+        job: (jobId: number, isPrebook: boolean, isArchived: boolean) =>
+            ['priceBreakdowns', 'job', jobId, isPrebook, isArchived] as const,
+    },
 } as const;
 
 export default queryClient;

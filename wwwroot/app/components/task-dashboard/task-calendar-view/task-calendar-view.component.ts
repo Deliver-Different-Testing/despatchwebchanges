@@ -5,7 +5,7 @@ import weekday from "dayjs/plugin/weekday";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import {ExtendedTask, ITask} from "../task-dashboard.interfaces";
-import {ITaskListItemConfig} from "../../common/task-item-component/task-item.interfaces";
+import {ITaskListItemConfig} from "../../../react/components/common/task-item/TaskItem.interfaces";
 import {CalendarDay, CalendarWeek} from "./task-calendar-view.interfaces";
 import BaseController from "../../base-controller";
 import TasksService from "../../../services/tasks.service";

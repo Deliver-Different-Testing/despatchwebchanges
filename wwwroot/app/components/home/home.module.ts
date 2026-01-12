@@ -37,7 +37,6 @@ const homeModule = angular.module('uDispatch.home', [
     'ngFileUpload',
     'hereMapTracking.services',
     'hereMapTracking.components',
-    'fixed.table.header',
     'ngMaterialDatePicker'
 ]);
 

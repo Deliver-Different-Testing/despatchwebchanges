@@ -32,7 +32,7 @@ import ThemeConfig from "./materialTheme";
 import AddEventDialogController from "./components/dialogs/add-event-dialog/add-event-dialog.controller";
 import AddEventDialogService from "./components/dialogs/add-event-dialog/add-event-dialog.service";
 import {bytesFilter, momentFormatFilter, replaceFilter, timezoneLongFilter, timezoneShortFilter} from "./filters";
-import StickyNoteComponent from "./components/common/sticky-notes/sticky-notes.component";
+import {StickyNotesReactComponent} from "./react/components/common/sticky-notes/sticky-notes-react.module";
 import EditParcelDimensionsDialogService
     from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
 import AutoCompleteDialogService from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.service";
@@ -63,7 +63,7 @@ import SimplePriceEditDialogController
     from "./components/dialogs/simple-price-edit-dialog/simple-price-edit-dialog.controller";
 import BulkPriceUploadDialogService
     from "./components/dialogs/bulk-price-upload-dialog/bulk-price-upload-dialog.service";
-import {TaskItemComponent} from "./components/common/task-item-component/task-item.component";
+import {TaskItemReactComponent} from "./react/components/common/task-item/task-item-react.module";
 import reactAppShellDirective from "./components/common/react-app-shell/react-app-shell.directive";
 
 const app = (window as any).uDispatchApp;
@@ -221,9 +221,9 @@ app.component("podPhotoViewer", PodPhotoViewerComponent);
 app.component("noData", NoDataComponent);
 app.component("tablePagination", TablePaginationComponent);
 app.component("dataTable", DataTableComponent);
-app.component("stickyNote", StickyNoteComponent);
+app.component("stickyNoteReact", StickyNotesReactComponent);
 app.component("customDatePicker", DayJsDatePickerComponent);
-app.component("taskItemComponent", TaskItemComponent);
+app.component("taskItemReact", TaskItemReactComponent);
 
 // Directives
 app.directive("reactAppShell", reactAppShellDirective);

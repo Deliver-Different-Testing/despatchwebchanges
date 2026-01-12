@@ -5,6 +5,7 @@ import SimplePriceEditDialogService, {
     PriceEditResult
 } from "../simple-price-edit-dialog/simple-price-edit-dialog.service";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
+import {pricingBreakdownApi} from "../../../react/services/pricingBreakdownApi";
 
 // Type declaration for the React dialog on window
 declare global {
@@ -14,10 +15,11 @@ declare global {
                 priceBreakdowns: PriceBreakdown[],
                 jobId: number,
                 isPrebook: boolean,
-                apiService: {
+                isArchived: boolean,
+                apiService?: {
                     addPriceBreakdown: (breakdown: Omit<PriceBreakdown, 'chargeId'>) => Promise<number>;
                     updatePriceBreakdown: (breakdown: PriceBreakdown) => Promise<void>;
-                    deletePriceBreakdown: (chargeId: number, jobId: number) => Promise<void>;
+                    deletePriceBreakdown: (chargeId: number, jobId: number, isArchived: boolean) => Promise<void>;
                 }
             ) => Promise<number | null>;
         };
@@ -118,15 +120,16 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
     async openPriceBreakdownDialog($event: MouseEvent,
                                    job: IJob): Promise<number | undefined> {
         try {
-            const priceBreakdowns: PriceBreakdown[] = await this.DispatchData.getPriceBreakdown(job.id, job.preBook);
+            // Use the new React pricing breakdown API service
+            const priceBreakdowns = await pricingBreakdownApi.getPriceBreakdowns(job.id, job.preBook, job.isArchived);
 
             // Check if using the old amount method and just show text
-            if(this.isUsingOldAmountMethod(job.charge, priceBreakdowns)) {
+            if (this.isUsingOldAmountMethod(job.charge, priceBreakdowns)) {
                 try {
                     const result = await this.simplePriceEditDialogService.openSimplePriceEditDialog($event, job, job.preBook);
                     return await this.handlePriceEditResult(result, job);
                 } catch (error) {
-                    if(!error) return;
+                    if (!error) return;
 
                     this.toastrService.showErrorToast('Job amount update failed.');
                     console.error('PriceBreakdownDialogService: Error in openPriceBreakdownDialog', error);
@@ -141,29 +144,19 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
                 throw new Error('React price breakdown dialog not loaded');
             }
 
-            // Create API service wrapper
-            const apiService = {
-                addPriceBreakdown: (breakdown: Omit<PriceBreakdown, 'chargeId'>) =>
-                    this.DispatchData.addPriceBreakdown(breakdown as PriceBreakdown),
-                updatePriceBreakdown: (breakdown: PriceBreakdown) =>
-                    this.DispatchData.updatePriceBreakdown(breakdown),
-                deletePriceBreakdown: (chargeId: number, jobId: number) =>
-                    this.DispatchData.deletePriceBreakdown(chargeId, jobId),
-            };
-
-            // Open the React dialog
+            // Open the React dialog (uses default React API service internally)
             const newAmount = await window.ReactPriceBreakdownDialog.open(
                 priceBreakdowns,
                 job.id,
                 job.preBook,
-                apiService
+                job.isArchived
             );
 
             console.debug('PriceBreakdownDialogService: Dialog closed!');
 
             return newAmount ?? undefined;
         } catch (error) {
-            if(!error) {
+            if (!error) {
                 console.debug('User closed dialog');
                 return;
             }

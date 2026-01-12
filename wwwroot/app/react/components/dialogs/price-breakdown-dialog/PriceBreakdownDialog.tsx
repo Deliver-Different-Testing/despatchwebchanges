@@ -51,6 +51,7 @@ export interface PriceBreakdown {
     prebookJobId?: number;
     costAmount?: number;
     childJobId?: number;
+    isArchived?: boolean;
 }
 
 export interface PriceBreakdownDialogProps {
@@ -58,11 +59,12 @@ export interface PriceBreakdownDialogProps {
     priceBreakdowns: PriceBreakdown[];
     jobId: number;
     isPrebook: boolean;
+    isArchived?: boolean;
     onClose: () => void;
     onSave: (totalAmount: number) => void;
     onAddItem: (item: Omit<PriceBreakdown, 'chargeId'>) => Promise<number>;
     onUpdateItem: (item: PriceBreakdown) => Promise<void>;
-    onDeleteItem: (chargeId: number, jobId: number) => Promise<void>;
+    onDeleteItem: (chargeId: number, jobId: number, isArchived: boolean) => Promise<void>;
 }
 
 const formatCurrency = (value: number): string => {
@@ -88,6 +90,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
     priceBreakdowns: initialBreakdowns,
     jobId,
     isPrebook,
+    isArchived = false,
     onClose,
     onSave,
     onAddItem,
@@ -162,6 +165,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                     name: formName,
                     amount,
                     costAmount,
+                    isArchived,
                     ...(isPrebook ? { prebookJobId: jobId } : { childJobId: jobId }),
                 };
                 const chargeId = await onAddItem(newItem);
@@ -172,6 +176,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                     name: formName,
                     amount,
                     costAmount,
+                    isArchived,
                 };
                 await onUpdateItem(updatedItem);
                 setPriceBreakdowns(priceBreakdowns.map(item =>
@@ -191,7 +196,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
 
         setIsDeleting(item.chargeId);
         try {
-            await onDeleteItem(item.chargeId, jobId);
+            await onDeleteItem(item.chargeId, jobId, isArchived);
             setPriceBreakdowns(priceBreakdowns.filter(pb => pb.chargeId !== item.chargeId));
         } catch (error) {
             console.error('Error deleting price breakdown:', error);

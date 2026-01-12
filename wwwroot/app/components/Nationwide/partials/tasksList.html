@@ -50,13 +50,13 @@
 <div class="task-widget-list-scroll nationwide-job-list">
     <div ng-if="!ctrl.tasksLoading && ctrl.filteredTasks && ctrl.filteredTasks.length > 0">
         <md-list ng-if="!ctrl.tasksLoading && ctrl.filteredTasks && ctrl.filteredTasks.length > 0">
-            <task-item-component
+            <task-item-react
                     ng-repeat="task in ctrl.filteredTasks | filter: box.searchBox"
                     task="task"
                     config="ctrl.taskItemConfig"
                     on-task-updated="ctrl.getTasks()"
                     on-task-click="ctrl.selectTaskJobDetail(task)">
-            </task-item-component>
+            </task-item-react>
         </md-list>
     </div>
 

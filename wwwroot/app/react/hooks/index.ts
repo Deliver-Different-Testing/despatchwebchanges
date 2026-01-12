@@ -15,3 +15,24 @@ export {useAddressSearch, useLocationDetails, useHereMapsApiKey} from './useAddr
 
 // Recurring Jobs API hooks
 export {useRecurringJobsList, useSpeedList} from './useRecurringJobsApi';
+
+// Notes API hooks
+export {
+    useJobNotes,
+    useBulkJobNotes,
+    useNoteTypes,
+    useCreateNote,
+    useCreateBulkJobNote,
+    useUpdateNote,
+    useUpdateBulkJobNote,
+    useDeleteNote,
+    useCreateNoteType,
+} from './useNotesApi';
+
+// Price Breakdown API hooks
+export {
+    usePriceBreakdowns,
+    useAddPriceBreakdown,
+    useUpdatePriceBreakdown,
+    useDeletePriceBreakdown,
+} from './usePriceBreakdownApi';
