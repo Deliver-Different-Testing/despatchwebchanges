@@ -26,6 +26,7 @@ namespace DespatchWeb.Services;
 /// </summary>
 public class JobReportService(
     IJobRepository jobRepository,
+    IRecurringJobRepository recurringJobRepository,
     ITenantInfoService infoService,
     IAmazonS3 s3Client) : IJobReportService
 {
@@ -140,7 +141,7 @@ public class JobReportService(
             var data = await jobRepository.GetClientJobsReportDataAsync(request);
 
             var clientCode = data.Count > 0
-                ? SanitizeFilename(data[0].ucclLegalName?.Replace(" ", "_") ?? "Unknown")
+                ? SanitizeFilename(data[0].UcclLegalName?.Replace(" ", "_") ?? "Unknown")
                 : "NoData";
             var csvBytes = await GenerateClientJobsCsvAsync(data);
             var filename = $"ClientJobsReport_{clientCode}_{currentDate:yyyyMMddHHmmssfff}.csv";
@@ -189,32 +190,32 @@ public class JobReportService(
         ["Ref B"] = x => FormatCsvField(x.RefB),
         ["Job Number"] = x => FormatCsvField(x.JobNumber),
         ["Urgent Ref"] = x => FormatCsvField(x.UrgentRef),
-        ["Raw Base Amount"] = x => string.Empty,
-        ["Fuel Surcharge Amount"] = x => string.Empty,
-        ["Charge Excl GST"] = x => FormatCsvField(x.ChargeExclGST),
+        ["Raw Base Amount"] = x => FormatCsvField(x.RawBaseAmount),
+        ["Fuel Surcharge Amount"] = x => FormatCsvField(x.FuelSurchargeAmount),
+        ["Charge Excl GST"] = x => FormatCsvField(x.ChargeExclGst),
         ["From Suburb"] = x => FormatCsvField(x.From),
         ["From Postcode"] = x => FormatCsvField(x.FromPostcode),
-        ["From Address"] = x => FormatCsvField(x.ucjbFromAddr),
+        ["From Address"] = x => FormatCsvField(x.UcjbFromAddr),
         ["To Suburb"] = x => FormatCsvField(x.To),
         ["To Postcode"] = x => FormatCsvField(x.ToPostcode),
         ["To Address"] = x => FormatCsvField(x.Address),
         ["Picked up time"] = x => FormatCsvField(x.PickedUpTime),
         ["Delivered"] = x => FormatCsvField(x.Delivered),
         ["Total Time"] = x => FormatCsvField(x.TotalTime),
-        ["POD Name"] = x => FormatCsvField(x.PODName),
+        ["POD Name"] = x => FormatCsvField(x.PodName),
         ["Achieved Speed"] = x => FormatCsvField(x.AchievedSpeed),
         ["Notes"] = x => FormatCsvField(x.Notes),
         ["Quantity"] = x => FormatCsvField(x.Quantity),
         ["Weight"] = x => FormatCsvField(x.Weight),
         ["Vehicle"] = x => FormatCsvField(x.Vehicle),
-        ["Type"] = x => FormatCsvField(x.ucjbType),
-        ["Month"] = x => FormatCsvField(x.ucjbMonth),
-        ["Year"] = x => FormatCsvField(x.ucjbYear),
+        ["Type"] = x => FormatCsvField(x.UcjbType),
+        ["Month"] = x => FormatCsvField(x.UcjbMonth),
+        ["Year"] = x => FormatCsvField(x.UcjbYear),
         ["Courier Number"] = x => FormatCsvField(x.Code),
-        ["Courier Name"] = x => FormatCsvField(x.uccrName),
-        ["Invoice No"] = x => FormatCsvField(x.ucjbInvoiceNo),
-        ["Account No."] = x => FormatCsvField(x.ucjbClientID),
-        ["Client Notes"] = x => FormatCsvField(x.ucclNote)
+        ["Courier Name"] = x => FormatCsvField(x.UccrName),
+        ["Invoice No"] = x => FormatCsvField(x.UcjbInvoiceNo),
+        ["Account No."] = x => FormatCsvField(x.UcjbClientId),
+        ["Client Notes"] = x => FormatCsvField(x.UcclNote)
     };
 
     #endregion
@@ -293,6 +294,78 @@ public class JobReportService(
         if (parsedData.Count > 0)
             await jobRepository.UpdateManualPriceAsync(parsedData);
     }
+
+    #endregion
+
+    #region Recurring Jobs Export
+
+    /// <summary>
+    /// Generates a CSV export of all recurring jobs matching the search criteria.
+    /// </summary>
+    public async Task<(byte[] FileBytes, string FileName)> GenerateRecurringJobsCsvAsync(RecurringJobQueryRequest request)
+    {
+        try
+        {
+            var currentDate = infoService.GetCurrentTenantTime();
+            var data = await recurringJobRepository.GetAllRecurringJobsForExportAsync(request);
+
+            var csvBytes = await GenerateRecurringJobsCsvBytesAsync(data);
+            var statusText = request.Active ? "active" : "inactive";
+            var filename = $"recurring-jobs-{statusText}-{currentDate:yyyy-MM-dd-HHmm}.csv";
+
+            return (csvBytes, filename);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobReportService), nameof(GenerateRecurringJobsCsvAsync)));
+            throw;
+        }
+    }
+
+    private static async Task<byte[]> GenerateRecurringJobsCsvBytesAsync(IEnumerable<PrebookListViewModel> data)
+    {
+        using var stream = new MemoryStream();
+        await using var writer = new StreamWriter(stream, new UTF8Encoding(true));
+
+        await writer.WriteLineAsync(string.Join(",", RecurringJobsCsvColumns.Keys));
+        foreach (var item in data)
+        {
+            var values = RecurringJobsCsvColumns.Values.Select(extractor => extractor(item));
+            await writer.WriteLineAsync(string.Join(",", values));
+        }
+
+        await writer.FlushAsync();
+        return stream.ToArray();
+    }
+
+    private static string FormatAddress(AddressViewModel addr)
+    {
+        if (addr == null) return string.Empty;
+
+        if (!string.IsNullOrEmpty(addr.FullAddress))
+            return FormatCsvField(addr.FullAddress);
+
+        var addressLines = new[]
+        {
+            addr.AddressLine1, addr.AddressLine2, addr.AddressLine3, addr.AddressLine4,
+            addr.AddressLine5, addr.AddressLine6, addr.AddressLine7, addr.AddressLine8
+        }.Where(line => !string.IsNullOrWhiteSpace(line));
+
+        return FormatCsvField(string.Join(", ", addressLines));
+    }
+
+    private static readonly Dictionary<string, Func<PrebookListViewModel, string>> RecurringJobsCsvColumns = new()
+    {
+        ["Job Number"] = x => FormatCsvField(x.JobNo),
+        ["Client"] = x => FormatCsvField(x.Client),
+        ["Booked"] = x => x.Booked != default ? x.Booked.ToString("dd/MM/yyyy HH:mm") : string.Empty,
+        ["Next Due"] = x => x.NextDueTime.HasValue ? x.NextDueTime.Value.ToString("dd/MM/yyyy HH:mm") : string.Empty,
+        ["Courier"] = x => FormatCsvField(x.Courier),
+        ["Speed"] = x => FormatCsvField(x.Speed),
+        ["Pickup Address"] = x => FormatAddress(x.PickupAddress),
+        ["Delivery Address"] = x => FormatAddress(x.DeliveryAddress)
+    };
 
     #endregion
 

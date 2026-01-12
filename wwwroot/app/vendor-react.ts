@@ -18,6 +18,7 @@ import {QueryClient, QueryClientProvider, useMutation, useQuery, useQueryClient}
 (window as any).ReactJsxRuntime = jsxRuntime;
 
 // Expose TanStack Query components/hooks
+(window as any).QueryClient = QueryClient;
 (window as any).QueryClientProvider = QueryClientProvider;
 (window as any).useQuery = useQuery;
 (window as any).useMutation = useMutation;

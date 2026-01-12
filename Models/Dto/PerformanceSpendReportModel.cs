@@ -10,82 +10,84 @@ namespace DespatchWeb.Models.Dto;
 public class PerformanceSpendReportModel
 {
     [Column("Job Number")]
-    public string? JobNumber { get; set; }
+    public string JobNumber { get; set; }
 
-    public string? ucjbType { get; set; }
+    public string UcjbType { get; set; }
 
     [Column("Date")]
-    public string? Date { get; set; }
+    public string Date { get; set; }
 
-    public string? Booked { get; set; }
-    public string? BookedBy { get; set; }
+    public string Booked { get; set; }
+    public string BookedBy { get; set; }
 
     [Column("Picked up time")]
-    public string? PickedUpTime { get; set; }
+    public string PickedUpTime { get; set; }
 
-    public string? Delivered { get; set; }
+    public string Delivered { get; set; }
 
     [Column("Total Time")]
-    public string? TotalTime { get; set; }
+    public string TotalTime { get; set; }
 
-    public string? DeliveryMins { get; set; }
+    public string DeliveryMins { get; set; }
 
     [Column("POD Name")]
-    public string? PODName { get; set; }
+    public string PodName { get; set; }
 
-    public string? Booker { get; set; }
+    public string Booker { get; set; }
 
     [Column("Achieved Speed")]
-    public string? AchievedSpeed { get; set; }
+    public string AchievedSpeed { get; set; }
 
     [Column("From")]
-    public string? From { get; set; }
+    public string From { get; set; }
 
     [Column("From Postcode")]
-    public string? FromPostcode { get; set; }
+    public string FromPostcode { get; set; }
 
     [Column("To")]
-    public string? To { get; set; }
+    public string To { get; set; }
 
     [Column("To Postcode")]
-    public string? ToPostcode { get; set; }
+    public string ToPostcode { get; set; }
 
-    public string? ucjbFromAddr { get; set; }
-    public string? Address { get; set; }
-    public string? Courier { get; set; }
+    public string UcjbFromAddr { get; set; }
+    public string Address { get; set; }
+    public string Courier { get; set; }
 
     [Column("Late Pickup")]
-    public string? LatePickup { get; set; }
+    public string LatePickup { get; set; }
 
     [Column("Late Delivery")]
-    public string? LateDelivery { get; set; }
+    public string LateDelivery { get; set; }
 
-    public string? ucclLegalName { get; set; }
-    public string? ucjbSpeed { get; set; }
-    public string? Notes { get; set; }
+    public string UcclLegalName { get; set; }
+    public string UcjbSpeed { get; set; }
+    public string Notes { get; set; }
 
     [Column("Charge($) Excl GST")]
-    public string? ChargeExclGST { get; set; }
+    public string ChargeExclGst { get; set; }
 
     [Column("Ref A")]
-    public string? RefA { get; set; }
+    public string RefA { get; set; }
 
     [Column("Ref B")]
-    public string? RefB { get; set; }
+    public string RefB { get; set; }
 
     [Column("Urgent Ref")]
-    public string? UrgentRef { get; set; }
+    public string UrgentRef { get; set; }
 
-    public string? Weight { get; set; }
-    public string? Vehicle { get; set; }
-    public string? Quantity { get; set; }
-    public string? ucjbYear { get; set; }
-    public string? ucjbMonth { get; set; }
-    public string? Code { get; set; }
-    public string? uccrName { get; set; }
-    public string? ucjbInvoiceNo { get; set; }
-    public string? ucjbLocked { get; set; }
-    public string? ucjbClientID { get; set; }
-    public string? ucclNote { get; set; }
-    public string? Minutes { get; set; }
+    public string Weight { get; set; }
+    public string Vehicle { get; set; }
+    public string Quantity { get; set; }
+    public string UcjbYear { get; set; }
+    public string UcjbMonth { get; set; }
+    public string Code { get; set; }
+    public string UccrName { get; set; }
+    public string UcjbInvoiceNo { get; set; }
+    public string UcjbLocked { get; set; }
+    public string UcjbClientId { get; set; }
+    public string UcclNote { get; set; }
+    public string Minutes { get; set; }
+    public decimal? RawBaseAmount { get; init; }
+    public decimal? FuelSurchargeAmount { get; init; }
 }

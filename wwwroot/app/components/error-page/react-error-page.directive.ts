@@ -4,7 +4,7 @@
  * An AngularJS directive that wraps the React Error Page component.
  */
 
-import {ErrorType} from './ErrorPage';
+import {ErrorType} from '../../react/pages/error-page/ErrorPage';
 
 interface ReactErrorPageScope extends angular.IScope {
     errorType?: string;

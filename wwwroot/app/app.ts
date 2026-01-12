@@ -18,7 +18,6 @@ import {
     EditDateTimeDialogController
 } from "./components/dialogs/edit-date-time-dialog/edit-date-time-dialog.controller";
 import {EditDateTimeDialogService} from "./components/dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
-import EditAddressDialogController from "./components/dialogs/edit-address-dialog/edit-address-dialog.controller";
 import {EditAddressDialogService} from "./components/dialogs/edit-address-dialog/edit-address-dialog.service";
 import PriceBreakdownDialogService from "./components/dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
 import JobDetailComponent from "./components/common/job-details/job-details.component";
@@ -54,8 +53,6 @@ import MessagingService from "./services/messaging.service";
 import MessagingDialogService from "./components/dialogs/messaging-dialog/messaging-dialog.service";
 import MessagingDialogController from "./components/dialogs/messaging-dialog/messaging-dialog.controller";
 import CustomUrlService from "./services/custom-url.service";
-import VoidJobConfirmationDialogController
-    from "./components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.controller";
 import VoidJobConfirmationDialogService
     from "./components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
 import DayJsDatePickerComponent from "./components/common/dayjs-date-picker/dayjs-date-picker.component";
@@ -227,6 +224,8 @@ app.component("dataTable", DataTableComponent);
 app.component("stickyNote", StickyNoteComponent);
 app.component("customDatePicker", DayJsDatePickerComponent);
 app.component("taskItemComponent", TaskItemComponent);
+
+// Directives
 app.directive("reactAppShell", reactAppShellDirective);
 app.directive("reactErrorPage", reactErrorPageDirective);
 
@@ -237,12 +236,10 @@ app.controller("FeatureInDevelopmentDialogController", FeatureInDevelopmentDialo
 app.controller("SelectDialogController", SelectDialogController);
 app.controller('EventGroupDialogController', EventGroupDialogController);
 app.controller("EditDateTimeDialogController", EditDateTimeDialogController);
-app.controller("EditAddressDialogController", EditAddressDialogController);
 app.controller("jobFileUploadController", JobFileUploadController);
 app.controller("jobNoteEditorDialogController", NoteManagementDialogController);
 app.controller("TruckCourierStatusDialogController", TruckCourierStatusDialogController);
 app.controller("messagingDialogController", MessagingDialogController);
-app.controller("voidJobConfirmationDialogController", VoidJobConfirmationDialogController);
 app.controller("simplePriceEditDialogController", SimplePriceEditDialogController);
 
 // Services

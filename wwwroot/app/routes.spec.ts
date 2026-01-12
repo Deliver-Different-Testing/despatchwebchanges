@@ -236,7 +236,11 @@ describe('RouterConfig', () => {
         it('should configure recurringJobs state', () => {
             const state = registeredStates.get('recurringJobs');
             expect(state.url).toBe('/recurringJobs');
-            expect(state.component).toBe('recurringJobsComponent');
+            // Now uses hybrid React/AngularJS template with app shell and job detail widget
+            expect(state.template).toContain('react-app-shell');
+            expect(state.template).toContain('react-recurring-jobs-list');
+            expect(state.template).toContain('job-detail-widget');
+            expect(state.controller).toBeDefined();
         });
 
         it('should configure overview state', () => {

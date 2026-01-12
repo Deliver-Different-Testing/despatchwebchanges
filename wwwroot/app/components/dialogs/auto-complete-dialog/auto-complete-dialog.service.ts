@@ -20,16 +20,12 @@ declare global {
 
 class AutoCompleteDialogService implements angular.IServiceProvider {
     static $inject = [
-        '$mdDialog',
-        '$document',
         '$ocLazyLoad',
         '$http',
         'DispatchData',
     ];
 
     constructor(
-        private $mdDialog: angular.material.IDialogService,
-        private $document: angular.IDocumentService,
         private $ocLazyLoad: oc.ILazyLoad,
         private $http: angular.IHttpService,
         private dispatchData: DispatchCoreService,

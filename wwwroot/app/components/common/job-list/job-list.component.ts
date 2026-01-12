@@ -4,7 +4,7 @@ import BaseController from "../../base-controller";
 import dayjs from "dayjs";
 import JobCategory from "./enums/jobCategory";
 import {JobStatus} from "../../../enums/job-status.enum";
-import {ContactID, TimeZone} from "../../../contants";
+import {ContactID} from "../../../contants";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import JobListType from "./enums/jobListType";
@@ -12,7 +12,7 @@ import JobHighlightService from "./job-highlight.service";
 import DensityMode from "../../../enums/densityMode";
 import AutoCompleteDialogService from "../../dialogs/auto-complete-dialog/auto-complete-dialog.service";
 import ToastrService from "../../../services/toastr.service";
-import {formatLongDateTime, formatMins, getIanaTimezone} from "../../../functions/formatDates";
+import {formatLongDateTime, formatMins} from "../../../functions/formatDates";
 
 class JobsListController extends BaseController {
     static $inject = [
@@ -721,6 +721,15 @@ class JobsListController extends BaseController {
         if (job.parentId) return 'parent-job';
         if (job.parentId && job.id !== job.parentId) return 'child-job';
         return 'normal';
+    }
+
+    /**
+     * Checks if a job is a chilled/frozen delivery based on vehicle type
+     */
+    isChilledJob(job: IDispatchJob): boolean {
+        if (!job.vehicle?.text) return false;
+        const vehicleName = job.vehicle.text.toLowerCase();
+        return vehicleName.includes('chilled') || vehicleName.includes('frozen');
     }
 
     formatDeliveryTime(job: IDispatchJob): string {

@@ -152,6 +152,48 @@ public class CsvFormattingTests
         result.Should().Be("2024-01-15 00:00:00");
     }
 
+    [Fact]
+    public void DateFormatting_ClientJobsReportDateFormat_FormatsCorrectly()
+    {
+        // The client jobs report now uses dd-MMM-yy format for dates
+        var date = new DateTime(2024, 1, 15);
+        var result = date.ToString("dd-MMM-yy");
+        result.Should().Be("15-Jan-24");
+    }
+
+    [Fact]
+    public void TimeFormatting_ClientJobsReportBookedFormat_FormatsCorrectly()
+    {
+        // The client jobs report now uses HH:mm format for booked time
+        var date = new DateTime(2024, 1, 15, 9, 30, 0);
+        var result = date.ToString("HH:mm");
+        result.Should().Be("09:30");
+    }
+
+    [Theory]
+    [InlineData(2024, 1, 1, "01-Jan-24")]
+    [InlineData(2024, 6, 15, "15-Jun-24")]
+    [InlineData(2024, 12, 31, "31-Dec-24")]
+    [InlineData(2025, 3, 5, "05-Mar-25")]
+    public void DateFormatting_ClientJobsReportDateFormat_VariousDates(int year, int month, int day, string expected)
+    {
+        var date = new DateTime(year, month, day);
+        var result = date.ToString("dd-MMM-yy");
+        result.Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData(0, 0, "00:00")]
+    [InlineData(9, 30, "09:30")]
+    [InlineData(14, 45, "14:45")]
+    [InlineData(23, 59, "23:59")]
+    public void TimeFormatting_ClientJobsReportBookedFormat_VariousTimes(int hour, int minute, string expected)
+    {
+        var date = new DateTime(2024, 1, 15, hour, minute, 0);
+        var result = date.ToString("HH:mm");
+        result.Should().Be(expected);
+    }
+
     #endregion
 
     #region Helper Methods
