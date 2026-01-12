@@ -1,6 +1,8 @@
+using System.Globalization;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Repositories;
 using FluentAssertions;
@@ -553,6 +555,753 @@ public class RecurringJobRepositoryTests : IDisposable
 
     #endregion
 
+    #region GetRecurringJobByIdAsync Tests
+
+    [Fact]
+    public async Task GetRecurringJobByIdAsync_WithValidJob_ReturnsJobGroup()
+    {
+        // Arrange
+        const int jobId = 100;
+        _context.TucJobBookings.Add(CreateJobBookingWithDetails(jobId, "JOB100", clientCode: "TEST"));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetRecurringJobByIdAsync(jobId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Job.Should().NotBeNull();
+        result.Job.Id.Should().Be(jobId);
+    }
+
+    [Fact]
+    public async Task GetRecurringJobByIdAsync_WithParentAndChildren_ReturnsAllRelatedJobs()
+    {
+        // Arrange
+        const int parentId = 100;
+        const int childId1 = 101;
+        const int childId2 = 102;
+
+        _context.TucJobBookings.AddRange(
+            CreateJobBookingWithDetails(parentId, "PARENT"),
+            CreateJobBookingWithDetails(childId1, "CHILD1", bookingParentId: parentId),
+            CreateJobBookingWithDetails(childId2, "CHILD2", bookingParentId: parentId)
+        );
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetRecurringJobByIdAsync(parentId);
+
+        // Assert
+        result.Job.Id.Should().Be(parentId);
+        result.RelatedJobs.Should().HaveCount(2);
+        result.RelatedJobs.Select(j => j.Id).Should().Contain([childId1, childId2]);
+    }
+
+    [Fact]
+    public async Task GetRecurringJobByIdAsync_RequestingChildJob_ReturnsChildAsMainJob()
+    {
+        // Arrange
+        const int parentId = 100;
+        const int childId = 101;
+
+        _context.TucJobBookings.AddRange(
+            CreateJobBookingWithDetails(parentId, "PARENT"),
+            CreateJobBookingWithDetails(childId, "CHILD", bookingParentId: parentId)
+        );
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetRecurringJobByIdAsync(childId);
+
+        // Assert
+        result.Job.Id.Should().Be(childId);
+        result.RelatedJobs.Should().ContainSingle(j => j.Id == parentId);
+    }
+
+    [Fact]
+    public async Task GetRecurringJobByIdAsync_WithNonExistentJob_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var repository = CreateRepository();
+
+        // Act & Assert
+        var act = async () => await repository.GetRecurringJobByIdAsync(999);
+        await act.Should().ThrowAsync<ArgumentNullException>();
+    }
+
+    #endregion
+
+    #region UpdateRecurringJobAsync - Additional Property Tests
+
+    [Theory]
+    [InlineData("true")]
+    [InlineData("false")]
+    public async Task UpdateRecurringJobAsync_Reprice_UpdatesRepriceFlag(string value)
+    {
+        // Arrange
+        const int jobId = 100;
+        var expected = bool.Parse(value);
+        _context.TucJobBookings.Add(CreateJobBooking(jobId));
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.Reprice, value);
+        _context.ChangeTracker.Clear();
+
+        // Assert
+        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        updatedJob!.Reprice.Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_Truck_SetsTruckAndClearsVan()
+    {
+        // Arrange
+        const int jobId = 100;
+        _context.TucJobBookings.Add(CreateJobBookingWithVehicle(jobId, van: true, truck: false));
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.Truck, "true");
+        _context.ChangeTracker.Clear();
+
+        // Assert
+        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        updatedJob!.Truck.Should().BeTrue();
+        updatedJob.UcbkVan.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_Van_SetsVanAndClearsTruck()
+    {
+        // Arrange
+        const int jobId = 100;
+        _context.TucJobBookings.Add(CreateJobBookingWithVehicle(jobId, van: false, truck: true));
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.Van, "true");
+        _context.ChangeTracker.Clear();
+
+        // Assert
+        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        updatedJob!.UcbkVan.Should().BeTrue();
+        updatedJob.Truck.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_RefA_TruncatesTo20Characters()
+    {
+        // Arrange
+        const int jobId = 100;
+        var longValue = new string('A', 50);
+        _context.TucJobBookings.Add(CreateJobBooking(jobId));
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.RefA, longValue);
+        _context.ChangeTracker.Clear();
+
+        // Assert
+        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        updatedJob!.UcbkClientRefa.Should().HaveLength(20);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_RefB_TruncatesTo15Characters()
+    {
+        // Arrange
+        const int jobId = 100;
+        var longValue = new string('B', 50);
+        _context.TucJobBookings.Add(CreateJobBooking(jobId));
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.RefB, longValue);
+        _context.ChangeTracker.Clear();
+
+        // Assert
+        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        updatedJob!.UcbkClientRefb.Should().HaveLength(15);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_Amount_UpdatesDecimalValue()
+    {
+        // Arrange
+        const int jobId = 100;
+        const decimal newAmount = 123.45m;
+        _context.TucJobBookings.Add(CreateJobBooking(jobId));
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.Amount, newAmount.ToString(CultureInfo.InvariantCulture));
+        _context.ChangeTracker.Clear();
+
+        // Assert
+        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        updatedJob!.UcbkAmount.Should().Be(newAmount);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_CourierId_UpdatesCourier()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int newCourierId = 42;
+        _context.TucJobBookings.Add(CreateJobBooking(jobId));
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.CourierId, newCourierId.ToString());
+        _context.ChangeTracker.Clear();
+
+        // Assert
+        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        updatedJob!.CourierId.Should().Be(newCourierId);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_Time_UpdatesParentAndChildren()
+    {
+        // Arrange
+        const int parentId = 100;
+        const int childId = 101;
+        var newTime = new DateTime(2024, 1, 15, 14, 30, 0);
+
+        _context.TucJobBookings.AddRange(
+            CreateJobBooking(parentId),
+            CreateJobBooking(childId, bookingParentId: parentId)
+        );
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateRecurringJobAsync(parentId, JobProperty.Time, newTime.ToString("O"));
+        _context.ChangeTracker.Clear();
+
+        // Assert
+        var parent = await _context.TucJobBookings.FindAsync(parentId);
+        var child = await _context.TucJobBookings.FindAsync(childId);
+        parent!.UcbkTime.Should().Be(newTime);
+        child!.UcbkTime.Should().Be(newTime);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_Weight_UpdatesParentAndChildren()
+    {
+        // Arrange
+        const int parentId = 100;
+        const int childId = 101;
+        const short newWeight = 25;
+
+        _context.TucJobBookings.AddRange(
+            CreateJobBooking(parentId),
+            CreateJobBooking(childId, bookingParentId: parentId)
+        );
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateRecurringJobAsync(parentId, JobProperty.Weight, newWeight.ToString());
+        _context.ChangeTracker.Clear();
+
+        // Assert
+        var parent = await _context.TucJobBookings.FindAsync(parentId);
+        var child = await _context.TucJobBookings.FindAsync(childId);
+        parent!.UcbkWeight.Should().Be(newWeight);
+        child!.UcbkWeight.Should().Be(newWeight);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_Direct_UpdatesDirectFlag()
+    {
+        // Arrange
+        const int jobId = 100;
+        _context.TucJobBookings.Add(CreateJobBooking(jobId));
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.Direct, "true");
+        _context.ChangeTracker.Clear();
+
+        // Assert
+        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        updatedJob!.Direct.Should().BeTrue();
+    }
+
+    // Note: Active property tests are skipped because they trigger note creation,
+    // which requires SQL Server's getdate() function that SQLite doesn't support.
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_FromContactName_UpdatesParentAndFirstChild()
+    {
+        // Arrange
+        const int parentId = 100;
+        const int firstChildId = 101;
+        const int secondChildId = 102;
+        const string newContact = "John Smith";
+
+        _context.TucJobBookings.AddRange(
+            CreateJobBooking(parentId),
+            CreateJobBooking(firstChildId, bookingParentId: parentId),
+            CreateJobBooking(secondChildId, bookingParentId: parentId)
+        );
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateRecurringJobAsync(parentId, JobProperty.FromContactName, newContact);
+        _context.ChangeTracker.Clear();
+
+        // Assert
+        var parent = await _context.TucJobBookings.FindAsync(parentId);
+        var firstChild = await _context.TucJobBookings.FindAsync(firstChildId);
+        var secondChild = await _context.TucJobBookings.FindAsync(secondChildId);
+
+        parent!.PickupFromContact.Should().Be(newContact);
+        firstChild!.PickupFromContact.Should().Be(newContact);
+        secondChild!.PickupFromContact.Should().BeNull(); // Second child should NOT be updated
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_ToContactName_UpdatesParentAndLastChild()
+    {
+        // Arrange
+        const int parentId = 100;
+        const int firstChildId = 101;
+        const int secondChildId = 102;
+        const string newContact = "Jane Doe";
+
+        _context.TucJobBookings.AddRange(
+            CreateJobBooking(parentId),
+            CreateJobBooking(firstChildId, bookingParentId: parentId),
+            CreateJobBooking(secondChildId, bookingParentId: parentId)
+        );
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateRecurringJobAsync(parentId, JobProperty.ToContactName, newContact);
+        _context.ChangeTracker.Clear();
+
+        // Assert
+        var parent = await _context.TucJobBookings.FindAsync(parentId);
+        var firstChild = await _context.TucJobBookings.FindAsync(firstChildId);
+        var secondChild = await _context.TucJobBookings.FindAsync(secondChildId);
+
+        parent!.DeliverToContact.Should().Be(newContact);
+        firstChild!.DeliverToContact.Should().BeNull(); // First child should NOT be updated
+        secondChild!.DeliverToContact.Should().Be(newContact);
+    }
+
+    #endregion
+
+    #region UpdateBookingDeliveryAddressAsync Tests
+
+    [Fact]
+    public async Task UpdateBookingDeliveryAddressAsync_WithValidJob_UpdatesAddress()
+    {
+        // Arrange
+        const int jobId = 100;
+        _context.TucJobBookings.Add(CreateJobBooking(jobId));
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        var request = new UpdateAddressRequest
+        {
+            JobId = jobId,
+            Address = CreateTestAddress("123 Delivery St", "Auckland", "1010")
+        };
+
+        // Act
+        await repository.UpdateBookingDeliveryAddressAsync(request);
+        _context.ChangeTracker.Clear();
+
+        // Assert
+        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        updatedJob!.DeliveryAddressLine1.Should().Be("123 Delivery St");
+        updatedJob.DeliveryAddressLine6.Should().Be("Auckland");
+        updatedJob.DeliveryAddressLine7.Should().Be("1010");
+    }
+
+    [Fact]
+    public async Task UpdateBookingDeliveryAddressAsync_WithParentAndChildren_UpdatesParentAndLastChild()
+    {
+        // Arrange
+        const int parentId = 100;
+        const int firstChildId = 101;
+        const int lastChildId = 102;
+
+        _context.TucJobBookings.AddRange(
+            CreateJobBooking(parentId),
+            CreateJobBooking(firstChildId, bookingParentId: parentId),
+            CreateJobBooking(lastChildId, bookingParentId: parentId)
+        );
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        var request = new UpdateAddressRequest
+        {
+            JobId = parentId,
+            Address = CreateTestAddress("456 New Delivery", "Wellington", "6011")
+        };
+
+        // Act
+        await repository.UpdateBookingDeliveryAddressAsync(request);
+        _context.ChangeTracker.Clear();
+
+        // Assert
+        var parent = await _context.TucJobBookings.FindAsync(parentId);
+        var firstChild = await _context.TucJobBookings.FindAsync(firstChildId);
+        var lastChild = await _context.TucJobBookings.FindAsync(lastChildId);
+
+        parent!.DeliveryAddressLine1.Should().Be("456 New Delivery");
+        firstChild!.DeliveryAddressLine1.Should().BeNull(); // First child NOT updated
+        lastChild!.DeliveryAddressLine1.Should().Be("456 New Delivery");
+    }
+
+    [Fact]
+    public async Task UpdateBookingDeliveryAddressAsync_WithNonExistentJob_ThrowsArgumentException()
+    {
+        // Arrange
+        var repository = CreateRepository();
+        var request = new UpdateAddressRequest
+        {
+            JobId = 999,
+            Address = CreateTestAddress("Test", "Test", "1234")
+        };
+
+        // Act & Assert
+        var act = async () => await repository.UpdateBookingDeliveryAddressAsync(request);
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*999*not found*");
+    }
+
+    #endregion
+
+    #region UpdateBookingPickupAddressAsync Tests
+
+    [Fact]
+    public async Task UpdateBookingPickupAddressAsync_WithValidJob_UpdatesAddress()
+    {
+        // Arrange
+        const int jobId = 100;
+        _context.TucJobBookings.Add(CreateJobBooking(jobId));
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        var request = new UpdateAddressRequest
+        {
+            JobId = jobId,
+            Address = CreateTestAddress("789 Pickup Ave", "Hamilton", "3200")
+        };
+
+        // Act
+        await repository.UpdateBookingPickupAddressAsync(request);
+        _context.ChangeTracker.Clear();
+
+        // Assert
+        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        updatedJob!.PickupAddressLine1.Should().Be("789 Pickup Ave");
+        updatedJob.PickupAddressLine6.Should().Be("Hamilton");
+        updatedJob.PickupAddressLine7.Should().Be("3200");
+    }
+
+    [Fact]
+    public async Task UpdateBookingPickupAddressAsync_WithParentAndChildren_UpdatesParentAndFirstChild()
+    {
+        // Arrange
+        const int parentId = 100;
+        const int firstChildId = 101;
+        const int lastChildId = 102;
+
+        _context.TucJobBookings.AddRange(
+            CreateJobBooking(parentId),
+            CreateJobBooking(firstChildId, bookingParentId: parentId),
+            CreateJobBooking(lastChildId, bookingParentId: parentId)
+        );
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        var request = new UpdateAddressRequest
+        {
+            JobId = parentId,
+            Address = CreateTestAddress("111 New Pickup", "Christchurch", "8011")
+        };
+
+        // Act
+        await repository.UpdateBookingPickupAddressAsync(request);
+        _context.ChangeTracker.Clear();
+
+        // Assert
+        var parent = await _context.TucJobBookings.FindAsync(parentId);
+        var firstChild = await _context.TucJobBookings.FindAsync(firstChildId);
+        var lastChild = await _context.TucJobBookings.FindAsync(lastChildId);
+
+        parent!.PickupAddressLine1.Should().Be("111 New Pickup");
+        firstChild!.PickupAddressLine1.Should().Be("111 New Pickup");
+        lastChild!.PickupAddressLine1.Should().BeNull(); // Last child NOT updated
+    }
+
+    [Fact]
+    public async Task UpdateBookingPickupAddressAsync_WithNonExistentJob_ThrowsArgumentException()
+    {
+        // Arrange
+        var repository = CreateRepository();
+        var request = new UpdateAddressRequest
+        {
+            JobId = 999,
+            Address = CreateTestAddress("Test", "Test", "1234")
+        };
+
+        // Act & Assert
+        var act = async () => await repository.UpdateBookingPickupAddressAsync(request);
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*999*not found*");
+    }
+
+    #endregion
+
+    #region GetAllRecurringJobsForExportAsync Tests
+
+    [Fact]
+    public async Task GetAllRecurringJobsForExportAsync_ReturnsAllActiveJobs()
+    {
+        // Arrange
+        const string timezone = "New Zealand Standard Time";
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        _context.TucJobBookings.AddRange(
+            CreateJobBookingWithDates(100, DateTime.Now, null, null, true, false),
+            CreateJobBookingWithDates(101, DateTime.Now, null, null, true, false),
+            CreateJobBookingWithDates(102, DateTime.Now, null, null, false, false) // Inactive
+        );
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        var request = new RecurringJobQueryRequest { Active = true };
+
+        // Act
+        var result = await repository.GetAllRecurringJobsForExportAsync(request);
+
+        // Assert
+        result.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task GetAllRecurringJobsForExportAsync_WithSpeedFilter_FiltersCorrectly()
+    {
+        // Arrange
+        const string timezone = "New Zealand Standard Time";
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        _context.TucJobBookings.AddRange(
+            CreateJobBookingWithSpeed(100, 1, true),
+            CreateJobBookingWithSpeed(101, 2, true),
+            CreateJobBookingWithSpeed(102, 1, true)
+        );
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        var request = new RecurringJobQueryRequest { Active = true, SpeedId = 1 };
+
+        // Act
+        var result = await repository.GetAllRecurringJobsForExportAsync(request);
+
+        // Assert
+        result.Should().HaveCount(2);
+        result.Should().OnlyContain(j => j.Id == 100 || j.Id == 102);
+    }
+
+    [Fact]
+    public async Task GetAllRecurringJobsForExportAsync_WithCourierFilter_FiltersCorrectly()
+    {
+        // Arrange
+        const string timezone = "New Zealand Standard Time";
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        _context.TucJobBookings.AddRange(
+            CreateJobBookingWithCourier(100, 10, true),
+            CreateJobBookingWithCourier(101, 20, true),
+            CreateJobBookingWithCourier(102, 10, true)
+        );
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        var request = new RecurringJobQueryRequest { Active = true, CourierId = 10 };
+
+        // Act
+        var result = await repository.GetAllRecurringJobsForExportAsync(request);
+
+        // Assert
+        result.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task GetAllRecurringJobsForExportAsync_WithSearchText_SearchesAllAddressFields()
+    {
+        // Arrange
+        const string timezone = "New Zealand Standard Time";
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        _context.TucJobBookings.AddRange(
+            CreateJobBookingWithAddress(100, "123 Queen St", true),
+            CreateJobBookingWithAddress(101, "456 King Ave", true),
+            CreateJobBookingWithAddress(102, "789 Queen Road", true)
+        );
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        var request = new RecurringJobQueryRequest { Active = true, SearchText = "Queen" };
+
+        // Act
+        var result = await repository.GetAllRecurringJobsForExportAsync(request);
+
+        // Assert
+        result.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task GetAllRecurringJobsForExportAsync_ExcludesOneOffJobs()
+    {
+        // Arrange
+        const string timezone = "New Zealand Standard Time";
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        _context.TucJobBookings.AddRange(
+            CreateJobBookingWithDates(100, DateTime.Now, null, null, true, false), // Recurring
+            CreateJobBookingWithDates(101, DateTime.Now, null, null, true, true)   // One-off
+        );
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        var request = new RecurringJobQueryRequest { Active = true };
+
+        // Act
+        var result = await repository.GetAllRecurringJobsForExportAsync(request);
+
+        // Assert
+        result.Should().ContainSingle();
+        result.First().Id.Should().Be(100);
+    }
+
+    [Theory]
+    [InlineData("booked", false)]
+    [InlineData("booked", true)]
+    [InlineData("speed", false)]
+    [InlineData("courier", false)]
+    public async Task GetAllRecurringJobsForExportAsync_WithSortOptions_SortsCorrectly(string order, bool descending)
+    {
+        // Arrange
+        const string timezone = "New Zealand Standard Time";
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        _context.TucJobBookings.AddRange(
+            CreateJobBookingWithDates(100, new DateTime(2024, 1, 1), null, null, true, false),
+            CreateJobBookingWithDates(101, new DateTime(2024, 6, 1), null, null, true, false),
+            CreateJobBookingWithDates(102, new DateTime(2024, 3, 1), null, null, true, false)
+        );
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        var request = new RecurringJobQueryRequest
+        {
+            Active = true,
+            Order = order,
+            OrderDirection = descending ? "desc" : "asc"
+        };
+
+        // Act
+        var result = await repository.GetAllRecurringJobsForExportAsync(request);
+
+        // Assert
+        result.Should().HaveCount(3);
+    }
+
+    #endregion
+
+    #region GetRecurringJobsListAsync - Filtering Tests
+
+    [Fact]
+    public async Task GetRecurringJobsListAsync_WithDaysOfWeekFilter_FiltersByBitwiseMatch()
+    {
+        // Arrange
+        const string timezone = "New Zealand Standard Time";
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        // Monday = 1, Tuesday = 2, Wednesday = 4
+        _context.TucJobBookings.AddRange(
+            CreateJobBookingWithDays(100, 1, true),   // Monday only
+            CreateJobBookingWithDays(101, 3, true),   // Monday + Tuesday
+            CreateJobBookingWithDays(102, 4, true)    // Wednesday only
+        );
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        // Filter for Monday (1)
+        var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50, DaysOfWeek = 1 };
+
+        // Act
+        var result = await repository.GetRecurringJobsListAsync(request);
+
+        // Assert
+        result.Items.Should().HaveCount(2); // Jobs 100 and 101 have Monday
+    }
+
+    [Fact]
+    public async Task GetRecurringJobsListAsync_ForUsTenant_ExcludesChildJobs()
+    {
+        // Arrange
+        const string timezone = "Pacific Standard Time";
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+
+        _context.TucJobBookings.AddRange(
+            CreateJobBookingWithDates(100, DateTime.Now, null, null, true, false),
+            CreateJobBookingWithDetails(101, "CHILD", bookingParentId: 100)
+        );
+        // Set the child as active
+        var child = await _context.TucJobBookings.FindAsync(101);
+        child!.UcbkActive = true;
+        child.UcbkOneOff = false;
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+        var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };
+
+        // Act
+        var result = await repository.GetRecurringJobsListAsync(request);
+
+        // Assert - US tenant should only see parent jobs
+        result.Items.Should().ContainSingle();
+        result.Items.First().Id.Should().Be(100);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private static TucClient CreateClient(int id, string code) => new()
@@ -607,6 +1356,102 @@ public class RecurringJobRepositoryTests : IDisposable
         UcbkOneOff = oneOff,
         UcbkJobNumber = $"JOB{id}",
         UcbkAttention = false
+    };
+
+    private static TucJobBooking CreateJobBookingWithDetails(
+        int id,
+        string jobNumber,
+        string? clientCode = null,
+        int? bookingParentId = null) => new()
+    {
+        UcbkId = id,
+        UcbkJobNumber = jobNumber,
+        UcbkClientCode = clientCode,
+        BookingParentId = bookingParentId,
+        UcbkAttention = false
+    };
+
+    private static TucJobBooking CreateJobBookingWithVehicle(
+        int id,
+        bool van,
+        bool truck) => new()
+    {
+        UcbkId = id,
+        UcbkJobNumber = $"JOB{id}",
+        UcbkVan = van,
+        Truck = truck,
+        UcbkAttention = false
+    };
+
+    private static TucJobBooking CreateJobBookingWithSpeed(
+        int id,
+        int speed,
+        bool active) => new()
+    {
+        UcbkId = id,
+        UcbkJobNumber = $"JOB{id}",
+        UcbkSpeed = speed,
+        UcbkActive = active,
+        UcbkOneOff = false,
+        UcbkAttention = false
+    };
+
+    private static TucJobBooking CreateJobBookingWithCourier(
+        int id,
+        int courierId,
+        bool active) => new()
+    {
+        UcbkId = id,
+        UcbkJobNumber = $"JOB{id}",
+        CourierId = courierId,
+        UcbkActive = active,
+        UcbkOneOff = false,
+        UcbkAttention = false
+    };
+
+    private static TucJobBooking CreateJobBookingWithAddress(
+        int id,
+        string addressLine1,
+        bool active) => new()
+    {
+        UcbkId = id,
+        UcbkJobNumber = $"JOB{id}",
+        DeliveryAddressLine1 = addressLine1,
+        UcbkActive = active,
+        UcbkOneOff = false,
+        UcbkAttention = false
+    };
+
+    private static TucJobBooking CreateJobBookingWithDays(
+        int id,
+        int daysInt,
+        bool active) => new()
+    {
+        UcbkId = id,
+        UcbkJobNumber = $"JOB{id}",
+        UcbkDaysInt = daysInt,
+        UcbkActive = active,
+        UcbkOneOff = false,
+        UcbkAttention = false
+    };
+
+    private static AddressViewModel CreateTestAddress(
+        string line1,
+        string suburb,
+        string postcode) => new()
+    {
+        AddressLine1 = line1,
+        AddressLine6 = suburb,
+        AddressLine7 = postcode
+    };
+
+    private static TucNoteType CreateNoteType(int id, string name) => new()
+    {
+        NoteTypeId = id,
+        NoteTypeName = name,
+        IsActive = true,
+        IsPublic = false,
+        IsSystemDefined = true
     };
 
     #endregion

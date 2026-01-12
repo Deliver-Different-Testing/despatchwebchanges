@@ -22,6 +22,7 @@ public class JobReportServiceLargeDataTests
 {
     private readonly ITestOutputHelper _testOutputHelper;
     private readonly Mock<IJobRepository> _jobRepositoryMock = new();
+    private readonly Mock<IRecurringJobRepository> _recurringJobRepositoryMock = new();
     private readonly Mock<IAmazonS3> _s3ClientMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
 
@@ -35,6 +36,7 @@ public class JobReportServiceLargeDataTests
     {
         return new JobReportService(
             _jobRepositoryMock.Object,
+            _recurringJobRepositoryMock.Object,
             _tenantInfoServiceMock.Object,
             _s3ClientMock.Object
         );
@@ -504,30 +506,40 @@ public class JobReportServiceLargeDataTests
                 Booker = $"Booker{i % 20}",
                 RefA = $"REF-A-{i:D6}",
                 RefB = $"REF-B-{i:D6}",
-                ChargeExclGST = (100m + i % 1000).ToString("F2"),
+                ChargeExclGst = (100m + i % 1000).ToString("F2"),
                 From = $"Suburb {i % 50}",
                 FromPostcode = $"{1000 + i % 100}",
-                ucjbFromAddr = $"{i + 100} Pickup Street",
+                UcjbFromAddr = $"{i + 100} Pickup Street",
                 To = $"Suburb {(i + 25) % 50}",
                 ToPostcode = $"{2000 + i % 100}",
                 Address = $"{i + 200} Delivery Ave",
                 PickedUpTime = baseDate.AddDays(i % 30).AddHours(10).ToString("yyyy-MM-dd HH:mm:ss"),
                 Delivered = baseDate.AddDays(i % 30).AddHours(12).ToString("yyyy-MM-dd HH:mm:ss"),
                 TotalTime = "120",
-                PODName = $"Recipient {i % 100}",
+                PodName = $"Recipient {i % 100}",
                 AchievedSpeed = i % 3 == 0 ? "1 Hour" : i % 3 == 1 ? "2 Hour" : "3 Hour",
                 Notes = i % 5 == 0 ? $"Note for job {i}" : null,
                 Quantity = (i % 10 + 1).ToString(),
                 Weight = (i % 50 + 0.5).ToString("F2"),
-                ucjbType = i % 3 == 0 ? "Pick up from us" : i % 3 == 1 ? "Deliver to us" : "3rd party",
+                UcjbType = i % 3 == 0 ? "Pick up from us" : i % 3 == 1 ? "Deliver to us" : "3rd party",
                 Vehicle = $"Vehicle {i % 10}",
-                ucjbMonth = baseDate.AddDays(i % 30).Month.ToString(),
-                ucjbYear = baseDate.Year.ToString(),
+                UcjbMonth = baseDate.AddDays(i % 30).Month.ToString(),
+                UcjbYear = baseDate.Year.ToString(),
                 Code = $"C{i % 50:D3}",
-                uccrName = $"Courier {i % 50}",
-                ucjbInvoiceNo = i % 2 == 0 ? $"INV-{i:D6}" : null,
-                ucclLegalName = $"Client {i % 20} Ltd",
-                ucclNote = i % 10 == 0 ? $"Client note {i}" : null
+                UccrName = $"Courier {i % 50}",
+                UcjbInvoiceNo = i % 2 == 0 ? $"INV-{i:D6}" : null,
+                UcclLegalName = $"Client {i % 20} Ltd",
+                UcclNote = i % 10 == 0 ? $"Client note {i}" : null,
+                RawBaseAmount = 90m + i % 500,
+                FuelSurchargeAmount = 10m + i % 50,
+                UcjbSpeed = (i % 4 + 1).ToString(),
+                UcjbLocked = (i % 2 == 0).ToString(),
+                UcjbClientId = $"CLI-{i % 100:D3}",
+                LatePickup = i % 5 == 0 ? "Yes" : null,
+                LateDelivery = i % 7 == 0 ? "Yes" : null,
+                Courier = $"{i % 50}",
+                DeliveryMins = ((i % 60) + 30).ToString(),
+                Minutes = "60"
             });
         }
 

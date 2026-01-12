@@ -22,8 +22,12 @@ type EntryPointName =
     | 'priceBreakdownDialogReact'
     | 'dashboardSettingsDialogReact'
     | 'autoCompleteDialogReact'
+    | 'voidJobConfirmationDialogReact'
+    | 'editAfterhoursDialogReact'
+    | 'editAddressDialogReact'
     | 'appShellReact'
-    | 'errorPageReact';
+    | 'errorPageReact'
+    | 'recurringJobsReact';
 type EntryPoints = Record<EntryPointName, string>;
 
 // Configuration
@@ -47,12 +51,16 @@ const entryPoints: EntryPoints = {
     recurringJobs: path.join(rootDir, "wwwroot/app/components/recurringJobs/recurringJobs.module.ts"),
     driverManagement: path.join(rootDir, "wwwroot/app/components/driver-management-dashboard/driver-management.module.ts"),
     courierMap: path.join(rootDir, "wwwroot/app/components/courier-map/courier-map.module.ts"),
-    dateRangeDialogReact: path.join(rootDir, "wwwroot/app/components/dialogs-react/date-range-dialog/date-range-dialog-react.module.tsx"),
-    priceBreakdownDialogReact: path.join(rootDir, "wwwroot/app/components/dialogs-react/price-breakdown-dialog/price-breakdown-dialog-react.module.tsx"),
-    dashboardSettingsDialogReact: path.join(rootDir, "wwwroot/app/components/dialogs-react/dashboard-settings-dialog/dashboard-settings-dialog-react.module.tsx"),
-    autoCompleteDialogReact: path.join(rootDir, "wwwroot/app/components/dialogs-react/auto-complete-dialog/auto-complete-dialog-react.module.tsx"),
-    appShellReact: path.join(rootDir, "wwwroot/app/components/common-react/app-shell/app-shell-react.module.tsx"),
-    errorPageReact: path.join(rootDir, "wwwroot/app/components/error-page/error-page-react.module.tsx"),
+    dateRangeDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/date-range-dialog/date-range-dialog-react.module.tsx"),
+    priceBreakdownDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/price-breakdown-dialog/price-breakdown-dialog-react.module.tsx"),
+    dashboardSettingsDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/dashboard-settings-dialog/dashboard-settings-dialog-react.module.tsx"),
+    autoCompleteDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/auto-complete-dialog/auto-complete-dialog-react.module.tsx"),
+    voidJobConfirmationDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog-react.module.tsx"),
+    editAfterhoursDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/edit-afterhours-dialog/edit-afterhours-dialog-react.module.tsx"),
+    editAddressDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/edit-address-dialog/edit-address-dialog-react.module.tsx"),
+    appShellReact: path.join(rootDir, "wwwroot/app/react/components/common/app-shell/app-shell-react.module.tsx"),
+    errorPageReact: path.join(rootDir, "wwwroot/app/react/pages/error-page/error-page-react.module.tsx"),
+    recurringJobsReact: path.join(rootDir, "wwwroot/app/react/pages/recurring-jobs/recurring-jobs-react.module.tsx"),
 };
 
 // Lazy-load html-minifier-terser only when needed (production builds)
@@ -320,6 +328,7 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
 
             build.onLoad({filter: /.*/, namespace: "react-query-shim"}, () => ({
                 contents: `
+                    export const QueryClient = window.QueryClient;
                     export const QueryClientProvider = window.QueryClientProvider;
                     export const useQuery = window.useQuery;
                     export const useMutation = window.useMutation;

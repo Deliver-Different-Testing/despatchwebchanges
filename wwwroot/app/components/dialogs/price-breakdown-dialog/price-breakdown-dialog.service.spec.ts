@@ -23,8 +23,7 @@ describe('PriceBreakdownDialogService', () => {
             // US Customers always get pricing breakdown
             if (isUsCustomer) return false;
 
-            const isUsingOldMethod = !!jobAmount && jobAmount > 0 && (!priceBreakdowns || priceBreakdowns.length === 0);
-            return isUsingOldMethod;
+            return !!jobAmount && jobAmount > 0 && (!priceBreakdowns || priceBreakdowns.length === 0);
         };
 
         describe('US Customer behavior', () => {

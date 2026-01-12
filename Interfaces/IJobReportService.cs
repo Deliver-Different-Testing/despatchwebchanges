@@ -37,4 +37,11 @@ public interface IJobReportService
     /// </summary>
     /// <param name="file">The uploaded spreadsheet file (xls, xlsx, or csv).</param>
     Task ProcessJobPriceUploadAsync(IFormFile file);
+
+    /// <summary>
+    /// Generates a CSV export of all recurring jobs matching the search criteria.
+    /// </summary>
+    /// <param name="request">Search and filter parameters.</param>
+    /// <returns>Tuple containing file bytes and filename.</returns>
+    Task<(byte[] FileBytes, string FileName)> GenerateRecurringJobsCsvAsync(RecurringJobQueryRequest request);
 }

@@ -14,11 +14,13 @@ namespace DespatchWeb.Tests.Services;
 public class JobReportServiceTests
 {
     private readonly Mock<IJobRepository> _jobRepositoryMock = new();
+    private readonly Mock<IRecurringJobRepository> _recurringJobRepositoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IAmazonS3> _s3ClientMock = new();
 
     private JobReportService CreateService() => new(
         _jobRepositoryMock.Object,
+        _recurringJobRepositoryMock.Object,
         _tenantInfoServiceMock.Object,
         _s3ClientMock.Object
     );

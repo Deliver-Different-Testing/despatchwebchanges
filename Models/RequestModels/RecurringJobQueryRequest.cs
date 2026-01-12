@@ -8,4 +8,9 @@ public class RecurringJobQueryRequest
     public int Page { get; set; }
     public string SearchText { get; set; }
     public bool Active { get; set; }
+
+    // Filters
+    public int? SpeedId { get; set; }
+    public int? CourierId { get; set; }
+    public int? DaysOfWeek { get; set; }
 }

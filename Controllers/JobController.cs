@@ -459,6 +459,22 @@ public class JobController(
         }
     }
 
+    [HttpPost]
+    public async Task<IActionResult> RecurringJobsExportCsv([FromBody] RecurringJobQueryRequest request)
+    {
+        try
+        {
+            var (fileBytes, fileName) = await jobReportService.GenerateRecurringJobsCsvAsync(request);
+            return File(fileBytes, "text/csv", fileName);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(RecurringJobsExportCsv)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
     public async Task<IActionResult> PodSearch([FromQuery] PodSearchRequest data)
     {
         try
@@ -799,6 +815,9 @@ public class JobController(
 
             // Rerate the parent job if a child was voided but the parent was not
             if (!parentId.HasValue || isParentBeingVoided) return Ok();
+
+            // Don't re-rate if debugging
+            if (Debugger.IsAttached) return Ok();
 
             var isUsTenant = infoService.IsUsTenant();
             if (isUsTenant)

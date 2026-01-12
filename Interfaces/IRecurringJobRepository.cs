@@ -16,4 +16,5 @@ public interface IRecurringJobRepository
     Task SaveRecurringJobNote(TucNoteViewModel note);
     Task UpdateBookingDeliveryAddressAsync(UpdateAddressRequest request);
     Task UpdateBookingPickupAddressAsync(UpdateAddressRequest request);
+    Task<List<PrebookListViewModel>> GetAllRecurringJobsForExportAsync(RecurringJobQueryRequest request);
 }

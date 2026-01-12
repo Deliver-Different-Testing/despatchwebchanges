@@ -145,6 +145,24 @@ class RouterConfig {
     private configurePrebooksState(): this {
         this.$stateProvider.state("recurringJobs", {
             url: "/recurringJobs",
+            template: `
+                <md-content class="md-dense prebook-view">
+                    <react-app-shell title="Recurring Jobs Dashboard"></react-app-shell>
+                    <div class="dashboard-padding" style="height: calc(100vh - 64px);">
+                        <div style="display: flex; height: 100%; gap: 16px; padding: 16px;">
+                            <div id="react-recurring-jobs-list" style="flex: 0 0 55%; height: 100%; overflow: hidden;"></div>
+                            <div style="flex: 0 0 45%; height: 100%; overflow: auto;">
+                                <job-detail-widget
+                                    style="height: 100%;"
+                                    job-id="selectedJobId"
+                                    is-recurring-job="true"
+                                    on-job-update="onJobUpdate()">
+                                </job-detail-widget>
+                            </div>
+                        </div>
+                    </div>
+                </md-content>
+            `,
             resolve: {
                 manifest: ['$http', async ($http: angular.IHttpService) => {
                     try {
@@ -152,18 +170,78 @@ class RouterConfig {
                         return response.data;
                     } catch {
                         console.warn('[ROUTES] Failed to load manifest for recurringJobs state, using fallback names');
-                        return {'recurringJobs.js': 'recurringJobs.css'};
+                        return {
+                            'vendor-react.js': 'vendor-react.js',
+                            'recurringJobsReact.js': 'recurringJobsReact.js'
+                        };
                     }
                 }],
-                loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                loadModule: ['$ocLazyLoad', 'manifest', async ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
                     const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
-                    return $ocLazyLoad.load([
-                        getAssetPath('recurringJobs.js'),
-                        getAssetPath('recurringJobs.css')
-                    ]);
+                    // Load vendor-react first (React, ReactDOM, React Query)
+                    await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
+                    // Then load the recurring jobs React module
+                    return $ocLazyLoad.load(getAssetPath('recurringJobsReact.js'));
                 }]
             },
-            component: "recurringJobsComponent",
+            controller: ['$scope', 'toastrService', 'jobAddStopService', 'APP_CONFIG',
+                function (
+                    $scope: angular.IScope & { selectedJobId?: number; onJobUpdate: () => void },
+                    toastrService: {
+                        showSuccessToast: (m: string) => void;
+                        showWarningToast: (m: string) => void;
+                        showErrorToast: (m: string) => void;
+                        showInfoToast: (m: string) => void
+                    },
+                    jobAddStopService: { addRecurringJobStop: (job: unknown, isPickup: boolean) => Promise<void> },
+                    appConfig: { US_Customer: boolean }
+                ) {
+                    $scope.selectedJobId = undefined;
+                    $scope.onJobUpdate = () => {
+                        // Trigger React refresh
+                        if ((window as any).ReactRecurringJobs?.refresh) {
+                            (window as any).ReactRecurringJobs.refresh();
+                        }
+                    };
+
+                    const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
+                        switch (type) {
+                            case 'success':
+                                toastrService.showSuccessToast(message);
+                                break;
+                            case 'warning':
+                                toastrService.showWarningToast(message);
+                                break;
+                            case 'error':
+                                toastrService.showErrorToast(message);
+                                break;
+                            case 'info':
+                                toastrService.showInfoToast(message);
+                                break;
+                        }
+                    };
+
+                    const onAddStop = async (job: unknown, isPickup: boolean) => {
+                        await jobAddStopService.addRecurringJobStop(job, isPickup);
+                    };
+
+                    const onJobSelect = (jobId: number | null) => {
+                        $scope.selectedJobId = jobId ?? undefined;
+                        $scope.$apply();
+                    };
+
+                    (window as any).ReactRecurringJobs.mount('react-recurring-jobs-list', {
+                        showToast,
+                        isUsCustomer: appConfig.US_Customer,
+                        onAddStop,
+                        onJobSelect,
+                    });
+
+                    $scope.$on('$destroy', () => {
+                        (window as any).ReactRecurringJobs.unmount();
+                    });
+                }
+            ],
         });
         return this;
     }

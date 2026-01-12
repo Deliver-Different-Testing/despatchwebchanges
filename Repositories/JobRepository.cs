@@ -1118,7 +1118,6 @@ public partial class JobRepository(
             var startDate = request.StartDate.Date;
             var endDate = request.EndDate.Date;
 
-            // Query with database-side ordering using CASE expression for job type priority
             var results = await Context.TucJobArchives
                 .AsNoTracking()
                 .AsSplitQuery()
@@ -1157,7 +1156,7 @@ public partial class JobRepository(
                     Delivered = job.UcjbComplTime,
                     JobTypeDescription = job.SpeedNavigation != null ? job.SpeedNavigation.UcjtDescription : null,
                     Minutes = job.SpeedNavigation != null ? job.SpeedNavigation.Minutes : null,
-                    PODName = job.UcjbPodname,
+                    PodName = job.UcjbPodname,
                     FromSuburb = job.UcjbFromNavigation != null ? job.UcjbFromNavigation.UcsuName : null,
                     FromPostcode = job.UcjbFromNavigation != null ? job.UcjbFromNavigation.PostCode : null,
                     ToSuburb = job.UcjbToNavigation != null ? job.UcjbToNavigation.UcsuName : null,
@@ -1185,11 +1184,12 @@ public partial class JobRepository(
                     InvoiceNo = job.UcjbInvoiceNo,
                     Locked = job.UcjbLocked == 1,
                     ClientId = job.UcjbClientId,
-                    ClientNote = job.UcjbClient != null ? job.UcjbClient.UcclNote : null
+                    ClientNote = job.UcjbClient != null ? job.UcjbClient.UcclNote : null,
+                    RawBaseAmount = job.RawBaseAmount,
+                    FuelSurchargeAmount = job.FuelSurchargeAmount
                 })
                 .ToListAsync();
 
-            // Map to final DTO with string formatting (must be done in-memory)
             return results.ConvertAll(MapToPerformanceSpendReportModel);
         }
         catch (Exception e)
@@ -1210,45 +1210,47 @@ public partial class JobRepository(
         return new PerformanceSpendReportModel
         {
             JobNumber = row.JobNumber,
-            ucjbType = row.JobType switch { 1 => "Pick up from us", 2 => "Deliver to us", 3 => "3rd party", _ => null },
-            Date = row.Date?.ToString("yyyy-MM-dd"),
-            Booked = row.Booked?.ToString("yyyy-MM-dd HH:mm:ss"),
+            UcjbType = row.JobType switch { 1 => "Pick up from us", 2 => "Deliver to us", 3 => "3rd party", _ => null },
+            Date = row.Date?.ToString("dd-MMM-yy"),
+            Booked = row.Booked?.ToString("HH:mm"),
             BookedBy = row.BookedBy,
             PickedUpTime = row.PickedUpTime?.ToString("yyyy-MM-dd HH:mm:ss"),
             Delivered = row.Delivered?.ToString("yyyy-MM-dd HH:mm:ss"),
             TotalTime = totalTime?.ToString(),
             DeliveryMins = totalTime != null && row.Minutes != null ? (totalTime - row.Minutes)?.ToString() : null,
-            PODName = row.PODName,
+            PodName = row.PodName,
             Booker = row.BookedBy,
             AchievedSpeed = row.JobTypeDescription,
             From = row.FromSuburb,
             FromPostcode = row.FromPostcode,
             To = string.IsNullOrEmpty(row.ToSuburb) || row.ToSuburb == "Unknown" ? row.ToSuburbFromAddress ?? "Unknown" : row.ToSuburb,
             ToPostcode = row.ToPostcode,
-            ucjbFromAddr = row.FromAddr,
+            UcjbFromAddr = row.FromAddr,
             Address = row.ToAddr,
             Courier = row.CourierId?.ToString(),
             LatePickup = row.LatePickup?.ToString(),
             LateDelivery = row.LateDelivery?.ToString(),
-            ucclLegalName = row.ClientLegalName,
-            ucjbSpeed = row.Speed?.ToString(),
+            UcclLegalName = row.ClientLegalName,
+            UcjbSpeed = row.Speed?.ToString(),
             Notes = row.Notes,
-            ChargeExclGST = row.Amount?.ToString("F2"),
+            ChargeExclGst = row.Amount?.ToString("F2"),
             RefA = row.RefA,
             RefB = row.RefB,
             UrgentRef = row.OurRef,
             Weight = row.Weight?.ToString(),
             Vehicle = row.Size switch { 1 or 2 => "Car", 3 => "Van", 4 => "Truck", _ => null },
             Quantity = row.Quantity?.ToString(),
-            ucjbYear = row.Year?.ToString(),
-            ucjbMonth = row.Month?.ToString(),
+            UcjbYear = row.Year?.ToString(),
+            UcjbMonth = row.Month?.ToString(),
             Code = row.CourierCode,
-            uccrName = row.CourierName,
-            ucjbInvoiceNo = row.InvoiceNo?.ToString(),
-            ucjbLocked = row.Locked?.ToString(),
-            ucjbClientID = row.ClientId?.ToString(),
-            ucclNote = row.ClientNote,
-            Minutes = row.Minutes?.ToString()
+            UccrName = row.CourierName,
+            UcjbInvoiceNo = row.InvoiceNo?.ToString(),
+            UcjbLocked = row.Locked?.ToString(),
+            UcjbClientId = row.ClientId?.ToString(),
+            UcclNote = row.ClientNote,
+            Minutes = row.Minutes?.ToString(),
+            FuelSurchargeAmount = row.FuelSurchargeAmount,
+            RawBaseAmount = row.RawBaseAmount
         };
     }
 

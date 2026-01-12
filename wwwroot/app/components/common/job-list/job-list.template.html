@@ -233,7 +233,9 @@
                              'unread': !job.hasBeenRead,
                              'child-job': !job.isParentOrSingle,
                              'related-job': ctrl.hasRelatedJobs(job),
-                             'warning': ctrl.isWarning(job)
+                             'warning': ctrl.isWarning(job),
+                             'direct': job.direct,
+                             'chilled': ctrl.isChilledJob(job)
                          }"
                      ng-style="{'grid-template-columns': ctrl.getGridTemplateColumns()}"
                      context-menu="ctrl.getJobContextMenuOptions(job)"

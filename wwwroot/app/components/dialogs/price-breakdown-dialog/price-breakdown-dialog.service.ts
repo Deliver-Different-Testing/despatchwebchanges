@@ -26,9 +26,7 @@ declare global {
 
 class PriceBreakdownDialogService implements angular.IServiceProvider {
     static $inject = [
-        '$mdDialog',
         'DispatchData',
-        '$document',
         'toastrService',
         'APP_CONFIG',
         "simplePriceEditDialogService",
@@ -39,9 +37,7 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
     private readonly isUsCustomer: boolean;
 
     constructor(
-        private $mdDialog: angular.material.IDialogService,
         private DispatchData: DispatchCoreService,
-        private $document: angular.IDocumentService,
         private toastrService: ToastrService,
         appConfig: IAppConfig,
         private simplePriceEditDialogService: SimplePriceEditDialogService,

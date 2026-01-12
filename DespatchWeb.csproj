@@ -338,15 +338,12 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\agent-info-dialog\agent-info-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\agent-info-dialog\agent-info-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\auto-complete-dialog\auto-complete-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\auto-complete-dialog\interfaces\IAutoCompleteOptions.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\compose-email-dialog\compose-email-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\compose-email-dialog\compose-email-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\create-job-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\dashboard-settings-dialog\dashboard-settings-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\dashboard-settings-dialog\dashboard-settings-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\dashboard-settings-dialog\interfaces\IDashboardSettingsConfig.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\dashboard-settings-dialog\interfaces\IDashboardSettingsDialogResult.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-afterhours-dialog\edit-afterhours-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-afterhours-dialog\edit-afterhours-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\flight-agent-conformation-dialog.controller.ts" />
@@ -367,7 +364,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\simple-price-edit-dialog\simple-price-edit-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\void-job-confirmation-dialog\void-job-confirmation-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\void-job-confirmation-dialog\void-job-confirmation-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\driver-management-dashboard\driver-management.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\driver-management-dashboard\driver-management.module.ts" />
@@ -394,7 +390,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-event-dialog\add-event-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\additional-services-dialog\additional-services-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\additional-services-dialog\additional-services-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\auto-complete-dialog\auto-complete-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\create-job-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-address-dialog\edit-address-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-address-dialog\edit-address-dialog.service.ts" />
@@ -411,11 +406,9 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\job-file-upload-dialog\job-file-upload.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\note-management-dialog\note-management-dialog.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\note-management-dialog\note-management.dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\price-breakdown-dialog\price-breakdown-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\price-breakdown-dialog\price-breakdown-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\select-dialog\select-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\select-dialog\select-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\auto-complete-dialog\auto-complete-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\create-job-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.controller.ts" />

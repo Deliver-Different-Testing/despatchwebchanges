@@ -17,7 +17,7 @@ internal class ClientJobsReportRow
     public DateTime? Delivered { get; init; }
     public string JobTypeDescription { get; init; }
     public int? Minutes { get; init; }
-    public string PODName { get; init; }
+    public string PodName { get; init; }
     public string FromSuburb { get; init; }
     public string FromPostcode { get; init; }
     public string ToSuburb { get; init; }
@@ -35,6 +35,8 @@ internal class ClientJobsReportRow
     public string RefA { get; init; }
     public string RefB { get; init; }
     public string OurRef { get; init; }
+    public decimal? RawBaseAmount { get; init; }
+    public decimal? FuelSurchargeAmount { get; init; }
     public decimal? Weight { get; init; }
     public int? Size { get; init; }
     public int? Quantity { get; init; }
