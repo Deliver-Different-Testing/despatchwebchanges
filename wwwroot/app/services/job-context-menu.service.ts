@@ -1,7 +1,7 @@
 import DispatchCoreService from "./dispatch-core.service";
 import ToastrService from "./toastr.service";
 import {EventGroupDialogService} from "../components/dialogs/event-group-dialog/event-group-dialog.service";
-import AddEventDialogService from "../components/dialogs/add-event-dialog/add-event-dialog.service";
+import {openAddEventDialog} from "../react/components/dialogs/add-event-dialog";
 import {IDispatchJob, ILateCallRequest, ISuggestion,} from "../interfaces/job.interface";
 import IContextMenuOption from "../interfaces/context-menu-option.interface";
 import InternalJobStatus from "../enums/job-internal-status.enum";
@@ -21,7 +21,6 @@ class JobContextMenuService implements angular.IServiceProvider {
         "DispatchData",
         "toastrService",
         "eventGroupDialogService",
-        "addEventDialogService",
         "jobAddStopService",
         "voidJobConfirmationDialogService",
     ];
@@ -34,7 +33,6 @@ class JobContextMenuService implements angular.IServiceProvider {
         private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
         private eventGroupDialogService: EventGroupDialogService,
-        private addEventDialogService: AddEventDialogService,
         private jobAddStopService: JobAddStopService,
         private voidJobConfirmationDialogService: VoidJobConfirmationDialogService,
     ) {
@@ -416,7 +414,29 @@ class JobContextMenuService implements angular.IServiceProvider {
     ) {
         if (!job) return;
 
-        await this.addEventDialogService.openAddEventDialog($event, job);
+        await openAddEventDialog({
+            job: {
+                id: job.id,
+                jobNo: job.jobNo,
+                client: job.client ?? '',
+                clientId: job.clientId,
+            },
+            toastService: {
+                showToast: (message: string, type: 'success' | 'warning' | 'error') => {
+                    switch (type) {
+                        case 'success':
+                            this.toastrService.showSuccessToast(message);
+                            break;
+                        case 'warning':
+                            this.toastrService.showWarningToast(message);
+                            break;
+                        case 'error':
+                            this.toastrService.showErrorToast(message);
+                            break;
+                    }
+                },
+            },
+        });
 
         if (onRefresh) {
             onRefresh();

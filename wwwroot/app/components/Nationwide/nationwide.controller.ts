@@ -27,7 +27,7 @@ import BaseController from "../base-controller";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import JobDataType from "./enums/JobDataType";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
-import AddEventDialogService from "../dialogs/add-event-dialog/add-event-dialog.service";
+import {openAddEventDialog} from "../../react/components/dialogs/add-event-dialog";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {ExtendedTask, ITask} from "../task-dashboard/task-dashboard.interfaces";
@@ -44,7 +44,7 @@ import JobAddStopService from "../../services/job-add-stop.service";
 import greetUser from '../../functions/greetUser';
 import FlightAgentConfirmationDialogService
     from "../dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.service";
-import AgentInfoDialogService from "../dialogs/agent-info-dialog/agent-info-dialog.service";
+import {openAgentInfoDialog} from "../../react/components/dialogs/agent-info-dialog";
 import dayjs, {Dayjs} from "dayjs";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import MessagingService from "../../services/messaging.service";
@@ -79,7 +79,6 @@ class NationwideControl extends BaseController {
         'APP_CONFIG',
         'dispatchJobService',
         'jobFileUploadDialogService',
-        'addEventDialogService',
         'additionalServicesDialogService',
         'jobContextMenuService',
         'flightDetailsDialogService',
@@ -89,7 +88,6 @@ class NationwideControl extends BaseController {
         'jobAddStopService',
         '$stateParams',
         'flightAgentConfirmationDialogService',
-        'agentInfoDialogService',
         'messagingDialogService',
         'messagingService',
         'tasksService',
@@ -236,7 +234,6 @@ class NationwideControl extends BaseController {
         private appConfig: IAppConfig,
         private dispatchJobService: DispatchExecutorService,
         private jobFileUploadDialogService: JobFileUploadDialogService,
-        private addEventDialogService: AddEventDialogService,
         private additionalServicesDialogService: AdditionalServicesDialogService,
         private jobContextMenuService: JobContextMenuService,
         private flightDetailsDialogService: FlightDetailsDialogService,
@@ -246,7 +243,6 @@ class NationwideControl extends BaseController {
         private jobAddStopService: JobAddStopService,
         private $stateParams: angular.ui.IStateParamsService,
         private flightAgentConfirmationDialogService: FlightAgentConfirmationDialogService,
-        private agentInfoDialogService: AgentInfoDialogService,
         private messagingDialogService: MessagingDialogService,
         private messagingService: MessagingService,
         private tasksService: TasksService,
@@ -1607,7 +1603,29 @@ class NationwideControl extends BaseController {
     }
 
     async createEvent($event: MouseEvent, job: IDispatchJob) {
-        await this.addEventDialogService.openAddEventDialog($event, job);
+        await openAddEventDialog({
+            job: {
+                id: job.id,
+                jobNo: job.jobNo,
+                client: job.client ?? '',
+                clientId: job.clientId,
+            },
+            toastService: {
+                showToast: (message: string, type: 'success' | 'warning' | 'error') => {
+                    switch (type) {
+                        case 'success':
+                            this.toastrService.showSuccessToast(message);
+                            break;
+                        case 'warning':
+                            this.toastrService.showWarningToast(message);
+                            break;
+                        case 'error':
+                            this.toastrService.showErrorToast(message);
+                            break;
+                    }
+                },
+            },
+        });
     }
 
     getContextMenuOptions(job: IDispatchJob): any[] | IContextMenuOption[] {
@@ -1999,7 +2017,9 @@ class NationwideControl extends BaseController {
     }
 
     async openAgentMoreInfo($event: MouseEvent, agent: IAgent): Promise<void> {
-        await this.agentInfoDialogService.openAgentInfoDialog($event, agent.agentId);
+        await openAgentInfoDialog({
+            agentId: agent.agentId,
+        });
     }
 
     refreshMap(): void {
