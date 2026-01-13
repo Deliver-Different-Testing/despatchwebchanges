@@ -7,6 +7,9 @@ include:
 test:backend:
   stage: .pre
   image: mcr.microsoft.com/dotnet/sdk:8.0
+  retry:
+    max: 2
+    when: runner_system_failure
   allow_failure: false
   script:
     - dotnet restore
@@ -20,6 +23,9 @@ test:backend:
 test:frontend:
   stage: .pre
   image: node:20
+  retry:
+    max: 2
+    when: runner_system_failure
   allow_failure: false
   script:
     - npm ci
