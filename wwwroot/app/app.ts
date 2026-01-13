@@ -29,8 +29,6 @@ import NoteManagementDialogController
 import NoteService from "./services/notes.service";
 import RouterConfig from "./routes";
 import ThemeConfig from "./materialTheme";
-import AddEventDialogController from "./components/dialogs/add-event-dialog/add-event-dialog.controller";
-import AddEventDialogService from "./components/dialogs/add-event-dialog/add-event-dialog.service";
 import {bytesFilter, momentFormatFilter, replaceFilter, timezoneLongFilter, timezoneShortFilter} from "./filters";
 import {StickyNotesReactComponent} from "./react/components/common/sticky-notes/sticky-notes-react.module";
 import EditParcelDimensionsDialogService
@@ -43,7 +41,6 @@ import 'dayjs/locale/en';
 import 'dayjs/locale/en-nz';
 import reactErrorPageDirective from "./components/error-page/react-error-page.directive";
 import TablePaginationComponent from "./components/common/table-pagination/table-pagination.component";
-import DataTableComponent from "./components/common/data-table/data-table.component";
 import TruckCourierStatusDialogController
     from "./components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.controller";
 import TruckCourierStatusDialogService
@@ -220,7 +217,6 @@ app.filter('minutesToTime', () => minutesToTimeFilter);
 app.component("jobDetailWidget", JobDetailComponent);
 app.component("podPhotoViewer", PodPhotoViewerComponent);
 app.component("tablePagination", TablePaginationComponent);
-app.component("dataTable", DataTableComponent);
 app.component("stickyNoteReact", StickyNotesReactComponent);
 app.component("customDatePicker", DayJsDatePickerComponent);
 app.component("taskItemReact", TaskItemReactComponent);
@@ -232,7 +228,6 @@ app.directive("reactAppShell", reactAppShellDirective);
 app.directive("reactErrorPage", reactErrorPageDirective);
 
 // Dialogs
-app.controller("AddEventDialogController", AddEventDialogController);
 app.controller("EditParcelDimensionsDialogController", EditParcelDimensionsDialogController);
 app.controller("FeatureInDevelopmentDialogController", FeatureInDevelopmentDialogController);
 app.controller("SelectDialogController", SelectDialogController);
@@ -257,7 +252,6 @@ app.service("priceBreakdownDialogService", PriceBreakdownDialogService);
 app.service("jobFileUploadDialogService", JobFileUploadDialogService);
 app.service("noteManagementDialogService", NoteManagementDialogService);
 app.service("noteService", NoteService);
-app.service("addEventDialogService", AddEventDialogService);
 app.service("editParcelDimensionsDialogService", EditParcelDimensionsDialogService);
 app.service("autoCompleteDialogService", AutoCompleteDialogService);
 app.service("jobAddStopService", JobAddStopService);

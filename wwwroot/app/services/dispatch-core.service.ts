@@ -42,7 +42,7 @@ import {
     IJobUpdateBaseRequest,
     UpdatePodDetailsRequest
 } from "../interfaces/requests.interfaces";
-import {JobEventData} from "../components/dialogs/add-event-dialog/add-event-dialog.interfaces";
+import {JobEventData} from "../react/interfaces/event";
 import {IDeliveryJourney, IDeliveryJourneyDto} from "../react/components/common/task-history/TaskHistory.interfaces";
 import {formatDateForApiWithTzs} from "../functions/formatDates";
 import IInterCourierData from "../components/dialogs/inter-courier-charge-dialog/interfaces/IInterCourierData";

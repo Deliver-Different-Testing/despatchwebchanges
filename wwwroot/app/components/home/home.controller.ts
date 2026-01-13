@@ -24,7 +24,7 @@ import AdditionalServicesDialogService from "../dialogs/additional-services-dial
 import {EditAddressDialogService} from "../dialogs/edit-address-dialog/edit-address-dialog.service";
 import {AppPage} from "../../enums/app-pages.enum";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
-import AddEventDialogService from "../dialogs/add-event-dialog/add-event-dialog.service";
+import {openAddEventDialog} from "../../react/components/dialogs/add-event-dialog";
 import InterCourierChargeDialogService
     from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
 import {Coordinates} from "../overview/overview.interfaces";
@@ -72,7 +72,6 @@ class HomeController extends BaseController {
         'additionalServicesDialogService',
         'editAddressDialogService',
         'jobFileUploadDialogService',
-        'addEventDialogService',
         'interCourierChargeDialogService',
         'jobContextMenuService',
         'navigationService',
@@ -212,7 +211,6 @@ class HomeController extends BaseController {
         private additionalServicesDialog: AdditionalServicesDialogService,
         private editAddressDialog: EditAddressDialogService,
         private jobFileUploadDialog: JobFileUploadDialogService,
-        private addEventDialog: AddEventDialogService,
         private interCourierChargeDialog: InterCourierChargeDialogService,
         private jobContextMenuService: JobContextMenuService,
         private navigationService: NavigationService,
@@ -1082,7 +1080,29 @@ class HomeController extends BaseController {
     }
 
     async otherEventForm($event: MouseEvent, job: IDispatchJob): Promise<void> {
-        await this.addEventDialog.openAddEventDialog($event, job);
+        await openAddEventDialog({
+            job: {
+                id: job.id,
+                jobNo: job.jobNo,
+                client: job.client ?? '',
+                clientId: job.clientId,
+            },
+            toastService: {
+                showToast: (message: string, type: 'success' | 'warning' | 'error') => {
+                    switch (type) {
+                        case 'success':
+                            this.toastrService.showSuccessToast(message);
+                            break;
+                        case 'warning':
+                            this.toastrService.showWarningToast(message);
+                            break;
+                        case 'error':
+                            this.toastrService.showErrorToast(message);
+                            break;
+                    }
+                },
+            },
+        });
     }
 
     jobClass(job: IDispatchJob): string {
