@@ -56,14 +56,7 @@ export interface DeliveryJourneyDto {
     status: string;
     notes: string;
 }
-
-export interface TimelineItem {
-    type: 'delivery-event';
-    data: DeliveryJourney;
-}
-
 // Backward compatibility aliases
 export type IDeliveryHistoryConfig = DeliveryHistoryConfig;
 export type IDeliveryJourney = DeliveryJourney;
 export type IDeliveryJourneyDto = DeliveryJourneyDto;
-export type ITimelineItem = TimelineItem;

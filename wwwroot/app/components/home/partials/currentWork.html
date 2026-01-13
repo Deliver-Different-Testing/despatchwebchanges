@@ -40,13 +40,13 @@
             </md-list-item>
         </md-list>
 
-        <no-data
+        <no-data-react
                 ng-if="!ctrl.driversWithJobCounts || ctrl.driversWithJobCounts.length === 0"
                 title="No Drivers Available"
                 message="No active drivers found"
                 icon="people"
                 show-action="false">
-        </no-data>
+        </no-data-react>
     </div>
 
     <!-- Selected Driver Mode -->
@@ -63,12 +63,12 @@
                 job-list-type="ctrl.currentWorkListName">
         </jobs-list>
 
-        <no-data
+        <no-data-react
                 ng-if="!ctrl.jobsCurrentList"
                 title="No Courier Selected"
                 message="Please Select a Courier to View Available Work"
                 icon="local_shipping"
                 show-action="false">
-        </no-data>
+        </no-data-react>
     </div>
 </div>

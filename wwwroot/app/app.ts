@@ -41,7 +41,6 @@ import AddressLookupService from "./services/address-lookup.service";
 import dayjs from "dayjs";
 import 'dayjs/locale/en';
 import 'dayjs/locale/en-nz';
-import NoDataComponent from "./components/common/no-data/no-data.component";
 import reactErrorPageDirective from "./components/error-page/react-error-page.directive";
 import TablePaginationComponent from "./components/common/table-pagination/table-pagination.component";
 import DataTableComponent from "./components/common/data-table/data-table.component";
@@ -64,6 +63,8 @@ import SimplePriceEditDialogController
 import BulkPriceUploadDialogService
     from "./components/dialogs/bulk-price-upload-dialog/bulk-price-upload-dialog.service";
 import {TaskItemReactComponent} from "./react/components/common/task-item/task-item-react.module";
+import {DriverLocationsReactComponent} from "./react/components/common/driver-locations/driver-locations-react.module";
+import {NoDataReactComponent} from "./react/components/common/no-data/no-data-react.module";
 import reactAppShellDirective from "./components/common/react-app-shell/react-app-shell.directive";
 
 const app = (window as any).uDispatchApp;
@@ -218,12 +219,13 @@ app.filter('minutesToTime', () => minutesToTimeFilter);
 // Components
 app.component("jobDetailWidget", JobDetailComponent);
 app.component("podPhotoViewer", PodPhotoViewerComponent);
-app.component("noData", NoDataComponent);
 app.component("tablePagination", TablePaginationComponent);
 app.component("dataTable", DataTableComponent);
 app.component("stickyNoteReact", StickyNotesReactComponent);
 app.component("customDatePicker", DayJsDatePickerComponent);
 app.component("taskItemReact", TaskItemReactComponent);
+app.component("driverLocationsReact", DriverLocationsReactComponent);
+app.component("noDataReact", NoDataReactComponent);
 
 // Directives
 app.directive("reactAppShell", reactAppShellDirective);

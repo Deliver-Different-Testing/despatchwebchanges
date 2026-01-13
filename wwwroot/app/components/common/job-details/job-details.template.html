@@ -1589,11 +1589,11 @@
 
                         <tr ng-if="!ctrl.job.palletInfo || ctrl.job.palletInfo.length === 0" class="pallet-empty-row">
                             <td colspan="7">
-                                <no-data
+                                <no-data-react
                                         title="No pallet information available"
                                         message="This job does not have any pallet information."
                                         icon="inventory_2">
-                                </no-data>
+                                </no-data-react>
                             </td>
                         </tr>
                         </tbody>
@@ -1768,14 +1768,14 @@
     </md-card>
 </div>
 
-<no-data
+<no-data-react
         icon="assignment"
         message="Please select a job or courier to view details."
         ng-if="!ctrl.job && !isLoading"
         show-action="false"
         title="No Job Selected"
 >
-</no-data>
+</no-data-react>
 
 <!-- Delivery Photos Section -->
 <div
