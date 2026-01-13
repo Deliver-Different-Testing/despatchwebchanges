@@ -332,9 +332,6 @@
     <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\StickyNotes.tsx" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\StickyNotes.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\sticky-notes-react.module.tsx" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-event-dialog\add-event-dialog.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\agent-info-dialog\agent-info-dialog.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\agent-info-dialog\agent-info-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\auto-complete-dialog\auto-complete-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\compose-email-dialog\compose-email-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\compose-email-dialog\compose-email-dialog.service.ts" />
@@ -384,12 +381,9 @@
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\interfaces\IScanDetailResult.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\jobSearch.module.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\jobSearch.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-event-dialog\add-event-dialog.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-event-dialog\add-event-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\additional-services-dialog\additional-services-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\additional-services-dialog\additional-services-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\create-job-dialog.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-address-dialog\edit-address-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-address-dialog\edit-address-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.service.ts" />
