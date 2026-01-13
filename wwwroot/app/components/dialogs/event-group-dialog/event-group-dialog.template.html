@@ -93,7 +93,7 @@
                 </md-table-container>
             </div>
 
-            <no-data
+            <no-data-react
                     ng-if="!ctrl.events || ctrl.events.length === 0"
                     title="No Task Groups Found"
                     message="Get started by adding task types in the Admin Manager to create your first task group."
@@ -101,7 +101,7 @@
                     show-action="true"
                     action-text="Open Admin Manager"
                     on-action="ctrl.goToAdminManager()">
-            </no-data>
+            </no-data-react>
         </md-dialog-content>
 
         <md-dialog-actions layout="row">

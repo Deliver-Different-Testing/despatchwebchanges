@@ -143,9 +143,9 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
     };
 
     private setupRefreshInterval = (): void => {
-        this.refreshIntervalRef = setInterval(() => {
+        this.refreshIntervalRef = setInterval(async () => {
             if (this.props.jobId) {
-                this.loadDeliveryJourney();
+                await this.loadDeliveryJourney();
             }
         }, 120000);
     };

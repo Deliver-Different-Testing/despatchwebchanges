@@ -323,7 +323,23 @@
                             </div>
                         </md-toolbar>
 
-                        <div class="box-content" ng-if="!ctrl.boxes[box.name].collapsed" ng-include="ctrl.boxes[box.name].templateUrl">
+                        <!-- Driver Locations uses React component -->
+                        <div class="box-content" ng-if="!ctrl.boxes[box.name].collapsed && box.name === 'driverLocations'">
+                            <driver-locations-react
+                                driver-locations="ctrl.driverLocations"
+                                loading="ctrl.driverLocationsLoading"
+                                show-no-data="ctrl.showDriverLocationsNoData"
+                                show-data="ctrl.showDriverLocationsData"
+                                truck-mode="ctrl.truckMode"
+                                active-area-id="ctrl.clearListId"
+                                on-area-click="ctrl.selectAndActivateArea(area)"
+                                on-courier-click="ctrl.selectCourier(courier)"
+                                on-clear-filter="ctrl.clearDriverLocationFilter()"
+                                is-us-customer="ctrl.appConfig.US_Customer">
+                            </driver-locations-react>
+                        </div>
+                        <!-- Other boxes use ng-include with template URL -->
+                        <div class="box-content" ng-if="!ctrl.boxes[box.name].collapsed && box.name !== 'driverLocations'" ng-include="ctrl.boxes[box.name].templateUrl">
                         </div>
                     </div>
                 </div>

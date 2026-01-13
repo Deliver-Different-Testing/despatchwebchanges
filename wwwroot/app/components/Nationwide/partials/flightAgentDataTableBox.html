@@ -14,29 +14,29 @@
 
 <div class="basic-box-scroll nationwide-job-list" ng-if="!ctrl.isDeliveryJobType">
     <!-- No Current Job Selected -->
-    <no-data ng-if="!ctrl.currentJob"
+    <no-data-react ng-if="!ctrl.currentJob"
              title="No Job Selected"
              message="Please select a job to view available flights."
              icon="flight_takeoff"
              show-action="false">
-    </no-data>
+    </no-data-react>
 
     <!-- Job Has Assigned Flight -->
-    <no-data ng-if="ctrl.currentJob && ctrl.currentJob.assignedFlight"
+    <no-data-react ng-if="ctrl.currentJob && ctrl.currentJob.assignedFlight"
              title="Flight Already Assigned"
              message="A flight has already been assigned to this job. This can be found in the job details widget."
              icon="flight_takeoff"
              show-action="false">
-    </no-data>
+    </no-data-react>
 
     <!-- Missing Airport Information -->
-    <no-data
+    <no-data-react
             ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && (!ctrl.currentJob.toAirportId || !ctrl.currentJob.fromAirportId)"
             title="Missing Airport Info"
             message="Airport information not applicable or not provided for this job. If needed, please update the job details with relevant airport data."
             icon="local_airport"
             show-action="false">
-    </no-data>
+    </no-data-react>
 
     <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading">
         <!-- Airline Filter Chips -->
@@ -328,16 +328,16 @@
 
 <div class="basic-box-scroll nationwide-job-list" ng-if="ctrl.isDeliveryJobType">
     <!--  No Current Job Selected -->
-    <no-data
+    <no-data-react
             ng-if="ctrl.showNoAgentJobSelectedMessage"
             title="No Job Selected"
             message="Please select a job to view available agents."
             icon="engineering"
             show-action="false">
-    </no-data>
+    </no-data-react>
 
     <!-- Job Has Assigned Agent -->
-    <no-data
+    <no-data-react
             ng-if="ctrl.showJobHasAssignedAgentMessage"
             title="Agent Already Assigned"
             message="An agent has already been assigned to this job. This can be found in the job details widget."
@@ -345,25 +345,25 @@
             show-action="true"
             action-text="Manage Recovery Agent(s)"
             on-action="ctrl.openRecoveryAgentDialog($event, ctrl.currentJob)">
-    </no-data>
+    </no-data-react>
 
     <!-- Not a Delivery Job -->
-    <no-data
+    <no-data-react
             ng-if="ctrl.showNotDeliveryJobMessage"
             title="Not a Delivery Job"
             message="Agent information is not applicable for this job. This section is only relevant for delivery jobs."
             icon="engineering"
             show-action="false">
-    </no-data>
+    </no-data-react>
 
     <!-- No Agents Available -->
-    <no-data
+    <no-data-react
             ng-if="ctrl.showNoAgentsAvailableMessage"
             title="No Agents Available"
             message="{{ctrl.agentMessage || 'No agents available for the specified criteria.'}}"
             icon="engineering"
             show-action="false">
-    </no-data>
+    </no-data-react>
 
     <!-- Agent List -->
     <div ng-if="ctrl.showAgentList">
