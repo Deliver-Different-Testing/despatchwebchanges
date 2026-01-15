@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
   <!-- Exclude test project from compilation -->
@@ -307,7 +307,7 @@
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="ExcelDataReader" Version="3.8.0" />
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.8.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.20" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.1" />
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="9.0.9" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
@@ -316,7 +316,7 @@
     <PackageReference Include="System.Linq.Async" Version="7.0.0" />
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.7.1" />
     <PackageReference Include="System.Formats.Asn1" Version="9.0.10" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Certificate" Version="8.0.20" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Certificate" Version="10.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.9" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.9" />
     <PackageReference Include="TimeZoneConverter" Version="7.2.0" />
@@ -420,9 +420,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\overview\overview.module.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\overview.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\services\overview-filters.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\recurringJobs\recurringJobs.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\recurringJobs\recurringJobs.module.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\recurringJobs\recurringJobs.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\enums\status-filter.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\enums\view-mode.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\task-calendar-view\task-calendar-view.component.ts" />
