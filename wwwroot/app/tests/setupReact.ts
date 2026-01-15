@@ -31,12 +31,26 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
 // Mock scrollTo
 window.scrollTo = jest.fn();
 
-// Suppress React 18 act() warnings in tests
+// Suppress React 18 act() warnings and expected test errors
+// These are error messages that are expected during error handling tests
+const suppressedErrorPatterns = [
+    'Warning: ReactDOM.render is no longer supported',
+    'Error loading related jobs',
+    'Error loading notes',
+    'Error deleting note',
+    'Error updating task',
+    'Error loading staff',
+    'Error reassigning task',
+    'Error loading delivery journey',
+    'Error loading event types',
+    'Export failed',
+];
+
 const originalError = console.error;
 console.error = (...args) => {
     if (
         typeof args[0] === 'string' &&
-        args[0].includes('Warning: ReactDOM.render is no longer supported')
+        suppressedErrorPatterns.some(pattern => args[0].includes(pattern))
     ) {
         return;
     }

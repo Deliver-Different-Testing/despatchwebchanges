@@ -76,13 +76,15 @@ if (builder.Environment.IsDevelopment())
         }
     }
 
-    builder.Services.AddDataProtection()
-        .PersistKeysToFileSystem(new DirectoryInfo(keyDirectory))
-        .SetApplicationName("DeliverDifferent")
-        .ProtectKeysWithDpapi();
-
-    Log.Information("DataProtection configured to use directory: {KeyDirectory}", keyDirectory);
-
+    if (OperatingSystem.IsWindows())
+    {
+        builder.Services.AddDataProtection()
+            .PersistKeysToFileSystem(new DirectoryInfo(keyDirectory))
+            .SetApplicationName("DeliverDifferent")
+            .ProtectKeysWithDpapi();
+        
+        Log.Information("DataProtection configured to use directory: {KeyDirectory}", keyDirectory);
+    }
 }
 else
 {
@@ -91,7 +93,7 @@ else
 
 
 builder.Services.AddSingleton<IConnectionStringManager, ConnectionStringManager>();
-builder.Services.AddSingleton<IAmazonS3>(serviceProvider =>
+builder.Services.AddSingleton<IAmazonS3>(_ =>
 {
     var awsOptions = builder.Configuration.GetAWSOptions();
 
@@ -122,12 +124,12 @@ builder.Services.Configure<FormOptions>(x =>
 });
 builder.Services.Configure<IISServerOptions>(options =>
 {
-    if (options != null) options.MaxRequestBodySize = maxFileSize;
+    options?.MaxRequestBodySize = maxFileSize;
 });
 
 builder.Services.Configure<KestrelServerOptions>(options =>
 {
-    if (options != null) options.Limits.MaxRequestBodySize = maxFileSize;
+    options?.Limits.MaxRequestBodySize = maxFileSize;
 });
 
 builder.Services.AddHttpClient();

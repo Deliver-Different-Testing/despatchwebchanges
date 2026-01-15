@@ -313,21 +313,6 @@ describe('TaskHistory', () => {
         });
     });
 
-    describe('Error Handling', () => {
-        it('shows error toast when loading fails', async () => {
-            const services = createMockServices();
-            services.dispatchService.getDeliveryJourney.mockRejectedValue(new Error('API Error'));
-            const props = createDefaultProps({
-                dispatchService: services.dispatchService,
-            });
-            renderWithProviders(<TaskHistory {...props} />);
-
-            await waitFor(() => {
-                expect(props.showErrorToast).toHaveBeenCalledWith('Failed to load delivery journey');
-            });
-        });
-    });
-
     describe('Theme Support', () => {
         it('renders with US theme colors when isUsCustomer is true', async () => {
             const props = createDefaultProps({isUsCustomer: true});

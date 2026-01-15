@@ -9,7 +9,7 @@ import JobInternalStatusEnum from "../enums/job-internal-status.enum";
 import {JobProperty} from "../enums/job-property.enum";
 import JobAddStopService from "./job-add-stop.service";
 import {AppPage} from "../enums/app-pages.enum";
-import {IPrebookListModel} from "../components/recurringJobs/recurringJobs.interface";
+import {IPrebookListModel} from "../react/interfaces";
 import {LateEventType} from "../enums/late-event-type.enum";
 import VoidJobConfirmationDialogService
     from "../components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";

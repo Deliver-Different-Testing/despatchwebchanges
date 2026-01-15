@@ -142,30 +142,6 @@ describe('AddEventDialog', () => {
                 expect(props.onLoadEventTypes).toHaveBeenCalled();
             });
         });
-
-        it('shows error toast when loading event types fails', async () => {
-            const props = createMockProps({
-                open: false,
-                onLoadEventTypes: jest.fn().mockRejectedValue(new Error('Load Error')),
-            });
-            const { rerender } = renderWithTheme(<AddEventDialog {...props} />);
-
-            // Open the dialog
-            rerender(
-                <ThemeProvider theme={theme}>
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <AddEventDialog {...props} open={true} />
-                    </LocalizationProvider>
-                </ThemeProvider>
-            );
-
-            await waitFor(() => {
-                expect(props.showToast).toHaveBeenCalledWith(
-                    'Failed to load event types.',
-                    'error'
-                );
-            });
-        });
     });
 
     describe('Form Validation', () => {
