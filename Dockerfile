@@ -7,12 +7,11 @@ RUN curl -sL https://deb.nodesource.com/setup_20.x | bash -
 RUN apt-get install -y nodejs
 
 COPY *.csproj ./
-RUN dotnet restore
+RUN dotnet restore DespatchWeb.csproj
 
 COPY . ./
 RUN npm install
-RUN dotnet build -c Release --property:OutputPath=/app
-RUN dotnet publish -c Release --property:PublishDir=/publish
+RUN dotnet publish DespatchWeb.csproj -c Release -o /publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 as base
 COPY --from=build-env /publish /app
