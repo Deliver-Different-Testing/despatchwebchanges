@@ -21,7 +21,6 @@ import {
     formatShortDateTime
 } from "./formatDates";
 import {ITask, ITaskDto} from "../components/task-dashboard/task-dashboard.interfaces";
-import {IPrebookListModel, IPrebookListModelDto} from "../components/recurringJobs/recurringJobs.interface";
 import {
     IDeliveryJourney,
     IDeliveryJourneyDto
@@ -182,16 +181,6 @@ export function transformTaskDTO(dto: ITaskDto): ITask {
         dueDate: formatDateFromApi(dto.dueDate),
         _dueDateString: formatLongDate(dto.dueDate),
         _dueTimeString: formatMins(dto.dueDate)
-    }
-}
-
-export function transformPrebookListDTO(dto: IPrebookListModelDto, isUsCustomer: boolean): IPrebookListModel {
-    return {
-        ...dto,
-        booked: formatDateFromApi(dto.booked),
-        nextDueTime: dto.nextDueTime ? formatDateFromApi(dto.nextDueTime) : undefined,
-        _bookedStr: formatMins(dto.booked),
-        _nextDueTimeStr: dto.nextDueTime ? formatLongDateTime(dto.nextDueTime, isUsCustomer) : undefined,
     }
 }
 

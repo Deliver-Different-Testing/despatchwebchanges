@@ -3,7 +3,7 @@ import {EditAddressDialogService} from "../components/dialogs/edit-address-dialo
 import {IAddressViewModel, IDispatchJob} from "../interfaces/job.interface";
 import ToastrService from "./toastr.service";
 import JobSuffix from "../enums/job-suffix.enum";
-import {IPrebookListModel} from "../components/recurringJobs/recurringJobs.interface";
+import {IPrebookListModel} from "../react/interfaces";
 
 class JobAddStopService implements angular.IServiceProvider {
     static $inject = [

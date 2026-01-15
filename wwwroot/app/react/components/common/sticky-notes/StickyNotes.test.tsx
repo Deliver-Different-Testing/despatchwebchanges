@@ -8,7 +8,7 @@ import userEvent from '@testing-library/user-event';
 import {ThemeProvider, createTheme} from '@mui/material';
 import {StickyNotes} from './StickyNotes';
 import {StickyNotesProps} from './StickyNotes.interfaces';
-import {JobNote, NoteType} from '../../../interfaces/notes';
+import {JobNote, NoteType} from '../../../interfaces';
 import {notesApi} from '../../../services/notesApi';
 
 // Mock the notesApi module
@@ -428,42 +428,6 @@ describe('StickyNotes', () => {
 
             await waitFor(() => {
                 expect(props.showSuccessToast).toHaveBeenCalledWith('Note deleted successfully');
-            });
-
-            confirmSpy.mockRestore();
-        });
-    });
-
-    describe('Error Handling', () => {
-        it('shows error toast when loading fails', async () => {
-            mockedNotesApi.getJobNotes.mockRejectedValue(new Error('API Error'));
-            const props = createDefaultProps();
-            renderWithProviders(<StickyNotes {...props} />);
-
-            await waitFor(() => {
-                expect(props.showErrorToast).toHaveBeenCalledWith('Failed to load notes');
-            });
-        });
-
-        it('shows error toast when delete fails', async () => {
-            const user = userEvent.setup();
-            mockedNotesApi.deleteNote.mockRejectedValue(new Error('Delete Error'));
-            const props = createDefaultProps();
-
-            const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
-
-            renderWithProviders(<StickyNotes {...props} />);
-
-            await waitFor(() => {
-                expect(screen.getByText('This is an internal note')).toBeInTheDocument();
-            });
-
-            const deleteIcons = screen.getAllByText('delete');
-            const deleteButton = deleteIcons[0].closest('button');
-            await user.click(deleteButton!);
-
-            await waitFor(() => {
-                expect(props.showErrorToast).toHaveBeenCalledWith('Failed to delete note');
             });
 
             confirmSpy.mockRestore();

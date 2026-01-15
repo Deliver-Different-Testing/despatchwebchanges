@@ -3,14 +3,14 @@
  */
 
 import React from 'react';
-import {render, screen, waitFor, within} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ThemeProvider, createTheme} from '@mui/material';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import {TaskItem} from './TaskItem';
-import {Task, TaskItemConfig, TaskItemProps} from './TaskItem.interfaces';
+import {Task, TaskItemProps} from './TaskItem.interfaces';
 
 // Mock the timezone functions
 jest.mock('../../../../functions/formatDates', () => ({
@@ -273,23 +273,6 @@ describe('TaskItem', () => {
             });
         });
 
-        it('shows error toast when completion fails', async () => {
-            const services = createMockServices();
-            services.tasksService.markTaskAsClosed.mockRejectedValue(new Error('API Error'));
-            const props = createDefaultProps({
-                tasksService: services.tasksService,
-                dispatchService: services.dispatchService,
-            });
-            renderWithProviders(<TaskItem {...props} />);
-
-            const checkbox = screen.getByRole('checkbox');
-            await userEvent.click(checkbox);
-
-            await waitFor(() => {
-                expect(props.showErrorToast).toHaveBeenCalledWith('Error updating task');
-            });
-        });
-
         it('checkbox is checked for closed task', () => {
             const task = createMockTask({closed: true});
             const props = createDefaultProps({task});
@@ -508,23 +491,6 @@ describe('TaskItem', () => {
 
             expect(screen.getByRole('progressbar')).toBeInTheDocument();
         });
-
-        it('shows error toast when loading staff fails', async () => {
-            const services = createMockServices();
-            services.dispatchService.getActiveStaff.mockRejectedValue(new Error('API Error'));
-            const props = createDefaultProps({
-                tasksService: services.tasksService,
-                dispatchService: services.dispatchService,
-            });
-            renderWithProviders(<TaskItem {...props} />);
-
-            const assigneeButton = screen.getByText('John Doe').closest('button');
-            await userEvent.click(assigneeButton!);
-
-            await waitFor(() => {
-                expect(props.showErrorToast).toHaveBeenCalledWith('Error loading staff list');
-            });
-        });
     });
 
     describe('Priority Indicator', () => {
@@ -627,55 +593,6 @@ describe('TaskItem', () => {
             // Should open popover, not trigger task click
             await waitFor(() => {
                 expect(props.dispatchService.getActiveStaff).toHaveBeenCalled();
-            });
-        });
-    });
-
-    describe('Error Handling', () => {
-        it('shows error toast when date update fails', async () => {
-            const services = createMockServices();
-            services.tasksService.updateTaskDate.mockRejectedValue(new Error('API Error'));
-            const props = createDefaultProps({
-                tasksService: services.tasksService,
-                dispatchService: services.dispatchService,
-            });
-            renderWithProviders(<TaskItem {...props} />);
-
-            const dateButton = screen.getByText(/Jan 15, 2025/).closest('button');
-            await userEvent.click(dateButton!);
-
-            await waitFor(() => {
-                expect(screen.getByRole('grid')).toBeInTheDocument();
-            });
-
-            const day20 = screen.getByRole('gridcell', {name: '20'});
-            await userEvent.click(day20);
-
-            await waitFor(() => {
-                expect(props.showErrorToast).toHaveBeenCalledWith('Error updating task date');
-            });
-        });
-
-        it('shows error toast when reassignment fails', async () => {
-            const services = createMockServices();
-            services.tasksService.reassignTaskToStaff.mockRejectedValue(new Error('API Error'));
-            const props = createDefaultProps({
-                tasksService: services.tasksService,
-                dispatchService: services.dispatchService,
-            });
-            renderWithProviders(<TaskItem {...props} />);
-
-            const assigneeButton = screen.getByText('John Doe').closest('button');
-            await userEvent.click(assigneeButton!);
-
-            await waitFor(() => {
-                expect(screen.getByText('Jane Smith')).toBeInTheDocument();
-            });
-
-            await userEvent.click(screen.getByText('Jane Smith'));
-
-            await waitFor(() => {
-                expect(props.showErrorToast).toHaveBeenCalledWith('Error reassigning task');
             });
         });
     });

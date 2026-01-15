@@ -40,6 +40,13 @@ public class StringToBooleanConverter : JsonConverter<bool?>
             case JsonTokenType.Number:
                 var numberValue = reader.GetInt32();
                 return numberValue != 0;
+            case JsonTokenType.None:
+            case JsonTokenType.StartObject:
+            case JsonTokenType.EndObject:
+            case JsonTokenType.StartArray:
+            case JsonTokenType.EndArray:
+            case JsonTokenType.PropertyName:
+            case JsonTokenType.Comment:
             default:
                 return null;
         }

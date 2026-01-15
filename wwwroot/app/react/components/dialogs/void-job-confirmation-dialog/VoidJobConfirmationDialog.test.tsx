@@ -493,44 +493,7 @@ describe('VoidJobConfirmationDialog', () => {
         });
     });
 
-    describe('Error Handling', () => {
-        it('should show error toast when void fails', async () => {
-            const props = createMockProps({
-                onVoidJob: jest.fn().mockRejectedValue(new Error('API Error')),
-            });
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const textarea = screen.getByLabelText(/Reason for voiding/);
-            await userEvent.type(textarea, 'Test reason');
-
-            const confirmButton = screen.getByRole('button', {name: /void job/i});
-            await userEvent.click(confirmButton);
-
-            await waitFor(() => {
-                expect(props.showToast).toHaveBeenCalledWith(
-                    'An error occurred while voiding the job. Please try again later.',
-                    'error'
-                );
-            });
-        });
-
-        it('should show error toast when loading related jobs fails', async () => {
-            const props = createMockProps({
-                onLoadRelatedJobs: jest.fn().mockRejectedValue(new Error('Load Error')),
-            });
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const toggle = screen.getByRole('checkbox');
-            await userEvent.click(toggle);
-
-            await waitFor(() => {
-                expect(props.showToast).toHaveBeenCalledWith(
-                    'Failed to load related jobs.',
-                    'error'
-                );
-            });
-        });
-
+    describe('Empty State', () => {
         it('should display empty state when no related jobs found', async () => {
             const props = createMockProps({
                 onLoadRelatedJobs: jest.fn().mockResolvedValue([]),

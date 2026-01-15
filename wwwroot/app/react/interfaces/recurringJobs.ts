@@ -166,3 +166,11 @@ export interface RecurringJobsPageProps {
     onJobSelect?: (jobId: number | null) => void;
     setRefreshCallback?: (callback: () => void) => void;
 }
+
+/**
+ * Legacy type aliases for backward compatibility with AngularJS services.
+ * These map to the React versions of the interfaces.
+ */
+export type IPrebookListModel = PrebookListModel;
+export type IPrebookListModelDto = PrebookListModelDto;
+export type IRecurringJobQuery = RecurringJobQuery;

@@ -15,7 +15,6 @@ type EntryPointName =
     | 'jobSearch'
     | 'megaMap'
     | 'taskDashboard'
-    | 'recurringJobs'
     | 'driverManagement'
     | 'courierMap'
     | 'dateRangeDialogReact'
@@ -48,7 +47,6 @@ const entryPoints: EntryPoints = {
     jobSearch: path.join(rootDir, "wwwroot/app/components/jobSearch/jobSearch.module.ts"),
     megaMap: path.join(rootDir, "wwwroot/app/components/mega-map/mega-map.module.ts"),
     taskDashboard: path.join(rootDir, "wwwroot/app/components/task-dashboard/task-dashboard.module.ts"),
-    recurringJobs: path.join(rootDir, "wwwroot/app/components/recurringJobs/recurringJobs.module.ts"),
     driverManagement: path.join(rootDir, "wwwroot/app/components/driver-management-dashboard/driver-management.module.ts"),
     courierMap: path.join(rootDir, "wwwroot/app/components/courier-map/courier-map.module.ts"),
     dateRangeDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/date-range-dialog/date-range-dialog-react.module.tsx"),

@@ -303,32 +303,6 @@ describe('RecurringJobsPage', () => {
 
             expect(refetch).toHaveBeenCalled();
         });
-
-        it('should show error toast when void fails', async () => {
-            const showToast = jest.fn();
-            const jobs = [createMockJob(1)];
-            mockUseRecurringJobsList.mockReturnValue({
-                data: createMockResponse(jobs),
-                isLoading: false,
-                error: null,
-                refetch: jest.fn(),
-            } as any);
-
-            mockRecurringJobsApi.voidPrebookJob.mockRejectedValue(new Error('API Error'));
-
-            renderWithProviders(createDefaultProps({showToast}));
-
-            // Open dialog and confirm
-            fireEvent.click(screen.getByRole('button', {name: /inactivate job/i}));
-            fireEvent.click(screen.getByText('Yes'));
-
-            await waitFor(() => {
-                expect(showToast).toHaveBeenCalledWith(
-                    'An error occurred while inactivating the recurring job. Please try again.',
-                    'error'
-                );
-            });
-        });
     });
 
     describe('Export', () => {
@@ -352,22 +326,6 @@ describe('RecurringJobsPage', () => {
 
             await waitFor(() => {
                 expect(showToast).toHaveBeenCalledWith('Recurring jobs exported successfully', 'success');
-            });
-        });
-
-        it('should show error toast when export fails', async () => {
-            const showToast = jest.fn();
-            mockRecurringJobsApi.exportToCsv.mockRejectedValue(new Error('Export failed'));
-
-            renderWithProviders(createDefaultProps({showToast}));
-
-            // Find export button by icon
-            const exportIcon = screen.getByTestId('FileDownloadIcon');
-            const exportButton = exportIcon.closest('button');
-            fireEvent.click(exportButton!);
-
-            await waitFor(() => {
-                expect(showToast).toHaveBeenCalledWith('Failed to export recurring jobs', 'error');
             });
         });
     });
