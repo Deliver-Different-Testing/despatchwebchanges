@@ -35,12 +35,16 @@ window.scrollTo = jest.fn();
 // These are error messages that are expected during error handling tests
 const suppressedErrorPatterns = [
     'Warning: ReactDOM.render is no longer supported',
+    'Warning: An update to',
+    'MUI: You are providing a disabled',
     'Error loading related jobs',
     'Error loading notes',
     'Error deleting note',
     'Error updating task',
+    'Error updating task date',
     'Error loading staff',
     'Error reassigning task',
+    'Error inactivating recurring job',
     'Error loading delivery journey',
     'Error loading event types',
     'Export failed',
@@ -48,9 +52,10 @@ const suppressedErrorPatterns = [
 
 const originalError = console.error;
 console.error = (...args) => {
+    const message = args[0] instanceof Error ? args[0].message : String(args[0]);
     if (
-        typeof args[0] === 'string' &&
-        suppressedErrorPatterns.some(pattern => args[0].includes(pattern))
+        message &&
+        suppressedErrorPatterns.some(pattern => message.includes(pattern))
     ) {
         return;
     }
