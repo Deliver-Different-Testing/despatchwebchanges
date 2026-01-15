@@ -6,7 +6,7 @@ include:
 # Test jobs - run on staging and master branches (before deploy)
 test:backend:
   stage: .pre
-  image: mcr.microsoft.com/dotnet/sdk:8.0
+  image: mcr.microsoft.com/dotnet/sdk:10.0
   retry:
     max: 2
     when: runner_system_failure
