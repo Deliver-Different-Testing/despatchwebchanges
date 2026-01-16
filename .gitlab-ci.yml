@@ -28,6 +28,10 @@ test:frontend:
     max: 2
     when: runner_system_failure
   allow_failure: false
+  variables:
+    KUBERNETES_MEMORY_REQUEST: "2.5Gi"
+    KUBERNETES_MEMORY_LIMIT: "3Gi"
+    KUBERNETES_CPU_REQUEST: "1"
   script:
     - npm ci
     - npm test -- --maxWorkers=2
