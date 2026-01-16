@@ -1,4 +1,5 @@
 using DespatchWeb.Enums;
+using DespatchWeb.Extensions;
 using FluentAssertions;
 
 namespace DespatchWeb.Tests.Enums;

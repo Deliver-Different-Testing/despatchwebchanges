@@ -5,28 +5,25 @@
  * Supports: All Time, Time Range (minutes), and Custom Date Range.
  */
 
-import React, {useState, useEffect, useCallback, useRef} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
-    IconButton,
-    Menu,
-    Box,
-    Typography,
-    RadioGroup,
-    FormControlLabel,
-    Radio,
-    Button,
-    Select,
-    MenuItem,
-    FormControl,
-    InputLabel,
-    Divider,
-    Tooltip,
     alpha,
+    Box,
+    Button,
+    Divider,
+    FormControl,
+    FormControlLabel,
+    IconButton,
+    InputLabel,
+    Menu,
+    MenuItem,
+    Radio,
+    RadioGroup,
+    Select,
+    Tooltip,
+    Typography,
 } from '@mui/material';
-import {
-    CalendarToday as CalendarIcon,
-    DateRange as DateRangeIcon,
-} from '@mui/icons-material';
+import {CalendarToday as CalendarIcon, DateRange as DateRangeIcon,} from '@mui/icons-material';
 import {DatePicker} from '@mui/x-date-pickers/DatePicker';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
@@ -122,12 +119,12 @@ function setDateFilterDefaults(ianaTimeZone: string): DateFilterData {
 }
 
 export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
-    dateFilterData,
-    appPage = 'default',
-    timeZone = 'New Zealand Standard Time',
-    onRefreshData,
-    onShowToast,
-}) => {
+                                                                  dateFilterData,
+                                                                  appPage = 'default',
+                                                                  timeZone = 'New Zealand Standard Time',
+                                                                  onRefreshData,
+                                                                  onShowToast,
+                                                              }) => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
 
@@ -322,7 +319,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                         },
                     }}
                 >
-                    <CalendarIcon sx={{fontSize: 22}} />
+                    <CalendarIcon sx={{fontSize: 22}}/>
                 </IconButton>
             </Tooltip>
 
@@ -332,12 +329,14 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                 onClose={handleClose}
                 anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
                 transformOrigin={{vertical: 'top', horizontal: 'right'}}
-                PaperProps={{
-                    elevation: 3,
-                    sx: {
-                        width: 320,
-                        mt: 0.5,
-                    },
+                slotProps={{
+                    paper: {
+                        elevation: 3,
+                        sx: {
+                            width: 320,
+                            mt: 0.5,
+                        },
+                    }
                 }}
             >
                 {/* Header */}
@@ -353,7 +352,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                         borderColor: 'divider',
                     }}
                 >
-                    <DateRangeIcon color="primary" sx={{fontSize: 20}} />
+                    <DateRangeIcon color="primary" sx={{fontSize: 20}}/>
                     <Typography variant="subtitle2" fontWeight={600}>
                         Date Filter
                     </Typography>
@@ -377,17 +376,17 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                     >
                         <FormControlLabel
                             value="all_time"
-                            control={<Radio size="small" />}
+                            control={<Radio size="small"/>}
                             label="All Time"
                         />
                         <FormControlLabel
                             value="custom_minutes"
-                            control={<Radio size="small" />}
+                            control={<Radio size="small"/>}
                             label="Time Range"
                         />
                         <FormControlLabel
                             value="custom_date"
-                            control={<Radio size="small" />}
+                            control={<Radio size="small"/>}
                             label="Custom Dates"
                         />
                     </RadioGroup>
@@ -455,7 +454,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                     )}
                 </Box>
 
-                <Divider />
+                <Divider/>
 
                 {/* Actions */}
                 <Box

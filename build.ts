@@ -24,6 +24,7 @@ type EntryPointName =
     | 'voidJobConfirmationDialogReact'
     | 'editAfterhoursDialogReact'
     | 'editAddressDialogReact'
+    | 'flightAgentConfirmationDialogReact'
     | 'appShellReact'
     | 'errorPageReact'
     | 'recurringJobsReact';
@@ -56,6 +57,7 @@ const entryPoints: EntryPoints = {
     voidJobConfirmationDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog-react.module.tsx"),
     editAfterhoursDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/edit-afterhours-dialog/edit-afterhours-dialog-react.module.tsx"),
     editAddressDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/edit-address-dialog/edit-address-dialog-react.module.tsx"),
+    flightAgentConfirmationDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/flight-agent-confirmation-dialog/flight-agent-confirmation-dialog-react.module.tsx"),
     appShellReact: path.join(rootDir, "wwwroot/app/react/components/common/app-shell/app-shell-react.module.tsx"),
     errorPageReact: path.join(rootDir, "wwwroot/app/react/pages/error-page/error-page-react.module.tsx"),
     recurringJobsReact: path.join(rootDir, "wwwroot/app/react/pages/recurring-jobs/recurring-jobs-react.module.tsx"),

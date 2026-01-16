@@ -11,10 +11,7 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import { NoData } from './NoData';
 import type { NoDataProps } from './NoData';
 import { getTheme } from '../../../theme/muiTheme';
-
-interface IAppConfig {
-    US_Customer: boolean;
-}
+import {IAppConfig} from "../../../../interfaces/app-config.interface";
 
 /**
  * AngularJS Component Controller for React NoData

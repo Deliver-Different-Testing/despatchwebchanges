@@ -7,30 +7,30 @@
 
 import React, {useState} from 'react';
 import {
-    IconButton,
+    alpha,
     Badge,
-    Tooltip,
-    Menu,
-    MenuItem,
+    Box,
+    Checkbox,
+    CircularProgress,
+    Divider,
+    IconButton,
     ListItemIcon,
     ListItemText,
-    Divider,
-    Checkbox,
-    Box,
+    Menu,
+    MenuItem,
+    Tooltip,
     Typography,
-    CircularProgress,
-    alpha,
 } from '@mui/material';
 import {
-    Sms as SmsIcon,
-    ViewList as ViewListIcon,
+    ClearAll as ClearAllIcon,
+    Delete as DeleteIcon,
     GridView as GridViewIcon,
-    Settings as SettingsIcon,
     Refresh as RefreshIcon,
     Save as SaveIcon,
-    Delete as DeleteIcon,
+    Settings as SettingsIcon,
+    Sms as SmsIcon,
     Tune as TuneIcon,
-    ClearAll as ClearAllIcon,
+    ViewList as ViewListIcon,
     VisibilityOff as VisibilityOffIcon,
 } from '@mui/icons-material';
 
@@ -70,7 +70,7 @@ export const MessagesButton: React.FC<MessagesButtonProps> = ({unreadCount, onCl
                         },
                     }}
                 >
-                    <SmsIcon sx={{fontSize: 22}} />
+                    <SmsIcon sx={{fontSize: 22}}/>
                 </Badge>
             </IconButton>
         </Tooltip>
@@ -94,9 +94,9 @@ export const RefreshButton: React.FC<RefreshButtonProps> = ({onClick, loading = 
                     sx={toolbarIconButtonSx}
                 >
                     {loading ? (
-                        <CircularProgress size={22} color="inherit" thickness={3} />
+                        <CircularProgress size={22} color="inherit" thickness={3}/>
                     ) : (
-                        <RefreshIcon sx={{fontSize: 22}} />
+                        <RefreshIcon sx={{fontSize: 22}}/>
                     )}
                 </IconButton>
             </span>
@@ -113,7 +113,7 @@ export const SettingsButton: React.FC<SettingsButtonProps> = ({onClick}) => {
     return (
         <Tooltip title="Settings">
             <IconButton color="inherit" onClick={onClick} sx={toolbarIconButtonSx}>
-                <SettingsIcon sx={{fontSize: 22}} />
+                <SettingsIcon sx={{fontSize: 22}}/>
             </IconButton>
         </Tooltip>
     );
@@ -134,11 +134,11 @@ export interface ViewsMenuProps {
 }
 
 export const ViewsMenu: React.FC<ViewsMenuProps> = ({
-    views,
-    loading = false,
-    onToggleView,
-    onClearAll,
-}) => {
+                                                        views,
+                                                        loading = false,
+                                                        onToggleView,
+                                                        onClearAll,
+                                                    }) => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
 
@@ -158,7 +158,7 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                 <span>
                     <IconButton color="inherit" onClick={handleClick} sx={toolbarIconButtonSx}>
                         {loading ? (
-                            <CircularProgress size={22} color="inherit" thickness={3} />
+                            <CircularProgress size={22} color="inherit" thickness={3}/>
                         ) : (
                             <Badge
                                 badgeContent={selectedCount > 0 ? selectedCount : null}
@@ -173,7 +173,7 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                                     },
                                 }}
                             >
-                                <ViewListIcon sx={{fontSize: 22}} />
+                                <ViewListIcon sx={{fontSize: 22}}/>
                             </Badge>
                         )}
                     </IconButton>
@@ -185,27 +185,31 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                 onClose={handleClose}
                 anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
                 transformOrigin={{vertical: 'top', horizontal: 'right'}}
-                PaperProps={{
-                    elevation: 3,
-                    sx: {minWidth: 220, maxHeight: 400, mt: 0.5},
+                slotProps={{
+                    paper: {
+                        elevation: 3,
+                        sx: {minWidth: 220, maxHeight: 400, mt: 0.5},
+                    }
                 }}
             >
                 {(!views || views.length === 0) ? (
                     <Box sx={{p: 3, textAlign: 'center'}}>
-                        <VisibilityOffIcon sx={{fontSize: 40, color: 'text.disabled', mb: 1}} />
+                        <VisibilityOffIcon sx={{fontSize: 40, color: 'text.disabled', mb: 1}}/>
                         <Typography variant="body2" color="text.secondary">
                             No views available
                         </Typography>
                     </Box>
                 ) : (
                     <>
-                        <MenuItem onClick={() => { onClearAll(); }}>
+                        <MenuItem onClick={() => {
+                            onClearAll();
+                        }}>
                             <ListItemIcon>
-                                <ClearAllIcon fontSize="small" />
+                                <ClearAllIcon fontSize="small"/>
                             </ListItemIcon>
                             <ListItemText>Clear Selection</ListItemText>
                         </MenuItem>
-                        <Divider sx={{my: 0.5}} />
+                        <Divider sx={{my: 0.5}}/>
                         {views.map((view) => (
                             <MenuItem
                                 key={view.id}
@@ -248,12 +252,12 @@ export interface LayoutsMenuProps {
 }
 
 export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
-    layouts,
-    currentLayoutName,
-    onSaveLayout,
-    onLoadLayout,
-    onDeleteLayout,
-}) => {
+                                                            layouts,
+                                                            currentLayoutName,
+                                                            onSaveLayout,
+                                                            onLoadLayout,
+                                                            onDeleteLayout,
+                                                        }) => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
 
@@ -284,7 +288,7 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
         <>
             <Tooltip title="Layouts">
                 <IconButton color="inherit" onClick={handleClick} sx={toolbarIconButtonSx}>
-                    <GridViewIcon sx={{fontSize: 22}} />
+                    <GridViewIcon sx={{fontSize: 22}}/>
                 </IconButton>
             </Tooltip>
             <Menu
@@ -293,18 +297,20 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                 onClose={handleClose}
                 anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
                 transformOrigin={{vertical: 'top', horizontal: 'right'}}
-                PaperProps={{
-                    elevation: 3,
-                    sx: {minWidth: 200, mt: 0.5},
+                slotProps={{
+                    paper: {
+                        elevation: 3,
+                        sx: {minWidth: 200, mt: 0.5},
+                    }
                 }}
             >
                 <MenuItem onClick={handleSave}>
                     <ListItemIcon>
-                        <SaveIcon fontSize="small" />
+                        <SaveIcon fontSize="small"/>
                     </ListItemIcon>
                     <ListItemText>Add Layout</ListItemText>
                 </MenuItem>
-                {layouts.length > 0 && <Divider sx={{my: 0.5}} />}
+                {layouts.length > 0 && <Divider sx={{my: 0.5}}/>}
                 {layouts.map((layout, index) => {
                     const isActive = layout.name === currentLayoutName;
                     const isDefault = layout.name === 'Default';
@@ -318,7 +324,7 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                         >
                             <ListItemIcon>
                                 {isDefault ? (
-                                    <TuneIcon fontSize="small" color={isActive ? 'primary' : 'inherit'} />
+                                    <TuneIcon fontSize="small" color={isActive ? 'primary' : 'inherit'}/>
                                 ) : (
                                     <IconButton
                                         size="small"
@@ -330,7 +336,7 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                                             },
                                         }}
                                     >
-                                        <DeleteIcon fontSize="small" />
+                                        <DeleteIcon fontSize="small"/>
                                     </IconButton>
                                 )}
                             </ListItemIcon>
@@ -360,11 +366,11 @@ export interface ToolbarIconButtonProps {
 }
 
 export const ToolbarIconButton: React.FC<ToolbarIconButtonProps> = ({
-    icon,
-    tooltip,
-    onClick,
-    disabled = false,
-}) => {
+                                                                        icon,
+                                                                        tooltip,
+                                                                        onClick,
+                                                                        disabled = false,
+                                                                    }) => {
     return (
         <Tooltip title={tooltip}>
             <span>

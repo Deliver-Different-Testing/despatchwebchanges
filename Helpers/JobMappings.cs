@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Extensions;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.Response;

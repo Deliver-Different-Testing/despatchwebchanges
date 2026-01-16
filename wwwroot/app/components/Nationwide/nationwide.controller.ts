@@ -2256,9 +2256,18 @@ class NationwideControl extends BaseController {
                 const savedDateFilter = localStorage.getItem(this.DateFilterKey);
                 if (savedDateFilter) {
                     const parsedDateFilter = JSON.parse(savedDateFilter);
+                    const startDate = dayjs(parsedDateFilter.startDate);
+                    let endDate = dayjs(parsedDateFilter.endDate);
+
+                    // If "all time" is selected (startDate is epoch), always recalculate
+                    // endDate to be 24 hours from now to include future jobs
+                    if (startDate.valueOf() === 0) {
+                        endDate = dayjs().tz(this.timeZone).add(24, 'hours');
+                    }
+
                     this.dateFilterData = {
-                        startDate: dayjs(parsedDateFilter.startDate),
-                        endDate: dayjs(parsedDateFilter.endDate),
+                        startDate,
+                        endDate,
                         useTime: parsedDateFilter.useTime ?? false
                     };
                 }
