@@ -30,7 +30,7 @@ test:frontend:
   allow_failure: false
   script:
     - npm ci
-    - npm test
+    - npm test -- --maxWorkers=2
   rules:
     - if: $CI_COMMIT_BRANCH == "staging"
     - if: $CI_COMMIT_BRANCH == "master"
