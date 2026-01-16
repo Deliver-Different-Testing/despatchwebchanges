@@ -19,7 +19,7 @@ import {
 } from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.interfaces";
 import IFlightCargoProcessing, {
     IFlightCargoProcessingDto
-} from "../dialogs/flight-agent-conformation-dialog/interfaces/IFlightCargoProcessing";
+} from "../../interfaces/flight-cargo-processing.interface";
 import {formatDateForApiWithTzs} from "../../functions/formatDates";
 import {Dayjs} from "dayjs";
 import {transformCargoHoursDTO, transformDispatchJobDTO, transformFlightDTO} from "../../functions/dtoMappings";

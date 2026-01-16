@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Extensions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -1395,12 +1396,13 @@ public class NationwideJobRepository(
         return string.Join(",", eventStrings);
     }
 
-    public async Task<FlightCargoProcessingModel> CalculateCargoReadyTimeAsync(
+    public async Task<FlightCargoProcessingModel?> CalculateCargoReadyTimeAsync(
         int jobId,
         string carrierFsCode,
         DateTime flightArrivalTime)
     {
         var now = _infoService.GetCurrentTenantTime();
+
         var cargoModel = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Select(j => new FlightCargoProcessingModel
@@ -1409,14 +1411,26 @@ public class NationwideJobRepository(
                 DeliverByTime = j.DeliverByTime,
                 ProcessingTimeMins = j.ToAirport.ProcessingTime ?? 0,
                 CargoOpeningTime = j.ToAirport.CargoFacilities
-                                       .FirstOrDefault(c => c.Carrier.CarrierCode == carrierFsCode).OpeningTime ??
-                                   now.ResetTimeToStartOfDay(),
+                    .Where(c => c.Carrier.CarrierCode == carrierFsCode)
+                    .Select(c => c.OpeningTime)
+                    .FirstOrDefault() ?? DateTime.MinValue,
                 CargoClosingTime = j.ToAirport.CargoFacilities
-                                       .FirstOrDefault(c => c.Carrier.CarrierCode == carrierFsCode).ClosingTime ??
-                                   now.ResetTimeToEndOfDay()
+                    .Where(c => c.Carrier.CarrierCode == carrierFsCode)
+                    .Select(c => c.ClosingTime)
+                    .FirstOrDefault() ?? DateTime.MinValue
             })
             .AsNoTracking()
             .FirstOrDefaultAsync();
+
+        if (cargoModel == null)
+            return null;
+
+        // Apply default times if no cargo facility was found for this carrier
+        if (cargoModel.CargoOpeningTime == DateTime.MinValue)
+            cargoModel.CargoOpeningTime = now.ResetTimeToStartOfDay();
+
+        if (cargoModel.CargoClosingTime == DateTime.MinValue)
+            cargoModel.CargoClosingTime = now.ResetTimeToEndOfDay();
 
         return cargoModel;
     }

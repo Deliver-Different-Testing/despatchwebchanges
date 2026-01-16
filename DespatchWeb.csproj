@@ -341,10 +341,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\dashboard-settings-dialog\interfaces\IDashboardSettingsDialogResult.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-afterhours-dialog\edit-afterhours-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\flight-agent-conformation-dialog.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\interfaces\ICargoStatus.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\interfaces\IFlightAgentConfirmationDialogLocals.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\interfaces\IFlightCargoProcessing.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.service.ts" />

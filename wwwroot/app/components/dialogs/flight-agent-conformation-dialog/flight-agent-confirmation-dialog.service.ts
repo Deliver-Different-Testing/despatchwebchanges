@@ -1,87 +1,205 @@
 import {IFlightViewModel} from "../../Nationwide/nationwide.interfaces";
 import {IDispatchJob, ISuggestion} from "../../../interfaces/job.interface";
-import FlightAgentConformationDialogController from "./flight-agent-conformation-dialog.controller";
 import {FlightAgentConfirmationDialogResult} from "../../../interfaces/dialog-result.interfaces";
 import countSubJobs from "../../../functions/countSubJobs";
-import IFlightAgentConfirmationDialogLocals from "./interfaces/IFlightAgentConfirmationDialogLocals";
+import {Dayjs} from "dayjs";
+
+// Type for the flight data passed to React dialog (with Dayjs dates)
+interface FlightViewModelForReact {
+    flightNumber: string;
+    departureTime?: Dayjs;
+    arrivalTime?: Dayjs;
+    departureTimeZone?: string;
+    arrivalTimeZone?: string;
+    flightSegments: Array<{
+        segmentOrder: number;
+        departureAirportFsCode: string;
+        departureAirportName: string;
+        departureAirportCity: string;
+        departureAirportId?: number;
+        departureAirportTimeZone: string;
+        arrivalAirportFsCode: string;
+        arrivalAirportName: string;
+        arrivalAirportCity: string;
+        arrivalAirportId?: number;
+        arrivalAirportTimeZone: string;
+        departureTime: Dayjs;
+        arrivalTime: Dayjs;
+        carrierFsCode: string;
+        flightNumber: string;
+        airlineName: string;
+        departureTerminal?: string;
+        arrivalTerminal?: string;
+    }>;
+}
+
+interface FlightAgentDialogResultFromReact {
+    shouldAssign: boolean;
+    awb?: string;
+    shouldAssignToStopJobs: boolean;
+    packageReadyTime?: Dayjs;
+    packageDeliverByTime?: Dayjs;
+    packageDeliveryNotes?: string;
+}
+
+interface ToastService {
+    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+}
+
+// Type declaration for the React dialog on window
+declare global {
+    interface Window {
+        ReactFlightAgentConfirmationDialog?: {
+            openFlightDialog: (options: {
+                jobId: number;
+                jobNumber: string;
+                flight: FlightViewModelForReact;
+                existingAwb?: string;
+                dgClass?: number;
+                toastService?: ToastService;
+            }) => Promise<FlightAgentDialogResultFromReact>;
+            openAgentDialog: (options: {
+                jobId: number;
+                jobNumber: string;
+                agent: ISuggestion;
+                existingAwb?: string;
+                dgClass?: number;
+                stopJobCount?: number;
+                toastService?: ToastService;
+            }) => Promise<FlightAgentDialogResultFromReact>;
+        };
+    }
+}
 
 class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
     static $inject = [
-        '$mdDialog',
-        '$document'
+        '$ocLazyLoad',
+        '$http',
     ];
 
-    dialogResult: FlightAgentConfirmationDialogResult;
-
     constructor(
-        private $mdDialog: angular.material.IDialogService,
-        private $document: angular.IDocumentService,
+        private $ocLazyLoad: oc.ILazyLoad,
+        private $http: angular.IHttpService,
     ) {
         console.debug('FlightAgentConfirmationDialogService: Service instantiated');
-
-        this.dialogResult = {
-            shouldAssign: false
-        }
     }
 
     $get() {
         return this;
     }
 
-    private async showConfirmationDialog($event: MouseEvent, dialogLocals: IFlightAgentConfirmationDialogLocals) {
-        const dialogConfig: angular.material.IDialogOptions = {
-            controller: FlightAgentConformationDialogController,
-            controllerAs: 'ctrl',
-            template: require("./flight-agent-confirmation-dialog.template.html"),
-            parent: this.$document.parent(),
-            targetEvent: $event,
-            clickOutsideToClose: false,
-            locals: dialogLocals,
-            bindToController: true,
-            fullscreen: true,
-        };
+    /**
+     * Load the React flight agent confirmation dialog module on demand
+     */
+    private async loadReactDialog(): Promise<void> {
+        // Check if already loaded
+        if (window.ReactFlightAgentConfirmationDialog) {
+            return;
+        }
 
         try {
-            this.dialogResult = await this.$mdDialog.show(dialogConfig);
-            this.dialogResult.shouldAssign = true;
-            return this.dialogResult;
-        } catch (error) {
-            if (error) {
-                console.debug('Dialog was cancelled or encountered an error:', error);
-            } else {
-                console.debug('Dialog was dismissed by user');
+            // Load the manifest to get hashed filenames
+            const manifestResponse = await this.$http.get<Record<string, string>>('dist/manifest.json');
+            const manifest = manifestResponse.data;
+
+            const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
+
+            // Load vendor-react first (if not already loaded)
+            if (!(window as any).React) {
+                await this.$ocLazyLoad.load(getAssetPath('vendor-react.js'));
             }
 
-            this.dialogResult.shouldAssign = false;
-            this.dialogResult.awb = undefined;
-            return this.dialogResult;
+            // Load the flight agent confirmation dialog React module
+            await this.$ocLazyLoad.load({
+                name: 'uDispatch.flightAgentConfirmationDialogReact',
+                files: [getAssetPath('flightAgentConfirmationDialogReact.js')]
+            });
+        } catch (error) {
+            console.error('[FlightAgentConfirmationDialogService] Failed to load React dialog:', error);
+            throw error;
         }
     }
 
-    async flightConfirmationDialog($event: MouseEvent, job: IDispatchJob, flight: IFlightViewModel) {
-        return this.showConfirmationDialog($event, {
-            jobId: job.id,
-            jobNumber: job.jobNo,
-            flight: flight,
-            agent: undefined,
-            existingAwb: job.conNote,
-            dgClass: job.dgClass,
-            stopJobCount: undefined
-        });
+    async flightConfirmationDialog($event: MouseEvent, job: IDispatchJob, flight: IFlightViewModel): Promise<FlightAgentConfirmationDialogResult> {
+        console.debug('FlightAgentConfirmationDialogService: flightConfirmationDialog called');
+
+        try {
+            // Load the React dialog module on demand
+            await this.loadReactDialog();
+
+            if (!window.ReactFlightAgentConfirmationDialog) {
+                throw new Error('React flight agent confirmation dialog not loaded');
+            }
+
+            // Open the React dialog
+            const result = await window.ReactFlightAgentConfirmationDialog.openFlightDialog({
+                jobId: job.id,
+                jobNumber: job.jobNo,
+                flight: flight as unknown as FlightViewModelForReact,
+                existingAwb: job.conNote,
+                dgClass: job.dgClass,
+            });
+
+            console.debug('FlightAgentConfirmationDialogService: Dialog closed with result:', result);
+
+            // Convert result to expected format
+            return {
+                shouldAssign: result.shouldAssign,
+                awb: result.awb,
+                shouldAssignToStopJobs: result.shouldAssignToStopJobs,
+                packageReadyTime: result.packageReadyTime,
+                packageDeliverByTime: result.packageDeliverByTime,
+                packageDeliveryNotes: result.packageDeliveryNotes,
+            };
+        } catch (error) {
+            console.error('FlightAgentConfirmationDialogService: Error in flightConfirmationDialog', error);
+            return {
+                shouldAssign: false,
+                awb: undefined,
+            };
+        }
     }
 
-    async agentConfirmationDialog($event: MouseEvent, job: IDispatchJob, agent: ISuggestion) {
-      const stopJobCount = job.relatedJobs ? countSubJobs(job.jobNo, job.relatedJobs) : 0;
+    async agentConfirmationDialog($event: MouseEvent, job: IDispatchJob, agent: ISuggestion): Promise<FlightAgentConfirmationDialogResult> {
+        console.debug('FlightAgentConfirmationDialogService: agentConfirmationDialog called');
+        const stopJobCount = job.relatedJobs ? countSubJobs(job.jobNo, job.relatedJobs) : 0;
 
-        return this.showConfirmationDialog($event, {
-            jobId: job.id,
-            jobNumber: job.jobNo,
-            flight: undefined,
-            agent: agent,
-            existingAwb: job.conNote,
-            dgClass: job.dgClass,
-            stopJobCount
-        });
+        try {
+            // Load the React dialog module on demand
+            await this.loadReactDialog();
+
+            if (!window.ReactFlightAgentConfirmationDialog) {
+                throw new Error('React flight agent confirmation dialog not loaded');
+            }
+
+            // Open the React dialog
+            const result = await window.ReactFlightAgentConfirmationDialog.openAgentDialog({
+                jobId: job.id,
+                jobNumber: job.jobNo,
+                agent: agent,
+                existingAwb: job.conNote,
+                dgClass: job.dgClass,
+                stopJobCount,
+            });
+
+            console.debug('FlightAgentConfirmationDialogService: Dialog closed with result:', result);
+
+            // Convert result to expected format
+            return {
+                shouldAssign: result.shouldAssign,
+                awb: result.awb,
+                shouldAssignToStopJobs: result.shouldAssignToStopJobs,
+                packageReadyTime: result.packageReadyTime,
+                packageDeliverByTime: result.packageDeliverByTime,
+                packageDeliveryNotes: result.packageDeliveryNotes,
+            };
+        } catch (error) {
+            console.error('FlightAgentConfirmationDialogService: Error in agentConfirmationDialog', error);
+            return {
+                shouldAssign: false,
+                awb: undefined,
+            };
+        }
     }
 }
 

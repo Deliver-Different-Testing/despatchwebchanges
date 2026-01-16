@@ -4,7 +4,7 @@
  * Type definitions for the React StickyNotes component.
  */
 
-import {JobNote} from '../../../interfaces/notes';
+import {JobNote} from '../../../interfaces';
 
 export interface NoteManagementDialogServiceInterface {
     openNoteDialog(event: MouseEvent, model: JobNote | null): Promise<void>;

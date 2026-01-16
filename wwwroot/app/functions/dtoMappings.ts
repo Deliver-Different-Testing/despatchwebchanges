@@ -2,7 +2,7 @@
 import dayjs from "dayjs";
 import IFlightCargoProcessing, {
     IFlightCargoProcessingDto
-} from "../components/dialogs/flight-agent-conformation-dialog/interfaces/IFlightCargoProcessing";
+} from "../interfaces/flight-cargo-processing.interface";
 import {
     IDispatchJob,
     IDispatchJobDto,

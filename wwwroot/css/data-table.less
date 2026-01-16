@@ -1,0 +1,626 @@
+﻿@import "variables";
+
+// Data Table Component Styles
+// Following Material Design 3 guidelines
+
+// ============================================
+// Variables
+// ============================================
+
+// Colors - Material Design 3 tokens
+@dt-surface: #ffffff;
+@dt-surface-variant: #f5f5f5;
+@dt-on-surface: rgba(0, 0, 0, 0.87);
+@dt-on-surface-variant: rgba(0, 0, 0, 0.6);
+@dt-outline: rgba(0, 0, 0, 0.12);
+@dt-outline-variant: rgba(0, 0, 0, 0.08);
+@dt-primary: #1976d2;
+@dt-primary-container: rgba(25, 118, 210, 0.08);
+@dt-on-primary-container: #1976d2;
+
+// Spacing - matches md-data-table defaults
+@dt-cell-padding-horizontal: 24px;
+@dt-cell-padding-vertical: 12px;
+@dt-cell-padding-vertical-dense: 6px;
+
+// Typography
+@dt-header-font-size: 12px;
+@dt-header-font-weight: 500;
+@dt-header-line-height: 1.5;
+@dt-body-font-size: 13px;
+@dt-body-line-height: 1.4;
+
+// Sizing - matches md-data-table defaults
+@dt-row-height: 48px;
+@dt-row-height-dense: 36px;
+@dt-header-height: 48px;
+@dt-header-height-dense: 40px;
+@dt-checkbox-size: 18px;
+
+// Column widths
+@dt-min-column-width: 80px;
+@dt-max-column-width: 300px;
+@dt-truncate-max-width: 200px;
+
+// Transitions
+@dt-transition-duration: 150ms;
+@dt-transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+
+// ============================================
+// Main Container
+// ============================================
+.data-table {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: @dt-surface;
+  border-radius: 4px;
+  overflow: hidden;
+
+  // ========================================
+  // Container
+  // ========================================
+  &__container {
+    overflow-x: auto;
+    overflow-y: visible;
+
+    // Custom scrollbar
+    &::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: @dt-surface-variant;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.3);
+      }
+    }
+  }
+
+  // ========================================
+  // Table
+  // ========================================
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    table-layout: auto;
+  }
+
+  // ========================================
+  // Header
+  // ========================================
+  &__head {
+    background: @dt-surface;
+  }
+
+  &__header-row {
+    border-bottom: 1px solid @dt-outline;
+  }
+
+  &__header-cell {
+    height: @dt-header-height;
+    padding: 0 @dt-cell-padding-horizontal;
+    text-align: left;
+    font-size: @dt-header-font-size;
+    font-weight: @dt-header-font-weight;
+    line-height: @dt-header-line-height;
+    color: @dt-on-surface-variant;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    vertical-align: middle;
+    user-select: none;
+    transition: background-color @dt-transition-duration @dt-transition-timing;
+
+    &.sortable {
+      cursor: pointer;
+
+      &:hover {
+        background: @dt-surface-variant;
+      }
+    }
+
+    &.align-center {
+      text-align: center;
+    }
+
+    &.align-right {
+      text-align: right;
+    }
+  }
+
+  &__header-content {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  &__header-label {
+    flex: 1;
+  }
+
+  &__sort-icon {
+    font-size: 18px !important;
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    min-height: 18px !important;
+    color: @dt-on-surface-variant;
+    opacity: 0.5;
+    transition: opacity @dt-transition-duration @dt-transition-timing,
+    transform @dt-transition-duration @dt-transition-timing;
+
+    &.active {
+      opacity: 1;
+      color: @dt-primary;
+    }
+  }
+
+  // ========================================
+  // Body
+  // ========================================
+  &__body {
+    background: @dt-surface;
+  }
+
+  &__row {
+    height: @dt-row-height;
+    border-bottom: 1px solid @dt-outline-variant;
+    transition: background-color @dt-transition-duration @dt-transition-timing;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &.selected {
+      background: @dt-primary-container;
+    }
+
+    &.striped {
+      background: @dt-surface-variant;
+
+      &.selected {
+        background: @dt-primary-container;
+      }
+    }
+
+    // Child row styling (for expandable rows)
+    &--child {
+      background: @dt-surface-variant;
+      height: auto;
+      min-height: @dt-row-height-dense;
+
+      .child-job-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 8px 0 8px 24px;
+
+        .child-job-name {
+          font-weight: 500;
+          min-width: 100px;
+        }
+
+        .status-chip {
+          flex-shrink: 0;
+        }
+
+        .progress-status {
+          width: 100px;
+          flex-shrink: 0;
+        }
+
+        > span {
+          flex: 1;
+          min-width: 80px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      }
+    }
+  }
+
+  &__cell {
+    padding: @dt-cell-padding-vertical @dt-cell-padding-horizontal;
+    font-size: @dt-body-font-size;
+    line-height: @dt-body-line-height;
+    color: @dt-on-surface;
+    vertical-align: middle;
+
+    &.align-center {
+      text-align: center;
+    }
+
+    &.align-right {
+      text-align: right;
+    }
+  }
+
+  &__cell-content {
+    display: block;
+
+    &.truncate {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: @dt-truncate-max-width;
+    }
+  }
+
+  // Location cell styling (for address columns)
+  .location-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-width: @dt-truncate-max-width;
+
+    .location-name {
+      font-weight: 500;
+      color: @dt-on-surface;
+      font-size: @dt-body-font-size;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .location-address {
+      font-size: 11px;
+      color: @dt-on-surface-variant;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  // ========================================
+  // Checkbox Cell
+  // ========================================
+  &__checkbox-cell {
+    width: 48px;
+    min-width: 48px;
+    max-width: 48px;
+    padding: 0 12px !important;
+    text-align: center;
+  }
+
+  &__checkbox {
+    margin: 0 !important;
+    min-width: @dt-checkbox-size;
+    min-height: @dt-checkbox-size;
+
+    .md-container {
+      width: @dt-checkbox-size;
+      height: @dt-checkbox-size;
+    }
+
+    .md-icon {
+      width: @dt-checkbox-size;
+      height: @dt-checkbox-size;
+    }
+  }
+
+  // ========================================
+  // Actions Cell
+  // ========================================
+  &__actions-cell {
+    width: auto;
+    white-space: nowrap;
+    text-align: right;
+    padding-right: 8px !important;
+
+    .md-button.md-icon-button {
+      margin: 0 2px;
+      padding: 0;
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      min-height: 36px;
+
+      md-icon {
+        font-size: 20px;
+        color: @dt-on-surface-variant;
+      }
+
+      &:hover md-icon {
+        color: @dt-on-surface;
+      }
+    }
+  }
+
+  // ========================================
+  // Loading State
+  // ========================================
+  &__loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.7);
+    z-index: 10;
+  }
+
+  // ========================================
+  // Empty State
+  // ========================================
+  &__empty {
+    padding: 48px 24px;
+    text-align: center;
+  }
+
+  &__empty-default {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  &__empty-icon {
+    font-size: 64px !important;
+    width: 64px !important;
+    height: 64px !important;
+    color: @dt-on-surface-variant;
+    opacity: 0.5;
+  }
+
+  &__empty-message {
+    margin: 0;
+    font-size: 16px;
+    color: @dt-on-surface-variant;
+  }
+
+  &__empty-submessage {
+    margin: 8px 0 0 0;
+    font-size: 14px;
+    color: @dt-on-surface-variant;
+    opacity: 0.7;
+  }
+
+  // ========================================
+  // Sticky Columns
+  // ========================================
+  .sticky-left {
+    position: sticky;
+    left: 0;
+    background: @dt-surface;
+    z-index: 1;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 4px;
+      box-shadow: inset -4px 0 4px -4px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  .sticky-right {
+    position: sticky;
+    right: 0;
+    background: @dt-surface;
+    z-index: 1;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 4px;
+      box-shadow: inset 4px 0 4px -4px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  // ========================================
+  // Modifiers
+  // ========================================
+
+  // Bordered variant
+  &--bordered {
+    border: 1px solid @dt-outline;
+
+    .data-table__cell,
+    .data-table__header-cell {
+      border-right: 1px solid @dt-outline-variant;
+
+      &:last-child {
+        border-right: none;
+      }
+    }
+  }
+
+  // Dense variant
+  &--dense {
+    .data-table__header-cell {
+      height: @dt-header-height-dense;
+      padding: 0 12px;
+      font-size: 11px;
+    }
+
+    .data-table__row {
+      height: @dt-row-height-dense;
+    }
+
+    .data-table__cell {
+      padding: @dt-cell-padding-vertical-dense 12px;
+      font-size: 13px;
+    }
+  }
+
+  // Hover effect
+  &--hover {
+    .data-table__row:hover {
+      background: @dt-surface-variant;
+
+      &.selected {
+        background: darken(@dt-primary-container, 2%);
+      }
+    }
+  }
+
+  // Sticky header
+  &--sticky-header {
+    .data-table__container {
+      max-height: calc(100vh - 200px);
+      overflow-y: auto;
+    }
+
+    .data-table__head {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: @dt-surface;
+
+      &::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 1px;
+        background: @dt-outline;
+      }
+    }
+  }
+
+  // Loading state
+  &--loading {
+    .data-table__table {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+  }
+
+  // Selectable
+  &--selectable {
+    .data-table__row {
+      cursor: pointer;
+    }
+  }
+}
+
+// ============================================
+// Mobile Responsive
+// ============================================
+@media screen and (max-width: 768px) {
+  .data-table {
+    &__header-cell,
+    &__cell {
+      padding-left: 12px;
+      padding-right: 12px;
+
+      &.hide-mobile {
+        display: none;
+      }
+    }
+
+    &__cell-content.truncate {
+      max-width: 120px;
+    }
+  }
+}
+
+// ============================================
+// Dark theme support (optional)
+// ============================================
+.dark-theme {
+  .data-table {
+    @dt-surface-dark: #1e1e1e;
+    @dt-surface-variant-dark: #2d2d2d;
+    @dt-on-surface-dark: rgba(255, 255, 255, 0.87);
+    @dt-on-surface-variant-dark: rgba(255, 255, 255, 0.6);
+    @dt-outline-dark: rgba(255, 255, 255, 0.12);
+    @dt-primary-container-dark: rgba(144, 202, 249, 0.16);
+
+    background: @dt-surface-dark;
+
+    &__head,
+    &__body {
+      background: @dt-surface-dark;
+    }
+
+    &__header-cell {
+      color: @dt-on-surface-variant-dark;
+
+      &.sortable:hover {
+        background: @dt-surface-variant-dark;
+      }
+    }
+
+    &__header-row,
+    &__row {
+      border-color: @dt-outline-dark;
+    }
+
+    &__cell {
+      color: @dt-on-surface-dark;
+    }
+
+    &__row {
+      &:hover {
+        background: @dt-surface-variant-dark;
+      }
+
+      &.selected {
+        background: @dt-primary-container-dark;
+      }
+
+      &.striped {
+        background: @dt-surface-variant-dark;
+      }
+    }
+
+    &__empty-icon,
+    &__empty-message {
+      color: @dt-on-surface-variant-dark;
+    }
+
+    &__loading-overlay {
+      background: rgba(30, 30, 30, 0.7);
+    }
+
+    .sticky-left,
+    .sticky-right {
+      background: @dt-surface-dark;
+    }
+  }
+}
+
+// NZ tenant theme overrides
+.nz-tenant .data-table {
+  &__sort-icon.active {
+    color: @nz-primary-dark;
+  }
+
+  &__row.selected {
+    background: fade(@nz-primary, 12%);
+  }
+
+  &--hover &__row:hover {
+    &.selected {
+      background: fade(@nz-primary, 18%);
+    }
+  }
+
+  &__checkbox {
+    .md-icon {
+      &.md-checked {
+        background-color: @nz-primary;
+      }
+    }
+  }
+}
