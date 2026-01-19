@@ -67,10 +67,7 @@ class TasksService implements angular.IServiceProvider {
     private eventTypesListCache?: ISuggestion[];
     private staffListPromise?: Promise<ISuggestion[]>;
     private eventTypesPromise?: Promise<ISuggestion[]>;
-
-    private loadTasksDebounced?: ReturnType<typeof setTimeout>;
     private backgroundLoadingStates: Record<AppPage, boolean> = {} as Record<AppPage, boolean>;
-
     private jobTaskLoadingStates: Record<string, boolean> = {};
 
     constructor(
@@ -419,26 +416,6 @@ class TasksService implements angular.IServiceProvider {
             console.warn('[TaskService] No jobId provided for task:', task.id);
         }
         return hasJobId;
-    }
-
-    loadTasksWithDebounce(
-        filterRequest: TaskTableFiltersRequest,
-        callback: (tasks: ExtendedTask[], error?: any) => void,
-        delay: number = 300
-    ): void {
-        if (this.loadTasksDebounced) {
-            clearTimeout(this.loadTasksDebounced);
-        }
-
-        this.loadTasksDebounced = setTimeout(async () => {
-            try {
-                const tasks = await this.DispatchData.getAllTasks(filterRequest);
-                callback(tasks || []);
-            } catch (error) {
-                console.error("Error loading tasks with debounce:", error);
-                callback([], error);
-            }
-        }, delay);
     }
 }
 

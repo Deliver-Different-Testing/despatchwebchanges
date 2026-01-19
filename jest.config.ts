@@ -8,16 +8,7 @@ const config: JestConfigWithTsJest = {
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
     transform: {
         '^.+\\.(ts|tsx)$': ['ts-jest', {
-            tsconfig: {
-                target: 'es6',
-                module: 'commonjs',
-                esModuleInterop: true,
-                allowSyntheticDefaultImports: true,
-                strict: false, // Relaxed for tests
-                skipLibCheck: true,
-                moduleResolution: 'node',
-                jsx: 'react-jsx',
-            }
+            tsconfig: 'tsconfig.test.json',
         }]
     },
     moduleNameMapper: {
@@ -40,7 +31,8 @@ const config: JestConfigWithTsJest = {
     ],
     coverageReporters: ['text', 'lcov', 'cobertura'],
     testPathIgnorePatterns: ['/node_modules/', '/DespatchWeb.Tests/'],
-    verbose: true
+    verbose: false,
+    maxWorkers: '50%', // Optimize parallel test execution
 };
 
 export default config;

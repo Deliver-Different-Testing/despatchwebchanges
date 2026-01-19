@@ -9,13 +9,14 @@ using Moq;
 using Moq.Protected;
 using System.Net;
 using System.Text.Json;
+using Xunit.Abstractions;
 
 namespace DespatchWeb.Tests.Services;
 
 /// <summary>
 /// Unit tests for FlightStatsService - tests FlightStats API integration for flight search and alerts.
 /// </summary>
-public class FlightStatsServiceTests
+public class FlightStatsServiceTests(ITestOutputHelper testOutputHelper)
 {
     private readonly Mock<HttpMessageHandler> _httpHandlerMock = new();
     private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock = new();
@@ -119,7 +120,7 @@ public class FlightStatsServiceTests
             "SendAsync",
             Times.Once(),
             ItExpr.Is<HttpRequestMessage>(req =>
-                req.RequestUri.ToString().Contains("json/delete/webhook-123")),
+                req.RequestUri != null && req.RequestUri.ToString().Contains("json/delete/webhook-123")),
             ItExpr.IsAny<CancellationToken>());
     }
 
@@ -263,7 +264,7 @@ public class FlightStatsServiceTests
             "SendAsync",
             Times.Once(),
             ItExpr.Is<HttpRequestMessage>(req =>
-                req.RequestUri.ToString().Contains("includeAirlines=NZ")),
+                req.RequestUri != null && req.RequestUri.ToString().Contains("includeAirlines=NZ")),
             ItExpr.IsAny<CancellationToken>());
     }
 
@@ -327,8 +328,147 @@ public class FlightStatsServiceTests
             "SendAsync",
             Times.Once(),
             ItExpr.Is<HttpRequestMessage>(req =>
-                !req.RequestUri.ToString().Contains("includeAirlines")),
+                req.RequestUri != null && !req.RequestUri.ToString().Contains("includeAirlines")),
             ItExpr.IsAny<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetFlightsAsync_DiagnoseAirlineFilter_OutputsActualUrl()
+    {
+        // This test captures the actual URL being generated to diagnose airline filtering issues
+
+        // Arrange
+        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
+
+        // Simulate active airlines in database
+        var activeAirlines = new List<string> { "NZ", "QF", "AA" };
+        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
+            .ReturnsAsync(activeAirlines);
+        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
+            .Returns(DateTime.Now);
+
+        string? capturedUrl = null;
+        _httpHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, _) =>
+            {
+                capturedUrl = req.RequestUri?.ToString();
+            })
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(CreateFlightConnectionsResponse()))
+            });
+
+        var service = CreateService();
+
+        // Act - Call WITHOUT specific airline (should use all active airlines)
+        await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: DateTimeOffset.Now.AddHours(2),
+            airlineId: null,
+            departureAirportId: 1,
+            arrivalAirportId: 2);
+
+        // Assert & Diagnose
+        capturedUrl.Should().NotBeNull("URL should have been captured");
+
+        // Output URL for diagnosis
+        testOutputHelper.WriteLine("=== CAPTURED URL (No airlineId specified) ===");
+        testOutputHelper.WriteLine(capturedUrl);
+        testOutputHelper.WriteLine("==============================================");
+
+        // Check if includeAirlines parameter exists
+        var containsAirlineFilter = capturedUrl!.Contains("includeAirlines");
+        testOutputHelper.WriteLine($"Contains includeAirlines parameter: {containsAirlineFilter}");
+
+        if (containsAirlineFilter)
+        {
+            // Extract the includeAirlines value
+            var uri = new Uri(capturedUrl);
+            var queryParams = System.Web.HttpUtility.ParseQueryString(uri.Query);
+            var airlinesValue = queryParams["includeAirlines"];
+            testOutputHelper.WriteLine($"includeAirlines value: '{airlinesValue}'");
+            testOutputHelper.WriteLine($"Expected: 'NZ,QF,AA'");
+
+            // Verify the value
+            airlinesValue.Should().Be("NZ,QF,AA", "Airlines should be comma-separated without URL encoding in the parsed value");
+        }
+        else
+        {
+            // This would be the bug - no airline filter being added!
+            Assert.Fail("BUG: includeAirlines parameter is missing from URL when active airlines exist!");
+        }
+    }
+
+    [Fact]
+    public async Task GetFlightsAsync_CompareWithAndWithoutAirlineId_OutputsBothUrls()
+    {
+        // Compare URLs generated with specific airline vs. all active airlines
+
+        // Arrange
+        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
+
+        var activeAirlines = new List<string> { "NZ", "QF", "AA" };
+        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
+            .ReturnsAsync(activeAirlines);
+        _nationwideJobRepositoryMock.Setup(x => x.GetAirlineCodeByIdAsync(3))
+            .ReturnsAsync("QF");
+        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
+            .Returns(DateTime.Now);
+
+        var capturedUrls = new List<string>();
+        _httpHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, _) =>
+            {
+                capturedUrls.Add(req.RequestUri?.ToString() ?? "");
+            })
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(CreateFlightConnectionsResponse()))
+            });
+
+        var service = CreateService();
+
+        // Act 1 - Call WITH specific airline
+        await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: DateTimeOffset.Now.AddHours(2),
+            airlineId: 3, // Specific airline
+            departureAirportId: 1,
+            arrivalAirportId: 2);
+
+        // Act 2 - Call WITHOUT specific airline
+        await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: DateTimeOffset.Now.AddHours(2),
+            airlineId: null, // All active airlines
+            departureAirportId: 1,
+            arrivalAirportId: 2);
+
+        // Output for comparison
+        testOutputHelper.WriteLine("=== URL COMPARISON ===");
+        testOutputHelper.WriteLine($"URL with airlineId=3: {capturedUrls[0]}");
+        testOutputHelper.WriteLine($"URL with airlineId=null: {capturedUrls[1]}");
+        testOutputHelper.WriteLine("======================");
+
+        // Parse and compare includeAirlines values
+        var uri1 = new Uri(capturedUrls[0]);
+        var uri2 = new Uri(capturedUrls[1]);
+        var params1 = System.Web.HttpUtility.ParseQueryString(uri1.Query);
+        var params2 = System.Web.HttpUtility.ParseQueryString(uri2.Query);
+
+        testOutputHelper.WriteLine($"With airlineId=3, includeAirlines='{params1["includeAirlines"]}'");
+        testOutputHelper.WriteLine($"With airlineId=null, includeAirlines='{params2["includeAirlines"]}'");
+
+        params1["includeAirlines"].Should().Be("QF");
+        params2["includeAirlines"].Should().Be("NZ,QF,AA");
     }
 
     #endregion

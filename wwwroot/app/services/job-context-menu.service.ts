@@ -9,7 +9,6 @@ import JobInternalStatusEnum from "../enums/job-internal-status.enum";
 import {JobProperty} from "../enums/job-property.enum";
 import JobAddStopService from "./job-add-stop.service";
 import {AppPage} from "../enums/app-pages.enum";
-import {IPrebookListModel} from "../react/interfaces";
 import {LateEventType} from "../enums/late-event-type.enum";
 import VoidJobConfirmationDialogService
     from "../components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
@@ -43,29 +42,7 @@ class JobContextMenuService implements angular.IServiceProvider {
     $get() {
         return this;
     }
-
-    getRecurringJobMenuOptions(job: IPrebookListModel, callbacks: any): IContextMenuOption[] {
-        if (!job) return [];
-
-        const menuOptions: IContextMenuOption[] = [];
-
-        menuOptions.push({
-            text: "Add Pickup Stop",
-            icon: "pin_drop",
-            click: () => this.addStopToRecurringJob(job, true, callbacks.onRefresh),
-            hasBottomDivider: true,
-        });
-
-        menuOptions.push({
-            text: "Add Delivery Stop",
-            icon: "pin_drop",
-            click: () => this.addStopToRecurringJob(job, false, callbacks.onRefresh),
-            hasBottomDivider: false,
-        });
-
-        return menuOptions;
-    }
-
+    
     getMenuOptions(job: IDispatchJob, callbacks: any, appPage: AppPage): IContextMenuOption[] {
         if (!job) return [];
 
@@ -146,7 +123,7 @@ class JobContextMenuService implements angular.IServiceProvider {
             text: "Add Task - Other",
             icon: "add",
             click: (_$itemScope: any, $event: MouseEvent) =>
-                this.addEventOtherAction($event, job, callbacks.onRefresh),
+                this.addEventOtherAction(job, callbacks.onRefresh),
             hasBottomDivider: true,
         });
 
@@ -325,17 +302,7 @@ class JobContextMenuService implements angular.IServiceProvider {
             onRefresh();
         }
     }
-
-    private async addStopToRecurringJob(job: IPrebookListModel, isPickup: boolean, onRefresh: () => void) {
-        if (!job) return;
-
-        await this.jobAddStopService.addRecurringJobStop(job, isPickup)
-
-        if (onRefresh) {
-            onRefresh();
-        }
-    }
-
+    
     private async moveJobToReprice(job: IDispatchJob, onRefresh: () => void) {
         if (!job) return;
 
@@ -408,7 +375,6 @@ class JobContextMenuService implements angular.IServiceProvider {
     }
 
     private async addEventOtherAction(
-        $event: MouseEvent,
         job: IDispatchJob,
         onRefresh: () => void
     ) {
@@ -578,31 +544,7 @@ class JobContextMenuService implements angular.IServiceProvider {
             this.toastrService.showErrorToast("Error applying late pickup");
         }
     }
-
-    async lateDelivery($event: MouseEvent, job: IDispatchJob, onRefresh: () => void): Promise<void> {
-        try {
-            const confirm = this.$mdDialog.prompt()
-                .title('Late Delivery')
-                .textContent('Enter the number of minutes the courier is running late for delivery:')
-                .ariaLabel('late delivery')
-                .targetEvent($event)
-                .required(true)
-                .ok('Save')
-                .cancel('Cancel');
-
-            const minsAway: number = await this.$mdDialog.show(confirm);
-            await this.handleLateOperation(minsAway, job, LateEventType.Delivery);
-
-            if (onRefresh) {
-                onRefresh();
-            }
-        } catch (error) {
-            if (!error) return;
-            console.error('Error in late pickup:', error);
-            this.toastrService.showErrorToast("Error applying late delivery");
-        }
-    }
-
+    
     private async handleLateOperation(minsAway: number, job: IDispatchJob, lateType: LateEventType): Promise<void> {
         const isPickup = lateType === LateEventType.Pickup;
         const operationType = isPickup ? "pickup" : "delivery";

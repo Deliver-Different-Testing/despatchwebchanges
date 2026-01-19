@@ -5,7 +5,8 @@
  */
 
 import React from 'react';
-import { Box, Paper, Typography, Icon } from '@mui/material';
+import { Box, Paper, Typography } from '@mui/material';
+import { Flight as FlightIcon, Schedule as ScheduleIcon } from '@mui/icons-material';
 import { FlightSummaryCardProps } from './types';
 
 export const FlightSummaryCard: React.FC<FlightSummaryCardProps> = ({
@@ -184,7 +185,7 @@ export const FlightSummaryCard: React.FC<FlightSummaryCardProps> = ({
                             })}
                         />
                         {/* Plane icon */}
-                        <Icon
+                        <FlightIcon
                             sx={{
                                 position: 'absolute',
                                 top: '50%',
@@ -197,9 +198,7 @@ export const FlightSummaryCard: React.FC<FlightSummaryCardProps> = ({
                                 p: 0.75,
                                 boxShadow: 1,
                             }}
-                        >
-                            flight
-                        </Icon>
+                        />
                     </Box>
 
                     {/* Duration badge */}
@@ -217,7 +216,7 @@ export const FlightSummaryCard: React.FC<FlightSummaryCardProps> = ({
                             fontWeight: 500,
                         }}
                     >
-                        <Icon sx={{ fontSize: 16 }}>schedule</Icon>
+                        <ScheduleIcon sx={{ fontSize: 16 }} />
                         <span>{duration}</span>
                     </Box>
                 </Box>
