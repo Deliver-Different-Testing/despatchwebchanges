@@ -6,10 +6,105 @@
 
 import dayjs from 'dayjs';
 
+interface MockAddress {
+    addressString: string;
+    unitNumber: string;
+    streetNumber: string;
+    streetName: string;
+    suburb: string;
+    city: string;
+    postcode: string;
+    country: string;
+    dpid: string;
+    longitude: number;
+    latitude: number;
+}
+
+interface MockUSAddress extends MockAddress {
+    state: string;
+}
+
+interface MockAgent {
+    id: number;
+    text: string;
+    name: string;
+    email: string;
+    phone: string;
+}
+
+interface MockTask {
+    id: number;
+    title: string;
+    description: string;
+    dueDate: string;
+    isCompleted: boolean;
+    priority: string;
+    assignedTo: string;
+}
+
+interface MockJob {
+    id: number;
+    jobNo: string;
+    status: string;
+    pickupAddress: string;
+    deliveryAddress: string;
+    customerName: string;
+}
+
+interface MockEventType {
+    id: number;
+    name: string;
+    color: string;
+}
+
+interface MockFlightSegment {
+    segmentOrder: number;
+    departureAirportFsCode: string;
+    departureAirportName: string;
+    departureAirportCity: string;
+    departureAirportId: number;
+    departureAirportTimeZone: string;
+    arrivalAirportFsCode: string;
+    arrivalAirportName: string;
+    arrivalAirportCity: string;
+    arrivalAirportId: number;
+    arrivalAirportTimeZone: string;
+    departureTime: dayjs.Dayjs;
+    arrivalTime: dayjs.Dayjs;
+    carrierFsCode: string;
+    flightNumber: string;
+    airlineName: string;
+}
+
+interface MockFlight {
+    flightNumber: string;
+    departureTime: dayjs.Dayjs;
+    arrivalTime: dayjs.Dayjs;
+    departureTimeZone: string;
+    arrivalTimeZone: string;
+    flightSegments: MockFlightSegment[];
+}
+
+interface MockCargoProcessing {
+    arrivalTime: dayjs.Dayjs;
+    processingTimeMins: number;
+    cargoOpeningTime: dayjs.Dayjs;
+    cargoClosingTime: dayjs.Dayjs;
+    deliverByTime: dayjs.Dayjs;
+}
+
+interface MockRecurringJob {
+    id: number;
+    name: string;
+    frequency: string;
+    nextRun: string;
+    isActive: boolean;
+}
+
 /**
  * Address mock data
  */
-export function createMockAddress(overrides?: Partial<ReturnType<typeof createMockAddress>>) {
+export function createMockAddress(overrides?: Partial<MockAddress>): MockAddress {
     return {
         addressString: '123 Test Street, Auckland 1010',
         unitNumber: '',
@@ -29,7 +124,7 @@ export function createMockAddress(overrides?: Partial<ReturnType<typeof createMo
 /**
  * US Address mock data
  */
-export function createMockUSAddress(overrides?: Partial<ReturnType<typeof createMockUSAddress>>) {
+export function createMockUSAddress(overrides?: Partial<MockUSAddress>): MockUSAddress {
     return {
         addressString: '456 Main St, New York, NY 10001',
         unitNumber: 'Apt 5',
@@ -50,7 +145,7 @@ export function createMockUSAddress(overrides?: Partial<ReturnType<typeof create
 /**
  * Agent mock data
  */
-export function createMockAgent(overrides?: Partial<ReturnType<typeof createMockAgent>>) {
+export function createMockAgent(overrides?: Partial<MockAgent>): MockAgent {
     return {
         id: 1,
         text: 'Test Agent',
@@ -64,7 +159,7 @@ export function createMockAgent(overrides?: Partial<ReturnType<typeof createMock
 /**
  * Task mock data
  */
-export function createMockTask(overrides?: Partial<ReturnType<typeof createMockTask>>) {
+export function createMockTask(overrides?: Partial<MockTask>): MockTask {
     return {
         id: 1,
         title: 'Test Task',
@@ -80,7 +175,7 @@ export function createMockTask(overrides?: Partial<ReturnType<typeof createMockT
 /**
  * Job mock data
  */
-export function createMockJob(overrides?: Partial<ReturnType<typeof createMockJob>>) {
+export function createMockJob(overrides?: Partial<MockJob>): MockJob {
     return {
         id: 1,
         jobNo: 'JOB-001',
@@ -95,7 +190,7 @@ export function createMockJob(overrides?: Partial<ReturnType<typeof createMockJo
 /**
  * Event type mock data
  */
-export function createMockEventType(overrides?: Partial<ReturnType<typeof createMockEventType>>) {
+export function createMockEventType(overrides?: Partial<MockEventType>): MockEventType {
     return {
         id: 1,
         name: 'Test Event',
@@ -107,7 +202,7 @@ export function createMockEventType(overrides?: Partial<ReturnType<typeof create
 /**
  * Flight segment mock data
  */
-export function createMockFlightSegment(overrides?: Partial<ReturnType<typeof createMockFlightSegment>>) {
+export function createMockFlightSegment(overrides?: Partial<MockFlightSegment>): MockFlightSegment {
     return {
         segmentOrder: 0,
         departureAirportFsCode: 'AKL',
@@ -132,7 +227,7 @@ export function createMockFlightSegment(overrides?: Partial<ReturnType<typeof cr
 /**
  * Flight mock data
  */
-export function createMockFlight(overrides?: Partial<ReturnType<typeof createMockFlight>>) {
+export function createMockFlight(overrides?: Partial<MockFlight>): MockFlight {
     return {
         flightNumber: 'NZ123',
         departureTime: dayjs('2024-03-15T08:00:00'),
@@ -147,7 +242,7 @@ export function createMockFlight(overrides?: Partial<ReturnType<typeof createMoc
 /**
  * Cargo processing mock data
  */
-export function createMockCargoProcessing(overrides?: Partial<ReturnType<typeof createMockCargoProcessing>>) {
+export function createMockCargoProcessing(overrides?: Partial<MockCargoProcessing>): MockCargoProcessing {
     return {
         arrivalTime: dayjs('2024-03-15T10:30:00'),
         processingTimeMins: 90,
@@ -161,7 +256,7 @@ export function createMockCargoProcessing(overrides?: Partial<ReturnType<typeof 
 /**
  * Recurring job mock data
  */
-export function createMockRecurringJob(overrides?: Partial<ReturnType<typeof createMockRecurringJob>>) {
+export function createMockRecurringJob(overrides?: Partial<MockRecurringJob>): MockRecurringJob {
     return {
         id: 1,
         name: 'Daily Pickup',
