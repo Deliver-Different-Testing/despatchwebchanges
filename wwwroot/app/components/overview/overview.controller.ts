@@ -398,14 +398,14 @@ class OverviewController extends BaseController {
 
             // Convert Dayjs to Date for the React dialog
             const dialogDateRange = {
-                start: this.dateRange.start?.toDate?.() ?? this.dateRange.start as Date | undefined,
-                end: this.dateRange.end?.toDate?.() ?? this.dateRange.end as Date | undefined
+                start: this.dateRange.start?.toDate?.(),
+                end: this.dateRange.end?.toDate?.()
             };
 
             // Open the React dialog
             const result = await window.ReactDateRangeDialog.open(dialogDateRange);
 
-            // Dialog was cancelled
+            // Dialog was canceled
             if (!result) {
                 return;
             }

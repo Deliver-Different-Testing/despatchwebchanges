@@ -4,7 +4,7 @@ import {DaysOfWeek} from "../enums/days-of-week.enum";
 import {Frequency} from "../enums/frequency.enum";
 import {HolidayDeliveryOptions} from "../enums/holiday-delivery-options.enum";
 import {IFlightSegment, IFlightSegmentDto} from "../components/Nationwide/nationwide.interfaces";
-import {AirportViewModel} from "../components/dialogs/flight-details-dialog/flight-details-dialog.interfaces";
+import {AirportViewModel} from "../react/interfaces/agent";
 import {Dayjs} from "dayjs";
 
 export interface IJobGroupDto {

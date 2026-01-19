@@ -622,7 +622,7 @@ class JobDetailController extends BaseController {
 
     private async processDateTimeUpdateResult(
         job: IJob,
-        result: IDialogDateTimeResult
+        result: IDialogDateTimeResult | undefined
     ): Promise<void> {
         if (result) {
             if (job.isBulkJob) {
@@ -1624,7 +1624,7 @@ class JobDetailController extends BaseController {
                         job.deliveryTimeZone
                     );
 
-                if (result.value === undefined) {
+                if (!result || result.value === undefined) {
                     this.toastrService.showWarningToast("A POD time needs to be provided to close this job.");
                     return;
                 }
