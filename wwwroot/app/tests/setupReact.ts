@@ -33,7 +33,8 @@ window.scrollTo = jest.fn();
 
 // Suppress React 18 act() warnings and expected test errors
 // These are error messages that are expected during error handling tests
-const suppressedErrorPatterns = [
+// Using Set for O(1) prefix lookups instead of array iteration
+const suppressedErrorPrefixes = new Set([
     'Warning: ReactDOM.render is no longer supported',
     'Error loading related jobs',
     'Error loading notes',
@@ -44,15 +45,17 @@ const suppressedErrorPatterns = [
     'Error loading delivery journey',
     'Error loading event types',
     'Export failed',
-];
+]);
 
 const originalError = console.error;
-console.error = (...args) => {
-    if (
-        typeof args[0] === 'string' &&
-        suppressedErrorPatterns.some(pattern => args[0].includes(pattern))
-    ) {
-        return;
+console.error = (...args: unknown[]) => {
+    if (typeof args[0] === 'string') {
+        // Check if error starts with any suppressed prefix (faster than .includes())
+        for (const prefix of suppressedErrorPrefixes) {
+            if (args[0].startsWith(prefix)) {
+                return;
+            }
+        }
     }
     originalError.call(console, ...args);
 };

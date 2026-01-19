@@ -5,7 +5,12 @@
  */
 
 import React from 'react';
-import { Box, Paper, Typography, Icon, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Paper, Typography, useMediaQuery, useTheme } from '@mui/material';
+import {
+    Flight as FlightIcon,
+    Schedule as ScheduleIcon,
+    Route as RouteIcon,
+} from '@mui/icons-material';
 import { FlightItineraryProps, FlightSegmentData } from './types';
 
 /**
@@ -160,7 +165,7 @@ const SegmentItem: React.FC<SegmentItemProps> = ({ segment, isLast, connectionTi
                                     borderRadius: 1,
                                 }}
                             />
-                            <Icon
+                            <FlightIcon
                                 sx={{
                                     position: 'absolute',
                                     fontSize: 16,
@@ -170,9 +175,7 @@ const SegmentItem: React.FC<SegmentItemProps> = ({ segment, isLast, connectionTi
                                     p: 0.5,
                                     transform: isMobile ? 'rotate(180deg)' : 'rotate(90deg)',
                                 }}
-                            >
-                                flight
-                            </Icon>
+                            />
                         </Box>
 
                         {/* Aircraft badge */}
@@ -244,7 +247,7 @@ const SegmentItem: React.FC<SegmentItemProps> = ({ segment, isLast, connectionTi
                         fontSize: '0.875rem',
                     }}
                 >
-                    <Icon sx={{ fontSize: '1.25rem' }}>schedule</Icon>
+                    <ScheduleIcon sx={{ fontSize: '1.25rem' }} />
                     <span>
                         {connectionTime} connection time in {segment.arrivalAirportFsCode}
                     </span>
@@ -298,7 +301,7 @@ export const FlightItinerary: React.FC<FlightItineraryProps> = ({
                     mb: 3,
                 }}
             >
-                <Icon sx={{ fontSize: '1.5rem', color: 'primary.main' }}>route</Icon>
+                <RouteIcon sx={{ fontSize: '1.5rem', color: 'primary.main' }} />
                 <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
                     Flight Itinerary
                 </Typography>

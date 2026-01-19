@@ -14,10 +14,15 @@ import {
     IconButton,
     Tabs,
     Tab,
-    Icon,
     useMediaQuery,
     useTheme,
 } from '@mui/material';
+import {
+    Flight as FlightIcon,
+    Close as CloseIcon,
+    Dashboard as OverviewIcon,
+    FlightTakeoff as FlightTakeoffIcon,
+} from '@mui/icons-material';
 import { FlightDetailsDialogProps, FlightSegmentData, FlightData } from './types';
 import { FlightSummaryCard } from './FlightSummaryCard';
 import { FlightDetailsCard } from './FlightDetailsCard';
@@ -177,7 +182,7 @@ export const FlightDetailsDialog: React.FC<FlightDetailsDialogProps> = ({
                         justifyContent: 'center',
                     }}
                 >
-                    <Icon sx={{ fontSize: 24 }}>flight</Icon>
+                    <FlightIcon sx={{ fontSize: 24 }} />
                 </Box>
                 <Box sx={{ flex: 1 }}>
                     <Typography variant="h6" fontWeight={600}>
@@ -191,7 +196,7 @@ export const FlightDetailsDialog: React.FC<FlightDetailsDialogProps> = ({
                         '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
                     }}
                 >
-                    <Icon>close</Icon>
+                    <CloseIcon />
                 </IconButton>
             </Box>
 
@@ -221,14 +226,14 @@ export const FlightDetailsDialog: React.FC<FlightDetailsDialogProps> = ({
                         }}
                     >
                         <Tab
-                            icon={<Icon sx={{ fontSize: 20 }}>overview</Icon>}
+                            icon={<OverviewIcon sx={{ fontSize: 20 }} />}
                             iconPosition="start"
                             label="Overview"
                         />
                         {flight.flightSegments.map((_, index) => (
                             <Tab
                                 key={index}
-                                icon={<Icon sx={{ fontSize: 20 }}>flight_takeoff</Icon>}
+                                icon={<FlightTakeoffIcon sx={{ fontSize: 20 }} />}
                                 iconPosition="start"
                                 label={`Segment ${index + 1}`}
                             />

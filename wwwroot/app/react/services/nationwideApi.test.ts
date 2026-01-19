@@ -2,7 +2,7 @@
  * Nationwide API Service Tests
  */
 
-import { nationwideApi, NationwideApiService } from './nationwideApi';
+import { nationwideApi, NationwideApiService, FlightViewModelDto } from './nationwideApi';
 import { apiClient } from './apiClient';
 import dayjs from 'dayjs';
 
@@ -136,6 +136,280 @@ describe('NationwideApiService', () => {
 
         it('should have calculateCargoReadyTime method', () => {
             expect(typeof nationwideApi.calculateCargoReadyTime).toBe('function');
+        });
+
+        it('should have getScheduledFlightOptions method', () => {
+            expect(typeof nationwideApi.getScheduledFlightOptions).toBe('function');
+        });
+    });
+
+    describe('getScheduledFlightOptions', () => {
+        const createMockFlightDto = (overrides: Partial<FlightViewModelDto> = {}): FlightViewModelDto => ({
+            airline: 'NZ',
+            flightNumber: 'NZ123',
+            departureTime: '2024-03-15T08:00:00',
+            arrivalTime: '2024-03-15T11:30:00',
+            departureAirport: 'AKL',
+            arrivalAirport: 'SYD',
+            duration: '3h 30m',
+            stops: 0,
+            aircraft: 'Boeing 787',
+            serviceClasses: ['Economy', 'Business'],
+            isCodeShare: false,
+            amount: 150.0,
+            codeShareAirline: '',
+            airlineId: 1,
+            departureTimeZone: 'Pacific/Auckland',
+            arrivalTimeZone: 'Australia/Sydney',
+            isMultiSegment: false,
+            elapsedTime: 210,
+            score: 95,
+            connectionId: 'conn-123',
+            flightSegments: [
+                {
+                    segmentOrder: 1,
+                    carrierFsCode: 'NZ',
+                    flightNumber: '123',
+                    departureTime: '2024-03-15T08:00:00',
+                    arrivalTime: '2024-03-15T11:30:00',
+                    departureAirportFsCode: 'AKL',
+                    arrivalAirportFsCode: 'SYD',
+                    flightEquipmentIataCode: '787',
+                    elapsedTime: 210,
+                    stopsInSegment: 0,
+                    departureAirportName: 'Auckland Airport',
+                    departureAirportCity: 'Auckland',
+                    departureAirportTimeZone: 'Pacific/Auckland',
+                    arrivalAirportName: 'Sydney Airport',
+                    arrivalAirportCity: 'Sydney',
+                    arrivalAirportTimeZone: 'Australia/Sydney',
+                },
+            ],
+            ...overrides,
+        });
+
+        it('should call apiClient.get with correct URL and params', async () => {
+            const mockFlights = [createMockFlightDto()];
+            mockApiClient.get.mockResolvedValueOnce(mockFlights);
+
+            await nationwideApi.getScheduledFlightOptions({
+                jobId: 16992,
+                departureDate: '2024-03-15T08:00:00+13:00',
+                departureAirportId: 150,
+                arrivalAirportId: 96,
+                minimumLayoverMinutes: 60,
+            });
+
+            expect(mockApiClient.get).toHaveBeenCalledWith(
+                'nationwideJob/GetScheduledFlightOptions',
+                {
+                    jobId: 16992,
+                    departureDate: '2024-03-15T08:00:00+13:00',
+                    airlineId: undefined,
+                    departureAirportId: 150,
+                    arrivalAirportId: 96,
+                    minimumLayoverMinutes: 60,
+                }
+            );
+        });
+
+        it('should pass airlineId when provided', async () => {
+            const mockFlights = [createMockFlightDto()];
+            mockApiClient.get.mockResolvedValueOnce(mockFlights);
+
+            await nationwideApi.getScheduledFlightOptions({
+                jobId: 16992,
+                departureDate: '2024-03-15T08:00:00+13:00',
+                airlineId: 3,
+                departureAirportId: 150,
+                arrivalAirportId: 96,
+            });
+
+            expect(mockApiClient.get).toHaveBeenCalledWith(
+                'nationwideJob/GetScheduledFlightOptions',
+                expect.objectContaining({
+                    airlineId: 3,
+                })
+            );
+        });
+
+        it('should default minimumLayoverMinutes to 60 when not provided', async () => {
+            const mockFlights = [createMockFlightDto()];
+            mockApiClient.get.mockResolvedValueOnce(mockFlights);
+
+            await nationwideApi.getScheduledFlightOptions({
+                jobId: 16992,
+                departureDate: '2024-03-15T08:00:00+13:00',
+                departureAirportId: 150,
+                arrivalAirportId: 96,
+                // minimumLayoverMinutes not specified
+            });
+
+            expect(mockApiClient.get).toHaveBeenCalledWith(
+                'nationwideJob/GetScheduledFlightOptions',
+                expect.objectContaining({
+                    minimumLayoverMinutes: 60,
+                })
+            );
+        });
+
+        it('should transform DTO to domain model with Dayjs objects', async () => {
+            const mockFlights = [createMockFlightDto()];
+            mockApiClient.get.mockResolvedValueOnce(mockFlights);
+
+            const result = await nationwideApi.getScheduledFlightOptions({
+                jobId: 16992,
+                departureDate: '2024-03-15T08:00:00+13:00',
+                departureAirportId: 150,
+                arrivalAirportId: 96,
+            });
+
+            expect(result).toHaveLength(1);
+            expect(dayjs.isDayjs(result[0].departureTime)).toBe(true);
+            expect(dayjs.isDayjs(result[0].arrivalTime)).toBe(true);
+            expect(result[0].flightSegments).toHaveLength(1);
+            expect(dayjs.isDayjs(result[0].flightSegments[0].departureTime)).toBe(true);
+            expect(dayjs.isDayjs(result[0].flightSegments[0].arrivalTime)).toBe(true);
+        });
+
+        it('should return empty array when API returns null', async () => {
+            mockApiClient.get.mockResolvedValueOnce(null);
+
+            const result = await nationwideApi.getScheduledFlightOptions({
+                jobId: 16992,
+                departureDate: '2024-03-15T08:00:00+13:00',
+                departureAirportId: 150,
+                arrivalAirportId: 96,
+            });
+
+            expect(result).toEqual([]);
+        });
+
+        it('should return empty array when API returns empty array', async () => {
+            mockApiClient.get.mockResolvedValueOnce([]);
+
+            const result = await nationwideApi.getScheduledFlightOptions({
+                jobId: 16992,
+                departureDate: '2024-03-15T08:00:00+13:00',
+                departureAirportId: 150,
+                arrivalAirportId: 96,
+            });
+
+            expect(result).toEqual([]);
+        });
+
+        it('should throw error when API throws', async () => {
+            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+            mockApiClient.get.mockRejectedValueOnce(new Error('API Error'));
+
+            await expect(
+                nationwideApi.getScheduledFlightOptions({
+                    jobId: 16992,
+                    departureDate: '2024-03-15T08:00:00+13:00',
+                    departureAirportId: 150,
+                    arrivalAirportId: 96,
+                })
+            ).rejects.toThrow('API Error');
+
+            expect(consoleSpy).toHaveBeenCalledWith(
+                'Error fetching scheduled flight options:',
+                expect.any(Error)
+            );
+            consoleSpy.mockRestore();
+        });
+
+        it('should handle multiple flights in response', async () => {
+            const mockFlights = [
+                createMockFlightDto({ flightNumber: 'NZ123', airline: 'NZ' }),
+                createMockFlightDto({ flightNumber: 'QF456', airline: 'QF' }),
+                createMockFlightDto({ flightNumber: 'AA789', airline: 'AA' }),
+            ];
+            mockApiClient.get.mockResolvedValueOnce(mockFlights);
+
+            const result = await nationwideApi.getScheduledFlightOptions({
+                jobId: 16992,
+                departureDate: '2024-03-15T08:00:00+13:00',
+                departureAirportId: 150,
+                arrivalAirportId: 96,
+            });
+
+            expect(result).toHaveLength(3);
+            expect(result[0].airline).toBe('NZ');
+            expect(result[1].airline).toBe('QF');
+            expect(result[2].airline).toBe('AA');
+        });
+
+        it('should handle multi-segment flights', async () => {
+            const multiSegmentFlight = createMockFlightDto({
+                isMultiSegment: true,
+                flightSegments: [
+                    {
+                        segmentOrder: 1,
+                        carrierFsCode: 'NZ',
+                        flightNumber: '123',
+                        departureTime: '2024-03-15T08:00:00',
+                        arrivalTime: '2024-03-15T11:30:00',
+                        departureAirportFsCode: 'AKL',
+                        arrivalAirportFsCode: 'SYD',
+                        flightEquipmentIataCode: '787',
+                        elapsedTime: 210,
+                        stopsInSegment: 0,
+                        departureAirportTimeZone: 'Pacific/Auckland',
+                        arrivalAirportTimeZone: 'Australia/Sydney',
+                    },
+                    {
+                        segmentOrder: 2,
+                        carrierFsCode: 'QF',
+                        flightNumber: '456',
+                        departureTime: '2024-03-15T13:00:00',
+                        arrivalTime: '2024-03-15T15:00:00',
+                        departureAirportFsCode: 'SYD',
+                        arrivalAirportFsCode: 'MEL',
+                        flightEquipmentIataCode: 'A320',
+                        elapsedTime: 120,
+                        stopsInSegment: 0,
+                        departureAirportTimeZone: 'Australia/Sydney',
+                        arrivalAirportTimeZone: 'Australia/Melbourne',
+                    },
+                ],
+            });
+            mockApiClient.get.mockResolvedValueOnce([multiSegmentFlight]);
+
+            const result = await nationwideApi.getScheduledFlightOptions({
+                jobId: 16992,
+                departureDate: '2024-03-15T08:00:00+13:00',
+                departureAirportId: 150,
+                arrivalAirportId: 96,
+            });
+
+            expect(result).toHaveLength(1);
+            expect(result[0].isMultiSegment).toBe(true);
+            expect(result[0].flightSegments).toHaveLength(2);
+            expect(dayjs.isDayjs(result[0].flightSegments[0].departureTime)).toBe(true);
+            expect(dayjs.isDayjs(result[0].flightSegments[1].departureTime)).toBe(true);
+        });
+
+        it('should preserve all flight properties after transformation', async () => {
+            const mockFlight = createMockFlightDto({
+                amount: 250.50,
+                score: 98,
+                duration: '4h 30m',
+            });
+            mockApiClient.get.mockResolvedValueOnce([mockFlight]);
+
+            const result = await nationwideApi.getScheduledFlightOptions({
+                jobId: 16992,
+                departureDate: '2024-03-15T08:00:00+13:00',
+                departureAirportId: 150,
+                arrivalAirportId: 96,
+            });
+
+            expect(result[0].amount).toBe(250.50);
+            expect(result[0].score).toBe(98);
+            expect(result[0].duration).toBe('4h 30m');
+            expect(result[0].airline).toBe('NZ');
+            expect(result[0].departureAirport).toBe('AKL');
+            expect(result[0].arrivalAirport).toBe('SYD');
         });
     });
 });

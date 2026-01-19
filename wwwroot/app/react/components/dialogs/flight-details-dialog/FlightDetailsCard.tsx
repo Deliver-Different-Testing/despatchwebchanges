@@ -5,7 +5,14 @@
  */
 
 import React from 'react';
-import { Box, Paper, Typography, Icon, Divider, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Paper, Typography, Divider, useMediaQuery, useTheme } from '@mui/material';
+import {
+    Info as InfoIcon,
+    FlightTakeoff as FlightTakeoffIcon,
+    FlightLand as FlightLandIcon,
+    MeetingRoom as TerminalIcon,
+    AirplanemodeActive as AircraftIcon,
+} from '@mui/icons-material';
 import { FlightDetailsCardProps } from './types';
 
 export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
@@ -69,7 +76,7 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
                     mb: 3,
                 }}
             >
-                <Icon sx={{ fontSize: '1.5rem', color: 'primary.main' }}>info</Icon>
+                <InfoIcon sx={{ fontSize: '1.5rem', color: 'primary.main' }} />
                 <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
                     Flight Information
                 </Typography>
@@ -87,7 +94,7 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
                 {/* Departure section */}
                 <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                        <Icon sx={{ fontSize: 20, color: 'primary.main' }}>flight_takeoff</Icon>
+                        <FlightTakeoffIcon sx={{ fontSize: 20, color: 'primary.main' }} />
                         <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'text.primary' }}>
                             Departure
                         </Typography>
@@ -147,7 +154,7 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
                                 fontSize: '0.875rem',
                             }}
                         >
-                            <Icon sx={{ fontSize: 16 }}>door_front</Icon>
+                            <TerminalIcon sx={{ fontSize: 16 }} />
                             <span>Terminal {departureInfo.terminal}</span>
                         </Box>
                     )}
@@ -156,7 +163,7 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
                 {/* Arrival section */}
                 <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                        <Icon sx={{ fontSize: 20, color: 'primary.main' }}>flight_land</Icon>
+                        <FlightLandIcon sx={{ fontSize: 20, color: 'primary.main' }} />
                         <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'text.primary' }}>
                             Arrival
                         </Typography>
@@ -216,7 +223,7 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
                                 fontSize: '0.875rem',
                             }}
                         >
-                            <Icon sx={{ fontSize: 16 }}>door_front</Icon>
+                            <TerminalIcon sx={{ fontSize: 16 }} />
                             <span>Terminal {arrivalInfo.terminal}</span>
                         </Box>
                     )}
@@ -229,7 +236,7 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
                     <Divider sx={{ my: 3 }} />
                     <Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                            <Icon sx={{ fontSize: 20, color: 'primary.main' }}>airlines</Icon>
+                            <AircraftIcon sx={{ fontSize: 20, color: 'primary.main' }} />
                             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'text.primary' }}>
                                 Aircraft
                             </Typography>

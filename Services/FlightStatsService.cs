@@ -209,6 +209,9 @@ public class FlightStatsService(
             throw new ArgumentException($"Arrival airport with ID {arrivalAirportId} not found in active airports");
 
         var activeAirlineCodes = await repository.GetActiveAirlineCodesAsync();
+        Log.Information("Found {Count} active airline codes: [{Codes}]",
+            activeAirlineCodes.Count,
+            string.Join(", ", activeAirlineCodes));
 
         var flightsFrom = CalculateFlightSearchStartTime(departureDateTime, departureAirport.FlightBufferMinutes);
         var (year, month, day, hour, minute) = SplitDate(flightsFrom);
@@ -239,8 +242,12 @@ public class FlightStatsService(
         else if (activeAirlineCodes.Count != 0)
         {
             var combinedAirlines = string.Join(",", activeAirlineCodes);
-            Log.Debug("Filtering FlightWebhooks by carrier filters: {Carriers}", combinedAirlines);
+            Log.Information("Filtering flights by {Count} active carriers: {Carriers}", activeAirlineCodes.Count, combinedAirlines);
             query["includeAirlines"] = combinedAirlines;
+        }
+        else
+        {
+            Log.Warning("No active airline codes found - flight search will not filter by airline");
         }
 
         if (!string.IsNullOrEmpty(codeType)) query["codeType"] = codeType;
