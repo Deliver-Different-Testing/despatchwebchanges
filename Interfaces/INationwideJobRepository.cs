@@ -57,4 +57,9 @@ public interface INationwideJobRepository
     Task<JobTypeFlightRatingDto> GetJobTypeFlightRatingDtoAsync(int speedId);
     Task<decimal?> GetExtraItemMultiplierByExtraChargeIdAsync(int extraChargeId);
     Task<List<GetAirportsDto>> GetAllActiveAirportsAsync();
+
+    /// <summary>
+    /// Gets carrier flight rates using the DD_stpGetCarrierFlightRate stored procedure.
+    /// </summary>
+    Task<List<FlightRateDto>> GetCarrierFlightRatesAsync(FlightRateCalculationDto dto);
 }

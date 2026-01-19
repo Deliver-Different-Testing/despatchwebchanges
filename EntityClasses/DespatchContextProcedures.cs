@@ -214,6 +214,133 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
+        public virtual async Task<List<DD_stpGetCarrierFlightRateResult>> DD_stpGetCarrierFlightRateAsync(int? clientID, string fromCity, string fromState, string toCity, string toState, string carrierCode, decimal? totalWeight, int? quantity, decimal? cubic, int? totalPallets, int? extraStopOffs, DateTime? bookTime, int? vehicleSizeID, bool? dangerousGoods, decimal? dryIceWeight, int? waitTime, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "ClientID",
+                    Value = clientID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "FromCity",
+                    Size = 200,
+                    Value = fromCity ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "FromState",
+                    Size = 200,
+                    Value = fromState ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "ToCity",
+                    Size = 200,
+                    Value = toCity ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "ToState",
+                    Size = 200,
+                    Value = toState ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "CarrierCode",
+                    Size = 200,
+                    Value = carrierCode ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "TotalWeight",
+                    Precision = 18,
+                    Scale = 4,
+                    Value = totalWeight ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Decimal,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Quantity",
+                    Value = quantity ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Cubic",
+                    Precision = 18,
+                    Scale = 4,
+                    Value = cubic ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Decimal,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "TotalPallets",
+                    Value = totalPallets ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "ExtraStopOffs",
+                    Value = extraStopOffs ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "BookTime",
+                    Value = bookTime ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.DateTime,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "VehicleSizeID",
+                    Value = vehicleSizeID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DangerousGoods",
+                    Value = dangerousGoods ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Bit,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DryIceWeight",
+                    Precision = 18,
+                    Scale = 4,
+                    Value = dryIceWeight ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Decimal,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "WaitTime",
+                    Value = waitTime ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.SqlQueryAsync<DD_stpGetCarrierFlightRateResult>("EXEC @returnValue = [dbo].[DD_stpGetCarrierFlightRate] @ClientID = @ClientID, @FromCity = @FromCity, @FromState = @FromState, @ToCity = @ToCity, @ToState = @ToState, @CarrierCode = @CarrierCode, @TotalWeight = @TotalWeight, @Quantity = @Quantity, @Cubic = @Cubic, @TotalPallets = @TotalPallets, @ExtraStopOffs = @ExtraStopOffs, @BookTime = @BookTime, @VehicleSizeID = @VehicleSizeID, @DangerousGoods = @DangerousGoods, @DryIceWeight = @DryIceWeight, @WaitTime = @WaitTime", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
         public virtual async Task<List<DD_stpJob_InsertExceleratorResult>> DD_stpJob_InsertExceleratorAsync(string bookedBy, string fromAddress, string fromStreet, string fromBuilding, string fromCompany, string fromCity, string fromState, int? fromZipCode, string speed, int? speedID, string toAddress, string toStreet, string toBuilding, string toCompany, string toCity, string toState, int? toZipCode, string toAddressType, string referenceA, string referenceB, int? vehicleSizeID, string totalWeight, string totalDistance, string @return, string courierNotes, string clientNotes, string pickupNotes, string deliveryNotes, string fromContactName, string fromPhoneNumber, string toContactName, string toPhoneNumber, string type, string pickUpFrom, string quantity, string leaveNotHome, string jobNotificationType, string jobNotificationEmail, string jobNotificationMobile, string toAddressCode, string fromAddressCode, int? clientID, DateTime? time, bool? hold, decimal? fixedAmount, decimal? agentAmount, int? agentCourierID, decimal? fuelSurchargeAmount, string ourRef, string pickUpLatitude, string pickUpLongitude, string deliveryLatitude, string deliveryLongitude, int? pickup, int? dropoff, bool? privateRes, DateTime? truckStartTime, double? truckHours, string jobNumber, int? storageState, int? deliveryState, int? sourceId, int? totalPallets, int? extraStopOffs, decimal? dryIceWeight, decimal? cubic, int? waitTime, int? dGClass, bool? dGDocs, int? loggedInContactId, string additionalServiceIds, DateTime? deliverByDateTime, string pickupTimeZone, string deliverByTimeZone, string recurringName, string recurringDays, string recurringFrequency, int? recurringHoliday, int? recurringInitialDays, DateTime? tenantCurrentTime, int? dimensionsType, string cubicList, string weightList, string barcodeList, OutputParameter<int?> jobID, OutputParameter<string> message, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterJobID = new SqlParameter

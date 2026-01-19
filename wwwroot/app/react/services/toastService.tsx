@@ -1,12 +1,15 @@
 /**
  * React Toast Service
  *
- * A React-native toast notification service using MUI Snackbar.
- * Can be used independently of AngularJS toastr service.
+ * A fully independent React toast notification service using MUI Snackbar.
+ * Works both within React component trees (via ToastProvider/useToast) and
+ * standalone (via toastService singleton for use outside React).
  */
 
-import React, {createContext, useContext, useState, useCallback, ReactNode} from 'react';
-import {Snackbar, Alert, AlertColor} from '@mui/material';
+import React, {createContext, useContext, useState, useCallback, ReactNode, useEffect} from 'react';
+import {createRoot, Root} from 'react-dom/client';
+import {Snackbar, Alert, AlertColor, ThemeProvider} from '@mui/material';
+import {getTheme} from '../theme/muiTheme';
 
 export type ToastType = 'success' | 'warning' | 'error' | 'info';
 
@@ -32,6 +35,55 @@ interface ToastProviderProps {
     children: ReactNode;
     autoHideDuration?: number;
 }
+
+/**
+ * Toast container component that renders the actual snackbars
+ */
+const ToastContainer: React.FC<{
+    toasts: Toast[];
+    autoHideDuration: number;
+    onClose: (id: number) => void;
+}> = ({toasts, autoHideDuration, onClose}) => {
+    const mapTypeToSeverity = (type: ToastType): AlertColor => {
+        switch (type) {
+            case 'success':
+                return 'success';
+            case 'warning':
+                return 'warning';
+            case 'error':
+                return 'error';
+            case 'info':
+            default:
+                return 'info';
+        }
+    };
+
+    return (
+        <>
+            {toasts.map((toast, index) => (
+                <Snackbar
+                    key={toast.id}
+                    open={true}
+                    autoHideDuration={autoHideDuration}
+                    onClose={() => onClose(toast.id)}
+                    anchorOrigin={{vertical: 'top', horizontal: 'right'}}
+                    sx={{
+                        mt: index * 8, // Stack toasts vertically
+                    }}
+                >
+                    <Alert
+                        onClose={() => onClose(toast.id)}
+                        severity={mapTypeToSeverity(toast.type)}
+                        variant="filled"
+                        sx={{width: '100%'}}
+                    >
+                        {toast.message}
+                    </Alert>
+                </Snackbar>
+            ))}
+        </>
+    );
+};
 
 export const ToastProvider: React.FC<ToastProviderProps> = ({
     children,
@@ -64,20 +116,6 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
         setToasts(prev => prev.filter(t => t.id !== id));
     }, []);
 
-    const mapTypeToSeverity = (type: ToastType): AlertColor => {
-        switch (type) {
-            case 'success':
-                return 'success';
-            case 'warning':
-                return 'warning';
-            case 'error':
-                return 'error';
-            case 'info':
-            default:
-                return 'info';
-        }
-    };
-
     return (
         <ToastContext.Provider
             value={{
@@ -89,27 +127,11 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
             }}
         >
             {children}
-            {toasts.map((toast, index) => (
-                <Snackbar
-                    key={toast.id}
-                    open={true}
-                    autoHideDuration={autoHideDuration}
-                    onClose={() => handleClose(toast.id)}
-                    anchorOrigin={{vertical: 'top', horizontal: 'right'}}
-                    sx={{
-                        mt: index * 8, // Stack toasts vertically
-                    }}
-                >
-                    <Alert
-                        onClose={() => handleClose(toast.id)}
-                        severity={mapTypeToSeverity(toast.type)}
-                        variant="filled"
-                        sx={{width: '100%'}}
-                    >
-                        {toast.message}
-                    </Alert>
-                </Snackbar>
-            ))}
+            <ToastContainer
+                toasts={toasts}
+                autoHideDuration={autoHideDuration}
+                onClose={handleClose}
+            />
         </ToastContext.Provider>
     );
 };
@@ -126,50 +148,96 @@ export const useToast = (): ToastContextValue => {
 };
 
 /**
+ * Standalone Toast Container Component
+ * Used by the standalone toast service to render toasts outside React tree
+ */
+const StandaloneToastContainer: React.FC<{
+    toasts: Toast[];
+    onClose: (id: number) => void;
+}> = ({toasts, onClose}) => {
+    const theme = getTheme();
+
+    return (
+        <ThemeProvider theme={theme}>
+            <ToastContainer
+                toasts={toasts}
+                autoHideDuration={5000}
+                onClose={onClose}
+            />
+        </ThemeProvider>
+    );
+};
+
+/**
  * Standalone toast service for use outside React component tree
- * Provides a bridge to AngularJS toastr or falls back to console
+ * Renders its own toast container using a portal to document.body
  */
 class StandaloneToastService {
-    private angularToastr: any = null;
+    private root: Root | null = null;
+    private container: HTMLDivElement | null = null;
+    private toasts: Toast[] = [];
+    private initialized = false;
 
-    /**
-     * Set the AngularJS toastr service reference
-     */
-    setAngularToastr(toastr: any): void {
-        this.angularToastr = toastr;
+    private initialize(): void {
+        if (this.initialized) return;
+
+        // Create container element
+        this.container = document.createElement('div');
+        this.container.id = 'react-toast-container';
+        this.container.style.position = 'fixed';
+        this.container.style.top = '0';
+        this.container.style.right = '0';
+        this.container.style.zIndex = '9999';
+        this.container.style.pointerEvents = 'none';
+        document.body.appendChild(this.container);
+
+        // Create React root
+        this.root = createRoot(this.container);
+        this.initialized = true;
+
+        // Initial render
+        this.render();
+    }
+
+    private render(): void {
+        if (!this.root) return;
+
+        this.root.render(
+            <StandaloneToastContainer
+                toasts={this.toasts}
+                onClose={(id) => this.handleClose(id)}
+            />
+        );
+    }
+
+    private handleClose(id: number): void {
+        this.toasts = this.toasts.filter(t => t.id !== id);
+        this.render();
     }
 
     showToast(message: string, type: ToastType): void {
-        if (this.angularToastr) {
-            switch (type) {
-                case 'success':
-                    this.angularToastr.showSuccessToast(message);
-                    break;
-                case 'warning':
-                    this.angularToastr.showWarningToast(message);
-                    break;
-                case 'error':
-                    this.angularToastr.showErrorToast(message);
-                    break;
-                case 'info':
-                default:
-                    this.angularToastr.showInfoToast?.(message) ??
-                        this.angularToastr.showSuccessToast(message);
-                    break;
-            }
-        } else {
-            // Fallback to console logging
-            const prefix = `[Toast ${type.toUpperCase()}]`;
-            switch (type) {
-                case 'error':
-                    console.error(prefix, message);
-                    break;
-                case 'warning':
-                    console.warn(prefix, message);
-                    break;
-                default:
-                    console.log(prefix, message);
-            }
+        this.initialize();
+
+        const id = ++toastIdCounter;
+        this.toasts = [...this.toasts, {id, message, type}];
+        this.render();
+
+        // Auto-remove after duration
+        setTimeout(() => {
+            this.handleClose(id);
+        }, 5000);
+
+        // Also log to console for debugging
+        const prefix = `[Toast ${type.toUpperCase()}]`;
+        switch (type) {
+            case 'error':
+                console.error(prefix, message);
+                break;
+            case 'warning':
+                console.warn(prefix, message);
+                break;
+            default:
+                console.log(prefix, message);
         }
     }
 
@@ -187,6 +255,14 @@ class StandaloneToastService {
 
     showInfoToast(message: string): void {
         this.showToast(message, 'info');
+    }
+
+    /**
+     * @deprecated No longer needed - toast service is now fully independent
+     */
+    setAngularToastr(_toastr: unknown): void {
+        // No-op for backwards compatibility
+        console.debug('[ToastService] setAngularToastr called - AngularJS bridge no longer needed');
     }
 }
 

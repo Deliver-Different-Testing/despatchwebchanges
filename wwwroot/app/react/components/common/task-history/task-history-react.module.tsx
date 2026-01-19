@@ -17,7 +17,7 @@ import {toastService} from '../../../services/toastService';
  * AngularJS Component Controller for React TaskHistory
  */
 class TaskHistoryReactController implements angular.IController {
-    static $inject = ['$element', 'DispatchData', 'toastrService', 'APP_CONFIG'];
+    static $inject = ['$element', 'DispatchData', 'APP_CONFIG'];
 
     private root: Root | null = null;
 
@@ -29,12 +29,8 @@ class TaskHistoryReactController implements angular.IController {
     constructor(
         private $element: JQLite,
         private dispatchService: DispatchServiceInterface,
-        private angularToastrService: any,
         private appConfig: {US_Customer: boolean}
-    ) {
-        // Set the angular toastr for the standalone toast service
-        toastService.setAngularToastr(angularToastrService);
-    }
+    ) {}
 
     $onInit(): void {
         this.root = createRoot(this.$element[0]);
@@ -70,9 +66,9 @@ class TaskHistoryReactController implements angular.IController {
                     config={this.config}
                     onDeliveryEventClick={handleDeliveryEventClick}
                     dispatchService={this.dispatchService}
-                    showSuccessToast={(msg) => this.angularToastrService.showSuccessToast(msg)}
-                    showErrorToast={(msg) => this.angularToastrService.showErrorToast(msg)}
-                    showInfoToast={(msg) => this.angularToastrService.showInfoToast(msg)}
+                    showSuccessToast={(msg) => toastService.showSuccessToast(msg)}
+                    showErrorToast={(msg) => toastService.showErrorToast(msg)}
+                    showInfoToast={(msg) => toastService.showInfoToast(msg)}
                     isUsCustomer={this.appConfig.US_Customer}
                 />
             </ThemeProvider>

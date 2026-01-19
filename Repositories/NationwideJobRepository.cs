@@ -1477,4 +1477,44 @@ public class NationwideJobRepository(
 
         return airports;
     }
+
+    /// <inheritdoc />
+    public async Task<List<FlightRateDto>> GetCarrierFlightRatesAsync(FlightRateCalculationDto dto)
+    {
+        var results = await Context.Procedures.DD_stpGetCarrierFlightRateAsync(
+            dto.ClientId,
+            dto.FromCity,
+            dto.FromState,
+            dto.ToCity,
+            dto.ToState,
+            dto.CarrierCode,
+            dto.TotalWeight,
+            dto.Quantity,
+            dto.Cubic,
+            dto.TotalPallets,
+            dto.ExtraStopOffs,
+            dto.BookTime,
+            dto.VehicleSizeId,
+            dto.DangerousGoods,
+            dto.DryIceWeight,
+            dto.WaitTime
+        );
+
+        return results
+            .Select(r => new FlightRateDto
+            {
+                JobTypeId = r.JobTypeID ?? 0,
+                Name = r.Name ?? string.Empty,
+                Speed = r.Speed ?? string.Empty,
+                Description = r.Description ?? string.Empty,
+                Rate = r.Rate ?? 0,
+                SaleRate = r.SaleRate ?? 0,
+                Availability = r.Availability ?? string.Empty,
+                AvailabilityColour = r.AvailabilityColour ?? string.Empty,
+                BookDate = r.BookDate ?? DateTime.Now,
+                Duration = r.Duration,
+                FlightRate = r.FlightRate ?? 0
+            })
+            .ToList();
+    }
 }

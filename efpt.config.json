@@ -371,14 +371,6 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[WeightBreakGroups]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[dbo].[WeightBreaks]",
-         "ObjectType": 0
-      },
-      {
          "Name": "[dbo].[ZipPolygon]",
          "ObjectType": 0
       },
@@ -436,6 +428,10 @@
       },
       {
          "Name": "[dbo].[DD_stpGetAgentDistanceRate]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DD_stpGetCarrierFlightRate]",
          "ObjectType": 1
       },
       {

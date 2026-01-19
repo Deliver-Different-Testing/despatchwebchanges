@@ -27,10 +27,7 @@ public class ClientAccessValidatorService(IClientRepository clientRepo) : IClien
         var requestedClientIds = new HashSet<int>();
         foreach (var idString in clientIds.Split(',', StringSplitOptions.RemoveEmptyEntries))
         {
-            if (int.TryParse(idString.Trim(), out var id))
-            {
-                requestedClientIds.Add(id);
-            }
+            if (int.TryParse(idString.Trim(), out var id)) requestedClientIds.Add(id);
             // Silently ignore non-numeric values to prevent DoS through malformed input
         }
 

@@ -371,7 +371,6 @@ public class CourierController(
     {
         try
         {
-            ArgumentNullException.ThrowIfNull(afterHoursScheduleId);
             await courierRepository.DeleteAfterHoursCourierScheduleAsync(afterHoursScheduleId);
             return Ok();
         }

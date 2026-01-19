@@ -443,7 +443,6 @@ public class NationwideJobController(
         try
         {
             ArgumentNullException.ThrowIfNull(request);
-            ArgumentNullException.ThrowIfNull(request.RecoveryId);
 
             await repository.RemoveRecoveryAgentAsync(request.RecoveryId);
             return Ok();

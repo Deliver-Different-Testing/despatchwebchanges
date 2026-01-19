@@ -29,22 +29,14 @@ jest.mock('../../services/tasksApi', () => ({
     },
 }));
 
-// Mock the date formatting functions
-jest.mock('../../../functions/formatDates', () => ({
-    formatDateForApiWithTzs: jest.fn((date) => date.toISOString()),
-    formatDateFromApi: jest.fn((dateStr) => dayjs(dateStr)),
-    formatInfoLogDateTimeString: jest.fn((dateStr) => dateStr),
+// Mock the date utilities
+jest.mock('../../utils/dateUtils', () => ({
+    formatDateForApi: jest.fn((date) => date.toISOString()),
+    parseDateFromApi: jest.fn((dateStr) => dayjs(dateStr)),
+    formatRelativeDateTime: jest.fn((dateStr) => dateStr),
     getIanaTimezone: jest.fn(() => 'America/New_York'),
-}));
-
-// Mock filters module
-jest.mock('../../../filters', () => ({
-    timezoneShortFilter: jest.fn(() => 'EST'),
-}));
-
-// Mock constants module
-jest.mock('../../../contants', () => ({
-    TimeZone: 'America/New_York',
+    getTenantTimezone: jest.fn(() => 'America/New_York'),
+    getTimezoneAbbreviation: jest.fn(() => '(EST)'),
 }));
 
 // Mock localStorage

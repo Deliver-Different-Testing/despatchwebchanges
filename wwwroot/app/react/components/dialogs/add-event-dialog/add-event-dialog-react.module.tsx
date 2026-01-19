@@ -11,8 +11,7 @@ import { createRoot, Root } from 'react-dom/client';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { AddEventDialog, AddEventJob, EventType, JobEventData } from './AddEventDialog';
 import { getTheme } from '../../../theme/muiTheme';
-import { getIanaTimezone, formatDateForApiWithTzs } from '../../../../functions/formatDates';
-import { TimeZone } from '../../../../contants';
+import { getIanaTimezone, formatDateForApi, getTenantTimezone } from '../../../utils/dateUtils';
 import { EventType as EventTypeEnum } from '../../../../enums/event-type';
 import { JobNoteType } from '../../../../enums/job-note-type.enum';
 import { eventApi } from '../../../services/eventApi';
@@ -109,7 +108,7 @@ class AddEventDialogManager {
 
             const formattedEventData: JobEventData = {
                 ...eventData,
-                eventDueDate: formatDateForApiWithTzs(eventData.eventDueDate),
+                eventDueDate: formatDateForApi(eventData.eventDueDate),
             };
 
             await eventApi.addEvent(formattedEventData);
@@ -142,7 +141,7 @@ class AddEventDialogManager {
         };
 
         const currentTheme = getTheme();
-        const timezone = getIanaTimezone(TimeZone);
+        const timezone = getIanaTimezone(getTenantTimezone());
 
         this.dialogRoot.render(
             <ThemeProvider theme={currentTheme}>

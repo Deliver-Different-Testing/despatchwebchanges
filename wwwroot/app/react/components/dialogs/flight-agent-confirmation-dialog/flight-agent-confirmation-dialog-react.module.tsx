@@ -16,8 +16,7 @@ import duration from 'dayjs/plugin/duration';
 
 import { FlightAgentConfirmationDialog } from './FlightAgentConfirmationDialog';
 import { getTheme } from '../../../theme/muiTheme';
-import { getIanaTimezone, formatDateForApiWithTzs } from '../../../../functions/formatDates';
-import { TimeZone } from '../../../../contants';
+import { getIanaTimezone, formatDateForApi, getTenantTimezone } from '../../../utils/dateUtils';
 import { nationwideApi } from '../../../services/nationwideApi';
 import {
     FlightAgentDialogResult,
@@ -97,7 +96,7 @@ class FlightAgentConfirmationDialogManager {
             tz: string
         ): Promise<FlightCargoProcessing | null> => {
             try {
-                const formattedArrivalTime = formatDateForApiWithTzs(arrivalTime, tz);
+                const formattedArrivalTime = formatDateForApi(arrivalTime, tz);
                 const result = await nationwideApi.calculateCargoReadyTime(
                     jobId,
                     carrierFsCode,
@@ -119,7 +118,7 @@ class FlightAgentConfirmationDialogManager {
         };
 
         const currentTheme = getTheme();
-        const tz = getIanaTimezone(TimeZone);
+        const tz = getIanaTimezone(getTenantTimezone());
 
         this.dialogRoot.render(
             <ThemeProvider theme={currentTheme}>

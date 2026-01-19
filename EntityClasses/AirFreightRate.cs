@@ -64,6 +64,4 @@ public partial class AirFreightRate
     public virtual TucJobType Speed { get; set; }
 
     public virtual VehicleSize VehicleSize { get; set; }
-
-    public virtual WeightBreakGroup WeightBreakGroup { get; set; }
 }

@@ -12,13 +12,12 @@ import {TaskItem} from './TaskItem';
 import {Task, TaskItemConfig, TasksServiceInterface, DispatchServiceInterface} from './TaskItem.interfaces';
 import {getTheme} from '../../../theme/muiTheme';
 import {toastService} from '../../../services/toastService';
-import ToastrService from "../../../../services/toastr.service";
 
 /**
  * AngularJS Component Controller for React TaskItem
  */
 class TaskItemReactController implements angular.IController {
-    static $inject = ['$element', 'tasksService', 'DispatchData', 'toastrService'];
+    static $inject = ['$element', 'tasksService', 'DispatchData'];
 
     private root: Root | null = null;
 
@@ -31,12 +30,8 @@ class TaskItemReactController implements angular.IController {
     constructor(
         private $element: JQLite,
         private tasksService: TasksServiceInterface,
-        private dispatchService: DispatchServiceInterface,
-        private angularToastrService: ToastrService
-    ) {
-        // Set the angular toastr for the standalone toast service
-        toastService.setAngularToastr(angularToastrService);
-    }
+        private dispatchService: DispatchServiceInterface
+    ) {}
 
     $onInit(): void {
         this.root = createRoot(this.$element[0]);
@@ -80,8 +75,8 @@ class TaskItemReactController implements angular.IController {
                     onTaskClick={handleTaskClick}
                     tasksService={this.tasksService}
                     dispatchService={this.dispatchService}
-                    showSuccessToast={(msg) => this.angularToastrService.showSuccessToast(msg)}
-                    showErrorToast={(msg) => this.angularToastrService.showErrorToast(msg)}
+                    showSuccessToast={(msg) => toastService.showSuccessToast(msg)}
+                    showErrorToast={(msg) => toastService.showErrorToast(msg)}
                 />
             </ThemeProvider>
         );

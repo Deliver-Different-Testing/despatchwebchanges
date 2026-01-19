@@ -1,22 +1,16 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using DespatchWeb.Interfaces;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace DespatchWeb;
 
-public interface IConnectionStringManager
-{
-    Task SetConnectionStringAsync(string tenantAppCacheKey, string connectionString);
-    Task<string> GetConnectionStringAsync(string tenantAppCacheKey);
-}
-
 public class ConnectionStringManager(
     IDistributedCache distributedCache,
-    IMemoryCache memoryCache,
-    ILogger<ConnectionStringManager> logger)
+    IMemoryCache memoryCache)
     : IConnectionStringManager
 {
     private static readonly SemaphoreSlim Semaphore = new(1, 1);
@@ -28,10 +22,7 @@ public class ConnectionStringManager(
 
     public async Task SetConnectionStringAsync(string tenantAppCacheKey, string connectionString)
     {
-        if (string.IsNullOrEmpty(connectionString))
-        {
-            throw new ArgumentNullException(nameof(connectionString));
-        }
+        if (string.IsNullOrEmpty(connectionString)) throw new ArgumentNullException(nameof(connectionString));
 
         // Always set in memory cache first (fast, reliable)
         SetMemoryCache(tenantAppCacheKey, connectionString);
@@ -45,12 +36,14 @@ public class ConnectionStringManager(
             };
 
             await distributedCache.SetStringAsync(tenantAppCacheKey, connectionString, options);
-            logger.LogDebug("Connection string set in distributed cache for {CacheKey}", tenantAppCacheKey);
+            Log.Debug("Connection string set in distributed cache for {CacheKey}", tenantAppCacheKey);
         }
         catch (Exception ex)
         {
             // Log but don't throw - memory cache is our fallback
-            logger.LogWarning(ex, "Failed to set connection string in distributed cache for {CacheKey}, using memory cache as fallback", tenantAppCacheKey);
+            Log.Warning(ex,
+                "Failed to set connection string in distributed cache for {CacheKey}, using memory cache as fallback",
+                tenantAppCacheKey);
         }
         finally
         {
@@ -64,7 +57,7 @@ public class ConnectionStringManager(
         if (memoryCache.TryGetValue(tenantAppCacheKey, out string cachedConnectionString)
             && !string.IsNullOrEmpty(cachedConnectionString))
         {
-            logger.LogDebug("Connection string retrieved from memory cache for {CacheKey}", tenantAppCacheKey);
+            Log.Debug("Connection string retrieved from memory cache for {CacheKey}", tenantAppCacheKey);
             return cachedConnectionString;
         }
 
@@ -78,7 +71,7 @@ public class ConnectionStringManager(
             return connectionString;
         }
 
-        logger.LogWarning("Connection string not found in any cache for {CacheKey}", tenantAppCacheKey);
+        Log.Warning("Connection string not found in any cache for {CacheKey}", tenantAppCacheKey);
         return null;
     }
 
@@ -95,7 +88,7 @@ public class ConnectionStringManager(
 
                 if (!string.IsNullOrEmpty(connectionString))
                 {
-                    logger.LogDebug("Connection string retrieved from distributed cache for {CacheKey} on attempt {Attempt}",
+                    Log.Debug("Connection string retrieved from distributed cache for {CacheKey} on attempt {Attempt}",
                         tenantAppCacheKey, attempt);
                     return connectionString;
                 }
@@ -103,13 +96,14 @@ public class ConnectionStringManager(
                 // Key doesn't exist in cache - no point retrying
                 if (attempt == 1)
                 {
-                    logger.LogDebug("Connection string not found in distributed cache for {CacheKey}", tenantAppCacheKey);
+                    Log.Debug("Connection string not found in distributed cache for {CacheKey}", tenantAppCacheKey);
                 }
+
                 return null;
             }
             catch (Exception ex) when (attempt < MaxRetryAttempts)
             {
-                logger.LogWarning(ex,
+                Log.Warning(ex,
                     "Transient error accessing distributed cache for {CacheKey}, attempt {Attempt}/{MaxAttempts}. Retrying in {Delay}ms",
                     tenantAppCacheKey, attempt, MaxRetryAttempts, retryDelay.TotalMilliseconds);
 
@@ -118,7 +112,7 @@ public class ConnectionStringManager(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex,
+                Log.Error(ex,
                     "Failed to retrieve connection string from distributed cache for {CacheKey} after {MaxAttempts} attempts",
                     tenantAppCacheKey, MaxRetryAttempts);
                 return null;
