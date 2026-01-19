@@ -190,12 +190,7 @@ describe('ToastProvider', () => {
 });
 
 describe('StandaloneToastService', () => {
-    beforeEach(() => {
-        // Reset the angular toastr reference
-        toastService.setAngularToastr(null);
-    });
-
-    describe('without AngularJS toastr', () => {
+    describe('console logging', () => {
         it('should log success message to console', () => {
             const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
@@ -233,57 +228,6 @@ describe('StandaloneToastService', () => {
         });
     });
 
-    describe('with AngularJS toastr', () => {
-        const mockAngularToastr = {
-            showSuccessToast: jest.fn(),
-            showWarningToast: jest.fn(),
-            showErrorToast: jest.fn(),
-            showInfoToast: jest.fn(),
-        };
-
-        beforeEach(() => {
-            jest.clearAllMocks();
-            toastService.setAngularToastr(mockAngularToastr);
-        });
-
-        it('should call AngularJS showSuccessToast', () => {
-            toastService.showSuccessToast('Angular success');
-
-            expect(mockAngularToastr.showSuccessToast).toHaveBeenCalledWith('Angular success');
-        });
-
-        it('should call AngularJS showWarningToast', () => {
-            toastService.showWarningToast('Angular warning');
-
-            expect(mockAngularToastr.showWarningToast).toHaveBeenCalledWith('Angular warning');
-        });
-
-        it('should call AngularJS showErrorToast', () => {
-            toastService.showErrorToast('Angular error');
-
-            expect(mockAngularToastr.showErrorToast).toHaveBeenCalledWith('Angular error');
-        });
-
-        it('should call AngularJS showInfoToast when available', () => {
-            toastService.showInfoToast('Angular info');
-
-            expect(mockAngularToastr.showInfoToast).toHaveBeenCalledWith('Angular info');
-        });
-
-        it('should fallback to showSuccessToast when showInfoToast is not available', () => {
-            const toastrWithoutInfo = {
-                showSuccessToast: jest.fn(),
-                showWarningToast: jest.fn(),
-                showErrorToast: jest.fn(),
-            };
-            toastService.setAngularToastr(toastrWithoutInfo);
-
-            toastService.showInfoToast('Fallback info');
-
-            expect(toastrWithoutInfo.showSuccessToast).toHaveBeenCalledWith('Fallback info');
-        });
-    });
-
     describe('showToast with type parameter', () => {
         it('should route to correct method based on type', () => {
             const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
@@ -305,6 +249,20 @@ describe('StandaloneToastService', () => {
             consoleSpy.mockRestore();
             consoleWarnSpy.mockRestore();
             consoleErrorSpy.mockRestore();
+        });
+    });
+
+    describe('setAngularToastr (deprecated)', () => {
+        it('should be a no-op for backwards compatibility', () => {
+            const consoleSpy = jest.spyOn(console, 'debug').mockImplementation(() => {});
+
+            // Should not throw
+            toastService.setAngularToastr({});
+
+            expect(consoleSpy).toHaveBeenCalledWith(
+                '[ToastService] setAngularToastr called - AngularJS bridge no longer needed'
+            );
+            consoleSpy.mockRestore();
         });
     });
 });

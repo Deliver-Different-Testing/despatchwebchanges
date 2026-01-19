@@ -12,17 +12,11 @@ import dayjs from 'dayjs';
 import {TaskHistory} from './TaskHistory';
 import {DeliveryJourney, TaskHistoryProps, DensityMode} from './TaskHistory.interfaces';
 
-// Mock the timezone functions
-jest.mock('../../../../functions/formatDates', () => ({
+// Mock the date utilities
+jest.mock('../../../utils/dateUtils', () => ({
     getIanaTimezone: jest.fn(() => 'America/New_York'),
-}));
-
-jest.mock('../../../../filters', () => ({
-    timezoneShortFilter: jest.fn(() => 'EST'),
-}));
-
-jest.mock('../../../../contants', () => ({
-    TimeZone: 'America/New_York',
+    getTenantTimezone: jest.fn(() => 'America/New_York'),
+    getTimezoneAbbreviation: jest.fn(() => '(EST)'),
 }));
 
 const theme = createTheme();

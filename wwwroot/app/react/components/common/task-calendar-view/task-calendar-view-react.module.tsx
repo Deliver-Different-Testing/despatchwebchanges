@@ -13,13 +13,12 @@ import {Task} from '../task-item/TaskItem.interfaces';
 import {TasksServiceInterface} from './TaskCalendarView.interfaces';
 import {getTheme} from '../../../theme/muiTheme';
 import {toastService} from '../../../services/toastService';
-import ToastrService from '../../../../services/toastr.service';
 
 /**
  * AngularJS Component Controller for React TaskCalendarView
  */
 class TaskCalendarViewReactController implements angular.IController {
-    static $inject = ['$element', 'tasksService', 'toastrService'];
+    static $inject = ['$element', 'tasksService'];
 
     private root: Root | null = null;
 
@@ -32,12 +31,8 @@ class TaskCalendarViewReactController implements angular.IController {
 
     constructor(
         private $element: JQLite,
-        private tasksService: TasksServiceInterface,
-        private angularToastrService: ToastrService
-    ) {
-        // Set the angular toastr for the standalone toast service
-        toastService.setAngularToastr(angularToastrService);
-    }
+        private tasksService: TasksServiceInterface
+    ) {}
 
     $onInit(): void {
         this.root = createRoot(this.$element[0]);
@@ -81,8 +76,8 @@ class TaskCalendarViewReactController implements angular.IController {
                     onTaskStatusChange={handleTaskStatusChange}
                     onViewChange={handleViewChange}
                     tasksService={this.tasksService}
-                    showSuccessToast={msg => this.angularToastrService.showSuccessToast(msg)}
-                    showErrorToast={msg => this.angularToastrService.showErrorToast(msg)}
+                    showSuccessToast={msg => toastService.showSuccessToast(msg)}
+                    showErrorToast={msg => toastService.showErrorToast(msg)}
                 />
             </ThemeProvider>
         );

@@ -42,7 +42,6 @@ import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
-import isBetween from 'dayjs/plugin/isBetween';
 import duration from 'dayjs/plugin/duration';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -57,7 +56,6 @@ import {
     FlightSegment,
 } from './types';
 
-dayjs.extend(isBetween);
 dayjs.extend(duration);
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -187,7 +185,9 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
             `${packageDate} ${cargoProcessing.cargoClosingTime.format('HH:mm:ss')}`
         );
 
-        return packageReadyTime.isBetween(openingTimeOnPackageDate, closingTimeOnPackageDate, null, '[]');
+        // Use direct timestamp comparison instead of isBetween plugin to avoid bundling issues
+        const pkgTime = packageReadyTime.valueOf();
+        return pkgTime >= openingTimeOnPackageDate.valueOf() && pkgTime <= closingTimeOnPackageDate.valueOf();
     }, [cargoProcessing, packageReadyTime]);
 
     // Calculate next morning time

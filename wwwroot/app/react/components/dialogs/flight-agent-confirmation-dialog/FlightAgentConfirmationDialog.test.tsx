@@ -561,6 +561,37 @@ describe('FlightAgentConfirmationDialog', () => {
         });
     });
 
+    describe('Operating Hours Boundary Conditions', () => {
+        // Verifies the isBetween fix using valueOf() comparison
+        it.each([
+            ['exactly at opening (06:00)', '2024-03-15T04:00:00', 120],
+            ['exactly at closing (22:00)', '2024-03-15T20:00:00', 120],
+            ['within hours (14:00)', '2024-03-15T12:00:00', 120],
+        ])('does not show warning when package ready %s', async (_, arrivalTime, processingMins) => {
+            const cargoProcessing = createCargoProcessing({
+                arrivalTime: dayjs(arrivalTime),
+                processingTimeMins: processingMins,
+                cargoOpeningTime: dayjs('2024-03-15T06:00:00'),
+                cargoClosingTime: dayjs('2024-03-15T22:00:00'),
+            });
+
+            renderWithTheme(
+                <FlightAgentConfirmationDialog
+                    {...defaultProps}
+                    mode="flight"
+                    flight={createFlight()}
+                    onCalculateCargoTimes={jest.fn().mockResolvedValue(cargoProcessing)}
+                />
+            );
+
+            await waitFor(() => {
+                expect(screen.getByText('06:00 - 22:00')).toBeInTheDocument();
+            });
+
+            expect(screen.queryByText(/Package Available After Cargo Hours/)).not.toBeInTheDocument();
+        });
+    });
+
     describe('Error Handling', () => {
         it('shows error toast when no flight segments available', async () => {
             const showToast = jest.fn();

@@ -13,13 +13,12 @@ import {NoteManagementDialogServiceInterface} from './StickyNotes.interfaces';
 import {getTheme} from '../../../theme/muiTheme';
 import {toastService} from '../../../services/toastService';
 import {IAppConfig} from "../../../../interfaces/app-config.interface";
-import ToastrService from "../../../../services/toastr.service";
 
 /**
  * AngularJS Component Controller for React StickyNotes
  */
 class StickyNotesReactController implements angular.IController {
-    static $inject = ['$element', 'noteManagementDialogService', 'toastrService', 'APP_CONFIG'];
+    static $inject = ['$element', 'noteManagementDialogService', 'APP_CONFIG'];
 
     private root: Root | null = null;
 
@@ -31,12 +30,8 @@ class StickyNotesReactController implements angular.IController {
     constructor(
         private $element: JQLite,
         private noteManagementDialogService: NoteManagementDialogServiceInterface,
-        private angularToastrService: ToastrService,
         private appConfig: IAppConfig
-    ) {
-        // Set the angular toastr for the standalone toast service
-        toastService.setAngularToastr(angularToastrService);
-    }
+    ) {}
 
     $onInit(): void {
         this.root = createRoot(this.$element[0]);
@@ -67,9 +62,9 @@ class StickyNotesReactController implements angular.IController {
                     bulkJobId={this.bulkJobId}
                     isRecurringJob={this.isRecurringJob}
                     noteManagementDialogService={this.noteManagementDialogService}
-                    showSuccessToast={(msg) => this.angularToastrService.showSuccessToast(msg)}
-                    showErrorToast={(msg) => this.angularToastrService.showErrorToast(msg)}
-                    showInfoToast={(msg) => this.angularToastrService.showInfoToast(msg)}
+                    showSuccessToast={(msg) => toastService.showSuccessToast(msg)}
+                    showErrorToast={(msg) => toastService.showErrorToast(msg)}
+                    showInfoToast={(msg) => toastService.showInfoToast(msg)}
                     isUsCustomer={this.appConfig.US_Customer}
                 />
             </ThemeProvider>

@@ -51,7 +51,7 @@ import {TaskFiltersRequest} from '../../interfaces';
 import {TaskItem} from '../../components/common/task-item/TaskItem';
 import {TaskCalendarView} from '../../components/common/task-calendar-view/TaskCalendarView';
 import {TaskHistory} from '../../components/common/task-history/TaskHistory';
-import {formatDateForApiWithTzs} from '../../../functions/formatDates';
+import {formatDateForApi} from '../../utils/dateUtils';
 import DensityMode from '../../../enums/densityMode';
 import {
     useTasks,
@@ -120,8 +120,8 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
             filters.searchText = searchQuery;
         }
 
-        filters.startDate = formatDateForApiWithTzs(dateFilterData.startDate);
-        filters.endDate = formatDateForApiWithTzs(dateFilterData.endDate);
+        filters.startDate = formatDateForApi(dateFilterData.startDate);
+        filters.endDate = formatDateForApi(dateFilterData.endDate);
 
         return filters;
     }, [staffFilter, eventTypeFilter, searchQuery, dateFilterData]);

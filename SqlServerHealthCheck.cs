@@ -3,11 +3,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace DespatchWeb;
 
-public class SqlServerHealthCheck(ILogger<SqlServerHealthCheck> logger): IHealthCheck
+public class SqlServerHealthCheck(): IHealthCheck
 {
     private readonly string _healthCheckConnectionString = 
         Environment.GetEnvironmentVariable("SQLHealthCheckConnection")
@@ -25,12 +25,12 @@ public class SqlServerHealthCheck(ILogger<SqlServerHealthCheck> logger): IHealth
             command.CommandText = "SELECT @@version";
             var version = await command.ExecuteScalarAsync(cancellationToken) as string;
 
-            logger.LogInformation("SQL Server health check succeeded");
+            Log.Information("SQL Server health check succeeded");
             return HealthCheckResult.Healthy($"Successfully connected to SQL Server. Version: {version}");
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "SQL Server health check failed");
+            Log.Error(ex, "SQL Server health check failed");
             return HealthCheckResult.Unhealthy(ex.Message);
         }
     }

@@ -207,10 +207,6 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<VehicleSize> VehicleSizes { get; set; }
 
-    public virtual DbSet<WeightBreak> WeightBreaks { get; set; }
-
-    public virtual DbSet<WeightBreakGroup> WeightBreakGroups { get; set; }
-
     public virtual DbSet<ZipPolygon> ZipPolygons { get; set; }
 
     public virtual DbSet<ZoneGroup> ZoneGroups { get; set; }
@@ -305,10 +301,6 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.VehicleSize).WithMany(p => p.AirFreightRates)
                 .HasForeignKey(d => d.VehicleSizeId)
                 .HasConstraintName("FK__AirFreigh__Vehic__6231487C");
-
-            entity.HasOne(d => d.WeightBreakGroup).WithMany(p => p.AirFreightRates)
-                .HasForeignKey(d => d.WeightBreakGroupId)
-                .HasConstraintName("FK__AirFreigh__Weigh__2962DF74");
         });
 
         modelBuilder.Entity<CargoFacility>(entity =>
@@ -7361,57 +7353,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.VehicleName).HasMaxLength(255);
             entity.Property(e => e.VehicleTypeId).HasColumnName("VehicleTypeID");
             entity.Property(e => e.WeightCapacity).HasColumnType("decimal(18, 4)");
-        });
-
-        modelBuilder.Entity<WeightBreak>(entity =>
-        {
-            entity.HasKey(e => e.WeightBreakId).HasName("PK__WeightBr__51EB3B5534D8700A");
-
-            entity.Property(e => e.WeightBreakId).HasColumnName("WeightBreakID");
-            entity.Property(e => e.BaseCharge).HasColumnType("decimal(18, 4)");
-            entity.Property(e => e.Created).HasColumnType("datetime");
-            entity.Property(e => e.CreatedBy).HasMaxLength(255);
-            entity.Property(e => e.ExtraWeightRate).HasColumnType("decimal(18, 4)");
-            entity.Property(e => e.IncrementRate).HasColumnType("decimal(10, 4)");
-            entity.Property(e => e.IncrementUnit).HasColumnType("decimal(10, 4)");
-            entity.Property(e => e.LastModified).HasColumnType("datetime");
-            entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
-        });
-
-        modelBuilder.Entity<WeightBreakGroup>(entity =>
-        {
-            entity.HasKey(e => e.WeightBreakGroupId).HasName("PK__WeightBr__34F02BA4C7CF6726");
-
-            entity.Property(e => e.WeightBreakGroupId).HasColumnName("WeightBreakGroupID");
-            entity.Property(e => e.Created).HasColumnType("datetime");
-            entity.Property(e => e.CreatedBy).HasMaxLength(255);
-            entity.Property(e => e.LastModified).HasColumnType("datetime");
-            entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
-            entity.Property(e => e.WeightBreakGroupName).HasMaxLength(200);
-
-            entity.HasOne(d => d.FifthWeightBreakNavigation).WithMany(p => p.WeightBreakGroupFifthWeightBreakNavigations)
-                .HasForeignKey(d => d.FifthWeightBreak)
-                .HasConstraintName("FK__WeightBre__Fifth__286EBB3B");
-
-            entity.HasOne(d => d.FirstWeightBreakNavigation).WithMany(p => p.WeightBreakGroupFirstWeightBreakNavigations)
-                .HasForeignKey(d => d.FirstWeightBreak)
-                .HasConstraintName("FK__WeightBre__First__249E2A57");
-
-            entity.HasOne(d => d.FourthWeightBreakNavigation).WithMany(p => p.WeightBreakGroupFourthWeightBreakNavigations)
-                .HasForeignKey(d => d.FourthWeightBreak)
-                .HasConstraintName("FK__WeightBre__Fourt__277A9702");
-
-            entity.HasOne(d => d.SecondWeightBreakNavigation).WithMany(p => p.WeightBreakGroupSecondWeightBreakNavigations)
-                .HasForeignKey(d => d.SecondWeightBreak)
-                .HasConstraintName("FK__WeightBre__Secon__25924E90");
-
-            entity.HasOne(d => d.SixthWeightBreakNavigation).WithMany(p => p.WeightBreakGroupSixthWeightBreakNavigations)
-                .HasForeignKey(d => d.SixthWeightBreak)
-                .HasConstraintName("FK__WeightBre__Sixth__3084DE4F");
-
-            entity.HasOne(d => d.ThirdWeightBreakNavigation).WithMany(p => p.WeightBreakGroupThirdWeightBreakNavigations)
-                .HasForeignKey(d => d.ThirdWeightBreak)
-                .HasConstraintName("FK__WeightBre__Third__268672C9");
         });
 
         modelBuilder.Entity<ZipPolygon>(entity =>

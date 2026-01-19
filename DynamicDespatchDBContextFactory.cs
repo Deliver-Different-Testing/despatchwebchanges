@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -19,7 +20,7 @@ public class DynamicDespatchDbContextFactory(
     public DespatchContext CreateDbContext()
     {
         var httpContext = contextAccessor.HttpContext;
-        var isAuthenticated = httpContext?.User?.Identity?.IsAuthenticated ?? false;
+        var isAuthenticated = httpContext?.User.Identity?.IsAuthenticated ?? false;
         var tenantId = httpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
         var cacheKey = $"{tenantId}-ClientManager-Connection";
 

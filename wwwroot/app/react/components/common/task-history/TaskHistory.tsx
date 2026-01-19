@@ -31,9 +31,7 @@ import {
     DensityMode,
     DeliveryHistoryConfig,
 } from './TaskHistory.interfaces';
-import {getIanaTimezone} from '../../../../functions/formatDates';
-import {TimeZone} from '../../../../contants';
-import {timezoneShortFilter} from '../../../../filters';
+import {getIanaTimezone, getTenantTimezone, getTimezoneAbbreviation} from '../../../utils/dateUtils';
 
 dayjs.extend(relativeTime);
 
@@ -89,8 +87,8 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
             shouldAnimate: false,
         };
 
-        const ianaTimeZone = getIanaTimezone(TimeZone);
-        this.timeZoneShort = timezoneShortFilter(ianaTimeZone);
+        const ianaTimeZone = getIanaTimezone(getTenantTimezone());
+        this.timeZoneShort = getTimezoneAbbreviation(ianaTimeZone);
     }
 
     componentDidMount(): void {

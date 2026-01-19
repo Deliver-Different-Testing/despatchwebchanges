@@ -26,11 +26,11 @@ jest.mock('./apiClient', () => ({
     },
 }));
 
-// Mock date formatting functions
-jest.mock('../../functions/formatDates', () => ({
-    formatDateForApiWithTzs: jest.fn((date) => date.toISOString()),
-    formatDateFromApi: jest.fn((dateStr) => dayjs(dateStr)),
-    formatInfoLogDateTimeString: jest.fn((dateStr) => dateStr),
+// Mock date utilities
+jest.mock('../utils/dateUtils', () => ({
+    formatDateForApi: jest.fn((date) => date.toISOString()),
+    parseDateFromApi: jest.fn((dateStr) => dayjs(dateStr)),
+    formatRelativeDateTime: jest.fn((dateStr) => dateStr),
 }));
 
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;

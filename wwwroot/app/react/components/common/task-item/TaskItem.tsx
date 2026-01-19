@@ -34,9 +34,7 @@ import {DateCalendar} from '@mui/x-date-pickers/DateCalendar';
 import {TimeClock} from '@mui/x-date-pickers/TimeClock';
 import dayjs, {Dayjs} from 'dayjs';
 import {TaskItemProps, TaskItemConfig} from './TaskItem.interfaces';
-import {getIanaTimezone} from '../../../../functions/formatDates';
-import {TimeZone} from '../../../../contants';
-import {timezoneShortFilter} from '../../../../filters';
+import {getIanaTimezone, getTenantTimezone, getTimezoneAbbreviation} from '../../../utils/dateUtils';
 
 const defaultConfig: TaskItemConfig = {
     showJobId: true,
@@ -76,8 +74,8 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
             isCompleting: false,
         };
 
-        const ianaTimeZone = getIanaTimezone(TimeZone);
-        this.timeZoneShort = timezoneShortFilter(ianaTimeZone);
+        const ianaTimeZone = getIanaTimezone(getTenantTimezone());
+        this.timeZoneShort = getTimezoneAbbreviation(ianaTimeZone);
     }
 
     private get config(): TaskItemConfig {

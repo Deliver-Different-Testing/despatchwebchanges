@@ -17,7 +17,7 @@ import {
     StaffSuggestion,
     EventTypeSuggestion,
 } from '../interfaces';
-import {formatDateForApiWithTzs, formatDateFromApi, formatInfoLogDateTimeString} from '../../functions/formatDates';
+import {formatDateForApi, parseDateFromApi, formatRelativeDateTime} from '../utils/dateUtils';
 import dayjs, {Dayjs} from 'dayjs';
 import {DeliveryJourney, DeliveryJourneyDto} from '../components/common/task-history/TaskHistory.interfaces';
 
@@ -69,7 +69,7 @@ export async function markTaskAsClosed(eventId: number, closed: boolean): Promis
 export async function updateTaskDate(eventId: number, date: Dayjs): Promise<void> {
     const data: TaskDateRequest = {
         eventId,
-        date: formatDateForApiWithTzs(date),
+        date: formatDateForApi(date),
     };
     await apiClient.post('task/UpdateTaskDate', data);
 }
@@ -80,7 +80,7 @@ export async function updateTaskDate(eventId: number, date: Dayjs): Promise<void
 export async function updateTaskTime(eventId: number, time: Dayjs): Promise<void> {
     const data: TaskTimeRequest = {
         eventId,
-        time: formatDateForApiWithTzs(time),
+        time: formatDateForApi(time),
     };
     await apiClient.post('task/UpdateTaskTime', data);
 }
@@ -113,9 +113,9 @@ export async function getEventTypes(): Promise<EventTypeSuggestion[]> {
 function transformDeliveryJourneyDTO(dto: DeliveryJourneyDto): DeliveryJourney {
     return {
         ...dto,
-        date: formatDateFromApi(dto.date),
+        date: parseDateFromApi(dto.date),
         status: dto.status as DeliveryJourney['status'],
-        _dateStr: formatInfoLogDateTimeString(dto.date),
+        _dateStr: formatRelativeDateTime(dto.date),
     };
 }
 

@@ -19,7 +19,6 @@ public class NoteController(
     {
         try
         {
-            ArgumentNullException.ThrowIfNull(jobId);
 
             var notes = await jobRepository.GetNotesByJobIdAsync(jobId);
             return Json(notes);
@@ -36,7 +35,6 @@ public class NoteController(
     {
         try
         {
-            ArgumentNullException.ThrowIfNull(bulkJobId);
 
             var bulkJobNotes = await jobRepository.GetBulkJobNotesByBulkJobIdAsync(bulkJobId);
             return Json(bulkJobNotes);
@@ -53,7 +51,6 @@ public class NoteController(
     {
         try
         {
-            ArgumentNullException.ThrowIfNull(jobId);
 
             var notes = await recurringJobRepository.GetRecurringNotesByJobIdAsync(jobId);
             return Json(notes);
@@ -72,7 +69,6 @@ public class NoteController(
         try
         {
             ArgumentNullException.ThrowIfNull(noteViewModel);
-            ArgumentNullException.ThrowIfNull(noteViewModel.NoteId);
 
             if (noteViewModel.JobBookingId.HasValue)
                 await recurringJobRepository.SaveRecurringJobNote(noteViewModel);
@@ -97,7 +93,6 @@ public class NoteController(
         try
         {
             ArgumentNullException.ThrowIfNull(noteViewModel);
-            ArgumentNullException.ThrowIfNull(noteViewModel.NoteId);
 
             await jobRepository.SaveBulkNoteAsync(noteViewModel);
             return Ok();

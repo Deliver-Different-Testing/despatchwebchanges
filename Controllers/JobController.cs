@@ -284,9 +284,6 @@ public class JobController(
     {
         try
         {
-            ArgumentNullException.ThrowIfNull(courierId);
-            ArgumentNullException.ThrowIfNull(startDate);
-            ArgumentNullException.ThrowIfNull(endDate);
 
             var result = await jobRepository.CurrentJobListAsync(courierId, startDate, endDate);
             return Json(result);
@@ -1295,7 +1292,6 @@ public class JobController(
     {
         try
         {
-            ArgumentNullException.ThrowIfNull(bulkJobId);
             await jobRepository.ReleaseBulkJobByIdAsync(bulkJobId);
 
             Log.Information("Successfully released bulk job {JobNumber}", bulkJobId);

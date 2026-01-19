@@ -42,9 +42,7 @@ import {
 } from './TaskCalendarView.interfaces';
 import {Task} from '../task-item/TaskItem.interfaces';
 import {TaskItem} from '../task-item/TaskItem';
-import {getIanaTimezone} from '../../../../functions/formatDates';
-import {TimeZone} from '../../../../contants';
-import {timezoneShortFilter} from '../../../../filters';
+import {getIanaTimezone, getTenantTimezone, getTimezoneAbbreviation} from '../../../utils/dateUtils';
 
 dayjs.extend(isoWeek);
 dayjs.extend(weekday);
@@ -67,8 +65,8 @@ export class TaskCalendarView extends React.Component<TaskCalendarViewProps, Tas
             timeSlots: this.generateTimeSlots(),
         };
 
-        const ianaTimeZone = getIanaTimezone(TimeZone);
-        this.timeZoneShort = timezoneShortFilter(ianaTimeZone);
+        const ianaTimeZone = getIanaTimezone(getTenantTimezone());
+        this.timeZoneShort = getTimezoneAbbreviation(ianaTimeZone);
     }
 
     componentDidMount(): void {

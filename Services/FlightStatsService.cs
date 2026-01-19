@@ -416,8 +416,6 @@ public class FlightStatsService(
         var effectiveStartTime = (departureDateTime < currentTenantTime ? currentTenantTime : departureDateTime) ??
                                  currentTenantTime;
         var flightsFrom = effectiveStartTime.AddMinutes(flightBuffer);
-
-        ArgumentNullException.ThrowIfNull(flightsFrom);
         return flightsFrom.DateTime;
     }
 
