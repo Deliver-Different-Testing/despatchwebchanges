@@ -1,39 +1,82 @@
 import { IFlightViewModel } from "../../Nationwide/nationwide.interfaces";
-import FlightDetailsDialogController from "./flight-details-dialog.component";
+
+// Type declaration for the React dialog on window
+declare global {
+    interface Window {
+        ReactFlightDetailsDialog?: {
+            openFlightDetailsDialog: (flightData: IFlightViewModel) => Promise<void>;
+        };
+    }
+}
 
 class FlightDetailsDialogService implements angular.IServiceProvider {
     static $inject = [
-        '$mdDialog',
-        '$document',
+        '$ocLazyLoad',
+        '$http',
     ];
 
     constructor(
-        private $mdDialog: angular.material.IDialogService,
-        private $document: angular.IDocumentService,
+        private $ocLazyLoad: oc.ILazyLoad,
+        private $http: angular.IHttpService,
     ) {
-        console.log('FlightDetailsDialogService: Service instantiated');
+        console.debug('FlightDetailsDialogService: Service instantiated');
     }
 
     $get() {
         return this;
     }
 
-    async openFlightDetailsDialog($event: MouseEvent, flightData: IFlightViewModel) {
-        // Don't need to make an additional API call since we already have the flight data
-        await this.$mdDialog.show({
-            template: require('./flight-details-dialog.template.html'),
-            controller: FlightDetailsDialogController,
-            controllerAs: 'ctrl',
-            parent: this.$document.parent(),
-            targetEvent: $event,
-            clickOutsideToClose: true,
-            escapeToClose: true,
-            locals: {
-                flightData
-            },
-            bindToController: true,
-            fullscreen: true,
-        });
+    /**
+     * Load the React flight details dialog module on demand
+     */
+    private async loadReactDialog(): Promise<void> {
+        // Check if already loaded
+        if (window.ReactFlightDetailsDialog) {
+            return;
+        }
+
+        try {
+            // Load the manifest to get hashed filenames
+            const manifestResponse = await this.$http.get<Record<string, string>>('dist/manifest.json');
+            const manifest = manifestResponse.data;
+
+            const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
+
+            // Load vendor-react first (if not already loaded)
+            if (!(window as any).React) {
+                await this.$ocLazyLoad.load(getAssetPath('vendor-react.js'));
+            }
+
+            // Load the flight details dialog React module
+            await this.$ocLazyLoad.load({
+                name: 'uDispatch.flightDetailsDialogReact',
+                files: [getAssetPath('flightDetailsDialogReact.js')]
+            });
+        } catch (error) {
+            console.error('[FlightDetailsDialogService] Failed to load React dialog:', error);
+            throw error;
+        }
+    }
+
+    async openFlightDetailsDialog($event: MouseEvent, flightData: IFlightViewModel): Promise<void> {
+        console.debug('FlightDetailsDialogService: openFlightDetailsDialog called');
+
+        try {
+            // Load the React dialog module on demand
+            await this.loadReactDialog();
+
+            if (!window.ReactFlightDetailsDialog) {
+                throw new Error('React flight details dialog not loaded');
+            }
+
+            // Open the React dialog
+            await window.ReactFlightDetailsDialog.openFlightDetailsDialog(flightData);
+
+            console.debug('FlightDetailsDialogService: Dialog closed');
+        } catch (error) {
+            console.error('FlightDetailsDialogService: Error in openFlightDetailsDialog', error);
+            throw error;
+        }
     }
 }
 

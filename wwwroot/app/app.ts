@@ -14,9 +14,6 @@ import ToastrService from "./services/toastr.service";
 import {SelectDialogService} from "./components/dialogs/select-dialog/select-dialog.service";
 import {EventGroupDialogController} from "./components/dialogs/event-group-dialog/event-group-dialog.controller";
 import {EventGroupDialogService} from "./components/dialogs/event-group-dialog/event-group-dialog.service";
-import {
-    EditDateTimeDialogController
-} from "./components/dialogs/edit-date-time-dialog/edit-date-time-dialog.controller";
 import {EditDateTimeDialogService} from "./components/dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
 import {EditAddressDialogService} from "./components/dialogs/edit-address-dialog/edit-address-dialog.service";
 import PriceBreakdownDialogService from "./components/dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
@@ -110,10 +107,11 @@ app.run(["APP_CONFIG", (appConfig: IAppConfig) => {
         root.style.setProperty('--theme-primary-strong', 'rgba(33, 150, 243, 0.5)');
         document.body.classList.add('theme-us');
     } else {
-        root.style.setProperty('--theme-primary', '#fddd00');
-        root.style.setProperty('--theme-primary-light', 'rgba(253, 221, 0, 0.15)');
-        root.style.setProperty('--theme-primary-medium', 'rgba(253, 221, 0, 0.3)');
-        root.style.setProperty('--theme-primary-strong', 'rgba(253, 221, 0, 0.5)');
+        // Match MUI theme urgentPrimaryPalette[500] - warm amber gold
+        root.style.setProperty('--theme-primary', '#f4c430');
+        root.style.setProperty('--theme-primary-light', 'rgba(244, 196, 48, 0.15)');
+        root.style.setProperty('--theme-primary-medium', 'rgba(244, 196, 48, 0.3)');
+        root.style.setProperty('--theme-primary-strong', 'rgba(244, 196, 48, 0.5)');
         document.body.classList.add('theme-nz');
     }
 }]);
@@ -232,7 +230,6 @@ app.controller("EditParcelDimensionsDialogController", EditParcelDimensionsDialo
 app.controller("FeatureInDevelopmentDialogController", FeatureInDevelopmentDialogController);
 app.controller("SelectDialogController", SelectDialogController);
 app.controller('EventGroupDialogController', EventGroupDialogController);
-app.controller("EditDateTimeDialogController", EditDateTimeDialogController);
 app.controller("jobFileUploadController", JobFileUploadController);
 app.controller("jobNoteEditorDialogController", NoteManagementDialogController);
 app.controller("TruckCourierStatusDialogController", TruckCourierStatusDialogController);

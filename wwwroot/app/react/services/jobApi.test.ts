@@ -4,6 +4,7 @@
 
 import {jobApi, getRelatedJobsMultiSelectList, voidJob, voidBulkJob} from './jobApi';
 import {apiClient} from './apiClient';
+import {createMockApiError} from '../__testUtils__';
 
 // Mock the apiClient
 jest.mock('./apiClient', () => ({
@@ -48,12 +49,6 @@ describe('jobApi', () => {
             );
         });
 
-        it('should propagate errors from apiClient', async () => {
-            const error = {status: 500, statusText: 'Internal Server Error', message: 'Server error'};
-            mockApiClient.get.mockRejectedValueOnce(error);
-
-            await expect(getRelatedJobsMultiSelectList(123, false)).rejects.toEqual(error);
-        });
     });
 
     describe('voidJob', () => {
@@ -89,17 +84,6 @@ describe('jobApi', () => {
                 voidReason: 'Bulk cancellation',
                 selectedJobIds: [123, 124, 125],
             });
-        });
-
-        it('should propagate errors from apiClient', async () => {
-            const error = {status: 400, statusText: 'Bad Request', message: 'Invalid job'};
-            mockApiClient.post.mockRejectedValueOnce(error);
-
-            await expect(voidJob({
-                jobId: 123,
-                voidSingleJobOnly: true,
-                voidReason: 'Test',
-            })).rejects.toEqual(error);
         });
     });
 
@@ -137,16 +121,17 @@ describe('jobApi', () => {
                 selectedJobIds: [456, 457, 458],
             });
         });
+    });
 
-        it('should propagate errors from apiClient', async () => {
-            const error = {status: 500, statusText: 'Internal Server Error', message: 'Database error'};
-            mockApiClient.post.mockRejectedValueOnce(error);
-
-            await expect(voidBulkJob({
-                bulkJobId: 456,
-                voidSingleJobOnly: true,
-                voidReason: 'Test',
-            })).rejects.toEqual(error);
+    describe('Error propagation', () => {
+        it.each([
+            ['getRelatedJobsMultiSelectList', () => getRelatedJobsMultiSelectList(123, false), mockApiClient.get],
+            ['voidJob', () => voidJob({jobId: 123, voidSingleJobOnly: true, voidReason: 'Test'}), mockApiClient.post],
+            ['voidBulkJob', () => voidBulkJob({bulkJobId: 456, voidSingleJobOnly: true, voidReason: 'Test'}), mockApiClient.post],
+        ])('%s should propagate errors from apiClient', async (_, apiCall, mockFn) => {
+            const error = createMockApiError();
+            mockFn.mockRejectedValueOnce(error);
+            await expect(apiCall()).rejects.toEqual(error);
         });
     });
 

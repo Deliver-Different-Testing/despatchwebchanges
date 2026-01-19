@@ -41,91 +41,39 @@ describe('ApiClient', () => {
     };
 
     describe('Security Headers', () => {
-        it('should include X-Requested-With header in GET requests', async () => {
-            mockFetch.mockReturnValueOnce(createMockResponse({body: '{"data": "test"}'}));
-
-            await client.get('/test');
-
+        it.each([
+            ['GET', () => client.get('/test')],
+            ['POST', () => client.post('/test', {data: 'test'})],
+            ['PUT', () => client.put('/test', {data: 'test'})],
+            ['DELETE', () => client.delete('/test')],
+        ])('should include X-Requested-With header in %s requests', async (_, makeRequest) => {
+            mockFetch.mockReturnValueOnce(createMockResponse({body: '{}'}));
+            await makeRequest();
             expect(mockFetch).toHaveBeenCalledWith(
                 '/test',
                 expect.objectContaining({
-                    headers: expect.objectContaining({
-                        'X-Requested-With': 'XMLHttpRequest',
-                    }),
+                    headers: expect.objectContaining({'X-Requested-With': 'XMLHttpRequest'}),
                 })
             );
         });
 
-        it('should include X-Requested-With header in POST requests', async () => {
+        it('should include Content-Type header in requests with body', async () => {
             mockFetch.mockReturnValueOnce(createMockResponse());
-
             await client.post('/test', {data: 'test'});
-
             expect(mockFetch).toHaveBeenCalledWith(
                 '/test',
                 expect.objectContaining({
-                    headers: expect.objectContaining({
-                        'X-Requested-With': 'XMLHttpRequest',
-                    }),
-                })
-            );
-        });
-
-        it('should include X-Requested-With header in PUT requests', async () => {
-            mockFetch.mockReturnValueOnce(createMockResponse());
-
-            await client.put('/test', {data: 'test'});
-
-            expect(mockFetch).toHaveBeenCalledWith(
-                '/test',
-                expect.objectContaining({
-                    headers: expect.objectContaining({
-                        'X-Requested-With': 'XMLHttpRequest',
-                    }),
-                })
-            );
-        });
-
-        it('should include X-Requested-With header in DELETE requests', async () => {
-            mockFetch.mockReturnValueOnce(createMockResponse());
-
-            await client.delete('/test');
-
-            expect(mockFetch).toHaveBeenCalledWith(
-                '/test',
-                expect.objectContaining({
-                    headers: expect.objectContaining({
-                        'X-Requested-With': 'XMLHttpRequest',
-                    }),
-                })
-            );
-        });
-
-        it('should include Content-Type header', async () => {
-            mockFetch.mockReturnValueOnce(createMockResponse());
-
-            await client.post('/test', {data: 'test'});
-
-            expect(mockFetch).toHaveBeenCalledWith(
-                '/test',
-                expect.objectContaining({
-                    headers: expect.objectContaining({
-                        'Content-Type': 'application/json',
-                    }),
+                    headers: expect.objectContaining({'Content-Type': 'application/json'}),
                 })
             );
         });
 
         it('should use same-origin credentials', async () => {
             mockFetch.mockReturnValueOnce(createMockResponse());
-
             await client.get('/test');
-
             expect(mockFetch).toHaveBeenCalledWith(
                 '/test',
-                expect.objectContaining({
-                    credentials: 'same-origin',
-                })
+                expect.objectContaining({credentials: 'same-origin'})
             );
         });
     });

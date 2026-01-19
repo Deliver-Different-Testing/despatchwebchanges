@@ -40,11 +40,15 @@ public class RateJobService(
         try
         {
             ArgumentNullException.ThrowIfNull(jobDetails);
-            ArgumentNullException.ThrowIfNull(jobDetails.ClientId);
-            ArgumentNullException.ThrowIfNull(jobDetails.FromId);
-            ArgumentNullException.ThrowIfNull(jobDetails.ToId);
-            ArgumentNullException.ThrowIfNull(jobDetails.SpeedId);
-            ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
+            if (!jobDetails.ClientId.HasValue) throw new ArgumentNullException(nameof(jobDetails.ClientId));
+
+            if (!jobDetails.FromId.HasValue) throw new ArgumentNullException(nameof(jobDetails.FromId));
+
+            if (!jobDetails.ToId.HasValue) throw new ArgumentNullException(nameof(jobDetails.ToId));
+
+            if (!jobDetails.SpeedId.HasValue) throw new ArgumentNullException(nameof(jobDetails.SpeedId));
+
+            if (!jobDetails.SizeId.HasValue) throw new ArgumentNullException(nameof(jobDetails.SizeId));
 
             var rateResult = await RateUrgentJobAsync(jobDetails);
             if (rateResult is { Rate: > 0 })
@@ -75,9 +79,9 @@ public class RateJobService(
         try
         {
             ArgumentNullException.ThrowIfNull(jobDetails);
-            ArgumentNullException.ThrowIfNull(jobDetails.SpeedId);
-            ArgumentNullException.ThrowIfNull(jobDetails.ClientId);
-            ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
+            if (!jobDetails.SpeedId.HasValue) throw new ArgumentNullException(nameof(jobDetails.SpeedId));
+            if (!jobDetails.ClientId.HasValue) throw new ArgumentNullException(nameof(jobDetails.ClientId));
+            if (!jobDetails.SizeId.HasValue) throw new ArgumentNullException(nameof(jobDetails.SizeId));
 
             // Get distances and airport info
             var distanceResult = await CalculateJobRateUsAsync(
@@ -139,11 +143,11 @@ public class RateJobService(
         try
         {
             ArgumentNullException.ThrowIfNull(jobDetails);
-            ArgumentNullException.ThrowIfNull(jobDetails.ClientId);
-            ArgumentNullException.ThrowIfNull(jobDetails.FromId);
-            ArgumentNullException.ThrowIfNull(jobDetails.ToId);
-            ArgumentNullException.ThrowIfNull(jobDetails.SpeedId);
-            ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
+            if (!jobDetails.ClientId.HasValue) throw new ArgumentNullException(nameof(jobDetails.ClientId));
+            if (!jobDetails.FromId.HasValue) throw new ArgumentNullException(nameof(jobDetails.FromId));
+            if (!jobDetails.ToId.HasValue) throw new ArgumentNullException(nameof(jobDetails.ToId));
+            if (!jobDetails.SpeedId.HasValue) throw new ArgumentNullException(nameof(jobDetails.SpeedId));
+            if (!jobDetails.SizeId.HasValue) throw new ArgumentNullException(nameof(jobDetails.SizeId));
 
             var rateResult = await RateUrgentJobAsync(jobDetails);
             if (rateResult is { Rate: > 0 }) return rateResult.Rate;
@@ -172,9 +176,9 @@ public class RateJobService(
         try
         {
             ArgumentNullException.ThrowIfNull(jobDetails);
-            ArgumentNullException.ThrowIfNull(jobDetails.SpeedId);
-            ArgumentNullException.ThrowIfNull(jobDetails.ClientId);
-            ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
+            if (!jobDetails.SpeedId.HasValue) throw new ArgumentNullException(nameof(jobDetails.SpeedId));
+            if (!jobDetails.ClientId.HasValue) throw new ArgumentNullException(nameof(jobDetails.ClientId));
+            if (!jobDetails.SizeId.HasValue) throw new ArgumentNullException(nameof(jobDetails.SizeId));
 
             // Get distances and airport info
             var distanceResult = await CalculateJobRateUsAsync(

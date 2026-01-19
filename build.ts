@@ -14,7 +14,7 @@ type EntryPointName =
     | 'overview'
     | 'jobSearch'
     | 'megaMap'
-    | 'taskDashboard'
+    | 'taskDashboardReact'
     | 'driverManagement'
     | 'courierMap'
     | 'dateRangeDialogReact'
@@ -24,7 +24,9 @@ type EntryPointName =
     | 'voidJobConfirmationDialogReact'
     | 'editAfterhoursDialogReact'
     | 'editAddressDialogReact'
+    | 'editDateTimeDialogReact'
     | 'flightAgentConfirmationDialogReact'
+    | 'flightDetailsDialogReact'
     | 'appShellReact'
     | 'errorPageReact'
     | 'recurringJobsReact';
@@ -47,7 +49,7 @@ const entryPoints: EntryPoints = {
     overview: path.join(rootDir, "wwwroot/app/components/overview/overview.module.ts"),
     jobSearch: path.join(rootDir, "wwwroot/app/components/jobSearch/jobSearch.module.ts"),
     megaMap: path.join(rootDir, "wwwroot/app/components/mega-map/mega-map.module.ts"),
-    taskDashboard: path.join(rootDir, "wwwroot/app/components/task-dashboard/task-dashboard.module.ts"),
+    taskDashboardReact: path.join(rootDir, "wwwroot/app/react/pages/task-dashboard/task-dashboard-react.module.tsx"),
     driverManagement: path.join(rootDir, "wwwroot/app/components/driver-management-dashboard/driver-management.module.ts"),
     courierMap: path.join(rootDir, "wwwroot/app/components/courier-map/courier-map.module.ts"),
     dateRangeDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/date-range-dialog/date-range-dialog-react.module.tsx"),
@@ -57,7 +59,9 @@ const entryPoints: EntryPoints = {
     voidJobConfirmationDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog-react.module.tsx"),
     editAfterhoursDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/edit-afterhours-dialog/edit-afterhours-dialog-react.module.tsx"),
     editAddressDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/edit-address-dialog/edit-address-dialog-react.module.tsx"),
+    editDateTimeDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/edit-date-time-dialog/edit-date-time-dialog-react.module.tsx"),
     flightAgentConfirmationDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/flight-agent-confirmation-dialog/flight-agent-confirmation-dialog-react.module.tsx"),
+    flightDetailsDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/flight-details-dialog/flight-details-dialog-react.module.tsx"),
     appShellReact: path.join(rootDir, "wwwroot/app/react/components/common/app-shell/app-shell-react.module.tsx"),
     errorPageReact: path.join(rootDir, "wwwroot/app/react/pages/error-page/error-page-react.module.tsx"),
     recurringJobsReact: path.join(rootDir, "wwwroot/app/react/pages/recurring-jobs/recurring-jobs-react.module.tsx"),

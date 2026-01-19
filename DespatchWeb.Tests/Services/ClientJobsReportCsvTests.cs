@@ -1,6 +1,6 @@
+using System.Globalization;
 using System.Text;
 using Amazon.S3;
-using Amazon.S3.Model;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
@@ -472,7 +472,7 @@ public class ClientJobsReportCsvTests
 
         // Assert
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
-        csvContent.Should().Contain(amount.ToString());
+        csvContent.Should().Contain(amount.ToString(CultureInfo.InvariantCulture));
     }
 
     #endregion
@@ -492,14 +492,14 @@ public class ClientJobsReportCsvTests
     private static PerformanceSpendReportModel CreateTestModel(
         decimal? rawBaseAmount = null,
         decimal? fuelSurchargeAmount = null,
-        string podName = null,
-        string ucjbType = null,
-        string chargeExclGst = null,
-        string ucclLegalName = null,
-        string ucjbFromAddr = null,
-        string uccrName = null,
-        string ucjbClientId = null,
-        string ucclNote = null)
+        string? podName = null,
+        string? ucjbType = null,
+        string? chargeExclGst = null,
+        string? ucclLegalName = null,
+        string? ucjbFromAddr = null,
+        string? uccrName = null,
+        string? ucjbClientId = null,
+        string? ucclNote = null)
     {
         return new PerformanceSpendReportModel
         {
@@ -523,7 +523,7 @@ public class ClientJobsReportCsvTests
             PickedUpTime = "2024-01-01 10:30:00",
             Delivered = "2024-01-01 12:00:00",
             TotalTime = "90",
-            PodName = podName ?? "Test Recipient",
+            PodName = podName,
             AchievedSpeed = "2 Hour",
             Notes = "Test notes",
             Quantity = "1",

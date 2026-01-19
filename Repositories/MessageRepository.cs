@@ -169,7 +169,7 @@ public class MessageRepository(
         }
         else if (request.SendToStaffId.HasValue)
         {
-            await HandleStaffMessageAsync(message, request.SendToStaffId.Value);
+            HandleStaffMessage(message, request.SendToStaffId.Value);
         }
 
         await Context.TucManualMessages.AddAsync(message);
@@ -207,7 +207,7 @@ public class MessageRepository(
                 UcmmMessage = request.Message
             };
 
-            await HandleStaffMessageAsync(message, staffId);
+            HandleStaffMessage(message, staffId);
             messages.Add(message);
         }
 
@@ -366,11 +366,8 @@ public class MessageRepository(
         return results;
     }
 
-    private async Task HandleStaffMessageAsync(TucManualMessage message, int sendToStaffId)
+    private static void HandleStaffMessage(TucManualMessage message, int sendToStaffId)
     {
-        var staffExists = await Context.StaffExistsAsync(sendToStaffId);
-        ArgumentNullException.ThrowIfNull(staffExists);
-
         message.UcmmSendToStaffId = sendToStaffId;
         message.Subject = "Staff Message";
     }

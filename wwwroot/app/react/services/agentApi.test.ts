@@ -4,6 +4,7 @@
 
 import {AgentApiService, agentApi} from './agentApi';
 import {apiClient} from './apiClient';
+import {createMockApiError} from '../__testUtils__';
 
 // Mock the apiClient
 jest.mock('./apiClient', () => ({
@@ -115,17 +116,11 @@ describe('AgentApiService', () => {
             expect(result.address).toBeUndefined();
         });
 
-        it('should propagate errors from apiClient', async () => {
-            const error = {status: 404, statusText: 'Not Found', message: 'Agent not found'};
+        it.each([
+            ['404 Not Found', createMockApiError({status: 404, statusText: 'Not Found', message: 'Agent not found'})],
+            ['500 Server Error', createMockApiError({status: 500, statusText: 'Internal Server Error', message: 'Database error'})],
+        ])('should propagate %s errors from apiClient', async (_, error) => {
             mockApiClient.get.mockRejectedValueOnce(error);
-
-            await expect(service.getAgentInfo(999)).rejects.toEqual(error);
-        });
-
-        it('should propagate server errors from apiClient', async () => {
-            const error = {status: 500, statusText: 'Internal Server Error', message: 'Database error'};
-            mockApiClient.get.mockRejectedValueOnce(error);
-
             await expect(service.getAgentInfo(123)).rejects.toEqual(error);
         });
     });

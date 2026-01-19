@@ -147,17 +147,27 @@ class RouterConfig {
             url: "/recurringJobs",
             template: `
                 <md-content class="md-dense prebook-view">
+                    <style>.prebook-view md-card { margin: 0; }</style>
                     <react-app-shell title="Recurring Jobs Dashboard"></react-app-shell>
                     <div class="dashboard-padding" style="height: calc(100vh - 64px);">
                         <div style="display: flex; height: 100%; gap: 16px; padding: 16px;">
                             <div id="react-recurring-jobs-list" style="flex: 0 0 55%; height: 100%; overflow: hidden;"></div>
-                            <div style="flex: 0 0 45%; height: 100%; overflow: auto;">
-                                <job-detail-widget
-                                    style="height: 100%;"
-                                    job-id="selectedJobId"
-                                    is-recurring-job="true"
-                                    on-job-update="onJobUpdate()">
-                                </job-detail-widget>
+                            <div style="flex: 0 0 45%; height: 100%; display: flex; flex-direction: column; overflow: hidden; min-width: 0;">
+                                <md-card style="flex: 1; display: flex; flex-direction: column; overflow: hidden; border-radius: 4px; min-height: 0; min-width: 0;">
+                                    <div style="min-height: 48px; height: 48px; width: 100%; background-color: var(--theme-primary); padding: 0 16px; box-sizing: border-box; line-height: 48px; text-align: left; flex-shrink: 0;">
+                                        <md-icon md-font-set="material-symbols-outlined" style="vertical-align: middle; margin-right: 8px; color: rgba(0,0,0,0.87);">info</md-icon>
+                                        <span style="font-size: 16px; font-weight: 500; color: rgba(0,0,0,0.87); vertical-align: middle;">Job Details</span>
+                                        <span ng-if="selectedJobId" style="font-size: 16px; font-weight: 500; color: rgba(0,0,0,0.87); vertical-align: middle;"> - Job #{{selectedJobId}}</span>
+                                    </div>
+                                    <md-card-content style="flex: 1; overflow: auto; padding: 0; min-height: 0;">
+                                        <job-detail-widget
+                                            style="height: 100%; display: block; width: 100%; max-width: 100%;"
+                                            job-id="selectedJobId"
+                                            is-recurring-job="true"
+                                            on-job-update="onJobUpdate()">
+                                        </job-detail-widget>
+                                    </md-card-content>
+                                </md-card>
                             </div>
                         </div>
                     </div>
@@ -308,6 +318,31 @@ class RouterConfig {
     private configureTaskDashboardState(): this {
         this.$stateProvider.state("taskDashboard", {
             url: "/taskDashboard",
+            template: `
+                <md-content class="md-dense task-dashboard-view">
+                    <react-app-shell title="Task Dashboard"></react-app-shell>
+                    <div class="dashboard-padding" style="height: calc(100vh - 64px);">
+                        <div style="display: flex; height: 100%; gap: 16px; padding: 16px;">
+                            <div id="react-task-dashboard" style="flex: 0 0 60%; height: 100%; overflow: hidden;"></div>
+                            <div style="flex: 0 0 40%; height: 100%; display: flex; flex-direction: column;">
+                                <md-card style="flex: 1; display: flex; flex-direction: column; overflow: hidden; border-radius: 4px;">
+                                    <div style="min-height: 48px; height: 48px; width: 100%; background-color: var(--theme-primary); padding: 0 16px; box-sizing: border-box; line-height: 48px; text-align: left;">
+                                        <md-icon md-font-set="material-symbols-outlined" style="vertical-align: middle; margin-right: 8px; color: rgba(0,0,0,0.87);">info</md-icon>
+                                        <span style="font-size: 16px; font-weight: 500; color: rgba(0,0,0,0.87); vertical-align: middle;">Job Details</span>
+                                        <span ng-if="selectedJobId" style="font-size: 16px; font-weight: 500; color: rgba(0,0,0,0.87); vertical-align: middle;"> - Job #{{selectedJobId}}</span>
+                                    </div>
+                                    <md-card-content style="flex: 1; overflow: auto; padding: 0;">
+                                        <job-detail-widget
+                                            style="height: 100%; display: block;"
+                                            job-id="selectedJobId">
+                                        </job-detail-widget>
+                                    </md-card-content>
+                                </md-card>
+                            </div>
+                        </div>
+                    </div>
+                </md-content>
+            `,
             resolve: {
                 manifest: ['$http', async ($http: angular.IHttpService) => {
                     try {
@@ -316,20 +351,65 @@ class RouterConfig {
                     } catch {
                         console.warn('[ROUTES] Failed to load manifest for taskDashboard state, using fallback names');
                         return {
-                            'taskDashboard.js': 'taskDashboard.js',
-                            'taskDashboard.css': 'taskDashboard.css'
+                            'vendor-react.js': 'vendor-react.js',
+                            'taskDashboardReact.js': 'taskDashboardReact.js'
                         };
                     }
                 }],
-                loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                loadModule: ['$ocLazyLoad', 'manifest', async ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
                     const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
-                    return $ocLazyLoad.load([
-                        getAssetPath('taskDashboard.js'),
-                        getAssetPath('taskDashboard.css')
-                    ]);
+                    // Load vendor-react first (React, ReactDOM)
+                    await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
+                    // Then load the task dashboard React module
+                    return $ocLazyLoad.load(getAssetPath('taskDashboardReact.js'));
                 }]
             },
-            component: "taskDashboardComponent",
+            controller: ['$scope', 'toastrService', 'APP_CONFIG',
+                function (
+                    $scope: angular.IScope & { selectedJobId?: number },
+                    toastrService: {
+                        showSuccessToast: (m: string) => void;
+                        showWarningToast: (m: string) => void;
+                        showErrorToast: (m: string) => void;
+                        showInfoToast: (m: string) => void
+                    },
+                    appConfig: { US_Customer: boolean }
+                ) {
+                    $scope.selectedJobId = undefined;
+
+                    const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
+                        switch (type) {
+                            case 'success':
+                                toastrService.showSuccessToast(message);
+                                break;
+                            case 'warning':
+                                toastrService.showWarningToast(message);
+                                break;
+                            case 'error':
+                                toastrService.showErrorToast(message);
+                                break;
+                            case 'info':
+                                toastrService.showInfoToast(message);
+                                break;
+                        }
+                    };
+
+                    const onTaskSelect = (task: { jobId?: number } | null) => {
+                        $scope.selectedJobId = task?.jobId;
+                        $scope.$apply();
+                    };
+
+                    (window as any).ReactTaskDashboard.mount('react-task-dashboard', {
+                        showToast,
+                        isUsCustomer: appConfig.US_Customer,
+                        onTaskSelect,
+                    });
+
+                    $scope.$on('$destroy', () => {
+                        (window as any).ReactTaskDashboard.unmount();
+                    });
+                }
+            ],
         });
         return this;
     }   

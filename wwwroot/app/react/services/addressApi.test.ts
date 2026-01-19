@@ -4,6 +4,7 @@
 
 import {addressApi} from './addressApi';
 import {apiClient} from './apiClient';
+import {createMockApiError} from '../__testUtils__';
 
 // Mock the apiClient
 jest.mock('./apiClient', () => ({
@@ -57,13 +58,6 @@ describe('addressApi', () => {
 
             expect(result).toEqual([]);
         });
-
-        it('should propagate errors from apiClient', async () => {
-            const error = {status: 500, statusText: 'Internal Server Error', message: 'Server error'};
-            mockApiClient.get.mockRejectedValueOnce(error);
-
-            await expect(addressApi.autocompleteSearch('test')).rejects.toEqual(error);
-        });
     });
 
     describe('getLocationDetailsById', () => {
@@ -100,13 +94,6 @@ describe('addressApi', () => {
                 {addressId: 'here:af:address:123'}
             );
             expect(result).toEqual(mockResponse);
-        });
-
-        it('should propagate errors from apiClient', async () => {
-            const error = {status: 404, statusText: 'Not Found', message: 'Address not found'};
-            mockApiClient.get.mockRejectedValueOnce(error);
-
-            await expect(addressApi.getLocationDetailsById('invalid-id')).rejects.toEqual(error);
         });
     });
 
@@ -151,13 +138,6 @@ describe('addressApi', () => {
                 {latitude: 40.71284567890123, longitude: -74.00598765432109}
             );
         });
-
-        it('should propagate errors from apiClient', async () => {
-            const error = {status: 500, statusText: 'Internal Server Error', message: 'Geocoding service unavailable'};
-            mockApiClient.get.mockRejectedValueOnce(error);
-
-            await expect(addressApi.fetchNearestAddress(40.7128, -74.006)).rejects.toEqual(error);
-        });
     });
 
     describe('getHereMapsKey', () => {
@@ -179,12 +159,18 @@ describe('addressApi', () => {
 
             expect(result).toBe('');
         });
+    });
 
-        it('should propagate errors from apiClient', async () => {
-            const error = {status: 401, statusText: 'Unauthorized', message: 'Not authenticated'};
+    describe('Error propagation', () => {
+        it.each([
+            ['autocompleteSearch', () => addressApi.autocompleteSearch('test')],
+            ['getLocationDetailsById', () => addressApi.getLocationDetailsById('invalid-id')],
+            ['fetchNearestAddress', () => addressApi.fetchNearestAddress(40.7128, -74.006)],
+            ['getHereMapsKey', () => addressApi.getHereMapsKey()],
+        ])('%s should propagate errors from apiClient', async (_, apiCall) => {
+            const error = createMockApiError();
             mockApiClient.get.mockRejectedValueOnce(error);
-
-            await expect(addressApi.getHereMapsKey()).rejects.toEqual(error);
+            await expect(apiCall()).rejects.toEqual(error);
         });
     });
 

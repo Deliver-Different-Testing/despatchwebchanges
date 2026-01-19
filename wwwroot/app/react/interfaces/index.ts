@@ -13,3 +13,4 @@ export * from './recurringJobs';
 export * from './notes';
 export * from './agent';
 export * from './event';
+export * from './tasks';

@@ -60,9 +60,15 @@ class TaskItemReactController implements angular.IController {
         const currentTheme = getTheme();
 
         // Wrap the AngularJS callback to match expected signature
-        const handleTaskClick = this.onTaskClick
-            ? (task: Task) => this.onTaskClick!({task})
-            : undefined;
+        const handleTaskClick = (task: Task) => {
+            console.log('[TaskItemReact] Task clicked:', task.id, task.jobNumber);
+            if (this.onTaskClick) {
+                console.log('[TaskItemReact] Calling onTaskClick callback');
+                this.onTaskClick({task});
+            } else {
+                console.warn('[TaskItemReact] onTaskClick callback not defined');
+            }
+        };
 
         this.root.render(
             <ThemeProvider theme={currentTheme}>

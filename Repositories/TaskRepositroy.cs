@@ -309,7 +309,7 @@ public class TaskRepository(
         var dispatcherName = await dispatcherTask;
 
         ArgumentNullException.ThrowIfNull(job);
-        ArgumentNullException.ThrowIfNull(job.UcjbClientId);
+        if (!job.UcjbClientId.HasValue) throw new ArgumentNullException(nameof(job.UcjbClientId));
 
         // Batch create all events
         var events = eventGroupViewModels.Select(eventGroup => new TucEvent

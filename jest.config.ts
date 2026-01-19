@@ -38,6 +38,7 @@ const config: JestConfigWithTsJest = {
         '!wwwroot/app/**/*.d.ts',
         '!wwwroot/app/tests/**'
     ],
+    coverageReporters: ['text', 'lcov', 'cobertura'],
     testPathIgnorePatterns: ['/node_modules/', '/DespatchWeb.Tests/'],
     verbose: true
 };

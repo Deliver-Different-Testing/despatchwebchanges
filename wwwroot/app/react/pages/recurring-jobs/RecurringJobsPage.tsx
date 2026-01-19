@@ -16,7 +16,13 @@ import {
     DialogContent,
     DialogContentText,
     DialogTitle,
+    Toolbar,
+    Typography,
 } from '@mui/material';
+import {
+    EventRepeat as EventRepeatIcon,
+    Tune as TuneIcon,
+} from '@mui/icons-material';
 import {useRecurringJobsList} from '../../hooks';
 import {recurringJobsApi} from '../../services/recurringJobsApi';
 import {
@@ -203,18 +209,20 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
     }, [onAddStop]);
 
     return (
-        <Box sx={{height: '100%', display: 'flex', flexDirection: 'column'}}>
-            <Card
-                elevation={1}
-                sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    borderRadius: 1,
-                    overflow: 'hidden',
-                }}
-            >
-                {/* Toolbar */}
+        <Box sx={{height: '100%', display: 'flex', flexDirection: 'column', gap: 2}}>
+            {/* Filters Card */}
+            <Card sx={{flexShrink: 0, borderRadius: 1, overflow: 'hidden'}}>
+                <Toolbar
+                    variant="dense"
+                    sx={{
+                        bgcolor: 'primary.main',
+                        color: 'primary.contrastText',
+                        minHeight: 48,
+                    }}
+                >
+                    <TuneIcon sx={{mr: 1}} />
+                    <Typography variant="subtitle1">Filters</Typography>
+                </Toolbar>
                 <RecurringJobsToolbar
                     searchText={query.searchText || ''}
                     isActive={query.active}
@@ -232,8 +240,33 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                     onRefresh={handleRefresh}
                     onExport={handleExport}
                 />
+            </Card>
 
-                {/* Table */}
+            {/* Recurring Jobs Table Card */}
+            <Card
+                sx={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    minHeight: 0,
+                }}
+            >
+                <Toolbar
+                    variant="dense"
+                    sx={{
+                        bgcolor: 'primary.main',
+                        color: 'primary.contrastText',
+                        minHeight: 48,
+                        flexShrink: 0,
+                    }}
+                >
+                    <EventRepeatIcon sx={{mr: 1}} />
+                    <Typography variant="subtitle1">
+                        Recurring Jobs {data?.total ? `(${data.total})` : ''}
+                    </Typography>
+                </Toolbar>
                 <Box sx={{flex: 1, overflow: 'hidden'}}>
                     <RecurringJobsTable
                         jobs={data?.items || []}

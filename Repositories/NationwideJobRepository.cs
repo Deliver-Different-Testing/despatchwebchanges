@@ -33,7 +33,6 @@ public class NationwideJobRepository(
     {
         try
         {
-            ArgumentNullException.ThrowIfNull(requestData.JobId);
             ArgumentNullException.ThrowIfNull(webhookIds);
 
             if (requestData.FlightSegments.Count == 0)
@@ -123,9 +122,10 @@ public class NationwideJobRepository(
             job.UcjbTime = primaryFlight.DepartureTime.DateTime;
 
             var departureAirportId = requestData.FromAirportId ?? job.FromAirportId;
-            ArgumentNullException.ThrowIfNull(departureAirportId);
+            if (!departureAirportId.HasValue) throw new ArgumentNullException(nameof(departureAirportId));
+
             var arrivalAirportId = requestData.ToAirportId ?? job.ToAirportId;
-            ArgumentNullException.ThrowIfNull(arrivalAirportId);
+            if (!arrivalAirportId.HasValue) throw new ArgumentNullException(nameof(arrivalAirportId));
 
             Log.Debug("Processing airports for PrimaryFlight: {PrimaryFlightNumber}, DepartureAirportId: {DepartureAirportId}, ArrivalAirportId: {ArrivalAirportId}",
                 primaryFlightNumber, departureAirportId, arrivalAirportId);
@@ -1396,7 +1396,7 @@ public class NationwideJobRepository(
         return string.Join(",", eventStrings);
     }
 
-    public async Task<FlightCargoProcessingModel?> CalculateCargoReadyTimeAsync(
+    public async Task<FlightCargoProcessingModel> CalculateCargoReadyTimeAsync(
         int jobId,
         string carrierFsCode,
         DateTime flightArrivalTime)
@@ -1464,6 +1464,7 @@ public class NationwideJobRepository(
     public async Task<List<GetAirportsDto>> GetAllActiveAirportsAsync()
     {
         var airports = await Context.TblAirports
+            .AsNoTracking()
             .Where(a => a.Active)
             .Select(a => new GetAirportsDto
             {
@@ -1472,7 +1473,6 @@ public class NationwideJobRepository(
                 AirportCode = a.AirportCode,
                 Timezone = a.Timezone
             })
-            .AsNoTracking()
             .ToListAsync();
 
         return airports;

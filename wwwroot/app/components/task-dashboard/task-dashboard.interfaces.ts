@@ -1,5 +1,15 @@
-import {ISuggestion} from "../../interfaces/job.interface";
-import {Dayjs} from "dayjs";
+/**
+ * Task Dashboard Interfaces
+ *
+ * Type definitions for task-related operations in AngularJS components.
+ */
+
+import {Dayjs} from 'dayjs';
+
+export interface ITaskAssignee {
+    id: number;
+    text: string;
+}
 
 export interface ITask {
     id: number;
@@ -7,12 +17,11 @@ export interface ITask {
     description: string;
     dueDate: Dayjs;
     closed: boolean;
-    assignee: ISuggestion;
+    assignee: ITaskAssignee;
     jobId: number;
     eventType: string;
     jobNumber: string;
-    
-    // Private 
+    priority?: 'high' | 'medium' | 'low';
     _dueDateString?: string;
     _dueTimeString?: string;
 }
@@ -23,15 +32,16 @@ export interface ITaskDto {
     description: string;
     dueDate: string;
     closed: boolean;
-    assignee: ISuggestion;
+    assignee: ITaskAssignee;
     jobId: number;
     eventType: string;
     jobNumber: string;
+    priority?: 'high' | 'medium' | 'low';
 }
 
 export interface ExtendedTask extends ITask {
     dueTimeStr?: string;
-}                   
+}
 
 export interface TaskTableFiltersRequest {
     searchText?: string;
@@ -46,3 +56,8 @@ export interface TaskTableFiltersRequest {
     courierId?: number;
     jobId?: number;
 }
+
+// Backward compatibility aliases
+export type Task = ITask;
+export type TaskDto = ITaskDto;
+export type TaskFiltersRequest = TaskTableFiltersRequest;
