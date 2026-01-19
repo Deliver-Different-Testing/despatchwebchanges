@@ -21,15 +21,13 @@ workflow:
     # Run pipeline for tags (releases)
     - if: $CI_COMMIT_TAG
 
-# Shared rules for test jobs - run on MRs targeting protected branches
+# Shared rules for test jobs - only run on MRs targeting protected branches
 .test-rules:
   rules:
     - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "staging"
     - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
-    - if: $CI_COMMIT_BRANCH == "staging"
-    - if: $CI_COMMIT_BRANCH == "master"
 
-# Test jobs - run on staging and master branches (before deploy)
+# Test jobs - only run on merge requests targeting protected branches
 test:backend:
   stage: .pre
   image: mcr.microsoft.com/dotnet/sdk:10.0
