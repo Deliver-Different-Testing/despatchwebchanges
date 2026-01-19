@@ -521,7 +521,7 @@ public class RecurringJobRepository(
     public async Task SaveRecurringJobNote(TucNoteViewModel note)
     {
         ArgumentNullException.ThrowIfNull(note);
-        ArgumentNullException.ThrowIfNull(note.JobBookingId);
+        if (!note.JobBookingId.HasValue) throw new ArgumentNullException(nameof(note.JobBookingId));
 
         if (note.NoteId == 0)
             await CreateNewRecurringJobNote(note.JobBookingId.Value, note.NoteText, note.IsImportant,

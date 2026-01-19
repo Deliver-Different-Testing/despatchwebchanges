@@ -800,10 +800,11 @@ class HomeController extends BaseController {
                 this.selectedViews.push(this.views[0]);
                 this.saveViewsToStorage(this.selectedViews);
             }
-
-            // Set the flag to indicate views are initialized
-            this.viewsInitialized = true;
         }
+
+        // Always set viewsInitialized to true, even if views are empty
+        // This prevents the loading spinner from staying forever
+        this.viewsInitialized = true;
     }
 
     async selectAllViews(): Promise<void> {

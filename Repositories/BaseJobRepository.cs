@@ -258,7 +258,7 @@ public class BaseJobRepository(
             @"\bDROP\b", @"\bDELETE\b", @"\bTRUNCATE\b", @"\bALTER\b", @"\bCREATE\b",
             @"\bINSERT\b", @"\bUPDATE\b", @"\bEXEC\b", @"\bEXECUTE\b", @"\bXP_",
             @"\bSP_", @"\bINTO\b", @"\bUNION\b", @"\bGRANT\b", @"\bREVOKE\b",
-            @"--", @"/\*", @"\*/", @"\bSHUTDOWN\b", @"\bWAITFOR\b", @"\bDELAY\b",
+            "--", @"/\*", @"\*/", @"\bSHUTDOWN\b", @"\bWAITFOR\b", @"\bDELAY\b",
             @"\bOPENROWSET\b", @"\bOPENQUERY\b", @"\bBULK\b", @"\bDBCC\b"
         };
 
@@ -449,19 +449,13 @@ public class BaseJobRepository(
 
     private static string FormatName(string firstName, string lastName) => string.Concat(firstName, " ", lastName);
 
-    public async Task<List<TucNoteViewModel>> GetNotesByJobIdAsync(int jobId)
-    {
-        ArgumentNullException.ThrowIfNull(jobId);
-
-        return await IsJobArchived(jobId)
+    public async Task<List<TucNoteViewModel>> GetNotesByJobIdAsync(int jobId) =>
+        await IsJobArchived(jobId)
             ? await GetArchivedNotesByJobIdAsync(jobId)
             : await GetActiveNotesByJobIdAsync(jobId);
-    }
 
     public async Task<TucNoteViewModel> GetNoteByIdAsync(int noteId)
     {
-        ArgumentNullException.ThrowIfNull(noteId);
-
         // Run both queries in parallel using separate contexts (DbContext is not thread-safe)
         await using var activeContext = CreateNewContext();
         await using var archivedContext = CreateNewContext();
@@ -488,7 +482,7 @@ public class BaseJobRepository(
     public async Task SaveNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
-        ArgumentNullException.ThrowIfNull(viewModel.JobId);
+        if (!viewModel.JobId.HasValue) throw new ArgumentNullException(nameof(viewModel.JobId));
 
         var staffId = infoService.GetStaffId();
         var currentTime = infoService.GetCurrentTenantTime();
@@ -502,7 +496,8 @@ public class BaseJobRepository(
     public async Task SaveBulkNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
-        ArgumentNullException.ThrowIfNull(viewModel.BulkJobId);
+        if (!viewModel.BulkJobId.HasValue) throw new ArgumentNullException(nameof(viewModel.BulkJobId));
+
         ArgumentException.ThrowIfNullOrWhiteSpace(viewModel.NoteText);
 
         // If a note type is not found, default to the internal note
@@ -662,7 +657,7 @@ public class BaseJobRepository(
         }
         else
         {
-            ArgumentNullException.ThrowIfNull(viewModel.JobId);
+            if (!viewModel.JobId.HasValue) throw new ArgumentNullException(nameof(viewModel.JobId));
             // Use the actual job ID instead of the effective job ID to avoid FK constraint issues
             // The note should be associated with the specific job being voided, not its parent
             activeNote.JobId = viewModel.JobId.Value;
@@ -726,7 +721,8 @@ public class BaseJobRepository(
         }
         else
         {
-            ArgumentNullException.ThrowIfNull(viewModel.JobId);
+            if (!viewModel.JobId.HasValue) throw new ArgumentNullException(nameof(viewModel.JobId));
+
             var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
             activeNote.JobId = effectiveJobId;
         }
@@ -745,17 +741,6 @@ public class BaseJobRepository(
         var notes = await Context.GetActiveNotesByJobIdAsync(effectiveJobId);
         UpdateNoteDate(notes, tenantTimeZone);
         return notes;
-    }
-
-    private async Task<TucNoteViewModel> GetArchivedNoteByIdAsync(int noteId)
-    {
-        var note = await CreateArchivedNoteQuery()
-            .Where(note => note.NoteId == noteId).FirstOrDefaultAsync();
-
-        var tenantTimeZone = infoService.GetTenantTimeZone();
-        UpdateNoteDate(note, tenantTimeZone);
-
-        return note;
     }
 
     private async Task<List<TucNoteViewModel>> GetArchivedNotesByJobIdAsync(int jobId)
@@ -828,14 +813,14 @@ public class BaseJobRepository(
         try
         {
             ArgumentNullException.ThrowIfNull(job);
-            ArgumentNullException.ThrowIfNull(job.Booked);
+            if (!job.Booked.HasValue) throw new ArgumentNullException(nameof(job.Booked));
 
             var jobDateTime = job.Booked.Value;
 
             if (job.SpeedId == economySpeedId)
             {
-                ArgumentNullException.ThrowIfNull(job.Booked);
-                ArgumentNullException.ThrowIfNull(ecoDeliveryTime);
+                if (!job.Booked.HasValue) throw new ArgumentNullException(nameof(job.Booked));
+                if (!ecoDeliveryTime.HasValue) throw new ArgumentNullException(nameof(ecoDeliveryTime));
 
                 var targetDateTime = new DateTime(
                     job.Booked.Value.Year,

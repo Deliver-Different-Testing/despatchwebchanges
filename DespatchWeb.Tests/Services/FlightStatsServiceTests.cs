@@ -143,7 +143,7 @@ public class FlightStatsServiceTests
     #region GetFlightsAsync Validation Tests
 
     [Fact]
-    public async Task GetFlightsAsync_NullDepartureAirport_ThrowsArgumentNullException()
+    public async Task GetFlightsAsync_NullDepartureAirport_ThrowsArgumentException()
     {
         // Arrange
         SetupAirportMocks(departureAirportExists: false, arrivalAirportExists: true);
@@ -157,11 +157,12 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*Departure airport*999*not found*");
     }
 
     [Fact]
-    public async Task GetFlightsAsync_NullArrivalAirport_ThrowsArgumentNullException()
+    public async Task GetFlightsAsync_NullArrivalAirport_ThrowsArgumentException()
     {
         // Arrange
         SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: false);
@@ -175,7 +176,8 @@ public class FlightStatsServiceTests
             arrivalAirportId: 999);
 
         // Assert
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*Arrival airport*999*not found*");
     }
 
     #endregion
@@ -262,6 +264,70 @@ public class FlightStatsServiceTests
             Times.Once(),
             ItExpr.Is<HttpRequestMessage>(req =>
                 req.RequestUri.ToString().Contains("includeAirlines=NZ")),
+            ItExpr.IsAny<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetFlightsAsync_NoAirlineSpecified_UsesActiveAirlineCodes()
+    {
+        // Arrange
+        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
+        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
+            .ReturnsAsync(["NZ", "QF", "AA"]);
+        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
+            .Returns(DateTime.Now);
+
+        var response = CreateFlightConnectionsResponse();
+        SetupHttpResponse(response);
+        var service = CreateService();
+
+        // Act
+        await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: DateTimeOffset.Now.AddHours(2),
+            airlineId: null, // No specific airline
+            departureAirportId: 1,
+            arrivalAirportId: 2);
+
+        // Assert - should include all active airline codes (comma is URL encoded as %2c or %2C)
+        _httpHandlerMock.Protected().Verify(
+            "SendAsync",
+            Times.Once(),
+            ItExpr.Is<HttpRequestMessage>(req =>
+                req.RequestUri.ToString().Contains("includeAirlines=NZ") &&
+                req.RequestUri.ToString().Contains("QF") &&
+                req.RequestUri.ToString().Contains("AA")),
+            ItExpr.IsAny<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetFlightsAsync_NoAirlineSpecified_NoActiveAirlines_DoesNotIncludeAirlineFilter()
+    {
+        // Arrange
+        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
+        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
+            .ReturnsAsync([]); // Empty list - no active airlines
+        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
+            .Returns(DateTime.Now);
+
+        var response = CreateFlightConnectionsResponse();
+        SetupHttpResponse(response);
+        var service = CreateService();
+
+        // Act
+        await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: DateTimeOffset.Now.AddHours(2),
+            airlineId: null, // No specific airline
+            departureAirportId: 1,
+            arrivalAirportId: 2);
+
+        // Assert - should NOT include any airline filter in the URL
+        _httpHandlerMock.Protected().Verify(
+            "SendAsync",
+            Times.Once(),
+            ItExpr.Is<HttpRequestMessage>(req =>
+                !req.RequestUri.ToString().Contains("includeAirlines")),
             ItExpr.IsAny<CancellationToken>());
     }
 

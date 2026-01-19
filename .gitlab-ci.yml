@@ -3,6 +3,14 @@ include:
     file: 'ci-template.yml'
     ref: 'main'
 
+# Shared rules for test jobs
+.test-rules:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "staging"
+    - if: $CI_COMMIT_BRANCH == "master"
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "staging"
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
+
 # Test jobs - run on staging and master branches (before deploy)
 test:backend:
   stage: .pre
@@ -11,27 +19,55 @@ test:backend:
     max: 2
     when: runner_system_failure
   allow_failure: false
+  cache:
+    key: dotnet-${CI_COMMIT_REF_SLUG}
+    paths:
+      - ~/.nuget/packages
   script:
     - dotnet restore
     - dotnet test DespatchWeb.Tests --verbosity normal --no-restore
-  rules:
-    - if: $CI_COMMIT_BRANCH == "staging"
-    - if: $CI_COMMIT_BRANCH == "master"
-    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "staging"
-    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
+  extends: .test-rules
 
-test:frontend:
-  stage: .pre
-  image: node:20
+# Frontend base configuration
+.frontend-base:
+  image: node:20-alpine
   retry:
     max: 2
     when: runner_system_failure
+  variables:
+    NODE_OPTIONS: "--max-old-space-size=4096"
+  cache:
+    key: npm-${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/
+      - .npm/
+    policy: pull-push
+  before_script:
+    - npm ci --cache .npm --prefer-offline
+  extends: .test-rules
+
+# Lint - fast check, runs first
+test:frontend:lint:
+  stage: .pre
+  extends: .frontend-base
   allow_failure: false
   script:
-    - npm ci
-    - npm test
-  rules:
-    - if: $CI_COMMIT_BRANCH == "staging"
-    - if: $CI_COMMIT_BRANCH == "master"
-    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "staging"
-    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
+    - npm run lint --if-present
+    - npm run type-check --if-present
+
+# Unit tests - runs in parallel with lint
+test:frontend:unit:
+  stage: .pre
+  extends: .frontend-base
+  allow_failure: false
+  script:
+    - npm test -- --ci --coverage --maxWorkers=2
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
+    paths:
+      - coverage/
+    expire_in: 1 week

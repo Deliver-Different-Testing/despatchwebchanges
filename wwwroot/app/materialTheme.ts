@@ -11,25 +11,25 @@ class ThemeConfig {
     }
 
     /**
-     * Defines a vibrant yellow primary palette for urgent/warning states
-     * Based on Material Design color specifications
+     * Defines a warm amber gold primary palette
+     * Matches MUI urgentPrimaryPalette for consistency
      */
     private defineUrgentPrimaryPalette(): void {
         this.$mdThemingProvider.definePalette("urgentPrimary", {
-            '50': "#fffbe0",
-            '100': "#fef5b3",
-            '200': "#feee80",
-            '300': "#fee74d",
-            '400': "#fde226",
-            '500': "#fddd00",
-            '600': "#fdd900",
-            '700': "#fcd400",
-            '800': "#fccf00",
-            '900': "#fcc700",
-            'A100': "#ffffff",
-            'A200': "#fffbef",
-            'A400': "#ffefbc",
-            'A700': "#ffe9a2",
+            '50': "#fef9e7",
+            '100': "#fcefc4",
+            '200': "#fae49d",
+            '300': "#f8d976",
+            '400': "#f6d058",
+            '500': "#f4c430",
+            '600': "#e5b52a",
+            '700': "#d4a324",
+            '800': "#c3911e",
+            '900': "#a87614",
+            'A100': "#fff8e1",
+            'A200': "#ffecb3",
+            'A400': "#ffd54f",
+            'A700': "#ffc107",
             'contrastDefaultColor': "light",
             'contrastDarkColors': ["50", "100", "200", "300", "400", "500", "600", "700", "800", "900", "A100", "A200", "A400", "A700"],
             'contrastLightColors': []

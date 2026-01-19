@@ -1308,10 +1308,12 @@ class JobsListController extends BaseController {
                 "Search couriers...",
                 "Courier",
                 "Bulk Assign Courier",
-                null,
+                undefined,
                 false,
                 "moped_package",
                 1);
+
+            if (!selectedCourier) return;
 
             for (const job of this.selectedJobs) {
                 if (this.onJobDispatch) {

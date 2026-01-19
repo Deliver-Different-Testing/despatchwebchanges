@@ -5,7 +5,6 @@ using DespatchWeb.Repositories;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
-using MockQueryable;
 using MockQueryable.Moq;
 using Moq;
 
@@ -494,7 +493,7 @@ internal class TestAsyncQueryProvider<TEntity> : IAsyncQueryProvider
     {
         var resultType = typeof(TResult).GetGenericArguments()[0];
         var executeMethod = typeof(IQueryProvider).GetMethods()
-            .First(m => m.Name == nameof(IQueryProvider.Execute) && m.IsGenericMethodDefinition)
+            .First(m => m is { Name: nameof(IQueryProvider.Execute), IsGenericMethodDefinition: true })
             .MakeGenericMethod(resultType);
 
         var result = executeMethod.Invoke(_inner, [expression]);

@@ -3,7 +3,6 @@ import NationwideService from "./nationwide.service";
 import FlightDetailsDialogService from "../dialogs/flight-details-dialog/flight-details-dialog.service";
 import FlightAgentConfirmationDialogService
     from "../dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.service";
-import FlightDetailsDialogController from "../dialogs/flight-details-dialog/flight-details-dialog.component";
 import JobsListComponent from "../common/job-list/job-list.component";
 import TasksService from "../../services/tasks.service";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
@@ -56,7 +55,6 @@ nationwideModule
 
 // Register controllers
 nationwideModule
-    .controller("flightDetailsDialogController", FlightDetailsDialogController)
     .controller("AdditionalServicesDialogController", AdditionalServicesDialogController)
     .controller("recoveryAgentManagementController", RecoveryAgentManagementController);
 

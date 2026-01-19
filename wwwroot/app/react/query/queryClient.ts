@@ -98,6 +98,21 @@ export const queryKeys = {
         job: (jobId: number, isPrebook: boolean, isArchived: boolean) =>
             ['priceBreakdowns', 'job', jobId, isPrebook, isArchived] as const,
     },
+    tasks: {
+        all: ['tasks'] as const,
+        list: (filters: {
+            searchText?: string;
+            staffId?: number;
+            eventTypeId?: number;
+            startDate?: string;
+            endDate?: string;
+            showCompleted?: boolean;
+            jobId?: number;
+        }) => ['tasks', 'list', filters] as const,
+        staff: ['tasks', 'staff'] as const,
+        eventTypes: ['tasks', 'eventTypes'] as const,
+        deliveryJourney: (jobId: number) => ['tasks', 'deliveryJourney', jobId] as const,
+    },
 } as const;
 
 export default queryClient;

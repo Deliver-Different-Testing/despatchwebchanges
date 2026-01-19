@@ -203,8 +203,10 @@ public class FlightStatsService(
         var departureAirport = airports.FirstOrDefault(x => x.AirportId == departureAirportId);
         var arrivalAirport = airports.FirstOrDefault(x => x.AirportId == arrivalAirportId);
 
-        ArgumentNullException.ThrowIfNull(departureAirport);
-        ArgumentNullException.ThrowIfNull(arrivalAirport);
+        if (departureAirport is null)
+            throw new ArgumentException($"Departure airport with ID {departureAirportId} not found in active airports");
+        if (arrivalAirport is null)
+            throw new ArgumentException($"Arrival airport with ID {arrivalAirportId} not found in active airports");
 
         var activeAirlineCodes = await repository.GetActiveAirlineCodesAsync();
 
@@ -228,7 +230,8 @@ public class FlightStatsService(
         if (airlineId is > 0)
         {
             var selectedAirline = await repository.GetAirlineCodeByIdAsync(airlineId.Value);
-            ArgumentNullException.ThrowIfNull(selectedAirline);
+            if (string.IsNullOrEmpty(selectedAirline))
+                throw new ArgumentException($"Airline with ID {airlineId} not found");
 
             Log.Debug("Filtering FlightWebhooks by specific airline: {Carrier}", selectedAirline);
             query["includeAirlines"] = selectedAirline;
@@ -265,8 +268,20 @@ public class FlightStatsService(
             stopwatch.ElapsedMilliseconds, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            Log.Error("FlightStats API returned error. Status: {StatusCode}, Content: {Content}",
+                response.StatusCode, content);
+            throw new HttpRequestException($"FlightStats API error: {response.StatusCode}. Response: {content}");
+        }
+
         var flightStatusResponse = JsonSerializer.Deserialize<FlightConnectionsRoot>(content);
-        ArgumentNullException.ThrowIfNull(flightStatusResponse);
+        if (flightStatusResponse is null)
+        {
+            Log.Error("Failed to deserialize FlightStats response. Content: {Content}", content);
+            throw new InvalidOperationException("Failed to parse FlightStats API response");
+        }
 
         // Pre-filter connections to avoid processing unnecessary data
         var connections = flightStatusResponse.Connections;

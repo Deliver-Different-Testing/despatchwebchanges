@@ -3,20 +3,10 @@
  */
 
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ThemeProvider, createTheme } from '@mui/material';
 import { AgentInfoDialog, AgentInfo, AirportViewModel } from './AgentInfoDialog';
-
-const theme = createTheme();
-
-const renderWithTheme = (ui: React.ReactElement) => {
-    return render(
-        <ThemeProvider theme={theme}>
-            {ui}
-        </ThemeProvider>
-    );
-};
+import { renderWithTheme, createProps } from '../../../__testUtils__';
 
 const mockAirports: AirportViewModel[] = [
     {
@@ -63,13 +53,15 @@ const mockAgent: AgentInfo = {
     },
 };
 
-const createMockProps = (overrides = {}) => ({
+const defaultProps = {
     open: true,
     agent: mockAgent,
     isLoading: false,
     onClose: jest.fn(),
-    ...overrides,
-});
+};
+
+const createMockProps = (overrides?: Partial<typeof defaultProps>) =>
+    createProps(defaultProps, overrides);
 
 describe('AgentInfoDialog', () => {
     describe('Rendering', () => {
@@ -104,14 +96,14 @@ describe('AgentInfoDialog', () => {
 
     describe('Loading State', () => {
         it('shows loading spinner when isLoading is true', () => {
-            const props = createMockProps({ isLoading: true, agent: null });
+            const props = createMockProps({ isLoading: true, agent: undefined });
             renderWithTheme(<AgentInfoDialog {...props} />);
 
             expect(screen.getByRole('progressbar')).toBeInTheDocument();
         });
 
         it('does not show content when loading', () => {
-            const props = createMockProps({ isLoading: true, agent: null });
+            const props = createMockProps({ isLoading: true, agent: undefined });
             renderWithTheme(<AgentInfoDialog {...props} />);
 
             expect(screen.queryByText('Basic Information')).not.toBeInTheDocument();
@@ -215,58 +207,33 @@ describe('AgentInfoDialog', () => {
             expect(screen.getByText('Assigned Airports')).toBeInTheDocument();
         });
 
-        it('displays airport codes', () => {
+        it.each([
+            ['airport codes', ['LAX', 'JFK']],
+            ['airport names', ['Los Angeles International Airport', 'John F. Kennedy International Airport']],
+            ['airport locations', ['Los Angeles, USA', 'New York, USA']],
+            ['airport timezones', ['America/Los_Angeles', 'America/New_York']],
+        ])('displays %s', (_, expectedTexts) => {
             const props = createMockProps();
             renderWithTheme(<AgentInfoDialog {...props} />);
 
-            expect(screen.getByText('LAX')).toBeInTheDocument();
-            expect(screen.getByText('JFK')).toBeInTheDocument();
-        });
-
-        it('displays airport names', () => {
-            const props = createMockProps();
-            renderWithTheme(<AgentInfoDialog {...props} />);
-
-            expect(screen.getByText('Los Angeles International Airport')).toBeInTheDocument();
-            expect(screen.getByText('John F. Kennedy International Airport')).toBeInTheDocument();
-        });
-
-        it('displays airport locations', () => {
-            const props = createMockProps();
-            renderWithTheme(<AgentInfoDialog {...props} />);
-
-            expect(screen.getByText('Los Angeles, USA')).toBeInTheDocument();
-            expect(screen.getByText('New York, USA')).toBeInTheDocument();
-        });
-
-        it('displays airport timezones', () => {
-            const props = createMockProps();
-            renderWithTheme(<AgentInfoDialog {...props} />);
-
-            expect(screen.getByText('America/Los_Angeles')).toBeInTheDocument();
-            expect(screen.getByText('America/New_York')).toBeInTheDocument();
+            expectedTexts.forEach(text => {
+                expect(screen.getByText(text)).toBeInTheDocument();
+            });
         });
 
         it('displays formatted coordinates', () => {
             const props = createMockProps();
             renderWithTheme(<AgentInfoDialog {...props} />);
 
-            // LAX coordinates
             expect(screen.getByText(/33.9425° N, 118.4081° W/)).toBeInTheDocument();
-            // JFK coordinates
             expect(screen.getByText(/40.6413° N, 73.7781° W/)).toBeInTheDocument();
         });
 
-        it('displays empty state when no airports assigned', () => {
-            const agentNoAirports = { ...mockAgent, airports: [] };
-            const props = createMockProps({ agent: agentNoAirports });
-            renderWithTheme(<AgentInfoDialog {...props} />);
-
-            expect(screen.getByText('No airports assigned')).toBeInTheDocument();
-        });
-
-        it('displays empty state when airports is undefined', () => {
-            const agentNoAirports = { ...mockAgent, airports: undefined };
+        it.each([
+            ['empty array', []],
+            ['undefined', undefined],
+        ])('displays empty state when airports is %s', (_, airports) => {
+            const agentNoAirports = { ...mockAgent, airports };
             const props = createMockProps({ agent: agentNoAirports });
             renderWithTheme(<AgentInfoDialog {...props} />);
 
@@ -288,7 +255,7 @@ describe('AgentInfoDialog', () => {
 
     describe('No Agent Data', () => {
         it('displays message when no agent data is available', () => {
-            const props = createMockProps({ agent: null, isLoading: false });
+            const props = createMockProps({ agent: undefined, isLoading: false });
             renderWithTheme(<AgentInfoDialog {...props} />);
 
             expect(screen.getByText('No agent data available')).toBeInTheDocument();

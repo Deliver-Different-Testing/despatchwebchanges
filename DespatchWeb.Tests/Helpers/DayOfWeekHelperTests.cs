@@ -71,7 +71,7 @@ public class DayOfWeekHelperTests
         // Verify that days are sequential from 1-7
         var days = new[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
 
-        for (int i = 0; i < days.Length; i++)
+        for (var i = 0; i < days.Length; i++)
         {
             var result = DayOfWeekHelper.DayNameToSqlInt(days[i]);
             result.Should().Be(i + 1, $"{days[i]} should be {i + 1}");

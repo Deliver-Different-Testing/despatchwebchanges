@@ -35,7 +35,7 @@ public class ClearListEnvelopeService(
         if (clearListAreaId <= 0)
             throw new ArgumentException("Invalid clearListAreaId", nameof(clearListAreaId));
 
-        if (!Enum.IsDefined(typeof(Country), country))
+        if (!Enum.IsDefined(country))
             throw new ArgumentException("Invalid country", nameof(country));
         
         return country switch

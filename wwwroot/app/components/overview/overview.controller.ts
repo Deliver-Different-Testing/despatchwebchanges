@@ -12,7 +12,7 @@ import "./overview.styles.less";
 import BaseController from "../base-controller";
 import {ISuggestion} from "../../interfaces/job.interface";
 import greetUser from "../../functions/greetUser";
-import {Dayjs} from "dayjs";
+import dayjs, {Dayjs} from "dayjs";
 import MapDialogService from "../dialogs/map-dialog/map-dialog.service";
 import {IPaginatedResponse} from "../../interfaces/paginated-response.interface";
 import DispatchCoreService from "../../services/dispatch-core.service";
@@ -410,10 +410,10 @@ class OverviewController extends BaseController {
                 return;
             }
 
-            // Update the date range with the result
+            // Update the date range with the result (convert Date back to Dayjs)
             this.dateRange = {
-                start: result.start,
-                end: result.end
+                start: result.start ? dayjs(result.start) : undefined,
+                end: result.end ? dayjs(result.end) : undefined
             };
 
             this.overviewFiltersService.updateFilters({

@@ -255,8 +255,8 @@ public class NationwideJobController(
         try
         {
             ArgumentNullException.ThrowIfNull(data);
-            ArgumentNullException.ThrowIfNull(data.AgentId);
-            ArgumentNullException.ThrowIfNull(data.JobId);
+            if (!data.AgentId.HasValue) throw new ArgumentNullException(nameof(data.AgentId));
+            if (!data.JobId.HasValue) throw new ArgumentNullException(nameof(data.JobId));
 
             await repository.SendAgentRequestMessageAsync(data.AgentId.Value, data.JobId.Value);
             return Ok();

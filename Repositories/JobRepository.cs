@@ -3145,7 +3145,8 @@ public partial class JobRepository(
             // Update existing items using ExecuteUpdateAsync
             foreach (var parcel in existingParcelsToUpdate)
             {
-                ArgumentNullException.ThrowIfNull(parcel.ItemId);
+                if (!parcel.ItemId.HasValue) throw new ArgumentNullException(nameof(parcel.ItemId));
+
                 await Context.TucJobItems
                     .Where(i => i.ItemId == parcel.ItemId.Value && i.JobId == effectiveJobId)
                     .ExecuteUpdateAsync(setters => setters
@@ -3235,7 +3236,8 @@ public partial class JobRepository(
             // Update existing items using ExecuteUpdateAsync
             foreach (var parcel in existingParcelsToUpdate)
             {
-                ArgumentNullException.ThrowIfNull(parcel.ItemId);
+                if (!parcel.ItemId.HasValue) throw new ArgumentNullException(nameof(parcel.ItemId));
+
                 await Context.TblBulkJobItems
                     .Where(i => i.ItemId == parcel.ItemId.Value && i.JobId == effectiveJobId)
                     .ExecuteUpdateAsync(setters => setters

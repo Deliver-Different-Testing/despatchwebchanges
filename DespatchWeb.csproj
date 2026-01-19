@@ -3,7 +3,7 @@
     <Exec Command="npm run build" WorkingDirectory="$(ProjectDir)" />
   </Target>
   <PropertyGroup Label="Globals">
-    <LangVersion>latestmajor</LangVersion>
+    <LangVersion>14</LangVersion>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <TypeScriptTarget>ES2021</TypeScriptTarget>
@@ -116,10 +116,6 @@
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-address-dialog\edit-address-dialog.controller.js.map" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-address-dialog\edit-address-dialog.controller.min.js" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-address-dialog\edit-address-dialog.controller.min.js.map" />
-    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.controller.js" />
-    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.controller.js.map" />
-    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.controller.min.js" />
-    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.controller.min.js.map" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\inter-courier-charge-dialog\inter-courier-charge-dialog.js" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\inter-courier-charge-dialog\inter-courier-charge-dialog.js.map" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\inter-courier-charge-dialog\inter-courier-charge-dialog.min.js" />
@@ -341,8 +337,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\dashboard-settings-dialog\interfaces\IDashboardSettingsDialogResult.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-afterhours-dialog\edit-afterhours-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.component.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\inter-courier-charge-dialog\interfaces\IInterCourierData.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.service.ts" />
@@ -381,7 +375,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\additional-services-dialog\additional-services-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\create-job-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-address-dialog\edit-address-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.service.ts" />
@@ -398,7 +391,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\select-dialog\select-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\select-dialog\select-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\create-job-dialog.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\home\home.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\mega-map\mega-map.controller.ts" />
@@ -417,12 +409,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\overview\overview.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\services\overview-filters.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\enums\status-filter.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\enums\view-mode.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\task-calendar-view\task-calendar-view.component.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\task-calendar-view\task-calendar-view.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\task-dashboard.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\task-dashboard.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\task-dashboard.module.ts" />
     <TypeScriptCompile Include="wwwroot\app\contants.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\app-pages.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\dangerous-goods.enum.ts" />

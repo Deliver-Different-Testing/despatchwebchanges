@@ -123,8 +123,14 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
 
     private handleTaskClick = (event: React.MouseEvent): void => {
         const {onTaskClick, task} = this.props;
+        console.log('[TaskItem] handleTaskClick called', {
+            taskId: task.id,
+            configOnTaskClick: this.config.onTaskClick,
+            hasOnTaskClick: !!onTaskClick,
+        });
         if (this.config.onTaskClick && onTaskClick) {
             event.stopPropagation();
+            console.log('[TaskItem] Calling onTaskClick prop');
             onTaskClick(task);
         }
     };

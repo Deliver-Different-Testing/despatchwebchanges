@@ -129,9 +129,9 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
             };
         }
         return {
-            primary: '#fddd00',
-            primaryLight: '#fffbe0',
-            headerBg: '#fddd00',
+            primary: '#f4c430',
+            primaryLight: '#fef9e7',
+            headerBg: '#f4c430',
             headerText: 'rgba(0, 0, 0, 0.87)',
         };
     }
@@ -537,20 +537,6 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
                                                     </Typography>
                                                 )}
                                             </Box>
-
-                                            {/* Description - only in Normal mode */}
-                                            {event.description && densityMode === DensityMode.Normal && (
-                                                <Typography
-                                                    sx={{
-                                                        fontSize: '0.875rem',
-                                                        color: '#6b7280',
-                                                        lineHeight: 1.5,
-                                                        margin: '0 0 8px 0',
-                                                    }}
-                                                >
-                                                    {event.description}
-                                                </Typography>
-                                            )}
 
                                             {/* Tags */}
                                             {tagsToShow.length > 0 && (

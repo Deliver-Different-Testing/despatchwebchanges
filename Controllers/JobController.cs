@@ -189,7 +189,7 @@ public class JobController(
         try
         {
             var jobId = breakdown.ChildJobId ?? breakdown.PrebookJobId;
-            ArgumentNullException.ThrowIfNull(jobId);
+            if (!jobId.HasValue) throw new ArgumentNullException(nameof(jobId));
 
             Log.Information("Adding price breakdown for job {JobId} (archived: {IsArchived})", jobId, breakdown.IsArchived);
 
@@ -219,7 +219,7 @@ public class JobController(
         try
         {
             var jobId = breakdown.JobId ?? breakdown.PrebookJobId;
-            ArgumentNullException.ThrowIfNull(jobId);
+            if (!jobId.HasValue) throw new ArgumentNullException(nameof(jobId));
 
             Log.Information("Updating price breakdown for job {JobId} (archived: {IsArchived})",
                 breakdown.JobId ?? breakdown.PrebookJobId, breakdown.IsArchived);

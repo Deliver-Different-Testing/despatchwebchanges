@@ -47,7 +47,6 @@ public class CourierRepository(
     {
         try
         {
-            ArgumentNullException.ThrowIfNull(courierId);
             const string truckVehicleName = "Truck";
 
             var courierData = await Context.TucCouriers
@@ -2358,8 +2357,8 @@ END CATCH");
     {
         try
         {
-            ArgumentNullException.ThrowIfNull(request.StartTime);
-            ArgumentNullException.ThrowIfNull(request.EndTime);
+            if (!request.StartTime.HasValue) throw new ArgumentNullException(nameof(request.StartTime));
+            if (!request.EndTime.HasValue) throw new ArgumentNullException(nameof(request.EndTime));
 
             // Delete the original schedule group in a single query
             await Context.TblAfterhoursCouriers
@@ -2395,8 +2394,8 @@ END CATCH");
     {
         try
         {
-            ArgumentNullException.ThrowIfNull(request.StartTime);
-            ArgumentNullException.ThrowIfNull(request.EndTime);
+            if (!request.StartTime.HasValue) throw new ArgumentNullException(nameof(request.StartTime));
+            if (!request.EndTime.HasValue) throw new ArgumentNullException(nameof(request.EndTime));
 
             // Add records for each day in batch
             var schedules = request.Days.Select(GetDayOfWeekAsInt).Select(dayOfWeek => new TblAfterhoursCourier
