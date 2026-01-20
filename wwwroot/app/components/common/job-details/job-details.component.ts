@@ -37,6 +37,7 @@ import {IFlightSegment} from "../../Nationwide/nationwide.interfaces";
 import PodPhotoType from "../../../enums/podPhotoType";
 import {formatLongDateTime} from "../../../functions/formatDates";
 import {ViewDensity, ViewDensityLabels} from "../../../enums/view-density.enum";
+import DispatchExecutorService from "../../../services/dispatch-executor.service";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -56,6 +57,7 @@ class JobDetailController extends BaseController {
         "autoCompleteDialogService",
         "jobFileUploadDialogService",
         "voidJobConfirmationDialogService",
+        "dispatchJobService",
     ];
 
     private readonly FIELD_VISIBILITY_KEY = `jobDetail_fieldVisibility_${ContactID}`;
@@ -120,6 +122,7 @@ class JobDetailController extends BaseController {
         private autoCompleteDialogService: AutoCompleteDialogService,
         private jobFileUploadDialogService: JobFileUploadDialogService,
         private voidJobConfirmationDialogService: VoidJobConfirmationDialogService,
+        private dispatchJobService: DispatchExecutorService,
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
@@ -1266,16 +1269,40 @@ class JobDetailController extends BaseController {
         const url = "/courier/AllActiveSearch";
         const placeholder = "Start typing to search courier...";
 
-        await this.showAutocompleteDialog(
-            $event,
-            job,
-            url,
-            placeholder,
-            JobProperty.CourierID,
-            "Courier",
-            null,
-            false
-        );
+        try {
+            const result = await this.autoCompleteDialogService.showAutocompleteDialog(
+                $event,
+                url,
+                placeholder,
+                JobProperty.CourierID,
+                "Courier",
+                undefined,
+                false
+            );
+
+            if (!result) return;
+
+            const courierId = result.id;
+            await this.dispatchJobService.assignSingleJobById(courierId, job.id);
+
+            // Get courier details for toast message
+            try {
+                const courier = await this.DispatchData.getCourierById(courierId);
+                if (courier) {
+                    const courierDisplay = (courier.id && courier.id !== 'undefined' && courier.id.trim() !== '')
+                        ? `${courier.id}: ${courier.name}`
+                        : courier.name;
+                    this.toastrService.showSuccessToast(`Dispatched to ${courierDisplay}`);
+                }
+            } catch {
+                this.toastrService.showSuccessToast("Job dispatched successfully");
+            }
+
+            // Refresh the job details to show updated courier assignment
+            await this.refreshJobDetails(job.id);
+        } catch (error) {
+            this.handleError(error);
+        }
     }
 
     async contactClick($event: MouseEvent, job: IJob): Promise<void> {

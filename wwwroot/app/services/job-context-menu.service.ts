@@ -2,7 +2,7 @@ import DispatchCoreService from "./dispatch-core.service";
 import ToastrService from "./toastr.service";
 import {EventGroupDialogService} from "../components/dialogs/event-group-dialog/event-group-dialog.service";
 import {openAddEventDialog} from "../react/components/dialogs/add-event-dialog";
-import {IDispatchJob, ILateCallRequest, ISuggestion,} from "../interfaces/job.interface";
+import {IAddressViewModel, IDispatchJob, ILateCallRequest, ISuggestion,} from "../interfaces/job.interface";
 import IContextMenuOption from "../interfaces/context-menu-option.interface";
 import InternalJobStatus from "../enums/job-internal-status.enum";
 import JobInternalStatusEnum from "../enums/job-internal-status.enum";
@@ -12,6 +12,7 @@ import {AppPage} from "../enums/app-pages.enum";
 import {LateEventType} from "../enums/late-event-type.enum";
 import VoidJobConfirmationDialogService
     from "../components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
+import {EditAddressDialogService} from "../components/dialogs/edit-address-dialog/edit-address-dialog.service";
 
 class JobContextMenuService implements angular.IServiceProvider {
     static $inject = [
@@ -22,6 +23,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         "eventGroupDialogService",
         "jobAddStopService",
         "voidJobConfirmationDialogService",
+        "editAddressDialogService",
     ];
 
     private eventGroupsCache: ISuggestion[] = [];
@@ -34,6 +36,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         private eventGroupDialogService: EventGroupDialogService,
         private jobAddStopService: JobAddStopService,
         private voidJobConfirmationDialogService: VoidJobConfirmationDialogService,
+        private editAddressDialogService: EditAddressDialogService,
     ) {
         console.log("JobContextMenuService initialized");
         this.preloadEventGroups();
@@ -42,7 +45,14 @@ class JobContextMenuService implements angular.IServiceProvider {
     $get() {
         return this;
     }
-    
+
+    /**
+     * Public method to split a job - can be called directly from controllers
+     */
+    async splitJob($event: MouseEvent, job: IDispatchJob, onRefresh?: () => void): Promise<void> {
+        await this.splitJobAction($event, job, onRefresh || (() => {}));
+    }
+
     getMenuOptions(job: IDispatchJob, callbacks: any, appPage: AppPage): IContextMenuOption[] {
         if (!job) return [];
 
@@ -158,7 +168,7 @@ class JobContextMenuService implements angular.IServiceProvider {
                 text: "Split Job",
                 icon: "arrow_split",
                 click: (_$itemScope: any, $event: MouseEvent) =>
-                    this.splitJobAction($event, job, callbacks.onSplitJob),
+                    this.splitJobAction($event, job, callbacks.onRefresh),
                 hasBottomDivider: true,
             });
         }
@@ -433,7 +443,7 @@ class JobContextMenuService implements angular.IServiceProvider {
     private async splitJobAction(
         $event: MouseEvent,
         job: IDispatchJob,
-        onSplitJob: (params: { job: IDispatchJob }) => void
+        onRefresh: () => void
     ) {
         if (!job) return;
 
@@ -464,14 +474,66 @@ class JobContextMenuService implements angular.IServiceProvider {
             );
 
             await this.DispatchData.splitJob(job.id);
+            await this.handleSplitJobMeetingPoint($event, job);
 
-            if (onSplitJob) {
-                onSplitJob({job: job});
+            if (onRefresh) {
+                onRefresh();
             }
         } catch (error) {
-            console.error("Splitting job failed:", error);
-            this.toastrService.showErrorToast("Error splitting job");
+            if (error) {
+                console.error("Splitting job failed:", error);
+                this.toastrService.showErrorToast("Error splitting job");
+            }
         }
+    }
+
+    private async handleSplitJobMeetingPoint($event: MouseEvent, job: IDispatchJob): Promise<void> {
+        try {
+            if (!job.deliveryAddress) return;
+
+            const newAddress = await this.editAddressDialogService.openEditAddressDialog(
+                job.deliveryAddress,
+                $event,
+                'Set Meeting Point',
+                'Save'
+            );
+
+            if (!newAddress) return;
+
+            await this.processSplitJobAddress(newAddress, job);
+        } catch (error: any) {
+            console.log("Meeting point dialog cancelled or error:", error?.message);
+        }
+    }
+
+    private async processSplitJobAddress(addressDetails: IAddressViewModel, job: IDispatchJob): Promise<void> {
+        if (!addressDetails) {
+            console.log("Split jobs canceled!");
+            return;
+        }
+
+        const callData = {
+            jobID: job.id,
+            lat: Number(addressDetails.latitude),
+            long: Number(addressDetails.longitude),
+            toSuburbId: Number(addressDetails.toSuburbId),
+            toAddress: addressDetails.address,
+        };
+
+        if (!callData.toAddress || !callData.toSuburbId) return;
+
+        await this.DispatchData.updateSplitJobAddress(
+            callData.jobID,
+            callData.toSuburbId,
+            callData.toAddress,
+            callData.lat,
+            callData.long
+        );
+        await this.DispatchData.reRateSplitJob(callData.jobID);
+        await this.DispatchData.finishSplitJobProcess(callData.jobID);
+
+        this.toastrService.showSuccessToast("Job Successfully Split");
+        console.log("Job splitting complete!");
     }
 
     private async setFirstJobAction(

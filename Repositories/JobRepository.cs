@@ -1424,14 +1424,14 @@ public partial class JobRepository(
     public async Task UpdatePodDetailsAsync(UpdatePodDetailsRequest data)
     {
         // Find if a job is in active or archive table
-        var activeJob = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == data.JobId);
+        var activeJob = await Context.TucJobs.AsNoTracking().FirstOrDefaultAsync(j => j.UcjbId == data.JobId);
         var isArchived = activeJob == null;
         int? parentId;
 
         // Determine parent ID based on job location
         if (isArchived)
         {
-            var archivedJob = await Context.TucJobArchives.FirstOrDefaultAsync(j => j.UcjbId == data.JobId);
+            var archivedJob = await Context.TucJobArchives.AsNoTracking().FirstOrDefaultAsync(j => j.UcjbId == data.JobId);
             if (archivedJob == null)
             {
                 // Job isn't found in either table
@@ -1832,6 +1832,38 @@ public partial class JobRepository(
 
         await Context.Procedures.DES_stpJob_UnSplitAsync(jobId, message, returnValue);
         return message.Value;
+    }
+
+    /// <summary>
+    /// Checks if a job can be split.
+    /// A job can be split if it has no parent (is not already a child job).
+    /// </summary>
+    /// <param name="jobId">The job ID to check.</param>
+    /// <returns>True if the job can be split, false otherwise.</returns>
+    public async Task<bool> CanJobBeSplitAsync(int jobId)
+    {
+        var job = await Context.TucJobs
+            .AsNoTracking()
+            .FirstOrDefaultAsync(j => j.UcjbId == jobId);
+
+        if (job == null) return false;
+
+        // Cannot split a child job (has parent) or a job where parent equals itself
+        return !job.ParentId.HasValue || job.ParentId == job.UcjbId;
+    }
+
+    /// <summary>
+    /// Gets all child job IDs for a split parent job.
+    /// </summary>
+    /// <param name="parentJobId">The parent job ID.</param>
+    /// <returns>List of child job IDs.</returns>
+    public async Task<List<int>> GetSplitJobChildrenAsync(int parentJobId)
+    {
+        return await Context.TucJobs
+            .AsNoTracking()
+            .Where(j => j.ParentId == parentJobId)
+            .Select(j => j.UcjbId)
+            .ToListAsync();
     }
 
     /// <summary>

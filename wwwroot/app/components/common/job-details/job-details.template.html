@@ -377,7 +377,7 @@
                 <!-- Combined Info Sections -->
                 <div
                         class="info-sections-container "
-                        ng-show="ctrl.job.assignedFlight || ctrl.job.assignedAgent"
+                        ng-if="ctrl.job.assignedFlight || ctrl.job.assignedAgent"
                         style="background: #f5f5f5">
                     <!-- Flight Information -->
                     <section
@@ -502,7 +502,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Agent Name</h3>
-                                    <p>{{ctrl.job.assignedAgent.agentName || '-'}}</p>
+                                    <p>{{ctrl.job.assignedAgent.agentName}}</p>
                                 </div>
                             </md-list-item>
 
@@ -515,7 +515,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Agent Rate</h3>
-                                    <p>{{ctrl.job.assignedAgent.agentRate || '-'}}</p>
+                                    <p>{{ctrl.job.assignedAgent.agentRate}}</p>
                                 </div>
                             </md-list-item>
 
@@ -528,7 +528,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Agent Ranking</h3>
-                                    <p>{{ctrl.job.assignedAgent.agentRanking || '-'}}</p>
+                                    <p>{{ctrl.job.assignedAgent.agentRanking}}</p>
                                 </div>
                             </md-list-item>
 
@@ -541,7 +541,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Agent Phone</h3>
-                                    <p>{{ctrl.job.assignedAgent.agentPhone || '-'}}</p>
+                                    <p>{{ctrl.job.assignedAgent.agentPhone}}</p>
                                 </div>
                                 <md-button
                                         class="md-secondary md-icon-button"
@@ -838,7 +838,7 @@
                                     </md-icon>
                                     <div class="md-list-item-text">
                                         <h3>Courier Mobile</h3>
-                                        <p>{{ctrl.job.courierData.courierMobile || '-'}}</p>
+                                        <p>{{ctrl.job.courierData.courierMobile}}</p>
                                     </div>
 
                                     <md-icon class="md-secondary"

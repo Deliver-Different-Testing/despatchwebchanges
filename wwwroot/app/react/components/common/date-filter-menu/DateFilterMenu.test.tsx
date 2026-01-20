@@ -211,7 +211,7 @@ describe('DateFilterMenu', () => {
             });
 
             expect(onShowToast).toHaveBeenCalledWith(
-                expect.stringContaining('Dates Applied'),
+                'Showing all up until the end of today',
                 'success'
             );
         });

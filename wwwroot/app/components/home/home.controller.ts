@@ -101,9 +101,8 @@ class HomeController extends BaseController {
     readonly dispatchListName: JobListType = JobListType.DispatchJobList;
 
     private readonly currentAppPage: AppPage = AppPage.Dispatch;
-    private readonly COURIER_URL: string = "/courier/AllActiveSearch";
-
-    // Layout
+    
+// Layout
     boxes?: Record<string, IBox>;
     currentLayoutName?: string;
     boxSortableOptions?: angular.ui.SortableOptions<any>;
@@ -179,7 +178,6 @@ class HomeController extends BaseController {
     private selectedClearListId?: number;
     currentJobListPage: number = 0;
     currentJobListPageSize: number = 50;
-    currentJobListTotalCount: number = 0;
 
     currentWorkViewMode: CurrentWorkLists = CurrentWorkLists.Overview;
     driversWithJobCounts?: IDriverWorkOverview[];
@@ -654,7 +652,7 @@ class HomeController extends BaseController {
                 name: DispatchBoxes.DriverLocations,
                 title: 'Driver Locations',
                 icon: "person_pin_circle",
-                templateUrl: "app/components/home/partials/driverLocations.html",
+                // Uses React component directly in template, no templateUrl needed
                 showRefresh: false,
                 visible: true,
                 description: "Real-time tracking of all driver positions"
@@ -896,41 +894,12 @@ class HomeController extends BaseController {
         this.initialViewSet = true;
     }
 
-    setActiveArea(selectedArea: IAreaClearList): void {
-        if (!this.driverLocations) return;
-
-        // Set isActive for the selected area and clear others
-        this.driverLocations.areas.forEach((area: IAreaClearList) => {
-            area.isActive = area === selectedArea;
-        });
-
-        // Apply scope to trigger Angular Material's ng-class updates
-        this.applyScope();
-    }
-
     async unlockJob(currentJob: IDispatchJob): Promise<void> {
         await this.DispatchData.updateJobDetail(currentJob.id, JobProperty.Locked, false, currentJob.preBook ?? false)
     }
 
     async lockJob(currentJob: IDispatchJob): Promise<void> {
         await this.DispatchData.updateJobDetail(currentJob.id, JobProperty.Locked, true, currentJob.preBook ?? false)
-    }
-
-    async selectClearList(selectedClearList: IAreaClearList): Promise<void> {
-        try {
-            if (!selectedClearList) {
-                this.toastrService.showErrorToast("An error occurred while selecting a clear list. Please try again.");
-                return;
-            }
-
-            // Set the status filter to 'needs-dispatch' when ClearListArea is clicked
-            this.queryParams.statusFilter = 'needs-dispatch';
-
-            await this.processClearListJobs(selectedClearList.id);
-        } catch (error) {
-            console.error("Clear list processing error:", error);
-            this.jobList = [];
-        }
     }
 
     private async processClearListJobs(selectedClearListId: number): Promise<void> {
@@ -1151,47 +1120,7 @@ class HomeController extends BaseController {
     }
 
     async splitJob($event: MouseEvent, job: IDispatchJob): Promise<void> {
-        if (!job.allowSplit) {
-            await this.showAlert("Unable to split job", `Can not split ${job.jobNo}.`);
-            return;
-        }
-
-        try {
-            const result = await this.showConfirm($event, "Split Job?", "Are you sure you wish to split this job?");
-            if (result) {
-                await this.DispatchData.splitJob(job.id);
-                await this.setSplitJobMeetingPoint($event, job);
-            }
-        } catch (error: any) {
-            if (error instanceof Error) {
-                console.log(error.message);
-            }
-            console.log("Splitting job failed:", error);
-        }
-    }
-
-    showAlert(title: string, content: string): angular.IPromise<any> {
-        return this.$mdDialog.show(this.$mdDialog
-            .alert()
-            .parent(this.$document.parent())
-            .clickOutsideToClose(true)
-            .title(title)
-            .textContent(content)
-            .ariaLabel("Alert")
-            .ok("OK"));
-    }
-
-    showConfirm($event: MouseEvent, title: string, content: string): angular.IPromise<any> {
-        const confirm = this.$mdDialog
-            .confirm()
-            .title(title)
-            .textContent(content)
-            .ariaLabel("Confirm")
-            .targetEvent($event)
-            .ok("Yes")
-            .cancel("No");
-
-        return this.$mdDialog.show(confirm);
+        await this.jobContextMenuService.splitJob($event, job, () => this.getData());
     }
 
     async getPotentialCouriers(jobId: number): Promise<void> {
@@ -1218,10 +1147,6 @@ class HomeController extends BaseController {
         } catch (error: any) {
             console.error("Error fetching truck courier status:", error);
         }
-    }
-
-    async getCourierOptions(searchTerm: string): Promise<ISuggestion[]> {
-        return await this.DispatchData.autocompleteSearch(searchTerm, this.COURIER_URL);
     }
 
     async searchCourier(): Promise<void> {
@@ -1276,33 +1201,6 @@ class HomeController extends BaseController {
             this.currentListLoading = false;
             this.applyScope();
         }
-    }
-
-    updateCourierInfo(courier: ICourierData): void {
-        if (!courier.courier) {
-            courier.courier = `${courier.courier} ${courier.courierName}`;
-        }
-    }
-
-    async displayJobsForCourier(courier: ICourierData): Promise<void> {
-        if (!courier.courierId) return;
-
-        const foundCourier = await this.DispatchData.getCourierById(courier.courierId);
-        const code = foundCourier?.id ?? '';
-        if (!courier.courierId) {
-            throw new Error('Courier ID is required');
-        }
-
-        const data = await this.DispatchData.getJobsCurrent(courier.courierId,
-            this.dateFilterData.startDate,
-            this.dateFilterData.endDate);
-
-        if (this.currentJob !== null && this.currentJob?.courier !== code) {
-            this.currentJob = undefined;
-        }
-
-        this.jobsCurrentList = data.jobs;
-        this.currentJobListTotalCount = data.totalCount;
     }
 
     async getCurrentJobs(courierId: number): Promise<void> {
@@ -1813,52 +1711,6 @@ class HomeController extends BaseController {
         }
     }
 
-    async setSplitJobMeetingPoint($event: MouseEvent, currentJob: IDispatchJob): Promise<void> {
-        try {
-            if (!currentJob.deliveryAddress) return;
-
-            const newAddress = await this.editAddressDialog.openEditAddressDialog(currentJob.deliveryAddress, $event)
-            if (!newAddress) return;
-
-            await this.handleNewAddressForSplitJobs(newAddress, currentJob);
-        } catch (error: any) {
-            console.log(error.message);
-        } finally {
-            console.log("Split jobs process completed.");
-        }
-    }
-
-    async handleNewAddressForSplitJobs(addressDetails: IAddressViewModel, currentJob: IDispatchJob): Promise<void> {
-        if (!addressDetails) {
-            console.log("Split jobs canceled!");
-            return;
-        }
-
-        const updatedJob = {
-            ...currentJob, toAddress: addressDetails.address, toSuburbID: addressDetails.toSuburbId,
-        };
-
-        const callData = {
-            jobID: updatedJob.id,
-            lat: Number(addressDetails.latitude),
-            long: Number(addressDetails.longitude),
-            toSuburbId: Number(updatedJob.toSuburbID),
-            toAddress: updatedJob.toAddress,
-        };
-
-        if (!callData.toAddress || !callData.toSuburbId) return;
-        await this.DispatchData.updateSplitJobAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long);
-        await this.DispatchData.reRateSplitJob(callData.jobID);
-        await this.DispatchData.finishSplitJobProcess(callData.jobID);
-        await this.getData();
-
-        this.toastrService.showSuccessToast("Job Successfully Split");
-        console.log("Job splitting complete!");
-        console.log("Dialog closed!");
-
-        return this.getJobList();
-    }
-
     async openTruckLoadingStatus($event: MouseEvent): Promise<void> {
         if (!this.truckCourierStatus) {
             console.error("No truck courier status available");
@@ -1958,7 +1810,6 @@ class HomeController extends BaseController {
                     return this.getData();
                 }
             },
-            onSplitJob: (params: { job: IDispatchJob }) => this.handleSplitJob(params.job),
             onRefreshCourierJobs: (params: { courierId: number }) => {
                 if (this.currentCourier) {
                     return this.getCurrentJobs(params.courierId);
@@ -1967,17 +1818,6 @@ class HomeController extends BaseController {
         };
 
         return this.jobContextMenuService.getMenuOptions(job, callbacks, AppPage.Dispatch);
-    }
-
-    async handleSplitJob(job: IDispatchJob): Promise<void> {
-        if (!job) return;
-
-        try {
-            await this.setSplitJobMeetingPoint(new MouseEvent('click'), job);
-            await this.getData();
-        } catch (error: any) {
-            console.error("Error handling split job:", error);
-        }
     }
 
     getTasksStatusCount(statusType: string): number {
@@ -2004,11 +1844,7 @@ class HomeController extends BaseController {
 
         await this.DispatchData.updateJobReadStatus(jobId, isRead);
     }
-
-    async openHubUrl(): Promise<void> {
-        await this.navigationService.openHubUrl();
-    }
-
+    
     private updateDriverLocationsDisplay(): void {
         const hasAreas = this.driverLocations && this.driverLocations.areas && this.driverLocations.areas.length > 0;
 
@@ -2298,14 +2134,7 @@ class HomeController extends BaseController {
             this.driverLocationRefreshIntervalPromise = undefined;
         }
     }
-
-    getCurrentDriverLocationRefreshIntervalText(): string {
-        if (!this.selectedDriverLocationRefreshInterval || this.selectedDriverLocationRefreshInterval.id === 0) {
-            return 'Driver location auto refresh disabled';
-        }
-        return `Driver location auto refresh: ${this.selectedDriverLocationRefreshInterval.text}`;
-    }
-
+    
     async onCourierSearchSelect(selectedCourier: ISuggestion): Promise<void> {
         try {
             await this.getCurrentJobs(selectedCourier.id);

@@ -17,36 +17,12 @@
     </md-progress-linear>
 
     <div ng-if="ctrl.isUsCustomer && ctrl.currentWorkViewMode === 'overview'" class="driver-overview-container">
-        <md-list flex>
-            <md-list-item
-                    ng-repeat="driver in ctrl.driversWithJobCounts track by driver.courierId"
-                    ng-click="ctrl.selectDriverFromOverview(driver)"
-                    class="driver-overview-item"
-                    ng-class="{'driver-selected': ctrl.currentCourier && ctrl.currentCourier.id === driver.courierId}">
-
-                <div class="md-list-item-text" layout="row" layout-align="start center" flex>
-                    <div flex>
-                        <h3>{{driver.name}}</h3>
-                        <p>{{driver.vehicleType}}</p>
-                    </div>
-                    <div layout="column" layout-align="center end">
-                        <md-chip class="job-count-chip" ng-class="ctrl.getDriverStatusClass(driver.jobCount)">
-                            {{driver.jobCount}} {{driver.jobCount === 1 ? 'job' : 'jobs'}}
-                        </md-chip>
-                        <span class="driver-status-text">{{driver.driverStatusText}}</span>
-                    </div>
-                </div>
-                <md-divider ng-if="!$last"></md-divider>
-            </md-list-item>
-        </md-list>
-
-        <no-data-react
-                ng-if="!ctrl.driversWithJobCounts || ctrl.driversWithJobCounts.length === 0"
-                title="No Drivers Available"
-                message="No active drivers found"
-                icon="people"
-                show-action="false">
-        </no-data-react>
+        <current-work-all-drivers-react
+                drivers="ctrl.driversWithJobCounts"
+                loading="ctrl.currentListLoading"
+                selected-courier-id="ctrl.currentCourier.id"
+                on-driver-select="ctrl.selectDriverFromOverview(driver)">
+        </current-work-all-drivers-react>
     </div>
 
     <!-- Selected Driver Mode -->

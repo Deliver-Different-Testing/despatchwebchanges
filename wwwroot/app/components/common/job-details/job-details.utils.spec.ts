@@ -742,3 +742,152 @@ describe('View Density', () => {
         expect(defaultDensity).toBe('normal');
     });
 });
+
+describe('courierClick Dispatch Logic', () => {
+    // Test the courier dispatch workflow
+
+    interface MockCourier {
+        courierId: number;
+        id: string;
+        name: string;
+    }
+
+    interface MockJob {
+        id: number;
+        jobNo: string;
+    }
+
+    const createMockDependencies = () => ({
+        autoCompleteDialogService: {
+            showAutocompleteDialog: jest.fn(),
+        },
+        dispatchJobService: {
+            assignSingleJobById: jest.fn(),
+        },
+        DispatchData: {
+            getCourierById: jest.fn(),
+        },
+        toastrService: {
+            showSuccessToast: jest.fn(),
+        },
+        refreshJobDetails: jest.fn(),
+        handleError: jest.fn(),
+    });
+
+    // Simulate the courierClick logic
+    const courierClick = async (
+        deps: ReturnType<typeof createMockDependencies>,
+        job: MockJob
+    ) => {
+        try {
+            const result = await deps.autoCompleteDialogService.showAutocompleteDialog();
+
+            if (!result) return;
+
+            const courierId = result.id;
+            await deps.dispatchJobService.assignSingleJobById(courierId, job.id);
+
+            try {
+                const courier = await deps.DispatchData.getCourierById(courierId);
+                if (courier) {
+                    const courierDisplay = (courier.id && courier.id !== 'undefined' && courier.id.trim() !== '')
+                        ? `${courier.id}: ${courier.name}`
+                        : courier.name;
+                    deps.toastrService.showSuccessToast(`Dispatched to ${courierDisplay}`);
+                }
+            } catch {
+                deps.toastrService.showSuccessToast("Job dispatched successfully");
+            }
+
+            await deps.refreshJobDetails(job.id);
+        } catch (error) {
+            deps.handleError(error);
+        }
+    };
+
+    it('should not dispatch when dialog is cancelled', async () => {
+        const deps = createMockDependencies();
+        deps.autoCompleteDialogService.showAutocompleteDialog.mockResolvedValue(null);
+
+        const job: MockJob = { id: 123, jobNo: 'JOB-123' };
+        await courierClick(deps, job);
+
+        expect(deps.autoCompleteDialogService.showAutocompleteDialog).toHaveBeenCalled();
+        expect(deps.dispatchJobService.assignSingleJobById).not.toHaveBeenCalled();
+        expect(deps.toastrService.showSuccessToast).not.toHaveBeenCalled();
+    });
+
+    it('should dispatch job when courier is selected', async () => {
+        const deps = createMockDependencies();
+        deps.autoCompleteDialogService.showAutocompleteDialog.mockResolvedValue({ id: 456, text: 'Test Courier' });
+        deps.dispatchJobService.assignSingleJobById.mockResolvedValue(undefined);
+        deps.DispatchData.getCourierById.mockResolvedValue({ courierId: 456, id: 'C001', name: 'Test Courier' });
+
+        const job: MockJob = { id: 123, jobNo: 'JOB-123' };
+        await courierClick(deps, job);
+
+        expect(deps.dispatchJobService.assignSingleJobById).toHaveBeenCalledWith(456, 123);
+        expect(deps.refreshJobDetails).toHaveBeenCalledWith(123);
+    });
+
+    it('should show courier name with ID in toast when courier has ID', async () => {
+        const deps = createMockDependencies();
+        deps.autoCompleteDialogService.showAutocompleteDialog.mockResolvedValue({ id: 456, text: 'Test Courier' });
+        deps.dispatchJobService.assignSingleJobById.mockResolvedValue(undefined);
+        deps.DispatchData.getCourierById.mockResolvedValue({ courierId: 456, id: 'C001', name: 'Test Courier' });
+
+        const job: MockJob = { id: 123, jobNo: 'JOB-123' };
+        await courierClick(deps, job);
+
+        expect(deps.toastrService.showSuccessToast).toHaveBeenCalledWith('Dispatched to C001: Test Courier');
+    });
+
+    it('should show courier name only in toast when courier has no ID', async () => {
+        const deps = createMockDependencies();
+        deps.autoCompleteDialogService.showAutocompleteDialog.mockResolvedValue({ id: 456, text: 'Test Courier' });
+        deps.dispatchJobService.assignSingleJobById.mockResolvedValue(undefined);
+        deps.DispatchData.getCourierById.mockResolvedValue({ courierId: 456, id: '', name: 'Test Courier' });
+
+        const job: MockJob = { id: 123, jobNo: 'JOB-123' };
+        await courierClick(deps, job);
+
+        expect(deps.toastrService.showSuccessToast).toHaveBeenCalledWith('Dispatched to Test Courier');
+    });
+
+    it('should show generic success message when courier lookup fails', async () => {
+        const deps = createMockDependencies();
+        deps.autoCompleteDialogService.showAutocompleteDialog.mockResolvedValue({ id: 456, text: 'Test Courier' });
+        deps.dispatchJobService.assignSingleJobById.mockResolvedValue(undefined);
+        deps.DispatchData.getCourierById.mockRejectedValue(new Error('Lookup failed'));
+
+        const job: MockJob = { id: 123, jobNo: 'JOB-123' };
+        await courierClick(deps, job);
+
+        expect(deps.toastrService.showSuccessToast).toHaveBeenCalledWith('Job dispatched successfully');
+    });
+
+    it('should call handleError when dispatch fails', async () => {
+        const deps = createMockDependencies();
+        const dispatchError = new Error('Dispatch failed');
+        deps.autoCompleteDialogService.showAutocompleteDialog.mockResolvedValue({ id: 456, text: 'Test Courier' });
+        deps.dispatchJobService.assignSingleJobById.mockRejectedValue(dispatchError);
+
+        const job: MockJob = { id: 123, jobNo: 'JOB-123' };
+        await courierClick(deps, job);
+
+        expect(deps.handleError).toHaveBeenCalledWith(dispatchError);
+        expect(deps.refreshJobDetails).not.toHaveBeenCalled();
+    });
+
+    it('should handle courier with undefined ID as empty', async () => {
+        const deps = createMockDependencies();
+        deps.autoCompleteDialogService.showAutocompleteDialog.mockResolvedValue({ id: 456, text: 'Test Courier' });
+        deps.dispatchJobService.assignSingleJobById.mockResolvedValue(undefined);
+        deps.DispatchData.getCourierById.mockResolvedValue({ courierId: 456, id: 'undefined', name: 'Test Courier' });
+
+        const job: MockJob = { id: 123, jobNo: 'JOB-123' };
+        await courierClick(deps, job);
+
+        expect(deps.toastrService.showSuccessToast).toHaveBeenCalledWith('Dispatched to Test Courier');
+    });
+});

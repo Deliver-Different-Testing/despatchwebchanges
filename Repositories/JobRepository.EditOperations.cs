@@ -911,6 +911,7 @@ public partial class JobRepository
     private static IQueryable<TucJob> AddRequiredIncludes(IQueryable<TucJob> query, JobProperty property)
     {
         query = query
+            .AsSplitQuery()
             .Include(j => j.UcjbStatusNavigation)
             .Include(j => j.PickupTimeZone);
 
@@ -935,6 +936,8 @@ public partial class JobRepository
     private static IQueryable<TucJobArchive> AddRequiredArchiveIncludes(IQueryable<TucJobArchive> query,
         JobProperty property)
     {
+        query = query.AsSplitQuery();
+
         return property switch
         {
             JobProperty.AirportOnly => query.Include(j => j.Nationwide),

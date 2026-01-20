@@ -375,6 +375,7 @@ public class RecurringJobRepository(
                 case JobProperty.FromContactName:
                     var fromContact = value[..Math.Min(value.Length, 100)];
                     var firstChildIdForContact = await Context.TucJobBookings
+                        .AsNoTracking()
                         .Where(c => c.BookingParentId == jobId).OrderBy(c => c.UcbkId)
                         .Select(c => c.UcbkId).FirstOrDefaultAsync();
                     await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.UcbkId == firstChildIdForContact)
@@ -384,6 +385,7 @@ public class RecurringJobRepository(
                 case JobProperty.FromContactPhone:
                     var fromPhone = value[..Math.Min(value.Length, 100)];
                     var firstChildIdForPhone = await Context.TucJobBookings
+                        .AsNoTracking()
                         .Where(c => c.BookingParentId == jobId).OrderBy(c => c.UcbkId)
                         .Select(c => c.UcbkId).FirstOrDefaultAsync();
                     await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.UcbkId == firstChildIdForPhone)
@@ -393,6 +395,7 @@ public class RecurringJobRepository(
                 case JobProperty.ToContactName:
                     var toContact = value[..Math.Min(value.Length, 100)];
                     var lastChildIdForContact = await Context.TucJobBookings
+                        .AsNoTracking()
                         .Where(c => c.BookingParentId == jobId).OrderByDescending(c => c.UcbkId)
                         .Select(c => c.UcbkId).FirstOrDefaultAsync();
                     await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.UcbkId == lastChildIdForContact)
@@ -402,6 +405,7 @@ public class RecurringJobRepository(
                 case JobProperty.ToContactPhone:
                     var toPhone = value[..Math.Min(value.Length, 100)];
                     var lastChildIdForPhone = await Context.TucJobBookings
+                        .AsNoTracking()
                         .Where(c => c.BookingParentId == jobId).OrderByDescending(c => c.UcbkId)
                         .Select(c => c.UcbkId).FirstOrDefaultAsync();
                     await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.UcbkId == lastChildIdForPhone)
