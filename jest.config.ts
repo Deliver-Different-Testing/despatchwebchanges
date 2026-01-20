@@ -6,23 +6,32 @@ const config: JestConfigWithTsJest = {
     roots: ['<rootDir>/wwwroot'],
     testMatch: ['**/*.spec.ts', '**/*.test.ts', '**/*.spec.tsx', '**/*.test.tsx'],
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
+
     transform: {
         '^.+\\.(ts|tsx)$': ['ts-jest', {
             tsconfig: 'tsconfig.test.json',
         }]
     },
+
     moduleNameMapper: {
-        // Map AngularJS and other dependencies
         '^angular$': '<rootDir>/node_modules/angular/angular.js',
-        // Mock style imports
         '\\.(less|css|scss|sass)$': '<rootDir>/wwwroot/app/tests/mocks/styleMock.ts',
-        // Mock HTML template imports
         '\\.html$': '<rootDir>/wwwroot/app/tests/mocks/templateMock.ts',
+        // Mock heavy MUI date picker components for faster tests
+        '^@mui/x-date-pickers/DateTimePicker$': '<rootDir>/wwwroot/app/tests/mocks/muiDatePickerMocks.ts',
+        '^@mui/x-date-pickers/DatePicker$': '<rootDir>/wwwroot/app/tests/mocks/muiDatePickerMocks.ts',
+        '^@mui/x-date-pickers/TimePicker$': '<rootDir>/wwwroot/app/tests/mocks/muiDatePickerMocks.ts',
+        '^@mui/x-date-pickers/DateCalendar$': '<rootDir>/wwwroot/app/tests/mocks/muiDatePickerMocks.ts',
+        '^@mui/x-date-pickers/TimeClock$': '<rootDir>/wwwroot/app/tests/mocks/muiDatePickerMocks.ts',
+        '^@mui/x-date-pickers/LocalizationProvider$': '<rootDir>/wwwroot/app/tests/mocks/muiDatePickerMocks.ts',
+        '^@mui/x-date-pickers/AdapterDayjs$': '<rootDir>/wwwroot/app/tests/mocks/muiDatePickerMocks.ts',
     },
+
     setupFilesAfterEnv: [
         '<rootDir>/wwwroot/app/tests/setup.ts',
         '<rootDir>/wwwroot/app/tests/setupReact.ts'
     ],
+
     collectCoverageFrom: [
         'wwwroot/app/**/*.ts',
         'wwwroot/app/**/*.tsx',
@@ -30,9 +39,25 @@ const config: JestConfigWithTsJest = {
         '!wwwroot/app/tests/**'
     ],
     coverageReporters: ['text', 'lcov', 'cobertura'],
+
     testPathIgnorePatterns: ['/node_modules/', '/DespatchWeb.Tests/'],
+
+    // Performance optimizations
+    maxWorkers: '50%',
+    cache: true,
+    cacheDirectory: '<rootDir>/.jest-cache',
     verbose: false,
-    maxWorkers: '50%', // Optimize parallel test execution
+
+    // Reduce memory usage and improve GC
+    workerIdleMemoryLimit: '512MB',
+
+    // Fail fast on hung tests
+    testTimeout: 30000,
+
+    // Use modern fake timers for better async handling
+    fakeTimers: {
+        enableGlobally: false,
+    },
 };
 
 export default config;
