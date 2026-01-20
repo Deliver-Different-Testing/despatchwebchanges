@@ -58,6 +58,7 @@ public class NationwideJobRepository(
                 requestData.JobId, primaryFlightNumber);
 
             var job = await Context.TucJobs
+                .AsSplitQuery()
                 .Include(j => j.Parent)
                 .ThenInclude(j => j.InverseParent)
                 .ThenInclude(j => j.UcjbSpeedNavigation)
@@ -421,6 +422,7 @@ public class NationwideJobRepository(
     public async Task AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false)
     {
         var job = await Context.TucJobs
+            .AsSplitQuery()
             .Include(j => j.Parent)
             .ThenInclude(j => j.InverseParent)
             .Include(j => j.InverseParent)
@@ -647,6 +649,7 @@ public class NationwideJobRepository(
     private async Task<List<AgentDto>> GetEligibleAgentsAsync(int? airportId, int? vehicleSizeId)
     {
         return await Context.AgentVehicles
+            .AsNoTracking()
             .Where(av => av.AirportId == airportId && av.VehicleSizeId == vehicleSizeId)
             .Select(a => new AgentDto
             {
@@ -736,9 +739,9 @@ public class NationwideJobRepository(
     public async Task<List<string>> GetActiveAirlineCodesAsync()
     {
         var airlineCodes = await Context.FlightCarriers
+            .AsNoTracking()
             .Where(fc => fc.IsActive)
             .Select(x => x.CarrierCode)
-            .AsNoTracking()
             .ToListAsync();
 
         return airlineCodes;
@@ -747,9 +750,9 @@ public class NationwideJobRepository(
     public async Task<string> GetAirlineCodeByIdAsync(int airlineId)
     {
         var airlineCode = await Context.FlightCarriers
+            .AsNoTracking()
             .Where(fc => fc.FlightCarrierId == airlineId)
             .Select(x => x.CarrierCode)
-            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         return airlineCode;
@@ -758,6 +761,7 @@ public class NationwideJobRepository(
     public async Task SendAgentRequestMessageAsync(int agentId, int jobId)
     {
         var agentEmail = await Context.TucAgents
+            .AsNoTracking()
             .Where(a => a.UcagId == agentId)
             .Select(a => a.UcagFax)
             .FirstOrDefaultAsync();
@@ -909,19 +913,16 @@ public class NationwideJobRepository(
     {
         var query = Context.TucAgents.AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            query = query.Where(a => a.UcagName.Contains(searchTerm));
-        }
+        if (!string.IsNullOrWhiteSpace(searchTerm)) query = query.Where(a => a.UcagName.Contains(searchTerm));
 
         var agents = await query
+            .AsNoTracking()
             .Select(a => new Suggestion
             {
                 Id = a.UcagId,
                 Text = a.UcagName
             })
             .OrderBy(a => a.Text)
-            .AsNoTracking()
             .ToListAsync();
 
         return agents;
@@ -942,6 +943,7 @@ public class NationwideJobRepository(
     private async Task<int> GetAirportProcessingTimeAsync(int airportId)
     {
         var processingTime = await Context.TblAirports
+            .AsNoTracking()
             .Where(a => a.AirportId == airportId)
             .Select(a => a.ProcessingTime)
             .FirstOrDefaultAsync();
@@ -992,6 +994,7 @@ public class NationwideJobRepository(
     public async Task<bool> IsHolidayAsync(int clientId, DateTime bookTime)
     {
         return await Context.TblHolidays
+            .AsNoTracking()
             .AnyAsync(h => (h.ClientId == clientId || h.ClientId == null) &&
                            (h.SpeedId == null || h.AllSpeeds) &&
                            h.Date.Date == bookTime.Date &&
@@ -1002,8 +1005,7 @@ public class NationwideJobRepository(
 
     public async Task<bool> IsAfterHoursAsync(int clientId, DateTime bookTime, bool isHoliday)
     {
-        if (isHoliday)
-            return false;
+        if (isHoliday) return false;
 
         var dayName = bookTime.DayOfWeek.ToString();
         return await Context.TblAfterHours
@@ -1044,6 +1046,7 @@ public class NationwideJobRepository(
     public async Task<int?> GetAirFreightRateIdFromZoneComboAsync(int carrierId, string fromZoneName, string toZoneName)
     {
         return await Context.FlightZoneCombos
+            .AsNoTracking()
             .Where(c => c.CarrierId == carrierId &&
                         c.FromZoneName == fromZoneName &&
                         c.ToZoneName == toZoneName)
@@ -1054,6 +1057,8 @@ public class NationwideJobRepository(
     public async Task<List<AirFreightRate>> GetAirFreightRatesAsync(int airFreightRateId)
     {
         return await Context.AirFreightRates
+            .AsSplitQuery()
+            .AsNoTracking()
             .Include(r => r.Speed)
             .Where(r => r.AirFreightRateId == airFreightRateId && r.Active)
             .ToListAsync();
@@ -1063,6 +1068,7 @@ public class NationwideJobRepository(
         bool extraStopOffs, DateTime? bookTime)
     {
         var data = await Context.TucJobs
+            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(j => new FlightRateCalculationDto
             {
@@ -1082,7 +1088,6 @@ public class NationwideJobRepository(
                 DryIceWeight = j.DryIceWeight ?? 0,
                 Ppd = 0
             })
-            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         return data;
@@ -1091,6 +1096,7 @@ public class NationwideJobRepository(
     public async Task<JobTypeFlightRatingDto> GetJobTypeFlightRatingDtoAsync(int speedId)
     {
         var data = await Context.TucJobTypes
+            .AsNoTracking()
             .Where(s => s.UcjtId == speedId)
             .Select(s => new JobTypeFlightRatingDto
             {
@@ -1099,7 +1105,6 @@ public class NationwideJobRepository(
                 Description = s.UcjtDescription,
                 Mins = s.Minutes
             })
-            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         return data;
@@ -1149,6 +1154,7 @@ public class NationwideJobRepository(
     {
         // Get Agent Name
         var agentName = await Context.TucAgents
+            .AsNoTracking()
             .Where(a => a.UcagId == agentId)
             .Select(a => a.UcagName)
             .FirstOrDefaultAsync();
@@ -1248,6 +1254,7 @@ public class NationwideJobRepository(
     public async Task<List<Suggestion>> GetAgentOptionsByAirportAsync(int airportId)
     {
         var agents = await Context.TblAirports
+            .AsNoTracking()
             .Where(a => a.AirportId == airportId)
             .SelectMany(a => a.AgentVehicles)
             .Select(agentVehicle => new Suggestion
@@ -1256,7 +1263,6 @@ public class NationwideJobRepository(
                 Text = agentVehicle.Agent.UcagName
             })
             .Distinct()
-            .AsNoTracking()
             .ToListAsync();
 
         return agents;
@@ -1265,13 +1271,13 @@ public class NationwideJobRepository(
     public async Task<List<Suggestion>> GetAllActiveAirportsWithAgentsAsync()
     {
         var agents = await Context.TblAirports
+            .AsNoTracking()
             .Where(a => a.Active && a.AgentVehicles.Any())
             .Select(a => new Suggestion
             {
                 Id = a.AirportId,
                 Text = a.Name
             })
-            .AsNoTracking()
             .ToListAsync();
 
         return agents;
@@ -1286,6 +1292,7 @@ public class NationwideJobRepository(
         {
             // Get the job ID through the recovery job relationship
             var recoveryJob = await Context.TucJobs
+                .AsNoTracking()
                 .FirstOrDefaultAsync(j => j.JobRecoveryAgents
                     .Any(ra => ra.RecoveryId == request.RecoveryId));
 
@@ -1324,15 +1331,16 @@ public class NationwideJobRepository(
 
     public async Task RemoveRecoveryAgentAsync(int recoveryId)
     {
-        // Get the recovery agent to remove
-        var recoveryAgent = await Context.JobRecoveryAgents.FindAsync(recoveryId);
-        ArgumentNullException.ThrowIfNull(recoveryAgent);
-
         // Check if this is the only recovery agent on the job
         var recoveryJob = await Context.TucJobs
             .Include(j => j.JobRecoveryAgents)
             .FirstOrDefaultAsync(j => j.JobRecoveryAgents.Any(ra => ra.RecoveryId == recoveryId));
         ArgumentNullException.ThrowIfNull(recoveryJob);
+        
+        // Get the recovery agent to remove
+        var recoveryAgent = await Context.JobRecoveryAgents.FindAsync(recoveryId);
+        ArgumentNullException.ThrowIfNull(recoveryAgent);
+
 
         // Remove the recovery agent
         Context.JobRecoveryAgents.Remove(recoveryAgent);
@@ -1404,6 +1412,7 @@ public class NationwideJobRepository(
         var now = _infoService.GetCurrentTenantTime();
 
         var cargoModel = await Context.TucJobs
+            .AsSplitQuery()
             .Where(j => j.UcjbId == jobId)
             .Select(j => new FlightCargoProcessingModel
             {
@@ -1441,6 +1450,7 @@ public class NationwideJobRepository(
             return true;
 
         var result = await Context.TucJobs
+            .AsSplitQuery()
             .AsNoTracking()
             .Where(j => j.UcjbId == agentJobId)
             .SelectMany(j => j.Parent.InverseParent)

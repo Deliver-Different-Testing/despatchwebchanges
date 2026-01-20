@@ -93,9 +93,16 @@ export class AddEventDialog extends React.Component<AddEventDialogProps, AddEven
             selectedEventTypeId: '',
             eventDate: dayjs().tz(props.timezone),
             notes: '',
-            isLoading: false,
+            isLoading: props.open,
             isSubmitting: false,
         };
+    }
+
+    componentDidMount(): void {
+        // Load event types if dialog is open on mount
+        if (this.props.open) {
+            this.loadEventTypes();
+        }
     }
 
     componentDidUpdate(prevProps: AddEventDialogProps): void {

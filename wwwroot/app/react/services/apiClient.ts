@@ -73,8 +73,31 @@ class ApiClient {
         return this.handleResponse<T>(response);
     }
 
-    async post<T>(url: string, data?: unknown): Promise<T> {
-        const response = await fetch(`${this.baseUrl}${url}`, {
+    async post<T>(
+        url: string,
+        data?: unknown,
+        config?: { params?: Record<string, unknown> }
+    ): Promise<T> {
+        let fullUrl = `${this.baseUrl}${url}`;
+
+        if (config?.params) {
+            const searchParams = new URLSearchParams();
+            Object.entries(config.params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) {
+                    if (Array.isArray(value)) {
+                        value.forEach(v => searchParams.append(key, String(v)));
+                    } else {
+                        searchParams.append(key, String(value));
+                    }
+                }
+            });
+            const queryString = searchParams.toString();
+            if (queryString) {
+                fullUrl += `?${queryString}`;
+            }
+        }
+
+        const response = await fetch(fullUrl, {
             method: 'POST',
             headers: this.getDefaultHeaders(),
             credentials: 'same-origin',

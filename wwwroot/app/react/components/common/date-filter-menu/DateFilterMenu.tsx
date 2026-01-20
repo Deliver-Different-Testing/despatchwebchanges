@@ -298,13 +298,25 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
             useTime: selectedRangeOption === 'custom_minutes',
         });
 
-        onShowToast?.(
-            `Dates Applied: ${startDate.format('MMM DD, YYYY')} - ${endDate.format('MMM DD, YYYY')}`,
-            'success'
-        );
+        let toastMessage: string;
+        switch (selectedRangeOption) {
+            case 'all_time':
+                toastMessage = 'Showing all up until the end of today';
+                break;
+            case 'custom_minutes': {
+                const minutes = Math.floor(selectedMinsOption / 60);
+                toastMessage = `Showing all up until ${minutes} mins from now`;
+                break;
+            }
+            case 'custom_date':
+                toastMessage = `Showing ${startDate.format('MMM DD, YYYY')} - ${endDate.format('MMM DD, YYYY')}`;
+                break;
+        }
+
+        onShowToast?.(toastMessage, 'success');
 
         handleClose();
-    }, [startDate, endDate, selectedRangeOption, onRefreshData, onShowToast]);
+    }, [startDate, endDate, selectedRangeOption, selectedMinsOption, onRefreshData, onShowToast]);
 
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en">
@@ -448,7 +460,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                                 color="text.secondary"
                                 sx={{display: 'block', mt: 1, textAlign: 'center'}}
                             >
-                                {startDate.format('MMM DD, h:mm A')} — {endDate.format('MMM DD, h:mm A')}
+                                {'All Time'} — {endDate.format('MMM DD, h:mm A')}
                             </Typography>
                         </Box>
                     )}

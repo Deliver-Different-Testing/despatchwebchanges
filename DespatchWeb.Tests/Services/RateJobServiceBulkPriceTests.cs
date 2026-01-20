@@ -1,5 +1,7 @@
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
 using FluentAssertions;
@@ -229,12 +231,9 @@ public class RateJobServiceBulkPriceTests
 
     #region Recalculate Mode Tests
 
-    [Fact(Skip = "RecalculateJobRateInternalAsync has complex dependencies (RateJobUsAsync/RateJobNzAsync) that require integration testing")]
+    [Fact]
     public async Task ApplyBulkPriceUpdateAsync_RecalculateMode_RecalculatesAndGetsNewAmount()
     {
-        // Note: This test requires a full integration test setup because RecalculateJobRateInternalAsync
-        // calls RateJobUsAsync or RateJobNzAsync which have many external dependencies (HTTP clients,
-        // HERE Maps API, DFRNT API, etc.) that cannot be easily mocked.
         // The recalculate mode flow is:
         // 1. Get current amounts for all jobs
         // 2. For each job, call RecalculateJobRateInternalAsync (which rates the job)
@@ -265,8 +264,34 @@ public class RateJobServiceBulkPriceTests
             });
 
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+
+        // Set up job details with required fields - zero coordinates bypass HTTP calls
         _jobRepositoryMock.Setup(x => x.GetJobDetailsForRatingAsync(1))
-            .ReturnsAsync(new DespatchWeb.Models.Dto.JobRatingDetailsDto());
+            .ReturnsAsync(new JobRatingDetailsDto
+            {
+                JobId = 1,
+                SpeedId = 1,
+                ClientId = 1,
+                SizeId = 1,
+                // Zero coordinates make CalculateRoadDistance return 0 without HTTP calls
+                PickupLat = 0,
+                PickupLong = 0,
+                DeliveryLat = 0,
+                DeliveryLong = 0
+            });
+
+        // Mock the speed type lookup - non-flight type (GroupingId != 2)
+        _jobRepositoryMock.Setup(x => x.GetJobTypeByIdAsync(1))
+            .ReturnsAsync(new EntityClasses.TucJobType
+            {
+                UcjtId = 1,
+                UcjtName = "Same Day",
+                Grouping = new EntityClasses.TucJobTypeGrouping { GroupingId = 1, GroupingName = "Standard" }
+            });
+
+        // Mock the actual rate job call to succeed
+        _jobRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
+            .Returns(Task.CompletedTask);
 
         var service = CreateService();
 
@@ -277,6 +302,9 @@ public class RateJobServiceBulkPriceTests
         result.Rows.Should().HaveCount(1);
         result.Rows[0].OldAmount.Should().Be(100m);
         result.Rows[0].NewAmount.Should().Be(180m);
+
+        // Verify the rating method was called
+        _jobRepositoryMock.Verify(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()), Times.Once);
     }
 
     #endregion

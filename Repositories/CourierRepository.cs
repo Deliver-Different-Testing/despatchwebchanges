@@ -85,8 +85,8 @@ public class CourierRepository(
             }
 
             var jobItemsAggregate = await Context.TucJobs
-                .AsNoTracking() // Article tip #2
-                .Where(j => j.UcjbCourierId == courierId && // Filter early
+                .AsNoTracking()
+                .Where(j => j.UcjbCourierId == courierId &&
                             !j.UcjbJobDone &&
                             !j.UcjbVoid)
                 .SelectMany(j => j.TucJobItemJobs)

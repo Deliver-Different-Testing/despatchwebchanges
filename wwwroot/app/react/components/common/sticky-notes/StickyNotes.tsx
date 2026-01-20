@@ -191,7 +191,7 @@ export class StickyNotes extends React.Component<StickyNotesProps, StickyNotesSt
             await this.loadNotes();
             showSuccessToast?.('Note added successfully');
         } catch (error) {
-            // Dialog was cancelled
+            // Dialog was canceled
             if (!error) return;
             console.error('Error adding note:', error);
         }
@@ -205,7 +205,7 @@ export class StickyNotes extends React.Component<StickyNotesProps, StickyNotesSt
             await this.loadNotes();
             showSuccessToast?.('Note updated successfully');
         } catch (error) {
-            // Dialog was cancelled
+            // Dialog was canceled
             if (!error) return;
             console.error('Error editing note:', error);
         }

@@ -39,16 +39,16 @@ public static class JobMappings
                          && j.UcjbSpeedNavigation.GroupingId !=
                          (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
 
-            Courier = j.UcjbCourierId != null ? j.UcjbCourier.Code : null,
+            Courier = j.UcjbCourier != null ? j.UcjbCourier.Code : "-",
             CourierData =
-                j.UcjbCourierId != null
+                j.UcjbCourier != null
                     ? new CourierData
                     {
-                        Courier = j.UcjbCourier.Code,
-                        CourierNumber = j.UcjbCourier.Code,
+                        Courier = j.UcjbCourier.Code ?? "-",
+                        CourierNumber = j.UcjbCourier.Code ?? "-",
                         CourierId = j.UcjbCourierId,
-                        CourierMobile = j.UcjbCourier.UccrMobile,
-                        CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
+                        CourierMobile = j.UcjbCourier.UccrMobile ?? "-",
+                        CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname 
                     }
                     : null,
             AssignedCourier =
@@ -244,10 +244,10 @@ public static class JobMappings
             ? new AgentViewModel
             {
                 AgentId = j.Agent.UcagId,
-                AgentName = j.Agent.UcagName,
-                AgentRanking = j.Agent.Ranking != null ? j.Agent.Ranking.AgentRankingName : null,
-                AgentEmail = j.Agent.UcagFax,
-                AgentPhone = j.Agent.UcagPhone
+                AgentName = j.Agent.UcagName ?? "-",
+                AgentRanking = j.Agent.Ranking != null ? j.Agent.Ranking.AgentRankingName : "-",
+                AgentEmail = j.Agent.UcagFax ?? "-",
+                AgentPhone = j.Agent.UcagPhone ?? "-"
             }
             : null,
 
@@ -635,9 +635,9 @@ public static class JobMappings
                 ? new AgentViewModel
                 {
                     AgentId = j.Agent.UcagId,
-                    AgentName = j.Agent.UcagName,
-                    AgentEmail = j.Agent.UcagFax,
-                    AgentPhone = j.Agent.UcagPhone
+                    AgentName = j.Agent.UcagName ?? "-",
+                    AgentEmail = j.Agent.UcagFax ?? "-",
+                    AgentPhone = j.Agent.UcagPhone ?? "-"
                 }
                 : null,
 

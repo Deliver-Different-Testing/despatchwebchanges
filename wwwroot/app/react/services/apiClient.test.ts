@@ -142,6 +142,53 @@ describe('ApiClient', () => {
                 })
             );
         });
+
+        it('should append query params to POST URL', async () => {
+            mockFetch.mockReturnValueOnce(createMockResponse());
+
+            await client.post('/api/action', null, {params: {jobId: 123, status: 'active'}});
+
+            expect(mockFetch).toHaveBeenCalledWith(
+                '/api/action?jobId=123&status=active',
+                expect.objectContaining({method: 'POST'})
+            );
+        });
+
+        it('should handle POST with both body and params', async () => {
+            mockFetch.mockReturnValueOnce(createMockResponse());
+
+            await client.post('/api/action', {data: 'test'}, {params: {id: 456}});
+
+            expect(mockFetch).toHaveBeenCalledWith(
+                '/api/action?id=456',
+                expect.objectContaining({
+                    method: 'POST',
+                    body: JSON.stringify({data: 'test'}),
+                })
+            );
+        });
+
+        it('should handle array params in POST', async () => {
+            mockFetch.mockReturnValueOnce(createMockResponse());
+
+            await client.post('/api/action', null, {params: {jobIds: [1, 2, 3]}});
+
+            expect(mockFetch).toHaveBeenCalledWith(
+                '/api/action?jobIds=1&jobIds=2&jobIds=3',
+                expect.objectContaining({method: 'POST'})
+            );
+        });
+
+        it('should skip null and undefined params in POST', async () => {
+            mockFetch.mockReturnValueOnce(createMockResponse());
+
+            await client.post('/api/action', null, {params: {id: 123, skip: null, ignore: undefined}});
+
+            expect(mockFetch).toHaveBeenCalledWith(
+                '/api/action?id=123',
+                expect.objectContaining({method: 'POST'})
+            );
+        });
     });
 
     describe('Error handling', () => {

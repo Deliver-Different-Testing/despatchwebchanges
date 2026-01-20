@@ -1635,25 +1635,12 @@ class NationwideControl extends BaseController {
 
         const callbacks = {
             onRefresh: () => this.getData(),
-            onSplitJob: (params: { job: IDispatchJob }) => this.handleSplitJob(params.job),
             onRefreshCourierJobs: (params: { courierId: number }) => {
                 console.info('Refreshing courier jobs:', params.courierId);
             }
         };
 
         return this.jobContextMenuService.getMenuOptions(job, callbacks, AppPage.Domestic);
-    }
-
-    async handleSplitJob(job: IDispatchJob): Promise<void> {
-        if (!job) return;
-
-        try {
-            console.info("Split job requested for:", job.id);
-
-            await this.getData();
-        } catch (error: any) {
-            console.error("Error handling split job:", error);
-        }
     }
 
     // Tasks
