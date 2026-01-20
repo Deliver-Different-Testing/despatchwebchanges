@@ -2833,19 +2833,21 @@ public partial class JobRepository(
 
         // Use a single atomic SQL statement to handle both update and insert
         // This prevents the race condition where multiple pods try to insert the same JobId
-        await Context.Database.ExecuteSqlRawAsync($@"
-            -- Update existing tracker records
-            UPDATE tucJobReadTracker
-            SET HasBeenRead = @p0, ReadTimestamp = @p1, ReadByStaffId = @p2
-            WHERE JobId IN ({parameterPlaceholders});
+        await Context.Database.ExecuteSqlRawAsync($"""
 
-            -- Insert new tracker records only for jobs that exist in tucJob and don't have a tracker yet
-            -- Uses NOT EXISTS to prevent PK violation race condition
-            INSERT INTO tucJobReadTracker (JobId, HasBeenRead, ReadByStaffId, ReadTimestamp)
-            SELECT j.UcjbId, @p0, @p2, @p1
-            FROM tucJob j
-            WHERE j.UcjbId IN ({parameterPlaceholders})
-              AND NOT EXISTS (SELECT 1 FROM tucJobReadTracker t WHERE t.JobId = j.UcjbId);",
+                                                               -- Update existing tracker records
+                                                               UPDATE tucJobReadTracker
+                                                               SET HasBeenRead = @p0, ReadTimestamp = @p1, ReadByStaffId = @p2
+                                                               WHERE JobId IN ({parameterPlaceholders});
+
+                                                               -- Insert new tracker records only for jobs that exist in tucJob and don't have a tracker yet
+                                                               -- Uses NOT EXISTS to prevent PK violation race condition
+                                                               INSERT INTO tucJobReadTracker (JobId, HasBeenRead, ReadByStaffId, ReadTimestamp)
+                                                               SELECT j.UcjbId, @p0, @p2, @p1
+                                                               FROM tucJob j
+                                                               WHERE j.UcjbId IN ({parameterPlaceholders})
+                                                                 AND NOT EXISTS (SELECT 1 FROM tucJobReadTracker t WHERE t.JobId = j.UcjbId);
+                                                   """,
             parameters.ToArray());
     }
 
@@ -3599,17 +3601,19 @@ public partial class JobRepository(
             var currentTenantTime = _infoService.GetCurrentTenantTime();
 
             // Use MERGE to handle concurrent inserts safely (prevents PK violation race condition)
-            await Context.Database.ExecuteSqlInterpolatedAsync($@"
-                MERGE INTO tucJobReadTracker WITH (HOLDLOCK) AS target
-                USING (SELECT {jobId} AS JobId) AS source
-                ON target.JobId = source.JobId
-                WHEN MATCHED THEN
-                    UPDATE SET HasBeenRead = {hasBeenRead},
-                               ReadByStaffId = {staffId},
-                               ReadTimestamp = {currentTenantTime}
-                WHEN NOT MATCHED THEN
-                    INSERT (JobId, HasBeenRead, ReadByStaffId, ReadTimestamp)
-                    VALUES ({jobId}, {hasBeenRead}, {staffId}, {currentTenantTime});");
+            await Context.Database.ExecuteSqlInterpolatedAsync($"""
+
+                                                                                MERGE INTO tucJobReadTracker WITH (HOLDLOCK) AS target
+                                                                                USING (SELECT {jobId} AS JobId) AS source
+                                                                                ON target.JobId = source.JobId
+                                                                                WHEN MATCHED THEN
+                                                                                    UPDATE SET HasBeenRead = {hasBeenRead},
+                                                                                               ReadByStaffId = {staffId},
+                                                                                               ReadTimestamp = {currentTenantTime}
+                                                                                WHEN NOT MATCHED THEN
+                                                                                    INSERT (JobId, HasBeenRead, ReadByStaffId, ReadTimestamp)
+                                                                                    VALUES ({jobId}, {hasBeenRead}, {staffId}, {currentTenantTime});
+                                                                """);
         }
         catch (Exception e)
         {
@@ -4612,11 +4616,13 @@ public partial class JobRepository(
         var currentTenantTime = _infoService.GetCurrentTenantTime();
 
         // Single query: insert only if a job exists in TucJobs and no tracker exists yet
-        await Context.Database.ExecuteSqlInterpolatedAsync($@"
-            INSERT INTO tucJobReadTracker (JobId, HasBeenRead, ReadByStaffId, ReadTimestamp)
-            SELECT {jobId}, 1, {staffId}, {currentTenantTime}
-            WHERE EXISTS (SELECT 1 FROM tucJob WHERE ucjbId = {jobId})
-              AND NOT EXISTS (SELECT 1 FROM tucJobReadTracker WHERE JobId = {jobId})");
+        await Context.Database.ExecuteSqlInterpolatedAsync($"""
+
+                                                                        INSERT INTO tucJobReadTracker (JobId, HasBeenRead, ReadByStaffId, ReadTimestamp)
+                                                                        SELECT {jobId}, 1, {staffId}, {currentTenantTime}
+                                                                        WHERE EXISTS (SELECT 1 FROM tucJob WHERE ucjbId = {jobId})
+                                                                          AND NOT EXISTS (SELECT 1 FROM tucJobReadTracker WHERE JobId = {jobId})
+                                                            """);
     }
 
     private async Task<JobGroupViewModel> GetLiveJobByIdAsync(int jobId)

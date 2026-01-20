@@ -12,8 +12,7 @@ describe('DashboardSettingsDialogService', () => {
         // This mirrors the actual implementation in the service
         const calculateCanShowDashboards = (
             appPage: AppPage,
-            currentLayoutName: string,
-            usCustomer: boolean // This parameter should NOT affect the result after the fix
+            currentLayoutName: string
         ): boolean => {
             const isValidPage = appPage === AppPage.Dispatch ||
                                appPage === AppPage.Domestic ||
@@ -23,54 +22,50 @@ describe('DashboardSettingsDialogService', () => {
         };
 
         describe('US Customer (US_Customer = true)', () => {
-            const usCustomer = true;
-
             it('should allow hiding boxes on Dispatch page with custom layout', () => {
-                const result = calculateCanShowDashboards(AppPage.Dispatch, 'MyCustomLayout', usCustomer);
+                const result = calculateCanShowDashboards(AppPage.Dispatch, 'MyCustomLayout');
                 expect(result).toBe(true);
             });
 
             it('should allow hiding boxes on Domestic page with custom layout', () => {
-                const result = calculateCanShowDashboards(AppPage.Domestic, 'CustomDomestic', usCustomer);
+                const result = calculateCanShowDashboards(AppPage.Domestic, 'CustomDomestic');
                 expect(result).toBe(true);
             });
 
             it('should allow hiding boxes on JobSearch page with custom layout', () => {
-                const result = calculateCanShowDashboards(AppPage.JobSearch, 'SearchLayout', usCustomer);
+                const result = calculateCanShowDashboards(AppPage.JobSearch, 'SearchLayout');
                 expect(result).toBe(true);
             });
 
             it('should NOT allow hiding boxes on default layout', () => {
-                const result = calculateCanShowDashboards(AppPage.Dispatch, 'Default', usCustomer);
+                const result = calculateCanShowDashboards(AppPage.Dispatch, 'Default');
                 expect(result).toBe(false);
             });
 
             it('should NOT allow hiding boxes when layout name is empty', () => {
-                const result = calculateCanShowDashboards(AppPage.Dispatch, '', usCustomer);
+                const result = calculateCanShowDashboards(AppPage.Dispatch, '');
                 expect(result).toBe(false);
             });
         });
 
         describe('NZ Customer (US_Customer = false)', () => {
-            const usCustomer = false;
-
             it('should allow hiding boxes on Dispatch page with custom layout', () => {
-                const result = calculateCanShowDashboards(AppPage.Dispatch, 'MyCustomLayout', usCustomer);
+                const result = calculateCanShowDashboards(AppPage.Dispatch, 'MyCustomLayout');
                 expect(result).toBe(true);
             });
 
             it('should allow hiding boxes on Domestic page with custom layout', () => {
-                const result = calculateCanShowDashboards(AppPage.Domestic, 'CustomDomestic', usCustomer);
+                const result = calculateCanShowDashboards(AppPage.Domestic, 'CustomDomestic');
                 expect(result).toBe(true);
             });
 
             it('should allow hiding boxes on JobSearch page with custom layout', () => {
-                const result = calculateCanShowDashboards(AppPage.JobSearch, 'SearchLayout', usCustomer);
+                const result = calculateCanShowDashboards(AppPage.JobSearch, 'SearchLayout');
                 expect(result).toBe(true);
             });
 
             it('should NOT allow hiding boxes on default layout', () => {
-                const result = calculateCanShowDashboards(AppPage.Dispatch, 'Default', usCustomer);
+                const result = calculateCanShowDashboards(AppPage.Dispatch, 'Default');
                 expect(result).toBe(false);
             });
         });
@@ -87,8 +82,8 @@ describe('DashboardSettingsDialogService', () => {
 
             testCases.forEach(({ appPage, layout, expected }) => {
                 it(`should return ${expected} for ${AppPage[appPage]} with layout "${layout}" for both US and NZ`, () => {
-                    const usResult = calculateCanShowDashboards(appPage, layout, true);
-                    const nzResult = calculateCanShowDashboards(appPage, layout, false);
+                    const usResult = calculateCanShowDashboards(appPage, layout);
+                    const nzResult = calculateCanShowDashboards(appPage, layout);
 
                     expect(usResult).toBe(expected);
                     expect(nzResult).toBe(expected);
@@ -101,7 +96,7 @@ describe('DashboardSettingsDialogService', () => {
             it('should NOT allow hiding boxes on invalid pages even with custom layout', () => {
                 // Using a numeric value that doesn't match valid pages
                 const invalidPage = 999 as AppPage;
-                const result = calculateCanShowDashboards(invalidPage, 'CustomLayout', false);
+                const result = calculateCanShowDashboards(invalidPage, 'CustomLayout');
                 expect(result).toBe(false);
             });
         });

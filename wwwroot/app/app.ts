@@ -1,6 +1,7 @@
 import {IAppConfig} from "./interfaces/app-config.interface";
 import {AppPage} from "./enums/app-pages.enum";
-import {PodPhotoViewerComponent} from "./components/common/pod-photo-viewer/pod-photo-viewer.component";
+import "./react/components/common/pod-photo-viewer/pod-photo-viewer-react.module";
+import "./react/components/dialogs/note-management-dialog/note-management-dialog-react.module";
 import EditParcelDimensionsDialogController
     from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.controller";
 import {
@@ -20,10 +21,7 @@ import PriceBreakdownDialogService from "./components/dialogs/price-breakdown-di
 import JobDetailComponent from "./components/common/job-details/job-details.component";
 import JobFileUploadController from "./components/dialogs/job-file-upload-dialog/job-file-upload.controller";
 import JobFileUploadDialogService from "./components/dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
-import NoteManagementDialogService from "./components/dialogs/note-management-dialog/note-management.dialog.service";
-import NoteManagementDialogController
-    from "./components/dialogs/note-management-dialog/note-management-dialog.component";
-import NoteService from "./services/notes.service";
+// NoteService removed - React uses notesApi.ts instead
 import RouterConfig from "./routes";
 import ThemeConfig from "./materialTheme";
 import {bytesFilter, momentFormatFilter, replaceFilter, timezoneLongFilter, timezoneShortFilter} from "./filters";
@@ -59,6 +57,7 @@ import BulkPriceUploadDialogService
 import {TaskItemReactComponent} from "./react/components/common/task-item/task-item-react.module";
 import {DriverLocationsReactComponent} from "./react/components/common/driver-locations/driver-locations-react.module";
 import {NoDataReactComponent} from "./react/components/common/no-data/no-data-react.module";
+import {FlightAgentDataTableReactComponent} from "./react/components/common/flight-agent-data-table/flight-agent-data-table-react.module";
 import reactAppShellDirective from "./components/common/react-app-shell/react-app-shell.directive";
 
 const app = (window as any).uDispatchApp;
@@ -213,13 +212,13 @@ app.filter('minutesToTime', () => minutesToTimeFilter);
 
 // Components
 app.component("jobDetailWidget", JobDetailComponent);
-app.component("podPhotoViewer", PodPhotoViewerComponent);
 app.component("tablePagination", TablePaginationComponent);
 app.component("stickyNoteReact", StickyNotesReactComponent);
 app.component("customDatePicker", DayJsDatePickerComponent);
 app.component("taskItemReact", TaskItemReactComponent);
 app.component("driverLocationsReact", DriverLocationsReactComponent);
 app.component("noDataReact", NoDataReactComponent);
+app.component("flightAgentDataTableReact", FlightAgentDataTableReactComponent);
 
 // Directives
 app.directive("reactAppShell", reactAppShellDirective);
@@ -231,7 +230,6 @@ app.controller("FeatureInDevelopmentDialogController", FeatureInDevelopmentDialo
 app.controller("SelectDialogController", SelectDialogController);
 app.controller('EventGroupDialogController', EventGroupDialogController);
 app.controller("jobFileUploadController", JobFileUploadController);
-app.controller("jobNoteEditorDialogController", NoteManagementDialogController);
 app.controller("TruckCourierStatusDialogController", TruckCourierStatusDialogController);
 app.controller("messagingDialogController", MessagingDialogController);
 app.controller("simplePriceEditDialogController", SimplePriceEditDialogController);
@@ -247,8 +245,6 @@ app.service("editDateTimeDialogService", EditDateTimeDialogService);
 app.service("editAddressDialogService", EditAddressDialogService);
 app.service("priceBreakdownDialogService", PriceBreakdownDialogService);
 app.service("jobFileUploadDialogService", JobFileUploadDialogService);
-app.service("noteManagementDialogService", NoteManagementDialogService);
-app.service("noteService", NoteService);
 app.service("editParcelDimensionsDialogService", EditParcelDimensionsDialogService);
 app.service("autoCompleteDialogService", AutoCompleteDialogService);
 app.service("jobAddStopService", JobAddStopService);

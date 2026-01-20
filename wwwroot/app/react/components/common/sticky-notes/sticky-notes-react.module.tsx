@@ -13,12 +13,23 @@ import {NoteManagementDialogServiceInterface} from './StickyNotes.interfaces';
 import {getTheme} from '../../../theme/muiTheme';
 import {toastService} from '../../../services/toastService';
 import {IAppConfig} from "../../../../interfaces/app-config.interface";
+import {JobNote} from '../../../interfaces';
+import {openNoteManagementDialog} from '../../dialogs/note-management-dialog/note-management-dialog-react.module';
+
+/**
+ * Wrapper service that uses React dialog but conforms to old interface
+ */
+const reactNoteManagementDialogService: NoteManagementDialogServiceInterface = {
+    openNoteDialog: async (_event: MouseEvent, model: JobNote | null): Promise<void> => {
+        await openNoteManagementDialog(model);
+    }
+};
 
 /**
  * AngularJS Component Controller for React StickyNotes
  */
 class StickyNotesReactController implements angular.IController {
-    static $inject = ['$element', 'noteManagementDialogService', 'APP_CONFIG'];
+    static $inject = ['$element', 'APP_CONFIG'];
 
     private root: Root | null = null;
 
@@ -29,7 +40,6 @@ class StickyNotesReactController implements angular.IController {
 
     constructor(
         private $element: JQLite,
-        private noteManagementDialogService: NoteManagementDialogServiceInterface,
         private appConfig: IAppConfig
     ) {}
 
@@ -61,7 +71,7 @@ class StickyNotesReactController implements angular.IController {
                     jobId={this.jobId}
                     bulkJobId={this.bulkJobId}
                     isRecurringJob={this.isRecurringJob}
-                    noteManagementDialogService={this.noteManagementDialogService}
+                    noteManagementDialogService={reactNoteManagementDialogService}
                     showSuccessToast={(msg) => toastService.showSuccessToast(msg)}
                     showErrorToast={(msg) => toastService.showErrorToast(msg)}
                     showInfoToast={(msg) => toastService.showInfoToast(msg)}
