@@ -102,7 +102,11 @@ public class RateJobService(
                 ClientId = jobDetails.ClientId.Value,
                 Speed = jobDetails.SpeedId.Value,
                 FromZip = jobDetails.FromZip,
+                FromLat = jobDetails.PickupLat,
+                FromLong = jobDetails.PickupLong,
                 ToZip = jobDetails.ToZip,
+                ToLat = jobDetails.DeliveryLat,
+                ToLong = jobDetails.DeliveryLong,
                 TotalMiles = (decimal)distanceResult.TotalMiles, // Used for non-flight jobs
                 FromMiles = (decimal)distanceResult.FromMiles, // Used for flight jobs
                 ToMiles = (decimal)distanceResult.ToMiles, // Used for flight jobs
@@ -199,7 +203,11 @@ public class RateJobService(
                 ClientId = jobDetails.ClientId.Value,
                 Speed = jobDetails.SpeedId.Value,
                 FromZip = jobDetails.FromZip,
+                FromLat = jobDetails.PickupLat,
+                FromLong = jobDetails.PickupLong,
                 ToZip = jobDetails.ToZip,
+                ToLat = jobDetails.DeliveryLat,
+                ToLong = jobDetails.DeliveryLong,
                 TotalMiles = (decimal)distanceResult.TotalMiles,
                 FromMiles = (decimal)distanceResult.FromMiles,
                 ToMiles = (decimal)distanceResult.ToMiles,

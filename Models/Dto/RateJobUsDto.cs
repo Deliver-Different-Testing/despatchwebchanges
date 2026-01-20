@@ -11,8 +11,12 @@ public class RateJobUsDto
     public int Speed { get; set; }
 
     public string FromZip { get; set; }
+    public decimal FromLat { get; set; }
+    public decimal FromLong { get; set; }
 
     public string ToZip { get; set; }
+    public decimal ToLat { get; set; }
+    public decimal ToLong { get; set; }
 
     public decimal TotalMiles { get; set; }
 
