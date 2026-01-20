@@ -910,7 +910,7 @@ class JobSearchController extends BaseController {
                 await this.refreshAllData();
             }
         } catch {
-            // Dialog was cancelled, do nothing
+            // Dialog was canceled, do nothing
         }
     }
 

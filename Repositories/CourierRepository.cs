@@ -589,14 +589,16 @@ public class CourierRepository(
         sb.AppendLine("*/");
         sb.AppendLine();
 
-        sb.AppendLine(@"SELECT DISTINCT t0.ClearListAreaID, t0.Name, t0.[Order]
-INTO #ClearLists
-FROM tblDespatchView t
-INNER JOIN DespatchViewZoneGroup d0 ON t.DespatchViewID = d0.DespatchViewID
-INNER JOIN ZoneGroup z ON d0.ZoneGroupID = z.ZoneGroupID
-LEFT JOIN tblClearListArea t0 ON z.ClearListAreaId = t0.ClearListAreaID
-WHERE t.DespatchViewID IN (SELECT value FROM OPENJSON(@despatchViewIds))
-    AND t0.ClearListAreaID IS NOT NULL;");
+        sb.AppendLine("""
+                      SELECT DISTINCT t0.ClearListAreaID, t0.Name, t0.[Order]
+                      INTO #ClearLists
+                      FROM tblDespatchView t
+                      INNER JOIN DespatchViewZoneGroup d0 ON t.DespatchViewID = d0.DespatchViewID
+                      INNER JOIN ZoneGroup z ON d0.ZoneGroupID = z.ZoneGroupID
+                      LEFT JOIN tblClearListArea t0 ON z.ClearListAreaId = t0.ClearListAreaID
+                      WHERE t.DespatchViewID IN (SELECT value FROM OPENJSON(@despatchViewIds))
+                          AND t0.ClearListAreaID IS NOT NULL;
+                      """);
         sb.AppendLine();
         sb.AppendLine("INSERT INTO #TimingResults SELECT 'Step 1: Clear Lists', @@ROWCOUNT, DATEDIFF(MILLISECOND, @StepStart, SYSDATETIME());");
         sb.AppendLine();
@@ -627,20 +629,22 @@ WHERE t.DespatchViewID IN (SELECT value FROM OPENJSON(@despatchViewIds))
         sb.AppendLine("*/");
         sb.AppendLine();
 
-        sb.AppendLine(@"SELECT c.uccrId, c.Code
-INTO #Couriers
-FROM tucCourier c
-LEFT JOIN tblClearListAreaOrder cao ON c.uccrId = cao.CourierID
-LEFT JOIN tblCourierLogInOut lio ON c.CourierLogInOutID = lio.CourierLogInOutID
-INNER JOIN tucCourierFleet cf ON c.CourierFleetID = cf.uccfID
-WHERE c.Active = 1 
-    AND cao.ClearListAreaOrderID IS NOT NULL
-    AND (c.CourierFleetID = 35 
-         OR (lio.CourierLogInOutID IS NOT NULL 
-             AND lio.LogInTime >= @currentDateOnly 
-             AND lio.LogInTime < @nextDay 
-             AND lio.LogOutTime IS NULL))
-    AND cf.DisplayOnClearlistsDespatch = 1;");
+        sb.AppendLine("""
+                      SELECT c.uccrId, c.Code
+                      INTO #Couriers
+                      FROM tucCourier c
+                      LEFT JOIN tblClearListAreaOrder cao ON c.uccrId = cao.CourierID
+                      LEFT JOIN tblCourierLogInOut lio ON c.CourierLogInOutID = lio.CourierLogInOutID
+                      INNER JOIN tucCourierFleet cf ON c.CourierFleetID = cf.uccfID
+                      WHERE c.Active = 1 
+                          AND cao.ClearListAreaOrderID IS NOT NULL
+                          AND (c.CourierFleetID = 35 
+                               OR (lio.CourierLogInOutID IS NOT NULL 
+                                   AND lio.LogInTime >= @currentDateOnly 
+                                   AND lio.LogInTime < @nextDay 
+                                   AND lio.LogOutTime IS NULL))
+                          AND cf.DisplayOnClearlistsDespatch = 1;
+                      """);
         sb.AppendLine();
         sb.AppendLine("INSERT INTO #TimingResults SELECT 'Step 3&4: Couriers', @@ROWCOUNT, DATEDIFF(MILLISECOND, @StepStart, SYSDATETIME());");
         sb.AppendLine();
@@ -670,13 +674,15 @@ WHERE c.Active = 1
         sb.AppendLine("*/");
         sb.AppendLine();
 
-        sb.AppendLine(@"SELECT j.ucjbCourierId, j.ucjbTo
-INTO #Jobs
-FROM tucJob j
-WHERE j.ucjbJobDone = 0
-    AND j.ucjbVoid = 0
-    AND j.ucjbDate < @nextDay
-    AND j.ucjbCourierId IN (SELECT uccrId FROM #Couriers);");
+        sb.AppendLine("""
+                      SELECT j.ucjbCourierId, j.ucjbTo
+                      INTO #Jobs
+                      FROM tucJob j
+                      WHERE j.ucjbJobDone = 0
+                          AND j.ucjbVoid = 0
+                          AND j.ucjbDate < @nextDay
+                          AND j.ucjbCourierId IN (SELECT uccrId FROM #Couriers);
+                      """);
         sb.AppendLine();
         sb.AppendLine("INSERT INTO #TimingResults SELECT 'Step 5: Jobs', @@ROWCOUNT, DATEDIFF(MILLISECOND, @StepStart, SYSDATETIME());");
         sb.AppendLine();
@@ -690,13 +696,15 @@ WHERE j.ucjbJobDone = 0
         sb.AppendLine("SET @StepStart = SYSDATETIME();");
         sb.AppendLine();
 
-        sb.AppendLine(@"SELECT ps.SuburbID, cla.ClearListAreaID, cla.Code, cla.ChannelID
-INTO #SuburbMappings
-FROM tblPolygonSuburb ps
-INNER JOIN tblPolygon p ON ps.PolygonID = p.PolygonID
-INNER JOIN tblClearListAreaPolygon cap ON p.PolygonID = cap.PolygonID
-INNER JOIN tblClearListArea cla ON cap.ClearListAreaID = cla.ClearListAreaID
-WHERE ps.SuburbID IN (SELECT DISTINCT ucjbTo FROM #Jobs WHERE ucjbTo IS NOT NULL);");
+        sb.AppendLine("""
+                      SELECT ps.SuburbID, cla.ClearListAreaID, cla.Code, cla.ChannelID
+                      INTO #SuburbMappings
+                      FROM tblPolygonSuburb ps
+                      INNER JOIN tblPolygon p ON ps.PolygonID = p.PolygonID
+                      INNER JOIN tblClearListAreaPolygon cap ON p.PolygonID = cap.PolygonID
+                      INNER JOIN tblClearListArea cla ON cap.ClearListAreaID = cla.ClearListAreaID
+                      WHERE ps.SuburbID IN (SELECT DISTINCT ucjbTo FROM #Jobs WHERE ucjbTo IS NOT NULL);
+                      """);
         sb.AppendLine();
         sb.AppendLine("INSERT INTO #TimingResults SELECT 'Step 6: Suburb Mappings', @@ROWCOUNT, DATEDIFF(MILLISECOND, @StepStart, SYSDATETIME());");
         sb.AppendLine();
@@ -710,11 +718,13 @@ WHERE ps.SuburbID IN (SELECT DISTINCT ucjbTo FROM #Jobs WHERE ucjbTo IS NOT NULL
         sb.AppendLine("SET @StepStart = SYSDATETIME();");
         sb.AppendLine();
 
-        sb.AppendLine(@"SELECT Name, CAST(WhereCondition AS NVARCHAR(MAX)) AS WhereCondition
-INTO #AreaFilters
-FROM tblDespatchView
-WHERE ShowOnAssistDespatch = 1
-    AND Name IN (SELECT Name FROM #ClearLists);");
+        sb.AppendLine("""
+                      SELECT Name, CAST(WhereCondition AS NVARCHAR(MAX)) AS WhereCondition
+                      INTO #AreaFilters
+                      FROM tblDespatchView
+                      WHERE ShowOnAssistDespatch = 1
+                          AND Name IN (SELECT Name FROM #ClearLists);
+                      """);
         sb.AppendLine();
         sb.AppendLine("INSERT INTO #TimingResults SELECT 'Step 7: Area Filters', @@ROWCOUNT, DATEDIFF(MILLISECOND, @StepStart, SYSDATETIME());");
         sb.AppendLine();
@@ -733,16 +743,18 @@ WHERE ShowOnAssistDespatch = 1
         sb.AppendLine("-- Step 8a: Compute IsParentJob ONCE (replaces per-row scalar UDF)");
         sb.AppendLine("SET @StepStart = SYSDATETIME();");
         sb.AppendLine();
-        sb.AppendLine(@"SELECT DISTINCT ch.ParentID AS JobID
-INTO #ParentJobs
-FROM tucJob ch
-WHERE ch.ParentID IS NOT NULL
-    AND ch.ucjbVoid = 0
-    AND ch.ParentID <> ch.ucjbID
-    AND NOT EXISTS (
-        SELECT 1 FROM tblBulkJob bj 
-        WHERE bj.JobID = ch.ParentID AND bj.Multibox = 1
-    );");
+        sb.AppendLine("""
+                      SELECT DISTINCT ch.ParentID AS JobID
+                      INTO #ParentJobs
+                      FROM tucJob ch
+                      WHERE ch.ParentID IS NOT NULL
+                          AND ch.ucjbVoid = 0
+                          AND ch.ParentID <> ch.ucjbID
+                          AND NOT EXISTS (
+                              SELECT 1 FROM tblBulkJob bj 
+                              WHERE bj.JobID = ch.ParentID AND bj.Multibox = 1
+                          );
+                      """);
         sb.AppendLine();
         sb.AppendLine("INSERT INTO #TimingResults SELECT 'Step 8a: ParentJobs', @@ROWCOUNT, DATEDIFF(MILLISECOND, @StepStart, SYSDATETIME());");
         sb.AppendLine();
@@ -751,42 +763,44 @@ WHERE ch.ParentID IS NOT NULL
         sb.AppendLine("-- Step 8b: Build lightweight countable jobs (replaces DESWEB_qryDespatch)");
         sb.AppendLine("SET @StepStart = SYSDATETIME();");
         sb.AppendLine();
-        sb.AppendLine(@"SELECT 
-    j.ucjbID,
-    j.RemoteJob,
-    j.Truck,
-    j.VanOK,
-    j.ucjbVan,
-    j.ucjbSpeed AS ucjtId,
-    j.ucjbClientCode AS ucclCode,
-    c.ucclID AS ucclId,
-    j.ucjbSize AS VehicleSizeId,
-    j.JobRelationshipTypeID,
-    ISNULL(fs.ucsuRegion, -1) AS RegionFromID,
-    ISNULL(ts.ucsuRegion, -1) AS RegionToID,
-    fs.ucsuID AS FromSuburbID,
-    ts.ucsuID AS ToSuburbID,
-    j.ucjbFrom,
-    j.ucjbTo,
-    fs.ucsuArea AS FromArea,
-    ts.ucsuArea AS ToArea,
-    fs.SiteID,
-    ts.SiteID AS ToSiteID,
-    CASE WHEN p.JobID IS NOT NULL THEN 1 ELSE 0 END AS IsParentJob
-INTO #CountableJobs
-FROM tucJob j
-LEFT JOIN tucSuburb fs ON j.ucjbFrom = fs.ucsuID
-LEFT JOIN tucSuburb ts ON j.ucjbTo = ts.ucsuID
-LEFT JOIN tucClient c ON j.ucjbClientID = c.ucclID
-LEFT JOIN tblJobRelationshipType jrt ON j.JobRelationshipTypeID = jrt.JobRelationshipTypeID
-LEFT JOIN #ParentJobs p ON j.ucjbID = p.JobID
-WHERE j.UcjbVoid = 0
-    AND (jrt.DisplayDespatch = 1 OR j.JobRelationshipTypeID = 10 OR j.JobRelationshipTypeID IS NULL)
-    AND (j.DisplayInDespatch IS NULL OR j.DisplayInDespatch = 1)
-    AND (j.UcjbPodname IS NULL OR j.UcjbPodname = '')
-    AND (j.UcjbComplTime IS NULL OR j.UcjbComplTime < GETDATE())
-    AND (j.ucjbStatus IS NULL OR j.ucjbStatus = 0)
-    AND j.ucjbCourierId IS NULL;");
+        sb.AppendLine("""
+                      SELECT 
+                          j.ucjbID,
+                          j.RemoteJob,
+                          j.Truck,
+                          j.VanOK,
+                          j.ucjbVan,
+                          j.ucjbSpeed AS ucjtId,
+                          j.ucjbClientCode AS ucclCode,
+                          c.ucclID AS ucclId,
+                          j.ucjbSize AS VehicleSizeId,
+                          j.JobRelationshipTypeID,
+                          ISNULL(fs.ucsuRegion, -1) AS RegionFromID,
+                          ISNULL(ts.ucsuRegion, -1) AS RegionToID,
+                          fs.ucsuID AS FromSuburbID,
+                          ts.ucsuID AS ToSuburbID,
+                          j.ucjbFrom,
+                          j.ucjbTo,
+                          fs.ucsuArea AS FromArea,
+                          ts.ucsuArea AS ToArea,
+                          fs.SiteID,
+                          ts.SiteID AS ToSiteID,
+                          CASE WHEN p.JobID IS NOT NULL THEN 1 ELSE 0 END AS IsParentJob
+                      INTO #CountableJobs
+                      FROM tucJob j
+                      LEFT JOIN tucSuburb fs ON j.ucjbFrom = fs.ucsuID
+                      LEFT JOIN tucSuburb ts ON j.ucjbTo = ts.ucsuID
+                      LEFT JOIN tucClient c ON j.ucjbClientID = c.ucclID
+                      LEFT JOIN tblJobRelationshipType jrt ON j.JobRelationshipTypeID = jrt.JobRelationshipTypeID
+                      LEFT JOIN #ParentJobs p ON j.ucjbID = p.JobID
+                      WHERE j.UcjbVoid = 0
+                          AND (jrt.DisplayDespatch = 1 OR j.JobRelationshipTypeID = 10 OR j.JobRelationshipTypeID IS NULL)
+                          AND (j.DisplayInDespatch IS NULL OR j.DisplayInDespatch = 1)
+                          AND (j.UcjbPodname IS NULL OR j.UcjbPodname = '')
+                          AND (j.UcjbComplTime IS NULL OR j.UcjbComplTime < GETDATE())
+                          AND (j.ucjbStatus IS NULL OR j.ucjbStatus = 0)
+                          AND j.ucjbCourierId IS NULL;
+                      """);
         sb.AppendLine();
         sb.AppendLine("INSERT INTO #TimingResults SELECT 'Step 8b: CountableJobs', @@ROWCOUNT, DATEDIFF(MILLISECOND, @StepStart, SYSDATETIME());");
         sb.AppendLine();
@@ -795,34 +809,36 @@ WHERE j.UcjbVoid = 0
         sb.AppendLine("-- Step 8c: Build single UNION ALL query from dynamic filters");
         sb.AppendLine("SET @StepStart = SYSDATETIME();");
         sb.AppendLine();
-        sb.AppendLine(@"DECLARE @sql nvarchar(max) = N'';
-DECLARE @AreaName nvarchar(100);
-DECLARE @WhereCondition nvarchar(max);
-DECLARE @first bit = 1;
+        sb.AppendLine("""
+                      DECLARE @sql nvarchar(max) = N'';
+                      DECLARE @AreaName nvarchar(100);
+                      DECLARE @WhereCondition nvarchar(max);
+                      DECLARE @first bit = 1;
 
-DECLARE area_cursor CURSOR LOCAL FAST_FORWARD FOR
-    SELECT Name, CAST(WhereCondition AS NVARCHAR(MAX))
-    FROM tblDespatchView
-    WHERE ShowOnAssistDespatch = 1
-        AND WhereCondition IS NOT NULL 
-        AND LEN(WhereCondition) > 0;
+                      DECLARE area_cursor CURSOR LOCAL FAST_FORWARD FOR
+                          SELECT Name, CAST(WhereCondition AS NVARCHAR(MAX))
+                          FROM tblDespatchView
+                          WHERE ShowOnAssistDespatch = 1
+                              AND WhereCondition IS NOT NULL 
+                              AND LEN(WhereCondition) > 0;
 
-OPEN area_cursor;
-FETCH NEXT FROM area_cursor INTO @AreaName, @WhereCondition;
+                      OPEN area_cursor;
+                      FETCH NEXT FROM area_cursor INTO @AreaName, @WhereCondition;
 
-WHILE @@FETCH_STATUS = 0
-BEGIN
-    IF @first = 0
-        SET @sql = @sql + N' UNION ALL ';
-    
-    SET @sql = @sql + N'SELECT ''' + REPLACE(@AreaName, '''', '''''') + N''' AS AreaName, COUNT(*) AS Remaining FROM #CountableJobs WHERE ' + @WhereCondition;
-    SET @first = 0;
-    
-    FETCH NEXT FROM area_cursor INTO @AreaName, @WhereCondition;
-END
+                      WHILE @@FETCH_STATUS = 0
+                      BEGIN
+                          IF @first = 0
+                              SET @sql = @sql + N' UNION ALL ';
+                          
+                          SET @sql = @sql + N'SELECT ''' + REPLACE(@AreaName, '''', '''''') + N''' AS AreaName, COUNT(*) AS Remaining FROM #CountableJobs WHERE ' + @WhereCondition;
+                          SET @first = 0;
+                          
+                          FETCH NEXT FROM area_cursor INTO @AreaName, @WhereCondition;
+                      END
 
-CLOSE area_cursor;
-DEALLOCATE area_cursor;");
+                      CLOSE area_cursor;
+                      DEALLOCATE area_cursor;
+                      """);
         sb.AppendLine();
         sb.AppendLine("INSERT INTO #TimingResults SELECT 'Step 8c: Build SQL', 0, DATEDIFF(MILLISECOND, @StepStart, SYSDATETIME());");
         sb.AppendLine();
@@ -831,15 +847,17 @@ DEALLOCATE area_cursor;");
         sb.AppendLine("-- Step 8d: Execute single query");
         sb.AppendLine("SET @StepStart = SYSDATETIME();");
         sb.AppendLine();
-        sb.AppendLine(@"CREATE TABLE #AreaCounts (AreaName nvarchar(100), Remaining int);
+        sb.AppendLine("""
+                      CREATE TABLE #AreaCounts (AreaName nvarchar(100), Remaining int);
 
-BEGIN TRY
-    INSERT INTO #AreaCounts (AreaName, Remaining)
-    EXEC sp_executesql @sql;
-END TRY
-BEGIN CATCH
-    PRINT 'Step 8 ERROR: ' + ERROR_MESSAGE();
-END CATCH");
+                      BEGIN TRY
+                          INSERT INTO #AreaCounts (AreaName, Remaining)
+                          EXEC sp_executesql @sql;
+                      END TRY
+                      BEGIN CATCH
+                          PRINT 'Step 8 ERROR: ' + ERROR_MESSAGE();
+                      END CATCH
+                      """);
         sb.AppendLine();
         sb.AppendLine("INSERT INTO #TimingResults SELECT 'Step 8d: Execute', (SELECT COUNT(*) FROM #AreaCounts), DATEDIFF(MILLISECOND, @StepStart, SYSDATETIME());");
         sb.AppendLine();
@@ -1762,10 +1780,7 @@ END CATCH");
             && !request.Day.Equals("all", StringComparison.CurrentCultureIgnoreCase))
         {
             var dayValue = GetDayOfWeekAsInt(request.Day);
-            if (dayValue != 0)
-            {
-                query = query.Where(c => c.WeekDay == dayValue);
-            }
+            if (dayValue != 0) query = query.Where(c => c.WeekDay == dayValue);
         }
 
         var totalActiveDrivers = await query

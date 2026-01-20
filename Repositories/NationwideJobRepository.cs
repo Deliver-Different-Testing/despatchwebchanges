@@ -322,6 +322,7 @@ public class NationwideJobRepository(
     private async Task<List<AirportAddressInfoDto>> GetAirportAddressInfosAsync()
     {
         var airports = await Context.TblAirports
+            .AsNoTracking()
             .Where(a => a.Active)
             .Select(a => new AirportAddressInfoDto
             {
@@ -337,7 +338,6 @@ public class NationwideJobRepository(
                 Latitude = a.Latitude,
                 Longitude = a.Longitude
             })
-            .AsNoTracking()
             .ToListAsync();
 
         return airports;
@@ -752,7 +752,7 @@ public class NationwideJobRepository(
         var airlineCode = await Context.FlightCarriers
             .AsNoTracking()
             .Where(fc => fc.FlightCarrierId == airlineId)
-            .Select(x => x.CarrierCode)
+            .Select(fc => fc.CarrierCode)
             .FirstOrDefaultAsync();
 
         return airlineCode;
@@ -772,6 +772,7 @@ public class NationwideJobRepository(
 
         // Create an object
         var agentQuoteTemplateDto = await Context.TucJobs
+            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(j => new AgentQuoteTemplateDto
             {
@@ -794,7 +795,6 @@ public class NationwideJobRepository(
                 PodName = j.UcjbPodname,
                 SuburbTo = j.DeliveryAddressLine6
             })
-            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         agentQuoteTemplateDto.CompletedTimeFormatted =
@@ -883,6 +883,7 @@ public class NationwideJobRepository(
 
         // Get flight IDs for cascade deletion
         var flightIds = await Context.TucJobNationwides
+            .AsNoTracking()
             .Where(flight => flight.UcnwJobId == jobId)
             .Select(flight => flight.UcnwId)
             .ToListAsync();
@@ -931,10 +932,10 @@ public class NationwideJobRepository(
     public async Task<List<string>> GetFlightWebhookIdByJobIdAsync(int jobId)
     {
         var webhookId = await Context.TucJobNationwides
+            .AsNoTracking()
             .Where(nj => nj.UcnwJobId == jobId)
             .Select(nj => nj.WebhookAlertId)
             .Distinct()
-            .AsNoTracking()
             .ToListAsync();
 
         return webhookId;
@@ -954,6 +955,8 @@ public class NationwideJobRepository(
     public async Task<AgentInfoDialogViewModel> GetAgentInfoForDialogAsync(int agentId)
     {
         var agentInfo = await Context.TucAgents
+            .AsSplitQuery()
+            .AsNoTracking()
             .Where(a => a.UcagId == agentId)
             .Select(a => new AgentInfoDialogViewModel
             {
@@ -985,7 +988,6 @@ public class NationwideJobRepository(
                     }).ToList()
                     : new List<AirportViewModel>()
             })
-            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         return agentInfo;
@@ -1021,6 +1023,7 @@ public class NationwideJobRepository(
     public async Task<int?> GetFlightCarrierIdByCodeAsync(string carrierCode)
     {
         return await Context.FlightCarriers
+            .AsNoTracking()
             .Where(fc => fc.CarrierCode == carrierCode)
             .Select(fc => fc.FlightCarrierId)
             .FirstOrDefaultAsync();
@@ -1029,6 +1032,7 @@ public class NationwideJobRepository(
     public async Task<string> GetZoneNameAsync(int carrierId, string state, string city)
     {
         var zones = await Context.FlightCarrierZones
+            .AsNoTracking()
             .Where(z => z.CarrierId == carrierId && z.StateName == state &&
                         (z.CityName == null || z.CityName == city))
             .ToListAsync();
@@ -1113,6 +1117,7 @@ public class NationwideJobRepository(
     public async Task<decimal?> GetExtraItemMultiplierByExtraChargeIdAsync(int extraChargeId)
     {
         var extraItemMultiplier = await Context.ExtraCharges
+            .AsNoTracking()
             .Where(e => e.ExtraChargeId == extraChargeId)
             .Select(e => e.ExtraItemMultiplier)
             .FirstOrDefaultAsync();
@@ -1165,6 +1170,8 @@ public class NationwideJobRepository(
     public async Task<RecoveryAgentJobViewModel> GetRecoveryAgentDialogDataAsync(int jobId)
     {
         var recoveryAgentData = await Context.TucJobs
+            .AsSplitQuery()
+            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(j => new RecoveryAgentJobViewModel
             {
@@ -1245,7 +1252,6 @@ public class NationwideJobRepository(
                             })
                         })
             })
-            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         return recoveryAgentData;

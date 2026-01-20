@@ -175,6 +175,10 @@ public static class JobMappings
         Void = j.UcjbVoid,
         IsInvoiced = false,
         Barcode = j.Barcode ?? "-",
+        
+        // Flight card
+        IsFlightAssigned = j.TucJobNationwides.Any(),
+        IsAgentAssigned =  j.AgentId != null,
 
         // Simple navigation properties
         LoggedInContactName = j.LoggedInContact != null

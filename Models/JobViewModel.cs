@@ -90,6 +90,10 @@ public class JobViewModel : DispatchJobViewModel
     public bool TailLiftDo { get; set; }
     public bool DeliverToPrivateRes { get; set; }
     public Suggestion BookingSource { get; set; }
+    
+    // Flight detail card
+    public bool IsFlightAssigned { get; set; }
+    public bool IsAgentAssigned { get; set; }
 }
 
 public class ParcelDimensions

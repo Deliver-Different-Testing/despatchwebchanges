@@ -2011,6 +2011,72 @@ class NationwideControl extends BaseController {
         });
     }
 
+    // React wrapper methods for FlightAgentDataTable component
+    onFlightSearchChange(searchText: string): void {
+        this.flightSearchText = searchText;
+        this.filterFlights();
+        this.applyScope();
+    }
+
+    onOutboundAirportSelectionChangedReact(airport: IAirportSuggestion | null): void {
+        this.selectedOutboundAirport = airport ?? undefined;
+        this.onOutboundAirportSelectionChanged();
+    }
+
+    onInboundAirportSelectionChangedReact(airport: IAirportSuggestion | null): void {
+        this.selectedInboundAirport = airport ?? undefined;
+        this.onInboundAirportSelectionChanged();
+    }
+
+    addFlightToJobReact($event: MouseEvent | undefined, flight: IFlightViewModel): void {
+        if (!this.currentJob) return;
+        const mouseEvent = $event || new MouseEvent('click');
+        this.addFlightToJob(mouseEvent, flight, this.currentJob);
+    }
+
+    openFlightMoreInfoReact($event: MouseEvent | undefined, flight: IFlightViewModel): void {
+        const mouseEvent = $event || new MouseEvent('click');
+        this.openFlightMoreInfo(mouseEvent, flight);
+    }
+
+    addAgentToJobReact($event: MouseEvent | undefined, agent: IAgent): void {
+        if (!this.currentJob) return;
+        const mouseEvent = $event || new MouseEvent('click');
+        this.addAgentToJob(mouseEvent, agent, this.currentJob);
+    }
+
+    sendQuoteRequestReact($event: MouseEvent | undefined, agent: IAgent): void {
+        if (!this.currentJob) return;
+        const mouseEvent = $event || new MouseEvent('click');
+        this.sendQuoteRequest(mouseEvent, agent, this.currentJob);
+    }
+
+    openAgentMoreInfoReact($event: MouseEvent | undefined, agent: IAgent): void {
+        const mouseEvent = $event || new MouseEvent('click');
+        this.openAgentMoreInfo(mouseEvent, agent);
+    }
+
+    openAgentSearchDialogReact($event: MouseEvent | undefined): void {
+        if (!this.currentJob) return;
+        const mouseEvent = $event || new MouseEvent('click');
+        this.openAgentSearchDialog(mouseEvent, this.currentJob);
+    }
+
+    openRecoveryAgentDialogReact($event: MouseEvent | undefined): void {
+        if (!this.currentJob) return;
+        const mouseEvent = $event || new MouseEvent('click');
+        this.openRecoveryAgentDialog(mouseEvent, this.currentJob);
+    }
+
+    formatMinutesToTimeReact(minutes: number): string {
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        if (hours > 0) {
+            return `${hours}h ${mins < 10 ? '0' + mins : mins}m`;
+        }
+        return `${mins}m`;
+    }
+
     refreshMap(): void {
         if (this.currentJob) {
             console.info('Manually refreshing map for current job');

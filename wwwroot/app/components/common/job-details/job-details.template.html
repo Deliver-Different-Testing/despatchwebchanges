@@ -377,12 +377,12 @@
                 <!-- Combined Info Sections -->
                 <div
                         class="info-sections-container "
-                        ng-if="ctrl.job.assignedFlight || ctrl.job.assignedAgent"
+                        ng-if="ctrl.job.isFlightAssigned || ctrl.job.isAgentAssigned"
                         style="background: #f5f5f5">
                     <!-- Flight Information -->
                     <section
                             class="info-section client-section"
-                            ng-show="ctrl.job.assignedFlight">
+                            ng-if="ctrl.job.isFlightAssigned">
                         <md-toolbar class="job-detail-toolbar">
                             <div class="md-toolbar-tools">
                                 <span class="material-symbols-outlined">flight</span>
@@ -393,7 +393,7 @@
                         <!-- Flight segments information for multi-leg flights -->
                         <div
                                 class="flight-segments-container md-padding"
-                                ng-show="ctrl.job.assignedFlight.flightSegments && ctrl.job.assignedFlight.flightSegments.length > 0">
+                                ng-if="ctrl.job.assignedFlight.flightSegments && ctrl.job.assignedFlight.flightSegments.length > 0">
                             <div class="segment-header md-caption">
                 <span>SEGMENTS:
                   {{ctrl.job.assignedFlight.flightSegments.length}}</span>
@@ -417,14 +417,14 @@
                                         <div class="segment-departure" flex="30">
                                             <div class="time">
                                                 {{segment._departureTimeStr}}
-                                                <span ng-show="segment.departureAirportTimeZone">
+                                                <span ng-if="segment.departureAirportTimeZone">
                                                     {{segment._departureTimeZoneStr}}
                                                 </span>
                                             </div>
                                             <div class="airport-code">
                                                 {{segment.departureAirportFsCode}}
                                             </div>
-                                            <div class="terminal" ng-show="segment.departureTerminal">
+                                            <div class="terminal" ng-if="segment.departureTerminal">
                                                 Terminal {{segment.departureTerminal}}
                                             </div>
                                         </div>
@@ -450,14 +450,14 @@
                                         <div class="segment-arrival" flex="30">
                                             <div class="time">
                                                 {{segment._arrivalTimeStr}}
-                                                <span ng-show="segment.arrivalAirportTimeZone">
+                                                <span ng-if="segment.arrivalAirportTimeZone">
                           {{segment._arrivalTimeZoneStr}}
                         </span>
                                             </div>
                                             <div class="airport-code">
                                                 {{segment.arrivalAirportFsCode}}
                                             </div>
-                                            <div class="terminal" ng-show="segment.arrivalTerminal">
+                                            <div class="terminal" ng-if="segment.arrivalTerminal">
                                                 Terminal {{segment.arrivalTerminal}}
                                             </div>
                                         </div>
@@ -465,7 +465,7 @@
                                 </div>
 
                                 <!-- Layover/Connection time - show between segments -->
-                                <div class="layover-info" ng-show="!$last">
+                                <div class="layover-info" ng-if="!$last">
                                     <md-icon
                                             class="layover-icon"
                                             md-font-set="material-symbols-outlined">schedule
@@ -476,7 +476,7 @@
                   </span>
                                 </div>
 
-                                <md-divider ng-show="!$last"></md-divider>
+                                <md-divider ng-if="!$last"></md-divider>
                             </div>
                         </div>
                     </section>
@@ -484,7 +484,7 @@
                     <!-- Agent information -->
                     <section
                             class="info-section booker-section"
-                            ng-show="ctrl.job.assignedAgent">
+                            ng-if="ctrl.job.isAgentAssigned">
                         <md-toolbar class="job-detail-toolbar">
                             <div class="md-toolbar-tools">
                                 <span class="material-symbols-outlined">badge</span>
@@ -2047,12 +2047,4 @@
     </div>
 </div>
 
-<!-- POD Photo Viewer - only pass image files -->
-<pod-photo-viewer
-        initial-photo-index="ctrl.selectedPhotoIndex"
-        is-open="ctrl.isPodViewerOpen"
-        ng-if="ctrl.imageOnlyPodPhotos.length > 0"
-        on-close="ctrl.closePodViewer()"
-        photos="ctrl.imageOnlyPodPhotos"
-        time-zone="ctrl.job.deliveryTimeZone.text">
-</pod-photo-viewer>
+<!-- POD Photo Viewer is now rendered via React (ReactPodPhotoViewer) -->

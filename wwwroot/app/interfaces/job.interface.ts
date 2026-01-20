@@ -4,7 +4,7 @@ import {DaysOfWeek} from "../enums/days-of-week.enum";
 import {Frequency} from "../enums/frequency.enum";
 import {HolidayDeliveryOptions} from "../enums/holiday-delivery-options.enum";
 import {IFlightSegment, IFlightSegmentDto} from "../components/Nationwide/nationwide.interfaces";
-import {AirportViewModel} from "../react/interfaces/agent";
+import {AirportViewModel} from "../react/interfaces";
 import {Dayjs} from "dayjs";
 
 export interface IJobGroupDto {
@@ -184,6 +184,8 @@ export interface IJob {
     bookingSource?: ISuggestion;
     isInvoiced: boolean;
     barcode?: string;
+    isFlightAssigned: boolean;
+    isAgentAssigned: boolean;
     
     // Private variables
     _createdDateStr?: string;
@@ -368,6 +370,8 @@ export interface IJobDto {
     bookingSource?: ISuggestion;
     isInvoiced: boolean;
     barcode?: string;
+    isFlightAssigned: boolean;
+    isAgentAssigned: boolean;
 }
 
 export interface UpdateBulkJobPackagesRequest extends UpdateJobPackagesBase {

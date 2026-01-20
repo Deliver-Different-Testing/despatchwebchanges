@@ -8,7 +8,7 @@ import {
 } from "../../../interfaces/job.interface";
 import {ContactID, FirstName} from "../../../contants";
 import {CallData} from "./job-details.interfaces";
-import {PodPhoto} from "../pod-photo-viewer/pod-photo-viewer.interfaces";
+import {PodPhoto} from "../../../react/components/common/pod-photo-viewer/PodPhotoViewer";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import "./job-details.styles.less";
 import {SelectDialogService} from "../../dialogs/select-dialog/select-dialog.service";
@@ -1792,10 +1792,24 @@ class JobDetailController extends BaseController {
 
     async openPodViewer(index: number, photoType: PodPhotoType = PodPhotoType.Delivery): Promise<void> {
         const photos = photoType === PodPhotoType.Pickup ? this.formattedPickupPhotos : this.formattedPodPhotos;
+        const imageOnlyPhotos = photoType === PodPhotoType.Pickup ? this.imageOnlyPickupPhotos : this.imageOnlyPodPhotos;
         const photo = photos[index];
 
         if (this.isImageFile(photo)) {
-            this.selectedPhotoIndex = index;
+            // Find the index in the image-only array
+            const imageIndex = imageOnlyPhotos.findIndex(p => p.url === photo.url);
+            const timeZone = this.job?.deliveryTimeZone?.text;
+
+            // Use React POD Photo Viewer
+            (window as any).ReactPodPhotoViewer?.open(
+                imageOnlyPhotos,
+                imageIndex >= 0 ? imageIndex : 0,
+                timeZone,
+                () => {
+                    this.isPodViewerOpen = false;
+                    this.applyScope();
+                }
+            );
             this.isPodViewerOpen = true;
         } else {
             // For non-image files, download them instead
@@ -1817,6 +1831,7 @@ class JobDetailController extends BaseController {
 
     closePodViewer(): void {
         this.isPodViewerOpen = false;
+        (window as any).ReactPodPhotoViewer?.close();
     }
 
     async sendPOD($event: MouseEvent): Promise<void> {
