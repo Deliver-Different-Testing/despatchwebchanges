@@ -50,8 +50,6 @@ const app = angular.module("uDispatch", [
     "ng-mfb",
     "md.data.table",
     "ngFileUpload",
-    "hereMapTracking.services",
-    "hereMapTracking.components",
     "ngMaterialDatePicker"
 ]);
 

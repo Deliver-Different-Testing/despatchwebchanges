@@ -36,7 +36,8 @@
                             credentials="ctrl.hereCredentials"
                             map-id="mapContainer"
                             on-map-ready=""
-                            class="here-map-element">
+                            class="here-map-element"
+                            ng-if="ctrl.hereCredentials && ctrl.mapConfig">
                     </here-map-react>
 
                     <!-- Job Timeline Navigation Overlay -->

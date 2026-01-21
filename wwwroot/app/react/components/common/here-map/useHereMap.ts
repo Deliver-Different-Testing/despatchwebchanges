@@ -245,8 +245,6 @@ export function useHereMap({
             return;
         }
 
-        if (!config.courierLocation) return;
-
         const allPoints = utils.getAllVisiblePoints(
             config.job,
             config.courierLocation,

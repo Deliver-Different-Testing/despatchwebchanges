@@ -969,12 +969,14 @@ public class JobController(
         }
     }
 
+    [HttpPost]
     public async Task<IActionResult> ReRateSplitJob([FromBody] JobUpdateBaseRequest request)
     {
         await jobRepository.ReRateSplitJobAsync(request.JobId);
         return Ok();
     }
 
+    [HttpPost]
     public async Task<IActionResult> FinishSplitJobProcess([FromBody] JobUpdateBaseRequest request)
     {
         var staffInfo = await infoService.GetStaffInfoAsync();
