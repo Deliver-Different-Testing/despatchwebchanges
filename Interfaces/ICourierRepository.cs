@@ -25,8 +25,6 @@ public interface ICourierRepository
 
     Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds);
 
-    string GetClearListsDebugSql(List<int> despatchViewIds);
-
     Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(
         int clearListAreaId,
         Country country,

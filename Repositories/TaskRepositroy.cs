@@ -25,6 +25,7 @@ public class TaskRepository(
 
         var query = Context.TucEvents
             .AsNoTracking()
+            .AsSplitQuery()
             .Where(t => t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.CS));
 
         if (filters != null) query = ApplyFilters(query, filters);

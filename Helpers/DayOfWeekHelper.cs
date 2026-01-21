@@ -11,9 +11,8 @@ public static class DayOfWeekHelper
     /// </summary>
     /// <param name="dayOfWeek">The day name (e.g., "Monday", "Sunday")</param>
     /// <returns>Integer value 1-7 where Sunday=1, Monday=2, ..., Saturday=7. Returns 0 for invalid input.</returns>
-    public static int DayNameToSqlInt(string dayOfWeek)
-    {
-        return dayOfWeek switch
+    public static int DayNameToSqlInt(string dayOfWeek) =>
+        dayOfWeek switch
         {
             "Sunday" => 1,
             "Monday" => 2,
@@ -24,16 +23,14 @@ public static class DayOfWeekHelper
             "Saturday" => 7,
             _ => 0
         };
-    }
 
     /// <summary>
     /// Converts a SQL Server DATEPART(WEEKDAY) integer value to its day name.
     /// </summary>
     /// <param name="sqlDayOfWeek">Integer value 1-7 where Sunday=1, Monday=2, ..., Saturday=7</param>
     /// <returns>The day name string, or "Unknown" for invalid input.</returns>
-    public static string SqlIntToDayName(int sqlDayOfWeek)
-    {
-        return sqlDayOfWeek switch
+    public static string SqlIntToDayName(int sqlDayOfWeek) =>
+        sqlDayOfWeek switch
         {
             1 => "Sunday",
             2 => "Monday",
@@ -44,5 +41,4 @@ public static class DayOfWeekHelper
             7 => "Saturday",
             _ => "Unknown"
         };
-    }
 }

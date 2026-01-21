@@ -29,7 +29,6 @@ public class RecurringJobRepository(
         var isUsTenant = _infoService.IsUsTenant();
 
         var query = Context.TucJobBookings
-            .AsNoTracking()
             .Where(j => j.UcbkActive == request.Active && j.UcbkOneOff != true);
 
         // US tenants: exclude child jobs (only show parent jobs)
@@ -108,6 +107,8 @@ public class RecurringJobRepository(
         };
 
         var items = await query
+            .AsSplitQuery()
+            .AsNoTracking()
             .Skip((request.Page - 1) * request.Limit)
             .Take(request.Limit)
             .Select(JobMappings.ToPrebookListViewModel)
@@ -151,6 +152,7 @@ public class RecurringJobRepository(
         var effectiveJobId = await Context.GetEffectiveJobBookingIdAsync(jobId);
 
         var allJobsInGroup = await Context.TucJobBookings
+            .AsSplitQuery()
             .AsNoTracking()
             .Where(j => j.UcbkId == effectiveJobId || j.BookingParentId == effectiveJobId)
             .Select(JobMappings.JobRecurringMapping)
@@ -513,8 +515,9 @@ public class RecurringJobRepository(
         var tenantTimeZone = _infoService.GetTenantTimeZone();
 
         var notes = await Context.TucNotes
-            .Where(n => n.JobBookingId == effectivePrebookId)
+            .AsSplitQuery()
             .AsNoTracking()
+            .Where(n => n.JobBookingId == effectivePrebookId)
             .Select(NoteMappings.ActiveNoteMap)
             .ToListAsync();
 

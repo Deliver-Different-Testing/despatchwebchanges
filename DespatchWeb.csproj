@@ -297,9 +297,9 @@
   <ItemGroup>
     <PackageReference Include="Amazon.AspNetCore.DataProtection.SSM" Version="4.0.1" />
     <PackageReference Include="AspNetCore.HealthChecks.SqlServer" Version="9.0.0" />
-    <PackageReference Include="AWSSDK.S3" Version="4.0.17.2" />
-    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.5.7" />
-    <PackageReference Include="AWSSDK.SSO" Version="4.0.2.11" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.17.3" />
+    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.5.8" />
+    <PackageReference Include="AWSSDK.SSO" Version="4.0.2.12" />
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="ExcelDataReader" Version="3.8.0" />
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.8.0" />
@@ -324,7 +324,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\enums\jobCategory.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\job-highlight.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\job-list.component.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\common\pod-photo-viewer\pod-photo-viewer.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\StickyNotes.tsx" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\StickyNotes.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\sticky-notes-react.module.tsx" />
