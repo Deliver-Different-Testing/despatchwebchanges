@@ -697,7 +697,7 @@ function addExtraMarkerPoints(extraMarkers: any[], points: Point[]): void {
  */
 export function getAllVisiblePoints(
     job: IHereMapJob,
-    courierLocation: CourierLocation,
+    courierLocation?: CourierLocation,
     extraMarkers: any[] = []
 ): Point[] {
     const points: Point[] = [];
