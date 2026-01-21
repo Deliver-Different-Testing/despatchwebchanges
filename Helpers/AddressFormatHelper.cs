@@ -11,8 +11,7 @@ public static class AddressFormatter
     /// </summary>
     public static string FormatWithCityStateZip(Address address)
     {
-        if (address == null)
-            return string.Empty;
+        if (address == null) return string.Empty;
 
         var lines = new List<string>();
 
@@ -41,9 +40,8 @@ public static class AddressFormatter
         return string.Join(", ", lines);
     }
 
-    private static string GetAddressLine(Address address, int index)
-    {
-        return index switch
+    private static string GetAddressLine(Address address, int index) =>
+        index switch
         {
             0 => address.Line1,
             1 => address.Line2,
@@ -55,7 +53,6 @@ public static class AddressFormatter
             7 => address.Line8,
             _ => null
         };
-    }
 
     public class Address(
         string line1 = null,

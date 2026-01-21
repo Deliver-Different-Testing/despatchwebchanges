@@ -3499,6 +3499,7 @@ public partial class JobRepository(
     public async Task<TucJobType> GetJobTypeByIdAsync(int speedId)
     {
         var jobType = await Context.TucJobTypes
+            .AsSplitQuery()
             .AsNoTracking()
             .Include(s => s.Grouping)
             .FirstOrDefaultAsync(x => x.UcjtId == speedId);

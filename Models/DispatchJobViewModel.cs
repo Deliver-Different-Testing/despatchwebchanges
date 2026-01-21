@@ -91,6 +91,7 @@ public class DispatchJobViewModel
 
     public AssignedFlight AssignedFlight { get; set; }
     public AgentViewModel AssignedAgent { get; set; }
+    public bool IsAgentAssigned { get; set; }
 
     // UI helper fields
     public List<Suggestion> RelatedJobs { get; set; }

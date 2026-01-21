@@ -1072,6 +1072,7 @@ public class NationwideJobRepository(
         bool extraStopOffs, DateTime? bookTime)
     {
         var data = await Context.TucJobs
+            .AsSplitQuery()
             .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(j => new FlightRateCalculationDto
@@ -1339,6 +1340,7 @@ public class NationwideJobRepository(
     {
         // Check if this is the only recovery agent on the job
         var recoveryJob = await Context.TucJobs
+            .AsSplitQuery()
             .Include(j => j.JobRecoveryAgents)
             .FirstOrDefaultAsync(j => j.JobRecoveryAgents.Any(ra => ra.RecoveryId == recoveryId));
         ArgumentNullException.ThrowIfNull(recoveryJob);

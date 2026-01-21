@@ -956,6 +956,8 @@ public partial class JobRepository
         IQueryable<TblBulkJob> query,
         JobProperty property)
     {
+        query = query.AsSplitQuery();
+
         return property switch
         {
             JobProperty.ClientID or JobProperty.ClientCode => query.Include(j => j.Client),

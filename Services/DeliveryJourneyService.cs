@@ -60,6 +60,7 @@ public partial class DeliveryJourneyService(
         var timezone = infoService.GetTenantTimeZone();
 
         var eventDtos = await context.TucEvents
+            .AsSplitQuery()
             .AsNoTracking()
             .Where(e => e.UcevJobId == jobId)
             .Select(e => new DeliveryJourneyDto
@@ -132,6 +133,7 @@ public partial class DeliveryJourneyService(
         if (isLiveJob)
         {
             var noteDtos = await context.TucNotes
+                .AsSplitQuery()
                 .AsNoTracking()
                 .Where(n => n.JobId == jobId)
                 .Select(n => new NoteDto
@@ -172,6 +174,7 @@ public partial class DeliveryJourneyService(
         }
 
         var archivedNoteDtos = await context.TucNoteArchives
+            .AsSplitQuery()
             .AsNoTracking()
             .Where(n => n.JobId == jobId)
             .Select(n => new ArchivedNoteDto
@@ -215,6 +218,7 @@ public partial class DeliveryJourneyService(
         var timezone = infoService.GetTenantTimeZone();
 
         var messageDtos = await context.TucManualMessages
+            .AsSplitQuery()
             .AsNoTracking()
             .Where(m => m.JobId == jobId)
             .Select(m => new ManualMessageDto
@@ -310,13 +314,65 @@ public partial class DeliveryJourneyService(
         if (isLiveJob)
         {
             var statusUpdateDtos = await (
-                from s in context.JobDeliveryJourneys.AsNoTracking()
+                    from s in context.JobDeliveryJourneys.AsNoTracking()
+                    where s.JobId == jobId && s.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus)
+                    join newCourier in context.TucCouriers on s.NewCourierId equals newCourier.UccrId into
+                        newCourierJoin
+                    from newCourier in newCourierJoin.DefaultIfEmpty()
+                    join oldCourier in context.TucCouriers on s.OldCourierId equals oldCourier.UccrId into
+                        oldCourierJoin
+                    from oldCourier in oldCourierJoin.DefaultIfEmpty()
+                    select new JobDeliveryJourneyDto
+                    {
+                        Id = s.JourneyId,
+                        UpdatedAt = s.UpdatedAt,
+                        ChangeType = s.ChangeType,
+                        Comments = s.Comments,
+                        FieldName = s.FieldName,
+                        OldValue = s.OldValue,
+                        NewValue = s.NewValue,
+                        StaffFirstName = s.Staff.UcstFirstName,
+                        StaffLastName = s.Staff.UcstLastName,
+                        CourierName = s.Courier.UccrName,
+                        CourierSurname = s.Courier.UccrSurname,
+                        FlightNumber = s.Flight.UcnwFlightNo,
+                        NewAgentName = s.NewAgent.UcagName,
+                        OldAgentName = s.OldAgent.UcagName,
+                        NewJobStatusName = s.NewJobStatus.UcjsName,
+                        OldJobStatusName = s.OldJobStatus.UcjsName,
+                        NewCourierName = newCourier != null ? newCourier.UccrName + " " + newCourier.UccrSurname : null,
+                        OldCourierName = oldCourier != null ? oldCourier.UccrName + " " + oldCourier.UccrSurname : null
+                    })
+                .TagWith("DeliveryJourney - Live Status Updates")
+                .ToListAsync();
+
+            return MapStatusUpdatesToViewModels(statusUpdateDtos, jobId);
+        }
+
+        var archivedStatusUpdateDtos = await (
+                from s in context.JobDeliveryJourneyArchives.AsNoTracking()
                 where s.JobId == jobId && s.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus)
+                join staff in context.TucStaffs on s.StaffId equals staff.UcstId into staffJoin
+                from staff in staffJoin.DefaultIfEmpty()
+                join courier in context.TucCouriers on s.CourierId equals courier.UccrId into courierJoin
+                from courier in courierJoin.DefaultIfEmpty()
+                join flight in context.TucJobNationwides on s.FlightId equals flight.UcnwId into flightJoin
+                from flight in flightJoin.DefaultIfEmpty()
+                join newAgent in context.TucAgents on s.NewAgentId equals newAgent.UcagId into newAgentJoin
+                from newAgent in newAgentJoin.DefaultIfEmpty()
+                join oldAgent in context.TucAgents on s.OldAgentId equals oldAgent.UcagId into oldAgentJoin
+                from oldAgent in oldAgentJoin.DefaultIfEmpty()
+                join newJobStatus in context.TucJobStatuses on s.NewJobStatusId equals newJobStatus.UcjsId into
+                    newJobStatusJoin
+                from newJobStatus in newJobStatusJoin.DefaultIfEmpty()
+                join oldJobStatus in context.TucJobStatuses on s.OldJobStatusId equals oldJobStatus.UcjsId into
+                    oldJobStatusJoin
+                from oldJobStatus in oldJobStatusJoin.DefaultIfEmpty()
                 join newCourier in context.TucCouriers on s.NewCourierId equals newCourier.UccrId into newCourierJoin
                 from newCourier in newCourierJoin.DefaultIfEmpty()
                 join oldCourier in context.TucCouriers on s.OldCourierId equals oldCourier.UccrId into oldCourierJoin
                 from oldCourier in oldCourierJoin.DefaultIfEmpty()
-                select new JobDeliveryJourneyDto
+                select new JobDeliveryJourneyArchiveDto
                 {
                     Id = s.JourneyId,
                     UpdatedAt = s.UpdatedAt,
@@ -325,67 +381,19 @@ public partial class DeliveryJourneyService(
                     FieldName = s.FieldName,
                     OldValue = s.OldValue,
                     NewValue = s.NewValue,
-                    StaffFirstName = s.Staff.UcstFirstName,
-                    StaffLastName = s.Staff.UcstLastName,
-                    CourierName = s.Courier.UccrName,
-                    CourierSurname = s.Courier.UccrSurname,
-                    FlightNumber = s.Flight.UcnwFlightNo,
-                    NewAgentName = s.NewAgent.UcagName,
-                    OldAgentName = s.OldAgent.UcagName,
-                    NewJobStatusName = s.NewJobStatus.UcjsName,
-                    OldJobStatusName = s.OldJobStatus.UcjsName,
+                    UpdatedByType = s.UpdatedByType,
+                    StaffFirstName = staff != null ? staff.UcstFirstName : null,
+                    StaffLastName = staff != null ? staff.UcstLastName : null,
+                    CourierName = courier != null ? courier.UccrName : null,
+                    CourierSurname = courier != null ? courier.UccrSurname : null,
+                    FlightNumber = flight != null ? flight.UcnwFlightNo : null,
+                    NewAgentName = newAgent != null ? newAgent.UcagName : null,
+                    OldAgentName = oldAgent != null ? oldAgent.UcagName : null,
+                    NewJobStatusName = newJobStatus != null ? newJobStatus.UcjsName : null,
+                    OldJobStatusName = oldJobStatus != null ? oldJobStatus.UcjsName : null,
                     NewCourierName = newCourier != null ? newCourier.UccrName + " " + newCourier.UccrSurname : null,
                     OldCourierName = oldCourier != null ? oldCourier.UccrName + " " + oldCourier.UccrSurname : null
                 })
-                .TagWith("DeliveryJourney - Live Status Updates")
-                .ToListAsync();
-
-            return MapStatusUpdatesToViewModels(statusUpdateDtos, jobId);
-        }
-
-        var archivedStatusUpdateDtos = await (
-            from s in context.JobDeliveryJourneyArchives.AsNoTracking()
-            where s.JobId == jobId && s.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus)
-            join staff in context.TucStaffs on s.StaffId equals staff.UcstId into staffJoin
-            from staff in staffJoin.DefaultIfEmpty()
-            join courier in context.TucCouriers on s.CourierId equals courier.UccrId into courierJoin
-            from courier in courierJoin.DefaultIfEmpty()
-            join flight in context.TucJobNationwides on s.FlightId equals flight.UcnwId into flightJoin
-            from flight in flightJoin.DefaultIfEmpty()
-            join newAgent in context.TucAgents on s.NewAgentId equals newAgent.UcagId into newAgentJoin
-            from newAgent in newAgentJoin.DefaultIfEmpty()
-            join oldAgent in context.TucAgents on s.OldAgentId equals oldAgent.UcagId into oldAgentJoin
-            from oldAgent in oldAgentJoin.DefaultIfEmpty()
-            join newJobStatus in context.TucJobStatuses on s.NewJobStatusId equals newJobStatus.UcjsId into newJobStatusJoin
-            from newJobStatus in newJobStatusJoin.DefaultIfEmpty()
-            join oldJobStatus in context.TucJobStatuses on s.OldJobStatusId equals oldJobStatus.UcjsId into oldJobStatusJoin
-            from oldJobStatus in oldJobStatusJoin.DefaultIfEmpty()
-            join newCourier in context.TucCouriers on s.NewCourierId equals newCourier.UccrId into newCourierJoin
-            from newCourier in newCourierJoin.DefaultIfEmpty()
-            join oldCourier in context.TucCouriers on s.OldCourierId equals oldCourier.UccrId into oldCourierJoin
-            from oldCourier in oldCourierJoin.DefaultIfEmpty()
-            select new JobDeliveryJourneyArchiveDto
-            {
-                Id = s.JourneyId,
-                UpdatedAt = s.UpdatedAt,
-                ChangeType = s.ChangeType,
-                Comments = s.Comments,
-                FieldName = s.FieldName,
-                OldValue = s.OldValue,
-                NewValue = s.NewValue,
-                UpdatedByType = s.UpdatedByType,
-                StaffFirstName = staff != null ? staff.UcstFirstName : null,
-                StaffLastName = staff != null ? staff.UcstLastName : null,
-                CourierName = courier != null ? courier.UccrName : null,
-                CourierSurname = courier != null ? courier.UccrSurname : null,
-                FlightNumber = flight != null ? flight.UcnwFlightNo : null,
-                NewAgentName = newAgent != null ? newAgent.UcagName : null,
-                OldAgentName = oldAgent != null ? oldAgent.UcagName : null,
-                NewJobStatusName = newJobStatus != null ? newJobStatus.UcjsName : null,
-                OldJobStatusName = oldJobStatus != null ? oldJobStatus.UcjsName : null,
-                NewCourierName = newCourier != null ? newCourier.UccrName + " " + newCourier.UccrSurname : null,
-                OldCourierName = oldCourier != null ? oldCourier.UccrName + " " + oldCourier.UccrSurname : null
-            })
             .TagWith("DeliveryJourney - Archived Status Updates")
             .ToListAsync();
 
@@ -483,9 +491,7 @@ public partial class DeliveryJourneyService(
             return $"Agent: {oldAgent} → {newAgent}";
         if (!string.IsNullOrEmpty(newAgent))
             return $"Agent: {newAgent}";
-        if (!string.IsNullOrEmpty(oldAgent))
-            return $"Removed Agent: {oldAgent}";
-        return null;
+        return !string.IsNullOrEmpty(oldAgent) ? $"Removed Agent: {oldAgent}" : null;
     }
 
     /// <summary>
@@ -497,9 +503,7 @@ public partial class DeliveryJourneyService(
             return $"Courier: {oldCourier} → {newCourier}";
         if (!string.IsNullOrEmpty(newCourier))
             return $"Courier: {newCourier}";
-        if (!string.IsNullOrEmpty(oldCourier))
-            return $"Removed Courier: {oldCourier}";
-        return null;
+        return !string.IsNullOrEmpty(oldCourier) ? $"Removed Courier: {oldCourier}" : null;
     }
 
     /// <summary>
@@ -509,9 +513,7 @@ public partial class DeliveryJourneyService(
     {
         if (!string.IsNullOrEmpty(newStatus) && !string.IsNullOrEmpty(oldStatus))
             return $"Status: {oldStatus} → {newStatus}";
-        if (!string.IsNullOrEmpty(newStatus))
-            return $"Status: {newStatus}";
-        return null;
+        return !string.IsNullOrEmpty(newStatus) ? $"Status: {newStatus}" : null;
     }
 
     /// <summary>
@@ -523,12 +525,13 @@ public partial class DeliveryJourneyService(
 
         var formattedName = FormatFieldName(fieldName);
         if (!string.IsNullOrEmpty(oldValue) && !string.IsNullOrEmpty(newValue))
-            return $"{formattedName}: {FormatFieldValue(fieldName, oldValue)} → {FormatFieldValue(fieldName, newValue)}";
+            return
+                $"{formattedName}: {FormatFieldValue(fieldName, oldValue)} → {FormatFieldValue(fieldName, newValue)}";
         if (!string.IsNullOrEmpty(newValue))
             return $"{formattedName}: {FormatFieldValue(fieldName, newValue)}";
-        if (!string.IsNullOrEmpty(oldValue))
-            return $"{formattedName}: {FormatFieldValue(fieldName, oldValue)} → (cleared)";
-        return null;
+        return !string.IsNullOrEmpty(oldValue)
+            ? $"{formattedName}: {FormatFieldValue(fieldName, oldValue)} → (cleared)"
+            : null;
     }
 
     /// <summary>
@@ -868,28 +871,19 @@ public partial class DeliveryJourneyService(
 
         if (value.Equals("True", StringComparison.OrdinalIgnoreCase) ||
             value.Equals("False", StringComparison.OrdinalIgnoreCase))
-        {
             return value.Equals("True", StringComparison.OrdinalIgnoreCase) ? "Yes" : "No";
-        }
 
-        if (fieldName is "ucjbAmount" or "FuelSurchargeAmount" or "PPDAmount" or "PickupAmount"
-            or "DropoffAmount" or "CourierPayment" or "CourierFuel" or "CourierBonus"
-            or "NWAmount" or "RawAmount" or "RebateAmt" or "PickupRawAmount" or "DropoffRawAmount"
-            or "NWRawAmount" or "RawBaseAmount" or "GSSAmount" or "PPDExclusiveAmount")
+        switch (fieldName)
         {
-            if (decimal.TryParse(value, out var amount))
+            case "ucjbAmount" or "FuelSurchargeAmount" or "PPDAmount" or "PickupAmount"
+                or "DropoffAmount" or "CourierPayment" or "CourierFuel" or "CourierBonus"
+                or "NWAmount" or "RawAmount" or "RebateAmt" or "PickupRawAmount" or "DropoffRawAmount"
+                or "NWRawAmount" or "RawBaseAmount" or "GSSAmount" or "PPDExclusiveAmount"
+                when decimal.TryParse(value, out var amount):
                 return amount.ToString("C2");
-        }
-
-        if (fieldName is "ucjbWeight")
-        {
-            if (decimal.TryParse(value, out var weight))
+            case "ucjbWeight" when decimal.TryParse(value, out var weight):
                 return $"{weight:F2} kg";
-        }
-
-        if (fieldName is "ucjbKm" or "TotalDistance")
-        {
-            if (decimal.TryParse(value, out var distance))
+            case "ucjbKm" or "TotalDistance" when decimal.TryParse(value, out var distance):
                 return $"{distance:F1} km";
         }
 

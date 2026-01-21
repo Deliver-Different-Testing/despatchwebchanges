@@ -21,6 +21,7 @@ import {
     Typography,
     useTheme,
 } from '@mui/material';
+import dayjs from 'dayjs';
 import {
     Add as AddIcon,
     AirlineSeatReclineNormal as SeatIcon,
@@ -57,6 +58,69 @@ type FlightSortKey =
     | 'amount'
     | 'aircraft';
 type AgentSortKey = 'agentName' | 'agentRate' | 'agentRanking' | 'agentNotes';
+
+// Airline color palette - distinctive colors for major airlines
+const AIRLINE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+    // US Airlines
+    'AA': { bg: '#B81D24', text: '#FFFFFF', border: '#8A161B' },      // American Airlines - Red
+    'DL': { bg: '#003366', text: '#FFFFFF', border: '#002244' },      // Delta - Navy Blue
+    'UA': { bg: '#0033A0', text: '#FFFFFF', border: '#002878' },      // United - Blue
+    'WN': { bg: '#F9B612', text: '#304CB2', border: '#E5A30E' },      // Southwest - Yellow/Blue
+    'B6': { bg: '#003876', text: '#FFFFFF', border: '#002B5C' },      // JetBlue - Blue
+    'AS': { bg: '#01426A', text: '#FFFFFF', border: '#003050' },      // Alaska - Dark Blue
+    'NK': { bg: '#FDE428', text: '#000000', border: '#E5CD22' },      // Spirit - Yellow
+    'F9': { bg: '#00A651', text: '#FFFFFF', border: '#008942' },      // Frontier - Green
+    'HA': { bg: '#4F2D7F', text: '#FFFFFF', border: '#3D2266' },      // Hawaiian - Purple
+    // International
+    'BA': { bg: '#075AAA', text: '#FFFFFF', border: '#054789' },      // British Airways - Blue
+    'LH': { bg: '#05164D', text: '#FFC72C', border: '#030F33' },      // Lufthansa - Navy/Gold
+    'AF': { bg: '#002157', text: '#FFFFFF', border: '#001840' },      // Air France - Dark Blue
+    'EK': { bg: '#C8102E', text: '#FFFFFF', border: '#A00D25' },      // Emirates - Red
+    'QF': { bg: '#E40000', text: '#FFFFFF', border: '#B50000' },      // Qantas - Red
+    'SQ': { bg: '#F7A823', text: '#0C2340', border: '#E59A1F' },      // Singapore - Gold
+    'CX': { bg: '#006564', text: '#FFFFFF', border: '#004D4C' },      // Cathay Pacific - Teal
+    'NH': { bg: '#142B64', text: '#FFFFFF', border: '#0F2050' },      // ANA - Blue
+    'JL': { bg: '#C8102E', text: '#FFFFFF', border: '#A00D25' },      // Japan Airlines - Red
+    'KE': { bg: '#00256C', text: '#FFFFFF', border: '#001C52' },      // Korean Air - Blue
+    'TK': { bg: '#C8102E', text: '#FFFFFF', border: '#A00D25' },      // Turkish - Red
+    'LX': { bg: '#C8102E', text: '#FFFFFF', border: '#A00D25' },      // Swiss - Red
+    'AC': { bg: '#F01428', text: '#FFFFFF', border: '#C81020' },      // Air Canada - Red
+    'QR': { bg: '#5C0632', text: '#FFFFFF', border: '#460526' },      // Qatar - Burgundy
+    'EY': { bg: '#BD8B13', text: '#1E1E1E', border: '#9A7210' },      // Etihad - Gold
+    'VS': { bg: '#E30613', text: '#FFFFFF', border: '#B50510' },      // Virgin Atlantic - Red
+};
+
+// Generate consistent color for unknown airlines based on code
+const getAirlineColor = (code: string): { bg: string; text: string; border: string } => {
+    if (AIRLINE_COLORS[code]) {
+        return AIRLINE_COLORS[code];
+    }
+
+    // Generate deterministic color from airline code
+    let hash = 0;
+    for (let i = 0; i < code.length; i++) {
+        hash = code.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    // Generate hue from hash (avoiding yellow-green range for readability)
+    const hue = ((hash % 300) + 180) % 360;
+    const saturation = 65 + (hash % 20);
+    const lightness = 35 + (hash % 15);
+
+    return {
+        bg: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
+        text: '#FFFFFF',
+        border: `hsl(${hue}, ${saturation}%, ${lightness - 10}%)`,
+    };
+};
+
+// Helper to format time from Dayjs or string
+const formatTimeDisplay = (time: dayjs.Dayjs | string | undefined): string => {
+    if (!time) return '--:--';
+    const dayjsTime = dayjs.isDayjs(time) ? time : dayjs(time);
+    if (!dayjsTime.isValid()) return '--:--';
+    return dayjsTime.format('h:mm A');
+};
 
 // Animation keyframes
 const slideIn = keyframes`
@@ -251,42 +315,53 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
         }).format(amount);
     };
 
-    // Airline badge with theme colors
-    const AirlineBadge: React.FC<{ code: string; isCodeShare?: boolean }> = ({code, isCodeShare}) => (
-        <Box
-            sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 0.5,
-                px: 1,
-                py: 0.25,
-                borderRadius: '4px',
-                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
-            }}
-        >
-            <Typography
+    // Airline badge with brand colors
+    const AirlineBadge: React.FC<{ code: string; isCodeShare?: boolean }> = ({code, isCodeShare}) => {
+        const colors = getAirlineColor(code);
+        return (
+            <Box
                 sx={{
-                    fontSize: '0.7rem',
-                    fontWeight: 600,
-                    color: theme.palette.primary.main,
-                    letterSpacing: '0.05em',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    px: 1.25,
+                    py: 0.5,
+                    borderRadius: '6px',
+                    bgcolor: colors.bg,
+                    border: `2px solid ${colors.border}`,
+                    boxShadow: `0 2px 4px ${alpha(colors.bg, 0.3)}`,
+                    transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                    '&:hover': {
+                        transform: 'scale(1.05)',
+                        boxShadow: `0 4px 8px ${alpha(colors.bg, 0.4)}`,
+                    },
                 }}
             >
-                {code}
-            </Typography>
-            {isCodeShare && (
                 <Typography
                     sx={{
-                        fontSize: '0.6rem',
-                        color: theme.palette.text.secondary,
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        color: colors.text,
+                        letterSpacing: '0.08em',
+                        textShadow: colors.text === '#FFFFFF' ? '0 1px 2px rgba(0,0,0,0.2)' : 'none',
                     }}
                 >
-                    *
+                    {code}
                 </Typography>
-            )}
-        </Box>
-    );
+                {isCodeShare && (
+                    <Typography
+                        sx={{
+                            fontSize: '0.6rem',
+                            fontWeight: 700,
+                            color: alpha(colors.text, 0.7),
+                        }}
+                    >
+                        *
+                    </Typography>
+                )}
+            </Box>
+        );
+    };
 
     // Airport code display
     const AirportCode: React.FC<{ code: string; time: string; timezone?: string; isOrigin?: boolean }> = ({
@@ -539,7 +614,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                         }}>
                             <AirportCode
                                 code={flight.departureAirport}
-                                time={flight._departureTimeStr || ''}
+                                time={formatTimeDisplay(flight.departureTime)}
                                 timezone={flight._departureTimeZoneStr}
                                 isOrigin
                             />
@@ -550,7 +625,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                             />
                             <AirportCode
                                 code={flight.arrivalAirport}
-                                time={flight._arrivalTimeStr || ''}
+                                time={formatTimeDisplay(flight.arrivalTime)}
                                 timezone={flight._arrivalTimeZoneStr}
                             />
                         </Box>
@@ -669,7 +744,9 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
     const renderSegmentDetails = (segments: FlightSegment[]) => {
         return (
             <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
-                {segments.map((segment, index) => (
+                {segments.map((segment, index) => {
+                    const segmentColors = getAirlineColor(segment.carrierFsCode);
+                    return (
                     <React.Fragment key={segment.segmentOrder}>
                         {/* Segment row */}
                         <Box sx={{
@@ -678,40 +755,54 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                             gap: 1.5,
                             py: 0.5,
                         }}>
-                            {/* Segment badge */}
+                            {/* Segment badge with airline color */}
                             <Box
                                 sx={{
-                                    width: 20,
-                                    height: 20,
+                                    width: 22,
+                                    height: 22,
                                     borderRadius: '50%',
-                                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                    bgcolor: segmentColors.bg,
+                                    border: `2px solid ${segmentColors.border}`,
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
+                                    boxShadow: `0 1px 3px ${alpha(segmentColors.bg, 0.3)}`,
                                 }}
                             >
                                 <Typography
                                     sx={{
-                                        fontSize: '0.65rem',
+                                        fontSize: '0.6rem',
                                         fontWeight: 700,
-                                        color: theme.palette.primary.main,
+                                        color: segmentColors.text,
                                     }}
                                 >
                                     {segment.segmentOrder + 1}
                                 </Typography>
                             </Box>
 
-                            {/* Flight info */}
-                            <Typography
+                            {/* Flight info with airline badge */}
+                            <Box
                                 sx={{
-                                    fontSize: '0.7rem',
-                                    fontWeight: 600,
-                                    color: theme.palette.text.primary,
-                                    minWidth: 50,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    px: 0.75,
+                                    py: 0.25,
+                                    borderRadius: '4px',
+                                    bgcolor: segmentColors.bg,
+                                    minWidth: 55,
                                 }}
                             >
-                                {segment.carrierFsCode}{segment.flightNumber}
-                            </Typography>
+                                <Typography
+                                    sx={{
+                                        fontSize: '0.65rem',
+                                        fontWeight: 700,
+                                        color: segmentColors.text,
+                                        letterSpacing: '0.02em',
+                                    }}
+                                >
+                                    {segment.carrierFsCode}{segment.flightNumber}
+                                </Typography>
+                            </Box>
 
                             {/* Origin */}
                             <Box sx={{minWidth: 60}}>
@@ -722,8 +813,8 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                 }}>
                                     {segment.departureAirportFsCode}
                                 </Typography>
-                                <Typography sx={{fontSize: '0.6rem', color: theme.palette.primary.main}}>
-                                    {segment._departureTimeStr}
+                                <Typography sx={{fontSize: '0.65rem', color: theme.palette.primary.main, fontWeight: 500}}>
+                                    {formatTimeDisplay(segment.departureTime)}
                                 </Typography>
                             </Box>
 
@@ -739,8 +830,8 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                 }}>
                                     {segment.arrivalAirportFsCode}
                                 </Typography>
-                                <Typography sx={{fontSize: '0.6rem', color: theme.palette.primary.main}}>
-                                    {segment._arrivalTimeStr}
+                                <Typography sx={{fontSize: '0.65rem', color: theme.palette.primary.main, fontWeight: 500}}>
+                                    {formatTimeDisplay(segment.arrivalTime)}
                                 </Typography>
                             </Box>
 
@@ -781,7 +872,8 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                             </Box>
                         )}
                     </React.Fragment>
-                ))}
+                    );
+                })}
             </Box>
         );
     };
@@ -1086,65 +1178,78 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                         {/* Airline filter chips */}
                         <Box sx={{
                             display: 'flex',
-                            gap: 0.5,
+                            gap: 0.75,
                             flexWrap: 'wrap',
-                            maxHeight: 56,
+                            maxHeight: 64,
                             overflow: 'auto',
+                            py: 0.5,
                         }}>
                             <Box
                                 onClick={() => onFilterFlightsByAirline(null)}
                                 sx={{
-                                    px: 1,
-                                    py: 0.25,
-                                    borderRadius: '4px',
-                                    bgcolor: !selectedAirline ? theme.palette.primary.main : 'transparent',
-                                    border: `1px solid ${!selectedAirline ? theme.palette.primary.main : theme.palette.divider}`,
+                                    px: 1.25,
+                                    py: 0.5,
+                                    borderRadius: '6px',
+                                    bgcolor: !selectedAirline ? theme.palette.text.primary : alpha(theme.palette.text.secondary, 0.08),
+                                    border: `2px solid ${!selectedAirline ? theme.palette.text.primary : theme.palette.divider}`,
                                     cursor: 'pointer',
-                                    transition: 'all 0.15s',
+                                    transition: 'all 0.15s ease',
+                                    boxShadow: !selectedAirline ? `0 2px 4px ${alpha(theme.palette.text.primary, 0.25)}` : 'none',
                                     '&:hover': {
-                                        borderColor: theme.palette.primary.main,
+                                        transform: 'scale(1.05)',
+                                        boxShadow: `0 2px 6px ${alpha(theme.palette.text.primary, 0.2)}`,
                                     },
                                 }}
                             >
                                 <Typography
                                     sx={{
-                                        fontSize: '0.65rem',
-                                        fontWeight: 600,
-                                        color: !selectedAirline ? theme.palette.primary.contrastText : theme.palette.text.secondary,
+                                        fontSize: '0.7rem',
+                                        fontWeight: 700,
+                                        color: !selectedAirline ? theme.palette.background.paper : theme.palette.text.secondary,
+                                        letterSpacing: '0.05em',
                                     }}
                                 >
                                     ALL
                                 </Typography>
                             </Box>
-                            {activeAirlineOptions?.map((airline) => (
+                            {activeAirlineOptions?.map((airline) => {
+                                const airlineColors = getAirlineColor(airline.text);
+                                const isSelected = selectedAirline?.id === airline.id;
+                                return (
                                 <Tooltip key={airline.id} title={airline.fullAirlineName || airline.text} arrow>
                                     <Box
                                         onClick={() => onFilterFlightsByAirline(airline)}
                                         sx={{
-                                            px: 1,
-                                            py: 0.25,
-                                            borderRadius: '4px',
-                                            bgcolor: selectedAirline?.id === airline.id ? theme.palette.primary.main : 'transparent',
-                                            border: `1px solid ${selectedAirline?.id === airline.id ? theme.palette.primary.main : theme.palette.divider}`,
+                                            px: 1.25,
+                                            py: 0.5,
+                                            borderRadius: '6px',
+                                            bgcolor: isSelected ? airlineColors.bg : alpha(airlineColors.bg, 0.1),
+                                            border: `2px solid ${isSelected ? airlineColors.border : alpha(airlineColors.bg, 0.3)}`,
                                             cursor: 'pointer',
-                                            transition: 'all 0.15s',
+                                            transition: 'all 0.15s ease',
+                                            boxShadow: isSelected ? `0 2px 6px ${alpha(airlineColors.bg, 0.4)}` : 'none',
                                             '&:hover': {
-                                                borderColor: theme.palette.primary.main,
+                                                transform: 'scale(1.05)',
+                                                bgcolor: isSelected ? airlineColors.bg : alpha(airlineColors.bg, 0.2),
+                                                boxShadow: `0 2px 6px ${alpha(airlineColors.bg, 0.3)}`,
                                             },
                                         }}
                                     >
                                         <Typography
                                             sx={{
-                                                            fontSize: '0.65rem',
-                                                fontWeight: 600,
-                                                color: selectedAirline?.id === airline.id ? theme.palette.primary.contrastText : theme.palette.text.secondary,
+                                                fontSize: '0.7rem',
+                                                fontWeight: 700,
+                                                color: isSelected ? airlineColors.text : airlineColors.bg,
+                                                letterSpacing: '0.05em',
+                                                textShadow: isSelected && airlineColors.text === '#FFFFFF' ? '0 1px 2px rgba(0,0,0,0.2)' : 'none',
                                             }}
                                         >
                                             {airline.text}
                                         </Typography>
                                     </Box>
                                 </Tooltip>
-                            ))}
+                                );
+                            })}
                         </Box>
                     </Box>
 

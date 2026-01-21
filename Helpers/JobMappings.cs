@@ -266,6 +266,7 @@ public static class JobMappings
                     AgentPhone = j.Agent.UcagPhone ?? "-"
                 }
                 : null,
+        IsAgentAssigned = j.Agent != null,
 
         // Tracking info
         TrackingMethod = j.TrackingMethod,
@@ -330,6 +331,16 @@ public static class JobMappings
         SpeedId = j.UcjbSpeed,
         NotifiedJobTypeId = j.NotifiedJobTypeId,
         AcceptedJobTypeId = j.AcceptedJobTypeId,
+
+        // Flight job indicator - check for both US (2) and NZ (5) flight grouping IDs
+        IsFlightJob = j.SpeedNavigation != null
+                      && (j.SpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
+                          || j.SpeedNavigation.GroupingId == (int)UrgentSpeedGrouping.Flight),
+
+        // Agent job indicator - check for both US (3) and NZ (6) agent grouping IDs
+        IsAgentJob = j.SpeedNavigation != null
+                     && (j.SpeedNavigation.GroupingId == (int)SpeedGrouping.Agent
+                         || j.SpeedNavigation.GroupingId == (int)UrgentSpeedGrouping.NationwideAgent),
 
         // References and amounts
         RefA = j.UcjbClientRefa,
@@ -815,6 +826,7 @@ public static class JobMappings
                         AgentPhone = j.Agent.UcagPhone
                     }
                     : null,
+            IsAgentAssigned = j.Agent != null,
 
             Locked = j.UcjbLocked ?? false,
 
@@ -935,6 +947,7 @@ public static class JobMappings
                 AgentPhone = j.Agent.UcagPhone ?? "-"
             }
             : null,
+        IsAgentAssigned = j.Agent != null,
 
         // Tracking info
         TrackingMethod = j.TrackingMethod,

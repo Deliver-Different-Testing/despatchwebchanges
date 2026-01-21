@@ -13,7 +13,6 @@ using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using DespatchWeb.Extensions;
 
@@ -215,6 +214,7 @@ public class CourierRepository(
             var courierIds = courierData.Select(c => c.UccrId).ToList();
 
             var jobData = await Context.TucJobs
+                .AsSplitQuery()
                 .AsNoTracking()
                 .Where(j => j.UcjbCourierId.HasValue &&
                             courierIds.Contains(j.UcjbCourierId.Value) &&
@@ -281,6 +281,7 @@ public class CourierRepository(
             var now = infoService.GetCurrentTenantTime();
 
             var courierData = await Context.TucCouriers
+                .AsSplitQuery()
                 .AsNoTracking()
                 .Where(c => c.CourierLogInOut != null &&
                             c.CourierLogInOut.LogOutTime == null &&
@@ -313,6 +314,7 @@ public class CourierRepository(
 
             // Single query for all job data
             var jobData = await Context.TucJobs
+                .AsSplitQuery()
                 .AsNoTracking()
                 .Where(j => j.UcjbCourierId.HasValue &&
                             courierIds.Contains(j.UcjbCourierId.Value) &&
@@ -533,373 +535,6 @@ public class CourierRepository(
         return results;
     }
 
-    public string GetClearListsDebugSql(List<int> despatchViewIds)
-    {
-        var currentDate = infoService.GetCurrentTenantTime();
-        var currentDateOnly = currentDate.Date;
-        var nextDay = currentDateOnly.AddDays(1);
-
-        var sb = new StringBuilder();
-
-        sb.AppendLine("-- ============================================");
-        sb.AppendLine($"-- GetClearLists SQL Extraction (EF Generated)");
-        sb.AppendLine($"-- Generated: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
-        sb.AppendLine($"-- Tenant Time: {currentDate:yyyy-MM-dd HH:mm:ss}");
-        sb.AppendLine($"-- currentDateOnly: {currentDateOnly:yyyy-MM-dd HH:mm:ss}");
-        sb.AppendLine($"-- nextDay: {nextDay:yyyy-MM-dd HH:mm:ss}");
-        sb.AppendLine($"-- despatchViewIds: [{string.Join(", ", despatchViewIds)}]");
-        sb.AppendLine("-- ============================================");
-        sb.AppendLine();
-
-        sb.AppendLine("SET NOCOUNT ON;");
-        sb.AppendLine();
-        sb.AppendLine("-- Parameters");
-        sb.AppendLine("DECLARE @currentDateOnly datetime = CAST(CAST(DATEADD(HOUR, 13, GETUTCDATE()) AS DATE) AS DATETIME);  -- NZT today midnight");
-        sb.AppendLine("DECLARE @nextDay datetime = DATEADD(DAY, 1, @currentDateOnly);  -- NZT tomorrow midnight");
-        sb.AppendLine($"DECLARE @despatchViewIds nvarchar(100) = N'[{string.Join(",", despatchViewIds)}]';");
-        sb.AppendLine();
-        sb.AppendLine("-- Timing");
-        sb.AppendLine("DECLARE @StepStart datetime2, @TotalStart datetime2;");
-        sb.AppendLine("SET @TotalStart = SYSDATETIME();");
-        sb.AppendLine();
-        sb.AppendLine("CREATE TABLE #TimingResults (Step nvarchar(50), Rows int, ElapsedMs int);");
-        sb.AppendLine();
-
-        // ============================================
-        // STEP 1
-        // ============================================
-        sb.AppendLine("-- ============================================");
-        sb.AppendLine("-- STEP 1: Clear List Areas");
-        sb.AppendLine("-- ============================================");
-        sb.AppendLine("SET @StepStart = SYSDATETIME();");
-        sb.AppendLine();
-
-        var query1 = Context.TblDespatchViews
-            .AsNoTracking()
-            .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
-            .SelectMany(dv => dv.DespatchViewZoneGroups)
-            .Select(dvzg => dvzg.ZoneGroup.ClearListArea)
-            .Where(cla => cla != null)
-            .Distinct()
-            .Select(cl => new { cl.ClearListAreaId, cl.Name, cl.Order })
-            .TagWith("GetClearLists - Step 1: Clear List Areas");
-
-        sb.AppendLine("/* EF Generated:");
-        sb.AppendLine(query1.ToQueryString());
-        sb.AppendLine("*/");
-        sb.AppendLine();
-
-        sb.AppendLine("""
-                      SELECT DISTINCT t0.ClearListAreaID, t0.Name, t0.[Order]
-                      INTO #ClearLists
-                      FROM tblDespatchView t
-                      INNER JOIN DespatchViewZoneGroup d0 ON t.DespatchViewID = d0.DespatchViewID
-                      INNER JOIN ZoneGroup z ON d0.ZoneGroupID = z.ZoneGroupID
-                      LEFT JOIN tblClearListArea t0 ON z.ClearListAreaId = t0.ClearListAreaID
-                      WHERE t.DespatchViewID IN (SELECT value FROM OPENJSON(@despatchViewIds))
-                          AND t0.ClearListAreaID IS NOT NULL;
-                      """);
-        sb.AppendLine();
-        sb.AppendLine("INSERT INTO #TimingResults SELECT 'Step 1: Clear Lists', @@ROWCOUNT, DATEDIFF(MILLISECOND, @StepStart, SYSDATETIME());");
-        sb.AppendLine();
-
-        // ============================================
-        // STEP 3&4
-        // ============================================
-        sb.AppendLine("-- ============================================");
-        sb.AppendLine("-- STEP 3&4: Courier Data");
-        sb.AppendLine("-- ============================================");
-        sb.AppendLine("SET @StepStart = SYSDATETIME();");
-        sb.AppendLine();
-
-        var query3 = Context.TucCouriers
-            .AsNoTracking()
-            .Where(c => c.Active && c.TblClearListAreaOrder != null)
-            .Where(c => c.CourierFleetId == (int)CourierFleet.UaAucklandP2P ||
-                        (c.CourierLogInOut != null &&
-                         c.CourierLogInOut.LogInTime >= currentDateOnly &&
-                         c.CourierLogInOut.LogInTime < nextDay &&
-                         c.CourierLogInOut.LogOutTime == null))
-            .Where(c => c.CourierFleet.DisplayOnClearlistsDespatch)
-            .Select(c => new { c.UccrId, c.Code })
-            .TagWith("GetClearLists - Step 3&4: Courier Data");
-
-        sb.AppendLine("/* EF Generated:");
-        sb.AppendLine(query3.ToQueryString());
-        sb.AppendLine("*/");
-        sb.AppendLine();
-
-        sb.AppendLine("""
-                      SELECT c.uccrId, c.Code
-                      INTO #Couriers
-                      FROM tucCourier c
-                      LEFT JOIN tblClearListAreaOrder cao ON c.uccrId = cao.CourierID
-                      LEFT JOIN tblCourierLogInOut lio ON c.CourierLogInOutID = lio.CourierLogInOutID
-                      INNER JOIN tucCourierFleet cf ON c.CourierFleetID = cf.uccfID
-                      WHERE c.Active = 1 
-                          AND cao.ClearListAreaOrderID IS NOT NULL
-                          AND (c.CourierFleetID = 35 
-                               OR (lio.CourierLogInOutID IS NOT NULL 
-                                   AND lio.LogInTime >= @currentDateOnly 
-                                   AND lio.LogInTime < @nextDay 
-                                   AND lio.LogOutTime IS NULL))
-                          AND cf.DisplayOnClearlistsDespatch = 1;
-                      """);
-        sb.AppendLine();
-        sb.AppendLine("INSERT INTO #TimingResults SELECT 'Step 3&4: Couriers', @@ROWCOUNT, DATEDIFF(MILLISECOND, @StepStart, SYSDATETIME());");
-        sb.AppendLine();
-
-        // ============================================
-        // STEP 5
-        // ============================================
-        sb.AppendLine("-- ============================================");
-        sb.AppendLine("-- STEP 5: All Jobs");
-        sb.AppendLine("-- ============================================");
-        sb.AppendLine("SET @StepStart = SYSDATETIME();");
-        sb.AppendLine();
-
-        var placeholderCourierIds = new HashSet<int> { -1 };
-        var query5 = Context.TucJobs
-            .AsNoTracking()
-            .Where(job => !job.UcjbJobDone &&
-                          !job.UcjbVoid &&
-                          job.UcjbDate < nextDay &&
-                          job.UcjbCourierId.HasValue &&
-                          placeholderCourierIds.Contains(job.UcjbCourierId.Value))
-            .Select(job => new { job.UcjbCourierId, job.UcjbTo })
-            .TagWith("GetClearLists - Step 5: All Jobs");
-
-        sb.AppendLine("/* EF Generated:");
-        sb.AppendLine(query5.ToQueryString());
-        sb.AppendLine("*/");
-        sb.AppendLine();
-
-        sb.AppendLine("""
-                      SELECT j.ucjbCourierId, j.ucjbTo
-                      INTO #Jobs
-                      FROM tucJob j
-                      WHERE j.ucjbJobDone = 0
-                          AND j.ucjbVoid = 0
-                          AND j.ucjbDate < @nextDay
-                          AND j.ucjbCourierId IN (SELECT uccrId FROM #Couriers);
-                      """);
-        sb.AppendLine();
-        sb.AppendLine("INSERT INTO #TimingResults SELECT 'Step 5: Jobs', @@ROWCOUNT, DATEDIFF(MILLISECOND, @StepStart, SYSDATETIME());");
-        sb.AppendLine();
-
-        // ============================================
-        // STEP 6
-        // ============================================
-        sb.AppendLine("-- ============================================");
-        sb.AppendLine("-- STEP 6: Suburb Mappings");
-        sb.AppendLine("-- ============================================");
-        sb.AppendLine("SET @StepStart = SYSDATETIME();");
-        sb.AppendLine();
-
-        sb.AppendLine("""
-                      SELECT ps.SuburbID, cla.ClearListAreaID, cla.Code, cla.ChannelID
-                      INTO #SuburbMappings
-                      FROM tblPolygonSuburb ps
-                      INNER JOIN tblPolygon p ON ps.PolygonID = p.PolygonID
-                      INNER JOIN tblClearListAreaPolygon cap ON p.PolygonID = cap.PolygonID
-                      INNER JOIN tblClearListArea cla ON cap.ClearListAreaID = cla.ClearListAreaID
-                      WHERE ps.SuburbID IN (SELECT DISTINCT ucjbTo FROM #Jobs WHERE ucjbTo IS NOT NULL);
-                      """);
-        sb.AppendLine();
-        sb.AppendLine("INSERT INTO #TimingResults SELECT 'Step 6: Suburb Mappings', @@ROWCOUNT, DATEDIFF(MILLISECOND, @StepStart, SYSDATETIME());");
-        sb.AppendLine();
-
-        // ============================================
-        // STEP 7
-        // ============================================
-        sb.AppendLine("-- ============================================");
-        sb.AppendLine("-- STEP 7: Area Filters");
-        sb.AppendLine("-- ============================================");
-        sb.AppendLine("SET @StepStart = SYSDATETIME();");
-        sb.AppendLine();
-
-        sb.AppendLine("""
-                      SELECT Name, CAST(WhereCondition AS NVARCHAR(MAX)) AS WhereCondition
-                      INTO #AreaFilters
-                      FROM tblDespatchView
-                      WHERE ShowOnAssistDespatch = 1
-                          AND Name IN (SELECT Name FROM #ClearLists);
-                      """);
-        sb.AppendLine();
-        sb.AppendLine("INSERT INTO #TimingResults SELECT 'Step 7: Area Filters', @@ROWCOUNT, DATEDIFF(MILLISECOND, @StepStart, SYSDATETIME());");
-        sb.AppendLine();
-
-        // ============================================
-        // STEP 8: Area Remaining Counts (OPTIMIZED)
-        // ============================================
-        sb.AppendLine("-- ============================================");
-        sb.AppendLine("-- STEP 8: Area Remaining Counts (OPTIMIZED)");
-        sb.AppendLine("-- Uses temp table approach instead of hitting DESWEB_qryDespatch 35x");
-        sb.AppendLine("-- Original: 2659ms -> Optimized: ~700ms (74% faster)");
-        sb.AppendLine("-- ============================================");
-        sb.AppendLine();
-
-        // Step 8a: ParentJobs
-        sb.AppendLine("-- Step 8a: Compute IsParentJob ONCE (replaces per-row scalar UDF)");
-        sb.AppendLine("SET @StepStart = SYSDATETIME();");
-        sb.AppendLine();
-        sb.AppendLine("""
-                      SELECT DISTINCT ch.ParentID AS JobID
-                      INTO #ParentJobs
-                      FROM tucJob ch
-                      WHERE ch.ParentID IS NOT NULL
-                          AND ch.ucjbVoid = 0
-                          AND ch.ParentID <> ch.ucjbID
-                          AND NOT EXISTS (
-                              SELECT 1 FROM tblBulkJob bj 
-                              WHERE bj.JobID = ch.ParentID AND bj.Multibox = 1
-                          );
-                      """);
-        sb.AppendLine();
-        sb.AppendLine("INSERT INTO #TimingResults SELECT 'Step 8a: ParentJobs', @@ROWCOUNT, DATEDIFF(MILLISECOND, @StepStart, SYSDATETIME());");
-        sb.AppendLine();
-
-        // Step 8b: CountableJobs
-        sb.AppendLine("-- Step 8b: Build lightweight countable jobs (replaces DESWEB_qryDespatch)");
-        sb.AppendLine("SET @StepStart = SYSDATETIME();");
-        sb.AppendLine();
-        sb.AppendLine("""
-                      SELECT 
-                          j.ucjbID,
-                          j.RemoteJob,
-                          j.Truck,
-                          j.VanOK,
-                          j.ucjbVan,
-                          j.ucjbSpeed AS ucjtId,
-                          j.ucjbClientCode AS ucclCode,
-                          c.ucclID AS ucclId,
-                          j.ucjbSize AS VehicleSizeId,
-                          j.JobRelationshipTypeID,
-                          ISNULL(fs.ucsuRegion, -1) AS RegionFromID,
-                          ISNULL(ts.ucsuRegion, -1) AS RegionToID,
-                          fs.ucsuID AS FromSuburbID,
-                          ts.ucsuID AS ToSuburbID,
-                          j.ucjbFrom,
-                          j.ucjbTo,
-                          fs.ucsuArea AS FromArea,
-                          ts.ucsuArea AS ToArea,
-                          fs.SiteID,
-                          ts.SiteID AS ToSiteID,
-                          CASE WHEN p.JobID IS NOT NULL THEN 1 ELSE 0 END AS IsParentJob
-                      INTO #CountableJobs
-                      FROM tucJob j
-                      LEFT JOIN tucSuburb fs ON j.ucjbFrom = fs.ucsuID
-                      LEFT JOIN tucSuburb ts ON j.ucjbTo = ts.ucsuID
-                      LEFT JOIN tucClient c ON j.ucjbClientID = c.ucclID
-                      LEFT JOIN tblJobRelationshipType jrt ON j.JobRelationshipTypeID = jrt.JobRelationshipTypeID
-                      LEFT JOIN #ParentJobs p ON j.ucjbID = p.JobID
-                      WHERE j.UcjbVoid = 0
-                          AND (jrt.DisplayDespatch = 1 OR j.JobRelationshipTypeID = 10 OR j.JobRelationshipTypeID IS NULL)
-                          AND (j.DisplayInDespatch IS NULL OR j.DisplayInDespatch = 1)
-                          AND (j.UcjbPodname IS NULL OR j.UcjbPodname = '')
-                          AND (j.UcjbComplTime IS NULL OR j.UcjbComplTime < GETDATE())
-                          AND (j.ucjbStatus IS NULL OR j.ucjbStatus = 0)
-                          AND j.ucjbCourierId IS NULL;
-                      """);
-        sb.AppendLine();
-        sb.AppendLine("INSERT INTO #TimingResults SELECT 'Step 8b: CountableJobs', @@ROWCOUNT, DATEDIFF(MILLISECOND, @StepStart, SYSDATETIME());");
-        sb.AppendLine();
-
-        // Step 8c: Build and execute UNION ALL
-        sb.AppendLine("-- Step 8c: Build single UNION ALL query from dynamic filters");
-        sb.AppendLine("SET @StepStart = SYSDATETIME();");
-        sb.AppendLine();
-        sb.AppendLine("""
-                      DECLARE @sql nvarchar(max) = N'';
-                      DECLARE @AreaName nvarchar(100);
-                      DECLARE @WhereCondition nvarchar(max);
-                      DECLARE @first bit = 1;
-
-                      DECLARE area_cursor CURSOR LOCAL FAST_FORWARD FOR
-                          SELECT Name, CAST(WhereCondition AS NVARCHAR(MAX))
-                          FROM tblDespatchView
-                          WHERE ShowOnAssistDespatch = 1
-                              AND WhereCondition IS NOT NULL 
-                              AND LEN(WhereCondition) > 0;
-
-                      OPEN area_cursor;
-                      FETCH NEXT FROM area_cursor INTO @AreaName, @WhereCondition;
-
-                      WHILE @@FETCH_STATUS = 0
-                      BEGIN
-                          IF @first = 0
-                              SET @sql = @sql + N' UNION ALL ';
-                          
-                          SET @sql = @sql + N'SELECT ''' + REPLACE(@AreaName, '''', '''''') + N''' AS AreaName, COUNT(*) AS Remaining FROM #CountableJobs WHERE ' + @WhereCondition;
-                          SET @first = 0;
-                          
-                          FETCH NEXT FROM area_cursor INTO @AreaName, @WhereCondition;
-                      END
-
-                      CLOSE area_cursor;
-                      DEALLOCATE area_cursor;
-                      """);
-        sb.AppendLine();
-        sb.AppendLine("INSERT INTO #TimingResults SELECT 'Step 8c: Build SQL', 0, DATEDIFF(MILLISECOND, @StepStart, SYSDATETIME());");
-        sb.AppendLine();
-
-        // Step 8d: Execute
-        sb.AppendLine("-- Step 8d: Execute single query");
-        sb.AppendLine("SET @StepStart = SYSDATETIME();");
-        sb.AppendLine();
-        sb.AppendLine("""
-                      CREATE TABLE #AreaCounts (AreaName nvarchar(100), Remaining int);
-
-                      BEGIN TRY
-                          INSERT INTO #AreaCounts (AreaName, Remaining)
-                          EXEC sp_executesql @sql;
-                      END TRY
-                      BEGIN CATCH
-                          PRINT 'Step 8 ERROR: ' + ERROR_MESSAGE();
-                      END CATCH
-                      """);
-        sb.AppendLine();
-        sb.AppendLine("INSERT INTO #TimingResults SELECT 'Step 8d: Execute', (SELECT COUNT(*) FROM #AreaCounts), DATEDIFF(MILLISECOND, @StepStart, SYSDATETIME());");
-        sb.AppendLine();
-
-        // ============================================
-        // Summary
-        // ============================================
-        sb.AppendLine("-- ============================================");
-        sb.AppendLine("-- TIMING SUMMARY");
-        sb.AppendLine("-- ============================================");
-        sb.AppendLine("INSERT INTO #TimingResults SELECT '*** TOTAL ***', NULL, DATEDIFF(MILLISECOND, @TotalStart, SYSDATETIME());");
-        sb.AppendLine("SELECT * FROM #TimingResults;");
-        sb.AppendLine();
-
-        // ============================================
-        // Step 8 Detail
-        // ============================================
-        sb.AppendLine("-- ============================================");
-        sb.AppendLine("-- STEP 8 AREA COUNTS");
-        sb.AppendLine("-- ============================================");
-        sb.AppendLine("SELECT AreaName, Remaining FROM #AreaCounts ORDER BY AreaName;");
-        sb.AppendLine();
-
-        sb.AppendLine("-- ============================================");
-        sb.AppendLine("-- DETAILED RESULTS (Steps 1-7)");
-        sb.AppendLine("-- ============================================");
-        sb.AppendLine("SELECT * FROM #ClearLists;");
-        sb.AppendLine("SELECT * FROM #Couriers ORDER BY Code;");
-        sb.AppendLine("SELECT ucjbCourierId, COUNT(*) AS JobCount FROM #Jobs GROUP BY ucjbCourierId;");
-        sb.AppendLine("SELECT * FROM #AreaFilters;");
-        sb.AppendLine();
-
-        sb.AppendLine("-- Cleanup");
-        sb.AppendLine("DROP TABLE IF EXISTS #TimingResults, #ClearLists, #Couriers, #Jobs, #SuburbMappings, #AreaFilters, #ParentJobs, #CountableJobs, #AreaCounts;");
-
-        return sb.ToString();
-    }
-
-
-
-
-
     public async Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds)
     {
         if (despatchViewIds.Count == 0) return new ClearListViewModel();
@@ -1074,11 +709,11 @@ public class CourierRepository(
             // ===================================================================
             var allCourierIds = allCourierData.Select(c => c.UccrId).ToHashSet();
 
-            var allJobs = await Context.TucJobs  // ✅ Active jobs only
+            var allJobs = await Context.TucJobs 
                 .AsNoTracking()
                 .Where(job => !job.UcjbJobDone &&
                               !job.UcjbVoid &&
-                              job.UcjbDate < nextDay &&  // ✅ SARGable
+                              job.UcjbDate < nextDay && 
                               job.UcjbCourierId.HasValue &&
                               allCourierIds.Contains(job.UcjbCourierId.Value))
                 .Select(job => new CourierJobSuburbDto
