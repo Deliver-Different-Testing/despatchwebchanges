@@ -33,11 +33,6 @@ import "../lib/ng-material-floating-button/mfb/dist/mfb";
 // React HereMap component
 import {HereMapReactComponent} from "./react/components/common/here-map";
 
-// Custom here maps
-import "../lib/here-map-tracking/here-map-tracking.module";
-import "../lib/here-map-tracking/here-map-tracking.service";
-import "../lib/here-map-tracking/here-map-tracking.component";
-
 // Create the main Angular module
 const app = angular.module("uDispatch", [
     "ui.router",
