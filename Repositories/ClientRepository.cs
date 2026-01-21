@@ -14,22 +14,21 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
 {
     public async Task<ClientViewModel> ValidateClientAsync(int contactId)
     {
-        return await Context
-            .TucClientContacts
+        return await Context.TucClientContacts
             .AsNoTracking()
             .Where(contact => contact.UcctId == contactId)
             .Join(
-                Context.TblClients,
+                Context.TucClients,
                 contact => contact.UcctClientId,
-                client => client.ClientId,
+                client => client.UcclId,
                 (contact, client) =>
                     new ClientViewModel
                     {
-                        Active = client.Active,
+                        Active = client.UcclActive,
                         FirstName = contact.UcctFirstname,
                         FullName = contact.UcctFirstname + " " + contact.UcctSurname,
                         Email = contact.UcctEmail,
-                        Internal = client.Internal,
+                        Internal = client.UcclInternal,
                         StaffID = contact.StaffId
                     }
             )

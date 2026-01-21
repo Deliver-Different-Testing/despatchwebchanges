@@ -6,7 +6,7 @@
  */
 
 import {apiClient} from './apiClient';
-import {JobNote, JobNoteDto, NoteType, CreateNoteRequest, UpdateNoteRequest} from '../interfaces/notes';
+import {CreateNoteRequest, JobNote, JobNoteDto, NoteType, UpdateNoteRequest} from '../interfaces';
 import dayjs from 'dayjs';
 
 /**

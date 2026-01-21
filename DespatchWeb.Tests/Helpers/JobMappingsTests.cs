@@ -1,6 +1,7 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Helpers;
 using FluentAssertions;
+using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Tests.Helpers;
 
@@ -10,6 +11,107 @@ namespace DespatchWeb.Tests.Helpers;
 /// </summary>
 public class JobMappingsTests
 {
+    #region Amount Consistency Tests
+
+    [Fact]
+    public void AmountCalculation_IsConsistentBetweenLiveAndArchived()
+    {
+        // Arrange - Same scenario for both live and archived
+        var liveParent = new TucJob
+        {
+            UcjbId = 1,
+            PricingBreakdownJobs = new List<PricingBreakdown>
+            {
+                new() { ChargeAmount = 100m }
+            }
+        };
+
+        var liveJob = new TucJob
+        {
+            UcjbId = 2,
+            ParentId = 1,
+            Parent = liveParent,
+            UcjbAmount = 999m,
+            PricingBreakdownJobs = new List<PricingBreakdown>()
+        };
+
+        var archivedParent = new TucJobArchive
+        {
+            UcjbId = 1,
+            PricingBreakdowns = new List<PricingBreakdownArchive>
+            {
+                new() { ChargeAmount = 100m }
+            }
+        };
+
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 2,
+            ParentId = 1,
+            Parent = archivedParent,
+            UcjbDate = DateTime.Now,
+            UcjbAmount = 999m,
+            PricingBreakdowns = new List<PricingBreakdownArchive>()
+        };
+
+        // Act
+        var liveMapping = JobMappings.LiveJobDownloadMapping.Compile();
+        var archivedMapping = JobMappings.ArchivedJobDownloadMapping.Compile();
+        var liveResult = liveMapping(liveJob);
+        var archivedResult = archivedMapping(archivedJob);
+
+        // Assert - Both should calculate Amount the same way
+        liveResult.Amount.Should().Be(100m);
+        archivedResult.Amount.Should().Be(100m);
+    }
+
+    #endregion
+
+    #region JobMappingCore vs JobArchiveMapping Consistency Tests
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JobArchiveMapping_HasSameCollectionDefaults_AsJobMappingCore(bool isUsCustomer)
+    {
+        // Arrange
+        var liveJob = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            UcjbNumber = "LIVE-001"
+        };
+
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            UcjbNumber = "ARCH-001",
+            PricingBreakdowns = new List<PricingBreakdownArchive>()
+        };
+
+        // Act
+        var liveMapping = JobMappings.JobMappingCore(isUsCustomer).Compile();
+        var archiveMapping = JobMappings.JobArchiveMapping.Compile();
+        var liveResult = liveMapping(liveJob);
+        var archiveResult = archiveMapping(archivedJob);
+
+        // Assert - Both should have same default values for collections
+        liveResult.TailLiftPu.Should().Be(archiveResult.TailLiftPu);
+        liveResult.TailLiftDo.Should().Be(archiveResult.TailLiftDo);
+        liveResult.DeliverToPrivateRes.Should().Be(archiveResult.DeliverToPrivateRes);
+        liveResult.ParcelDimensions.Should().BeNull();
+        archiveResult.ParcelDimensions.Should().BeNull();
+        liveResult.PalletInfo.Should().BeNull();
+        archiveResult.PalletInfo.Should().BeNull();
+        liveResult.AssignedFlight.Should().BeNull();
+        archiveResult.AssignedFlight.Should().BeNull();
+    }
+
+    #endregion
+
     #region LiveJobDownloadMapping Tests
 
     [Fact]
@@ -594,62 +696,6 @@ public class JobMappingsTests
 
     #endregion
 
-    #region Amount Consistency Tests
-
-    [Fact]
-    public void AmountCalculation_IsConsistentBetweenLiveAndArchived()
-    {
-        // Arrange - Same scenario for both live and archived
-        var liveParent = new TucJob
-        {
-            UcjbId = 1,
-            PricingBreakdownJobs = new List<PricingBreakdown>
-            {
-                new() { ChargeAmount = 100m }
-            }
-        };
-
-        var liveJob = new TucJob
-        {
-            UcjbId = 2,
-            ParentId = 1,
-            Parent = liveParent,
-            UcjbAmount = 999m,
-            PricingBreakdownJobs = new List<PricingBreakdown>()
-        };
-
-        var archivedParent = new TucJobArchive
-        {
-            UcjbId = 1,
-            PricingBreakdowns = new List<PricingBreakdownArchive>
-            {
-                new() { ChargeAmount = 100m }
-            }
-        };
-
-        var archivedJob = new TucJobArchive
-        {
-            UcjbId = 2,
-            ParentId = 1,
-            Parent = archivedParent,
-            UcjbDate = DateTime.Now,
-            UcjbAmount = 999m,
-            PricingBreakdowns = new List<PricingBreakdownArchive>()
-        };
-
-        // Act
-        var liveMapping = JobMappings.LiveJobDownloadMapping.Compile();
-        var archivedMapping = JobMappings.ArchivedJobDownloadMapping.Compile();
-        var liveResult = liveMapping(liveJob);
-        var archivedResult = archivedMapping(archivedJob);
-
-        // Assert - Both should calculate Amount the same way
-        liveResult.Amount.Should().Be(100m);
-        archivedResult.Amount.Should().Be(100m);
-    }
-
-    #endregion
-
     #region JobArchiveMapping Tests
 
     [Fact]
@@ -1039,8 +1085,8 @@ public class JobMappingsTests
         {
             UcjbId = 1,
             UcjbDate = new DateTime(2024, 1, 15),
-            PickupTimeZone = new EntityClasses.TimeZone { Id = 1, Name = "Pacific/Auckland" },
-            DeliverByTimeZone = new EntityClasses.TimeZone { Id = 2, Name = "America/Los_Angeles" },
+            PickupTimeZone = new TimeZone { Id = 1, Name = "Pacific/Auckland" },
+            DeliverByTimeZone = new TimeZone { Id = 2, Name = "America/Los_Angeles" },
             PricingBreakdowns = new List<PricingBreakdownArchive>()
         };
 
@@ -1197,49 +1243,6 @@ public class JobMappingsTests
         result.LoggedInContactName.Should().Be(string.Empty);
         result.PickUpTimeZone.Should().BeNull();
         result.DeliveryTimeZone.Should().BeNull();
-    }
-
-    #endregion
-
-    #region JobMappingCore vs JobArchiveMapping Consistency Tests
-
-    [Fact]
-    public void JobArchiveMapping_HasSameCollectionDefaults_AsJobMappingCore()
-    {
-        // Arrange
-        var liveJob = new TucJob
-        {
-            UcjbId = 1,
-            UcjbDate = new DateTime(2024, 1, 15),
-            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
-            UcjbNumber = "LIVE-001"
-        };
-
-        var archivedJob = new TucJobArchive
-        {
-            UcjbId = 1,
-            UcjbDate = new DateTime(2024, 1, 15),
-            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
-            UcjbNumber = "ARCH-001",
-            PricingBreakdowns = new List<PricingBreakdownArchive>()
-        };
-
-        // Act
-        var liveMapping = JobMappings.JobMappingCore.Compile();
-        var archiveMapping = JobMappings.JobArchiveMapping.Compile();
-        var liveResult = liveMapping(liveJob);
-        var archiveResult = archiveMapping(archivedJob);
-
-        // Assert - Both should have same default values for collections
-        liveResult.TailLiftPu.Should().Be(archiveResult.TailLiftPu);
-        liveResult.TailLiftDo.Should().Be(archiveResult.TailLiftDo);
-        liveResult.DeliverToPrivateRes.Should().Be(archiveResult.DeliverToPrivateRes);
-        liveResult.ParcelDimensions.Should().BeNull();
-        archiveResult.ParcelDimensions.Should().BeNull();
-        liveResult.PalletInfo.Should().BeNull();
-        archiveResult.PalletInfo.Should().BeNull();
-        liveResult.AssignedFlight.Should().BeNull();
-        archiveResult.AssignedFlight.Should().BeNull();
     }
 
     #endregion

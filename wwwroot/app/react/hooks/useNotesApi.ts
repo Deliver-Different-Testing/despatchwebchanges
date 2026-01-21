@@ -5,10 +5,10 @@
  * with automatic caching, loading states, and error handling.
  */
 
-import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from '../query';
 import {notesApi} from '../services/notesApi';
-import {JobNote, NoteType, CreateNoteRequest, UpdateNoteRequest} from '../interfaces/notes';
+import {CreateNoteRequest, JobNote, NoteType, UpdateNoteRequest} from '../interfaces';
 
 /**
  * Hook to fetch notes for a job
@@ -75,7 +75,7 @@ export function useBulkJobNotes(
  * const { data: noteTypes, isLoading } = useNoteTypes();
  * ```
  */
-export function useNoteTypes(options?: {enabled?: boolean}) {
+export function useNoteTypes(options?: { enabled?: boolean }) {
     return useQuery<NoteType[], Error>({
         queryKey: queryKeys.notes.types,
         queryFn: () => notesApi.getNoteTypes(),
@@ -101,15 +101,15 @@ export function useCreateNote() {
 
     return useMutation<JobNote, Error, CreateNoteRequest>({
         mutationFn: (note) => notesApi.createNote(note),
-        onSuccess: (_, variables) => {
+        onSuccess: async (_, variables) => {
             // Invalidate job notes query to refetch
             if (variables.jobId) {
-                queryClient.invalidateQueries({
+                await queryClient.invalidateQueries({
                     queryKey: queryKeys.notes.job(variables.jobId, false),
                 });
             }
             if (variables.jobBookingId) {
-                queryClient.invalidateQueries({
+                await queryClient.invalidateQueries({
                     queryKey: queryKeys.notes.job(variables.jobBookingId, true),
                 });
             }
@@ -133,9 +133,9 @@ export function useCreateBulkJobNote() {
 
     return useMutation<JobNote, Error, CreateNoteRequest>({
         mutationFn: (note) => notesApi.createBulkJobNote(note),
-        onSuccess: (_, variables) => {
+        onSuccess: async (_, variables) => {
             if (variables.bulkJobId) {
-                queryClient.invalidateQueries({
+                await queryClient.invalidateQueries({
                     queryKey: queryKeys.notes.bulkJob(variables.bulkJobId),
                 });
             }
@@ -157,17 +157,17 @@ export function useCreateBulkJobNote() {
 export function useUpdateNote() {
     const queryClient = useQueryClient();
 
-    return useMutation<void, Error, UpdateNoteRequest & {jobId?: number; jobBookingId?: number}>({
+    return useMutation<void, Error, UpdateNoteRequest & { jobId?: number; jobBookingId?: number }>({
         mutationFn: (note) => notesApi.updateNote(note),
-        onSuccess: (_, variables) => {
+        onSuccess: async (_, variables) => {
             // Invalidate relevant queries
             if (variables.jobId) {
-                queryClient.invalidateQueries({
+                await queryClient.invalidateQueries({
                     queryKey: queryKeys.notes.job(variables.jobId, false),
                 });
             }
             if (variables.jobBookingId) {
-                queryClient.invalidateQueries({
+                await queryClient.invalidateQueries({
                     queryKey: queryKeys.notes.job(variables.jobBookingId, true),
                 });
             }
@@ -183,11 +183,11 @@ export function useUpdateNote() {
 export function useUpdateBulkJobNote() {
     const queryClient = useQueryClient();
 
-    return useMutation<void, Error, UpdateNoteRequest & {bulkJobId?: number}>({
+    return useMutation<void, Error, UpdateNoteRequest & { bulkJobId?: number }>({
         mutationFn: (note) => notesApi.updateBulkJobNote(note),
-        onSuccess: (_, variables) => {
+        onSuccess: async (_, variables) => {
             if (variables.bulkJobId) {
-                queryClient.invalidateQueries({
+                await queryClient.invalidateQueries({
                     queryKey: queryKeys.notes.bulkJob(variables.bulkJobId),
                 });
             }
@@ -209,22 +209,22 @@ export function useUpdateBulkJobNote() {
 export function useDeleteNote() {
     const queryClient = useQueryClient();
 
-    return useMutation<void, Error, {noteId: number; jobId?: number; jobBookingId?: number; bulkJobId?: number}>({
+    return useMutation<void, Error, { noteId: number; jobId?: number; jobBookingId?: number; bulkJobId?: number }>({
         mutationFn: ({noteId}) => notesApi.deleteNote(noteId),
-        onSuccess: (_, variables) => {
+        onSuccess: async (_, variables) => {
             // Invalidate relevant queries
             if (variables.jobId) {
-                queryClient.invalidateQueries({
+                await queryClient.invalidateQueries({
                     queryKey: queryKeys.notes.job(variables.jobId, false),
                 });
             }
             if (variables.jobBookingId) {
-                queryClient.invalidateQueries({
+                await queryClient.invalidateQueries({
                     queryKey: queryKeys.notes.job(variables.jobBookingId, true),
                 });
             }
             if (variables.bulkJobId) {
-                queryClient.invalidateQueries({
+                await queryClient.invalidateQueries({
                     queryKey: queryKeys.notes.bulkJob(variables.bulkJobId),
                 });
             }
@@ -248,9 +248,9 @@ export function useCreateNoteType() {
 
     return useMutation<NoteType, Error, NoteType>({
         mutationFn: (noteType) => notesApi.createNoteType(noteType),
-        onSuccess: () => {
+        onSuccess: async () => {
             // Invalidate note types query to refetch
-            queryClient.invalidateQueries({
+            await queryClient.invalidateQueries({
                 queryKey: queryKeys.notes.types,
             });
         },

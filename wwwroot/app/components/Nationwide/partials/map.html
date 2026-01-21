@@ -1,10 +1,10 @@
 <div class="overlay-map-fix"></div>
-<here-map-tracking
+<here-map-react
         config="ctrl.mapConfig"
         credentials="ctrl.hereCredentials"
         map-id="mapContainer"
         on-map-ready="">
-</here-map-tracking>
+</here-map-react>
 
 <style>
     /* Fix the overlay-map-fix class */
@@ -19,7 +19,7 @@
     }
 
     /* Ensure the here-map element fills its container exactly */
-    here-map-tracking {
+    here-map-react {
         display: block;
         width: 100%;
         height: 100%;

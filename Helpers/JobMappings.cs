@@ -2,398 +2,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Extensions;
+using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
-using DespatchWeb.Models.Response;
+using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Helpers;
 
 public static class JobMappings
 {
     private static readonly DateTime SqlMinDateTime = new(1753, 1, 1);
-
-    public static Expression<Func<TucJob, DispatchJobViewModel>> JobDispatchMapping(bool isUsCustomer) =>
-        j => new DispatchJobViewModel
-        {
-            Id = j.UcjbId,
-            JobNo = j.UcjbNumber,
-            HasBeenRead = j.TucJobReadTracker != null && j.TucJobReadTracker.HasBeenRead,
-            IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.UcjbId,
-            ParentId = j.ParentId,
-            JobTypeMins = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.Minutes : null,
-
-            InternalStatusId = j.InternalStatus,
-            SpeedId = j.UcjbSpeed,
-            StatusId = j.UcjbStatus,
-            Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsCode : null,
-            StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
-            Time = j.UcjbTime,
-            Booked = j.UcjbDate.CombineWithTime(j.UcjbTime),
-            IsFlightJob = j.UcjbSpeedNavigation != null
-                          && j.UcjbSpeedNavigation.GroupingId ==
-                          (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
-            IsAgentJob = j.UcjbSpeedNavigation != null
-                         && j.UcjbSpeedNavigation.GroupingId !=
-                         (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
-
-            Courier = j.UcjbCourier != null ? j.UcjbCourier.Code : "-",
-            CourierData =
-                j.UcjbCourier != null
-                    ? new CourierData
-                    {
-                        Courier = j.UcjbCourier.Code ?? "-",
-                        CourierNumber = j.UcjbCourier.Code ?? "-",
-                        CourierId = j.UcjbCourierId,
-                        CourierMobile = j.UcjbCourier.UccrMobile ?? "-",
-                        CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname 
-                    }
-                    : null,
-            AssignedCourier =
-                j.UcjbCourier != null
-                    ? new Suggestion
-                    {
-                        Id = j.UcjbCourier.UccrId,
-                        Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
-                    }
-                    : null,
-
-            From = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuName : "Unknown",
-            ToAddress = j.UcjbToAddr,
-            PickupAddress = new AddressViewModel
-            {
-                AddressLine1 = j.PickupAddressLine1,
-                AddressLine2 = j.PickupAddressLine2,
-                AddressLine3 = j.PickupAddressLine3,
-                AddressLine4 = j.PickupAddressLine4,
-                AddressLine5 = j.PickupAddressLine5 ?? "-",
-                AddressLine6 = j.PickupAddressLine6,
-                AddressLine7 = j.PickupAddressLine7,
-                AddressLine8 = j.PickupAddressLine8,
-                Latitude = j.PickUpLatitude,
-                Longitude = j.PickUpLongitude
-            },
-            DeliveryAddress = new AddressViewModel
-            {
-                AddressLine1 = j.DeliveryAddressLine1 ?? "-",
-                AddressLine2 = j.DeliveryAddressLine2,
-                AddressLine3 = j.DeliveryAddressLine3,
-                AddressLine4 = j.DeliveryAddressLine4,
-                AddressLine5 = j.DeliveryAddressLine5,
-                AddressLine6 = j.DeliveryAddressLine6,
-                AddressLine7 = j.DeliveryAddressLine7,
-                AddressLine8 = j.DeliveryAddressLine8,
-                Latitude = j.DeliveryLatitude,
-                Longitude = j.DeliveryLongitude
-            },
-            PickUpLatitude = j.PickUpLatitude,
-            PickUpLongitude = j.PickUpLongitude,
-            DeliveryLatitude = j.DeliveryLatitude,
-            DeliveryLongitude = j.DeliveryLongitude,
-            PickupContact = j.PickupFromContact,
-            DeliveryContact = j.DeliverToContact ?? "Not specified",
-
-            Direct = j.Direct,
-            Speed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : "-",
-            Notify = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName : null,
-            Vehicle =
-                j.UcjbSizeNavigation != null
-                    ? new Suggestion
-                    {
-                        Id = j.UcjbSizeNavigation.VehicleSizeId,
-                        Text = j.UcjbSizeNavigation.VehicleName ?? "-"
-                    }
-                    : null,
-
-            Client = j.UcjbClientCode ?? "-",
-            ClientId = j.UcjbClientId,
-            ClientName = j.UcjbClient != null ? j.UcjbClient.UcclName : "-",
-
-            JobType = (int)(j.UcjbType ?? 0),
-            PickupTime = null,
-            DeliveryTime = null,
-            AlertLatePickup = j.UcjbClient != null ? j.UcjbClient.AlertLatePickUp : null,
-
-            Lp = j.UcjbLatePick,
-            Ld = j.UcjbLateDel,
-
-            Done = j.UcjbJobDone,
-            PreBook = true,
-            IsArchived = false,
-
-            PickupFrom = j.UcjbPickUpFrom,
-            RootParentId = j.RootParentId,
-
-            ToAirportId = j.ToAirportId,
-            FromAirportId = j.FromAirportId,
-
-            // Assigned agent
-            AssignedAgent =
-                j.Agent != null
-                    ? new AgentViewModel
-                    {
-                        AgentName = j.Agent.UcagName,
-                        AgentEmail = j.Agent.UcagFax,
-                        AgentPhone = j.Agent.UcagPhone
-                    }
-                    : null,
-            Locked = j.UcjbLocked ?? false,
-
-            ConNote = j.Parent != null ? j.Parent.Connote : j.Connote,
-            FollowupTime = j.FollowupTime,
-            Van = j.UcjbVan,
-            Truck = j.Truck ?? false,
-            DgClass = j.Dgclass,
-
-            AllowSplit = !j.ParentId.HasValue || j.ParentId != j.UcjbId,
-
-            PickUpTimeZone = j.PickupTimeZone != null
-                ? new Suggestion { Id = j.PickupTimeZone.Id, Text = j.PickupTimeZone.Name }
-                : null,
-            DeliveryTimeZone = j.DeliverByTimeZone != null
-                ? new Suggestion { Id = j.DeliverByTimeZone.Id, Text = j.DeliverByTimeZone.Name }
-                : null
-        };
-
-    public static readonly Expression<Func<TucJob, JobViewModel>> JobMappingCore = j => new JobViewModel
-    {
-        AngularId = Guid.NewGuid(),
-        ClientId = j.UcjbClientId,
-        Id = j.UcjbId,
-        JobNo = j.UcjbNumber,
-        Time = j.UcjbTime,
-        ParentId = j.ParentId,
-        RootParentId = j.RootParentId,
-        Date = FormatDate(j.UcjbDate),
-        Booked = j.UcjbDate.CombineWithTime(j.UcjbTime),
-        DispatchTime = j.UcjbDispTime,
-        CreatedDate = j.UcjbDate,
-        ScheduleName = j.ScheduleName ?? "-",
-        FollowupTime = j.FollowupTime,
-        Void = j.UcjbVoid,
-        IsInvoiced = false,
-        Barcode = j.Barcode ?? "-",
-        
-        // Flight card
-        IsFlightAssigned = j.TucJobNationwides.Any(),
-        IsAgentAssigned =  j.AgentId != null,
-
-        // Simple navigation properties
-        LoggedInContactName = j.LoggedInContact != null
-            ? j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname
-            : string.Empty,
-        BookingSource = j.Source != null
-            ? new Suggestion { Id = j.Source.SourceId, Text = j.Source.Name }
-            : null,
-
-        PickupTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.PickupTime : null,
-        DeliveryTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime : null,
-
-        // Courier - Simple navigation
-        Courier = j.UcjbCourierId != null ? j.UcjbCourier.Code : null,
-        CourierData = j.UcjbCourierId != null
-            ? new CourierData
-            {
-                Courier = j.UcjbCourier.Code,
-                CourierNumber = j.UcjbCourier.Code,
-                CourierId = j.UcjbCourierId,
-                CourierMobile = j.UcjbCourier.UccrMobile,
-                CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
-            }
-            : null,
-        AssignedCourier = j.UcjbCourier != null
-            ? new Suggestion
-            {
-                Id = j.UcjbCourier.UccrId,
-                Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
-            }
-            : null,
-
-        // Address information - Direct properties (no navigation)
-        PickupAddress = new AddressViewModel
-        {
-            AddressLine1 = j.PickupAddressLine1,
-            AddressLine2 = j.PickupAddressLine2,
-            AddressLine3 = j.PickupAddressLine3,
-            AddressLine4 = j.PickupAddressLine4,
-            AddressLine5 = j.PickupAddressLine5,
-            AddressLine6 = j.PickupAddressLine6,
-            AddressLine7 = j.PickupAddressLine7,
-            AddressLine8 = j.PickupAddressLine8,
-            Latitude = j.PickUpLatitude,
-            Longitude = j.PickUpLongitude
-        },
-        DeliveryAddress = new AddressViewModel
-        {
-            AddressLine1 = j.DeliveryAddressLine1,
-            AddressLine2 = j.DeliveryAddressLine2,
-            AddressLine3 = j.DeliveryAddressLine3,
-            AddressLine4 = j.DeliveryAddressLine4,
-            AddressLine5 = j.DeliveryAddressLine5,
-            AddressLine6 = j.DeliveryAddressLine6,
-            AddressLine7 = j.DeliveryAddressLine7,
-            AddressLine8 = j.DeliveryAddressLine8,
-            Latitude = j.DeliveryLatitude,
-            Longitude = j.DeliveryLongitude
-        },
-
-        // Airport IDs (load flight info separately)
-        ToAirportId = j.ToAirportId,
-        FromAirportId = j.FromAirportId,
-
-        // Agent - Simple navigation
-        AssignedAgent = j.Agent != null
-            ? new AgentViewModel
-            {
-                AgentId = j.Agent.UcagId,
-                AgentName = j.Agent.UcagName ?? "-",
-                AgentRanking = j.Agent.Ranking != null ? j.Agent.Ranking.AgentRankingName : "-",
-                AgentEmail = j.Agent.UcagFax ?? "-",
-                AgentPhone = j.Agent.UcagPhone ?? "-"
-            }
-            : null,
-
-        // Tracking info
-        TrackingMethod = j.TrackingMethod,
-        TrackingMobile = j.TrackingMobile,
-        TrackingEmail = j.TrackingEmail ?? "-",
-
-        // Delivery details
-        PrivateRes = (j.DeliverToPrivateBusiness ?? 0) == 1,
-        Return = j.UcjbReturn,
-        SaturdayDelivery = j.SaturdayDelivery,
-        CompletedTime = j.UcjbComplTime,
-        UdStatus = j.UndeliverableLocation != null ? j.UndeliverableLocation.Name : string.Empty,
-        SigNotRequired = j.DeliverToLeave != null ? j.DeliverToLeave.Name : string.Empty,
-        DeliverToLeaveId = j.DeliverToLeaveId,
-        DeliverToContact = j.DeliverToContact ?? "Not specified",
-
-        // Location data
-        PickUpLatitude = j.PickUpLatitude,
-        PickUpLongitude = j.PickUpLongitude,
-        DeliveryLatitude = j.DeliveryLatitude,
-        DeliveryLongitude = j.DeliveryLongitude,
-
-        // Client information
-        Client = j.UcjbClientCode,
-        ClientName = j.UcjbClient != null ? j.UcjbClient.UcclName : string.Empty,
-        ToContactPhone = j.DeliverToPhone ?? "Not specified",
-        PodName = j.UcjbPodname,
-        PuTime = j.PickUpTime,
-
-        // Job characteristics
-        Weight = j.UcjbWeight,
-        CalculateDimsOncePerJob = j.DimensionsType == 1,
-        ToAddress = j.UcjbToAddr,
-        JobType = (int)(j.UcjbType ?? 0),
-        JobTypeDescription = GetJobTypeDescription(j.UcjbType ?? 0),
-        Direct = j.Direct,
-        Van = j.UcjbVan,
-        VanOk = j.VanOk,
-        Truck = j.Truck,
-        DgClass = j.Dgclass,
-        DgDocumentation = j.Dgdocument,
-        HasDgDocsString = j.Dgdocument != null ? "Yes" : "No",
-
-        // Job status and details
-        Done = j.UcjbJobDone,
-        AlertLatePickup = j.UcjbClient != null ? j.UcjbClient.AlertLatePickUp : null,
-        AlertLateDelivery = j.UcjbClient != null ? j.UcjbClient.AlertLateDelivery : null,
-        Lp = j.UcjbLatePick,
-        Ld = j.UcjbLateDel,
-        Items = j.UcjbQty,
-
-        PickupFrom = j.UcjbPickUpFrom,
-        Notify = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName : null,
-        FromContactName = j.PickupFromContact,
-        FromContactNumber = j.PickupFromPhone ?? "Not specified",
-
-        // Speed and job type information
-        Speed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : null,
-        SpeedName = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.UcjtName : null,
-        NotifiedName = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName : null,
-        AcceptedName = j.AcceptedJobType != null ? j.AcceptedJobType.UcjtName : null,
-        SpeedId = j.UcjbSpeed,
-        NotifiedJobTypeId = j.NotifiedJobTypeId,
-        AcceptedJobTypeId = j.AcceptedJobTypeId,
-
-        // References
-        RefA = j.UcjbClientRefa,
-        RefB = j.UcjbClientRefb,
-        OurRef = j.UcjbOurRef,
-
-        // Basic charge (will be updated from pricing breakdown separately)
-        Charge = j.UcjbAmount,
-
-        // Status
-        StatusId = j.UcjbStatus,
-        Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsCode : null,
-        StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
-        InternalStatusId = j.InternalStatus,
-        ConNote = j.Connote,
-
-        // Checkboxes
-        Reprice = j.Reprice,
-
-        // Size
-        Size = j.UcjbSizeNavigation != null
-            ? new Suggestion
-            {
-                Id = j.UcjbSizeNavigation.VehicleSizeId,
-                Text = j.UcjbSizeNavigation.VehicleName
-            }
-            : null,
-
-        IsArchived = false,
-        PreBook = false,
-        DeliverByTime = j.DeliverByTime,
-        Attention = j.UcjbAttention,
-
-        Distance = j.ToAirportId != null && j.FromAirportId != null
-            ? DistanceCalculator.CalculateDistance(
-                j.PickUpLatitude ?? 0,
-                j.PickUpLongitude ?? 0,
-                j.DeliveryLatitude ?? 0,
-                j.DeliveryLongitude ?? 0
-            )
-            : (double)(j.TotalDistance ?? 0),
-
-        ReadTrackerInfo = j.TucJobReadTracker != null
-            ? new ReadTrackerInfoViewModel
-            {
-                HasBeenRead = j.TucJobReadTracker.HasBeenRead,
-                ReadBy = j.TucJobReadTracker.ReadByStaff != null
-                    ? FormatFullName(j.TucJobReadTracker.ReadByStaff)
-                    : string.Empty,
-                ReadDate = j.TucJobReadTracker.ReadTimestamp
-            }
-            : new ReadTrackerInfoViewModel { HasBeenRead = false },
-
-        PickUpWindowMins = j.PickUpWindowMins,
-        DeliverByWindowMins = j.DeliverByWindowMins,
-
-        // Timezones
-        PickUpTimeZone = j.PickupTimeZone != null
-            ? new Suggestion { Id = j.PickupTimeZone.Id, Text = j.PickupTimeZone.Name }
-            : null,
-        DeliveryTimeZone = j.DeliverByTimeZone != null
-            ? new Suggestion { Id = j.DeliverByTimeZone.Id, Text = j.DeliverByTimeZone.Name }
-            : null,
-
-        Locked = j.UcjbLocked ?? false,
-
-        // Collections will be loaded separately
-        TailLiftPu = false, // Will be set from separate query
-        TailLiftDo = false, // Will be set from separate query
-        DeliverToPrivateRes = false, // Will be set from separate query
-        ParcelDimensions = null, // Will be loaded separately
-        PalletInfo = null, // Will be loaded separately
-        AssignedFlight = null, // Will be loaded separately
-
-        CustomJobName = j.CustomJobName
-    };
 
     public static readonly Expression<Func<TblBulkJob, JobViewModel>> BulkJobMapping = j => new JobViewModel
     {
@@ -1027,6 +649,433 @@ public static class JobMappings
                 : string.Empty
         };
 
+    public static readonly Expression<Func<TucJobBooking, PrebookListViewModel>> ToPrebookListViewModel = j =>
+        new PrebookListViewModel
+        {
+            Id = j.UcbkId,
+            Booked = j.UcbkDate.HasValue && j.UcbkTime.HasValue
+                ? j.UcbkDate.Value.CombineWithTime(j.UcbkTime)
+                : SqlMinDateTime,
+            NextDueTime = j.UcbkNextDue,
+            Client = j.UcbkClientCode,
+            JobNo = j.UcbkJobNumber,
+            ClientId = j.UcbkClientId,
+            Courier = j.Courier != null ? j.Courier.Code : null,
+            Speed = j.UcbkSpeedNavigation != null ? j.UcbkSpeedNavigation.UcjtName : null,
+            PickupAddress = new AddressViewModel
+            {
+                AddressLine1 = j.PickupAddressLine1,
+                AddressLine2 = j.PickupAddressLine2,
+                AddressLine3 = j.PickupAddressLine3,
+                AddressLine4 = j.PickupAddressLine4,
+                AddressLine5 = j.PickupAddressLine5,
+                AddressLine6 = j.PickupAddressLine6,
+                AddressLine7 = j.PickupAddressLine7,
+                AddressLine8 = j.PickupAddressLine8,
+                Latitude = j.PickUpLatitude,
+                Longitude = j.PickUpLongitude
+            },
+            DeliveryAddress = new AddressViewModel
+            {
+                AddressLine1 = j.DeliveryAddressLine1,
+                AddressLine2 = j.DeliveryAddressLine2,
+                AddressLine3 = j.DeliveryAddressLine3,
+                AddressLine4 = j.DeliveryAddressLine4,
+                AddressLine5 = j.DeliveryAddressLine5,
+                AddressLine6 = j.DeliveryAddressLine6,
+                AddressLine7 = j.DeliveryAddressLine7,
+                AddressLine8 = j.DeliveryAddressLine8,
+                Latitude = j.DeliveryLatitude,
+                Longitude = j.DeliveryLongitude
+            },
+            CustomJobName = j.CustomJobName
+        };
+
+    public static Expression<Func<TucJob, DispatchJobViewModel>> JobDispatchMapping(bool isUsCustomer) =>
+        j => new DispatchJobViewModel
+        {
+            Id = j.UcjbId,
+            JobNo = j.UcjbNumber,
+            HasBeenRead = j.TucJobReadTracker != null && j.TucJobReadTracker.HasBeenRead,
+            IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.UcjbId,
+            ParentId = j.ParentId,
+            JobTypeMins = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.Minutes : null,
+
+            InternalStatusId = j.InternalStatus,
+            SpeedId = j.UcjbSpeed,
+            StatusId = j.UcjbStatus,
+            Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsCode : null,
+            StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
+            Time = j.UcjbTime,
+            Booked = j.UcjbDate.CombineWithTime(j.UcjbTime),
+            IsFlightJob = j.UcjbSpeedNavigation != null
+                          && j.UcjbSpeedNavigation.GroupingId ==
+                          (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
+            IsAgentJob = j.UcjbSpeedNavigation != null
+                         && j.UcjbSpeedNavigation.GroupingId !=
+                         (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
+
+            Courier = j.UcjbCourier != null ? j.UcjbCourier.Code : "-",
+            CourierData =
+                j.UcjbCourier != null
+                    ? new CourierData
+                    {
+                        Courier = j.UcjbCourier.Code ?? "-",
+                        CourierNumber = j.UcjbCourier.Code ?? "-",
+                        CourierId = j.UcjbCourierId,
+                        CourierMobile = j.UcjbCourier.UccrMobile ?? "-",
+                        CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
+                    }
+                    : null,
+            AssignedCourier =
+                j.UcjbCourier != null
+                    ? new Suggestion
+                    {
+                        Id = j.UcjbCourier.UccrId,
+                        Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
+                    }
+                    : null,
+
+            From = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuName : "Unknown",
+            ToAddress = j.UcjbToAddr,
+            PickupAddress = new AddressViewModel
+            {
+                AddressLine1 = j.PickupAddressLine1,
+                AddressLine2 = j.PickupAddressLine2,
+                AddressLine3 = j.PickupAddressLine3,
+                AddressLine4 = j.PickupAddressLine4,
+                AddressLine5 = j.PickupAddressLine5 ?? "-",
+                AddressLine6 = j.PickupAddressLine6,
+                AddressLine7 = j.PickupAddressLine7,
+                AddressLine8 = j.PickupAddressLine8,
+                Latitude = j.PickUpLatitude,
+                Longitude = j.PickUpLongitude
+            },
+            DeliveryAddress = new AddressViewModel
+            {
+                AddressLine1 = j.DeliveryAddressLine1 ?? "-",
+                AddressLine2 = j.DeliveryAddressLine2,
+                AddressLine3 = j.DeliveryAddressLine3,
+                AddressLine4 = j.DeliveryAddressLine4,
+                AddressLine5 = j.DeliveryAddressLine5,
+                AddressLine6 = j.DeliveryAddressLine6,
+                AddressLine7 = j.DeliveryAddressLine7,
+                AddressLine8 = j.DeliveryAddressLine8,
+                Latitude = j.DeliveryLatitude,
+                Longitude = j.DeliveryLongitude
+            },
+            PickUpLatitude = j.PickUpLatitude,
+            PickUpLongitude = j.PickUpLongitude,
+            DeliveryLatitude = j.DeliveryLatitude,
+            DeliveryLongitude = j.DeliveryLongitude,
+            PickupContact = j.PickupFromContact,
+            DeliveryContact = j.DeliverToContact ?? "Not specified",
+
+            Direct = j.Direct,
+            Speed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : "-",
+            Notify = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName : null,
+            Vehicle =
+                j.UcjbSizeNavigation != null
+                    ? new Suggestion
+                    {
+                        Id = j.UcjbSizeNavigation.VehicleSizeId,
+                        Text = j.UcjbSizeNavigation.VehicleName ?? "-"
+                    }
+                    : null,
+
+            Client = j.UcjbClientCode ?? "-",
+            ClientId = j.UcjbClientId,
+            ClientName = j.UcjbClient != null ? j.UcjbClient.UcclName : "-",
+
+            JobType = (int)(j.UcjbType ?? 0),
+            PickupTime = null,
+            DeliveryTime = null,
+            AlertLatePickup = j.UcjbClient != null ? j.UcjbClient.AlertLatePickUp : null,
+
+            Lp = j.UcjbLatePick,
+            Ld = j.UcjbLateDel,
+
+            Done = j.UcjbJobDone,
+            PreBook = true,
+            IsArchived = false,
+
+            PickupFrom = j.UcjbPickUpFrom,
+            RootParentId = j.RootParentId,
+
+            ToAirportId = j.ToAirportId,
+            FromAirportId = j.FromAirportId,
+
+            // Assigned agent
+            AssignedAgent =
+                j.Agent != null
+                    ? new AgentViewModel
+                    {
+                        AgentName = j.Agent.UcagName,
+                        AgentEmail = j.Agent.UcagFax,
+                        AgentPhone = j.Agent.UcagPhone
+                    }
+                    : null,
+
+            Locked = j.UcjbLocked ?? false,
+
+            ConNote = j.Parent != null ? j.Parent.Connote : j.Connote,
+            FollowupTime = j.FollowupTime,
+            Van = j.UcjbVan,
+            Truck = j.Truck ?? false,
+            DgClass = j.Dgclass,
+
+            AllowSplit = !j.ParentId.HasValue || j.ParentId != j.UcjbId,
+
+            PickUpTimeZone = j.PickupTimeZone != null
+                ? new Suggestion { Id = j.PickupTimeZone.Id, Text = j.PickupTimeZone.Name }
+                : null,
+            DeliveryTimeZone = j.DeliverByTimeZone != null
+                ? new Suggestion { Id = j.DeliverByTimeZone.Id, Text = j.DeliverByTimeZone.Name }
+                : null,
+        };
+
+    public static Expression<Func<TucJob, JobViewModel>> JobMappingCore(bool isUsCustomer) => j => new JobViewModel
+    {
+        AngularId = Guid.NewGuid(),
+        ClientId = j.UcjbClientId,
+        Id = j.UcjbId,
+        JobNo = j.UcjbNumber,
+        Time = j.UcjbTime,
+        ParentId = j.ParentId,
+        RootParentId = j.RootParentId,
+        Date = FormatDate(j.UcjbDate),
+        Booked = j.UcjbDate.CombineWithTime(j.UcjbTime),
+        DispatchTime = j.UcjbDispTime,
+        CreatedDate = j.UcjbDate,
+        ScheduleName = j.ScheduleName ?? "-",
+        FollowupTime = j.FollowupTime,
+        Void = j.UcjbVoid,
+        IsInvoiced = false,
+        Barcode = j.Barcode ?? "-",
+
+        // Flight card
+        IsFlightJob = j.UcjbSpeedNavigation != null
+                      && j.UcjbSpeedNavigation.GroupingId ==
+                      (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
+        IsAgentJob = j.UcjbSpeedNavigation != null
+                     && j.UcjbSpeedNavigation.GroupingId !=
+                     (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
+
+        // Simple navigation properties
+        LoggedInContactName = j.LoggedInContact != null
+            ? j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname
+            : string.Empty,
+        BookingSource = j.Source != null
+            ? new Suggestion { Id = j.Source.SourceId, Text = j.Source.Name }
+            : null,
+
+        PickupTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.PickupTime : null,
+        DeliveryTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime : null,
+
+        // Courier - Simple navigation
+        Courier = j.UcjbCourierId != null ? j.UcjbCourier.Code : null,
+        CourierData = j.UcjbCourierId != null
+            ? new CourierData
+            {
+                Courier = j.UcjbCourier.Code,
+                CourierNumber = j.UcjbCourier.Code,
+                CourierId = j.UcjbCourierId,
+                CourierMobile = j.UcjbCourier.UccrMobile,
+                CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
+            }
+            : null,
+        AssignedCourier = j.UcjbCourier != null
+            ? new Suggestion
+            {
+                Id = j.UcjbCourier.UccrId,
+                Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
+            }
+            : null,
+
+        // Address information - Direct properties (no navigation)
+        PickupAddress = new AddressViewModel
+        {
+            AddressLine1 = j.PickupAddressLine1,
+            AddressLine2 = j.PickupAddressLine2,
+            AddressLine3 = j.PickupAddressLine3,
+            AddressLine4 = j.PickupAddressLine4,
+            AddressLine5 = j.PickupAddressLine5,
+            AddressLine6 = j.PickupAddressLine6,
+            AddressLine7 = j.PickupAddressLine7,
+            AddressLine8 = j.PickupAddressLine8,
+            Latitude = j.PickUpLatitude,
+            Longitude = j.PickUpLongitude
+        },
+        DeliveryAddress = new AddressViewModel
+        {
+            AddressLine1 = j.DeliveryAddressLine1,
+            AddressLine2 = j.DeliveryAddressLine2,
+            AddressLine3 = j.DeliveryAddressLine3,
+            AddressLine4 = j.DeliveryAddressLine4,
+            AddressLine5 = j.DeliveryAddressLine5,
+            AddressLine6 = j.DeliveryAddressLine6,
+            AddressLine7 = j.DeliveryAddressLine7,
+            AddressLine8 = j.DeliveryAddressLine8,
+            Latitude = j.DeliveryLatitude,
+            Longitude = j.DeliveryLongitude
+        },
+
+        // Airport IDs (load flight info separately)
+        ToAirportId = j.ToAirportId,
+        FromAirportId = j.FromAirportId,
+
+        // Agent
+        AssignedAgent = j.Agent != null
+            ? new AgentViewModel
+            {
+                AgentId = j.Agent.UcagId,
+                AgentName = j.Agent.UcagName ?? "-",
+                AgentRanking = j.Agent.Ranking != null ? j.Agent.Ranking.AgentRankingName : "-",
+                AgentEmail = j.Agent.UcagFax ?? "-",
+                AgentPhone = j.Agent.UcagPhone ?? "-"
+            }
+            : null,
+
+        // Tracking info
+        TrackingMethod = j.TrackingMethod,
+        TrackingMobile = j.TrackingMobile,
+        TrackingEmail = j.TrackingEmail ?? "-",
+
+        // Delivery details
+        PrivateRes = (j.DeliverToPrivateBusiness ?? 0) == 1,
+        Return = j.UcjbReturn,
+        SaturdayDelivery = j.SaturdayDelivery,
+        CompletedTime = j.UcjbComplTime,
+        UdStatus = j.UndeliverableLocation != null ? j.UndeliverableLocation.Name : string.Empty,
+        SigNotRequired = j.DeliverToLeave != null ? j.DeliverToLeave.Name : string.Empty,
+        DeliverToLeaveId = j.DeliverToLeaveId,
+        DeliverToContact = j.DeliverToContact ?? "Not specified",
+
+        // Location data
+        PickUpLatitude = j.PickUpLatitude,
+        PickUpLongitude = j.PickUpLongitude,
+        DeliveryLatitude = j.DeliveryLatitude,
+        DeliveryLongitude = j.DeliveryLongitude,
+
+        // Client information
+        Client = j.UcjbClientCode,
+        ClientName = j.UcjbClient != null ? j.UcjbClient.UcclName : string.Empty,
+        ToContactPhone = j.DeliverToPhone ?? "Not specified",
+        PodName = j.UcjbPodname,
+        PuTime = j.PickUpTime,
+
+        // Job characteristics
+        Weight = j.UcjbWeight,
+        CalculateDimsOncePerJob = j.DimensionsType == 1,
+        ToAddress = j.UcjbToAddr,
+        JobType = (int)(j.UcjbType ?? 0),
+        JobTypeDescription = GetJobTypeDescription(j.UcjbType ?? 0),
+        Direct = j.Direct,
+        Van = j.UcjbVan,
+        VanOk = j.VanOk,
+        Truck = j.Truck,
+        DgClass = j.Dgclass,
+        DgDocumentation = j.Dgdocument,
+        HasDgDocsString = j.Dgdocument != null ? "Yes" : "No",
+
+        // Job status and details
+        Done = j.UcjbJobDone,
+        AlertLatePickup = j.UcjbClient != null ? j.UcjbClient.AlertLatePickUp : null,
+        AlertLateDelivery = j.UcjbClient != null ? j.UcjbClient.AlertLateDelivery : null,
+        Lp = j.UcjbLatePick,
+        Ld = j.UcjbLateDel,
+        Items = j.UcjbQty,
+
+        PickupFrom = j.UcjbPickUpFrom,
+        Notify = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName : null,
+        FromContactName = j.PickupFromContact,
+        FromContactNumber = j.PickupFromPhone ?? "Not specified",
+
+        // Speed and job type information
+        Speed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : null,
+        SpeedName = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.UcjtName : null,
+        NotifiedName = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName : null,
+        AcceptedName = j.AcceptedJobType != null ? j.AcceptedJobType.UcjtName : null,
+        SpeedId = j.UcjbSpeed,
+        NotifiedJobTypeId = j.NotifiedJobTypeId,
+        AcceptedJobTypeId = j.AcceptedJobTypeId,
+
+        // References
+        RefA = j.UcjbClientRefa,
+        RefB = j.UcjbClientRefb,
+        OurRef = j.UcjbOurRef,
+
+        // Basic charge (will be updated from pricing breakdown separately)
+        Charge = j.UcjbAmount,
+
+        // Status
+        StatusId = j.UcjbStatus,
+        Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsCode : null,
+        StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
+        InternalStatusId = j.InternalStatus,
+        ConNote = j.Connote,
+
+        // Checkboxes
+        Reprice = j.Reprice,
+
+        // Size
+        Size = j.UcjbSizeNavigation != null
+            ? new Suggestion
+            {
+                Id = j.UcjbSizeNavigation.VehicleSizeId,
+                Text = j.UcjbSizeNavigation.VehicleName
+            }
+            : null,
+
+        IsArchived = false,
+        PreBook = false,
+        DeliverByTime = j.DeliverByTime,
+        Attention = j.UcjbAttention,
+
+        Distance = j.ToAirportId != null && j.FromAirportId != null
+            ? DistanceCalculator.CalculateDistance(
+                j.PickUpLatitude ?? 0,
+                j.PickUpLongitude ?? 0,
+                j.DeliveryLatitude ?? 0,
+                j.DeliveryLongitude ?? 0
+            )
+            : (double)(j.TotalDistance ?? 0),
+
+        ReadTrackerInfo = j.TucJobReadTracker != null
+            ? new ReadTrackerInfoViewModel
+            {
+                HasBeenRead = j.TucJobReadTracker.HasBeenRead,
+                ReadBy = j.TucJobReadTracker.ReadByStaff != null
+                    ? FormatFullName(j.TucJobReadTracker.ReadByStaff)
+                    : string.Empty,
+                ReadDate = j.TucJobReadTracker.ReadTimestamp
+            }
+            : new ReadTrackerInfoViewModel { HasBeenRead = false },
+
+        PickUpWindowMins = j.PickUpWindowMins,
+        DeliverByWindowMins = j.DeliverByWindowMins,
+
+        // Timezones
+        PickUpTimeZone = j.PickupTimeZone != null
+            ? new Suggestion { Id = j.PickupTimeZone.Id, Text = j.PickupTimeZone.Name }
+            : null,
+        DeliveryTimeZone = j.DeliverByTimeZone != null
+            ? new Suggestion { Id = j.DeliverByTimeZone.Id, Text = j.DeliverByTimeZone.Name }
+            : null,
+
+        Locked = j.UcjbLocked ?? false,
+
+        // Collections will be loaded separately
+        TailLiftPu = false, // Will be set from separate query
+        TailLiftDo = false, // Will be set from separate query
+        DeliverToPrivateRes = false, // Will be set from separate query
+        ParcelDimensions = null, // Will be loaded separately
+        PalletInfo = null, // Will be loaded separately
+        AssignedFlight = null, // Will be loaded separately
+
+        CustomJobName = j.CustomJobName,
+    };
+
     private static string FormatDate(DateTime? date)
     {
         var dateToUse = date ?? SqlMinDateTime;
@@ -1080,88 +1129,6 @@ public static class JobMappings
             Barcode = item.Barcode
         };
     }
-
-    public static readonly Expression<Func<TucJobBooking, PrebookListViewModel>> ToPrebookListViewModel = j =>
-        new PrebookListViewModel
-        {
-            Id = j.UcbkId,
-            Booked = j.UcbkDate.HasValue && j.UcbkTime.HasValue
-                ? j.UcbkDate.Value.CombineWithTime(j.UcbkTime)
-                : SqlMinDateTime,
-            NextDueTime = j.UcbkNextDue,
-            Client = j.UcbkClientCode,
-            JobNo = j.UcbkJobNumber,
-            ClientId = j.UcbkClientId,
-            Courier = j.Courier != null ? j.Courier.Code : null,
-            Speed = j.UcbkSpeedNavigation != null ? j.UcbkSpeedNavigation.UcjtName : null,
-            PickupAddress = new AddressViewModel
-            {
-                AddressLine1 = j.PickupAddressLine1,
-                AddressLine2 = j.PickupAddressLine2,
-                AddressLine3 = j.PickupAddressLine3,
-                AddressLine4 = j.PickupAddressLine4,
-                AddressLine5 = j.PickupAddressLine5,
-                AddressLine6 = j.PickupAddressLine6,
-                AddressLine7 = j.PickupAddressLine7,
-                AddressLine8 = j.PickupAddressLine8,
-                Latitude = j.PickUpLatitude,
-                Longitude = j.PickUpLongitude
-            },
-            DeliveryAddress = new AddressViewModel
-            {
-                AddressLine1 = j.DeliveryAddressLine1,
-                AddressLine2 = j.DeliveryAddressLine2,
-                AddressLine3 = j.DeliveryAddressLine3,
-                AddressLine4 = j.DeliveryAddressLine4,
-                AddressLine5 = j.DeliveryAddressLine5,
-                AddressLine6 = j.DeliveryAddressLine6,
-                AddressLine7 = j.DeliveryAddressLine7,
-                AddressLine8 = j.DeliveryAddressLine8,
-                Latitude = j.DeliveryLatitude,
-                Longitude = j.DeliveryLongitude
-            },
-            CustomJobName = j.CustomJobName
-        };
-
-    public static readonly Expression<Func<TucJob, DispatchMapItem>> ToDispatchMapItem = j =>
-        new DispatchMapItem
-        {
-            JobId = j.UcjbId,
-            JobNo = j.UcjbNumber,
-            PickupAddress = new AddressViewModel
-            {
-                AddressLine1 = j.PickupAddressLine1,
-                AddressLine2 = j.PickupAddressLine2,
-                AddressLine3 = j.PickupAddressLine3,
-                AddressLine4 = j.PickupAddressLine4,
-                AddressLine5 = j.PickupAddressLine5,
-                AddressLine6 = j.PickupAddressLine6,
-                AddressLine7 = j.PickupAddressLine7,
-                AddressLine8 = j.PickupAddressLine8,
-                Latitude = j.PickUpLatitude,
-                Longitude = j.PickUpLongitude
-            },
-            DeliveryAddress = new AddressViewModel
-            {
-                AddressLine1 = j.DeliveryAddressLine1,
-                AddressLine2 = j.DeliveryAddressLine2,
-                AddressLine3 = j.DeliveryAddressLine3,
-                AddressLine4 = j.DeliveryAddressLine4,
-                AddressLine5 = j.DeliveryAddressLine5,
-                AddressLine6 = j.DeliveryAddressLine6,
-                AddressLine7 = j.DeliveryAddressLine7,
-                AddressLine8 = j.DeliveryAddressLine8,
-                Latitude = j.DeliveryLatitude,
-                Longitude = j.DeliveryLongitude
-            },
-            AssignedCourier = j.UcjbCourier != null
-                ? new Suggestion
-                {
-                    Id = j.UcjbCourier.UccrId,
-                    Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
-                }
-                : null
-        };
 
     public static Expression<Func<TucJob, DispatchJobViewModel>> PodSearchMapping(bool isUsCustomer) =>
         j => new DispatchJobViewModel
@@ -1488,6 +1455,451 @@ public static class JobMappings
             RawBaseAmount = j.RawBaseAmount,
             CourierCode = j.UcjbCourier != null ? j.UcjbCourier.Code : null
         };
+
+    #endregion
+
+    #region Job Enrichment Methods
+
+    /// <summary>
+    /// Enriches live jobs with collections (flight info, pricing, parcels, flags) using parallel queries.
+    /// </summary>
+    public static async Task EnrichJobsWithCollectionsAsync(
+        List<JobViewModel> jobs,
+        IDbContextFactory<DespatchContext> contextFactory,
+        ITenantInfoService infoService)
+    {
+        if (jobs.Count == 0) return;
+
+        var jobIds = jobs.Select(j => j.Id).ToList();
+        var effectiveJobIds = jobs.Select(j => j.ParentId ?? j.Id).Distinct().ToList();
+
+        await using var flightContext = await contextFactory.CreateDbContextAsync();
+        await using var pricingContext = await contextFactory.CreateDbContextAsync();
+        await using var parcelContext = await contextFactory.CreateDbContextAsync();
+        await using var flagsContext = await contextFactory.CreateDbContextAsync();
+
+        var flightInfoTask = BatchLoadFlightInfoAsync(flightContext, jobs);
+        var pricingTask = BatchLoadPricingBreakdownAsync(pricingContext, effectiveJobIds, jobs);
+        var parcelDimensionsTask = BatchLoadParcelDimensionsAsync(parcelContext, jobIds, effectiveJobIds, jobs);
+        var jobItemFlagsTask = BatchLoadJobItemFlagsAsync(flagsContext, jobIds, jobs);
+
+        await Task.WhenAll(flightInfoTask, pricingTask, parcelDimensionsTask, jobItemFlagsTask);
+
+        ApplyTimezoneToJobDates(jobs, infoService.GetTenantTimeZone());
+    }
+
+    /// <summary>
+    /// Enriches archived jobs with collections (flight info, pricing, parcels, flags) using parallel queries.
+    /// </summary>
+    public static async Task EnrichArchivedJobsWithCollectionsAsync(
+        List<JobViewModel> jobs,
+        IDbContextFactory<DespatchContext> contextFactory,
+        ITenantInfoService infoService)
+    {
+        if (jobs.Count == 0) return;
+
+        var jobIds = jobs.Select(j => j.Id).ToList();
+        var effectiveJobIds = jobs.Select(j => j.ParentId ?? j.Id).Distinct().ToList();
+
+        await using var flightContext = await contextFactory.CreateDbContextAsync();
+        await using var pricingContext = await contextFactory.CreateDbContextAsync();
+        await using var parcelContext = await contextFactory.CreateDbContextAsync();
+        await using var flagsContext = await contextFactory.CreateDbContextAsync();
+
+        var flightInfoTask = BatchLoadFlightInfoAsync(flightContext, jobs);
+        var pricingTask = BatchLoadPricingBreakdownAsync(pricingContext, effectiveJobIds, jobs);
+        var parcelDimensionsTask = BatchLoadArchivedParcelDimensionsAsync(parcelContext, jobIds, effectiveJobIds, jobs);
+        var jobItemFlagsTask = BatchLoadArchivedJobItemFlagsAsync(flagsContext, jobIds, jobs);
+
+        await Task.WhenAll(flightInfoTask, pricingTask, parcelDimensionsTask, jobItemFlagsTask);
+
+        ApplyTimezoneToJobDates(jobs, infoService.GetTenantTimeZone());
+    }
+
+    private static void ApplyTimezoneToJobDates(List<JobViewModel> jobs, string tenantTimeZone)
+    {
+        foreach (var job in jobs)
+        {
+            if (job.DispatchTime.HasValue)
+                job.DispatchTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.DispatchTime.Value, tenantTimeZone);
+
+            if (job.PuTime.HasValue)
+                job.PuTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.PuTime.Value, tenantTimeZone);
+
+            if (job.FollowupTime.HasValue)
+                job.FollowupTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.FollowupTime.Value, tenantTimeZone);
+
+            if (job.CompletedTime.HasValue)
+                job.CompletedTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.CompletedTime.Value, tenantTimeZone);
+
+            if (job.CreatedDate.HasValue)
+                job.CreatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(job.CreatedDate.Value, tenantTimeZone);
+
+            if (job.DeliverByTime.HasValue)
+                job.DeliverByTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.DeliverByTime.Value, tenantTimeZone);
+        }
+    }
+
+    private static async Task BatchLoadFlightInfoAsync(
+        DespatchContext context,
+        List<JobViewModel> jobs)
+    {
+        var flightJobs = jobs.Where(j => j.IsFlightJob).ToList();
+        if (flightJobs.Count == 0) return;
+
+        var flightJobEffectiveIds = flightJobs.Select(j => j.ParentId ?? j.Id).Distinct().ToList();
+
+        var allFlightSegments = await context.TucJobNationwides
+            .AsNoTracking()
+            .Where(n => n.UcnwJobId.HasValue && flightJobEffectiveIds.Contains(n.UcnwJobId.Value))
+            .OrderBy(n => n.UcnwJobId)
+            .ThenBy(n => n.UcnwLegNumber)
+            .Select(segment => new
+            {
+                JobId = segment.UcnwJobId,
+                Segment = new FlightSegmentViewModel
+                {
+                    SegmentOrder = segment.UcnwLegNumber - 1,
+                    CarrierFsCode = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length >= 2
+                        ? segment.UcnwFlightNo.Substring(0, 2)
+                        : "??",
+                    FlightNumber = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length > 2
+                        ? segment.UcnwFlightNo.Substring(2)
+                        : "????",
+                    DepartureTime = segment.UcnwEtd ?? SqlMinDateTime,
+                    ArrivalTime = segment.UcnwEta ?? SqlMinDateTime,
+                    DepartureAirportFsCode = segment.DepartureAirportFsCode,
+                    DepartureAirportName = segment.DepartureAirportName,
+                    DepartureAirportCity = segment.DepartureAirportCity,
+                    DepartureAirportCountry = segment.DepartureAirportCountry,
+                    DepartureAirportTimeZone = segment.DepartureAirportTimeZoneNavigation.Name,
+                    DepartureAirportTimeZoneId = segment.DepartureAirportTimeZoneId ?? 0,
+                    DepartureTerminal = segment.DepartureTerminal,
+                    ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
+                    ArrivalAirportName = segment.ArrivalAirportName,
+                    ArrivalAirportCity = segment.ArrivalAirportCity,
+                    ArrivalAirportCountry = segment.ArrivalAirportCountry,
+                    ArrivalAirportTimeZone = segment.ArrivalAirportTimeZoneNavigation.Name,
+                    ArrivalAirportTimeZoneId = segment.ArrivalAirportTimeZoneId ?? 0,
+                    ArrivalTerminal = segment.ArrivalTerminal,
+                    ElapsedTime = (int)(segment.UcnwEta.HasValue && segment.UcnwEtd.HasValue
+                        ? (segment.UcnwEta.Value - segment.UcnwEtd.Value).TotalMinutes
+                        : 0),
+                    AircraftName = segment.AircraftName,
+                    AirlineName = segment.UcnwAirlineName
+                },
+                Notes = segment.UcnwNotes
+            })
+            .TagWith("BatchLoadFlightInfo - All Segments")
+            .ToListAsync();
+
+        var segmentsByJob = allFlightSegments
+            .GroupBy(s => s.JobId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        foreach (var job in flightJobs)
+        {
+            var effectiveJobId = job.ParentId ?? job.Id;
+            if (!segmentsByJob.TryGetValue(effectiveJobId, out var segments) || segments.Count == 0)
+                continue;
+
+            var flightSegments = segments.Select(s => s.Segment).ToList();
+            var firstSegment = flightSegments[0];
+            var lastSegment = flightSegments[^1];
+            var notes = segments[0].Notes;
+
+            job.AssignedFlight = new AssignedFlight
+            {
+                ExpectedArrival = lastSegment.ArrivalTime,
+                ArrivalTimeZone = lastSegment.ArrivalAirportTimeZone,
+                ExpectedDeparture = firstSegment.DepartureTime,
+                DepartureTimeZone = firstSegment.DepartureAirportTimeZone,
+                FlightNumber = firstSegment.CarrierFsCode + firstSegment.FlightNumber,
+                Notes = notes,
+                FlightSegments = flightSegments
+            };
+
+            ApplyFlightTimezones(job);
+        }
+    }
+
+    private static async Task BatchLoadPricingBreakdownAsync(
+        DespatchContext context,
+        List<int> effectiveJobIds,
+        List<JobViewModel> jobs)
+    {
+        var pricingTotals = await context.PricingBreakdowns
+            .AsNoTracking()
+            .Where(p => p.JobId.HasValue && effectiveJobIds.Contains(p.JobId.Value))
+            .GroupBy(p => p.JobId)
+            .Select(g => new
+            {
+                JobId = g.Key,
+                Total = g.Sum(p => p.ChargeAmount)
+            })
+            .TagWith("BatchLoadPricing - All Jobs")
+            .ToDictionaryAsync(x => x.JobId, x => x.Total);
+
+        foreach (var job in jobs)
+        {
+            var effectiveJobId = job.ParentId ?? job.Id;
+            if (pricingTotals.TryGetValue(effectiveJobId, out var total) && total > 0) job.Charge = total;
+        }
+    }
+
+    private static async Task BatchLoadParcelDimensionsAsync(
+        DespatchContext context,
+        List<int> jobIds,
+        List<int> effectiveJobIds,
+        List<JobViewModel> jobs)
+    {
+        var allChildItems = await context.TucJobItems
+            .AsNoTracking()
+            .Where(i => jobIds.Contains(i.ChildJobId.Value))
+            .Select(i => new
+            {
+                ChildJobId = i.ChildJobId.Value,
+                Parcel = new ParcelDimensions
+                {
+                    ItemId = i.ItemId,
+                    ItemName = i.Notes,
+                    Height = i.Height,
+                    Depth = i.Depth,
+                    Length = i.Length,
+                    Barcode = i.Barcode
+                }
+            })
+            .TagWith("BatchLoadParcels - Child Items")
+            .ToListAsync();
+
+        var childItemsByJob = allChildItems
+            .GroupBy(x => x.ChildJobId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Parcel).ToList());
+
+        var allParentItems = await context.TucJobItems
+            .AsNoTracking()
+            .Where(i => effectiveJobIds.Contains(i.JobId) && i.ChildJobId == null)
+            .Select(i => new
+            {
+                i.JobId,
+                Parcel = new ParcelDimensions
+                {
+                    ItemId = i.ItemId,
+                    ItemName = i.Notes,
+                    Height = i.Height,
+                    Depth = i.Depth,
+                    Length = i.Length,
+                    Barcode = i.Barcode
+                },
+                Pallet = new PalletInfo
+                {
+                    Id = i.JobId,
+                    Quantity = i.Items,
+                    ItemId = i.ItemId,
+                    Weight = i.Weight,
+                    Length = i.Length ?? 0,
+                    Depth = i.Depth ?? 0,
+                    Height = i.Height ?? 0,
+                    Pu = i.Pu,
+                    Do = i.Do,
+                    DgClass = i.Dgclass,
+                    Notes = i.Notes
+                }
+            })
+            .TagWith("BatchLoadParcels - Parent Items")
+            .ToListAsync();
+
+        var parentItemsByJob = allParentItems
+            .GroupBy(x => x.JobId)
+            .ToDictionary(g => g.Key, g => (
+                Parcels: g.Select(x => x.Parcel).ToList(),
+                Pallets: g.Select(x => x.Pallet).ToList()
+            ));
+
+        foreach (var job in jobs)
+        {
+            if (childItemsByJob.TryGetValue(job.Id, out var childItems))
+            {
+                job.ParcelDimensions = childItems;
+                continue;
+            }
+
+            var effectiveJobId = job.ParentId ?? job.Id;
+            if (!parentItemsByJob.TryGetValue(effectiveJobId, out var parentItems)) continue;
+            job.ParcelDimensions = parentItems.Parcels;
+            if (parentItems.Pallets.Count != 0)
+                job.PalletInfo = parentItems.Pallets;
+        }
+    }
+
+    private static async Task BatchLoadJobItemFlagsAsync(
+        DespatchContext context,
+        List<int> jobIds,
+        List<JobViewModel> jobs)
+    {
+        var allFlags = await context.TucJobItems
+            .AsNoTracking()
+            .Where(i => jobIds.Contains(i.JobId))
+            .Select(i => new { i.JobId, i.Pu, i.Do, i.PrivateRes })
+            .TagWith("BatchLoadFlags - All Jobs")
+            .ToListAsync();
+
+        var flagsByJob = allFlags
+            .GroupBy(f => f.JobId)
+            .ToDictionary(g => g.Key, g => new
+            {
+                TailLiftPu = g.Any(f => f.Pu == true),
+                TailLiftDo = g.Any(f => f.Do == true),
+                DeliverToPrivateRes = g.Any(f => f.PrivateRes == true)
+            });
+
+        foreach (var job in jobs)
+        {
+            if (!flagsByJob.TryGetValue(job.Id, out var flags)) continue;
+            job.TailLiftPu = flags.TailLiftPu;
+            job.TailLiftDo = flags.TailLiftDo;
+            job.DeliverToPrivateRes = flags.DeliverToPrivateRes;
+        }
+    }
+
+    private static void ApplyFlightTimezones(JobViewModel job)
+    {
+        if (job.AssignedFlight == null || job.AssignedFlight.FlightSegments.Count == 0)
+            return;
+
+        job.AssignedFlight.ExpectedArrival = job.AssignedFlight.ExpectedArrival.HasValue
+            ? TimeZoneHelper.SetDateTimeWithTimeZone(job.AssignedFlight.ExpectedArrival.Value,
+                job.AssignedFlight.ArrivalTimeZone)
+            : null;
+
+        job.AssignedFlight.ExpectedDeparture = job.AssignedFlight.ExpectedDeparture.HasValue
+            ? TimeZoneHelper.SetDateTimeWithTimeZone(job.AssignedFlight.ExpectedDeparture.Value,
+                job.AssignedFlight.DepartureTimeZone)
+            : null;
+
+        foreach (var segment in job.AssignedFlight.FlightSegments)
+        {
+            segment.ArrivalTime =
+                TimeZoneHelper.SetDateTimeWithTimeZone(segment.ArrivalTime, segment.ArrivalAirportTimeZone);
+            segment.DepartureTime =
+                TimeZoneHelper.SetDateTimeWithTimeZone(segment.DepartureTime, segment.DepartureAirportTimeZone);
+        }
+    }
+
+    private static async Task BatchLoadArchivedParcelDimensionsAsync(
+        DespatchContext context,
+        List<int> jobIds,
+        List<int> effectiveJobIds,
+        List<JobViewModel> jobs)
+    {
+        var allChildItems = await context.TucJobItemsArchives
+            .AsNoTracking()
+            .Where(i => i.ChildJobId.HasValue && jobIds.Contains(i.ChildJobId.Value))
+            .Select(i => new
+            {
+                ChildJobId = i.ChildJobId.Value,
+                Parcel = new ParcelDimensions
+                {
+                    ItemId = i.ItemId,
+                    ItemName = i.Notes,
+                    Height = i.Height,
+                    Depth = i.Depth,
+                    Length = i.Length,
+                    Barcode = i.Barcode
+                }
+            })
+            .TagWith("BatchLoadArchivedParcels - Child Items")
+            .ToListAsync();
+
+        var childItemsByJob = allChildItems
+            .GroupBy(x => x.ChildJobId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Parcel).ToList());
+
+        var allParentItems = await context.TucJobItemsArchives
+            .AsNoTracking()
+            .Where(i => effectiveJobIds.Contains(i.JobId) && i.ChildJobId == null)
+            .Select(i => new
+            {
+                i.JobId,
+                Parcel = new ParcelDimensions
+                {
+                    ItemId = i.ItemId,
+                    ItemName = i.Notes,
+                    Height = i.Height,
+                    Depth = i.Depth,
+                    Length = i.Length,
+                    Barcode = i.Barcode
+                },
+                Pallet = new PalletInfo
+                {
+                    Id = i.JobId,
+                    Quantity = i.Items,
+                    ItemId = i.ItemId,
+                    Weight = i.Weight,
+                    Length = i.Length ?? 0,
+                    Depth = i.Depth ?? 0,
+                    Height = i.Height ?? 0,
+                    Pu = i.Pu,
+                    Do = i.Do,
+                    DgClass = i.Dgclass,
+                    Notes = i.Notes
+                }
+            })
+            .TagWith("BatchLoadArchivedParcels - Parent Items")
+            .ToListAsync();
+
+        var parentItemsByJob = allParentItems
+            .GroupBy(x => x.JobId)
+            .ToDictionary(g => g.Key, g => (
+                Parcels: g.Select(x => x.Parcel).ToList(),
+                Pallets: g.Select(x => x.Pallet).ToList()
+            ));
+
+        foreach (var job in jobs)
+        {
+            if (childItemsByJob.TryGetValue(job.Id, out var childItems))
+            {
+                job.ParcelDimensions = childItems;
+                continue;
+            }
+
+            var effectiveJobId = job.ParentId ?? job.Id;
+            if (!parentItemsByJob.TryGetValue(effectiveJobId, out var parentItems)) continue;
+            job.ParcelDimensions = parentItems.Parcels;
+            if (parentItems.Pallets.Count != 0)
+                job.PalletInfo = parentItems.Pallets;
+        }
+    }
+
+    private static async Task BatchLoadArchivedJobItemFlagsAsync(
+        DespatchContext context,
+        List<int> jobIds,
+        List<JobViewModel> jobs)
+    {
+        var allFlags = await context.TucJobItemsArchives
+            .AsNoTracking()
+            .Where(i => jobIds.Contains(i.JobId))
+            .Select(i => new { i.JobId, i.Pu, i.Do, i.PrivateRes })
+            .TagWith("BatchLoadArchivedFlags - All Jobs")
+            .ToListAsync();
+
+        var flagsByJob = allFlags
+            .GroupBy(f => f.JobId)
+            .ToDictionary(g => g.Key, g => new
+            {
+                TailLiftPu = g.Any(f => f.Pu == true),
+                TailLiftDo = g.Any(f => f.Do == true),
+                DeliverToPrivateRes = g.Any(f => f.PrivateRes == true)
+            });
+
+        foreach (var job in jobs)
+        {
+            if (!flagsByJob.TryGetValue(job.Id, out var flags)) continue;
+            job.TailLiftPu = flags.TailLiftPu;
+            job.TailLiftDo = flags.TailLiftDo;
+            job.DeliverToPrivateRes = flags.DeliverToPrivateRes;
+        }
+    }
 
     #endregion
 }
