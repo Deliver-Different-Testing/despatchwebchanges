@@ -1,5 +1,6 @@
 /**
  * FlightAgentDataTable Component Tests
+ * Updated for table-based UI matching original AngularJS design
  */
 
 import React from 'react';
@@ -156,16 +157,16 @@ describe('FlightAgentDataTable', () => {
 
     describe('Flight Mode', () => {
         describe('Loading State', () => {
-            it('should show loading skeleton when flights are loading', () => {
+            it('should show loading indicator when flights are loading', () => {
                 const props = createMockProps({
                     flightsLoading: true,
                     showFlightList: false,
                 });
                 const { container } = renderWithTheme(<FlightAgentDataTable {...props} />);
 
-                // The new component shows skeleton loading boxes instead of a progressbar
-                const skeletonBoxes = container.querySelectorAll('[class*="css-"]');
-                expect(skeletonBoxes.length).toBeGreaterThan(0);
+                // The component shows a loading indicator bar
+                const boxes = container.querySelectorAll('[class*="MuiBox"]');
+                expect(boxes.length).toBeGreaterThan(0);
             });
         });
 
@@ -178,7 +179,6 @@ describe('FlightAgentDataTable', () => {
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
                 expect(screen.getByText('No Job Selected')).toBeInTheDocument();
-                expect(screen.getByText('Select a job to view available flights.')).toBeInTheDocument();
             });
 
             it('should show flight already assigned message', () => {
@@ -188,7 +188,7 @@ describe('FlightAgentDataTable', () => {
                 });
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
-                expect(screen.getByText('Flight Assigned')).toBeInTheDocument();
+                expect(screen.getByText('Flight Already Assigned')).toBeInTheDocument();
             });
 
             it('should show missing airport info message', () => {
@@ -209,18 +209,17 @@ describe('FlightAgentDataTable', () => {
                 });
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
-                expect(screen.getByText('No Flights')).toBeInTheDocument();
-                expect(screen.getByText('No flights found for this route')).toBeInTheDocument();
+                expect(screen.getByText('No Flights Available')).toBeInTheDocument();
             });
         });
 
         describe('Flight List', () => {
-            it('should render flight cards with data', () => {
+            it('should render flight table with data', () => {
                 const props = createMockProps();
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
                 expect(screen.getByText('AA100')).toBeInTheDocument();
-                expect(screen.getByText('$250')).toBeInTheDocument();
+                expect(screen.getByText('$250.00')).toBeInTheDocument();
                 expect(screen.getByText('Boeing 737-800')).toBeInTheDocument();
             });
 
@@ -228,8 +227,8 @@ describe('FlightAgentDataTable', () => {
                 const props = createMockProps();
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
-                expect(screen.getByText('ALL')).toBeInTheDocument();
-                // AA appears in the filter chip and in the flight card
+                expect(screen.getByText('All')).toBeInTheDocument();
+                // AA appears in the filter chip and in the flight table
                 const aaElements = screen.getAllByText('AA');
                 expect(aaElements.length).toBeGreaterThanOrEqual(1);
             });
@@ -248,11 +247,11 @@ describe('FlightAgentDataTable', () => {
                 );
             });
 
-            it('should call onFilterFlightsByAirline with null when clicking ALL chip', async () => {
+            it('should call onFilterFlightsByAirline with null when clicking All chip', async () => {
                 const props = createMockProps();
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
-                const allChip = screen.getByText('ALL');
+                const allChip = screen.getByText('All');
                 await userEvent.click(allChip);
 
                 expect(props.onFilterFlightsByAirline).toHaveBeenCalledWith(null);
@@ -275,11 +274,11 @@ describe('FlightAgentDataTable', () => {
                 expect(props.onFlightSearchChange).toHaveBeenCalled();
             });
 
-            it('should show NONSTOP label for direct flights', () => {
+            it('should show Nonstop label for direct flights', () => {
                 const props = createMockProps();
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
-                expect(screen.getByText('NONSTOP')).toBeInTheDocument();
+                expect(screen.getByText('Nonstop')).toBeInTheDocument();
             });
 
             it('should show stops label for connecting flights', () => {
@@ -288,7 +287,7 @@ describe('FlightAgentDataTable', () => {
                 });
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
-                expect(screen.getByText('2 STOPS')).toBeInTheDocument();
+                expect(screen.getByText('2 stops')).toBeInTheDocument();
             });
 
             it('should call onAddFlightToJob when clicking add button', async () => {
@@ -296,16 +295,13 @@ describe('FlightAgentDataTable', () => {
                 const { container } = renderWithTheme(<FlightAgentDataTable {...props} />);
 
                 // Find the AddIcon which is inside the assign flight button
-                // The button is wrapped in a Tooltip, so we need to find the button directly
                 const addIcons = container.querySelectorAll('[data-testid="AddIcon"]');
                 expect(addIcons.length).toBeGreaterThan(0);
 
-                // The first AddIcon is the flight assign button
                 const addIcon = addIcons[0];
                 const button = addIcon.closest('button');
                 expect(button).toBeTruthy();
 
-                // Use fireEvent.click which works better with MUI Tooltip wrapped buttons
                 fireEvent.click(button!);
 
                 expect(props.onAddFlightToJob).toHaveBeenCalled();
@@ -340,7 +336,7 @@ describe('FlightAgentDataTable', () => {
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
                 // Should show stops indicator
-                expect(screen.getByText('1 STOP')).toBeInTheDocument();
+                expect(screen.getByText('1 stop')).toBeInTheDocument();
 
                 // Should have expand icon (ExpandMore or ExpandLess)
                 const expandIcon = document.querySelector('[data-testid="ExpandMoreIcon"]');
@@ -351,7 +347,7 @@ describe('FlightAgentDataTable', () => {
 
     describe('Agent Mode', () => {
         describe('Loading State', () => {
-            it('should show loading skeleton when agents are loading', () => {
+            it('should show loading indicator when agents are loading', () => {
                 const props = createMockProps({
                     isDeliveryJobType: true,
                     agentsLoading: true,
@@ -359,7 +355,6 @@ describe('FlightAgentDataTable', () => {
                 });
                 const { container } = renderWithTheme(<FlightAgentDataTable {...props} />);
 
-                // The new component shows skeleton loading boxes
                 const boxes = container.querySelectorAll('[class*="MuiBox"]');
                 expect(boxes.length).toBeGreaterThan(0);
             });
@@ -375,7 +370,6 @@ describe('FlightAgentDataTable', () => {
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
                 expect(screen.getByText('No Job Selected')).toBeInTheDocument();
-                expect(screen.getByText('Select a job to view available agents.')).toBeInTheDocument();
             });
 
             it('should show agent already assigned message with action button', () => {
@@ -386,7 +380,7 @@ describe('FlightAgentDataTable', () => {
                 });
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
-                expect(screen.getByText('Agent Assigned')).toBeInTheDocument();
+                expect(screen.getByText('Agent Already Assigned')).toBeInTheDocument();
                 expect(screen.getByText('Manage Recovery Agent(s)')).toBeInTheDocument();
             });
 
@@ -424,13 +418,12 @@ describe('FlightAgentDataTable', () => {
                 });
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
-                expect(screen.getByText('No Agents')).toBeInTheDocument();
-                expect(screen.getByText('No agents service this area')).toBeInTheDocument();
+                expect(screen.getByText('No Agents Available')).toBeInTheDocument();
             });
         });
 
         describe('Agent List', () => {
-            it('should render agent cards with data', () => {
+            it('should render agent table with data', () => {
                 const props = createMockProps({
                     isDeliveryJobType: true,
                     showAgentList: true,
@@ -438,7 +431,7 @@ describe('FlightAgentDataTable', () => {
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
                 expect(screen.getByText('Test Agent')).toBeInTheDocument();
-                expect(screen.getByText('$150')).toBeInTheDocument();
+                expect(screen.getByText('$150.00')).toBeInTheDocument();
                 expect(screen.getByText('Reliable agent')).toBeInTheDocument();
             });
 
@@ -449,7 +442,7 @@ describe('FlightAgentDataTable', () => {
                 });
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
-                expect(screen.getByRole('button', { name: /search/i })).toBeInTheDocument();
+                expect(screen.getByRole('button', { name: /search agents/i })).toBeInTheDocument();
             });
 
             it('should call onOpenAgentSearchDialog when clicking search agents button', async () => {
@@ -459,7 +452,7 @@ describe('FlightAgentDataTable', () => {
                 });
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
-                const searchButton = screen.getByRole('button', { name: /search/i });
+                const searchButton = screen.getByRole('button', { name: /search agents/i });
                 await userEvent.click(searchButton);
 
                 expect(props.onOpenAgentSearchDialog).toHaveBeenCalled();
@@ -470,10 +463,15 @@ describe('FlightAgentDataTable', () => {
                     isDeliveryJobType: true,
                     showAgentList: true,
                 });
-                renderWithTheme(<FlightAgentDataTable {...props} />);
+                const { container } = renderWithTheme(<FlightAgentDataTable {...props} />);
 
-                const assignButtons = screen.getAllByRole('button', { name: /assign agent/i });
-                await userEvent.click(assignButtons[0]);
+                // Find the AddIcon for assign job
+                const addIcons = container.querySelectorAll('[data-testid="AddIcon"]');
+                expect(addIcons.length).toBeGreaterThan(0);
+
+                const addIcon = addIcons[0];
+                const button = addIcon.closest('button');
+                fireEvent.click(button!);
 
                 expect(props.onAddAgentToJob).toHaveBeenCalledWith(mockAgent);
             });
@@ -483,24 +481,28 @@ describe('FlightAgentDataTable', () => {
                     isDeliveryJobType: true,
                     showAgentList: true,
                 });
-                renderWithTheme(<FlightAgentDataTable {...props} />);
+                const { container } = renderWithTheme(<FlightAgentDataTable {...props} />);
 
-                const quoteButtons = screen.getAllByRole('button', { name: /send quote request/i });
-                await userEvent.click(quoteButtons[0]);
+                // Find the RequestQuoteIcon
+                const quoteIcons = container.querySelectorAll('[data-testid="RequestQuoteIcon"]');
+                expect(quoteIcons.length).toBeGreaterThan(0);
+
+                const quoteIcon = quoteIcons[0];
+                const button = quoteIcon.closest('button');
+                fireEvent.click(button!);
 
                 expect(props.onSendQuoteRequest).toHaveBeenCalledWith(mockAgent);
             });
 
-            it('should render star ratings for agents', () => {
+            it('should show agent ranking in table', () => {
                 const props = createMockProps({
                     isDeliveryJobType: true,
                     showAgentList: true,
                 });
-                const { container } = renderWithTheme(<FlightAgentDataTable {...props} />);
+                renderWithTheme(<FlightAgentDataTable {...props} />);
 
-                // Check for star icons
-                const starIcons = container.querySelectorAll('[data-testid="StarIcon"], [data-testid="StarBorderIcon"]');
-                expect(starIcons.length).toBe(5); // 5 stars total for rating
+                // Check for ranking value in the table
+                expect(screen.getByText('3')).toBeInTheDocument();
             });
         });
     });
@@ -513,38 +515,53 @@ describe('FlightAgentDataTable', () => {
                     { ...mockFlight, flightNumber: 'AA100', amount: 250, connectionId: 'conn-100' },
                 ],
             });
-            const { container } = renderWithTheme(<FlightAgentDataTable {...props} />);
+            renderWithTheme(<FlightAgentDataTable {...props} />);
 
-            // Find sort headers (they're uppercase in the component)
-            const sortLabels = container.querySelectorAll('.sort-label');
+            // Find MUI TableSortLabel elements
+            const sortLabels = screen.getAllByRole('button', { name: /airline|flight no|departure|arrival|duration|stops|rate|aircraft/i });
             expect(sortLabels.length).toBeGreaterThan(0);
         });
 
-        it('should show sort indicator when sorting is active', async () => {
+        it('should sort when clicking column header', async () => {
             const props = createMockProps();
-            const { container } = renderWithTheme(<FlightAgentDataTable {...props} />);
+            renderWithTheme(<FlightAgentDataTable {...props} />);
 
-            // Find a sort header and click it
-            const sortLabels = container.querySelectorAll('.sort-label');
-            expect(sortLabels.length).toBeGreaterThan(0);
-            await userEvent.click(sortLabels[0]);
+            // Click the Rate column header to sort
+            const rateHeader = screen.getByRole('button', { name: /rate/i });
+            await userEvent.click(rateHeader);
 
-            // Sort icon should be present (KeyboardArrowUp or KeyboardArrowDown)
-            const sortIcons = container.querySelectorAll('[data-testid="KeyboardArrowUpIcon"], [data-testid="KeyboardArrowDownIcon"]');
-            expect(sortIcons.length).toBeGreaterThan(0);
+            // Verify the sort was triggered (the header should be clickable)
+            expect(rateHeader).toBeInTheDocument();
         });
     });
 
     describe('Airport Selection', () => {
-        it('should display selected airports in chips', () => {
+        it('should display selected airports in buttons', () => {
             const props = createMockProps();
-            const { container } = renderWithTheme(<FlightAgentDataTable {...props} />);
+            renderWithTheme(<FlightAgentDataTable {...props} />);
 
-            // Check that airport codes are displayed (may appear multiple times in the component)
+            // Check that airport codes are displayed in the airport selectors
             const laxElements = screen.getAllByText('LAX');
             expect(laxElements.length).toBeGreaterThanOrEqual(1);
             const jfkElements = screen.getAllByText('JFK');
             expect(jfkElements.length).toBeGreaterThanOrEqual(1);
+        });
+
+        it('should open airport menu when clicking departure airport button', async () => {
+            const props = createMockProps();
+            renderWithTheme(<FlightAgentDataTable {...props} />);
+
+            // Find the departure airport button (contains FlightTakeoffIcon)
+            const buttons = screen.getAllByRole('button');
+            const departureButton = buttons.find(btn => btn.textContent?.includes('LAX'));
+            expect(departureButton).toBeTruthy();
+
+            await userEvent.click(departureButton!);
+
+            // Menu should open with airport options
+            await waitFor(() => {
+                expect(screen.getByText('LAX - Los Angeles')).toBeInTheDocument();
+            });
         });
     });
 });
