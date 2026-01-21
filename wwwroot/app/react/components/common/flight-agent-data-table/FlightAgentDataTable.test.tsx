@@ -307,11 +307,11 @@ describe('FlightAgentDataTable', () => {
                 expect(props.onAddFlightToJob).toHaveBeenCalled();
             });
 
-            it('should call onLoadMoreFlights when clicking load more button', async () => {
+            it('should call onLoadMoreFlights when clicking more button', async () => {
                 const props = createMockProps();
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
-                const loadMoreButton = screen.getByRole('button', { name: /load more/i });
+                const loadMoreButton = screen.getByRole('button', { name: /^more$/i });
                 await userEvent.click(loadMoreButton);
 
                 expect(props.onLoadMoreFlights).toHaveBeenCalled();
