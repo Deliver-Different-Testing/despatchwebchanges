@@ -7,18 +7,6 @@
 
 import {apiClient} from './apiClient';
 
-export interface SplitJobRequest {
-    jobId: number;
-}
-
-export interface UpdateSplitJobAddressRequest {
-    jobId: number;
-    toSuburbId: number;
-    address: string;
-    deliveryLat: number;
-    deliveryLng: number;
-}
-
 /**
  * Split a job into multiple child jobs for separate delivery handling.
  */

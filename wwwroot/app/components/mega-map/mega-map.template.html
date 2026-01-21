@@ -4,13 +4,13 @@
 <div class="md-padding mega-map-component">
     <div class="map-container">
         <!-- HERE Maps Component -->
-        <here-map-tracking
+        <here-map-react
                 map-id="megaMap"
                 credentials="ctrl.hereMapCredentials"
                 config="ctrl.hereMapConfig"
                 on-map-ready="ctrl.onMapReady(map, platform)"
                 ng-if="ctrl.hereMapCredentials && ctrl.hereMapConfig">
-        </here-map-tracking>
+        </here-map-react>
 
         <!-- Active Drivers Panel -->
         <md-card class="active-drivers" ng-if="ctrl.drivers.length > 0">

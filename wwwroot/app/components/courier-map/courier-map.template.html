@@ -5,13 +5,13 @@
     <!-- Map Container -->
     <div class="map-wrapper" flex>
         <!-- HERE Maps Component -->
-        <here-map-tracking
+        <here-map-react
                 map-id="courierMap"
                 credentials="ctrl.hereMapCredentials"
                 config="ctrl.hereMapConfig"
                 on-map-ready="ctrl.onMapReady(map, platform)"
                 ng-if="ctrl.hereMapCredentials && ctrl.hereMapConfig">
-        </here-map-tracking>
+        </here-map-react>
 
         <!-- Active Drivers Panel -->
         <div class="drivers-panel"

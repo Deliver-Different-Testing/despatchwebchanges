@@ -138,60 +138,6 @@ public class BaseJobRepository(
         }
     }
 
-    private async Task EnrichJobsWithCollections(List<DispatchJobViewModel> jobs)
-    {
-        if (jobs.Count == 0) return;
-
-        var jobIds = jobs.Select(j => j.Id).ToList();
-        var parentIds = jobs.Where(j => j.ParentId.HasValue)
-            .Select(j => j.ParentId.Value)
-            .Distinct()
-            .ToList();
-
-        // Run both queries in parallel using separate contexts (DbContext is not thread-safe)
-        await using var relatedJobsContext = CreateNewContext();
-        await using var flightsContext = CreateNewContext();
-
-        var relatedJobsTask = parentIds.Count != 0
-            ? relatedJobsContext.TucJobs
-                .AsNoTracking()
-                .Where(j => parentIds.Contains(j.ParentId.Value))
-                .GroupBy(j => j.ParentId.Value)
-                .Select(g => new
-                {
-                    ParentId = g.Key,
-                    RelatedJobs = g.Select(j => new Suggestion { Id = j.UcjbId, Text = j.UcjbNumber }).ToList()
-                })
-                .ToDictionaryAsync(x => x.ParentId, x => x.RelatedJobs)
-            : Task.FromResult(new Dictionary<int, List<Suggestion>>());
-
-        var flightsTask = flightsContext.TucJobNationwides
-            .AsNoTracking()
-            .Where(nw => nw.UcnwJobId.HasValue && jobIds.Contains(nw.UcnwJobId.Value))
-            .Select(nw => new { nw.UcnwJobId, nw.UcnwFlightNo })
-            .GroupBy(x => x.UcnwJobId)
-            .ToDictionaryAsync(g => g.Key, g => new AssignedFlight { FlightNumber = g.First().UcnwFlightNo });
-
-        await Task.WhenAll(relatedJobsTask, flightsTask);
-
-        var relatedJobsDict = await relatedJobsTask;
-        var flightsDict = await flightsTask;
-
-        // Apply related jobs
-        foreach (var job in jobs.Where(j => j.ParentId.HasValue))
-        {
-            if (job.ParentId != null && relatedJobsDict.TryGetValue(job.ParentId.Value, out var related))
-                job.RelatedJobs = related;
-        }
-
-        // Apply flights
-        foreach (var job in jobs)
-        {
-            if (flightsDict.TryGetValue(job.Id, out var flight))
-                job.AssignedFlight = flight;
-        }
-    }
-
     private IQueryable<TucJob> BuildBaseQuery(List<int> selectedViewIds, bool isUsTenant)
     {
         var jobIdsQuery = GetFilteredJobIdsQuery(selectedViewIds, isUsTenant);
@@ -264,6 +210,61 @@ public class BaseJobRepository(
 
         return dangerousPatterns.All(pattern => !Regex.IsMatch(condition, pattern, RegexOptions.IgnoreCase));
     }
+
+    private async Task EnrichJobsWithCollections(List<DispatchJobViewModel> jobs)
+    {
+        if (jobs.Count == 0) return;
+
+        var jobIds = jobs.Select(j => j.Id).ToList();
+        var parentIds = jobs.Where(j => j.ParentId.HasValue)
+            .Select(j => j.ParentId.Value)
+            .Distinct()
+            .ToList();
+
+        // Run both queries in parallel using separate contexts (DbContext is not thread-safe)
+        await using var relatedJobsContext = CreateNewContext();
+        await using var flightsContext = CreateNewContext();
+
+        var relatedJobsTask = parentIds.Count != 0
+            ? relatedJobsContext.TucJobs
+                .AsNoTracking()
+                .Where(j => parentIds.Contains(j.ParentId.Value))
+                .GroupBy(j => j.ParentId.Value)
+                .Select(g => new
+                {
+                    ParentId = g.Key,
+                    RelatedJobs = g.Select(j => new Suggestion { Id = j.UcjbId, Text = j.UcjbNumber }).ToList()
+                })
+                .ToDictionaryAsync(x => x.ParentId, x => x.RelatedJobs)
+            : Task.FromResult(new Dictionary<int, List<Suggestion>>());
+
+        var flightsTask = flightsContext.TucJobNationwides
+            .AsNoTracking()
+            .Where(nw => nw.UcnwJobId.HasValue && jobIds.Contains(nw.UcnwJobId.Value))
+            .Select(nw => new { nw.UcnwJobId, nw.UcnwFlightNo })
+            .GroupBy(x => x.UcnwJobId)
+            .ToDictionaryAsync(g => g.Key, g => new AssignedFlight { FlightNumber = g.First().UcnwFlightNo });
+
+        await Task.WhenAll(relatedJobsTask, flightsTask);
+
+        var relatedJobsDict = await relatedJobsTask;
+        var flightsDict = await flightsTask;
+
+        // Apply related jobs
+        foreach (var job in jobs.Where(j => j.ParentId.HasValue))
+        {
+            if (job.ParentId != null && relatedJobsDict.TryGetValue(job.ParentId.Value, out var related))
+                job.RelatedJobs = related;
+        }
+
+        // Apply flights
+        foreach (var job in jobs)
+        {
+            if (flightsDict.TryGetValue(job.Id, out var flight))
+                job.AssignedFlight = flight;
+        }
+    }
+
 
     private static IQueryable<TucJob> ApplyGeographicFilters(
         IQueryable<TucJob> query,
@@ -423,6 +424,7 @@ public class BaseJobRepository(
     public async Task<List<TucNoteViewModel>> GetBulkJobNotesByBulkJobIdAsync(int bulkJobId)
     {
         var bulkNotes = await Context.TblBulkJobNotes
+            .AsSplitQuery()
             .AsNoTracking()
             .Where(n => n.BulkJobId == bulkJobId)
             .Select(n => new TucNoteViewModel

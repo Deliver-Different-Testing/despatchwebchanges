@@ -31,13 +31,13 @@
             <!-- Map Container -->
             <div class="map-wrapper" ng-if="!ctrl.loading">
                 <div class="map-container">
-                    <here-map-tracking
+                    <here-map-react
                             config="ctrl.mapConfig"
                             credentials="ctrl.hereCredentials"
                             map-id="mapContainer"
                             on-map-ready=""
                             class="here-map-element">
-                    </here-map-tracking>
+                    </here-map-react>
 
                     <!-- Job Timeline Navigation Overlay -->
                     <div class="job-timeline-wrapper">
@@ -135,7 +135,7 @@
     }
 
     /* Ensure the here-map element fills its container exactly */
-    here-map-tracking {
+    here-map-react {
         display: block;
         width: 100%;
         height: 100%;

@@ -29,7 +29,9 @@ import "angular-heremaps/dist/angular-heremaps";
 import "../lib/ModernizerLocalStorage";
 import "../lib/ng-material-floating-button/src/mfb-directive";
 import "../lib/ng-material-floating-button/mfb/dist/mfb";
-import "../lib/google-maps-label/label";
+
+// React HereMap component
+import {HereMapReactComponent} from "./react/components/common/here-map";
 
 // Custom here maps
 import "../lib/here-map-tracking/here-map-tracking.module";
@@ -57,6 +59,9 @@ const app = angular.module("uDispatch", [
     "hereMapTracking.components",
     "ngMaterialDatePicker"
 ]);
+
+// Register React HereMap component
+app.component("hereMapReact", HereMapReactComponent);
 
 // Make the module available globally
 (window as any).uDispatchApp = app;

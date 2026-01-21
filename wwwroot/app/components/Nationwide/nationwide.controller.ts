@@ -1353,12 +1353,9 @@ class NationwideControl extends BaseController {
             this.applyScope();
             console.info('Assigning to job');
 
-            const previousInternalStatusId = job.internalStatusId ?? InternalJobStatus.NewJobs;
-            const listsToRefresh = new Set([JobDataType.POD]);
-
-            if (this.STATUS_TO_LIST_MAP[previousInternalStatusId]) {
-                this.STATUS_TO_LIST_MAP[previousInternalStatusId].forEach((type: JobDataType) => listsToRefresh.add(type));
-            }
+            // Always refresh both NEW and POD lists when assigning a flight
+            // Flight jobs can appear in either list depending on status, so refresh both to avoid stale data
+            const listsToRefresh = new Set([JobDataType.NEW, JobDataType.POD]);
 
             const requestData: AssignFlightToJobRequest = {
                 jobId: job.id,

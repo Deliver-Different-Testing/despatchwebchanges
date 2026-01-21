@@ -1283,6 +1283,12 @@ class JobDetailController extends BaseController {
             if (!result) return;
 
             const courierId = result.id;
+
+            // If job already has a courier assigned, restore it first
+            if (job.courierData?.courierId || job.assignedCourier?.id) {
+                await this.DispatchData.restoreJobs([job.id]);
+            }
+
             await this.dispatchJobService.assignSingleJobById(courierId, job.id);
 
             // Get courier details for toast message

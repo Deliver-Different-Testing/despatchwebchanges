@@ -661,7 +661,11 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                                     ) : packageTimeEditEnabled ? (
                                         <DateTimePicker
                                             value={packageReadyTime}
-                                            onChange={(newValue) => newValue && setPackageReadyTime(newValue)}
+                                            onChange={(newValue) => {
+                                                if (newValue && newValue.isValid()) {
+                                                    setPackageReadyTime(newValue);
+                                                }
+                                            }}
                                             slotProps={{
                                                 textField: { size: 'small', fullWidth: true },
                                             }}
@@ -729,7 +733,11 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                                     </Typography>
                                     <DateTimePicker
                                         value={deliveryByTime}
-                                        onChange={(newValue) => setDeliveryByTime(newValue)}
+                                        onChange={(newValue) => {
+                                            if (newValue && newValue.isValid()) {
+                                                setDeliveryByTime(newValue);
+                                            }
+                                        }}
                                         slotProps={{
                                             textField: { size: 'small', fullWidth: true },
                                         }}
