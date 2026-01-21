@@ -444,6 +444,14 @@ html, body {
           position: relative;
           overflow: hidden;
           transition: opacity 0.15s ease;
+
+          // React component wrappers need explicit dimensions
+          flight-agent-data-table-react,
+          here-map-react {
+            display: block;
+            width: 100%;
+            height: 100%;
+          }
         }
       }
     }

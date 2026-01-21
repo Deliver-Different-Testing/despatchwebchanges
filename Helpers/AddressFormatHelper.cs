@@ -20,10 +20,7 @@ public static class AddressFormatter
         for (var i = 0; i < 5; i++)
         {
             var line = GetAddressLine(address, i);
-            if (!string.IsNullOrWhiteSpace(line))
-            {
-                lines.Add(line.Trim());
-            }
+            if (!string.IsNullOrWhiteSpace(line)) lines.Add(line.Trim());
         }
 
         // Try to combine city, state, zip
@@ -36,10 +33,7 @@ public static class AddressFormatter
         if (!string.IsNullOrWhiteSpace(state))
         {
             lastLine += ", " + state;
-            if (!string.IsNullOrWhiteSpace(zip))
-            {
-                lastLine += " " + zip;
-            }
+            if (!string.IsNullOrWhiteSpace(zip)) lastLine += " " + zip;
         }
 
         lines.Add(lastLine);

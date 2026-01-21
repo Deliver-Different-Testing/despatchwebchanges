@@ -1618,6 +1618,7 @@ public static class JobMappings
                 Notes = notes,
                 FlightSegments = flightSegments
             };
+            job.IsFlightAssigned = true;
 
             ApplyFlightTimezones(job);
         }

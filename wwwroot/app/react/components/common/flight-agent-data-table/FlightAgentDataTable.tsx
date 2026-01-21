@@ -5,114 +5,121 @@
  * Uses app theme colors for consistency with the dashboard.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, {useMemo, useState} from 'react';
 import {
+    alpha,
     Box,
-    TextField,
-    InputAdornment,
-    IconButton,
     Button,
+    Collapse,
+    IconButton,
+    InputAdornment,
+    keyframes,
     Menu,
     MenuItem,
+    TextField,
     Tooltip,
-    Collapse,
     Typography,
-    alpha,
-    keyframes,
     useTheme,
 } from '@mui/material';
 import {
-    Search as SearchIcon,
-    FlightTakeoff as FlightTakeoffIcon,
-    FlightLand as FlightLandIcon,
-    Flight as FlightIcon,
     Add as AddIcon,
-    ExpandMore as ExpandMoreIcon,
-    ExpandLess as ExpandLessIcon,
-    Clear as ClearIcon,
+    AirlineSeatReclineNormal as SeatIcon,
     Check as CheckIcon,
+    ChevronRight as ChevronRightIcon,
+    Clear as ClearIcon,
+    ExpandLess as ExpandLessIcon,
+    ExpandMore as ExpandMoreIcon,
+    Flight as FlightIcon,
+    FlightLand as FlightLandIcon,
+    FlightTakeoff as FlightTakeoffIcon,
+    KeyboardArrowDown as SortDownIcon,
+    KeyboardArrowUp as SortUpIcon,
+    NavigateNext as NavigateNextIcon,
     PersonSearch as PersonSearchIcon,
     RequestQuote as RequestQuoteIcon,
     Schedule as ScheduleIcon,
-    KeyboardArrowUp as SortUpIcon,
-    KeyboardArrowDown as SortDownIcon,
-    SwapHoriz as SwapHorizIcon,
-    AirlineSeatReclineNormal as SeatIcon,
+    Search as SearchIcon,
     Star as StarIcon,
     StarBorder as StarBorderIcon,
-    ChevronRight as ChevronRightIcon,
-    NavigateNext as NavigateNextIcon,
+    SwapHoriz as SwapHorizIcon,
 } from '@mui/icons-material';
-import { NoData } from '../no-data/NoData';
-import {
-    FlightAgentDataTableProps,
-    FlightOption,
-    FlightSegment,
-    AgentOption,
-    AirlineSuggestion,
-    AirportSuggestion,
-} from './types';
+import {NoData} from '../no-data/NoData';
+import {AgentOption, AirportSuggestion, FlightAgentDataTableProps, FlightOption, FlightSegment,} from './types';
 
 type SortDirection = 'asc' | 'desc';
-type FlightSortKey = 'airline' | 'flightNumber' | 'departureTime' | 'arrivalTime' | 'elapsedTime' | 'stops' | 'amount' | 'aircraft';
+type FlightSortKey =
+    'airline'
+    | 'flightNumber'
+    | 'departureTime'
+    | 'arrivalTime'
+    | 'elapsedTime'
+    | 'stops'
+    | 'amount'
+    | 'aircraft';
 type AgentSortKey = 'agentName' | 'agentRate' | 'agentRanking' | 'agentNotes';
 
 // Animation keyframes
 const slideIn = keyframes`
-    from { opacity: 0; transform: translateY(-4px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 `;
 
 const shimmer = keyframes`
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
 `;
 
 export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
-    isDeliveryJobType,
-    currentJob,
-    flightsLoading,
-    agentsLoading,
-    flightOptions,
-    filteredFlightOptions,
-    flightSearchText,
-    flightMessage,
-    agentOptions,
-    agentMessage,
-    activeAirlineOptions,
-    selectedAirline,
-    outboundAirportOptions,
-    inboundAirportOptions,
-    selectedOutboundAirport,
-    selectedInboundAirport,
-    showNoJobSelectedMessage,
-    showJobHasAssignedFlightMessage,
-    showMissingAirportInfoMessage,
-    showNoFlightsAvailableMessage,
-    showFlightList,
-    showNoAgentJobSelectedMessage,
-    showJobHasAssignedAgentMessage,
-    showNotDeliveryJobMessage,
-    showNoAgentsAvailableMessage,
-    showAgentList,
-    onFlightSearchChange,
-    onFilterFlightsByAirline,
-    onOutboundAirportChange,
-    onInboundAirportChange,
-    onAddFlightToJob,
-    onOpenFlightMoreInfo,
-    onLoadMoreFlights,
-    onLoadNextDayFlights,
-    onAddAgentToJob,
-    onSendQuoteRequest,
-    onOpenAgentMoreInfo,
-    onOpenAgentSearchDialog,
-    onOpenRecoveryAgentDialog,
-    formatAirportCodeForDropdown,
-    getConnectionTime,
-    formatMinutesToTime,
-    isUsCustomer,
-}) => {
+                                                                              isDeliveryJobType,
+                                                                              flightsLoading,
+                                                                              agentsLoading,
+                                                                              filteredFlightOptions,
+                                                                              flightSearchText,
+                                                                              flightMessage,
+                                                                              agentOptions,
+                                                                              agentMessage,
+                                                                              activeAirlineOptions,
+                                                                              selectedAirline,
+                                                                              outboundAirportOptions,
+                                                                              inboundAirportOptions,
+                                                                              selectedOutboundAirport,
+                                                                              selectedInboundAirport,
+                                                                              showNoJobSelectedMessage,
+                                                                              showJobHasAssignedFlightMessage,
+                                                                              showMissingAirportInfoMessage,
+                                                                              showNoFlightsAvailableMessage,
+                                                                              showFlightList,
+                                                                              showNoAgentJobSelectedMessage,
+                                                                              showJobHasAssignedAgentMessage,
+                                                                              showNotDeliveryJobMessage,
+                                                                              showNoAgentsAvailableMessage,
+                                                                              showAgentList,
+                                                                              onFlightSearchChange,
+                                                                              onFilterFlightsByAirline,
+                                                                              onOutboundAirportChange,
+                                                                              onInboundAirportChange,
+                                                                              onAddFlightToJob,
+                                                                              onLoadMoreFlights,
+                                                                              onLoadNextDayFlights,
+                                                                              onAddAgentToJob,
+                                                                              onSendQuoteRequest,
+                                                                              onOpenAgentSearchDialog,
+                                                                              onOpenRecoveryAgentDialog,
+                                                                              formatAirportCodeForDropdown,
+                                                                              getConnectionTime,
+                                                                              formatMinutesToTime,
+                                                                              isUsCustomer,
+                                                                          }) => {
     const theme = useTheme();
     const [expandedFlights, setExpandedFlights] = useState<Set<string>>(new Set());
     const [flightSortKey, setFlightSortKey] = useState<FlightSortKey>('departureTime');
@@ -245,7 +252,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
     };
 
     // Airline badge with theme colors
-    const AirlineBadge: React.FC<{ code: string; isCodeShare?: boolean }> = ({ code, isCodeShare }) => (
+    const AirlineBadge: React.FC<{ code: string; isCodeShare?: boolean }> = ({code, isCodeShare}) => (
         <Box
             sx={{
                 display: 'inline-flex',
@@ -260,7 +267,6 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
         >
             <Typography
                 sx={{
-                    fontFamily: 'monospace',
                     fontSize: '0.7rem',
                     fontWeight: 600,
                     color: theme.palette.primary.main,
@@ -284,12 +290,14 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
 
     // Airport code display
     const AirportCode: React.FC<{ code: string; time: string; timezone?: string; isOrigin?: boolean }> = ({
-        code, time, timezone, isOrigin
-    }) => (
-        <Box sx={{ textAlign: isOrigin ? 'left' : 'right', minWidth: 70 }}>
+                                                                                                              code,
+                                                                                                              time,
+                                                                                                              timezone,
+                                                                                                              isOrigin
+                                                                                                          }) => (
+        <Box sx={{textAlign: isOrigin ? 'left' : 'right', minWidth: 70}}>
             <Typography
                 sx={{
-                    fontFamily: 'monospace',
                     fontSize: '1rem',
                     fontWeight: 700,
                     color: theme.palette.text.primary,
@@ -301,7 +309,6 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
             </Typography>
             <Typography
                 sx={{
-                    fontFamily: 'monospace',
                     fontSize: '0.75rem',
                     fontWeight: 500,
                     color: theme.palette.primary.main,
@@ -326,8 +333,10 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
 
     // Flight route visualization
     const FlightRoute: React.FC<{ stops: number; duration: string; isNonstop: boolean }> = ({
-        stops, duration, isNonstop
-    }) => (
+                                                                                                stops,
+                                                                                                duration,
+                                                                                                isNonstop
+                                                                                            }) => (
         <Box
             sx={{
                 flex: 1,
@@ -341,7 +350,6 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
             {/* Duration */}
             <Typography
                 sx={{
-                    fontFamily: 'monospace',
                     fontSize: '0.65rem',
                     color: theme.palette.text.secondary,
                     mb: 0.5,
@@ -382,7 +390,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                     }}
                 >
                     {/* Stop indicators */}
-                    {Array.from({ length: stops }).map((_, i) => (
+                    {Array.from({length: stops}).map((_, i) => (
                         <Box
                             key={i}
                             sx={{
@@ -443,7 +451,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
         direction: SortDirection;
         onClick: () => void;
         align?: 'left' | 'center' | 'right';
-    }> = ({ label, sortKey, currentKey, direction, onClick, align = 'left' }) => (
+    }> = ({label, sortKey, currentKey, direction, onClick, align = 'left'}) => (
         <Box
             onClick={onClick}
             sx={{
@@ -476,14 +484,14 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
             </Typography>
             {currentKey === sortKey && (
                 direction === 'asc' ?
-                    <SortUpIcon sx={{ fontSize: 12, color: theme.palette.primary.main }} /> :
-                    <SortDownIcon sx={{ fontSize: 12, color: theme.palette.primary.main }} />
+                    <SortUpIcon sx={{fontSize: 12, color: theme.palette.primary.main}}/> :
+                    <SortDownIcon sx={{fontSize: 12, color: theme.palette.primary.main}}/>
             )}
         </Box>
     );
 
     // Flight card component
-    const FlightCard: React.FC<{ flight: FlightOption; index: number }> = ({ flight, index }) => {
+    const FlightCard: React.FC<{ flight: FlightOption; index: number }> = ({flight, index}) => {
         const flightId = flight.connectionId || flight.flightNumber;
         const isExpanded = expandedFlights.has(flightId);
         const isHovered = hoveredFlight === flightId;
@@ -505,14 +513,13 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                 }}
             >
                 {/* Main content row */}
-                <Box sx={{ p: 1.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{p: 1.5}}>
+                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5}}>
                         {/* Airline & Flight Number */}
-                        <Box sx={{ minWidth: 85 }}>
-                            <AirlineBadge code={flight.airline} isCodeShare={flight.isCodeShare} />
+                        <Box sx={{minWidth: 85}}>
+                            <AirlineBadge code={flight.airline} isCodeShare={flight.isCodeShare}/>
                             <Typography
                                 sx={{
-                                    fontFamily: 'monospace',
                                     fontSize: '0.75rem',
                                     fontWeight: 500,
                                     color: theme.palette.text.primary,
@@ -558,7 +565,6 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                         }}>
                             <Typography
                                 sx={{
-                                    fontFamily: 'monospace',
                                     fontSize: '1rem',
                                     fontWeight: 700,
                                     color: theme.palette.text.primary,
@@ -566,7 +572,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                             >
                                 {formatCurrency(flight.amount)}
                             </Typography>
-                            <Box sx={{ display: 'flex', gap: 0.5 }}>
+                            <Box sx={{display: 'flex', gap: 0.5}}>
                                 {flight.isMultiSegment && (
                                     <IconButton
                                         size="small"
@@ -581,8 +587,8 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                         }}
                                     >
                                         {isExpanded ?
-                                            <ExpandLessIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} /> :
-                                            <ExpandMoreIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />
+                                            <ExpandLessIcon sx={{fontSize: 14, color: theme.palette.text.secondary}}/> :
+                                            <ExpandMoreIcon sx={{fontSize: 14, color: theme.palette.text.secondary}}/>
                                         }
                                     </IconButton>
                                 )}
@@ -600,7 +606,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                             },
                                         }}
                                     >
-                                        <AddIcon sx={{ fontSize: 14, color: theme.palette.success.main }} />
+                                        <AddIcon sx={{fontSize: 14, color: theme.palette.success.main}}/>
                                     </IconButton>
                                 </Tooltip>
                             </Box>
@@ -625,10 +631,10 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                 gap: 0.5,
                             }}
                         >
-                            <SeatIcon sx={{ fontSize: 12 }} />
+                            <SeatIcon sx={{fontSize: 12}}/>
                             {flight.aircraft || 'Aircraft TBD'}
                         </Typography>
-                        <Box sx={{ flex: 1 }} />
+                        <Box sx={{flex: 1}}/>
                         {flight.serviceClasses?.length > 0 && (
                             <Typography
                                 sx={{
@@ -662,7 +668,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
 
     const renderSegmentDetails = (segments: FlightSegment[]) => {
         return (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
                 {segments.map((segment, index) => (
                     <React.Fragment key={segment.segmentOrder}>
                         {/* Segment row */}
@@ -698,7 +704,6 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                             {/* Flight info */}
                             <Typography
                                 sx={{
-                                    fontFamily: 'monospace',
                                     fontSize: '0.7rem',
                                     fontWeight: 600,
                                     color: theme.palette.text.primary,
@@ -709,34 +714,32 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                             </Typography>
 
                             {/* Origin */}
-                            <Box sx={{ minWidth: 60 }}>
+                            <Box sx={{minWidth: 60}}>
                                 <Typography sx={{
-                                    fontFamily: 'monospace',
                                     fontSize: '0.75rem',
                                     fontWeight: 600,
                                     color: theme.palette.text.primary
                                 }}>
                                     {segment.departureAirportFsCode}
                                 </Typography>
-                                <Typography sx={{ fontSize: '0.6rem', color: theme.palette.primary.main }}>
+                                <Typography sx={{fontSize: '0.6rem', color: theme.palette.primary.main}}>
                                     {segment._departureTimeStr}
                                 </Typography>
                             </Box>
 
                             {/* Arrow */}
-                            <ChevronRightIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />
+                            <ChevronRightIcon sx={{fontSize: 14, color: theme.palette.text.secondary}}/>
 
                             {/* Destination */}
-                            <Box sx={{ minWidth: 60 }}>
+                            <Box sx={{minWidth: 60}}>
                                 <Typography sx={{
-                                    fontFamily: 'monospace',
                                     fontSize: '0.75rem',
                                     fontWeight: 600,
                                     color: theme.palette.text.primary
                                 }}>
                                     {segment.arrivalAirportFsCode}
                                 </Typography>
-                                <Typography sx={{ fontSize: '0.6rem', color: theme.palette.primary.main }}>
+                                <Typography sx={{fontSize: '0.6rem', color: theme.palette.primary.main}}>
                                     {segment._arrivalTimeStr}
                                 </Typography>
                             </Box>
@@ -744,7 +747,6 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                             {/* Duration */}
                             <Typography
                                 sx={{
-                                    fontFamily: 'monospace',
                                     fontSize: '0.65rem',
                                     color: theme.palette.text.secondary,
                                     ml: 'auto',
@@ -763,7 +765,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                 pl: 4.5,
                                 py: 0.5,
                             }}>
-                                <ScheduleIcon sx={{ fontSize: 12, color: theme.palette.warning.main }} />
+                                <ScheduleIcon sx={{fontSize: 12, color: theme.palette.warning.main}}/>
                                 <Typography
                                     sx={{
                                         fontSize: '0.6rem',
@@ -773,7 +775,8 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                         letterSpacing: '0.05em',
                                     }}
                                 >
-                                    {getConnectionTime(segment, segments[index + 1])} layover at {segment.arrivalAirportFsCode}
+                                    {getConnectionTime(segment, segments[index + 1])} layover
+                                    at {segment.arrivalAirportFsCode}
                                 </Typography>
                             </Box>
                         )}
@@ -784,7 +787,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
     };
 
     // Agent card component
-    const AgentCard: React.FC<{ agent: AgentOption; index: number }> = ({ agent, index }) => (
+    const AgentCard: React.FC<{ agent: AgentOption; index: number }> = ({agent, index}) => (
         <Box
             sx={{
                 bgcolor: theme.palette.background.paper,
@@ -803,7 +806,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
             }}
         >
             {/* Agent info */}
-            <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Box sx={{flex: 1, minWidth: 0}}>
                 <Typography
                     sx={{
                         fontSize: '0.85rem',
@@ -816,13 +819,13 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                 >
                     {agent.agentName}
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mt: 0.5}}>
                     {/* Ranking stars */}
-                    <Box sx={{ display: 'flex', gap: 0.25 }}>
+                    <Box sx={{display: 'flex', gap: 0.25}}>
                         {[1, 2, 3, 4, 5].map((star) => (
                             star <= (parseInt(agent.agentRanking) || 0) ?
-                                <StarIcon key={star} sx={{ fontSize: 12, color: theme.palette.warning.main }} /> :
-                                <StarBorderIcon key={star} sx={{ fontSize: 12, color: theme.palette.text.disabled }} />
+                                <StarIcon key={star} sx={{fontSize: 12, color: theme.palette.warning.main}}/> :
+                                <StarBorderIcon key={star} sx={{fontSize: 12, color: theme.palette.text.disabled}}/>
                         ))}
                     </Box>
                     {agent.agentNotes && (
@@ -845,7 +848,6 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
             {/* Rate */}
             <Typography
                 sx={{
-                    fontFamily: 'monospace',
                     fontSize: '0.9rem',
                     fontWeight: 700,
                     color: theme.palette.text.primary,
@@ -855,7 +857,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
             </Typography>
 
             {/* Actions */}
-            <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <Box sx={{display: 'flex', gap: 0.5}}>
                 <Tooltip title="Send Quote Request" arrow>
                     <IconButton
                         size="small"
@@ -869,7 +871,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                             },
                         }}
                     >
-                        <RequestQuoteIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />
+                        <RequestQuoteIcon sx={{fontSize: 14, color: theme.palette.text.secondary}}/>
                     </IconButton>
                 </Tooltip>
                 <Tooltip title="Assign Agent" arrow>
@@ -886,7 +888,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                             },
                         }}
                     >
-                        <AddIcon sx={{ fontSize: 14, color: theme.palette.success.main }} />
+                        <AddIcon sx={{fontSize: 14, color: theme.palette.success.main}}/>
                     </IconButton>
                 </Tooltip>
             </Box>
@@ -895,7 +897,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
 
     // Loading skeleton
     const LoadingSkeleton = () => (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.5 }}>
+        <Box sx={{display: 'flex', flexDirection: 'column', gap: 1, p: 1.5}}>
             {[1, 2, 3, 4].map((i) => (
                 <Box
                     key={i}
@@ -928,7 +930,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
         label: string;
         selected?: AirportSuggestion;
         onClick: (e: React.MouseEvent<HTMLElement>) => void;
-    }> = ({ icon, label, selected, onClick }) => (
+    }> = ({icon, label, selected, onClick}) => (
         <Box
             onClick={onClick}
             sx={{
@@ -950,7 +952,6 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
             {icon}
             <Typography
                 sx={{
-                    fontFamily: 'monospace',
                     fontSize: '0.7rem',
                     fontWeight: 600,
                     color: selected ? theme.palette.primary.main : theme.palette.text.secondary,
@@ -963,7 +964,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
 
     const renderFlightSection = () => {
         if (flightsLoading) {
-            return <LoadingSkeleton />;
+            return <LoadingSkeleton/>;
         }
 
         if (showNoJobSelectedMessage) {
@@ -1016,7 +1017,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
 
         if (showFlightList) {
             return (
-                <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <Box sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
                     {/* Header controls */}
                     <Box sx={{
                         p: 1,
@@ -1026,22 +1027,22 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                         gap: 1,
                     }}>
                         {/* Airport selectors & Search */}
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                             <AirportChip
-                                icon={<FlightTakeoffIcon sx={{ fontSize: 14, color: theme.palette.primary.main }} />}
+                                icon={<FlightTakeoffIcon sx={{fontSize: 14, color: theme.palette.primary.main}}/>}
                                 label="FROM"
                                 selected={selectedOutboundAirport}
                                 onClick={(e) => setOutboundAnchorEl(e.currentTarget)}
                             />
-                            <SwapHorizIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />
+                            <SwapHorizIcon sx={{fontSize: 14, color: theme.palette.text.secondary}}/>
                             <AirportChip
-                                icon={<FlightLandIcon sx={{ fontSize: 14, color: theme.palette.primary.main }} />}
+                                icon={<FlightLandIcon sx={{fontSize: 14, color: theme.palette.primary.main}}/>}
                                 label="TO"
                                 selected={selectedInboundAirport}
                                 onClick={(e) => setInboundAnchorEl(e.currentTarget)}
                             />
 
-                            <Box sx={{ flex: 1 }} />
+                            <Box sx={{flex: 1}}/>
 
                             <TextField
                                 size="small"
@@ -1075,7 +1076,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                 InputProps={{
                                     startAdornment: (
                                         <InputAdornment position="start">
-                                            <SearchIcon sx={{ fontSize: 16, color: theme.palette.text.secondary }} />
+                                            <SearchIcon sx={{fontSize: 16, color: theme.palette.text.secondary}}/>
                                         </InputAdornment>
                                     ),
                                 }}
@@ -1134,8 +1135,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                     >
                                         <Typography
                                             sx={{
-                                                fontFamily: 'monospace',
-                                                fontSize: '0.65rem',
+                                                            fontSize: '0.65rem',
                                                 fontWeight: 600,
                                                 color: selectedAirline?.id === airline.id ? theme.palette.primary.contrastText : theme.palette.text.secondary,
                                             }}
@@ -1156,18 +1156,25 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                     >
                         {selectedOutboundAirport && (
                             <MenuItem
-                                onClick={() => { onOutboundAirportChange(null); setOutboundAnchorEl(null); }}
+                                onClick={() => {
+                                    onOutboundAirportChange(null);
+                                    setOutboundAnchorEl(null);
+                                }}
                             >
-                                <ClearIcon sx={{ mr: 1, fontSize: 16 }} /> Clear
+                                <ClearIcon sx={{mr: 1, fontSize: 16}}/> Clear
                             </MenuItem>
                         )}
                         {outboundAirportOptions?.map((airport) => (
                             <MenuItem
                                 key={airport.id}
-                                onClick={() => { onOutboundAirportChange(airport); setOutboundAnchorEl(null); }}
-                                sx={{ fontFamily: 'monospace' }}
+                                onClick={() => {
+                                    onOutboundAirportChange(airport);
+                                    setOutboundAnchorEl(null);
+                                }}
+                                sx={{}}
                             >
-                                {selectedOutboundAirport?.id === airport.id && <CheckIcon sx={{ mr: 1, fontSize: 16, color: theme.palette.primary.main }} />}
+                                {selectedOutboundAirport?.id === airport.id &&
+                                    <CheckIcon sx={{mr: 1, fontSize: 16, color: theme.palette.primary.main}}/>}
                                 {airport.text}
                             </MenuItem>
                         ))}
@@ -1180,18 +1187,25 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                     >
                         {selectedInboundAirport && (
                             <MenuItem
-                                onClick={() => { onInboundAirportChange(null); setInboundAnchorEl(null); }}
+                                onClick={() => {
+                                    onInboundAirportChange(null);
+                                    setInboundAnchorEl(null);
+                                }}
                             >
-                                <ClearIcon sx={{ mr: 1, fontSize: 16 }} /> Clear
+                                <ClearIcon sx={{mr: 1, fontSize: 16}}/> Clear
                             </MenuItem>
                         )}
                         {inboundAirportOptions?.map((airport) => (
                             <MenuItem
                                 key={airport.id}
-                                onClick={() => { onInboundAirportChange(airport); setInboundAnchorEl(null); }}
-                                sx={{ fontFamily: 'monospace' }}
+                                onClick={() => {
+                                    onInboundAirportChange(airport);
+                                    setInboundAnchorEl(null);
+                                }}
+                                sx={{}}
                             >
-                                {selectedInboundAirport?.id === airport.id && <CheckIcon sx={{ mr: 1, fontSize: 16, color: theme.palette.primary.main }} />}
+                                {selectedInboundAirport?.id === airport.id &&
+                                    <CheckIcon sx={{mr: 1, fontSize: 16, color: theme.palette.primary.main}}/>}
                                 {airport.text}
                             </MenuItem>
                         ))}
@@ -1205,16 +1219,26 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                         py: 0.75,
                         borderBottom: `1px solid ${theme.palette.divider}`,
                     }}>
-                        <Box sx={{ minWidth: 85 }}>
-                            <SortHeader label="Flight" sortKey="flightNumber" currentKey={flightSortKey} direction={flightSortDirection} onClick={() => handleFlightSort('flightNumber')} />
+                        <Box sx={{minWidth: 85}}>
+                            <SortHeader label="Flight" sortKey="flightNumber" currentKey={flightSortKey}
+                                        direction={flightSortDirection}
+                                        onClick={() => handleFlightSort('flightNumber')}/>
                         </Box>
-                        <Box sx={{ flex: 1, display: 'flex', justifyContent: 'space-between', px: 2 }}>
-                            <SortHeader label="Depart" sortKey="departureTime" currentKey={flightSortKey} direction={flightSortDirection} onClick={() => handleFlightSort('departureTime')} />
-                            <SortHeader label="Stops" sortKey="stops" currentKey={flightSortKey} direction={flightSortDirection} onClick={() => handleFlightSort('stops')} align="center" />
-                            <SortHeader label="Arrive" sortKey="arrivalTime" currentKey={flightSortKey} direction={flightSortDirection} onClick={() => handleFlightSort('arrivalTime')} align="right" />
+                        <Box sx={{flex: 1, display: 'flex', justifyContent: 'space-between', px: 2}}>
+                            <SortHeader label="Depart" sortKey="departureTime" currentKey={flightSortKey}
+                                        direction={flightSortDirection}
+                                        onClick={() => handleFlightSort('departureTime')}/>
+                            <SortHeader label="Stops" sortKey="stops" currentKey={flightSortKey}
+                                        direction={flightSortDirection} onClick={() => handleFlightSort('stops')}
+                                        align="center"/>
+                            <SortHeader label="Arrive" sortKey="arrivalTime" currentKey={flightSortKey}
+                                        direction={flightSortDirection} onClick={() => handleFlightSort('arrivalTime')}
+                                        align="right"/>
                         </Box>
-                        <Box sx={{ minWidth: 80, textAlign: 'right' }}>
-                            <SortHeader label="Price" sortKey="amount" currentKey={flightSortKey} direction={flightSortDirection} onClick={() => handleFlightSort('amount')} align="right" />
+                        <Box sx={{minWidth: 80, textAlign: 'right'}}>
+                            <SortHeader label="Price" sortKey="amount" currentKey={flightSortKey}
+                                        direction={flightSortDirection} onClick={() => handleFlightSort('amount')}
+                                        align="right"/>
                         </Box>
                     </Box>
 
@@ -1264,7 +1288,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                         <Button
                             size="small"
                             onClick={onLoadNextDayFlights}
-                            endIcon={<NavigateNextIcon sx={{ fontSize: 14 }} />}
+                            endIcon={<NavigateNextIcon sx={{fontSize: 14}}/>}
                             sx={{
                                 fontSize: '0.7rem',
                                 fontWeight: 600,
@@ -1288,7 +1312,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
 
     const renderAgentSection = () => {
         if (agentsLoading) {
-            return <LoadingSkeleton />;
+            return <LoadingSkeleton/>;
         }
 
         if (showNoAgentJobSelectedMessage) {
@@ -1343,7 +1367,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
 
         if (showAgentList) {
             return (
-                <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <Box sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
                     {/* Header */}
                     <Box sx={{
                         display: 'flex',
@@ -1352,20 +1376,9 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                         p: 1,
                         borderBottom: `1px solid ${theme.palette.divider}`,
                     }}>
-                        <Typography
-                            sx={{
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-                                color: theme.palette.text.secondary,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.1em',
-                            }}
-                        >
-                            Available Agents
-                        </Typography>
                         <Button
                             size="small"
-                            startIcon={<PersonSearchIcon sx={{ fontSize: 14 }} />}
+                            startIcon={<PersonSearchIcon sx={{fontSize: 14}}/>}
                             onClick={onOpenAgentSearchDialog}
                             sx={{
                                 fontSize: '0.7rem',
@@ -1392,7 +1405,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                         gap: 0.75,
                     }}>
                         {sortedAgents.map((agent, index) => (
-                            <AgentCard key={agent.agentId} agent={agent} index={index} />
+                            <AgentCard key={agent.agentId} agent={agent} index={index}/>
                         ))}
                     </Box>
                 </Box>
