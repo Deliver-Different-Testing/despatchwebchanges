@@ -2,7 +2,7 @@
  * FlightAgentDataTable React Component
  *
  * Displays flight options or agent options based on job type.
- * Uses app theme colors for consistency with the dashboard.
+ * Styled to match the original AngularJS md-table layout.
  */
 
 import React, {useMemo, useState} from 'react';
@@ -13,9 +13,15 @@ import {
     Collapse,
     IconButton,
     InputAdornment,
-    keyframes,
     Menu,
     MenuItem,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    TableSortLabel,
     TextField,
     Tooltip,
     Typography,
@@ -24,25 +30,18 @@ import {
 import dayjs from 'dayjs';
 import {
     Add as AddIcon,
-    AirlineSeatReclineNormal as SeatIcon,
     Check as CheckIcon,
-    ChevronRight as ChevronRightIcon,
     Clear as ClearIcon,
     ExpandLess as ExpandLessIcon,
     ExpandMore as ExpandMoreIcon,
     Flight as FlightIcon,
     FlightLand as FlightLandIcon,
     FlightTakeoff as FlightTakeoffIcon,
-    KeyboardArrowDown as SortDownIcon,
-    KeyboardArrowUp as SortUpIcon,
-    NavigateNext as NavigateNextIcon,
+    Info as InfoIcon,
     PersonSearch as PersonSearchIcon,
     RequestQuote as RequestQuoteIcon,
     Schedule as ScheduleIcon,
     Search as SearchIcon,
-    Star as StarIcon,
-    StarBorder as StarBorderIcon,
-    SwapHoriz as SwapHorizIcon,
 } from '@mui/icons-material';
 import {NoData} from '../no-data/NoData';
 import {AgentOption, AirportSuggestion, FlightAgentDataTableProps, FlightOption, FlightSegment,} from './types';
@@ -59,89 +58,29 @@ type FlightSortKey =
     | 'aircraft';
 type AgentSortKey = 'agentName' | 'agentRate' | 'agentRanking' | 'agentNotes';
 
-// Airline color palette - distinctive colors for major airlines
-const AIRLINE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-    // US Airlines
-    'AA': { bg: '#B81D24', text: '#FFFFFF', border: '#8A161B' },      // American Airlines - Red
-    'DL': { bg: '#003366', text: '#FFFFFF', border: '#002244' },      // Delta - Navy Blue
-    'UA': { bg: '#0033A0', text: '#FFFFFF', border: '#002878' },      // United - Blue
-    'WN': { bg: '#F9B612', text: '#304CB2', border: '#E5A30E' },      // Southwest - Yellow/Blue
-    'B6': { bg: '#003876', text: '#FFFFFF', border: '#002B5C' },      // JetBlue - Blue
-    'AS': { bg: '#01426A', text: '#FFFFFF', border: '#003050' },      // Alaska - Dark Blue
-    'NK': { bg: '#FDE428', text: '#000000', border: '#E5CD22' },      // Spirit - Yellow
-    'F9': { bg: '#00A651', text: '#FFFFFF', border: '#008942' },      // Frontier - Green
-    'HA': { bg: '#4F2D7F', text: '#FFFFFF', border: '#3D2266' },      // Hawaiian - Purple
-    // International
-    'BA': { bg: '#075AAA', text: '#FFFFFF', border: '#054789' },      // British Airways - Blue
-    'LH': { bg: '#05164D', text: '#FFC72C', border: '#030F33' },      // Lufthansa - Navy/Gold
-    'AF': { bg: '#002157', text: '#FFFFFF', border: '#001840' },      // Air France - Dark Blue
-    'EK': { bg: '#C8102E', text: '#FFFFFF', border: '#A00D25' },      // Emirates - Red
-    'QF': { bg: '#E40000', text: '#FFFFFF', border: '#B50000' },      // Qantas - Red
-    'SQ': { bg: '#F7A823', text: '#0C2340', border: '#E59A1F' },      // Singapore - Gold
-    'CX': { bg: '#006564', text: '#FFFFFF', border: '#004D4C' },      // Cathay Pacific - Teal
-    'NH': { bg: '#142B64', text: '#FFFFFF', border: '#0F2050' },      // ANA - Blue
-    'JL': { bg: '#C8102E', text: '#FFFFFF', border: '#A00D25' },      // Japan Airlines - Red
-    'KE': { bg: '#00256C', text: '#FFFFFF', border: '#001C52' },      // Korean Air - Blue
-    'TK': { bg: '#C8102E', text: '#FFFFFF', border: '#A00D25' },      // Turkish - Red
-    'LX': { bg: '#C8102E', text: '#FFFFFF', border: '#A00D25' },      // Swiss - Red
-    'AC': { bg: '#F01428', text: '#FFFFFF', border: '#C81020' },      // Air Canada - Red
-    'QR': { bg: '#5C0632', text: '#FFFFFF', border: '#460526' },      // Qatar - Burgundy
-    'EY': { bg: '#BD8B13', text: '#1E1E1E', border: '#9A7210' },      // Etihad - Gold
-    'VS': { bg: '#E30613', text: '#FFFFFF', border: '#B50510' },      // Virgin Atlantic - Red
+// Airline colors matching the original CSS
+const AIRLINE_COLORS: Record<string, { bg: string; text: string }> = {
+    'AA': {bg: '#0078D2', text: '#FFFFFF'},
+    'DL': {bg: '#E01A4F', text: '#FFFFFF'},
+    'UA': {bg: '#002244', text: '#FFFFFF'},
+    'WN': {bg: '#304CB2', text: '#FFFFFF'},
+    'AC': {bg: '#D82F2F', text: '#FFFFFF'},
+    'B6': {bg: '#003A70', text: '#FFFFFF'},
+    'AS': {bg: '#0060AF', text: '#FFFFFF'},
+    'WS': {bg: '#0F8ED0', text: '#FFFFFF'},
+    'NK': {bg: '#FFC600', text: '#000000'},
+    'F9': {bg: '#018A32', text: '#FFFFFF'},
+    'TS': {bg: '#1F83BE', text: '#FFFFFF'},
+    'HA': {bg: '#481D7D', text: '#FFFFFF'},
+    'G4': {bg: '#FFC72C', text: '#000000'},
+    'PD': {bg: '#00BDF2', text: '#FFFFFF'},
+    'F8': {bg: '#59CAEE', text: '#000000'},
+    'Y9': {bg: '#A3CE39', text: '#000000'},
 };
 
-// Generate consistent color for unknown airlines based on code
-const getAirlineColor = (code: string): { bg: string; text: string; border: string } => {
-    if (AIRLINE_COLORS[code]) {
-        return AIRLINE_COLORS[code];
-    }
-
-    // Generate deterministic color from airline code
-    let hash = 0;
-    for (let i = 0; i < code.length; i++) {
-        hash = code.charCodeAt(i) + ((hash << 5) - hash);
-    }
-
-    // Generate hue from hash (avoiding yellow-green range for readability)
-    const hue = ((hash % 300) + 180) % 360;
-    const saturation = 65 + (hash % 20);
-    const lightness = 35 + (hash % 15);
-
-    return {
-        bg: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
-        text: '#FFFFFF',
-        border: `hsl(${hue}, ${saturation}%, ${lightness - 10}%)`,
-    };
+const getAirlineColor = (code: string): { bg: string; text: string } => {
+    return AIRLINE_COLORS[code] || {bg: '#757575', text: '#FFFFFF'};
 };
-
-// Helper to format time from Dayjs or string
-const formatTimeDisplay = (time: dayjs.Dayjs | string | undefined): string => {
-    if (!time) return '--:--';
-    const dayjsTime = dayjs.isDayjs(time) ? time : dayjs(time);
-    if (!dayjsTime.isValid()) return '--:--';
-    return dayjsTime.format('h:mm A');
-};
-
-// Animation keyframes
-const slideIn = keyframes`
-    from {
-        opacity: 0;
-        transform: translateY(-4px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-`;
-
-const shimmer = keyframes`
-    0% {
-        background-position: -200% 0;
-    }
-    100% {
-        background-position: 200% 0;
-    }
-`;
 
 export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                                                               isDeliveryJobType,
@@ -192,7 +131,6 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
     const [agentSortDirection, setAgentSortDirection] = useState<SortDirection>('asc');
     const [outboundAnchorEl, setOutboundAnchorEl] = useState<null | HTMLElement>(null);
     const [inboundAnchorEl, setInboundAnchorEl] = useState<null | HTMLElement>(null);
-    const [hoveredFlight, setHoveredFlight] = useState<string | null>(null);
 
     const toggleFlightExpand = (flightId: string) => {
         setExpandedFlights(prev => {
@@ -306,764 +244,233 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
         });
     }, [agentOptions, agentSortKey, agentSortDirection]);
 
+    const formatDateTime = (time: dayjs.Dayjs | string | undefined): string => {
+        if (!time) return '--';
+        const dayjsTime = dayjs.isDayjs(time) ? time : dayjs(time);
+        if (!dayjsTime.isValid()) return '--';
+        return dayjsTime.format('MM/DD/YYYY HH:mm');
+    };
+
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
         }).format(amount);
     };
 
-    // Airline badge with brand colors
-    const AirlineBadge: React.FC<{ code: string; isCodeShare?: boolean }> = ({code, isCodeShare}) => {
-        const colors = getAirlineColor(code);
+    // Airline chip component matching original styling
+    const AirlineChip: React.FC<{
+        code: string;
+        label?: string;
+        isSelected?: boolean;
+        isAllChip?: boolean;
+        onClick: () => void;
+    }> = ({code, label, isSelected, isAllChip, onClick}) => {
+        const colors = isAllChip ? {bg: '#f5f5f5', text: 'rgba(0,0,0,0.87)'} : getAirlineColor(code);
         return (
-            <Box
+            <Button
+                onClick={onClick}
                 sx={{
+                    height: 32,
+                    borderRadius: '16px',
+                    minWidth: 0,
+                    px: 1.5,
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 0.5,
-                    px: 1.25,
-                    py: 0.5,
-                    borderRadius: '6px',
                     bgcolor: colors.bg,
-                    border: `2px solid ${colors.border}`,
-                    boxShadow: `0 2px 4px ${alpha(colors.bg, 0.3)}`,
-                    transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                    color: colors.text,
+                    textTransform: 'none',
+                    border: isSelected ? `2px solid ${theme.palette.primary.main}` : '2px solid transparent',
+                    boxShadow: isSelected ? theme.shadows[2] : 'none',
                     '&:hover': {
-                        transform: 'scale(1.05)',
-                        boxShadow: `0 4px 8px ${alpha(colors.bg, 0.4)}`,
+                        bgcolor: alpha(colors.bg, 0.85),
                     },
                 }}
             >
-                <Typography
-                    sx={{
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        color: colors.text,
-                        letterSpacing: '0.08em',
-                        textShadow: colors.text === '#FFFFFF' ? '0 1px 2px rgba(0,0,0,0.2)' : 'none',
-                    }}
-                >
-                    {code}
+                <FlightIcon sx={{fontSize: 18}}/>
+                <Typography sx={{fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap'}}>
+                    {label || code}
                 </Typography>
-                {isCodeShare && (
-                    <Typography
-                        sx={{
-                            fontSize: '0.6rem',
-                            fontWeight: 700,
-                            color: alpha(colors.text, 0.7),
-                        }}
-                    >
-                        *
-                    </Typography>
-                )}
-            </Box>
+            </Button>
         );
     };
 
-    // Airport code display
-    const AirportCode: React.FC<{ code: string; time: string; timezone?: string; isOrigin?: boolean }> = ({
-                                                                                                              code,
-                                                                                                              time,
-                                                                                                              timezone,
-                                                                                                              isOrigin
-                                                                                                          }) => (
-        <Box sx={{textAlign: isOrigin ? 'left' : 'right', minWidth: 70}}>
-            <Typography
-                sx={{
-                    fontSize: '1rem',
-                    fontWeight: 700,
-                    color: theme.palette.text.primary,
-                    letterSpacing: '0.1em',
-                    lineHeight: 1,
-                }}
-            >
-                {code}
-            </Typography>
-            <Typography
-                sx={{
-                    fontSize: '0.75rem',
-                    fontWeight: 500,
-                    color: theme.palette.primary.main,
-                    mt: 0.25,
-                }}
-            >
-                {time}
-            </Typography>
-            {timezone && (
-                <Typography
-                    sx={{
-                        fontSize: '0.6rem',
-                        color: theme.palette.text.secondary,
-                        textTransform: 'uppercase',
-                    }}
-                >
-                    {timezone}
-                </Typography>
-            )}
-        </Box>
-    );
-
-    // Flight route visualization
-    const FlightRoute: React.FC<{ stops: number; duration: string; isNonstop: boolean }> = ({
-                                                                                                stops,
-                                                                                                duration,
-                                                                                                isNonstop
-                                                                                            }) => (
-        <Box
-            sx={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                mx: 1.5,
-                minWidth: 80,
-            }}
-        >
-            {/* Duration */}
-            <Typography
-                sx={{
-                    fontSize: '0.65rem',
-                    color: theme.palette.text.secondary,
-                    mb: 0.5,
-                }}
-            >
-                {duration}
-            </Typography>
-
-            {/* Route line */}
-            <Box sx={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                position: 'relative',
-            }}>
-                {/* Origin dot */}
-                <Box
-                    sx={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: '50%',
-                        bgcolor: theme.palette.primary.main,
-                        flexShrink: 0,
-                    }}
-                />
-
-                {/* Line with stops */}
-                <Box
-                    sx={{
-                        flex: 1,
-                        height: 2,
-                        bgcolor: alpha(theme.palette.text.secondary, 0.3),
-                        mx: 0.5,
-                        position: 'relative',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-evenly',
-                    }}
-                >
-                    {/* Stop indicators */}
-                    {Array.from({length: stops}).map((_, i) => (
-                        <Box
-                            key={i}
-                            sx={{
-                                width: 4,
-                                height: 4,
-                                borderRadius: '50%',
-                                bgcolor: theme.palette.warning.main,
-                                border: `1px solid ${theme.palette.background.paper}`,
-                            }}
-                        />
-                    ))}
-
-                    {/* Plane icon */}
-                    <FlightIcon
-                        sx={{
-                            position: 'absolute',
-                            left: '50%',
-                            transform: 'translateX(-50%) rotate(90deg)',
-                            fontSize: 12,
-                            color: theme.palette.primary.main,
-                        }}
-                    />
-                </Box>
-
-                {/* Destination dot */}
-                <Box
-                    sx={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: '50%',
-                        bgcolor: isNonstop ? theme.palette.success.main : theme.palette.warning.main,
-                        flexShrink: 0,
-                    }}
-                />
-            </Box>
-
-            {/* Stops label */}
-            <Typography
-                sx={{
-                    fontSize: '0.6rem',
-                    fontWeight: 600,
-                    color: isNonstop ? theme.palette.success.main : theme.palette.warning.main,
-                    mt: 0.5,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                }}
-            >
-                {isNonstop ? 'NONSTOP' : `${stops} STOP${stops > 1 ? 'S' : ''}`}
-            </Typography>
-        </Box>
-    );
-
-    // Sort header button
-    const SortHeader: React.FC<{
-        label: string;
-        sortKey: FlightSortKey;
-        currentKey: FlightSortKey;
-        direction: SortDirection;
+    // Action icon button
+    const ActionIcon: React.FC<{
+        icon: React.ReactNode;
+        tooltip: string;
         onClick: () => void;
-        align?: 'left' | 'center' | 'right';
-    }> = ({label, sortKey, currentKey, direction, onClick, align = 'left'}) => (
-        <Box
-            onClick={onClick}
-            sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: align === 'right' ? 'flex-end' : align === 'center' ? 'center' : 'flex-start',
-                gap: 0.25,
-                cursor: 'pointer',
-                userSelect: 'none',
-                py: 0.5,
-                '&:hover': {
-                    '& .sort-label': {
-                        color: theme.palette.text.primary,
-                    },
-                },
-            }}
-        >
-            <Typography
-                className="sort-label"
+    }> = ({icon, tooltip, onClick}) => (
+        <Tooltip title={tooltip} placement="left">
+            <IconButton
+                size="small"
+                onClick={onClick}
                 sx={{
-                    fontSize: '0.6rem',
-                    fontWeight: 600,
-                    color: currentKey === sortKey ? theme.palette.primary.main : theme.palette.text.secondary,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
-                    transition: 'color 0.15s',
+                    color: theme.palette.text.secondary,
+                    '&:hover': {
+                        color: theme.palette.primary.main,
+                        bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    },
                 }}
             >
-                {label}
-            </Typography>
-            {currentKey === sortKey && (
-                direction === 'asc' ?
-                    <SortUpIcon sx={{fontSize: 12, color: theme.palette.primary.main}}/> :
-                    <SortDownIcon sx={{fontSize: 12, color: theme.palette.primary.main}}/>
-            )}
-        </Box>
+                {icon}
+            </IconButton>
+        </Tooltip>
     );
 
-    // Flight card component
-    const FlightCard: React.FC<{ flight: FlightOption; index: number }> = ({flight, index}) => {
-        const flightId = flight.connectionId || flight.flightNumber;
-        const isExpanded = expandedFlights.has(flightId);
-        const isHovered = hoveredFlight === flightId;
-
-        return (
-            <Box
-                onMouseEnter={() => setHoveredFlight(flightId)}
-                onMouseLeave={() => setHoveredFlight(null)}
-                sx={{
-                    bgcolor: theme.palette.background.paper,
-                    borderRadius: '8px',
-                    border: `1px solid ${isHovered ? alpha(theme.palette.primary.main, 0.3) : theme.palette.divider}`,
-                    overflow: 'hidden',
-                    transition: 'all 0.2s ease',
-                    animation: `${slideIn} 0.3s ease ${index * 0.05}s both`,
-                    '&:hover': {
-                        boxShadow: theme.shadows[2],
-                    },
-                }}
-            >
-                {/* Main content row */}
-                <Box sx={{p: 1.5}}>
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5}}>
-                        {/* Airline & Flight Number */}
-                        <Box sx={{minWidth: 85}}>
-                            <AirlineBadge code={flight.airline} isCodeShare={flight.isCodeShare}/>
-                            <Typography
-                                sx={{
-                                    fontSize: '0.75rem',
-                                    fontWeight: 500,
-                                    color: theme.palette.text.primary,
-                                    mt: 0.5,
-                                }}
-                            >
-                                {flight.flightNumber}
-                            </Typography>
-                        </Box>
-
-                        {/* Route visualization */}
-                        <Box sx={{
-                            flex: 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            minWidth: 0,
-                        }}>
-                            <AirportCode
-                                code={flight.departureAirport}
-                                time={formatTimeDisplay(flight.departureTime)}
-                                timezone={flight._departureTimeZoneStr}
-                                isOrigin
-                            />
-                            <FlightRoute
-                                stops={flight.stops}
-                                duration={flight.elapsedTime ? formatMinutesToTime(flight.elapsedTime) : flight.duration}
-                                isNonstop={flight.stops === 0}
-                            />
-                            <AirportCode
-                                code={flight.arrivalAirport}
-                                time={formatTimeDisplay(flight.arrivalTime)}
-                                timezone={flight._arrivalTimeZoneStr}
-                            />
-                        </Box>
-
-                        {/* Price & Actions */}
-                        <Box sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'flex-end',
-                            gap: 0.5,
-                            ml: 1,
-                        }}>
-                            <Typography
-                                sx={{
-                                    fontSize: '1rem',
-                                    fontWeight: 700,
-                                    color: theme.palette.text.primary,
-                                }}
-                            >
-                                {formatCurrency(flight.amount)}
-                            </Typography>
-                            <Box sx={{display: 'flex', gap: 0.5}}>
-                                {flight.isMultiSegment && (
-                                    <IconButton
-                                        size="small"
-                                        onClick={() => toggleFlightExpand(flightId)}
-                                        sx={{
-                                            width: 24,
-                                            height: 24,
-                                            bgcolor: alpha(theme.palette.text.secondary, 0.1),
-                                            '&:hover': {
-                                                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                            },
-                                        }}
-                                    >
-                                        {isExpanded ?
-                                            <ExpandLessIcon sx={{fontSize: 14, color: theme.palette.text.secondary}}/> :
-                                            <ExpandMoreIcon sx={{fontSize: 14, color: theme.palette.text.secondary}}/>
-                                        }
-                                    </IconButton>
-                                )}
-                                <Tooltip title="Assign Flight" arrow>
-                                    <IconButton
-                                        size="small"
-                                        onClick={() => onAddFlightToJob(flight)}
-                                        sx={{
-                                            width: 24,
-                                            height: 24,
-                                            bgcolor: alpha(theme.palette.success.main, 0.1),
-                                            border: `1px solid ${alpha(theme.palette.success.main, 0.3)}`,
-                                            '&:hover': {
-                                                bgcolor: alpha(theme.palette.success.main, 0.2),
-                                            },
-                                        }}
-                                    >
-                                        <AddIcon sx={{fontSize: 14, color: theme.palette.success.main}}/>
-                                    </IconButton>
-                                </Tooltip>
-                            </Box>
-                        </Box>
-                    </Box>
-
-                    {/* Aircraft info line */}
-                    <Box sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1.5,
-                        mt: 1,
-                        pt: 1,
-                        borderTop: `1px solid ${theme.palette.divider}`,
-                    }}>
-                        <Typography
-                            sx={{
-                                fontSize: '0.65rem',
-                                color: theme.palette.text.secondary,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 0.5,
-                            }}
-                        >
-                            <SeatIcon sx={{fontSize: 12}}/>
-                            {flight.aircraft || 'Aircraft TBD'}
-                        </Typography>
-                        <Box sx={{flex: 1}}/>
-                        {flight.serviceClasses?.length > 0 && (
-                            <Typography
-                                sx={{
-                                    fontSize: '0.6rem',
-                                    color: theme.palette.text.secondary,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.05em',
-                                }}
-                            >
-                                {flight.serviceClasses.join(' / ')}
-                            </Typography>
-                        )}
-                    </Box>
-                </Box>
-
-                {/* Expanded segment details */}
-                {flight.isMultiSegment && (
-                    <Collapse in={isExpanded}>
-                        <Box sx={{
-                            bgcolor: alpha(theme.palette.grey[500], 0.05),
-                            borderTop: `1px solid ${theme.palette.divider}`,
-                            p: 1.5,
-                        }}>
-                            {renderSegmentDetails(flight.flightSegments)}
-                        </Box>
-                    </Collapse>
-                )}
-            </Box>
-        );
-    };
-
-    const renderSegmentDetails = (segments: FlightSegment[]) => {
-        return (
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
-                {segments.map((segment, index) => {
-                    const segmentColors = getAirlineColor(segment.carrierFsCode);
-                    return (
-                    <React.Fragment key={segment.segmentOrder}>
-                        {/* Segment row */}
-                        <Box sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1.5,
-                            py: 0.5,
-                        }}>
-                            {/* Segment badge with airline color */}
-                            <Box
-                                sx={{
-                                    width: 22,
-                                    height: 22,
-                                    borderRadius: '50%',
-                                    bgcolor: segmentColors.bg,
-                                    border: `2px solid ${segmentColors.border}`,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    boxShadow: `0 1px 3px ${alpha(segmentColors.bg, 0.3)}`,
-                                }}
-                            >
-                                <Typography
-                                    sx={{
-                                        fontSize: '0.6rem',
-                                        fontWeight: 700,
-                                        color: segmentColors.text,
-                                    }}
-                                >
-                                    {segment.segmentOrder + 1}
+    // Segment details row for multi-segment flights
+    const SegmentDetailsRow: React.FC<{ segments: FlightSegment[] }> = ({segments}) => (
+        <TableRow>
+            <TableCell colSpan={9} sx={{py: 0, bgcolor: alpha(theme.palette.grey[100], 0.5)}}>
+                <Box sx={{py: 2, px: 2}}>
+                    {segments.map((segment, index) => (
+                        <Box key={segment.segmentOrder} sx={{mb: index < segments.length - 1 ? 2 : 0}}>
+                            {/* Segment header */}
+                            <Box sx={{display: 'flex', alignItems: 'center', gap: 2, mb: 1}}>
+                                <Typography sx={{fontSize: 12, fontWeight: 600, color: theme.palette.text.secondary}}>
+                                    Segment {segment.segmentOrder + 1} of {segments.length}
                                 </Typography>
-                            </Box>
-
-                            {/* Flight info with airline badge */}
-                            <Box
-                                sx={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    px: 0.75,
-                                    py: 0.25,
-                                    borderRadius: '4px',
-                                    bgcolor: segmentColors.bg,
-                                    minWidth: 55,
-                                }}
-                            >
-                                <Typography
-                                    sx={{
-                                        fontSize: '0.65rem',
-                                        fontWeight: 700,
-                                        color: segmentColors.text,
-                                        letterSpacing: '0.02em',
-                                    }}
-                                >
+                                <Typography sx={{fontSize: 12, fontWeight: 600, color: theme.palette.primary.main}}>
                                     {segment.carrierFsCode}{segment.flightNumber}
                                 </Typography>
                             </Box>
 
-                            {/* Origin */}
-                            <Box sx={{minWidth: 60}}>
-                                <Typography sx={{
-                                    fontSize: '0.75rem',
-                                    fontWeight: 600,
-                                    color: theme.palette.text.primary
+                            {/* Segment times */}
+                            <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 3}}>
+                                {/* Departure */}
+                                <Box sx={{minWidth: 140}}>
+                                    <Typography sx={{fontSize: 13, fontWeight: 500}}>
+                                        {formatDateTime(segment.departureTime)}
+                                    </Typography>
+                                    <Typography sx={{fontSize: 14, fontWeight: 700, color: theme.palette.primary.main}}>
+                                        {segment.departureAirportFsCode}
+                                    </Typography>
+                                    {segment.departureTerminal && (
+                                        <Typography sx={{fontSize: 11, color: theme.palette.text.secondary}}>
+                                            Terminal {segment.departureTerminal}
+                                        </Typography>
+                                    )}
+                                    {segment.departureAirportName && (
+                                        <Typography sx={{fontSize: 11, color: theme.palette.text.secondary}}>
+                                            {segment.departureAirportName}
+                                        </Typography>
+                                    )}
+                                </Box>
+
+                                {/* Flight line */}
+                                <Box sx={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    minWidth: 100
                                 }}>
-                                    {segment.departureAirportFsCode}
-                                </Typography>
-                                <Typography sx={{fontSize: '0.65rem', color: theme.palette.primary.main, fontWeight: 500}}>
-                                    {formatTimeDisplay(segment.departureTime)}
-                                </Typography>
+                                    <Typography sx={{fontSize: 11, color: theme.palette.text.secondary, mb: 0.5}}>
+                                        {formatMinutesToTime(segment.elapsedTime)}
+                                    </Typography>
+                                    <Box sx={{
+                                        width: 80,
+                                        height: 2,
+                                        bgcolor: theme.palette.divider,
+                                        position: 'relative'
+                                    }}>
+                                        <FlightIcon sx={{
+                                            position: 'absolute',
+                                            left: '50%',
+                                            top: '50%',
+                                            transform: 'translate(-50%, -50%) rotate(90deg)',
+                                            fontSize: 14,
+                                            color: theme.palette.text.secondary,
+                                        }}/>
+                                    </Box>
+                                    {segment.aircraftName && (
+                                        <Typography sx={{fontSize: 11, color: theme.palette.text.secondary, mt: 0.5}}>
+                                            {segment.aircraftName}
+                                        </Typography>
+                                    )}
+                                </Box>
+
+                                {/* Arrival */}
+                                <Box sx={{minWidth: 140}}>
+                                    <Typography sx={{fontSize: 13, fontWeight: 500}}>
+                                        {formatDateTime(segment.arrivalTime)}
+                                    </Typography>
+                                    <Typography sx={{fontSize: 14, fontWeight: 700, color: theme.palette.primary.main}}>
+                                        {segment.arrivalAirportFsCode}
+                                    </Typography>
+                                    {segment.arrivalTerminal && (
+                                        <Typography sx={{fontSize: 11, color: theme.palette.text.secondary}}>
+                                            Terminal {segment.arrivalTerminal}
+                                        </Typography>
+                                    )}
+                                    {segment.arrivalAirportName && (
+                                        <Typography sx={{fontSize: 11, color: theme.palette.text.secondary}}>
+                                            {segment.arrivalAirportName}
+                                        </Typography>
+                                    )}
+                                </Box>
                             </Box>
 
-                            {/* Arrow */}
-                            <ChevronRightIcon sx={{fontSize: 14, color: theme.palette.text.secondary}}/>
-
-                            {/* Destination */}
-                            <Box sx={{minWidth: 60}}>
-                                <Typography sx={{
-                                    fontSize: '0.75rem',
-                                    fontWeight: 600,
-                                    color: theme.palette.text.primary
+                            {/* Connection time */}
+                            {index < segments.length - 1 && (
+                                <Box sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1,
+                                    mt: 1.5,
+                                    pt: 1.5,
+                                    borderTop: `1px dashed ${theme.palette.divider}`,
                                 }}>
-                                    {segment.arrivalAirportFsCode}
-                                </Typography>
-                                <Typography sx={{fontSize: '0.65rem', color: theme.palette.primary.main, fontWeight: 500}}>
-                                    {formatTimeDisplay(segment.arrivalTime)}
-                                </Typography>
-                            </Box>
-
-                            {/* Duration */}
-                            <Typography
-                                sx={{
-                                    fontSize: '0.65rem',
-                                    color: theme.palette.text.secondary,
-                                    ml: 'auto',
-                                }}
-                            >
-                                {formatMinutesToTime(segment.elapsedTime)}
-                            </Typography>
+                                    <ScheduleIcon sx={{fontSize: 16, color: theme.palette.warning.main}}/>
+                                    <Typography sx={{fontSize: 12, fontWeight: 500, color: theme.palette.warning.main}}>
+                                        {getConnectionTime(segment, segments[index + 1])} layover
+                                    </Typography>
+                                </Box>
+                            )}
                         </Box>
-
-                        {/* Layover indicator */}
-                        {index < segments.length - 1 && (
-                            <Box sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1,
-                                pl: 4.5,
-                                py: 0.5,
-                            }}>
-                                <ScheduleIcon sx={{fontSize: 12, color: theme.palette.warning.main}}/>
-                                <Typography
-                                    sx={{
-                                        fontSize: '0.6rem',
-                                        fontWeight: 500,
-                                        color: theme.palette.warning.main,
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '0.05em',
-                                    }}
-                                >
-                                    {getConnectionTime(segment, segments[index + 1])} layover
-                                    at {segment.arrivalAirportFsCode}
-                                </Typography>
-                            </Box>
-                        )}
-                    </React.Fragment>
-                    );
-                })}
-            </Box>
-        );
-    };
-
-    // Agent card component
-    const AgentCard: React.FC<{ agent: AgentOption; index: number }> = ({agent, index}) => (
-        <Box
-            sx={{
-                bgcolor: theme.palette.background.paper,
-                borderRadius: '8px',
-                border: `1px solid ${theme.palette.divider}`,
-                p: 1.5,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-                animation: `${slideIn} 0.3s ease ${index * 0.05}s both`,
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                    borderColor: alpha(theme.palette.primary.main, 0.3),
-                    boxShadow: theme.shadows[1],
-                },
-            }}
-        >
-            {/* Agent info */}
-            <Box sx={{flex: 1, minWidth: 0}}>
-                <Typography
-                    sx={{
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        color: theme.palette.text.primary,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                    }}
-                >
-                    {agent.agentName}
-                </Typography>
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mt: 0.5}}>
-                    {/* Ranking stars */}
-                    <Box sx={{display: 'flex', gap: 0.25}}>
-                        {[1, 2, 3, 4, 5].map((star) => (
-                            star <= (parseInt(agent.agentRanking) || 0) ?
-                                <StarIcon key={star} sx={{fontSize: 12, color: theme.palette.warning.main}}/> :
-                                <StarBorderIcon key={star} sx={{fontSize: 12, color: theme.palette.text.disabled}}/>
-                        ))}
-                    </Box>
-                    {agent.agentNotes && (
-                        <Typography
-                            sx={{
-                                fontSize: '0.65rem',
-                                color: theme.palette.text.secondary,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                maxWidth: 120,
-                            }}
-                        >
-                            {agent.agentNotes}
-                        </Typography>
-                    )}
+                    ))}
                 </Box>
-            </Box>
-
-            {/* Rate */}
-            <Typography
-                sx={{
-                    fontSize: '0.9rem',
-                    fontWeight: 700,
-                    color: theme.palette.text.primary,
-                }}
-            >
-                {formatCurrency(agent.agentRate)}
-            </Typography>
-
-            {/* Actions */}
-            <Box sx={{display: 'flex', gap: 0.5}}>
-                <Tooltip title="Send Quote Request" arrow>
-                    <IconButton
-                        size="small"
-                        onClick={() => onSendQuoteRequest(agent)}
-                        sx={{
-                            width: 28,
-                            height: 28,
-                            bgcolor: alpha(theme.palette.text.secondary, 0.1),
-                            '&:hover': {
-                                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                            },
-                        }}
-                    >
-                        <RequestQuoteIcon sx={{fontSize: 14, color: theme.palette.text.secondary}}/>
-                    </IconButton>
-                </Tooltip>
-                <Tooltip title="Assign Agent" arrow>
-                    <IconButton
-                        size="small"
-                        onClick={() => onAddAgentToJob(agent)}
-                        sx={{
-                            width: 28,
-                            height: 28,
-                            bgcolor: alpha(theme.palette.success.main, 0.1),
-                            border: `1px solid ${alpha(theme.palette.success.main, 0.3)}`,
-                            '&:hover': {
-                                bgcolor: alpha(theme.palette.success.main, 0.2),
-                            },
-                        }}
-                    >
-                        <AddIcon sx={{fontSize: 14, color: theme.palette.success.main}}/>
-                    </IconButton>
-                </Tooltip>
-            </Box>
-        </Box>
+            </TableCell>
+        </TableRow>
     );
 
-    // Loading skeleton
-    const LoadingSkeleton = () => (
-        <Box sx={{display: 'flex', flexDirection: 'column', gap: 1, p: 1.5}}>
-            {[1, 2, 3, 4].map((i) => (
-                <Box
-                    key={i}
-                    sx={{
-                        height: 80,
-                        borderRadius: '8px',
-                        bgcolor: alpha(theme.palette.text.secondary, 0.08),
-                        position: 'relative',
-                        overflow: 'hidden',
-                        '&::after': {
-                            content: '""',
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            background: `linear-gradient(90deg, transparent, ${alpha(theme.palette.background.paper, 0.4)}, transparent)`,
-                            backgroundSize: '200% 100%',
-                            animation: `${shimmer} 1.5s infinite`,
-                        },
-                    }}
-                />
-            ))}
-        </Box>
-    );
-
-    // Airport selector chip
-    const AirportChip: React.FC<{
-        icon: React.ReactNode;
-        label: string;
-        selected?: AirportSuggestion;
-        onClick: (e: React.MouseEvent<HTMLElement>) => void;
-    }> = ({icon, label, selected, onClick}) => (
-        <Box
-            onClick={onClick}
-            sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-                px: 1,
-                py: 0.5,
-                borderRadius: '6px',
-                bgcolor: selected ? alpha(theme.palette.primary.main, 0.1) : alpha(theme.palette.text.secondary, 0.05),
-                border: `1px solid ${selected ? alpha(theme.palette.primary.main, 0.3) : 'transparent'}`,
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-                '&:hover': {
-                    bgcolor: alpha(theme.palette.primary.main, 0.15),
+    // Loading indicator
+    const LoadingIndicator = () => (
+        <Box sx={{
+            height: 4,
+            width: '100%',
+            bgcolor: alpha(theme.palette.primary.main, 0.1),
+            position: 'relative',
+            overflow: 'hidden',
+        }}>
+            <Box sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                height: '100%',
+                width: '30%',
+                bgcolor: theme.palette.primary.main,
+                animation: 'loading 1.5s infinite ease-in-out',
+                '@keyframes loading': {
+                    '0%': {left: '-30%'},
+                    '100%': {left: '100%'},
                 },
-            }}
-        >
-            {icon}
-            <Typography
-                sx={{
-                    fontSize: '0.7rem',
-                    fontWeight: 600,
-                    color: selected ? theme.palette.primary.main : theme.palette.text.secondary,
-                }}
-            >
-                {selected ? formatAirportCodeForDropdown(selected.text) : label}
-            </Typography>
+            }}/>
         </Box>
     );
 
     const renderFlightSection = () => {
         if (flightsLoading) {
-            return <LoadingSkeleton/>;
+            return <LoadingIndicator/>;
         }
 
         if (showNoJobSelectedMessage) {
             return (
                 <NoData
                     title="No Job Selected"
-                    message="Select a job to view available flights."
+                    message="Please select a job to view available flights."
                     icon="flight_takeoff"
                     showAction={false}
                     isUsCustomer={isUsCustomer}
@@ -1074,8 +481,8 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
         if (showJobHasAssignedFlightMessage) {
             return (
                 <NoData
-                    title="Flight Assigned"
-                    message="A flight has been assigned to this job."
+                    title="Flight Already Assigned"
+                    message="A flight has already been assigned to this job. This can be found in the job details widget."
                     icon="flight_takeoff"
                     showAction={false}
                     isUsCustomer={isUsCustomer}
@@ -1087,7 +494,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
             return (
                 <NoData
                     title="Missing Airport Info"
-                    message="Airport information not available for this job."
+                    message="Airport information not applicable or not provided for this job."
                     icon="local_airport"
                     showAction={false}
                     isUsCustomer={isUsCustomer}
@@ -1098,8 +505,8 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
         if (showNoFlightsAvailableMessage) {
             return (
                 <NoData
-                    title="No Flights"
-                    message={flightMessage || "No flights available."}
+                    title="No Flights Available"
+                    message={flightMessage || "No flights available for the specified criteria."}
                     icon="flight_takeoff"
                     showAction={false}
                     isUsCustomer={isUsCustomer}
@@ -1110,147 +517,72 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
         if (showFlightList) {
             return (
                 <Box sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-                    {/* Header controls */}
+                    {/* Airline filter chips */}
                     <Box sx={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: 1,
                         p: 1,
                         borderBottom: `1px solid ${theme.palette.divider}`,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 1,
                     }}>
-                        {/* Airport selectors & Search */}
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                            <AirportChip
-                                icon={<FlightTakeoffIcon sx={{fontSize: 14, color: theme.palette.primary.main}}/>}
-                                label="FROM"
-                                selected={selectedOutboundAirport}
-                                onClick={(e) => setOutboundAnchorEl(e.currentTarget)}
+                        <AirlineChip
+                            code="ALL"
+                            label="All"
+                            isAllChip
+                            isSelected={!selectedAirline}
+                            onClick={() => onFilterFlightsByAirline(null)}
+                        />
+                        {activeAirlineOptions?.map((airline) => (
+                            <AirlineChip
+                                key={airline.id}
+                                code={airline.text}
+                                isSelected={selectedAirline?.id === airline.id}
+                                onClick={() => onFilterFlightsByAirline(airline)}
                             />
-                            <SwapHorizIcon sx={{fontSize: 14, color: theme.palette.text.secondary}}/>
-                            <AirportChip
-                                icon={<FlightLandIcon sx={{fontSize: 14, color: theme.palette.primary.main}}/>}
-                                label="TO"
-                                selected={selectedInboundAirport}
-                                onClick={(e) => setInboundAnchorEl(e.currentTarget)}
-                            />
+                        ))}
 
-                            <Box sx={{flex: 1}}/>
+                        <Box sx={{flex: 1}}/>
 
-                            <TextField
-                                size="small"
-                                placeholder="Search..."
-                                value={flightSearchText}
-                                onChange={(e) => onFlightSearchChange(e.target.value)}
-                                sx={{
-                                    width: 140,
-                                    '& .MuiOutlinedInput-root': {
-                                        bgcolor: alpha(theme.palette.text.secondary, 0.05),
-                                        borderRadius: '6px',
-                                        '& fieldset': {
-                                            borderColor: 'transparent',
-                                        },
-                                        '&:hover fieldset': {
-                                            borderColor: alpha(theme.palette.primary.main, 0.3),
-                                        },
-                                        '&.Mui-focused fieldset': {
-                                            borderColor: theme.palette.primary.main,
-                                        },
-                                    },
-                                    '& .MuiOutlinedInput-input': {
-                                        py: 0.75,
-                                        fontSize: '0.75rem',
-                                        color: theme.palette.text.primary,
-                                        '&::placeholder': {
-                                            color: theme.palette.text.secondary,
-                                        },
-                                    },
-                                }}
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <SearchIcon sx={{fontSize: 16, color: theme.palette.text.secondary}}/>
-                                        </InputAdornment>
-                                    ),
-                                }}
-                            />
-                        </Box>
+                        {/* Departure airport selector */}
+                        <Button
+                            onClick={(e) => setOutboundAnchorEl(e.currentTarget)}
+                            sx={{
+                                height: 32,
+                                borderRadius: '16px',
+                                px: 1.5,
+                                bgcolor: alpha(theme.palette.text.secondary, 0.1),
+                                color: theme.palette.text.primary,
+                                textTransform: 'none',
+                                '&:hover': {bgcolor: alpha(theme.palette.text.secondary, 0.2)},
+                            }}
+                        >
+                            <FlightTakeoffIcon sx={{fontSize: 18, mr: 0.5}}/>
+                            <Typography sx={{fontSize: 12, fontWeight: 500}}>
+                                {selectedOutboundAirport ? formatAirportCodeForDropdown(selectedOutboundAirport.text) : 'From'}
+                            </Typography>
+                        </Button>
 
-                        {/* Airline filter chips */}
-                        <Box sx={{
-                            display: 'flex',
-                            gap: 0.75,
-                            flexWrap: 'wrap',
-                            maxHeight: 64,
-                            overflow: 'auto',
-                            py: 0.5,
-                        }}>
-                            <Box
-                                onClick={() => onFilterFlightsByAirline(null)}
-                                sx={{
-                                    px: 1.25,
-                                    py: 0.5,
-                                    borderRadius: '6px',
-                                    bgcolor: !selectedAirline ? theme.palette.text.primary : alpha(theme.palette.text.secondary, 0.08),
-                                    border: `2px solid ${!selectedAirline ? theme.palette.text.primary : theme.palette.divider}`,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.15s ease',
-                                    boxShadow: !selectedAirline ? `0 2px 4px ${alpha(theme.palette.text.primary, 0.25)}` : 'none',
-                                    '&:hover': {
-                                        transform: 'scale(1.05)',
-                                        boxShadow: `0 2px 6px ${alpha(theme.palette.text.primary, 0.2)}`,
-                                    },
-                                }}
-                            >
-                                <Typography
-                                    sx={{
-                                        fontSize: '0.7rem',
-                                        fontWeight: 700,
-                                        color: !selectedAirline ? theme.palette.background.paper : theme.palette.text.secondary,
-                                        letterSpacing: '0.05em',
-                                    }}
-                                >
-                                    ALL
-                                </Typography>
-                            </Box>
-                            {activeAirlineOptions?.map((airline) => {
-                                const airlineColors = getAirlineColor(airline.text);
-                                const isSelected = selectedAirline?.id === airline.id;
-                                return (
-                                <Tooltip key={airline.id} title={airline.fullAirlineName || airline.text} arrow>
-                                    <Box
-                                        onClick={() => onFilterFlightsByAirline(airline)}
-                                        sx={{
-                                            px: 1.25,
-                                            py: 0.5,
-                                            borderRadius: '6px',
-                                            bgcolor: isSelected ? airlineColors.bg : alpha(airlineColors.bg, 0.1),
-                                            border: `2px solid ${isSelected ? airlineColors.border : alpha(airlineColors.bg, 0.3)}`,
-                                            cursor: 'pointer',
-                                            transition: 'all 0.15s ease',
-                                            boxShadow: isSelected ? `0 2px 6px ${alpha(airlineColors.bg, 0.4)}` : 'none',
-                                            '&:hover': {
-                                                transform: 'scale(1.05)',
-                                                bgcolor: isSelected ? airlineColors.bg : alpha(airlineColors.bg, 0.2),
-                                                boxShadow: `0 2px 6px ${alpha(airlineColors.bg, 0.3)}`,
-                                            },
-                                        }}
-                                    >
-                                        <Typography
-                                            sx={{
-                                                fontSize: '0.7rem',
-                                                fontWeight: 700,
-                                                color: isSelected ? airlineColors.text : airlineColors.bg,
-                                                letterSpacing: '0.05em',
-                                                textShadow: isSelected && airlineColors.text === '#FFFFFF' ? '0 1px 2px rgba(0,0,0,0.2)' : 'none',
-                                            }}
-                                        >
-                                            {airline.text}
-                                        </Typography>
-                                    </Box>
-                                </Tooltip>
-                                );
-                            })}
-                        </Box>
+                        <Typography sx={{color: theme.palette.text.secondary}}>→</Typography>
+
+                        {/* Arrival airport selector */}
+                        <Button
+                            onClick={(e) => setInboundAnchorEl(e.currentTarget)}
+                            sx={{
+                                height: 32,
+                                borderRadius: '16px',
+                                px: 1.5,
+                                bgcolor: alpha(theme.palette.text.secondary, 0.1),
+                                color: theme.palette.text.primary,
+                                textTransform: 'none',
+                                '&:hover': {bgcolor: alpha(theme.palette.text.secondary, 0.2)},
+                            }}
+                        >
+                            <FlightLandIcon sx={{fontSize: 18, mr: 0.5}}/>
+                            <Typography sx={{fontSize: 12, fontWeight: 500}}>
+                                {selectedInboundAirport ? formatAirportCodeForDropdown(selectedInboundAirport.text) : 'To'}
+                            </Typography>
+                        </Button>
                     </Box>
 
                     {/* Airport menus */}
@@ -1260,13 +592,11 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                         onClose={() => setOutboundAnchorEl(null)}
                     >
                         {selectedOutboundAirport && (
-                            <MenuItem
-                                onClick={() => {
-                                    onOutboundAirportChange(null);
-                                    setOutboundAnchorEl(null);
-                                }}
-                            >
-                                <ClearIcon sx={{mr: 1, fontSize: 16}}/> Clear
+                            <MenuItem onClick={() => {
+                                onOutboundAirportChange(null);
+                                setOutboundAnchorEl(null);
+                            }}>
+                                <ClearIcon sx={{mr: 1, fontSize: 18}}/> Clear selection
                             </MenuItem>
                         )}
                         {outboundAirportOptions?.map((airport) => (
@@ -1276,10 +606,11 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                     onOutboundAirportChange(airport);
                                     setOutboundAnchorEl(null);
                                 }}
-                                sx={{}}
                             >
-                                {selectedOutboundAirport?.id === airport.id &&
-                                    <CheckIcon sx={{mr: 1, fontSize: 16, color: theme.palette.primary.main}}/>}
+                                {selectedOutboundAirport?.id === airport.id && (
+                                    <CheckIcon sx={{mr: 1, fontSize: 18, color: theme.palette.primary.main}}/>
+                                )}
+                                {selectedOutboundAirport?.id !== airport.id && <Box sx={{width: 26}}/>}
                                 {airport.text}
                             </MenuItem>
                         ))}
@@ -1291,13 +622,11 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                         onClose={() => setInboundAnchorEl(null)}
                     >
                         {selectedInboundAirport && (
-                            <MenuItem
-                                onClick={() => {
-                                    onInboundAirportChange(null);
-                                    setInboundAnchorEl(null);
-                                }}
-                            >
-                                <ClearIcon sx={{mr: 1, fontSize: 16}}/> Clear
+                            <MenuItem onClick={() => {
+                                onInboundAirportChange(null);
+                                setInboundAnchorEl(null);
+                            }}>
+                                <ClearIcon sx={{mr: 1, fontSize: 18}}/> Clear selection
                             </MenuItem>
                         )}
                         {inboundAirportOptions?.map((airport) => (
@@ -1307,104 +636,295 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                     onInboundAirportChange(airport);
                                     setInboundAnchorEl(null);
                                 }}
-                                sx={{}}
                             >
-                                {selectedInboundAirport?.id === airport.id &&
-                                    <CheckIcon sx={{mr: 1, fontSize: 16, color: theme.palette.primary.main}}/>}
+                                {selectedInboundAirport?.id === airport.id && (
+                                    <CheckIcon sx={{mr: 1, fontSize: 18, color: theme.palette.primary.main}}/>
+                                )}
+                                {selectedInboundAirport?.id !== airport.id && <Box sx={{width: 26}}/>}
                                 {airport.text}
                             </MenuItem>
                         ))}
                     </Menu>
 
-                    {/* Column headers */}
-                    <Box sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        px: 1.5,
-                        py: 0.75,
-                        borderBottom: `1px solid ${theme.palette.divider}`,
-                    }}>
-                        <Box sx={{minWidth: 85}}>
-                            <SortHeader label="Flight" sortKey="flightNumber" currentKey={flightSortKey}
-                                        direction={flightSortDirection}
-                                        onClick={() => handleFlightSort('flightNumber')}/>
-                        </Box>
-                        <Box sx={{flex: 1, display: 'flex', justifyContent: 'space-between', px: 2}}>
-                            <SortHeader label="Depart" sortKey="departureTime" currentKey={flightSortKey}
-                                        direction={flightSortDirection}
-                                        onClick={() => handleFlightSort('departureTime')}/>
-                            <SortHeader label="Stops" sortKey="stops" currentKey={flightSortKey}
-                                        direction={flightSortDirection} onClick={() => handleFlightSort('stops')}
-                                        align="center"/>
-                            <SortHeader label="Arrive" sortKey="arrivalTime" currentKey={flightSortKey}
-                                        direction={flightSortDirection} onClick={() => handleFlightSort('arrivalTime')}
-                                        align="right"/>
-                        </Box>
-                        <Box sx={{minWidth: 80, textAlign: 'right'}}>
-                            <SortHeader label="Price" sortKey="amount" currentKey={flightSortKey}
-                                        direction={flightSortDirection} onClick={() => handleFlightSort('amount')}
-                                        align="right"/>
-                        </Box>
+                    {/* Search input */}
+                    <Box sx={{p: 1, borderBottom: `1px solid ${theme.palette.divider}`}}>
+                        <TextField
+                            fullWidth
+                            size="small"
+                            placeholder="Search by flight number, airline, airport, or aircraft..."
+                            value={flightSearchText}
+                            onChange={(e) => onFlightSearchChange(e.target.value)}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon sx={{fontSize: 20, color: theme.palette.text.secondary}}/>
+                                    </InputAdornment>
+                                ),
+                            }}
+                            sx={{
+                                '& .MuiOutlinedInput-root': {
+                                    bgcolor: theme.palette.background.paper,
+                                },
+                            }}
+                        />
                     </Box>
 
-                    {/* Flight list */}
-                    <Box sx={{
-                        flex: 1,
-                        overflow: 'auto',
-                        p: 1,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 0.75,
-                    }}>
-                        {sortedFlights.map((flight, index) => (
-                            <FlightCard
-                                key={`${flight.connectionId || flight.flightNumber}-${flight.departureTime?.valueOf()}-${index}`}
-                                flight={flight}
-                                index={index}
-                            />
-                        ))}
-                    </Box>
+                    {/* Flight table */}
+                    <TableContainer sx={{flex: 1, overflow: 'auto'}}>
+                        <Table size="small" stickyHeader>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>
+                                        <TableSortLabel
+                                            active={flightSortKey === 'airline'}
+                                            direction={flightSortKey === 'airline' ? flightSortDirection : 'asc'}
+                                            onClick={() => handleFlightSort('airline')}
+                                        >
+                                            Airline
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell>
+                                        <TableSortLabel
+                                            active={flightSortKey === 'flightNumber'}
+                                            direction={flightSortKey === 'flightNumber' ? flightSortDirection : 'asc'}
+                                            onClick={() => handleFlightSort('flightNumber')}
+                                        >
+                                            Flight No
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell>
+                                        <TableSortLabel
+                                            active={flightSortKey === 'departureTime'}
+                                            direction={flightSortKey === 'departureTime' ? flightSortDirection : 'asc'}
+                                            onClick={() => handleFlightSort('departureTime')}
+                                        >
+                                            Departure
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell>
+                                        <TableSortLabel
+                                            active={flightSortKey === 'arrivalTime'}
+                                            direction={flightSortKey === 'arrivalTime' ? flightSortDirection : 'asc'}
+                                            onClick={() => handleFlightSort('arrivalTime')}
+                                        >
+                                            Arrival
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell>
+                                        <TableSortLabel
+                                            active={flightSortKey === 'elapsedTime'}
+                                            direction={flightSortKey === 'elapsedTime' ? flightSortDirection : 'asc'}
+                                            onClick={() => handleFlightSort('elapsedTime')}
+                                        >
+                                            Duration
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell>
+                                        <TableSortLabel
+                                            active={flightSortKey === 'stops'}
+                                            direction={flightSortKey === 'stops' ? flightSortDirection : 'asc'}
+                                            onClick={() => handleFlightSort('stops')}
+                                        >
+                                            Stops
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell>
+                                        <TableSortLabel
+                                            active={flightSortKey === 'amount'}
+                                            direction={flightSortKey === 'amount' ? flightSortDirection : 'asc'}
+                                            onClick={() => handleFlightSort('amount')}
+                                        >
+                                            Rate
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell>
+                                        <TableSortLabel
+                                            active={flightSortKey === 'aircraft'}
+                                            direction={flightSortKey === 'aircraft' ? flightSortDirection : 'asc'}
+                                            onClick={() => handleFlightSort('aircraft')}
+                                        >
+                                            Aircraft
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell>Actions</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {sortedFlights.map((flight, index) => {
+                                    const flightId = flight.connectionId || flight.flightNumber;
+                                    const isExpanded = expandedFlights.has(flightId);
+                                    const airlineColor = getAirlineColor(flight.airline);
+
+                                    return (
+                                        <React.Fragment key={`${flightId}-${index}`}>
+                                            <TableRow
+                                                hover
+                                                sx={{
+                                                    '&:hover': {bgcolor: alpha(theme.palette.primary.main, 0.04)},
+                                                }}
+                                            >
+                                                <TableCell>
+                                                    <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
+                                                        <Typography
+                                                            sx={{
+                                                                px: 1,
+                                                                py: 0.25,
+                                                                borderRadius: '4px',
+                                                                bgcolor: airlineColor.bg,
+                                                                color: airlineColor.text,
+                                                                fontSize: 12,
+                                                                fontWeight: 600,
+                                                            }}
+                                                        >
+                                                            {flight.airline}
+                                                        </Typography>
+                                                        {flight.isCodeShare && (
+                                                            <Typography sx={{
+                                                                fontSize: 14,
+                                                                color: theme.palette.warning.main
+                                                            }}>*</Typography>
+                                                        )}
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
+                                                        <Typography sx={{fontWeight: 500}}>
+                                                            {flight.flightNumber}
+                                                        </Typography>
+                                                        {flight.isMultiSegment && (
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={() => toggleFlightExpand(flightId)}
+                                                                sx={{p: 0.25}}
+                                                            >
+                                                                {isExpanded ? <ExpandLessIcon fontSize="small"/> :
+                                                                    <ExpandMoreIcon fontSize="small"/>}
+                                                            </IconButton>
+                                                        )}
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography sx={{fontSize: 13}}>
+                                                        {formatDateTime(flight.departureTime)}
+                                                        {flight._departureTimeZoneStr && (
+                                                            <Typography component="span" sx={{
+                                                                fontSize: 11,
+                                                                color: theme.palette.text.secondary,
+                                                                ml: 0.5
+                                                            }}>
+                                                                ({flight._departureTimeZoneStr})
+                                                            </Typography>
+                                                        )}
+                                                    </Typography>
+                                                    <Typography sx={{
+                                                        fontSize: 12,
+                                                        fontWeight: 600,
+                                                        color: theme.palette.primary.main
+                                                    }}>
+                                                        {flight.departureAirport}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography sx={{fontSize: 13}}>
+                                                        {formatDateTime(flight.arrivalTime)}
+                                                        {flight._arrivalTimeZoneStr && (
+                                                            <Typography component="span" sx={{
+                                                                fontSize: 11,
+                                                                color: theme.palette.text.secondary,
+                                                                ml: 0.5
+                                                            }}>
+                                                                ({flight._arrivalTimeZoneStr})
+                                                            </Typography>
+                                                        )}
+                                                    </Typography>
+                                                    <Typography sx={{
+                                                        fontSize: 12,
+                                                        fontWeight: 600,
+                                                        color: theme.palette.primary.main
+                                                    }}>
+                                                        {flight.arrivalAirport}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    {flight.elapsedTime ? formatMinutesToTime(flight.elapsedTime) : flight.duration}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {flight.stops === 0 ? (
+                                                        <Typography sx={{
+                                                            fontSize: 12,
+                                                            fontWeight: 600,
+                                                            color: theme.palette.success.main
+                                                        }}>
+                                                            Nonstop
+                                                        </Typography>
+                                                    ) : (
+                                                        <Typography sx={{
+                                                            fontSize: 12,
+                                                            px: 1,
+                                                            py: 0.25,
+                                                            borderRadius: '4px',
+                                                            bgcolor: alpha(theme.palette.warning.main, 0.1),
+                                                            color: theme.palette.warning.dark,
+                                                            display: 'inline-block',
+                                                        }}>
+                                                            {flight.stops} stop{flight.stops > 1 ? 's' : ''}
+                                                        </Typography>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography sx={{fontWeight: 600}}>
+                                                        {formatCurrency(flight.amount)}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography sx={{fontSize: 13}}>
+                                                        {flight.aircraft || '-'}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Box sx={{display: 'flex', gap: 0.5}}>
+                                                        <ActionIcon
+                                                            icon={<AddIcon fontSize="small"/>}
+                                                            tooltip="Assign Flight"
+                                                            onClick={() => onAddFlightToJob(flight)}
+                                                        />
+                                                        <ActionIcon
+                                                            icon={<InfoIcon fontSize="small"/>}
+                                                            tooltip="More Info"
+                                                            onClick={() => {
+                                                            }}
+                                                        />
+                                                    </Box>
+                                                </TableCell>
+                                            </TableRow>
+                                            {flight.isMultiSegment && (
+                                                <TableRow>
+                                                    <TableCell colSpan={9} sx={{p: 0, border: 'none'}}>
+                                                        <Collapse in={isExpanded}>
+                                                            <SegmentDetailsRow segments={flight.flightSegments}/>
+                                                        </Collapse>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
 
                     {/* Footer actions */}
                     <Box sx={{
                         display: 'flex',
-                        justifyContent: 'center',
+                        justifyContent: 'flex-end',
                         gap: 1,
                         p: 1,
                         borderTop: `1px solid ${theme.palette.divider}`,
                     }}>
-                        <Button
-                            size="small"
-                            onClick={onLoadMoreFlights}
-                            sx={{
-                                fontSize: '0.7rem',
-                                fontWeight: 600,
-                                color: theme.palette.text.secondary,
-                                bgcolor: alpha(theme.palette.text.secondary, 0.1),
-                                px: 2,
-                                '&:hover': {
-                                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                    color: theme.palette.primary.main,
-                                },
-                            }}
-                        >
-                            Load More
+                        <Button variant="outlined" onClick={onLoadMoreFlights}>
+                            Load More Flights
                         </Button>
-                        <Button
-                            size="small"
-                            onClick={onLoadNextDayFlights}
-                            endIcon={<NavigateNextIcon sx={{fontSize: 14}}/>}
-                            sx={{
-                                fontSize: '0.7rem',
-                                fontWeight: 600,
-                                color: theme.palette.primary.main,
-                                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                px: 2,
-                                '&:hover': {
-                                    bgcolor: alpha(theme.palette.primary.main, 0.2),
-                                },
-                            }}
-                        >
+                        <Button variant="outlined" onClick={onLoadNextDayFlights}>
                             Next Day
                         </Button>
                     </Box>
@@ -1417,14 +937,14 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
 
     const renderAgentSection = () => {
         if (agentsLoading) {
-            return <LoadingSkeleton/>;
+            return <LoadingIndicator/>;
         }
 
         if (showNoAgentJobSelectedMessage) {
             return (
                 <NoData
                     title="No Job Selected"
-                    message="Select a job to view available agents."
+                    message="Please select a job to view available agents."
                     icon="engineering"
                     showAction={false}
                     isUsCustomer={isUsCustomer}
@@ -1435,8 +955,8 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
         if (showJobHasAssignedAgentMessage) {
             return (
                 <NoData
-                    title="Agent Assigned"
-                    message="An agent has been assigned to this job."
+                    title="Agent Already Assigned"
+                    message="An agent has already been assigned to this job. This can be found in the job details widget."
                     icon="engineering"
                     showAction={true}
                     actionText="Manage Recovery Agent(s)"
@@ -1450,7 +970,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
             return (
                 <NoData
                     title="Not a Delivery Job"
-                    message="Agent info not applicable for this job type."
+                    message="Agent information is not applicable for this job. This section is only relevant for delivery jobs."
                     icon="engineering"
                     showAction={false}
                     isUsCustomer={isUsCustomer}
@@ -1461,8 +981,8 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
         if (showNoAgentsAvailableMessage) {
             return (
                 <NoData
-                    title="No Agents"
-                    message={agentMessage || "No agents available."}
+                    title="No Agents Available"
+                    message={agentMessage || "No agents available for the specified criteria."}
                     icon="engineering"
                     showAction={false}
                     isUsCustomer={isUsCustomer}
@@ -1473,46 +993,124 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
         if (showAgentList) {
             return (
                 <Box sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-                    {/* Header */}
+                    {/* Header with search button */}
                     <Box sx={{
                         display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
+                        justifyContent: 'flex-end',
                         p: 1,
                         borderBottom: `1px solid ${theme.palette.divider}`,
                     }}>
                         <Button
-                            size="small"
-                            startIcon={<PersonSearchIcon sx={{fontSize: 14}}/>}
+                            variant="contained"
+                            color="primary"
+                            startIcon={<PersonSearchIcon/>}
                             onClick={onOpenAgentSearchDialog}
-                            sx={{
-                                fontSize: '0.7rem',
-                                fontWeight: 600,
-                                color: theme.palette.primary.main,
-                                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                px: 1.5,
-                                '&:hover': {
-                                    bgcolor: alpha(theme.palette.primary.main, 0.2),
-                                },
-                            }}
                         >
-                            Search
+                            Search Agents
                         </Button>
                     </Box>
 
-                    {/* Agent list */}
-                    <Box sx={{
-                        flex: 1,
-                        overflow: 'auto',
-                        p: 1,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 0.75,
-                    }}>
-                        {sortedAgents.map((agent, index) => (
-                            <AgentCard key={agent.agentId} agent={agent} index={index}/>
-                        ))}
-                    </Box>
+                    {/* Agent table */}
+                    <TableContainer sx={{flex: 1, overflow: 'auto'}}>
+                        <Table size="small" stickyHeader>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>
+                                        <TableSortLabel
+                                            active={agentSortKey === 'agentName'}
+                                            direction={agentSortKey === 'agentName' ? agentSortDirection : 'asc'}
+                                            onClick={() => handleAgentSort('agentName')}
+                                        >
+                                            Agent Name
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell>
+                                        <TableSortLabel
+                                            active={agentSortKey === 'agentRate'}
+                                            direction={agentSortKey === 'agentRate' ? agentSortDirection : 'asc'}
+                                            onClick={() => handleAgentSort('agentRate')}
+                                        >
+                                            Rate
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell>
+                                        <TableSortLabel
+                                            active={agentSortKey === 'agentRanking'}
+                                            direction={agentSortKey === 'agentRanking' ? agentSortDirection : 'asc'}
+                                            onClick={() => handleAgentSort('agentRanking')}
+                                        >
+                                            Ranking
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell>
+                                        <TableSortLabel
+                                            active={agentSortKey === 'agentNotes'}
+                                            direction={agentSortKey === 'agentNotes' ? agentSortDirection : 'asc'}
+                                            onClick={() => handleAgentSort('agentNotes')}
+                                        >
+                                            Notes
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell>Actions</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {sortedAgents.map((agent) => (
+                                    <TableRow
+                                        key={agent.agentId}
+                                        hover
+                                        sx={{
+                                            '&:hover': {bgcolor: alpha(theme.palette.primary.main, 0.04)},
+                                        }}
+                                    >
+                                        <TableCell>
+                                            <Typography sx={{fontWeight: 500}}>
+                                                {agent.agentName}
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Typography sx={{fontWeight: 600}}>
+                                                {formatCurrency(agent.agentRate)}
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell>{agent.agentRanking}</TableCell>
+                                        <TableCell>
+                                            <Typography
+                                                sx={{
+                                                    maxWidth: 200,
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                }}
+                                            >
+                                                {agent.agentNotes || '-'}
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box sx={{display: 'flex', gap: 0.5}}>
+                                                <ActionIcon
+                                                    icon={<RequestQuoteIcon fontSize="small"/>}
+                                                    tooltip="Send Quote Request"
+                                                    onClick={() => onSendQuoteRequest(agent)}
+                                                />
+                                                <ActionIcon
+                                                    icon={<AddIcon fontSize="small"/>}
+                                                    tooltip="Assign Job"
+                                                    onClick={() => onAddAgentToJob(agent)}
+                                                />
+                                                <ActionIcon
+                                                    icon={<InfoIcon fontSize="small"/>}
+                                                    tooltip="More Info"
+                                                    onClick={() => {
+                                                    }}
+                                                />
+                                            </Box>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
                 </Box>
             );
         }
@@ -1526,11 +1124,8 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
-                bgcolor: theme.palette.background.default,
-                borderRadius: '8px',
+                bgcolor: theme.palette.background.paper,
                 overflow: 'hidden',
-                border: `1px solid ${theme.palette.divider}`,
-                boxShadow: theme.shadows[1],
             }}
         >
             {!isDeliveryJobType ? renderFlightSection() : renderAgentSection()}
