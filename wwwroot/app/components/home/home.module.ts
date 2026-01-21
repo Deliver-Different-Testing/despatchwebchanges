@@ -36,8 +36,6 @@ const homeModule = angular.module('uDispatch.home', [
     'angularResizable',
     'ng-mfb',
     'ngFileUpload',
-    'hereMapTracking.services',
-    'hereMapTracking.components',
     'ngMaterialDatePicker'
 ]);
 
