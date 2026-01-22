@@ -55,8 +55,6 @@ public partial class AirFreightRate
 
     public int? GroundDistanceRateId { get; set; }
 
-    public int? WeightBreakGroupId { get; set; }
-
     public virtual ExtraCharge ExtraCharge { get; set; }
 
     public virtual ICollection<FlightZoneCombo> FlightZoneCombos { get; set; } = new List<FlightZoneCombo>();
