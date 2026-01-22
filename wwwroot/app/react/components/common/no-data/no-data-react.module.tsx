@@ -9,7 +9,7 @@ import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { NoData } from './NoData';
-import type { NoDataProps } from './NoData';
+import type { NoDataProps } from './types';
 import { getTheme } from '../../../theme/muiTheme';
 import {IAppConfig} from "../../../../interfaces/app-config.interface";
 

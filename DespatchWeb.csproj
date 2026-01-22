@@ -324,6 +324,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\enums\jobCategory.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\job-highlight.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\job-list.component.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\components\common\no-data\types.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\StickyNotes.tsx" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\StickyNotes.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\sticky-notes-react.module.tsx" />
@@ -384,8 +385,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\job-file-upload-dialog\job-file-upload-dialog.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\job-file-upload-dialog\job-file-upload-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\job-file-upload-dialog\job-file-upload.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\note-management-dialog\note-management-dialog.component.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\note-management-dialog\note-management.dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\price-breakdown-dialog\price-breakdown-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\select-dialog\select-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\select-dialog\select-dialog.service.ts" />
@@ -470,7 +469,6 @@
     <TypeScriptCompile Include="wwwroot\app\services\job-add-stop.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\job-context-menu.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\messaging.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\services\notes.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\tasks.service.ts" />
   </ItemGroup>
   <ItemGroup>

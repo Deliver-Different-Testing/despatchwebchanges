@@ -80,7 +80,11 @@ public class JobMappingsTests
             UcjbId = 1,
             UcjbDate = new DateTime(2024, 1, 15),
             UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
-            UcjbNumber = "LIVE-001"
+            UcjbNumber = "LIVE-001",
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
         };
 
         var archivedJob = new TucJobArchive
@@ -89,7 +93,9 @@ public class JobMappingsTests
             UcjbDate = new DateTime(2024, 1, 15),
             UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
             UcjbNumber = "ARCH-001",
-            PricingBreakdowns = new List<PricingBreakdownArchive>()
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>(),
+            TucJobNationwides = new List<TucJobNationwide>()
         };
 
         // Act
@@ -98,12 +104,13 @@ public class JobMappingsTests
         var liveResult = liveMapping(liveJob);
         var archiveResult = archiveMapping(archivedJob);
 
-        // Assert - Both should have same default values for collections
+        // Assert - Both should have same default values for collections when no items exist
         liveResult.TailLiftPu.Should().Be(archiveResult.TailLiftPu);
         liveResult.TailLiftDo.Should().Be(archiveResult.TailLiftDo);
         liveResult.DeliverToPrivateRes.Should().Be(archiveResult.DeliverToPrivateRes);
-        liveResult.ParcelDimensions.Should().BeNull();
-        archiveResult.ParcelDimensions.Should().BeNull();
+        // With inline mapping, empty collections result in empty list
+        liveResult.ParcelDimensions.Should().BeEmpty();
+        archiveResult.ParcelDimensions.Should().BeNullOrEmpty(); // Either null or empty depending on expression evaluation
         liveResult.PalletInfo.Should().BeNull();
         archiveResult.PalletInfo.Should().BeNull();
         liveResult.AssignedFlight.Should().BeNull();
@@ -708,20 +715,23 @@ public class JobMappingsTests
             UcjbNumber = "TEST-001",
             UcjbDate = new DateTime(2024, 1, 15),
             UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
-            PricingBreakdowns = new List<PricingBreakdownArchive>()
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>(),
+            TucJobNationwides = new List<TucJobNationwide>()
         };
 
         // Act
         var mapping = JobMappings.JobArchiveMapping.Compile();
         var result = mapping(archivedJob);
 
-        // Assert - Collections should have default values for later enrichment
+        // Assert - Collections have default values when no items exist (now loaded inline)
         result.TailLiftPu.Should().BeFalse();
         result.TailLiftDo.Should().BeFalse();
         result.DeliverToPrivateRes.Should().BeFalse();
-        result.ParcelDimensions.Should().BeNull();
+        result.ParcelDimensions.Should().BeNullOrEmpty(); // Either null or empty depending on expression evaluation
         result.PalletInfo.Should().BeNull();
         result.AssignedFlight.Should().BeNull();
+        result.IsFlightAssigned.Should().BeFalse();
     }
 
     [Fact]
@@ -1243,6 +1253,838 @@ public class JobMappingsTests
         result.LoggedInContactName.Should().Be(string.Empty);
         result.PickUpTimeZone.Should().BeNull();
         result.DeliveryTimeZone.Should().BeNull();
+    }
+
+    #endregion
+
+    #region Inline Charge/Pricing Mapping Tests (JobMappingCore)
+
+    [Fact]
+    public void JobMappingCore_Charge_UsesPricingBreakdownSum()
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            UcjbAmount = 50m, // Should be ignored when pricing exists
+            PricingBreakdownJobs = new List<PricingBreakdown>
+            {
+                new() { ChargeAmount = 100m },
+                new() { ChargeAmount = 75m }
+            },
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert - Should sum pricing breakdowns (100 + 75 = 175)
+        result.Charge.Should().Be(175m);
+    }
+
+    [Fact]
+    public void JobMappingCore_Charge_FallsBackToUcjbAmount_WhenNoPricing()
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            UcjbAmount = 200m,
+            PricingBreakdownJobs = new List<PricingBreakdown>(), // Empty
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert - Should fall back to UcjbAmount
+        result.Charge.Should().Be(200m);
+    }
+
+    #endregion
+
+    #region Inline Job Item Flags Tests (JobMappingCore)
+
+    [Fact]
+    public void JobMappingCore_TailLiftPu_TrueWhenJobItemHasPu()
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>
+            {
+                new() { JobId = 1, ItemId = 1, Pu = true },
+                new() { JobId = 1, ItemId = 2, Pu = false }
+            },
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert
+        result.TailLiftPu.Should().BeTrue();
+    }
+
+    [Fact]
+    public void JobMappingCore_TailLiftDo_TrueWhenJobItemHasDo()
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>
+            {
+                new() { JobId = 1, ItemId = 1, Do = true }
+            },
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert
+        result.TailLiftDo.Should().BeTrue();
+    }
+
+    [Fact]
+    public void JobMappingCore_DeliverToPrivateRes_TrueWhenJobItemHasPrivateRes()
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>
+            {
+                new() { JobId = 1, ItemId = 1, PrivateRes = true }
+            },
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert
+        result.DeliverToPrivateRes.Should().BeTrue();
+    }
+
+    [Fact]
+    public void JobMappingCore_Flags_FalseWhenNoJobItems()
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert
+        result.TailLiftPu.Should().BeFalse();
+        result.TailLiftDo.Should().BeFalse();
+        result.DeliverToPrivateRes.Should().BeFalse();
+    }
+
+    #endregion
+
+    #region Inline ParcelDimensions Tests (JobMappingCore)
+
+    [Fact]
+    public void JobMappingCore_ParcelDimensions_UsesChildJobItems()
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>
+            {
+                new() { JobId = 1, ItemId = 1, Notes = "Parent Item", Height = 10 }
+            },
+            TucJobItemChildJobs = new List<TucJobItem>
+            {
+                new() { JobId = 1, ItemId = 2, ChildJobId = 1, Notes = "Child Item", Height = 20, Depth = 30, Length = 40, Barcode = "CHILD123" }
+            },
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert - Should use child items when available
+        result.ParcelDimensions.Should().NotBeNull();
+        result.ParcelDimensions.Should().HaveCount(1);
+        result.ParcelDimensions![0].ItemName.Should().Be("Child Item");
+        result.ParcelDimensions[0].Height.Should().Be(20);
+        result.ParcelDimensions[0].Depth.Should().Be(30);
+        result.ParcelDimensions[0].Length.Should().Be(40);
+        result.ParcelDimensions[0].Barcode.Should().Be("CHILD123");
+    }
+
+    [Fact]
+    public void JobMappingCore_ParcelDimensions_FallsBackToParentItems()
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>
+            {
+                new() { JobId = 1, ItemId = 1, ChildJobId = null, Notes = "Parent Item", Height = 15, Depth = 25, Length = 35 }
+            },
+            TucJobItemChildJobs = new List<TucJobItem>(), // No child items
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert - Should fall back to parent items
+        result.ParcelDimensions.Should().NotBeNull();
+        result.ParcelDimensions.Should().HaveCount(1);
+        result.ParcelDimensions![0].ItemName.Should().Be("Parent Item");
+        result.ParcelDimensions[0].Height.Should().Be(15);
+    }
+
+    [Fact]
+    public void JobMappingCore_ParcelDimensions_EmptyWhenNoItems()
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert
+        result.ParcelDimensions.Should().BeEmpty();
+    }
+
+    #endregion
+
+    #region Inline PalletInfo Tests (JobMappingCore)
+
+    [Fact]
+    public void JobMappingCore_PalletInfo_MapsFromParentJobItems()
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>
+            {
+                new()
+                {
+                    JobId = 1,
+                    ItemId = 1,
+                    ChildJobId = null, // Parent item
+                    Items = 5,
+                    Weight = 100,
+                    Length = 120,
+                    Depth = 80,
+                    Height = 100,
+                    Pu = true,
+                    Do = false,
+                    Dgclass = 3,
+                    Notes = "Pallet Notes"
+                }
+            },
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert
+        result.PalletInfo.Should().NotBeNull();
+        result.PalletInfo.Should().HaveCount(1);
+        result.PalletInfo![0].Quantity.Should().Be(5);
+        result.PalletInfo[0].Weight.Should().Be(100);
+        result.PalletInfo[0].Length.Should().Be(120);
+        result.PalletInfo[0].Depth.Should().Be(80);
+        result.PalletInfo[0].Height.Should().Be(100);
+        result.PalletInfo[0].Pu.Should().BeTrue();
+        result.PalletInfo[0].Do.Should().BeFalse();
+        result.PalletInfo[0].DgClass.Should().Be(3);
+        result.PalletInfo[0].Notes.Should().Be("Pallet Notes");
+    }
+
+    [Fact]
+    public void JobMappingCore_PalletInfo_ExcludesChildItems()
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>
+            {
+                new() { JobId = 1, ItemId = 1, ChildJobId = 2, Items = 10 }, // Child item - should be excluded
+                new() { JobId = 1, ItemId = 2, ChildJobId = null, Items = 5 } // Parent item - should be included
+            },
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert - Only parent item should be in pallet info
+        result.PalletInfo.Should().NotBeNull();
+        result.PalletInfo.Should().HaveCount(1);
+        result.PalletInfo![0].Quantity.Should().Be(5);
+    }
+
+    [Fact]
+    public void JobMappingCore_PalletInfo_NullWhenNoParentItems()
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(), // No items
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert
+        result.PalletInfo.Should().BeNull();
+    }
+
+    #endregion
+
+    #region Inline AssignedFlight Tests (JobMappingCore)
+
+    [Fact]
+    public void JobMappingCore_AssignedFlight_MapsFromNationwides()
+    {
+        // Arrange
+        var depTimezone = new TimeZone { Id = 1, Name = "Pacific/Auckland" };
+        var arrTimezone = new TimeZone { Id = 2, Name = "America/Los_Angeles" };
+
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>
+            {
+                new()
+                {
+                    UcnwLegNumber = 1,
+                    UcnwFlightNo = "NZ123",
+                    UcnwEtd = new DateTime(2024, 1, 15, 10, 0, 0),
+                    UcnwEta = new DateTime(2024, 1, 15, 14, 0, 0),
+                    UcnwNotes = "First leg notes",
+                    DepartureAirportFsCode = "AKL",
+                    DepartureAirportName = "Auckland Airport",
+                    DepartureAirportCity = "Auckland",
+                    DepartureAirportCountry = "New Zealand",
+                    DepartureAirportTimeZoneNavigation = depTimezone,
+                    DepartureAirportTimeZoneId = 1,
+                    DepartureTerminal = "Int",
+                    ArrivalAirportFsCode = "LAX",
+                    ArrivalAirportName = "Los Angeles Airport",
+                    ArrivalAirportCity = "Los Angeles",
+                    ArrivalAirportCountry = "USA",
+                    ArrivalAirportTimeZoneNavigation = arrTimezone,
+                    ArrivalAirportTimeZoneId = 2,
+                    ArrivalTerminal = "B",
+                    AircraftName = "Boeing 787",
+                    UcnwAirlineName = "Air New Zealand"
+                }
+            }
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert
+        result.AssignedFlight.Should().NotBeNull();
+        result.AssignedFlight!.FlightNumber.Should().Be("NZ123");
+        result.AssignedFlight.Notes.Should().Be("First leg notes");
+        result.AssignedFlight.ExpectedDeparture.Should().Be(new DateTime(2024, 1, 15, 10, 0, 0));
+        result.AssignedFlight.ExpectedArrival.Should().Be(new DateTime(2024, 1, 15, 14, 0, 0));
+        result.AssignedFlight.DepartureTimeZone.Should().Be("Pacific/Auckland");
+        result.AssignedFlight.ArrivalTimeZone.Should().Be("America/Los_Angeles");
+        result.IsFlightAssigned.Should().BeTrue();
+    }
+
+    [Fact]
+    public void JobMappingCore_AssignedFlight_MapsMultipleSegments()
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>
+            {
+                new()
+                {
+                    UcnwLegNumber = 1,
+                    UcnwFlightNo = "NZ1",
+                    UcnwEtd = new DateTime(2024, 1, 15, 8, 0, 0),
+                    UcnwEta = new DateTime(2024, 1, 15, 12, 0, 0),
+                    DepartureAirportFsCode = "AKL",
+                    ArrivalAirportFsCode = "SYD"
+                },
+                new()
+                {
+                    UcnwLegNumber = 2,
+                    UcnwFlightNo = "QF2",
+                    UcnwEtd = new DateTime(2024, 1, 15, 14, 0, 0),
+                    UcnwEta = new DateTime(2024, 1, 15, 22, 0, 0),
+                    DepartureAirportFsCode = "SYD",
+                    ArrivalAirportFsCode = "LAX"
+                }
+            }
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert
+        result.AssignedFlight.Should().NotBeNull();
+        result.AssignedFlight!.FlightSegments.Should().HaveCount(2);
+
+        // First segment (departure info)
+        result.AssignedFlight.ExpectedDeparture.Should().Be(new DateTime(2024, 1, 15, 8, 0, 0));
+        result.AssignedFlight.FlightNumber.Should().Be("NZ1");
+
+        // Last segment (arrival info)
+        result.AssignedFlight.ExpectedArrival.Should().Be(new DateTime(2024, 1, 15, 22, 0, 0));
+
+        // Segment details
+        result.AssignedFlight.FlightSegments[0].DepartureAirportFsCode.Should().Be("AKL");
+        result.AssignedFlight.FlightSegments[0].ArrivalAirportFsCode.Should().Be("SYD");
+        result.AssignedFlight.FlightSegments[1].DepartureAirportFsCode.Should().Be("SYD");
+        result.AssignedFlight.FlightSegments[1].ArrivalAirportFsCode.Should().Be("LAX");
+    }
+
+    [Fact]
+    public void JobMappingCore_AssignedFlight_ParsesCarrierAndFlightNumber()
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>
+            {
+                new()
+                {
+                    UcnwLegNumber = 1,
+                    UcnwFlightNo = "NZ123"
+                }
+            }
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert
+        result.AssignedFlight.Should().NotBeNull();
+        result.AssignedFlight!.FlightSegments[0].CarrierFsCode.Should().Be("NZ");
+        result.AssignedFlight.FlightSegments[0].FlightNumber.Should().Be("123");
+    }
+
+    [Fact]
+    public void JobMappingCore_AssignedFlight_NullWhenNoNationwides()
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert
+        result.AssignedFlight.Should().BeNull();
+        result.IsFlightAssigned.Should().BeFalse();
+    }
+
+    #endregion
+
+    #region Inline Archived Job Item Flags Tests (JobArchiveMapping)
+
+    [Fact]
+    public void JobArchiveMapping_TailLiftPu_TrueWhenArchivedItemHasPu()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>
+            {
+                new() { JobId = 1, ItemId = 1, Pu = true }
+            },
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        result.TailLiftPu.Should().BeTrue();
+    }
+
+    [Fact]
+    public void JobArchiveMapping_TailLiftDo_TrueWhenArchivedItemHasDo()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>
+            {
+                new() { JobId = 1, ItemId = 1, Do = true }
+            },
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        result.TailLiftDo.Should().BeTrue();
+    }
+
+    [Fact]
+    public void JobArchiveMapping_DeliverToPrivateRes_TrueWhenArchivedItemHasPrivateRes()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>
+            {
+                new() { JobId = 1, ItemId = 1, PrivateRes = true }
+            },
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        result.DeliverToPrivateRes.Should().BeTrue();
+    }
+
+    #endregion
+
+    #region Inline Archived ParcelDimensions Tests (JobArchiveMapping)
+
+    [Fact]
+    public void JobArchiveMapping_ParcelDimensions_MapsFromArchivedItems()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>
+            {
+                new()
+                {
+                    JobId = 1,
+                    ItemId = 1,
+                    ChildJobId = null,
+                    Notes = "Archived Parcel",
+                    Height = 10,
+                    Depth = 20,
+                    Length = 30,
+                    Barcode = "ARCH123"
+                }
+            },
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        result.ParcelDimensions.Should().NotBeNull();
+        result.ParcelDimensions.Should().HaveCount(1);
+        result.ParcelDimensions![0].ItemName.Should().Be("Archived Parcel");
+        result.ParcelDimensions[0].Height.Should().Be(10);
+        result.ParcelDimensions[0].Depth.Should().Be(20);
+        result.ParcelDimensions[0].Length.Should().Be(30);
+        result.ParcelDimensions[0].Barcode.Should().Be("ARCH123");
+    }
+
+    #endregion
+
+    #region Inline Archived PalletInfo Tests (JobArchiveMapping)
+
+    [Fact]
+    public void JobArchiveMapping_PalletInfo_MapsFromArchivedItems()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>
+            {
+                new()
+                {
+                    JobId = 1,
+                    ItemId = 1,
+                    ChildJobId = null, // Parent item
+                    Items = 3,
+                    Weight = 50,
+                    Length = 100,
+                    Depth = 80,
+                    Height = 120,
+                    Pu = true,
+                    Do = false,
+                    Dgclass = 2,
+                    Notes = "Archived Pallet"
+                }
+            },
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        result.PalletInfo.Should().NotBeNull();
+        result.PalletInfo.Should().HaveCount(1);
+        result.PalletInfo![0].Quantity.Should().Be(3);
+        result.PalletInfo[0].Weight.Should().Be(50);
+        result.PalletInfo[0].Length.Should().Be(100);
+        result.PalletInfo[0].Depth.Should().Be(80);
+        result.PalletInfo[0].Height.Should().Be(120);
+        result.PalletInfo[0].DgClass.Should().Be(2);
+        result.PalletInfo[0].Notes.Should().Be("Archived Pallet");
+    }
+
+    #endregion
+
+    #region Inline Archived AssignedFlight Tests (JobArchiveMapping)
+
+    [Fact]
+    public void JobArchiveMapping_AssignedFlight_MapsFromNationwides()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>(),
+            TucJobNationwides = new List<TucJobNationwide>
+            {
+                new()
+                {
+                    UcnwLegNumber = 1,
+                    UcnwFlightNo = "QF456",
+                    UcnwEtd = new DateTime(2024, 1, 15, 6, 0, 0),
+                    UcnwEta = new DateTime(2024, 1, 15, 18, 0, 0),
+                    UcnwNotes = "Archived flight notes",
+                    DepartureAirportFsCode = "SYD",
+                    ArrivalAirportFsCode = "LHR",
+                    UcnwAirlineName = "Qantas"
+                }
+            }
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        result.AssignedFlight.Should().NotBeNull();
+        result.AssignedFlight!.FlightNumber.Should().Be("QF456");
+        result.AssignedFlight.Notes.Should().Be("Archived flight notes");
+        result.AssignedFlight.ExpectedDeparture.Should().Be(new DateTime(2024, 1, 15, 6, 0, 0));
+        result.AssignedFlight.ExpectedArrival.Should().Be(new DateTime(2024, 1, 15, 18, 0, 0));
+        result.IsFlightAssigned.Should().BeTrue();
+
+        // Segment details
+        result.AssignedFlight.FlightSegments.Should().HaveCount(1);
+        result.AssignedFlight.FlightSegments[0].CarrierFsCode.Should().Be("QF");
+        result.AssignedFlight.FlightSegments[0].FlightNumber.Should().Be("456");
+        result.AssignedFlight.FlightSegments[0].DepartureAirportFsCode.Should().Be("SYD");
+        result.AssignedFlight.FlightSegments[0].ArrivalAirportFsCode.Should().Be("LHR");
+        result.AssignedFlight.FlightSegments[0].AirlineName.Should().Be("Qantas");
+    }
+
+    [Fact]
+    public void JobArchiveMapping_AssignedFlight_NullWhenNoNationwides()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        result.AssignedFlight.Should().BeNull();
+        result.IsFlightAssigned.Should().BeFalse();
+    }
+
+    [Fact]
+    public void JobArchiveMapping_AssignedFlight_MapsMultipleSegmentsWithFirstLastLogic()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>(),
+            TucJobNationwides = new List<TucJobNationwide>
+            {
+                new()
+                {
+                    UcnwLegNumber = 1,
+                    UcnwFlightNo = "NZ1",
+                    UcnwEtd = new DateTime(2024, 1, 15, 8, 0, 0),
+                    UcnwEta = new DateTime(2024, 1, 15, 12, 0, 0),
+                    UcnwNotes = "First leg",
+                    DepartureAirportFsCode = "AKL"
+                },
+                new()
+                {
+                    UcnwLegNumber = 2,
+                    UcnwFlightNo = "UA2",
+                    UcnwEtd = new DateTime(2024, 1, 15, 14, 0, 0),
+                    UcnwEta = new DateTime(2024, 1, 15, 20, 0, 0),
+                    UcnwNotes = "Second leg",
+                    ArrivalAirportFsCode = "JFK"
+                }
+            }
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        result.AssignedFlight.Should().NotBeNull();
+
+        // First segment properties
+        result.AssignedFlight!.ExpectedDeparture.Should().Be(new DateTime(2024, 1, 15, 8, 0, 0));
+        result.AssignedFlight.FlightNumber.Should().Be("NZ1");
+        result.AssignedFlight.Notes.Should().Be("First leg");
+
+        // Last segment properties
+        result.AssignedFlight.ExpectedArrival.Should().Be(new DateTime(2024, 1, 15, 20, 0, 0));
+
+        // All segments
+        result.AssignedFlight.FlightSegments.Should().HaveCount(2);
     }
 
     #endregion

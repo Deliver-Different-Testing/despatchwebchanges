@@ -2031,11 +2031,6 @@ class NationwideControl extends BaseController {
         this.addFlightToJob(mouseEvent, flight, this.currentJob);
     }
 
-    openFlightMoreInfoReact($event: MouseEvent | undefined, flight: IFlightViewModel): void {
-        const mouseEvent = $event || new MouseEvent('click');
-        this.openFlightMoreInfo(mouseEvent, flight);
-    }
-
     addAgentToJobReact($event: MouseEvent | undefined, agent: IAgent): void {
         if (!this.currentJob) return;
         const mouseEvent = $event || new MouseEvent('click');
@@ -2046,11 +2041,6 @@ class NationwideControl extends BaseController {
         if (!this.currentJob) return;
         const mouseEvent = $event || new MouseEvent('click');
         this.sendQuoteRequest(mouseEvent, agent, this.currentJob);
-    }
-
-    openAgentMoreInfoReact($event: MouseEvent | undefined, agent: IAgent): void {
-        const mouseEvent = $event || new MouseEvent('click');
-        this.openAgentMoreInfo(mouseEvent, agent);
     }
 
     openAgentSearchDialogReact($event: MouseEvent | undefined): void {

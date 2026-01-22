@@ -214,6 +214,10 @@ public partial class DespatchContext
                 .Where(x => x.NoteId == noteId)
                 .Select(NoteMappings.ActiveNoteMap)
                 .FirstOrDefault());
+    
+    private static readonly Func<DespatchContext, string, Task<bool>> JobNumberExistsAsyncCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, string jobNumber) =>
+            context.TucJobs.AsNoTracking().Any(j => j.UcjbNumber == jobNumber));
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -227,6 +231,9 @@ public partial class DespatchContext
     }
 
     // Access compiled queries
+    public async Task<bool> JobNumberExistsAsync(string jobNumber) =>
+        await JobNumberExistsAsyncCompiled(this, jobNumber);
+    
     public async Task<TucNoteViewModel> GetActiveNotesByNoteIdAsync(int noteId) =>
         await GetActiveNoteByIdCompiled(this, noteId);
 

@@ -806,7 +806,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                 helperText={validationErrors.addressLine7}
                                 disabled={isLoadingAddress}
                                 required
-                                sx={{flex: '0 0 25%'}}
+                                sx={{flex: '0 0 auto', maxWidth: 120}}
                                 inputProps={{pattern: '[0-9]{5}(-[0-9]{4})?'}}
                             />
                         </Box>
@@ -840,7 +840,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                 helperText={validationErrors.addressLine7}
                                 disabled={isLoadingAddress}
                                 required
-                                sx={{flex: '0 0 20%'}}
+                                sx={{flex: '0 0 auto', maxWidth: 110}}
                                 inputProps={{pattern: '[0-9]{4}'}}
                             />
                         </Box>

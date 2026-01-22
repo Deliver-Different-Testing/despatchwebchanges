@@ -5,5 +5,5 @@
  */
 
 export { NoData } from './NoData';
-export type { NoDataProps } from './NoData';
+export type { NoDataProps } from './types';
 export { NoDataReactComponent } from './no-data-react.module';

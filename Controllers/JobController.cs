@@ -35,7 +35,8 @@ public class JobController(
     IJobReportService jobReportService,
     IJobPhotoService jobPhotoService,
     IDispatchJobService dispatchJobService,
-    IDeliveryJourneyService deliveryJourneyService
+    IDeliveryJourneyService deliveryJourneyService,
+    IPricingPermissionService pricingPermissionService
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -191,6 +192,13 @@ public class JobController(
             var jobId = breakdown.ChildJobId ?? breakdown.PrebookJobId;
             if (!jobId.HasValue) throw new ArgumentNullException(nameof(jobId));
 
+            // Permission check: user must have breakdown permission
+            if (!await pricingPermissionService.CanModifyPriceBreakdownAsync())
+                return StatusCode(StatusCodes.Status403Forbidden, "You do not have permission to modify price breakdowns");
+
+            // Job access validation
+            await pricingPermissionService.ValidateJobAccessAsync(jobId.Value);
+
             Log.Information("Adding price breakdown for job {JobId} (archived: {IsArchived})", jobId, breakdown.IsArchived);
 
             var chargeId = await jobRepository.AddJobPriceBreakdownAsync(breakdown, breakdown.IsArchived);
@@ -204,6 +212,11 @@ public class JobController(
             }
 
             return Json(chargeId);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Log.Warning(ex, "Unauthorized access to add price component for job {JobId}", breakdown.JobId ?? breakdown.PrebookJobId);
+            return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
         }
         catch (Exception ex)
         {
@@ -221,6 +234,13 @@ public class JobController(
             var jobId = breakdown.JobId ?? breakdown.PrebookJobId;
             if (!jobId.HasValue) throw new ArgumentNullException(nameof(jobId));
 
+            // Permission check: user must have breakdown permission
+            if (!await pricingPermissionService.CanModifyPriceBreakdownAsync())
+                return StatusCode(StatusCodes.Status403Forbidden, "You do not have permission to modify price breakdowns");
+
+            // Job access validation
+            await pricingPermissionService.ValidateJobAccessAsync(jobId.Value);
+
             Log.Information("Updating price breakdown for job {JobId} (archived: {IsArchived})",
                 breakdown.JobId ?? breakdown.PrebookJobId, breakdown.IsArchived);
 
@@ -236,6 +256,11 @@ public class JobController(
 
             return Ok();
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            Log.Warning(ex, "Unauthorized access to update price component for job {JobId}", breakdown.JobId ?? breakdown.PrebookJobId);
+            return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
+        }
         catch (Exception ex)
         {
             Log.Error(ex, "Error updating price breakdown for job {JobId}",
@@ -249,6 +274,13 @@ public class JobController(
     {
         try
         {
+            // Permission check: user must have breakdown permission
+            if (!await pricingPermissionService.CanModifyPriceBreakdownAsync())
+                return StatusCode(StatusCodes.Status403Forbidden, "You do not have permission to modify price breakdowns");
+
+            // Job access validation
+            await pricingPermissionService.ValidateJobAccessAsync(request.JobId);
+
             Log.Information("Deleting price breakdown for charge {ChargeId} (archived: {IsArchived})",
                 request.ChargeId, request.IsArchived);
 
@@ -263,6 +295,11 @@ public class JobController(
             }
 
             return Ok();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Log.Warning(ex, "Unauthorized access to delete price component for job {JobId}", request.JobId);
+            return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
         }
         catch (Exception ex)
         {
@@ -556,12 +593,28 @@ public class JobController(
     {
         try
         {
+            // Validate pricing mode is a valid value
+            pricingPermissionService.ValidatePricingMode(pricingMode);
+
+            // Permission check: user must have bulk update permission
+            if (!await pricingPermissionService.CanBulkUpdatePricesAsync())
+                return StatusCode(StatusCodes.Status403Forbidden, "You do not have permission to perform bulk price updates");
+
+            // Permission check: user must have permission for the specific pricing mode
+            if (!await pricingPermissionService.CanUsePricingModeAsync(pricingMode))
+                return StatusCode(StatusCodes.Status403Forbidden, $"You do not have permission to use the '{pricingMode}' pricing mode");
+
             var result = await rateJobService.ApplyBulkPriceUpdateAsync(file, pricingMode);
             return Ok(result);
         }
         catch (ArgumentException ex)
         {
             return BadRequest(ex.Message);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Log.Warning(ex, "Unauthorized bulk price update attempt");
+            return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
         }
         catch (Exception e)
         {
@@ -1820,8 +1873,20 @@ public class JobController(
     {
         try
         {
+            // Permission check: user must have modify prices permission
+            if (!await pricingPermissionService.CanModifyPricesAsync())
+                return StatusCode(StatusCodes.Status403Forbidden, "You do not have permission to modify job prices");
+
+            // Job access validation
+            await pricingPermissionService.ValidateJobAccessAsync(data.JobId);
+
             await jobRepository.SimpleRepriceJobManualAsync(data);
             return Ok();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Log.Warning(ex, "Unauthorized access to reprice job {JobId}", data.JobId);
+            return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
         }
         catch (Exception e)
         {
@@ -1836,8 +1901,20 @@ public class JobController(
     {
         try
         {
+            // Permission check: user must have base amount permission
+            if (!await pricingPermissionService.CanUsePricingModeAsync("base"))
+                return StatusCode(StatusCodes.Status403Forbidden, "You do not have permission to set base amounts");
+
+            // Job access validation
+            await pricingPermissionService.ValidateJobAccessAsync(data.JobId);
+
             var newRate = await jobRepository.RepriceJobWithBaseAmountAsync(data);
             return Ok(newRate);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Log.Warning(ex, "Unauthorized access to reprice job with base amount {JobId}", data.JobId);
+            return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
         }
         catch (Exception e)
         {
@@ -1852,8 +1929,20 @@ public class JobController(
     {
         try
         {
+            // Permission check: user must have recalculate permission
+            if (!await pricingPermissionService.CanUsePricingModeAsync("recalculate"))
+                return StatusCode(StatusCodes.Status403Forbidden, "You do not have permission to recalculate job prices");
+
+            // Job access validation
+            await pricingPermissionService.ValidateJobAccessAsync(jobId);
+
             var newRate = await GetJobRateAsync(jobId, false);
             return Ok(newRate);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Log.Warning(ex, "Unauthorized access to recalculate job rate {JobId}", jobId);
+            return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
         }
         catch (Exception e)
         {
@@ -1901,5 +1990,22 @@ public class JobController(
             : await jobRepository.GetJobDetailsForRatingNzAsync(jobId, isArchived);
 
         return await rateJobService.GetJobRateNzAsync(jobDetailsNz);
+    }
+
+    /// <summary>
+    /// Gets the current user's pricing permissions.
+    /// </summary>
+    public async Task<IActionResult> GetPricingPermissions()
+    {
+        try
+        {
+            var permissions = await pricingPermissionService.GetPricingPermissionsAsync();
+            return Json(permissions);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error getting pricing permissions");
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
     }
 }

@@ -4,12 +4,24 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ThemeProvider, createTheme } from '@mui/material';
 import { FlightAgentDataTable } from './FlightAgentDataTable';
 import { FlightAgentDataTableProps, FlightOption, AgentOption, FlightSegment } from './types';
 import dayjs from 'dayjs';
+
+// Mock the dialog modules
+jest.mock('../../dialogs/flight-details-dialog', () => ({
+    openFlightDetailsDialog: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('../../dialogs/agent-info-dialog', () => ({
+    openAgentInfoDialog: jest.fn().mockResolvedValue(undefined),
+}));
+
+import { openFlightDetailsDialog } from '../../dialogs/flight-details-dialog';
+import { openAgentInfoDialog } from '../../dialogs/agent-info-dialog';
 
 const theme = createTheme();
 
@@ -131,12 +143,10 @@ const createMockProps = (overrides: Partial<FlightAgentDataTableProps> = {}): Fl
     onOutboundAirportChange: jest.fn(),
     onInboundAirportChange: jest.fn(),
     onAddFlightToJob: jest.fn(),
-    onOpenFlightMoreInfo: jest.fn(),
     onLoadMoreFlights: jest.fn(),
     onLoadNextDayFlights: jest.fn(),
     onAddAgentToJob: jest.fn(),
     onSendQuoteRequest: jest.fn(),
-    onOpenAgentMoreInfo: jest.fn(),
     onOpenAgentSearchDialog: jest.fn(),
     onOpenRecoveryAgentDialog: jest.fn(),
     formatAirportCodeForDropdown: (text: string) => text.split(' ')[0] || text,
@@ -305,6 +315,32 @@ describe('FlightAgentDataTable', () => {
                 fireEvent.click(button!);
 
                 expect(props.onAddFlightToJob).toHaveBeenCalled();
+            });
+
+            it('should open flight details dialog when clicking info button', async () => {
+                const mockOpenFlightDetailsDialog = openFlightDetailsDialog as jest.Mock;
+                mockOpenFlightDetailsDialog.mockClear();
+
+                const props = createMockProps();
+                const { container } = renderWithTheme(<FlightAgentDataTable {...props} />);
+
+                // Find the InfoIcon which is inside the more info button
+                const infoIcons = container.querySelectorAll('[data-testid="InfoIcon"]');
+                expect(infoIcons.length).toBeGreaterThan(0);
+
+                const infoIcon = infoIcons[0];
+                const button = infoIcon.closest('button');
+                expect(button).toBeTruthy();
+
+                fireEvent.click(button!);
+
+                expect(mockOpenFlightDetailsDialog).toHaveBeenCalledTimes(1);
+                expect(mockOpenFlightDetailsDialog).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        flightNumber: 'AA100',
+                        airline: 'AA',
+                    })
+                );
             });
 
             it('should call onLoadMoreFlights when clicking more button', async () => {
@@ -492,6 +528,32 @@ describe('FlightAgentDataTable', () => {
                 fireEvent.click(button!);
 
                 expect(props.onSendQuoteRequest).toHaveBeenCalledWith(mockAgent);
+            });
+
+            it('should open agent info dialog when clicking info button', async () => {
+                const mockOpenAgentInfoDialog = openAgentInfoDialog as jest.Mock;
+                mockOpenAgentInfoDialog.mockClear();
+
+                const props = createMockProps({
+                    isDeliveryJobType: true,
+                    showAgentList: true,
+                });
+                const { container } = renderWithTheme(<FlightAgentDataTable {...props} />);
+
+                // Find the InfoIcon which is inside the more info button
+                const infoIcons = container.querySelectorAll('[data-testid="InfoIcon"]');
+                expect(infoIcons.length).toBeGreaterThan(0);
+
+                const infoIcon = infoIcons[0];
+                const button = infoIcon.closest('button');
+                expect(button).toBeTruthy();
+
+                fireEvent.click(button!);
+
+                expect(mockOpenAgentInfoDialog).toHaveBeenCalledTimes(1);
+                expect(mockOpenAgentInfoDialog).toHaveBeenCalledWith({
+                    agentId: mockAgent.agentId,
+                });
             });
 
             it('should show agent ranking in table', () => {

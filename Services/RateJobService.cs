@@ -26,7 +26,8 @@ public class RateJobService(
     HttpClient httpClient,
     ITenantInfoService infoService,
     IHttpContextAccessor contextAccessor,
-    IJobReportService jobReportService)
+    IJobReportService jobReportService,
+    IPricingPermissionService pricingPermissionService)
     : IRateJobService
 {
     private const string HereMapsApiBaseUrl = "https://router.hereapi.com/v8";
@@ -256,6 +257,18 @@ public class RateJobService(
 
         // Get current amounts for all jobs before update
         var jobIds = parsedData.Select(d => d.Id).Distinct().ToList();
+
+        // Validate user has access to ALL jobs in the bulk update
+        var inaccessibleJobs = await pricingPermissionService.ValidateJobsAccessAsync(jobIds);
+        if (inaccessibleJobs.Count > 0)
+        {
+            var jobList = string.Join(", ", inaccessibleJobs.Take(10));
+            var message = inaccessibleJobs.Count > 10
+                ? $"You do not have access to the following jobs (and {inaccessibleJobs.Count - 10} more): {jobList}"
+                : $"You do not have access to the following jobs: {jobList}";
+            throw new UnauthorizedAccessException(message);
+        }
+
         var currentAmounts = await jobRepository.GetJobCurrentAmountsAsync(jobIds);
 
         var resultRows = new List<BulkPricePreviewRow>();

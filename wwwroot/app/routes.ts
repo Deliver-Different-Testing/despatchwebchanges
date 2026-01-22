@@ -320,7 +320,14 @@ class RouterConfig {
             url: "/taskDashboard",
             template: `
                 <md-content class="md-dense task-dashboard-view">
-                    <react-app-shell title="Task Dashboard"></react-app-shell>
+                    <react-app-shell
+                        title="Task Dashboard"
+                        layouts="layouts"
+                        current-layout-name="currentLayoutName"
+                        on-save-layout="saveLayout()"
+                        on-load-layout="loadLayout(index)"
+                        on-delete-layout="deleteLayout(index)">
+                    </react-app-shell>
                     <div class="dashboard-padding" style="height: calc(100vh - 64px);">
                         <div style="display: flex; height: 100%; gap: 16px; padding: 16px;">
                             <div id="react-task-dashboard" style="flex: 0 0 60%; height: 100%; overflow: hidden;"></div>
@@ -366,7 +373,14 @@ class RouterConfig {
             },
             controller: ['$scope', 'toastrService', 'APP_CONFIG',
                 function (
-                    $scope: angular.IScope & { selectedJobId?: number },
+                    $scope: angular.IScope & {
+                        selectedJobId?: number;
+                        layouts: { name: string }[];
+                        currentLayoutName: string;
+                        saveLayout: () => void;
+                        loadLayout: (index: number) => void;
+                        deleteLayout: (index: number) => void;
+                    },
                     toastrService: {
                         showSuccessToast: (m: string) => void;
                         showWarningToast: (m: string) => void;
@@ -376,6 +390,39 @@ class RouterConfig {
                     appConfig: { US_Customer: boolean }
                 ) {
                     $scope.selectedJobId = undefined;
+
+                    // Layout state - will be updated by React component
+                    $scope.layouts = [];
+                    $scope.currentLayoutName = 'Default';
+
+                    // Layout action callbacks - will be set by React component
+                    let reactSaveLayout: (() => void) | null = null;
+                    let reactLoadLayout: ((index: number) => void) | null = null;
+                    let reactDeleteLayout: ((index: number) => void) | null = null;
+
+                    // Callbacks exposed to template that delegate to React
+                    $scope.saveLayout = () => {
+                        console.log('[TaskDashboard] saveLayout called, reactSaveLayout:', !!reactSaveLayout);
+                        if (reactSaveLayout) {
+                            reactSaveLayout();
+                        } else {
+                            console.warn('[TaskDashboard] reactSaveLayout not set yet');
+                        }
+                    };
+
+                    $scope.loadLayout = (index: number) => {
+                        console.log('[TaskDashboard] loadLayout called, index:', index);
+                        if (reactLoadLayout) {
+                            reactLoadLayout(index);
+                        }
+                    };
+
+                    $scope.deleteLayout = (index: number) => {
+                        console.log('[TaskDashboard] deleteLayout called, index:', index);
+                        if (reactDeleteLayout) {
+                            reactDeleteLayout(index);
+                        }
+                    };
 
                     const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
                         switch (type) {
@@ -399,10 +446,36 @@ class RouterConfig {
                         $scope.$apply();
                     };
 
+                    // Called by React component when layout actions change
+                    const onLayoutActionsChange = (actions: {
+                        layouts: { name: string }[];
+                        currentLayoutName: string;
+                        onSaveLayout: () => void;
+                        onLoadLayout: (index: number) => void;
+                        onDeleteLayout: (index: number) => void;
+                    }) => {
+                        console.log('[TaskDashboard] onLayoutActionsChange called with', actions.layouts.length, 'layouts');
+
+                        // Update scope with layout data
+                        $scope.layouts = actions.layouts;
+                        $scope.currentLayoutName = actions.currentLayoutName;
+
+                        // Store React callbacks
+                        reactSaveLayout = actions.onSaveLayout;
+                        reactLoadLayout = actions.onLoadLayout;
+                        reactDeleteLayout = actions.onDeleteLayout;
+
+                        // Trigger Angular digest cycle if not already in one
+                        if (!$scope.$$phase && !$scope.$root.$$phase) {
+                            $scope.$apply();
+                        }
+                    };
+
                     (window as any).ReactTaskDashboard.mount('react-task-dashboard', {
                         showToast,
                         isUsCustomer: appConfig.US_Customer,
                         onTaskSelect,
+                        onLayoutActionsChange,
                     });
 
                     $scope.$on('$destroy', () => {

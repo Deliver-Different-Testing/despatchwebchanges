@@ -19,13 +19,23 @@ public class RateJobServiceBulkPriceTests
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock = new();
     private readonly Mock<IJobReportService> _jobReportServiceMock = new();
+    private readonly Mock<IPricingPermissionService> _pricingPermissionServiceMock = new();
+
+    public RateJobServiceBulkPriceTests()
+    {
+        // By default, allow all job access in tests (internal user behavior)
+        _pricingPermissionServiceMock
+            .Setup(x => x.ValidateJobsAccessAsync(It.IsAny<List<int>>()))
+            .ReturnsAsync([]); // Empty list = all jobs accessible
+    }
 
     private RateJobService CreateService() => new(
         _jobRepositoryMock.Object,
         new HttpClient(),
         _tenantInfoServiceMock.Object,
         _httpContextAccessorMock.Object,
-        _jobReportServiceMock.Object
+        _jobReportServiceMock.Object,
+        _pricingPermissionServiceMock.Object
     );
 
     #region Empty/No Data Tests

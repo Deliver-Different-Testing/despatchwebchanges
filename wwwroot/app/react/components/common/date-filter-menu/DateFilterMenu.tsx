@@ -36,7 +36,7 @@ export interface DateFilterData {
     useTime?: boolean;
 }
 
-export type DateRangeOption = 'all_time' | 'custom_minutes' | 'custom_date';
+export type DateRangeOption = 'all_time' | 'today' | 'custom_minutes' | 'custom_date';
 
 interface DurationOption {
     id: number;
@@ -146,7 +146,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
     useEffect(() => {
         try {
             const saved = localStorage.getItem(storageKey);
-            if (saved && ['all_time', 'custom_minutes', 'custom_date'].includes(saved)) {
+            if (saved && ['all_time', 'today', 'custom_minutes', 'custom_date'].includes(saved)) {
                 setSelectedRangeOption(saved as DateRangeOption);
             }
         } catch {
@@ -219,6 +219,11 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
             case 'all_time':
                 newStartDate = defaults.startDate;
                 newEndDate = defaults.endDate;
+                break;
+
+            case 'today':
+                newStartDate = dayjs().tz(ianaTimeZone).startOf('day');
+                newEndDate = dayjs().tz(ianaTimeZone).endOf('day');
                 break;
 
             case 'custom_date':
@@ -302,6 +307,9 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
         switch (selectedRangeOption) {
             case 'all_time':
                 toastMessage = 'Showing all up until the end of today';
+                break;
+            case 'today':
+                toastMessage = `Showing today (${startDate.format('MMM DD, YYYY')})`;
                 break;
             case 'custom_minutes': {
                 const minutes = Math.floor(selectedMinsOption / 60);
@@ -390,6 +398,11 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                             value="all_time"
                             control={<Radio size="small"/>}
                             label="All Time"
+                        />
+                        <FormControlLabel
+                            value="today"
+                            control={<Radio size="small"/>}
+                            label="Today"
                         />
                         <FormControlLabel
                             value="custom_minutes"

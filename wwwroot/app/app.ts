@@ -46,6 +46,7 @@ import CustomUrlService from "./services/custom-url.service";
 import VoidJobConfirmationDialogService
     from "./components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
 import DayJsDatePickerComponent from "./components/common/dayjs-date-picker/dayjs-date-picker.component";
+import DispatchExecutorService from "./services/dispatch-executor.service";
 import {minutesToTimeFilter} from "./components/Nationwide/filters/minutesToTimeFilter";
 import SimplePriceEditDialogService
     from "./components/dialogs/simple-price-edit-dialog/simple-price-edit-dialog.service";
@@ -257,5 +258,6 @@ app.service('customUrlService', CustomUrlService);
 app.service('voidJobConfirmationDialogService', VoidJobConfirmationDialogService);
 app.service('simplePriceEditDialogService', SimplePriceEditDialogService);
 app.service('bulkPriceUploadDialogService', BulkPriceUploadDialogService);
+app.service('dispatchJobService', DispatchExecutorService);
 
 export default app;

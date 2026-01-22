@@ -91,6 +91,16 @@ describe('DateFilterMenu', () => {
             });
         });
 
+        it('should render Today option', async () => {
+            renderWithProviders(<DateFilterMenu {...defaultProps} />);
+
+            fireEvent.click(screen.getByRole('button'));
+
+            await waitFor(() => {
+                expect(screen.getByLabelText('Today')).toBeInTheDocument();
+            });
+        });
+
         it('should render Reset button', async () => {
             renderWithProviders(<DateFilterMenu {...defaultProps} />);
 
@@ -216,6 +226,30 @@ describe('DateFilterMenu', () => {
             );
         });
 
+        it('should call onShowToast with today message when Today is selected', async () => {
+            const onShowToast = jest.fn();
+            renderWithProviders(
+                <DateFilterMenu {...defaultProps} onShowToast={onShowToast} />
+            );
+
+            fireEvent.click(screen.getByRole('button'));
+
+            await waitFor(() => {
+                expect(screen.getByText('Today')).toBeInTheDocument();
+            });
+
+            fireEvent.click(screen.getByText('Today'));
+
+            await waitFor(() => {
+                fireEvent.click(screen.getByText('Apply'));
+            });
+
+            expect(onShowToast).toHaveBeenCalledWith(
+                expect.stringContaining('Showing today'),
+                'success'
+            );
+        });
+
         it('should close menu after Apply is clicked', async () => {
             renderWithProviders(<DateFilterMenu {...defaultProps} />);
 
@@ -296,6 +330,21 @@ describe('DateFilterMenu', () => {
             await waitFor(() => {
                 const timeRangeRadio = screen.getByLabelText('Time Range');
                 expect(timeRangeRadio).toBeChecked();
+            });
+        });
+
+        it('should restore today option from localStorage', async () => {
+            localStorage.setItem('dateRangeOption-testPage', 'today');
+
+            renderWithProviders(
+                <DateFilterMenu {...defaultProps} appPage="testPage" />
+            );
+
+            fireEvent.click(screen.getByRole('button'));
+
+            await waitFor(() => {
+                const todayRadio = screen.getByLabelText('Today');
+                expect(todayRadio).toBeChecked();
             });
         });
     });

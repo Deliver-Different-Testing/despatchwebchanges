@@ -491,5 +491,7 @@ public partial class TucJobArchive
 
     public virtual ICollection<TucJobItemsArchive> TucJobItemsArchives { get; set; } = new List<TucJobItemsArchive>();
 
+    public virtual ICollection<TucJobNationwide> TucJobNationwides { get; set; } = new List<TucJobNationwide>();
+
     public virtual VehicleSize UcjbSizeNavigation { get; set; }
 }

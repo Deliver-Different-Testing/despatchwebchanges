@@ -143,12 +143,10 @@ export interface FlightAgentDataTableProps {
     onOutboundAirportChange: (airport: AirportSuggestion | null) => void;
     onInboundAirportChange: (airport: AirportSuggestion | null) => void;
     onAddFlightToJob: (flight: FlightOption) => void;
-    onOpenFlightMoreInfo: (flight: FlightOption) => void;
     onLoadMoreFlights: () => void;
     onLoadNextDayFlights: () => void;
     onAddAgentToJob: (agent: AgentOption) => void;
     onSendQuoteRequest: (agent: AgentOption) => void;
-    onOpenAgentMoreInfo: (agent: AgentOption) => void;
     onOpenAgentSearchDialog: () => void;
     onOpenRecoveryAgentDialog: () => void;
 
