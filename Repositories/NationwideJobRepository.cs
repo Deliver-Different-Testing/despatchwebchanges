@@ -1156,17 +1156,12 @@ public class NationwideJobRepository(
         };
     }
 
-    public async Task<string> GetAgentNameAsync(int agentId)
-    {
-        // Get Agent Name
-        var agentName = await Context.TucAgents
+    public async Task<string> GetAgentNameAsync(int agentId) =>
+        await Context.TucAgents
             .AsNoTracking()
             .Where(a => a.UcagId == agentId)
             .Select(a => a.UcagName)
             .FirstOrDefaultAsync();
-
-        return agentName;
-    }
 
     public async Task<RecoveryAgentJobViewModel> GetRecoveryAgentDialogDataAsync(int jobId)
     {
@@ -1258,9 +1253,8 @@ public class NationwideJobRepository(
         return recoveryAgentData;
     }
 
-    public async Task<List<Suggestion>> GetAgentOptionsByAirportAsync(int airportId)
-    {
-        var agents = await Context.TblAirports
+    public async Task<List<Suggestion>> GetAgentOptionsByAirportAsync(int airportId) =>
+        await Context.TblAirports
             .AsNoTracking()
             .Where(a => a.AirportId == airportId)
             .SelectMany(a => a.AgentVehicles)
@@ -1272,12 +1266,8 @@ public class NationwideJobRepository(
             .Distinct()
             .ToListAsync();
 
-        return agents;
-    }
-
-    public async Task<List<Suggestion>> GetAllActiveAirportsWithAgentsAsync()
-    {
-        var agents = await Context.TblAirports
+    public async Task<List<Suggestion>> GetAllActiveAirportsWithAgentsAsync() =>
+        await Context.TblAirports
             .AsNoTracking()
             .Where(a => a.Active && a.AgentVehicles.Any())
             .Select(a => new Suggestion
@@ -1286,9 +1276,6 @@ public class NationwideJobRepository(
                 Text = a.Name
             })
             .ToListAsync();
-
-        return agents;
-    }
 
     public async Task UpdateRecoveryAgentAsync(UpdateAgentRecoveryRequest request)
     {
@@ -1479,9 +1466,8 @@ public class NationwideJobRepository(
                || flightSpeedJobs.Any(job => job.HasTucJobNationwides);
     }
 
-    public async Task<List<GetAirportsDto>> GetAllActiveAirportsAsync()
-    {
-        var airports = await Context.TblAirports
+    public async Task<List<GetAirportsDto>> GetAllActiveAirportsAsync() =>
+        await Context.TblAirports
             .AsNoTracking()
             .Where(a => a.Active)
             .Select(a => new GetAirportsDto
@@ -1492,9 +1478,6 @@ public class NationwideJobRepository(
                 Timezone = a.Timezone
             })
             .ToListAsync();
-
-        return airports;
-    }
 
     /// <inheritdoc />
     public async Task<List<FlightRateDto>> GetCarrierFlightRatesAsync(FlightRateCalculationDto dto)

@@ -159,6 +159,7 @@ builder.Services.AddScoped<IClearListEnvelopeService, ClearListEnvelopeService>(
 builder.Services.AddScoped<IDispatchJobService, DispatchJobService>();
 builder.Services.AddScoped<IDeliveryJourneyService, DeliveryJourneyService>();
 builder.Services.AddScoped<IPricingPermissionService, PricingPermissionService>();
+builder.Services.AddScoped<ISplitJobService, SplitJobService>();
 
 // Register DespatchContext with a fake connection string
 builder.Services.AddDbContextFactory<DespatchContext>(options =>

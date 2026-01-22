@@ -1140,7 +1140,7 @@ public static class JobMappings
 
         // Pallet info - from parent job items only
 
-        PalletInfo = j.TucJobItemJobs.Where(i => i.ChildJobId == null).Any()
+        PalletInfo = j.TucJobItemJobs.Any(i => i.ChildJobId == null)
             ? j.TucJobItemJobs.Where(i => i.ChildJobId == null).Select(i => new PalletInfo
             {
                 Id = i.JobId,
@@ -1678,13 +1678,13 @@ public static class JobMappings
             .ToList();
         if (flightJobsNeedingData.Count == 0) return;
 
-        // Get effective job IDs (use ParentId for child jobs, own Id for root/archived jobs)
+        // Get effective job IDs (use ParentId for child jobs, own I'd for root/archived jobs)
         var effectiveJobIds = flightJobsNeedingData
             .Select(j => j.ParentId ?? j.Id)
             .Distinct()
             .ToList();
 
-        // Query TucJobNationwides directly by job ID - works for both live and archived jobs
+        // Query TucJobNationwide directly by job ID - works for both live and archived jobs
         var segmentsByJob = await context.TucJobNationwides
             .AsNoTracking()
             .Where(n => n.UcnwJobId.HasValue && effectiveJobIds.Contains(n.UcnwJobId.Value))

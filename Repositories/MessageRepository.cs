@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Extensions;
-using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.MessageModels;
@@ -54,6 +53,8 @@ public class MessageRepository(
         var currentDate = infoService.GetCurrentTenantTime();
 
         var allMessages = await Context.TucManualMessages
+            .AsNoTracking()
+            .AsSplitQuery()
             .ForStaff(staffId)
             .IncludeParticipants()
             .ToListAsync();
@@ -94,9 +95,8 @@ public class MessageRepository(
         return result;
     }
 
-    public async Task<List<ChatMessageViewModel>> GetMessagesByCourierIdAsync(int courierId, int staffId)
-    {
-        var messages = await Context.TucManualMessages
+    public async Task<List<ChatMessageViewModel>> GetMessagesByCourierIdAsync(int courierId, int staffId) =>
+        await Context.TucManualMessages
             .BetweenStaffAndCourier(staffId, courierId)
             .OrderBy(m => m.UcmmDate)
             .Select(m => new ChatMessageViewModel
@@ -115,12 +115,8 @@ public class MessageRepository(
             })
             .ToListAsync();
 
-        return messages;
-    }
-
-    public async Task<List<ChatMessageViewModel>> GetMessagesByStaffIdAsync(int otherStaffId, int currentStaffId)
-    {
-        var messages = await Context.TucManualMessages
+    public async Task<List<ChatMessageViewModel>> GetMessagesByStaffIdAsync(int otherStaffId, int currentStaffId) =>
+        await Context.TucManualMessages
             .BetweenStaff(currentStaffId, otherStaffId)
             .OrderBy(m => m.UcmmDate)
             .Select(m => new ChatMessageViewModel
@@ -138,9 +134,6 @@ public class MessageRepository(
                 IsSender = m.UcmmSendFromStaffId == currentStaffId
             })
             .ToListAsync();
-
-        return messages;
-    }
 
     public async Task SendMessageAsync(SendMessageRequest request)
     {
@@ -372,23 +365,19 @@ public class MessageRepository(
         message.Subject = "Staff Message";
     }
 
-    private static TucCourier GetCourierFromMessage(TucManualMessage message, int courierId)
-    {
-        return message.UcmmSendFromCourierId == courierId
+    private static TucCourier GetCourierFromMessage(TucManualMessage message, int courierId) =>
+        message.UcmmSendFromCourierId == courierId
             ? message.UcmmSendFromCourier
             : message.UcmmSendToCourier;
-    }
 
-    private static MessageDeliveryType GetDeliveryMethod(int messageType, bool isLoggedInToday)
-    {
-        return messageType switch
+    private static MessageDeliveryType GetDeliveryMethod(int messageType, bool isLoggedInToday) =>
+        messageType switch
         {
             1 => MessageDeliveryType.App,
             2 => MessageDeliveryType.Sms,
             3 => isLoggedInToday ? MessageDeliveryType.App : MessageDeliveryType.Sms,
             _ => throw new ArgumentException($"Invalid message type: {messageType}")
         };
-    }
 
     private static string NormalizeMobileNumber(string phoneNumber, bool isUsTenant)
     {

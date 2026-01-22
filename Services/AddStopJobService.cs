@@ -348,9 +348,8 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
     /// <summary>
     /// Creates a note entity for a live job.
     /// </summary>
-    private static TucNote CreateNote(int jobId, string noteText, int staffId, DateTime currentDate)
-    {
-        return new TucNote
+    private static TucNote CreateNote(int jobId, string noteText, int staffId, DateTime currentDate) =>
+        new()
         {
             JobId = jobId,
             NoteText = noteText,
@@ -360,14 +359,12 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
             UpdatedBy = staffId,
             UpdatedDate = currentDate
         };
-    }
 
     /// <summary>
     /// Creates a note entity for a recurring job booking.
     /// </summary>
-    private static TucNote CreateBookingNote(int jobBookingId, string noteText, int staffId, DateTime currentDate)
-    {
-        return new TucNote
+    private static TucNote CreateBookingNote(int jobBookingId, string noteText, int staffId, DateTime currentDate) =>
+        new()
         {
             JobBookingId = jobBookingId,
             NoteText = noteText,
@@ -377,7 +374,6 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
             UpdatedBy = staffId,
             UpdatedDate = currentDate
         };
-    }
 
     /// <summary>
     /// Creates a pricing breakdown for a live job stop.

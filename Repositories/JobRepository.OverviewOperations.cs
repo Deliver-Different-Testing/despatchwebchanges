@@ -122,9 +122,7 @@ public partial class JobRepository
                 JobId = j.UcjbId,
                 JobName = j.UcjbNumber,
                 Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : "Unknown",
-                Region = j.TblBulkJobs.FirstOrDefault() != null
-                    ? j.TblBulkJobs.FirstOrDefault().Region.Name
-                    : null,
+                Region = j.TblBulkJobs.Select(b => b.Region.Name).FirstOrDefault(),
                 // Simple conditional - server evaluable
                 Pickup = isUsCustomer
                     ? j.PickupAddressLine5 + ", " + j.PickupAddressLine6
@@ -135,13 +133,13 @@ public partial class JobRepository
                 Driver = j.UcjbCourier != null
                     ? j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
                     : null,
-                Completion = j.InverseParent.Count != 0
+                Completion = j.InverseParent.Any()
                     ? (int)Math.Round(
-                        (double)j.InverseParent.Count(c =>
+                        100.0 * j.InverseParent.Count(c =>
                             c.UcjbJobDone
                             || (c.UcjbStatus.HasValue
                                 && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))
-                        ) / j.InverseParent.Count * 100
+                        ) / j.InverseParent.Count()
                     )
                     : 0,
                 ChildJobs = j.InverseParent
@@ -150,9 +148,7 @@ public partial class JobRepository
                         JobId = c.UcjbId,
                         JobName = c.UcjbNumber,
                         Status = c.UcjbStatusNavigation != null ? c.UcjbStatusNavigation.UcjsName : "Unknown",
-                        Region = c.TblBulkJobs.FirstOrDefault() != null
-                            ? c.TblBulkJobs.FirstOrDefault().Region.Name
-                            : null,
+                        Region = c.TblBulkJobs.Select(b => b.Region.Name).FirstOrDefault(),
                         Pickup = c.PickupAddressLine5 + ", " + c.PickupAddressLine6,
                         Delivery = c.DeliveryAddressLine5 + ", " + c.DeliveryAddressLine6,
                         Driver = c.UcjbCourier != null
@@ -194,18 +190,18 @@ public partial class JobRepository
 
             "completion" => isAscending
                 ? query.OrderBy(j =>
-                    j.InverseParent.Count(c =>
+                    100.0 * j.InverseParent.Count(c =>
                         c.UcjbJobDone
                         || (c.UcjbStatus.HasValue
                             && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))
-                    ) / (double)j.InverseParent.Count * 100
+                    ) / j.InverseParent.Count()
                 )
                 : query.OrderByDescending(j =>
-                    j.InverseParent.Count(c =>
+                    100.0 * j.InverseParent.Count(c =>
                         c.UcjbJobDone
                         || (c.UcjbStatus.HasValue
                             && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))
-                    ) / (double)j.InverseParent.Count * 100
+                    ) / j.InverseParent.Count()
                 ),
 
             "pickup" => isAscending
@@ -221,8 +217,8 @@ public partial class JobRepository
                 : query.OrderByDescending(j => j.UcjbCourier.UccrName),
 
             "region" => isAscending
-                ? query.OrderBy(j => j.TblBulkJobs.FirstOrDefault().Region.Name)
-                : query.OrderByDescending(j => j.TblBulkJobs.FirstOrDefault().Region.Name),
+                ? query.OrderBy(j => j.TblBulkJobs.Select(b => b.Region.Name).FirstOrDefault())
+                : query.OrderByDescending(j => j.TblBulkJobs.Select(b => b.Region.Name).FirstOrDefault()),
 
             _ => query.OrderBy(j => j.UcjbNumber) // Default sort
         };

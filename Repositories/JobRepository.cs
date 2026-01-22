@@ -25,7 +25,6 @@ public partial class JobRepository(
     IClearListEnvelopeService clearListEnvelopeService)
     : BaseJobRepository(contextFactory, infoService, clearListEnvelopeService), IJobRepository
 {
-    private static readonly DateTime SqlMinDateTime = new(1753, 1, 1);
     private readonly IDbContextFactory<DespatchContext> _contextFactory = contextFactory;
     private readonly ITenantInfoService _infoService = infoService;
 
@@ -649,11 +648,15 @@ public partial class JobRepository(
         var dbData = await dbDataTask;
         var dbDataArchive = await dbDataArchiveTask;
 
+        // Create dictionaries for O(1) lookups instead of O(n) list searches
+        var dbDataDict = dbData.ToDictionary(j => j.UcjbId);
+        var dbDataArchiveDict = dbDataArchive.ToDictionary(j => j.UcjbId);
+
         // Update job status
-        await UpdateJobStatusesAsync(data, dbData, dbDataArchive);
+        await UpdateJobStatusesAsync(data, dbDataDict, dbDataArchiveDict);
 
         // Update job couriers
-        await UpdateJobCouriersAsync(data, dbData, dbDataArchive);
+        await UpdateJobCouriersAsync(data, dbDataDict, dbDataArchiveDict);
 
         // Log counts for diagnostics
         Log.Information("Processing {DbDataCount} active jobs and {Count} archived jobs", dbData.Count,
@@ -665,9 +668,9 @@ public partial class JobRepository(
         // Process individual jobs and save in batches
         foreach (var d in data)
         {
-            var match =
-                (dynamic)dbData.FirstOrDefault(j => j.UcjbId == d.Id)
-                ?? dbDataArchive.FirstOrDefault(j => j.UcjbId == d.Id);
+            dynamic match = dbDataDict.TryGetValue(d.Id, out var activeJob) ? activeJob
+                : dbDataArchiveDict.TryGetValue(d.Id, out var archivedJob) ? archivedJob
+                : null;
 
             if (match == null)
             {
@@ -746,9 +749,8 @@ public partial class JobRepository(
         {
             try
             {
-                var parentJob =
-                    (dynamic)dbData.FirstOrDefault(j => j.UcjbId == x.Key)
-                    ?? dbDataArchive.First(j => j.UcjbId == x.Key);
+                dynamic parentJob = dbDataDict.TryGetValue(x.Key, out var activeParent) ? activeParent
+                    : dbDataArchiveDict[x.Key];
 
                 var childJobs = x.Where(j => j.UcjbId != parentJob.UcjbId).ToList();
 
@@ -1754,26 +1756,6 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Splits a job into multiple child jobs for separate delivery handling.
-    /// </summary>
-    /// <param name="jobId">The job ID to split.</param>
-    /// <param name="user">The username performing the split.</param>
-    public async Task SplitJobAsync(int jobId,
-        string user)
-    {
-        try
-        {
-            Log.Information("Splitting job {JobId} by user {User}", jobId, user);
-            await Context.Procedures.DES_stpJob_SplitJobAsync(jobId, false, user);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "Error splitting job {JobId}", jobId);
-            throw;
-        }
-    }
-
-    /// <summary>
     /// Reverses a job split, merging child jobs back into the parent.
     /// </summary>
     /// <param name="jobId">The job ID to unsplit.</param>
@@ -1946,9 +1928,8 @@ public partial class JobRepository(
     /// <summary>
     /// Retrieves available internal job statuses for dispatch workflow.
     /// </summary>
-    public async Task<List<InternalStatus>> GetInternalStatusListAsync()
-    {
-        return await Context
+    public async Task<List<InternalStatus>> GetInternalStatusListAsync() =>
+        await Context
             .TucJobInternalStatuses
             .AsNoTracking()
             .Where(x => x.Tcis != (int)InternalJobStatus.OvernightCp
@@ -1962,32 +1943,27 @@ public partial class JobRepository(
                 DefaultMins = x.DefaultMinutes
             })
             .ToListAsync();
-    }
 
     /// <summary>
     /// Retrieves all available job statuses.
     /// </summary>
-    public async Task<List<Suggestion>> GetStatusListAsync()
-    {
-        return await Context.TucJobStatuses
+    public async Task<List<Suggestion>> GetStatusListAsync() =>
+        await Context.TucJobStatuses
             .AsNoTracking()
             .OrderBy(s => s.UcjsName)
             .Select(s => new Suggestion { Id = s.UcjsId, Text = s.UcjsName })
             .ToListAsync();
-    }
 
     /// <summary>
     /// Retrieves event types for customer service and general events.
     /// </summary>
-    public async Task<List<Suggestion>> EventTypeListAsync()
-    {
-        return await Context.TucEventTypes
+    public async Task<List<Suggestion>> EventTypeListAsync() =>
+        await Context.TucEventTypes
             .AsNoTracking()
             .Where(u => u.UcetGroup == "CS" || u.UcetGroup == "GE")
             .OrderBy(u => u.UcetName)
             .Select(x => new Suggestion { Id = x.UcetId, Text = x.UcetName })
             .ToListAsync();
-    }
 
     /// <summary>
     /// Retrieves pricing breakdown components for a job or prebook job.
@@ -2733,23 +2709,18 @@ public partial class JobRepository(
     /// <summary>
     /// Retrieves job details needed for late call notification processing.
     /// </summary>
-    public async Task<JobLateCallDto> GetJobForLateCallAsync(int jobId)
-    {
-        var job = await Context.TucJobs
+    public async Task<JobLateCallDto> GetJobForLateCallAsync(int jobId) =>
+        await Context.TucJobs
             .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(JobMappings.JobLateCallMapping)
             .FirstOrDefaultAsync();
 
-        return job;
-    }
-
     /// <summary>
     /// Retrieves all available time zone options for selection.
     /// </summary>
-    public async Task<List<TimeZoneSuggestion>> GetTimeZoneOptions()
-    {
-        var timeZones = await Context.TimeZones
+    public async Task<List<TimeZoneSuggestion>> GetTimeZoneOptions() =>
+        await Context.TimeZones
             .AsNoTracking()
             .Select(t => new TimeZoneSuggestion
             {
@@ -2759,9 +2730,6 @@ public partial class JobRepository(
             })
             .OrderBy(tz => tz.TimeZoneIana)
             .ToListAsync();
-
-        return timeZones;
-    }
 
     /// <summary>
     /// Updates the read status for multiple jobs in a single atomic operation.
@@ -3043,22 +3011,17 @@ public partial class JobRepository(
     /// </summary>
     /// <param name="bulkJobId">The bulk job ID to check.</param>
     /// <returns>True if the bulk job has a parent.</returns>
-    public async Task<bool> IsBulkJobParent(int bulkJobId)
-    {
-        var isParent = await Context.TblBulkJobs
+    public async Task<bool> IsBulkJobParent(int bulkJobId) =>
+        await Context.TblBulkJobs
             .Where(j => j.BulkJobId == bulkJobId)
             .Select(j => j.ParentId.HasValue || j.BulkParentId.HasValue)
             .FirstOrDefaultAsync();
 
-        return isParent;
-    }
-
     /// <summary>
     /// Retrieves all active note types for job notes.
     /// </summary>
-    public async Task<List<NoteTypeViewModel>> GetNoteTypesAsync()
-    {
-        var noteTypes = await Context.TucNoteTypes
+    public async Task<List<NoteTypeViewModel>> GetNoteTypesAsync() =>
+        await Context.TucNoteTypes
             .Where(x => x.IsActive)
             .Select(x => new NoteTypeViewModel
             {
@@ -3068,9 +3031,6 @@ public partial class JobRepository(
             })
             .AsNoTracking()
             .ToListAsync();
-
-        return noteTypes;
-    }
 
     /// <summary>
     /// Updates or creates package/parcel items for a job.
@@ -3497,16 +3457,12 @@ public partial class JobRepository(
     /// </summary>
     /// <param name="speedId">The job type ID.</param>
     /// <returns>The job type entity with grouping.</returns>
-    public async Task<TucJobType> GetJobTypeByIdAsync(int speedId)
-    {
-        var jobType = await Context.TucJobTypes
+    public async Task<TucJobType> GetJobTypeByIdAsync(int speedId) =>
+        await Context.TucJobTypes
             .AsSplitQuery()
             .AsNoTracking()
             .Include(s => s.Grouping)
-            .FirstOrDefaultAsync(x => x.UcjtId == speedId);
-
-        return jobType ?? throw new KeyNotFoundException($"Job type with ID {speedId} not found");
-    }
+            .FirstOrDefaultAsync(x => x.UcjtId == speedId) ?? throw new KeyNotFoundException($"Job type with ID {speedId} not found");
 
     /// <summary>
     /// Retrieves aggregate statistics for the overview page (active, completed, inactive counts).
@@ -3557,7 +3513,6 @@ public partial class JobRepository(
 
             // Use MERGE to handle concurrent inserts safely (prevents PK violation race condition)
             await Context.Database.ExecuteSqlInterpolatedAsync($"""
-
                                                                                 MERGE INTO tucJobReadTracker WITH (HOLDLOCK) AS target
                                                                                 USING (SELECT {jobId} AS JobId) AS source
                                                                                 ON target.JobId = source.JobId
@@ -3945,9 +3900,8 @@ public partial class JobRepository(
     private static IOrderedQueryable<TucJob> ApplyLiveJobSorting(
         IQueryable<TucJob> query,
         string sortColumn,
-        bool descending)
-    {
-        return sortColumn switch
+        bool descending) =>
+        sortColumn switch
         {
             "date" => descending
                 ? query.OrderByDescending(j => j.UcjbDate).ThenByDescending(j => j.UcjbTime)
@@ -3974,14 +3928,12 @@ public partial class JobRepository(
                 : query.OrderBy(j => j.UcjbCourier!.Code).ThenBy(j => j.UcjbId),
             _ => query.OrderBy(j => j.UcjbDate).ThenBy(j => j.UcjbTime).ThenBy(j => j.UcjbId)
         };
-    }
 
     private static IOrderedQueryable<TucJobArchive> ApplyArchivedJobSorting(
         IQueryable<TucJobArchive> query,
         string sortColumn,
-        bool descending)
-    {
-        return sortColumn switch
+        bool descending) =>
+        sortColumn switch
         {
             "date" => descending
                 ? query.OrderByDescending(j => j.UcjbDate).ThenByDescending(j => j.UcjbTime)
@@ -4008,7 +3960,6 @@ public partial class JobRepository(
                 : query.OrderBy(j => j.UcjbCourier!.Code).ThenBy(j => j.UcjbId),
             _ => query.OrderBy(j => j.UcjbDate).ThenBy(j => j.UcjbTime).ThenBy(j => j.UcjbId)
         };
-    }
 
     private static IEnumerable<DispatchJobViewModel> ApplyDispatchJobSorting(
         IEnumerable<DispatchJobViewModel> jobs,
@@ -4072,8 +4023,8 @@ public partial class JobRepository(
     }
 
     private async Task UpdateJobCouriersAsync(List<JobManualPriceModel> data,
-        List<TucJob> dbData,
-        List<TucJobArchive> dbDataArchive)
+        Dictionary<int, TucJob> dbDataDict,
+        Dictionary<int, TucJobArchive> dbDataArchiveDict)
     {
         var courierCodes = data.Where(d => !string.IsNullOrWhiteSpace(d.CourierCode))
             .Select(d => d.CourierCode.Trim())
@@ -4094,8 +4045,9 @@ public partial class JobRepository(
         // Update couriers for each job
         foreach (var d in data.Where(d => !string.IsNullOrWhiteSpace(d.CourierCode)))
         {
-            var match = (dynamic)dbData.FirstOrDefault(j => j.UcjbId == d.Id)
-                        ?? dbDataArchive.FirstOrDefault(j => j.UcjbId == d.Id);
+            dynamic match = dbDataDict.TryGetValue(d.Id, out var activeJob) ? activeJob
+                : dbDataArchiveDict.TryGetValue(d.Id, out var archivedJob) ? archivedJob
+                : null;
 
             if (match == null)
             {
@@ -4119,8 +4071,8 @@ public partial class JobRepository(
     }
 
     private async Task UpdateJobStatusesAsync(List<JobManualPriceModel> data,
-        List<TucJob> dbData,
-        List<TucJobArchive> dbDataArchive)
+        Dictionary<int, TucJob> dbDataDict,
+        Dictionary<int, TucJobArchive> dbDataArchiveDict)
     {
         var statusNames = data.Where(d => !string.IsNullOrWhiteSpace(d.StatusName))
             .Select(d => d.StatusName)
@@ -4141,8 +4093,9 @@ public partial class JobRepository(
         // Update statuses for each job
         foreach (var d in data.Where(d => !string.IsNullOrWhiteSpace(d.StatusName)))
         {
-            var match = (dynamic)dbData.FirstOrDefault(j => j.UcjbId == d.Id)
-                        ?? dbDataArchive.FirstOrDefault(j => j.UcjbId == d.Id);
+            dynamic match = dbDataDict.TryGetValue(d.Id, out var activeJob) ? activeJob
+                : dbDataArchiveDict.TryGetValue(d.Id, out var archivedJob) ? archivedJob
+                : null;
 
             if (match == null)
             {
@@ -4306,12 +4259,10 @@ public partial class JobRepository(
         return relatedBulkJobIds;
     }
 
-    private async Task UpdateJobDisplayInDespatchAsync(int jobId)
-    {
+    private async Task UpdateJobDisplayInDespatchAsync(int jobId) =>
         await Context.TucJobs
             .Where(j => j.RootParentId == jobId)
             .ExecuteUpdateAsync(j => j.SetProperty(x => x.DisplayInDespatch, true));
-    }
 
     private async Task SetJobAsManuallyPriceAsync(int jobId,
         string note)
@@ -4707,9 +4658,8 @@ public partial class JobRepository(
         };
     }
 
-    private static string GetScanDetail(int scanType)
-    {
-        return scanType switch
+    private static string GetScanDetail(int scanType) =>
+        scanType switch
         {
             (int)ScanType.Sort or (int)ScanType.AlternateSort => "Sort",
             (int)ScanType.Run => "Run",
@@ -4721,7 +4671,6 @@ public partial class JobRepository(
             (int)ScanType.Transfer => "Transfer",
             _ => null
         };
-    }
 
     private static string GetCourierDescription(int scanType,
         TucCourier courier,

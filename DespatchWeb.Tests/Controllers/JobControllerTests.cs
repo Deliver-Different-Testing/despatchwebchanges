@@ -32,6 +32,7 @@ public class JobControllerTests
     private readonly Mock<IDispatchJobService> _dispatchJobServiceMock = new();
     private readonly Mock<IDeliveryJourneyService> _deliveryJourneyServiceMock = new();
     private readonly Mock<IPricingPermissionService> _pricingPermissionServiceMock = new();
+    private readonly Mock<ISplitJobService> _splitJobServiceMock = new();
 
     public JobControllerTests()
     {
@@ -59,7 +60,8 @@ public class JobControllerTests
             _jobPhotoServiceMock.Object,
             _dispatchJobServiceMock.Object,
             _deliveryJourneyServiceMock.Object,
-            _pricingPermissionServiceMock.Object);
+            _pricingPermissionServiceMock.Object,
+            _splitJobServiceMock.Object);
     }
 
     #endregion
@@ -1076,8 +1078,8 @@ public class JobControllerTests
 
         _tenantInfoServiceMock.Setup(x => x.GetStaffInfoAsync())
             .ReturnsAsync(staffInfo);
-        _jobRepositoryMock.Setup(x => x.SplitJobAsync(1, "John Doe"))
-            .Returns(Task.CompletedTask);
+        _splitJobServiceMock.Setup(x => x.SplitJobAsync(1, "John Doe"))
+            .ReturnsAsync((1, 2));
 
         var controller = CreateController();
 

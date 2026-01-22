@@ -64,14 +64,12 @@ public class TaskRepository(
     }
 
     private static IQueryable<TucEvent> ApplyDateTimeOrder(IQueryable<TucEvent> query, bool isDescending,
-        DateTime today)
-    {
-        return isDescending
+        DateTime today) =>
+        isDescending
             ? query.OrderByDescending(e => e.UcevDueTime.Date < today.Date)
                 .ThenByDescending(e => e.UcevDueTime)
             : query.OrderByDescending(e => e.UcevDueTime.Date < today)
                 .ThenBy(e => e.UcevDueTime);
-    }
 
     public async Task SetEventAsClosedAsync(int eventId, bool closed)
     {
@@ -239,16 +237,12 @@ public class TaskRepository(
         }
     }
 
-    public async Task<List<Suggestion>> GetEventGroupsAsync()
-    {
-        var eventGroups = await Context.TucEventTypeGroups
+    public async Task<List<Suggestion>> GetEventGroupsAsync() =>
+        await Context.TucEventTypeGroups
             .AsNoTracking()
             .Select(x => new Suggestion { Id = x.Id, Text = x.Name })
             .OrderBy(x => x.Text)
             .ToListAsync();
-
-        return eventGroups;
-    }
 
     public async Task<List<EventGroupViewModel>> GetEventTypeGroupsAsync(int eventGroupId)
     {

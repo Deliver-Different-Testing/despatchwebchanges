@@ -1738,7 +1738,6 @@ public class CourierRepository(
         var pageSize = Math.Max(1, Math.Min(100, request.PageSize));
 
         var query = Context.TucCouriers
-            .AsNoTracking() // Article tip #2
             .Where(c => c.CourierLogInOut != null &&
                         c.CourierLogInOut.LogInTime.Date == now.Date);
 
@@ -1824,6 +1823,7 @@ public class CourierRepository(
         // Get all courier data for hourly rate calculation (single query instead of 3)
         var allCouriersForAverage = await query
             .AsNoTracking()
+            .AsSplitQuery()
             .Select(c => new
             {
                 c.UccrId,

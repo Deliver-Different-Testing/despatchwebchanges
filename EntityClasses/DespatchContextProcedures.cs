@@ -1266,45 +1266,6 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<List<DES_stpJob_SplitJobResult>> DES_stpJob_SplitJobAsync(int? jobID, bool? preBookJob, string userName, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
-        {
-            var parameterreturnValue = new SqlParameter
-            {
-                ParameterName = "returnValue",
-                Direction = System.Data.ParameterDirection.Output,
-                SqlDbType = System.Data.SqlDbType.Int,
-            };
-
-            var sqlParameters = new []
-            {
-                new SqlParameter
-                {
-                    ParameterName = "JobID",
-                    Value = jobID ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Int,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "PreBookJob",
-                    Value = preBookJob ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Bit,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "UserName",
-                    Size = 100,
-                    Value = userName ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                },
-                parameterreturnValue,
-            };
-            var _ = await _context.SqlQueryAsync<DES_stpJob_SplitJobResult>("EXEC @returnValue = [dbo].[DES_stpJob_SplitJob] @JobID = @JobID, @PreBookJob = @PreBookJob, @UserName = @UserName", sqlParameters, cancellationToken);
-
-            returnValue?.SetValue(parameterreturnValue.Value);
-
-            return _;
-        }
-
         public virtual async Task<List<DES_stpJob_SplitJob_ReRateResult>> DES_stpJob_SplitJob_ReRateAsync(int? parentJobID, bool? preBookJob, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter

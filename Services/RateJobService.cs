@@ -41,14 +41,11 @@ public class RateJobService(
         try
         {
             ArgumentNullException.ThrowIfNull(jobDetails);
+          
             if (!jobDetails.ClientId.HasValue) throw new ArgumentNullException(nameof(jobDetails.ClientId));
-
             if (!jobDetails.FromId.HasValue) throw new ArgumentNullException(nameof(jobDetails.FromId));
-
             if (!jobDetails.ToId.HasValue) throw new ArgumentNullException(nameof(jobDetails.ToId));
-
             if (!jobDetails.SpeedId.HasValue) throw new ArgumentNullException(nameof(jobDetails.SpeedId));
-
             if (!jobDetails.SizeId.HasValue) throw new ArgumentNullException(nameof(jobDetails.SizeId));
 
             var rateResult = await RateUrgentJobAsync(jobDetails);
@@ -148,6 +145,7 @@ public class RateJobService(
         try
         {
             ArgumentNullException.ThrowIfNull(jobDetails);
+            
             if (!jobDetails.ClientId.HasValue) throw new ArgumentNullException(nameof(jobDetails.ClientId));
             if (!jobDetails.FromId.HasValue) throw new ArgumentNullException(nameof(jobDetails.FromId));
             if (!jobDetails.ToId.HasValue) throw new ArgumentNullException(nameof(jobDetails.ToId));
@@ -181,6 +179,7 @@ public class RateJobService(
         try
         {
             ArgumentNullException.ThrowIfNull(jobDetails);
+            
             if (!jobDetails.SpeedId.HasValue) throw new ArgumentNullException(nameof(jobDetails.SpeedId));
             if (!jobDetails.ClientId.HasValue) throw new ArgumentNullException(nameof(jobDetails.ClientId));
             if (!jobDetails.SizeId.HasValue) throw new ArgumentNullException(nameof(jobDetails.SizeId));
@@ -252,8 +251,7 @@ public class RateJobService(
     {
         // Parse the file using JobReportService
         var parsedData = await jobReportService.ParseBulkPriceFileAsync(file);
-        if (parsedData.Count == 0)
-            return new BulkPricePreviewResponse();
+        if (parsedData.Count == 0) return new BulkPricePreviewResponse();
 
         // Get current amounts for all jobs before update
         var jobIds = parsedData.Select(d => d.Id).Distinct().ToList();
