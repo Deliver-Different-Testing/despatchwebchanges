@@ -94,6 +94,4 @@ public partial class TucJobNationwide
     public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneys { get; set; } = new List<JobDeliveryJourney>();
 
     public virtual TucJob UcnwJob { get; set; }
-
-    public virtual TucJobArchive UcnwJobArchive { get; set; }
 }

@@ -254,66 +254,9 @@ public static class JobMappings
         ToAirportId = j.ToAirportId,
         FromAirportId = j.FromAirportId,
 
-        // Flight info - loaded inline using navigation property
-        AssignedFlight = j.TucJobNationwides.Any()
-            ? j.TucJobNationwides
-                .OrderBy(n => n.UcnwLegNumber)
-                .Take(1)
-                .SelectMany(
-                    first => j.TucJobNationwides.OrderByDescending(n => n.UcnwLegNumber).Take(1),
-                    (first, last) => new AssignedFlight
-                    {
-                        ExpectedDeparture = first.UcnwEtd,
-                        DepartureTimeZone = first.DepartureAirportTimeZoneNavigation != null
-                            ? first.DepartureAirportTimeZoneNavigation.Name
-                            : null,
-                        ExpectedArrival = last.UcnwEta,
-                        ArrivalTimeZone = last.ArrivalAirportTimeZoneNavigation != null
-                            ? last.ArrivalAirportTimeZoneNavigation.Name
-                            : null,
-                        FlightNumber = first.UcnwFlightNo ?? "",
-                        Notes = first.UcnwNotes,
-                        FlightSegments = j.TucJobNationwides
-                            .OrderBy(n => n.UcnwLegNumber)
-                            .Select(n => new FlightSegmentViewModel
-                            {
-                                SegmentOrder = n.UcnwLegNumber - 1,
-                                CarrierFsCode = n.UcnwFlightNo != null && n.UcnwFlightNo.Length >= 2
-                                    ? n.UcnwFlightNo.Substring(0, 2)
-                                    : "??",
-                                FlightNumber = n.UcnwFlightNo != null && n.UcnwFlightNo.Length > 2
-                                    ? n.UcnwFlightNo.Substring(2)
-                                    : "????",
-                                DepartureTime = n.UcnwEtd ?? SqlMinDateTime,
-                                ArrivalTime = n.UcnwEta ?? SqlMinDateTime,
-                                DepartureAirportFsCode = n.DepartureAirportFsCode,
-                                DepartureAirportName = n.DepartureAirportName,
-                                DepartureAirportCity = n.DepartureAirportCity,
-                                DepartureAirportCountry = n.DepartureAirportCountry,
-                                DepartureAirportTimeZone = n.DepartureAirportTimeZoneNavigation != null
-                                    ? n.DepartureAirportTimeZoneNavigation.Name
-                                    : null,
-                                DepartureAirportTimeZoneId = n.DepartureAirportTimeZoneId ?? 0,
-                                DepartureTerminal = n.DepartureTerminal,
-                                ArrivalAirportFsCode = n.ArrivalAirportFsCode,
-                                ArrivalAirportName = n.ArrivalAirportName,
-                                ArrivalAirportCity = n.ArrivalAirportCity,
-                                ArrivalAirportCountry = n.ArrivalAirportCountry,
-                                ArrivalAirportTimeZone = n.ArrivalAirportTimeZoneNavigation != null
-                                    ? n.ArrivalAirportTimeZoneNavigation.Name
-                                    : null,
-                                ArrivalAirportTimeZoneId = n.ArrivalAirportTimeZoneId ?? 0,
-                                ArrivalTerminal = n.ArrivalTerminal,
-                                ElapsedTime = n.UcnwEta.HasValue && n.UcnwEtd.HasValue
-                                    ? (int)(n.UcnwEta.Value - n.UcnwEtd.Value).TotalMinutes
-                                    : 0,
-                                AircraftName = n.AircraftName,
-                                AirlineName = n.UcnwAirlineName
-                            }).ToList()
-                    })
-                .FirstOrDefault()
-            : null,
-        IsFlightAssigned = j.TucJobNationwides.Any(),
+        // Flight info - not loaded inline for archived jobs, use BatchLoadFlightInfo instead
+        AssignedFlight = null,
+        IsFlightAssigned = false,
 
         AssignedAgent =
             j.Agent != null
@@ -485,7 +428,7 @@ public static class JobMappings
             : null,
 
         // Pallet info - from archived job items
-        PalletInfo = j.TucJobItemsArchives.Where(i => i.ChildJobId == null).Any()
+        PalletInfo = j.TucJobItemsArchives.Any(i => i.ChildJobId == null)
             ? j.TucJobItemsArchives.Where(i => i.ChildJobId == null).Select(i => new PalletInfo
             {
                 Id = i.JobId,
@@ -815,7 +758,7 @@ public static class JobMappings
                          && j.UcjbSpeedNavigation.GroupingId !=
                          (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
 
-            Courier = j.UcjbCourier != null ? j.UcjbCourier.Code : "-",
+            Courier = j.UcjbCourier != null ? j.UcjbCourier.Code : null,
             CourierData =
                 j.UcjbCourier != null
                     ? new CourierData

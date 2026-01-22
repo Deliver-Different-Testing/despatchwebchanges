@@ -285,8 +285,6 @@ public partial class DespatchContext
 
     public async Task<bool> IsLiveJobAsync(int jobId) => await IsLiveJobCompiled(this, jobId);
 
-    public async Task<bool> StaffExistsAsync(int staffId) => await StaffExistsCompiled(this, staffId);
-
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {
         // TblJob is a keyless view - can only configure relationships where TblJob is dependent

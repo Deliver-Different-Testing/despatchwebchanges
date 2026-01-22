@@ -94,8 +94,7 @@ public class JobMappingsTests
             UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
             UcjbNumber = "ARCH-001",
             PricingBreakdowns = new List<PricingBreakdownArchive>(),
-            TucJobItemsArchives = new List<TucJobItemsArchive>(),
-            TucJobNationwides = new List<TucJobNationwide>()
+            TucJobItemsArchives = new List<TucJobItemsArchive>()
         };
 
         // Act
@@ -716,8 +715,7 @@ public class JobMappingsTests
             UcjbDate = new DateTime(2024, 1, 15),
             UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
             PricingBreakdowns = new List<PricingBreakdownArchive>(),
-            TucJobItemsArchives = new List<TucJobItemsArchive>(),
-            TucJobNationwides = new List<TucJobNationwide>()
+            TucJobItemsArchives = new List<TucJobItemsArchive>()
         };
 
         // Act
@@ -1808,8 +1806,7 @@ public class JobMappingsTests
             TucJobItemsArchives = new List<TucJobItemsArchive>
             {
                 new() { JobId = 1, ItemId = 1, Pu = true }
-            },
-            TucJobNationwides = new List<TucJobNationwide>()
+            }
         };
 
         // Act
@@ -1832,8 +1829,7 @@ public class JobMappingsTests
             TucJobItemsArchives = new List<TucJobItemsArchive>
             {
                 new() { JobId = 1, ItemId = 1, Do = true }
-            },
-            TucJobNationwides = new List<TucJobNationwide>()
+            }
         };
 
         // Act
@@ -1856,8 +1852,7 @@ public class JobMappingsTests
             TucJobItemsArchives = new List<TucJobItemsArchive>
             {
                 new() { JobId = 1, ItemId = 1, PrivateRes = true }
-            },
-            TucJobNationwides = new List<TucJobNationwide>()
+            }
         };
 
         // Act
@@ -1894,8 +1889,7 @@ public class JobMappingsTests
                     Length = 30,
                     Barcode = "ARCH123"
                 }
-            },
-            TucJobNationwides = new List<TucJobNationwide>()
+            }
         };
 
         // Act
@@ -1942,8 +1936,7 @@ public class JobMappingsTests
                     Dgclass = 2,
                     Notes = "Archived Pallet"
                 }
-            },
-            TucJobNationwides = new List<TucJobNationwide>()
+            }
         };
 
         // Act
@@ -1967,124 +1960,25 @@ public class JobMappingsTests
     #region Inline Archived AssignedFlight Tests (JobArchiveMapping)
 
     [Fact]
-    public void JobArchiveMapping_AssignedFlight_MapsFromNationwides()
+    public void JobArchiveMapping_AssignedFlight_AlwaysNullForArchivedJobs()
     {
-        // Arrange
+        // Arrange - Flight info is not loaded inline for archived jobs
+        // Use BatchLoadFlightInfo to load flight data separately
         var archivedJob = new TucJobArchive
         {
             UcjbId = 1,
             UcjbDate = new DateTime(2024, 1, 15),
             PricingBreakdowns = new List<PricingBreakdownArchive>(),
-            TucJobItemsArchives = new List<TucJobItemsArchive>(),
-            TucJobNationwides = new List<TucJobNationwide>
-            {
-                new()
-                {
-                    UcnwLegNumber = 1,
-                    UcnwFlightNo = "QF456",
-                    UcnwEtd = new DateTime(2024, 1, 15, 6, 0, 0),
-                    UcnwEta = new DateTime(2024, 1, 15, 18, 0, 0),
-                    UcnwNotes = "Archived flight notes",
-                    DepartureAirportFsCode = "SYD",
-                    ArrivalAirportFsCode = "LHR",
-                    UcnwAirlineName = "Qantas"
-                }
-            }
+            TucJobItemsArchives = new List<TucJobItemsArchive>()
         };
 
         // Act
         var mapping = JobMappings.JobArchiveMapping.Compile();
         var result = mapping(archivedJob);
 
-        // Assert
-        result.AssignedFlight.Should().NotBeNull();
-        result.AssignedFlight!.FlightNumber.Should().Be("QF456");
-        result.AssignedFlight.Notes.Should().Be("Archived flight notes");
-        result.AssignedFlight.ExpectedDeparture.Should().Be(new DateTime(2024, 1, 15, 6, 0, 0));
-        result.AssignedFlight.ExpectedArrival.Should().Be(new DateTime(2024, 1, 15, 18, 0, 0));
-        result.IsFlightAssigned.Should().BeTrue();
-
-        // Segment details
-        result.AssignedFlight.FlightSegments.Should().HaveCount(1);
-        result.AssignedFlight.FlightSegments[0].CarrierFsCode.Should().Be("QF");
-        result.AssignedFlight.FlightSegments[0].FlightNumber.Should().Be("456");
-        result.AssignedFlight.FlightSegments[0].DepartureAirportFsCode.Should().Be("SYD");
-        result.AssignedFlight.FlightSegments[0].ArrivalAirportFsCode.Should().Be("LHR");
-        result.AssignedFlight.FlightSegments[0].AirlineName.Should().Be("Qantas");
-    }
-
-    [Fact]
-    public void JobArchiveMapping_AssignedFlight_NullWhenNoNationwides()
-    {
-        // Arrange
-        var archivedJob = new TucJobArchive
-        {
-            UcjbId = 1,
-            UcjbDate = new DateTime(2024, 1, 15),
-            PricingBreakdowns = new List<PricingBreakdownArchive>(),
-            TucJobItemsArchives = new List<TucJobItemsArchive>(),
-            TucJobNationwides = new List<TucJobNationwide>()
-        };
-
-        // Act
-        var mapping = JobMappings.JobArchiveMapping.Compile();
-        var result = mapping(archivedJob);
-
-        // Assert
+        // Assert - Flight info is always null for archived jobs in the mapping
         result.AssignedFlight.Should().BeNull();
         result.IsFlightAssigned.Should().BeFalse();
-    }
-
-    [Fact]
-    public void JobArchiveMapping_AssignedFlight_MapsMultipleSegmentsWithFirstLastLogic()
-    {
-        // Arrange
-        var archivedJob = new TucJobArchive
-        {
-            UcjbId = 1,
-            UcjbDate = new DateTime(2024, 1, 15),
-            PricingBreakdowns = new List<PricingBreakdownArchive>(),
-            TucJobItemsArchives = new List<TucJobItemsArchive>(),
-            TucJobNationwides = new List<TucJobNationwide>
-            {
-                new()
-                {
-                    UcnwLegNumber = 1,
-                    UcnwFlightNo = "NZ1",
-                    UcnwEtd = new DateTime(2024, 1, 15, 8, 0, 0),
-                    UcnwEta = new DateTime(2024, 1, 15, 12, 0, 0),
-                    UcnwNotes = "First leg",
-                    DepartureAirportFsCode = "AKL"
-                },
-                new()
-                {
-                    UcnwLegNumber = 2,
-                    UcnwFlightNo = "UA2",
-                    UcnwEtd = new DateTime(2024, 1, 15, 14, 0, 0),
-                    UcnwEta = new DateTime(2024, 1, 15, 20, 0, 0),
-                    UcnwNotes = "Second leg",
-                    ArrivalAirportFsCode = "JFK"
-                }
-            }
-        };
-
-        // Act
-        var mapping = JobMappings.JobArchiveMapping.Compile();
-        var result = mapping(archivedJob);
-
-        // Assert
-        result.AssignedFlight.Should().NotBeNull();
-
-        // First segment properties
-        result.AssignedFlight!.ExpectedDeparture.Should().Be(new DateTime(2024, 1, 15, 8, 0, 0));
-        result.AssignedFlight.FlightNumber.Should().Be("NZ1");
-        result.AssignedFlight.Notes.Should().Be("First leg");
-
-        // Last segment properties
-        result.AssignedFlight.ExpectedArrival.Should().Be(new DateTime(2024, 1, 15, 20, 0, 0));
-
-        // All segments
-        result.AssignedFlight.FlightSegments.Should().HaveCount(2);
     }
 
     #endregion

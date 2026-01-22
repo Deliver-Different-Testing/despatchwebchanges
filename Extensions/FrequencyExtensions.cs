@@ -9,9 +9,8 @@ public static class FrequencyExtensions
     // Convert to readable string
     extension(Frequency frequency)
     {
-        public string ToDisplayString()
-        {
-            return frequency switch
+        public string ToDisplayString() =>
+            frequency switch
             {
                 Frequency.None => "None",
                 Frequency.Weekly => "Weekly",
@@ -23,15 +22,12 @@ public static class FrequencyExtensions
                 Frequency.LastWorkdayOfMonth => "Last Workday of the Month",
                 _ => string.Join(", ", frequency.GetSelectedFrequencies().Select(f => f.ToDisplayString()))
             };
-        }
 
-        private Frequency[] GetSelectedFrequencies()
-        {
-            return Enum.GetValues<Frequency>()
+        private Frequency[] GetSelectedFrequencies() =>
+            Enum.GetValues<Frequency>()
                 .Where(f => f != Frequency.None)
                 .Where(f => frequency.HasFlag(f))
                 .ToArray();
-        }
 
         private bool MatchesDate(DateTime date, DateTime? referenceDate = null)
         {
@@ -104,7 +100,7 @@ public static class FrequencyExtensions
         // Get the last day of the month
         var lastDay = new DateTime(date.Year, date.Month, DateTime.DaysInMonth(date.Year, date.Month));
 
-        // If the last day is a weekday and it's our date, return true
+        // If the last day is a weekday, and it's our date, return true
         if (lastDay.DayOfWeek != DayOfWeek.Saturday && lastDay.DayOfWeek != DayOfWeek.Sunday && lastDay == date.Date)
             return true;
 

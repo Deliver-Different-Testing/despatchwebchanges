@@ -107,5 +107,13 @@ public partial class ExtraCharge
 
     public decimal? WeightIncrement { get; set; }
 
+    public int? CubicBreakGroupId { get; set; }
+
+    public int? WeightBreakGroupId { get; set; }
+
+    public int? PalletBreakGroupId { get; set; }
+
+    public int? ItemBreakGroupId { get; set; }
+
     public virtual ICollection<AirFreightRate> AirFreightRates { get; set; } = new List<AirFreightRate>();
 }
