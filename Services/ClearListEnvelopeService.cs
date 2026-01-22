@@ -93,9 +93,8 @@ public class ClearListEnvelopeService(
     /// <summary>
     /// Gets the boundary coordinates query for a US clear list area using zip polygons.
     /// </summary>
-    private IQueryable<EnvelopeCoordinate> GetClearListAreaBoundariesQuery(int clearListAreaId)
-    {
-        return Context.TblClearListAreas
+    private IQueryable<EnvelopeCoordinate> GetClearListAreaBoundariesQuery(int clearListAreaId) =>
+        Context.TblClearListAreas
             .Where(area => area.ClearListAreaId == clearListAreaId)
             .SelectMany(area => area.TblClearListAreaPolygons)
             .Select(polygon => polygon.ZipPolygon)
@@ -104,7 +103,6 @@ public class ClearListEnvelopeService(
                 Longitude = (decimal)zipPolygon.Longitude,
                 Latitude = (decimal)zipPolygon.Latitude
             });
-    }
 
     /// <summary>
     /// Gets GPS coordinates of logged-in couriers with active jobs in the US clear list area.
@@ -135,13 +133,12 @@ public class ClearListEnvelopeService(
     /// <summary>
     /// Gets delivery coordinates of unassigned jobs in the US clear list area.
     /// </summary>
-    private IQueryable<EnvelopeCoordinate> GetUnassignedJobLocationsQueryUs(int clearListAreaId)
-    {
-        return Context.TucJobs
+    private IQueryable<EnvelopeCoordinate> GetUnassignedJobLocationsQueryUs(int clearListAreaId) =>
+        Context.TucJobs
             .Where(jt => !jt.UcjbJobDone && !jt.UcjbVoid && jt.UcjbCourierId == null)
             .SelectMany(jt => Context.ZipPolygons
                 .Where(zp => zp.Latitude == jt.PickUpLatitude && 
-                            zp.Longitude == jt.PickUpLongitude)
+                             zp.Longitude == jt.PickUpLongitude)
                 .SelectMany(zp => zp.TblClearListAreaPolygons
                     .Where(clazp => clazp.ClearListAreaId == clearListAreaId)
                     .Select(clazp => new EnvelopeCoordinate
@@ -149,14 +146,12 @@ public class ClearListEnvelopeService(
                         Longitude = (decimal)jt.DeliveryLongitude,
                         Latitude = (decimal)jt.DeliveryLatitude
                     })));
-    }
 
     /// <summary>
     /// Gets the polygon GPS coordinates for a NZ clear list area.
     /// </summary>
-    private IQueryable<EnvelopeCoordinate> GetAreaPolygonsQueryNz(int clearListAreaId)
-    {
-        return Context.TblClearListAreas
+    private IQueryable<EnvelopeCoordinate> GetAreaPolygonsQueryNz(int clearListAreaId) =>
+        Context.TblClearListAreas
             .Where(cla => cla.ClearListAreaId == clearListAreaId)
             .SelectMany(cla => cla.TblClearListAreaPolygons
                 .SelectMany(clap => clap.Polygon.TblPolygonGps
@@ -165,35 +160,31 @@ public class ClearListEnvelopeService(
                         Longitude = pgps.Longitude,
                         Latitude = pgps.Latitude
                     })));
-    }
 
     /// <summary>
     /// Gets GPS coordinates of logged-in couriers with active jobs in the NZ clear list area.
     /// </summary>
-    private IQueryable<EnvelopeCoordinate> GetCourierLocationsQueryNz(int clearListAreaId)
-    {
-        return Context.TucCouriers
+    private IQueryable<EnvelopeCoordinate> GetCourierLocationsQueryNz(int clearListAreaId) =>
+        Context.TucCouriers
             .Where(c => c.CourierLogInOut.LogInTime.Date == DateTime.Today && 
-                       c.CourierLogInOut.LogOutTime == null)
+                        c.CourierLogInOut.LogOutTime == null)
             .SelectMany(c => c.TucJobUcjbCouriers
                 .Where(jt => !jt.UcjbJobDone && !jt.UcjbVoid)
                 .SelectMany(jt => jt.UcjbToNavigation.TblPolygonSuburbs
                     .SelectMany(dps => dps.Polygon.TblClearListAreaPolygons
                         .Where(dclap => dclap.ClearListArea.ClearListAreaId == clearListAreaId && 
-                                       dclap.ClearListArea.ChannelId == c.UccrChannelId)
+                                        dclap.ClearListArea.ChannelId == c.UccrChannelId)
                         .Select(dclap => new EnvelopeCoordinate
                         {
                             Longitude = (decimal)c.CourierGps.Longitude,
                             Latitude = (decimal)c.CourierGps.Latitude
                         }))));
-    }
 
     /// <summary>
     /// Gets delivery coordinates of unassigned jobs in the NZ clear list area.
     /// </summary>
-    private IQueryable<EnvelopeCoordinate> GetUnassignedJobLocationsQueryNz(int clearListAreaId)
-    {
-        return Context.TucJobs
+    private IQueryable<EnvelopeCoordinate> GetUnassignedJobLocationsQueryNz(int clearListAreaId) =>
+        Context.TucJobs
             .Where(jt => !jt.UcjbJobDone && !jt.UcjbVoid && jt.UcjbCourierId == null)
             .SelectMany(jt => jt.UcjbToNavigation.TblPolygonSuburbs
                 .SelectMany(ps => ps.Polygon.TblClearListAreaPolygons
@@ -203,15 +194,13 @@ public class ClearListEnvelopeService(
                         Longitude = (decimal)jt.DeliveryLongitude,
                         Latitude = (decimal)jt.DeliveryLatitude
                     })));
-    }
 
     /// <summary>
     /// Calculates the min/max bounding envelope from a set of coordinates.
     /// </summary>
     private static async Task<ClearListEnvelopeViewModel> CalculateEnvelopeAsync(
-        IQueryable<EnvelopeCoordinate> query)
-    {
-        var result = await query
+        IQueryable<EnvelopeCoordinate> query) =>
+        await query
             .GroupBy(_ => 1)
             .Select(g => new ClearListEnvelopeViewModel
             {
@@ -220,16 +209,10 @@ public class ClearListEnvelopeService(
                 MaximumLongitude = g.Max(x => x.Longitude),
                 MaximumLatitude = g.Max(x => x.Latitude)
             })
-            .FirstOrDefaultAsync();
-
-        return result ?? new ClearListEnvelopeViewModel();
-    }
+            .FirstOrDefaultAsync() ?? new ClearListEnvelopeViewModel();
 
     /// <summary>
     /// Disposes the database context if it was created.
     /// </summary>
-    public void Dispose()
-    {
-        _context?.Dispose();
-    }
+    public void Dispose() => _context?.Dispose();
 }

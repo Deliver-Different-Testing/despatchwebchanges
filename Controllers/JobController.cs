@@ -36,7 +36,8 @@ public class JobController(
     IJobPhotoService jobPhotoService,
     IDispatchJobService dispatchJobService,
     IDeliveryJourneyService deliveryJourneyService,
-    IPricingPermissionService pricingPermissionService
+    IPricingPermissionService pricingPermissionService,
+    ISplitJobService splitJobService
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -991,7 +992,7 @@ public class JobController(
         try
         {
             var staffInfo = await infoService.GetStaffInfoAsync();
-            await jobRepository.SplitJobAsync(request.JobId, staffInfo.Text);
+            await splitJobService.SplitJobAsync(request.JobId, staffInfo.Text);
             return Ok();
         }
         catch (Exception e)

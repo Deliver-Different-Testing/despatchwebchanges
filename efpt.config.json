@@ -203,6 +203,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tblSetting]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tblSMPPSettings]",
          "ObjectType": 0
       },
@@ -452,10 +456,6 @@
       },
       {
          "Name": "[dbo].[DES_stpJob_SplitJob_ReRate]",
-         "ObjectType": 1
-      },
-      {
-         "Name": "[dbo].[DES_stpJob_SplitJob]",
          "ObjectType": 1
       },
       {

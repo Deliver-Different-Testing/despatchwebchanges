@@ -12,9 +12,8 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
     : BaseRepository(contextFactory),
         IClientRepository
 {
-    public async Task<ClientViewModel> ValidateClientAsync(int contactId)
-    {
-        return await Context.TucClientContacts
+    public async Task<ClientViewModel> ValidateClientAsync(int contactId) =>
+        await Context.TucClientContacts
             .AsNoTracking()
             .Where(contact => contact.UcctId == contactId)
             .Join(
@@ -33,11 +32,9 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
                     }
             )
             .FirstOrDefaultAsync();
-    }
 
-    public async Task<List<Suggestion>> ClientContactsAsync(int contactId)
-    {
-        return await Context.TblClientContacts
+    public async Task<List<Suggestion>> ClientContactsAsync(int contactId) =>
+        await Context.TblClientContacts
             .AsNoTracking()
             .Where(c => c.ContactId == contactId)
             .Join(
@@ -61,7 +58,6 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
             })
             .Distinct()
             .ToListAsync();
-    }
 
     public async Task<List<Suggestion>> ActiveClientsAsync(string searchTerm)
     {

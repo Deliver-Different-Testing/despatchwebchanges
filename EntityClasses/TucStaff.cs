@@ -107,6 +107,8 @@ public partial class TucStaff
 
     public virtual ICollection<TblBulkJobNote> TblBulkJobNoteUpdatedByNavigations { get; set; } = new List<TblBulkJobNote>();
 
+    public virtual ICollection<TblSetting> TblSettings { get; set; } = new List<TblSetting>();
+
     public virtual ICollection<TucEventAudit> TucEventAudits { get; set; } = new List<TucEventAudit>();
 
     public virtual ICollection<TucEvent> TucEventUcevStaffIdinNavigations { get; set; } = new List<TucEvent>();
