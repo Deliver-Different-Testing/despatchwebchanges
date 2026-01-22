@@ -68,12 +68,10 @@ class FlightAgentDataTableReactController implements angular.IController {
     onOutboundAirportChange?: (params: { airport: AirportSuggestion | null }) => void;
     onInboundAirportChange?: (params: { airport: AirportSuggestion | null }) => void;
     onAddFlightToJob?: (params: { flight: FlightOption }) => void;
-    onOpenFlightMoreInfo?: (params: { flight: FlightOption }) => void;
     onLoadMoreFlights?: () => void;
     onLoadNextDayFlights?: () => void;
     onAddAgentToJob?: (params: { agent: AgentOption }) => void;
     onSendQuoteRequest?: (params: { agent: AgentOption }) => void;
-    onOpenAgentMoreInfo?: (params: { agent: AgentOption }) => void;
     onOpenAgentSearchDialog?: () => void;
     onOpenRecoveryAgentDialog?: () => void;
 
@@ -147,13 +145,6 @@ class FlightAgentDataTableReactController implements angular.IController {
             }
         };
 
-        const handleOpenFlightMoreInfo = (flight: FlightOption) => {
-            if (this.onOpenFlightMoreInfo) {
-                this.onOpenFlightMoreInfo({ flight });
-                this.$scope.$applyAsync();
-            }
-        };
-
         const handleLoadMoreFlights = () => {
             if (this.onLoadMoreFlights) {
                 this.onLoadMoreFlights();
@@ -178,13 +169,6 @@ class FlightAgentDataTableReactController implements angular.IController {
         const handleSendQuoteRequest = (agent: AgentOption) => {
             if (this.onSendQuoteRequest) {
                 this.onSendQuoteRequest({ agent });
-                this.$scope.$applyAsync();
-            }
-        };
-
-        const handleOpenAgentMoreInfo = (agent: AgentOption) => {
-            if (this.onOpenAgentMoreInfo) {
-                this.onOpenAgentMoreInfo({ agent });
                 this.$scope.$applyAsync();
             }
         };
@@ -267,12 +251,10 @@ class FlightAgentDataTableReactController implements angular.IController {
             onOutboundAirportChange: handleOutboundAirportChange,
             onInboundAirportChange: handleInboundAirportChange,
             onAddFlightToJob: handleAddFlightToJob,
-            onOpenFlightMoreInfo: handleOpenFlightMoreInfo,
             onLoadMoreFlights: handleLoadMoreFlights,
             onLoadNextDayFlights: handleLoadNextDayFlights,
             onAddAgentToJob: handleAddAgentToJob,
             onSendQuoteRequest: handleSendQuoteRequest,
-            onOpenAgentMoreInfo: handleOpenAgentMoreInfo,
             onOpenAgentSearchDialog: handleOpenAgentSearchDialog,
             onOpenRecoveryAgentDialog: handleOpenRecoveryAgentDialog,
             formatAirportCodeForDropdown: formatAirportCode,
@@ -329,12 +311,10 @@ export const FlightAgentDataTableReactComponent: angular.IComponentOptions = {
         onOutboundAirportChange: '&',
         onInboundAirportChange: '&',
         onAddFlightToJob: '&',
-        onOpenFlightMoreInfo: '&',
         onLoadMoreFlights: '&',
         onLoadNextDayFlights: '&',
         onAddAgentToJob: '&',
         onSendQuoteRequest: '&',
-        onOpenAgentMoreInfo: '&',
         onOpenAgentSearchDialog: '&',
         onOpenRecoveryAgentDialog: '&',
         // Utility function bindings

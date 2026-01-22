@@ -103,7 +103,7 @@ public class JobRepositorySplitJobTests : IDisposable
         var result = await CreateRepository().GetSplitJobChildrenAsync(100);
 
         result.Should().HaveCount(2);
-        result.Should().Contain(new[] { 101, 102 });
+        result.Should().Contain([101, 102]);
     }
 
     [Fact]

@@ -32,6 +32,7 @@ public partial class JobRepository
 
         var query = Context.TucJobs
             .AsNoTracking()
+            .AsSplitQuery()
             .Where(j => j.ParentId == j.UcjbId || !j.ParentId.HasValue);
 
         // Apply status group - filter early
@@ -116,7 +117,6 @@ public partial class JobRepository
         var jobs = await query
             .Skip((parameters.Page - 1) * parameters.Limit)
             .Take(parameters.Limit)
-            .AsSplitQuery()
             .Select(j => new DeliveryJob
             {
                 JobId = j.UcjbId,

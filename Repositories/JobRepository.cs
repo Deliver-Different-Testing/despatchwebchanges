@@ -1125,72 +1125,72 @@ public partial class JobRepository(
             var results = await Context.TucJobArchives
                 .AsNoTracking()
                 .AsSplitQuery()
-                .Where(job => job.UcjbDate >= startDate
-                              && job.UcjbDate <= endDate
-                              && (job.JobRelationshipType == null || job.JobRelationshipType.DisplayStatement == true)
-                              && clientIds.Contains(job.UcjbClientId ?? 0)
-                              && job.UcjbVoid == false
-                              && job.UcjbJobDone == true)
-                .OrderBy(job => job.SpeedNavigation == null ? 100 :
-                    job.SpeedNavigation.UcjtDescription == "15 Minute" ? 1 :
-                    job.SpeedNavigation.UcjtDescription == "30 Minute" ? 2 :
-                    job.SpeedNavigation.UcjtDescription == "45 Minute" ? 3 :
-                    job.SpeedNavigation.UcjtDescription == "1 Hour" ? 4 :
-                    job.SpeedNavigation.UcjtDescription == "75 Minute" ? 5 :
-                    job.SpeedNavigation.UcjtDescription == "90 Minute" ? 6 :
-                    job.SpeedNavigation.UcjtDescription == "2 Hour" ? 7 :
-                    job.SpeedNavigation.UcjtDescription == "3 Hour" ? 8 :
-                    job.SpeedNavigation.UcjtDescription == "Baggage" ? 10 :
-                    job.SpeedNavigation.UcjtDescription == "Truck Super" ? 11 :
-                    job.SpeedNavigation.UcjtDescription == "Truck Express" ? 12 :
-                    job.SpeedNavigation.UcjtDescription == "Truck Standard" ? 13 :
-                    job.SpeedNavigation.UcjtDescription == "Truck Economy" ? 14 : 100)
-                .ThenBy(job => job.UcjbDate)
-                .ThenBy(job => job.UcjbTime)
-                .ThenBy(job => job.UcjbCourierId)
-                .ThenBy(job => job.SpeedNavigation != null ? job.SpeedNavigation.Minutes : null)
-                .Select(job => new ClientJobsReportRow
+                .Where(j => j.UcjbDate >= startDate
+                              && j.UcjbDate <= endDate
+                              && (j.JobRelationshipType == null || j.JobRelationshipType.DisplayStatement == true)
+                              && clientIds.Contains(j.UcjbClientId ?? 0)
+                              && j.UcjbVoid == false
+                              && j.UcjbJobDone == true)
+                .OrderBy(j => j.SpeedNavigation == null ? 100 :
+                    j.SpeedNavigation.UcjtDescription == "15 Minute" ? 1 :
+                    j.SpeedNavigation.UcjtDescription == "30 Minute" ? 2 :
+                    j.SpeedNavigation.UcjtDescription == "45 Minute" ? 3 :
+                    j.SpeedNavigation.UcjtDescription == "1 Hour" ? 4 :
+                    j.SpeedNavigation.UcjtDescription == "75 Minute" ? 5 :
+                    j.SpeedNavigation.UcjtDescription == "90 Minute" ? 6 :
+                    j.SpeedNavigation.UcjtDescription == "2 Hour" ? 7 :
+                    j.SpeedNavigation.UcjtDescription == "3 Hour" ? 8 :
+                    j.SpeedNavigation.UcjtDescription == "Baggage" ? 10 :
+                    j.SpeedNavigation.UcjtDescription == "Truck Super" ? 11 :
+                    j.SpeedNavigation.UcjtDescription == "Truck Express" ? 12 :
+                    j.SpeedNavigation.UcjtDescription == "Truck Standard" ? 13 :
+                    j.SpeedNavigation.UcjtDescription == "Truck Economy" ? 14 : 100)
+                .ThenBy(j => j.UcjbDate)
+                .ThenBy(j => j.UcjbTime)
+                .ThenBy(j => j.UcjbCourierId)
+                .ThenBy(j => j.SpeedNavigation != null ? j.SpeedNavigation.Minutes : null)
+                .Select(j => new ClientJobsReportRow
                 {
-                    JobNumber = job.UcjbNumber,
-                    JobType = (int?)job.UcjbType,
-                    Date = job.UcjbDate,
-                    Booked = job.UcjbTime,
-                    BookedBy = job.UcjbContact,
-                    PickedUpTime = job.PickUpTime,
-                    Delivered = job.UcjbComplTime,
-                    JobTypeDescription = job.SpeedNavigation != null ? job.SpeedNavigation.UcjtDescription : null,
-                    Minutes = job.SpeedNavigation != null ? job.SpeedNavigation.Minutes : null,
-                    PodName = job.UcjbPodname,
-                    FromSuburb = job.UcjbFromNavigation != null ? job.UcjbFromNavigation.UcsuName : null,
-                    FromPostcode = job.UcjbFromNavigation != null ? job.UcjbFromNavigation.PostCode : null,
-                    ToSuburb = job.UcjbToNavigation != null ? job.UcjbToNavigation.UcsuName : null,
-                    ToPostcode = job.UcjbToNavigation != null ? job.UcjbToNavigation.PostCode : null,
-                    ToSuburbFromAddress = job.AddressDetail != null ? job.AddressDetail.ToSuburb : null,
-                    FromAddr = job.UcjbFromAddr,
-                    ToAddr = job.UcjbToAddr,
-                    CourierId = job.UcjbCourierId,
-                    LatePickup = job.UcjbLatePick == 1,
-                    LateDelivery = job.UcjbLateDel == 1,
-                    ClientLegalName = job.UcjbClient != null ? job.UcjbClient.UcclLegalName : null,
-                    Speed = job.UcjbSpeed,
-                    Notes = job.UcjbNotes,
-                    Amount = job.UcjbAmount,
-                    RefA = job.UcjbClientRefa,
-                    RefB = job.UcjbClientRefb,
-                    OurRef = job.UcjbOurRef,
-                    Weight = (decimal?)job.UcjbWeight,
-                    Size = job.UcjbSize,
-                    Quantity = job.UcjbQty,
-                    Year = job.UcjbYear,
-                    Month = job.UcjbMonth,
-                    CourierCode = job.UcjbCourier != null ? job.UcjbCourier.Code : null,
-                    CourierName = job.UcjbCourier != null ? job.UcjbCourier.UccrName : null,
-                    InvoiceNo = job.UcjbInvoiceNo,
-                    Locked = job.UcjbLocked == 1,
-                    ClientId = job.UcjbClientId,
-                    ClientNote = job.UcjbClient != null ? job.UcjbClient.UcclNote : null,
-                    RawBaseAmount = job.RawBaseAmount,
-                    FuelSurchargeAmount = job.FuelSurchargeAmount
+                    JobNumber = j.UcjbNumber,
+                    JobType = (int?)j.UcjbType,
+                    Date = j.UcjbDate,
+                    Booked = j.UcjbTime,
+                    BookedBy = j.UcjbContact,
+                    PickedUpTime = j.PickUpTime,
+                    Delivered = j.UcjbComplTime,
+                    JobTypeDescription = j.SpeedNavigation != null ? j.SpeedNavigation.UcjtDescription : null,
+                    Minutes = j.SpeedNavigation != null ? j.SpeedNavigation.Minutes : null,
+                    PodName = j.UcjbPodname,
+                    FromSuburb = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuName : null,
+                    FromPostcode = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.PostCode : null,
+                    ToSuburb = j.UcjbToNavigation != null ? j.UcjbToNavigation.UcsuName : null,
+                    ToPostcode = j.UcjbToNavigation != null ? j.UcjbToNavigation.PostCode : null,
+                    ToSuburbFromAddress = j.AddressDetail != null ? j.AddressDetail.ToSuburb : null,
+                    FromAddr = j.UcjbFromAddr,
+                    ToAddr = j.UcjbToAddr,
+                    CourierId = j.UcjbCourierId,
+                    LatePickup = j.UcjbLatePick == 1,
+                    LateDelivery = j.UcjbLateDel == 1,
+                    ClientLegalName = j.UcjbClient != null ? j.UcjbClient.UcclLegalName : null,
+                    Speed = j.UcjbSpeed,
+                    Notes = j.UcjbNotes,
+                    Amount = j.UcjbAmount,
+                    RefA = j.UcjbClientRefa,
+                    RefB = j.UcjbClientRefb,
+                    OurRef = j.UcjbOurRef,
+                    Weight = (decimal?)j.UcjbWeight,
+                    Size = j.UcjbSize,
+                    Quantity = j.UcjbQty,
+                    Year = j.UcjbYear,
+                    Month = j.UcjbMonth,
+                    CourierCode = j.UcjbCourier != null ? j.UcjbCourier.Code : null,
+                    CourierName = j.UcjbCourier != null ? j.UcjbCourier.UccrName : null,
+                    InvoiceNo = j.UcjbInvoiceNo,
+                    Locked = j.UcjbLocked == 1,
+                    ClientId = j.UcjbClientId,
+                    ClientNote = j.UcjbClient != null ? j.UcjbClient.UcclNote : null,
+                    RawBaseAmount = j.RawBaseAmount,
+                    FuelSurchargeAmount = j.FuelSurchargeAmount
                 })
                 .ToListAsync();
 
@@ -2808,7 +2808,7 @@ public partial class JobRepository(
     /// Checks if a job number already exists in the system.
     /// </summary>
     public async Task<bool> JobNumberExistsAsync(string jobNumber) =>
-        await Context.TucJobs.AnyAsync(j => j.UcjbNumber == jobNumber);
+        await Context.JobNumberExistsAsync(jobNumber);
 
     /// <summary>
     /// Calculates the raw price for a nationwide service job using the database function.
@@ -2848,6 +2848,7 @@ public partial class JobRepository(
 
         // First, try to get from active jobs (TucJobs)
         var activeJob = await Context.TucJobs
+            .AsSplitQuery()
             .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(JobMappings.JobDispatchMapping(isUsCustomer))

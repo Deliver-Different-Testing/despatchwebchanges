@@ -182,6 +182,7 @@ public class CourierRepository(
             var currentDate = infoService.GetCurrentTenantTime();
 
             var courierData = await Context.TucCouriers
+                .AsSplitQuery()
                 .AsNoTracking()
                 .Where(c => c.CourierFleetId != (int)CourierFleet.ClientDriver &&
                             c.CourierGps != null &&
@@ -1527,7 +1528,8 @@ public class CourierRepository(
         var pageSize = Math.Max(1, Math.Min(100, request.PageSize));
 
         var query = Context.TucCouriers
-            .AsNoTracking() // Article tip #2
+            .AsSplitQuery()
+            .AsNoTracking()
             .Where(c => c.CourierLogInOut != null &&
                         c.CourierLogInOut.LogInTime.Date == today.Date);
 
@@ -1878,10 +1880,7 @@ public class CourierRepository(
         foreach (var courier in allCouriersForAverage)
         {
             var hoursLogged = ((courier.LogOutTime ?? now) - courier.LogInTime).TotalMinutes;
-            if (hoursLogged > 0 && allEarningsDict.TryGetValue(courier.UccrId, out var earnings))
-            {
-                hourlyRates.Add(earnings / (decimal)(hoursLogged / 60.0));
-            }
+            if (hoursLogged > 0 && allEarningsDict.TryGetValue(courier.UccrId, out var earnings)) hourlyRates.Add(earnings / (decimal)(hoursLogged / 60.0));
         }
 
         var averageHourlyRate = hourlyRates.Count > 0 ? hourlyRates.Average() : 0;
@@ -1952,6 +1951,7 @@ public class CourierRepository(
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
         var courierEmails = await query
+            .AsSplitQuery()
             .AsNoTracking()
             .OrderBy(c => c.UccrName)
             .ThenBy(c => c.UccrSurname)

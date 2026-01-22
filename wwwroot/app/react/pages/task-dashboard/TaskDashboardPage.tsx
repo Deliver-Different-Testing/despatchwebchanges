@@ -2,51 +2,69 @@
  * TaskDashboard Page Component
  *
  * A React implementation of the task dashboard, managing tasks in list and calendar views.
+ * Features customizable, resizable grid layout using react-grid-layout.
  * The job-detail-widget is rendered separately in the AngularJS template.
  */
 
-import React, {useState, useEffect, useCallback, useMemo} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
     Box,
     Card,
     CardContent,
-    Typography,
-    TextField,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    ToggleButtonGroup,
-    ToggleButton,
-    Switch,
-    List,
     CircularProgress,
     Divider,
+    FormControl,
+    IconButton,
     InputAdornment,
+    InputLabel,
+    List,
+    MenuItem,
+    Select,
+    Switch,
+    TextField,
+    ToggleButton,
+    ToggleButtonGroup,
     Toolbar,
+    Tooltip,
+    Typography,
 } from '@mui/material';
 import {
-    ViewList as ViewListIcon,
     CalendarMonth as CalendarMonthIcon,
-    TaskAlt as TaskAltIcon,
-    Warning as WarningIcon,
-    PendingActions as PendingActionsIcon,
     CheckCircle as CheckCircleIcon,
-    Search as SearchIcon,
-    Tune as TuneIcon,
+    DragIndicator as DragIndicatorIcon,
     Info as InfoIcon,
+    Lock as LockIcon,
+    LockOpen as LockOpenIcon,
+    PendingActions as PendingActionsIcon,
+    RestartAlt as RestartAltIcon,
     RocketLaunch as RocketLaunchIcon,
+    Search as SearchIcon,
+    TaskAlt as TaskAltIcon,
+    Tune as TuneIcon,
+    ViewList as ViewListIcon,
+    Warning as WarningIcon,
 } from '@mui/icons-material';
+import type {Layout} from 'react-grid-layout';
+import {ResponsiveGridLayout, useContainerWidth} from 'react-grid-layout';
 import dayjs from 'dayjs';
 
+// Import react-grid-layout styles
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
+
 import {
-    TaskDashboardPageProps,
-    StatusFilter,
-    ViewMode,
-    ExtendedTask,
+    DashboardLayouts,
+    DashboardWidget,
     DateFilterData,
+    ExtendedTask,
+    SavedLayout,
+    SavedLayoutsState,
     StatusCounts,
+    StatusFilter,
+    TaskDashboardPageProps,
+    ViewMode,
 } from './TaskDashboardPage.interfaces';
+import {SaveLayoutDialog} from './SaveLayoutDialog';
 import {TaskFiltersRequest} from '../../interfaces';
 import {TaskItem} from '../../components/common/task-item/TaskItem';
 import {TaskCalendarView} from '../../components/common/task-calendar-view/TaskCalendarView';
@@ -54,13 +72,13 @@ import {TaskHistory} from '../../components/common/task-history/TaskHistory';
 import {formatDateForApi} from '../../utils/dateUtils';
 import DensityMode from '../../../enums/densityMode';
 import {
-    useTasks,
     useActiveStaff,
     useEventTypes,
     useMarkTaskAsClosed,
+    useReassignTask,
+    useTasks,
     useUpdateTaskDate,
     useUpdateTaskTime,
-    useReassignTask,
 } from '../../hooks';
 import {tasksApi} from '../../services/tasksApi';
 
@@ -75,17 +93,65 @@ const getDateFilterKey = () => {
     return `dateFilter-task-dashboard-${contactId}`;
 };
 
+const getSavedLayoutsKey = () => {
+    const contactId = (window as any).ContactID || 0;
+    return `taskDashboardSavedLayouts-${contactId}`;
+};
+
+const DEFAULT_LAYOUT_NAME = 'Default';
+
 // Helper to set default date filter
 const setDateFilterDefaults = (): DateFilterData => ({
     startDate: dayjs().subtract(1, 'day').startOf('day'),
     endDate: dayjs().add(7, 'days').endOf('day'),
 });
 
+// Default layouts for list view (filters, tasks, delivery journey)
+const DEFAULT_LIST_LAYOUTS: DashboardLayouts = {
+    lg: [
+        {i: DashboardWidget.Filters, x: 0, y: 0, w: 6, h: 3, minW: 3, minH: 2},
+        {i: DashboardWidget.Tasks, x: 0, y: 3, w: 6, h: 9, minW: 3, minH: 4},
+        {i: DashboardWidget.DeliveryJourney, x: 6, y: 0, w: 6, h: 12, minW: 3, minH: 4},
+    ],
+    md: [
+        {i: DashboardWidget.Filters, x: 0, y: 0, w: 6, h: 3, minW: 3, minH: 2},
+        {i: DashboardWidget.Tasks, x: 0, y: 3, w: 6, h: 9, minW: 3, minH: 4},
+        {i: DashboardWidget.DeliveryJourney, x: 6, y: 0, w: 6, h: 12, minW: 3, minH: 4},
+    ],
+    sm: [
+        {i: DashboardWidget.Filters, x: 0, y: 0, w: 12, h: 3, minW: 6, minH: 2},
+        {i: DashboardWidget.Tasks, x: 0, y: 3, w: 12, h: 6, minW: 6, minH: 4},
+        {i: DashboardWidget.DeliveryJourney, x: 0, y: 9, w: 12, h: 6, minW: 6, minH: 4},
+    ],
+};
+
+// Default layouts for calendar view (calendar, delivery journey)
+const DEFAULT_CALENDAR_LAYOUTS: DashboardLayouts = {
+    lg: [
+        {i: DashboardWidget.Calendar, x: 0, y: 0, w: 6, h: 12, minW: 4, minH: 6},
+        {i: DashboardWidget.DeliveryJourney, x: 6, y: 0, w: 6, h: 12, minW: 3, minH: 4},
+    ],
+    md: [
+        {i: DashboardWidget.Calendar, x: 0, y: 0, w: 6, h: 12, minW: 4, minH: 6},
+        {i: DashboardWidget.DeliveryJourney, x: 6, y: 0, w: 6, h: 12, minW: 3, minH: 4},
+    ],
+    sm: [
+        {i: DashboardWidget.Calendar, x: 0, y: 0, w: 12, h: 8, minW: 6, minH: 6},
+        {i: DashboardWidget.DeliveryJourney, x: 0, y: 8, w: 12, h: 6, minW: 6, minH: 4},
+    ],
+};
+
+// Grid configuration
+const GRID_BREAKPOINTS = {lg: 1200, md: 996, sm: 768};
+const GRID_COLS = {lg: 12, md: 12, sm: 12};
+const GRID_ROW_HEIGHT = 50;
+
 export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
     showToast,
     isUsCustomer,
     onTaskSelect,
     setRefreshCallback,
+    onLayoutActionsChange,
 }) => {
     // View state
     const [showFullCalendar, setShowFullCalendar] = useState(false);
@@ -101,6 +167,27 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
 
     // Selection
     const [selectedTask, setSelectedTask] = useState<ExtendedTask | undefined>();
+
+    // Layout state
+    const [layouts, setLayouts] = useState<DashboardLayouts>(DEFAULT_LIST_LAYOUTS);
+    const [isLayoutLocked, setIsLayoutLocked] = useState(true);
+    const [savedLayouts, setSavedLayouts] = useState<SavedLayout[]>([]);
+    const [activeLayoutName, setActiveLayoutName] = useState(DEFAULT_LAYOUT_NAME);
+    const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+
+    // Grid layout width management - debounce to prevent jumping
+    const {width: rawContainerWidth, containerRef: gridContainerRef} = useContainerWidth();
+    const [containerWidth, setContainerWidth] = useState(1200);
+
+    // Debounce width changes to prevent layout thrashing
+    useEffect(() => {
+        if (rawContainerWidth && rawContainerWidth > 0) {
+            const timeout = setTimeout(() => {
+                setContainerWidth(rawContainerWidth);
+            }, 100);
+            return () => clearTimeout(timeout);
+        }
+    }, [rawContainerWidth]);
 
     // Build filters for API request
     const taskFilters = useMemo((): TaskFiltersRequest => {
@@ -194,6 +281,42 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
             console.warn('Failed to load date filter:', error);
         }
     }, []);
+
+    // Create default layout object
+    const defaultLayout: SavedLayout = useMemo(() => ({
+        name: DEFAULT_LAYOUT_NAME,
+        listLayouts: DEFAULT_LIST_LAYOUTS,
+        calendarLayouts: DEFAULT_CALENDAR_LAYOUTS,
+        isDefault: true,
+    }), []);
+
+    // Load saved layouts from localStorage on mount
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem(getSavedLayoutsKey());
+            if (saved) {
+                const parsed: SavedLayoutsState = JSON.parse(saved);
+                setSavedLayouts(parsed.layouts || []);
+                setActiveLayoutName(parsed.activeLayoutName || DEFAULT_LAYOUT_NAME);
+
+                // Find and apply the active layout
+                const activeLayout = parsed.layouts?.find(l => l.name === parsed.activeLayoutName);
+                if (activeLayout) {
+                    setLayouts(showFullCalendar ? activeLayout.calendarLayouts : activeLayout.listLayouts);
+                    // Lock layout if it's the default
+                    setIsLayoutLocked(activeLayout.isDefault !== false);
+                }
+            }
+        } catch (error) {
+            console.warn('Failed to load saved layouts:', error);
+        }
+    }, []);
+
+    // Update layouts when view mode or active layout changes
+    useEffect(() => {
+        const activeLayout = savedLayouts.find(l => l.name === activeLayoutName) || defaultLayout;
+        setLayouts(showFullCalendar ? activeLayout.calendarLayouts : activeLayout.listLayouts);
+    }, [showFullCalendar, activeLayoutName, savedLayouts, defaultLayout]);
 
     // Register refresh callback for external use
     useEffect(() => {
@@ -302,8 +425,8 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
     }, [selectTaskForHistory]);
 
     // Handle calendar task status change
-    const handleCalendarTaskStatusChange = useCallback((task: ExtendedTask) => {
-        handleTaskCompletion();
+    const handleCalendarTaskStatusChange = useCallback(async (task: ExtendedTask) => {
+        await handleTaskCompletion();
     }, [handleTaskCompletion]);
 
     // Handle calendar view change
@@ -319,6 +442,200 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
     const showSuccessToast = useCallback((msg: string) => showToast(msg, 'success'), [showToast]);
     const showErrorToast = useCallback((msg: string) => showToast(msg, 'error'), [showToast]);
     const showInfoToast = useCallback((msg: string) => showToast(msg, 'info'), [showToast]);
+
+    // Helper to persist saved layouts to localStorage
+    const persistSavedLayouts = useCallback((layouts: SavedLayout[], activeName: string) => {
+        try {
+            const state: SavedLayoutsState = {layouts, activeLayoutName: activeName};
+            localStorage.setItem(getSavedLayoutsKey(), JSON.stringify(state));
+        } catch (error) {
+            console.warn('Failed to save layouts:', error);
+        }
+    }, []);
+
+    // Check if current layout is the default
+    const isDefaultLayout = activeLayoutName === DEFAULT_LAYOUT_NAME;
+
+    // Get all layout names for the dropdown (including Default)
+    const allLayoutNames = useMemo(() => {
+        return [DEFAULT_LAYOUT_NAME, ...savedLayouts.map(l => l.name)];
+    }, [savedLayouts]);
+
+    // Helper to get current breakpoint based on container width
+    const getCurrentBreakpoint = useCallback((): string => {
+        const width = containerWidth || 1200;
+        if (width >= GRID_BREAKPOINTS.lg) return 'lg';
+        if (width >= GRID_BREAKPOINTS.md) return 'md';
+        return 'sm';
+    }, [containerWidth]);
+
+    // Layout handlers - only save on drag/resize stop to prevent layout thrashing
+    const handleLayoutChangeEnd = useCallback((newLayout: Layout) => {
+        if (isLayoutLocked || isDefaultLayout) return;
+
+        // Convert Layout to mutable array for our DashboardLayouts type
+        const currentBreakpoint = getCurrentBreakpoint();
+        const dashboardLayouts: DashboardLayouts = {
+            ...layouts,
+            [currentBreakpoint]: newLayout.map(item => ({...item})),
+        };
+
+        setLayouts(dashboardLayouts);
+
+        // Update the saved layout
+        setSavedLayouts(prev => {
+            const updated = prev.map(l => {
+                if (l.name === activeLayoutName) {
+                    return {
+                        ...l,
+                        [showFullCalendar ? 'calendarLayouts' : 'listLayouts']: dashboardLayouts,
+                    };
+                }
+                return l;
+            });
+            persistSavedLayouts(updated, activeLayoutName);
+            return updated;
+        });
+    }, [showFullCalendar, isLayoutLocked, isDefaultLayout, activeLayoutName, persistSavedLayouts, layouts, getCurrentBreakpoint]);
+
+    // Handlers for drag and resize end events
+    const handleDragStop = useCallback((layout: Layout) => {
+        handleLayoutChangeEnd(layout);
+    }, [handleLayoutChangeEnd]);
+
+    const handleResizeStop = useCallback((layout: Layout) => {
+        handleLayoutChangeEnd(layout);
+    }, [handleLayoutChangeEnd]);
+
+    // Switch to a different layout
+    const handleLayoutSelect = useCallback((layoutName: string) => {
+        setActiveLayoutName(layoutName);
+        const layout = savedLayouts.find(l => l.name === layoutName) || defaultLayout;
+        setLayouts(showFullCalendar ? layout.calendarLayouts : layout.listLayouts);
+        // Lock the layout when switching (default is always locked, custom starts locked)
+        setIsLayoutLocked(true);
+        persistSavedLayouts(savedLayouts, layoutName);
+    }, [savedLayouts, defaultLayout, showFullCalendar, persistSavedLayouts]);
+
+    // Save current layout as a new named layout
+    const handleSaveLayout = useCallback((name: string) => {
+        const newLayout: SavedLayout = {
+            name,
+            listLayouts: showFullCalendar ? DEFAULT_LIST_LAYOUTS : layouts,
+            calendarLayouts: showFullCalendar ? layouts : DEFAULT_CALENDAR_LAYOUTS,
+            isDefault: false,
+        };
+
+        // If we're on a custom layout, copy both view layouts from the current active
+        const currentActive = savedLayouts.find(l => l.name === activeLayoutName);
+        if (currentActive) {
+            newLayout.listLayouts = showFullCalendar ? currentActive.listLayouts : layouts;
+            newLayout.calendarLayouts = showFullCalendar ? layouts : currentActive.calendarLayouts;
+        }
+
+        const updated = [...savedLayouts, newLayout];
+        setSavedLayouts(updated);
+        setActiveLayoutName(name);
+        setIsLayoutLocked(true);
+        persistSavedLayouts(updated, name);
+        showSuccessToast(`Layout "${name}" saved`);
+    }, [layouts, showFullCalendar, savedLayouts, activeLayoutName, persistSavedLayouts, showSuccessToast]);
+
+    // Delete a saved layout
+    const handleDeleteLayout = useCallback((name: string) => {
+        if (name === DEFAULT_LAYOUT_NAME) return;
+
+        const updated = savedLayouts.filter(l => l.name !== name);
+        setSavedLayouts(updated);
+
+        // Switch to default if we deleted the active layout
+        if (activeLayoutName === name) {
+            setActiveLayoutName(DEFAULT_LAYOUT_NAME);
+            setLayouts(showFullCalendar ? DEFAULT_CALENDAR_LAYOUTS : DEFAULT_LIST_LAYOUTS);
+            setIsLayoutLocked(true);
+        }
+
+        persistSavedLayouts(updated, activeLayoutName === name ? DEFAULT_LAYOUT_NAME : activeLayoutName);
+        showSuccessToast(`Layout "${name}" deleted`);
+    }, [savedLayouts, activeLayoutName, showFullCalendar, persistSavedLayouts, showSuccessToast]);
+
+    // Reset current layout to default values
+    const handleResetLayout = useCallback(() => {
+        if (isDefaultLayout) {
+            // For default layout, just reset to default values
+            setLayouts(showFullCalendar ? DEFAULT_CALENDAR_LAYOUTS : DEFAULT_LIST_LAYOUTS);
+            showSuccessToast('Layout reset to default');
+        } else {
+            // For custom layouts, reset to default values but keep the layout
+            const defaultLayouts = showFullCalendar ? DEFAULT_CALENDAR_LAYOUTS : DEFAULT_LIST_LAYOUTS;
+            setLayouts(defaultLayouts);
+
+            setSavedLayouts(prev => {
+                const updated = prev.map(l => {
+                    if (l.name === activeLayoutName) {
+                        return {
+                            ...l,
+                            [showFullCalendar ? 'calendarLayouts' : 'listLayouts']: defaultLayouts,
+                        };
+                    }
+                    return l;
+                });
+                persistSavedLayouts(updated, activeLayoutName);
+                return updated;
+            });
+            showSuccessToast('Layout reset to default');
+        }
+    }, [isDefaultLayout, showFullCalendar, activeLayoutName, persistSavedLayouts, showSuccessToast]);
+
+    // Toggle layout lock (only for custom layouts)
+    const toggleLayoutLock = useCallback(() => {
+        if (isDefaultLayout) {
+            showInfoToast('Default layout cannot be modified');
+            return;
+        }
+
+        setIsLayoutLocked(prev => {
+            const newValue = !prev;
+            if (newValue) {
+                showInfoToast('Layout locked');
+            } else {
+                showInfoToast('Layout unlocked - drag widgets to rearrange');
+            }
+            return newValue;
+        });
+    }, [isDefaultLayout, showInfoToast]);
+
+    // Index-based handlers for app bar LayoutsMenu integration
+    const handleLoadLayoutByIndex = useCallback((index: number) => {
+        const layoutName = allLayoutNames[index];
+        if (layoutName) {
+            handleLayoutSelect(layoutName);
+        }
+    }, [allLayoutNames, handleLayoutSelect]);
+
+    const handleDeleteLayoutByIndex = useCallback((index: number) => {
+        const layoutName = allLayoutNames[index];
+        if (layoutName && layoutName !== DEFAULT_LAYOUT_NAME) {
+            handleDeleteLayout(layoutName);
+        }
+    }, [allLayoutNames, handleDeleteLayout]);
+
+    const handleOpenSaveDialog = useCallback(() => {
+        setSaveDialogOpen(true);
+    }, []);
+
+    // Notify parent of layout actions for app bar integration
+    useEffect(() => {
+        if (onLayoutActionsChange) {
+            onLayoutActionsChange({
+                layouts: allLayoutNames.map(name => ({ name })),
+                currentLayoutName: activeLayoutName,
+                onSaveLayout: handleOpenSaveDialog,
+                onLoadLayout: handleLoadLayoutByIndex,
+                onDeleteLayout: handleDeleteLayoutByIndex,
+            });
+        }
+    }, [onLayoutActionsChange, allLayoutNames, activeLayoutName, handleOpenSaveDialog, handleLoadLayoutByIndex, handleDeleteLayoutByIndex]);
 
     // Create a tasks service interface for child components
     const tasksServiceForComponents = useMemo(() => ({
@@ -422,30 +739,155 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                                 </ToggleButton>
                             </ToggleButtonGroup>
                         </Box>
+
+                        {/* Layout Controls */}
+                        <Box display="flex" alignItems="center" gap={1}>
+                            {!isDefaultLayout && (
+                                <>
+                                    <Tooltip title={isLayoutLocked ? 'Unlock layout to edit' : 'Lock layout'}>
+                                        <IconButton
+                                            size="small"
+                                            onClick={toggleLayoutLock}
+                                            color={isLayoutLocked ? 'default' : 'primary'}
+                                            aria-label={isLayoutLocked ? 'Unlock layout to edit' : 'Lock layout'}
+                                        >
+                                            {isLayoutLocked ? <LockIcon fontSize="small" /> : <LockOpenIcon fontSize="small" />}
+                                        </IconButton>
+                                    </Tooltip>
+                                    <Tooltip title="Reset layout to default">
+                                        <IconButton
+                                            size="small"
+                                            onClick={handleResetLayout}
+                                            aria-label="Reset layout to default"
+                                        >
+                                            <RestartAltIcon fontSize="small" />
+                                        </IconButton>
+                                    </Tooltip>
+                                </>
+                            )}
+                        </Box>
                     </Box>
                 </CardContent>
             </Card>
 
-            {/* Main Content */}
-            <Box sx={{flex: 1, display: 'flex', gap: 2, minHeight: 0}}>
-                {/* Left Column - List or Calendar */}
-                <Box sx={{flex: '0 0 50%', display: 'flex', flexDirection: 'column', minHeight: 0}}>
-                    {!showFullCalendar ? (
-                        <>
-                            {/* Filters Card */}
-                            <Card sx={{mb: 2, flexShrink: 0}}>
+            {/* Main Content - Grid Layout */}
+            <Box
+                ref={gridContainerRef}
+                sx={{
+                    flex: 1,
+                    minHeight: 0,
+                    '& .react-grid-layout': {
+                        height: '100% !important',
+                    },
+                    '& .react-grid-item': {
+                        transition: isLayoutLocked ? 'none' : 'all 200ms ease',
+                    },
+                    '& .react-grid-item.react-grid-placeholder': {
+                        bgcolor: 'primary.light',
+                        opacity: 0.3,
+                        borderRadius: 1,
+                    },
+                    '& .react-resizable-handle': {
+                        display: isLayoutLocked ? 'none' : 'block',
+                        position: 'absolute',
+                        background: 'transparent',
+                    },
+                    '& .react-resizable-handle-se': {
+                        width: 20,
+                        height: 20,
+                        bottom: 0,
+                        right: 0,
+                        cursor: 'se-resize',
+                        '&::after': {
+                            content: '""',
+                            position: 'absolute',
+                            right: 3,
+                            bottom: 3,
+                            width: 8,
+                            height: 8,
+                            borderRight: '2px solid rgba(0,0,0,0.4)',
+                            borderBottom: '2px solid rgba(0,0,0,0.4)',
+                        },
+                    },
+                    '& .react-resizable-handle-s': {
+                        width: '100%',
+                        height: 10,
+                        bottom: 0,
+                        left: 0,
+                        cursor: 's-resize',
+                        '&::after': {
+                            content: '""',
+                            position: 'absolute',
+                            left: '50%',
+                            bottom: 2,
+                            width: 30,
+                            height: 4,
+                            marginLeft: -15,
+                            backgroundColor: 'rgba(0,0,0,0.3)',
+                            borderRadius: 2,
+                        },
+                    },
+                    '& .react-resizable-handle-e': {
+                        width: 10,
+                        height: '100%',
+                        top: 0,
+                        right: 0,
+                        cursor: 'e-resize',
+                        '&::after': {
+                            content: '""',
+                            position: 'absolute',
+                            top: '50%',
+                            right: 2,
+                            width: 4,
+                            height: 30,
+                            marginTop: -15,
+                            backgroundColor: 'rgba(0,0,0,0.3)',
+                            borderRadius: 2,
+                        },
+                    },
+                }}
+            >
+                <ResponsiveGridLayout
+                    width={containerWidth}
+                    layouts={layouts}
+                    breakpoints={GRID_BREAKPOINTS}
+                    cols={GRID_COLS}
+                    rowHeight={GRID_ROW_HEIGHT}
+                    onDragStop={handleDragStop}
+                    onResizeStop={handleResizeStop}
+                    dragConfig={{
+                        enabled: !isLayoutLocked,
+                        handle: '.drag-handle',
+                        bounded: false,
+                        threshold: 3,
+                    }}
+                    resizeConfig={{
+                        enabled: !isLayoutLocked,
+                        handles: ['se', 's', 'e'],
+                    }}
+                    margin={[16, 16]}
+                    containerPadding={[0, 0]}
+                >
+                    {/* Filters Widget (List View Only) */}
+                    {!showFullCalendar && (
+                        <div key={DashboardWidget.Filters}>
+                            <Card sx={{height: '100%', display: 'flex', flexDirection: 'column'}}>
                                 <Toolbar
                                     variant="dense"
+                                    className="drag-handle"
                                     sx={{
                                         bgcolor: 'primary.main',
                                         color: 'primary.contrastText',
                                         minHeight: 48,
+                                        cursor: isLayoutLocked ? 'default' : 'grab',
+                                        '&:active': {cursor: isLayoutLocked ? 'default' : 'grabbing'},
                                     }}
                                 >
+                                    {!isLayoutLocked && <DragIndicatorIcon sx={{mr: 1, opacity: 0.7}} />}
                                     <TuneIcon sx={{mr: 1}} />
                                     <Typography variant="subtitle1">Filters</Typography>
                                 </Toolbar>
-                                <CardContent>
+                                <CardContent sx={{flex: 1, overflow: 'auto'}}>
                                     <TextField
                                         fullWidth
                                         size="small"
@@ -497,18 +939,26 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                                     </Box>
                                 </CardContent>
                             </Card>
+                        </div>
+                    )}
 
-                            {/* Task List Card */}
-                            <Card sx={{flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0}}>
+                    {/* Tasks Widget (List View Only) */}
+                    {!showFullCalendar && (
+                        <div key={DashboardWidget.Tasks}>
+                            <Card sx={{height: '100%', display: 'flex', flexDirection: 'column'}}>
                                 <Toolbar
                                     variant="dense"
+                                    className="drag-handle"
                                     sx={{
                                         bgcolor: 'primary.main',
                                         color: 'primary.contrastText',
                                         minHeight: 48,
                                         flexShrink: 0,
+                                        cursor: isLayoutLocked ? 'default' : 'grab',
+                                        '&:active': {cursor: isLayoutLocked ? 'default' : 'grabbing'},
                                     }}
                                 >
+                                    {!isLayoutLocked && <DragIndicatorIcon sx={{mr: 1, opacity: 0.7}} />}
                                     <TaskAltIcon sx={{mr: 1}} />
                                     <Typography variant="subtitle1">
                                         Tasks ({filteredTasks.length})
@@ -570,58 +1020,91 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                                     )}
                                 </CardContent>
                             </Card>
-                        </>
-                    ) : (
-                        /* Calendar View */
-                        <Box sx={{flex: 1, minHeight: 0}}>
-                            <TaskCalendarView
-                                tasks={filteredTasks}
-                                onTaskUpdate={() => refetchTasks()}
-                                onTaskClick={handleCalendarTaskClick}
-                                onTaskStatusChange={handleCalendarTaskStatusChange}
-                                onViewChange={handleCalendarViewChange}
-                                tasksService={tasksServiceForComponents}
-                                showSuccessToast={showSuccessToast}
-                                showErrorToast={showErrorToast}
-                            />
-                        </Box>
+                        </div>
                     )}
-                </Box>
 
-                {/* Right Column - Task History */}
-                <Box sx={{flex: '0 0 50%', display: 'flex', flexDirection: 'column', minHeight: 0}}>
-                    <Card sx={{flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0}}>
-                        <Toolbar
-                            variant="dense"
-                            sx={{
-                                bgcolor: 'primary.main',
-                                color: 'primary.contrastText',
-                                minHeight: 48,
-                                flexShrink: 0,
-                            }}
-                        >
-                            <RocketLaunchIcon sx={{mr: 1}} />
-                            <Typography variant="subtitle1">
-                                Delivery Journey {selectedTask ? `for Job ${selectedTask.jobNumber}` : ''}
-                            </Typography>
-                        </Toolbar>
-                        <Box sx={{flex: 1, overflow: 'auto'}}>
-                            <TaskHistory
-                                jobId={selectedTask?.jobId}
-                                config={{
-                                    showSummaryStats: true,
-                                    densityMode: DensityMode.Normal,
+                    {/* Calendar Widget (Calendar View Only) */}
+                    {showFullCalendar && (
+                        <div key={DashboardWidget.Calendar}>
+                            <Card sx={{height: '100%', display: 'flex', flexDirection: 'column'}}>
+                                <Toolbar
+                                    variant="dense"
+                                    className="drag-handle"
+                                    sx={{
+                                        bgcolor: 'primary.main',
+                                        color: 'primary.contrastText',
+                                        minHeight: 48,
+                                        cursor: isLayoutLocked ? 'default' : 'grab',
+                                        '&:active': {cursor: isLayoutLocked ? 'default' : 'grabbing'},
+                                    }}
+                                >
+                                    {!isLayoutLocked && <DragIndicatorIcon sx={{mr: 1, opacity: 0.7}} />}
+                                    <CalendarMonthIcon sx={{mr: 1}} />
+                                    <Typography variant="subtitle1">Calendar</Typography>
+                                </Toolbar>
+                                <Box sx={{flex: 1, overflow: 'hidden'}}>
+                                    <TaskCalendarView
+                                        tasks={filteredTasks}
+                                        onTaskUpdate={() => refetchTasks()}
+                                        onTaskClick={handleCalendarTaskClick}
+                                        onTaskStatusChange={handleCalendarTaskStatusChange}
+                                        onViewChange={handleCalendarViewChange}
+                                        tasksService={tasksServiceForComponents}
+                                        showSuccessToast={showSuccessToast}
+                                        showErrorToast={showErrorToast}
+                                    />
+                                </Box>
+                            </Card>
+                        </div>
+                    )}
+
+                    {/* Delivery Journey Widget (Always Visible) */}
+                    <div key={DashboardWidget.DeliveryJourney}>
+                        <Card sx={{height: '100%', display: 'flex', flexDirection: 'column'}}>
+                            <Toolbar
+                                variant="dense"
+                                className="drag-handle"
+                                sx={{
+                                    bgcolor: 'primary.main',
+                                    color: 'primary.contrastText',
+                                    minHeight: 48,
+                                    flexShrink: 0,
+                                    cursor: isLayoutLocked ? 'default' : 'grab',
+                                    '&:active': {cursor: isLayoutLocked ? 'default' : 'grabbing'},
                                 }}
-                                dispatchService={dispatchServiceForComponents}
-                                showSuccessToast={showSuccessToast}
-                                showErrorToast={showErrorToast}
-                                showInfoToast={showInfoToast}
-                                isUsCustomer={isUsCustomer}
-                            />
-                        </Box>
-                    </Card>
-                </Box>
+                            >
+                                {!isLayoutLocked && <DragIndicatorIcon sx={{mr: 1, opacity: 0.7}} />}
+                                <RocketLaunchIcon sx={{mr: 1}} />
+                                <Typography variant="subtitle1">
+                                    Delivery Journey {selectedTask ? `for Job ${selectedTask.jobNumber}` : ''}
+                                </Typography>
+                            </Toolbar>
+                            <Box sx={{flex: 1, overflow: 'auto'}}>
+                                <TaskHistory
+                                    jobId={selectedTask?.jobId}
+                                    config={{
+                                        showSummaryStats: true,
+                                        densityMode: DensityMode.Normal,
+                                    }}
+                                    dispatchService={dispatchServiceForComponents}
+                                    showSuccessToast={showSuccessToast}
+                                    showErrorToast={showErrorToast}
+                                    showInfoToast={showInfoToast}
+                                    isUsCustomer={isUsCustomer}
+                                />
+                            </Box>
+                        </Card>
+                    </div>
+                </ResponsiveGridLayout>
             </Box>
+
+            {/* Save Layout Dialog */}
+            <SaveLayoutDialog
+                open={saveDialogOpen}
+                onClose={() => setSaveDialogOpen(false)}
+                onSave={handleSaveLayout}
+                existingNames={allLayoutNames}
+            />
         </Box>
     );
 };

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
@@ -100,7 +101,7 @@ public class NationwideJobController(
         int? arrivalAirportId,
         int minimumLayoverMinutes = 60) //minimumLayover allowed
     {
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var stopwatch = Stopwatch.StartNew();
 
         try
         {

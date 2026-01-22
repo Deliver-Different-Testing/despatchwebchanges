@@ -11,7 +11,7 @@ import {CssBaseline, ThemeProvider} from '@mui/material';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {TaskDashboardPage} from './TaskDashboardPage';
 import {getTheme} from '../../theme/muiTheme';
-import {MountTaskDashboardConfig} from './TaskDashboardPage.interfaces';
+import {MountTaskDashboardConfig, LayoutActions} from './TaskDashboardPage.interfaces';
 import {queryClient} from '../../query';
 
 let taskDashboardRoot: Root | null = null;
@@ -19,6 +19,9 @@ let taskDashboardContainer: HTMLElement | null = null;
 
 // Store config for refresh functionality
 let refreshCallback: (() => void) | null = null;
+
+// Store current layout actions callback for external access
+let currentLayoutActionsCallback: ((actions: LayoutActions) => void) | null = null;
 
 /**
  * Mounts the task dashboard page component into a container element
@@ -49,6 +52,9 @@ export function mountTaskDashboardPage(
 
     taskDashboardContainer = container;
 
+    // Store the layout actions callback for use by the React component
+    currentLayoutActionsCallback = config.onLayoutActionsChange || null;
+
     // Create new root if needed
     if (!taskDashboardRoot) {
         console.log('[TaskDashboardReact] Creating new React root');
@@ -68,6 +74,7 @@ export function mountTaskDashboardPage(
                     setRefreshCallback={(cb) => {
                         refreshCallback = cb;
                     }}
+                    onLayoutActionsChange={config.onLayoutActionsChange}
                 />
             </ThemeProvider>
         </QueryClientProvider>
@@ -98,6 +105,7 @@ export function unmountTaskDashboardPage(): void {
 
     taskDashboardContainer = null;
     refreshCallback = null;
+    currentLayoutActionsCallback = null;
 }
 
 // Expose globally for AngularJS access

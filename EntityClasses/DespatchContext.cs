@@ -6636,6 +6636,11 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.UcnwJob).WithMany(p => p.TucJobNationwides)
                 .HasForeignKey(d => d.UcnwJobId)
                 .HasConstraintName("FK_tucJobNationwide_tucJob");
+
+            // Relationship with archived jobs - uses same UcnwJobId but no FK constraint
+            entity.HasOne(d => d.UcnwJobArchive).WithMany(p => p.TucJobNationwides)
+                .HasForeignKey(d => d.UcnwJobId)
+                .IsRequired(false);
         });
 
         modelBuilder.Entity<TucJobReadTracker>(entity =>

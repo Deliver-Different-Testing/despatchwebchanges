@@ -31,6 +31,18 @@ public class JobControllerTests
     private readonly Mock<IJobPhotoService> _jobPhotoServiceMock = new();
     private readonly Mock<IDispatchJobService> _dispatchJobServiceMock = new();
     private readonly Mock<IDeliveryJourneyService> _deliveryJourneyServiceMock = new();
+    private readonly Mock<IPricingPermissionService> _pricingPermissionServiceMock = new();
+
+    public JobControllerTests()
+    {
+        // By default, allow all pricing operations in tests (internal user behavior)
+        _pricingPermissionServiceMock.Setup(x => x.CanModifyPricesAsync()).ReturnsAsync(true);
+        _pricingPermissionServiceMock.Setup(x => x.CanBulkUpdatePricesAsync()).ReturnsAsync(true);
+        _pricingPermissionServiceMock.Setup(x => x.CanModifyPriceBreakdownAsync()).ReturnsAsync(true);
+        _pricingPermissionServiceMock.Setup(x => x.CanUsePricingModeAsync(It.IsAny<string>())).ReturnsAsync(true);
+        _pricingPermissionServiceMock.Setup(x => x.ValidateJobAccessAsync(It.IsAny<int>())).Returns(Task.CompletedTask);
+        _pricingPermissionServiceMock.Setup(x => x.ValidateJobsAccessAsync(It.IsAny<List<int>>())).ReturnsAsync([]);
+    }
 
     private JobController CreateController()
     {
@@ -46,7 +58,8 @@ public class JobControllerTests
             _jobReportServiceMock.Object,
             _jobPhotoServiceMock.Object,
             _dispatchJobServiceMock.Object,
-            _deliveryJourneyServiceMock.Object);
+            _deliveryJourneyServiceMock.Object,
+            _pricingPermissionServiceMock.Object);
     }
 
     #endregion
@@ -64,11 +77,11 @@ public class JobControllerTests
         };
         var expectedResult = new JobSearchResult
         {
-            Jobs = new List<DispatchJobViewModel>
-            {
+            Jobs =
+            [
                 CreateTestDispatchJob(1, "JOB001"),
                 CreateTestDispatchJob(2, "JOB002")
-            },
+            ],
             TotalCount = 2
         };
 
@@ -1653,7 +1666,7 @@ public class JobControllerTests
         };
         var reportResult = new JobsReportResult
         {
-            FileBytes = new byte[] { 1, 2, 3 },
+            FileBytes = [1, 2, 3],
             FileName = "jobs_report.csv"
         };
 
@@ -1832,7 +1845,7 @@ public class JobControllerTests
         var downloadResult = new AwsFileDownloadResult
         {
             Success = true,
-            FileBytes = new byte[] { 1, 2, 3 },
+            FileBytes = [1, 2, 3],
             ContentType = "application/pdf",
             FileName = "document.pdf"
         };

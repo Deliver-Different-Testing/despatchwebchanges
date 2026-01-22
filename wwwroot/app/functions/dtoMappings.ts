@@ -226,13 +226,3 @@ export function transformOpenJobResponseDto(dto: IOpenJobResponseDto): IOpenJobR
         _deliveryTimeStr: dto.deliveryTime ? formatLongDateTime(dto.deliveryTime) : undefined,
     }
 }
-
-export function transformJobNoteDto(dto: IJobNoteDto): IJobNote {
-    return {
-        ...dto,
-        createdDate: dto.createdDate ? formatDateFromApi(dto.createdDate) : undefined,
-        updatedDate: dto.updatedDate ? formatDateFromApi(dto.updatedDate) : undefined,
-        _createdDateStr: dto.createdDate ? formatLongDateTime(dto.createdDate) : undefined,
-        _updatedDateStr: dto.updatedDate ? formatLongDateTime(dto.updatedDate) : undefined,
-    }
-}

@@ -6,7 +6,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material';
 import { NoData } from './NoData';
-import type { NoDataProps } from './NoData';
+import type { NoDataProps } from './types';
 
 const theme = createTheme();
 
