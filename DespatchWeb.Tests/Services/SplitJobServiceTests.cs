@@ -347,12 +347,12 @@ public class SplitJobServiceTests
             var deliveryNote = await context.TucNotes.FirstOrDefaultAsync(n => n.JobId == deliveryJobId);
 
             pickupNote.Should().NotBeNull();
-            pickupNote!.NoteText.Should().Contain("SPLIT Part 1 of 2");
+            pickupNote.NoteText.Should().Contain("SPLIT Part 1 of 2");
             pickupNote.NoteTypeId.Should().Be((int)NoteType.InternalNote);
             pickupNote.CreatedBy.Should().Be(StaffId);
 
             deliveryNote.Should().NotBeNull();
-            deliveryNote!.NoteText.Should().Contain("SPLIT Part 2 of 2");
+            deliveryNote.NoteText.Should().Contain("SPLIT Part 2 of 2");
             deliveryNote.NoteTypeId.Should().Be((int)NoteType.InternalNote);
             deliveryNote.CreatedBy.Should().Be(StaffId);
         }
@@ -473,6 +473,30 @@ public class SplitJobServiceTests
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*relationship type*not found*");
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_JobHasChildren_ThrowsInvalidOperationException()
+    {
+        // Arrange - Create a parent job with existing children
+        await using (var context = CreateContext())
+        {
+            var parentJob = CreateTestJob(1, "PARENT-001");
+            parentJob.ParentId = 1; // Self-referencing parent
+            var childJob1 = CreateTestJob(2, "PARENT-001-1", parentId: 1);
+            var childJob2 = CreateTestJob(3, "PARENT-001-2", parentId: 1);
+            context.TucJobs.AddRange(parentJob, childJob1, childJob2);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+
+        // Act
+        var act = async () => await service.SplitJobAsync(1, "TestUser");
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*has child jobs*cannot be split*");
     }
 
     #endregion
@@ -699,6 +723,30 @@ public class SplitJobServiceTests
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*already a child job*");
+    }
+
+    [Fact]
+    public async Task SplitJobBookingAsync_BookingHasChildren_ThrowsInvalidOperationException()
+    {
+        // Arrange - Create a parent booking with existing children
+        await using (var context = CreateContext())
+        {
+            var parentBooking = CreateTestJobBooking(1, "PARENT-001");
+            parentBooking.ParentId = 1; // Self-referencing parent
+            var childBooking1 = CreateTestJobBooking(2, "PARENT-001-1", parentId: 1);
+            var childBooking2 = CreateTestJobBooking(3, "PARENT-001-2", parentId: 1);
+            context.TucJobBookings.AddRange(parentBooking, childBooking1, childBooking2);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+
+        // Act
+        var act = async () => await service.SplitJobBookingAsync(1, "TestUser");
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*has child jobs*cannot be split*");
     }
 
     #endregion

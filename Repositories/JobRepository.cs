@@ -1771,7 +1771,7 @@ public partial class JobRepository(
 
     /// <summary>
     /// Checks if a job can be split.
-    /// A job can be split if it has no parent (is not already a child job).
+    /// A job can be split if it has no parent (is not already a child job) and has no children.
     /// </summary>
     /// <param name="jobId">The job ID to check.</param>
     /// <returns>True if the job can be split, false otherwise.</returns>
@@ -1783,8 +1783,15 @@ public partial class JobRepository(
 
         if (job == null) return false;
 
-        // Cannot split a child job (has parent) or a job where parent equals itself
-        return !job.ParentId.HasValue || job.ParentId == job.UcjbId;
+        // Cannot split a child job (has parent that is not itself)
+        if (job.ParentId.HasValue && job.ParentId != job.UcjbId)
+            return false;
+
+        // Cannot split a job that already has children
+        var hasChildren = await Context.TucJobs
+            .AnyAsync(j => j.ParentId == jobId && j.UcjbId != jobId);
+
+        return !hasChildren;
     }
 
     /// <summary>
