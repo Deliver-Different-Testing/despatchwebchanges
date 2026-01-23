@@ -90,8 +90,7 @@ public class TenantInfoService(
     /// <returns>The current time in the specified timezone.</returns>
     public DateTime GetCurrentTimeFromTimeZone(TimeZone timeZone)
     {
-        if (timeZone is null)
-            return GetCurrentTenantTime();
+        if (timeZone is null) return GetCurrentTenantTime();
 
         var cacheKey = $"timezone_info_{timeZone.Name}";
         var timeZoneInfo = cache.GetOrCreate(cacheKey, entry =>
@@ -110,8 +109,7 @@ public class TenantInfoService(
     /// <returns>A culture-specific formatted date string, or empty if null.</returns>
     public string FormatDateForTenant(DateTime? dateTime)
     {
-        if (!dateTime.HasValue)
-            return string.Empty;
+        if (!dateTime.HasValue) return string.Empty;
 
         var culture = GetCultureInfo();
         return dateTime.Value.ToString("g", culture);

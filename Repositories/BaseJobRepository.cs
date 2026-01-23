@@ -252,17 +252,13 @@ public class BaseJobRepository(
 
         // Apply related jobs
         foreach (var job in jobs.Where(j => j.ParentId.HasValue))
-        {
             if (job.ParentId != null && relatedJobsDict.TryGetValue(job.ParentId.Value, out var related))
                 job.RelatedJobs = related;
-        }
 
         // Apply flights
         foreach (var job in jobs)
-        {
             if (flightsDict.TryGetValue(job.Id, out var flight))
                 job.AssignedFlight = flight;
-        }
     }
 
 
@@ -324,34 +320,24 @@ public class BaseJobRepository(
         {
             NationwideWidget.JobList => query.Where(j =>
                 j.InternalStatus == (int)InternalJobStatus.NewJobs
-                || (j.InternalStatus == null && j.UcjbStatus != (int)JobStatus.AwaitingPod)
-                // Keep dispatched jobs visible until courier accepts them
-                || (j.InternalStatus == (int)InternalJobStatus.AwaitingPod && j.UcjbStatus == (int)JobStatus.Dispatched)
             ),
-
             NationwideWidget.Pod => query.Where(j =>
-                // Exclude dispatched jobs - they stay in New Jobs until courier accepts
-                (j.InternalStatus == (int)InternalJobStatus.AwaitingPod && j.UcjbStatus != (int)JobStatus.Dispatched)
-                || j.UcjbStatus == (int)JobStatus.AwaitingPod
+                j.InternalStatus == (int)InternalJobStatus.AwaitingPod || j.UcjbStatus == (int)JobStatus.AwaitingPod
             ),
-
             NationwideWidget.ActionRequired => query.Where(j =>
                 j.InternalStatus == (int)InternalJobStatus.ActionRequired
             ),
-
             NationwideWidget.Reprice => query.Where(j =>
                 j.InternalStatus == (int)InternalJobStatus.Reprice || j.Reprice == true
             ),
-
             _ => query
         };
 
         // Block out completed jobs from the domestic/nationwide page
-        query = query.Where(j => j.UcjbComplTime == null);
+        query = query.Where(j => !j.UcjbComplTime.HasValue);
 
         // Apply client viewFilters for non-internal users
-        if (isInternal || string.IsNullOrEmpty(clientIds))
-            return query;
+        if (isInternal || string.IsNullOrEmpty(clientIds)) return query;
 
         var clientIdList = clientIds.Split(',').Select(id => int.Parse(id.Trim())).ToList();
         query = query.Where(j => clientIdList.Contains((int)j.UcjbClientId));
@@ -604,12 +590,10 @@ public class BaseJobRepository(
         }
     }
 
-    public async Task DeleteNoteAsync(int noteId, CancellationToken cancellationToken = default)
-    {
+    public async Task DeleteNoteAsync(int noteId, CancellationToken cancellationToken = default) =>
         await Context.TucNotes
             .Where(note => note.NoteId == noteId)
             .ExecuteDeleteAsync(cancellationToken);
-    }
 
     // Helper Methods
     public async Task<bool> IsJobArchived(int jobId) => await Context.IsJobArchivedAsync(jobId);
@@ -800,16 +784,14 @@ public class BaseJobRepository(
             };
     }
 
-    protected static string GetTrackingName(int trackingMethodId)
-    {
-        return trackingMethodId switch
+    protected static string GetTrackingName(int trackingMethodId) =>
+        trackingMethodId switch
         {
             1 => "Email",
             2 => "Mobile",
             3 => "Email & Mobile",
             _ => string.Empty
         };
-    }
 
     protected static double? CalculateRemainTime(DispatchJobViewModel job, DateTime currentTenantTime,
         int? economySpeedId, DateTime? ecoDeliveryTime)

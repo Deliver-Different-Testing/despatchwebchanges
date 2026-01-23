@@ -868,7 +868,7 @@ public static class JobMappings
             Truck = j.Truck ?? false,
             DgClass = j.Dgclass,
 
-            AllowSplit = !j.ParentId.HasValue || j.ParentId != j.UcjbId,
+            AllowSplit = j.ParentId.HasValue && j.ParentId != j.UcjbId,
 
             PickUpTimeZone = j.PickupTimeZone != null
                 ? new Suggestion { Id = j.PickupTimeZone.Id, Text = j.PickupTimeZone.Name }
@@ -896,6 +896,7 @@ public static class JobMappings
         Void = j.UcjbVoid,
         IsInvoiced = false,
         Barcode = j.Barcode ?? "-",
+        AllowSplit = j.ParentId.HasValue && j.ParentId != j.UcjbId,
 
         // Flight card
         IsFlightJob = j.UcjbSpeedNavigation != null
