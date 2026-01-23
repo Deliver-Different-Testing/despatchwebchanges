@@ -86,6 +86,32 @@ public class JobRepositorySplitJobTests : IDisposable
         result.Should().BeFalse();
     }
 
+    [Fact]
+    public async Task CanJobBeSplitAsync_JobWithChildren_ReturnsFalse()
+    {
+        _context.TucJobs.AddRange(
+            new TucJob { UcjbId = 100, UcjbNumber = "PARENT", ParentId = 100 }, // Self-referencing parent
+            new TucJob { UcjbId = 101, UcjbNumber = "CHILD-1", ParentId = 100 },
+            new TucJob { UcjbId = 102, UcjbNumber = "CHILD-2", ParentId = 100 }
+        );
+        await _context.SaveChangesAsync();
+
+        var result = await CreateRepository().CanJobBeSplitAsync(100);
+
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CanJobBeSplitAsync_JobWithNoParentAndNoChildren_ReturnsTrue()
+    {
+        _context.TucJobs.Add(new TucJob { UcjbId = 100, UcjbNumber = "STANDALONE" });
+        await _context.SaveChangesAsync();
+
+        var result = await CreateRepository().CanJobBeSplitAsync(100);
+
+        result.Should().BeTrue();
+    }
+
     #endregion
 
     #region GetSplitJobChildrenAsync Tests

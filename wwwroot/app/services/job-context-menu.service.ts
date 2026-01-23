@@ -162,8 +162,9 @@ class JobContextMenuService implements angular.IServiceProvider {
             hasBottomDivider: true,
         });
 
-        // Split Job option (if allowed)
-        if (job.allowSplit) {
+        // Split Job option (if allowed and job has no children)
+        const hasChildren = job._groupChildren && job._groupChildren.length > 0;
+        if (job.allowSplit && !hasChildren) {
             menuOptions.push({
                 text: "Split Job",
                 icon: "arrow_split",
@@ -447,14 +448,18 @@ class JobContextMenuService implements angular.IServiceProvider {
     ) {
         if (!job) return;
 
-        if (!job.allowSplit) {
+        const hasChildren = job._groupChildren && job._groupChildren.length > 0;
+        if (!job.allowSplit || hasChildren) {
+            const reason = hasChildren
+                ? `Job ${job.jobNo} has child jobs and cannot be split.`
+                : `Can not split ${job.jobNo}.`;
             await this.$mdDialog.show(
                 this.$mdDialog
                     .alert()
                     .parent(this.$document.parent())
                     .clickOutsideToClose(true)
                     .title("Unable to split job")
-                    .textContent(`Can not split ${job.jobNo}.`)
+                    .textContent(reason)
                     .ariaLabel("Alert")
                     .ok("OK")
             );

@@ -52,6 +52,12 @@ public class SplitJobService(
             if (job.ParentId.HasValue && job.ParentId != job.UcjbId)
                 throw new InvalidOperationException($"Job {jobId} is already a child job and cannot be split");
 
+            // Check if job has children (already been split)
+            var hasChildren = await context.TucJobs
+                .AnyAsync(j => j.ParentId == jobId && j.UcjbId != jobId);
+            if (hasChildren)
+                throw new InvalidOperationException($"Job {jobId} has child jobs and cannot be split");
+
             // Validate and get a valid speed ID
             var validSpeedId = await GetValidSpeedIdAsync(context, job.UcjbSpeed);
 
@@ -147,6 +153,12 @@ public class SplitJobService(
             if (jobBooking.ParentId.HasValue && jobBooking.ParentId != jobBooking.UcbkId)
                 throw new InvalidOperationException(
                     $"Job booking {jobBookingId} is already a child job and cannot be split");
+
+            // Check if job booking has children (already been split)
+            var hasChildren = await context.TucJobBookings
+                .AnyAsync(j => j.ParentId == jobBookingId && j.UcbkId != jobBookingId);
+            if (hasChildren)
+                throw new InvalidOperationException($"Job booking {jobBookingId} has child jobs and cannot be split");
 
             // Validate and get a valid speed ID
             var validSpeedId = await GetValidSpeedIdAsync(context, jobBooking.UcbkSpeed);
