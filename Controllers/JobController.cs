@@ -858,6 +858,14 @@ public class JobController(
     {
         try
         {
+            var isArchived = await jobRepository.IsJobArchived(request.JobId);
+
+            if (isArchived)
+            {
+                await jobRepository.VoidArchivedJobAsync(request);
+                return Ok();
+            }
+
             // Get the parent ID before voiding (if this is a child job)
             var parentId = await jobRepository.GetJobParentIdAsync(request.JobId);
 
@@ -904,7 +912,7 @@ public class JobController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
-
+    
     [HttpPost]
     public async Task<IActionResult> VoidBulkJob([FromBody] VoidBulkJobRequest request)
     {
@@ -987,12 +995,16 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> SplitJob([FromBody] JobUpdateBaseRequest request)
+    public async Task<IActionResult> SplitJob([FromBody] SplitJobRequest request)
     {
         try
         {
             var staffInfo = await infoService.GetStaffInfoAsync();
-            await splitJobService.SplitJobAsync(request.JobId, staffInfo.Text);
+            await splitJobService.SplitJobAsync(
+                request.JobId,
+                staffInfo.Text,
+                request.MeetingPointSuburbId,
+                request.MeetingPointAddress);
             return Ok();
         }
         catch (Exception e)
@@ -1021,40 +1033,6 @@ public class JobController(
         {
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> ReRateSplitJob([FromBody] JobUpdateBaseRequest request)
-    {
-        await jobRepository.ReRateSplitJobAsync(request.JobId);
-        return Ok();
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> FinishSplitJobProcess([FromBody] JobUpdateBaseRequest request)
-    {
-        var staffInfo = await infoService.GetStaffInfoAsync();
-        await jobRepository.FinishSplitJobProcessAsync(request.JobId, staffInfo.Text);
-        return Ok();
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> UpdateSplitJobAddress(
-        int jobId,
-        int toSuburbId,
-        string address,
-        decimal deliveryLat,
-        decimal deliveryLng
-    )
-    {
-        await jobRepository.UpdateSplitJobAddressAsync(
-            jobId,
-            toSuburbId,
-            address,
-            deliveryLat,
-            deliveryLng
-        );
-        return Ok();
     }
 
     [HttpPost]

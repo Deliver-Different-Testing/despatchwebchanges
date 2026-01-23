@@ -1,10 +1,11 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWeb.Services;
 using FluentAssertions;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Moq;
 
 namespace DespatchWeb.Tests.Services;
@@ -12,8 +13,9 @@ namespace DespatchWeb.Tests.Services;
 /// <summary>
 /// Unit tests for SplitJobService - tests job splitting functionality.
 /// </summary>
-public class SplitJobServiceTests
+public class SplitJobServiceTests : IDisposable
 {
+    private readonly SqliteConnection _connection;
     private readonly DbContextOptions<DespatchContext> _dbOptions;
     private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
@@ -26,11 +28,29 @@ public class SplitJobServiceTests
 
     public SplitJobServiceTests()
     {
-        // Use InMemory database to avoid SQLite/SQL Server compatibility issues
+        // Use SQLite in-memory database (supports ExecuteUpdateAsync unlike InMemory provider)
+        _connection = new SqliteConnection("DataSource=:memory:");
+        _connection.Open();
+
+        // Register SQL Server functions that SQLite doesn't have
+        _connection.CreateFunction("getdate", () => DateTime.Now);
+        _connection.CreateFunction("getutcdate", () => DateTime.UtcNow);
+
+        using (var command = _connection.CreateCommand())
+        {
+            command.CommandText = "PRAGMA foreign_keys = OFF;";
+            command.ExecuteNonQuery();
+        }
+
         _dbOptions = new DbContextOptionsBuilder<DespatchContext>()
-            .UseInMemoryDatabase(databaseName: $"SplitJobServiceTests_{Guid.NewGuid()}")
-            .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
+            .UseSqlite(_connection)
             .Options;
+
+        // Ensure database is created
+        using (var context = new DespatchContext(_dbOptions))
+        {
+            context.Database.EnsureCreated();
+        }
 
         // Setup mock for async context factory - create new context each time to avoid disposal issues
         _contextFactoryMock.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
@@ -42,6 +62,11 @@ public class SplitJobServiceTests
 
         // Setup required reference data
         SetupReferenceData();
+    }
+
+    public void Dispose()
+    {
+        _connection.Dispose();
     }
 
     private DespatchContext CreateContext() => new(_dbOptions);
@@ -105,7 +130,7 @@ public class SplitJobServiceTests
         _tenantInfoServiceMock.Object
     );
 
-    private TucJob CreateTestJob(int jobId, string jobNumber, int? parentId = null)
+    private static TucJob CreateTestJob(int jobId, string jobNumber, int? parentId = null)
     {
         return new TucJob
         {
@@ -125,7 +150,7 @@ public class SplitJobServiceTests
         };
     }
 
-    private TucJobBooking CreateTestJobBooking(int bookingId, string jobNumber, int? parentId = null)
+    private static TucJobBooking CreateTestJobBooking(int bookingId, string jobNumber, int? parentId = null)
     {
         return new TucJobBooking
         {
@@ -144,6 +169,23 @@ public class SplitJobServiceTests
         };
     }
 
+    private const int TestMeetingPointSuburbId = 50;
+
+    private static AddressViewModel CreateTestMeetingPointAddress() => new(
+        addressLine1: "Unit 5",
+        addressLine2: "Meeting Point Building",
+        addressLine3: "123",
+        addressLine4: "Handoff Street",
+        addressLine5: "Auckland",
+        addressLine6: "Auckland Central",
+        addressLine7: "1010",
+        addressLine8: "Near main entrance"
+    )
+    {
+        Latitude = -36.8485m,
+        Longitude = 174.7633m
+    };
+
     #region SplitJobAsync Success Tests
 
     [Fact]
@@ -158,9 +200,10 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser");
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         pickupJobId.Should().BeGreaterThan(0);
@@ -189,9 +232,10 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser");
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -216,9 +260,10 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser");
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -258,9 +303,10 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        await service.SplitJobAsync(1, "TestUser");
+        await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert - ParentJobCourierId is null since we don't seed TblSettings
         await using (var context = CreateContext())
@@ -283,9 +329,10 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, _) = await service.SplitJobAsync(1, "TestUser");
+        var (pickupJobId, _) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -308,9 +355,10 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (_, deliveryJobId) = await service.SplitJobAsync(1, "TestUser");
+        var (_, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -336,9 +384,10 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser");
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -371,9 +420,10 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser");
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -399,9 +449,10 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, _) = await service.SplitJobAsync(1, "TestUser");
+        var (pickupJobId, _) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -420,9 +471,10 @@ public class SplitJobServiceTests
     {
         // Arrange
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var act = async () => await service.SplitJobAsync(999, "TestUser");
+        var act = async () => await service.SplitJobAsync(999, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
@@ -442,9 +494,10 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var act = async () => await service.SplitJobAsync(2, "TestUser");
+        var act = async () => await service.SplitJobAsync(2, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
@@ -466,9 +519,10 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var act = async () => await service.SplitJobAsync(1, "TestUser");
+        var act = async () => await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
@@ -490,9 +544,10 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var act = async () => await service.SplitJobAsync(1, "TestUser");
+        var act = async () => await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
@@ -516,9 +571,10 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser");
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -544,9 +600,10 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser");
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -573,9 +630,10 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser");
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -604,9 +662,10 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser");
+        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         pickupId.Should().BeGreaterThan(0);
@@ -636,9 +695,10 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser");
+        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -670,9 +730,10 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser");
+        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -694,9 +755,10 @@ public class SplitJobServiceTests
     {
         // Arrange
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var act = async () => await service.SplitJobBookingAsync(999, "TestUser");
+        var act = async () => await service.SplitJobBookingAsync(999, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
@@ -716,9 +778,10 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var act = async () => await service.SplitJobBookingAsync(2, "TestUser");
+        var act = async () => await service.SplitJobBookingAsync(2, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
@@ -740,9 +803,10 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var act = async () => await service.SplitJobBookingAsync(1, "TestUser");
+        var act = async () => await service.SplitJobBookingAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
@@ -754,7 +818,7 @@ public class SplitJobServiceTests
     #region Address Field Tests
 
     [Fact]
-    public async Task SplitJobAsync_PickupJob_HasTBADeliveryAddress()
+    public async Task SplitJobAsync_PickupJob_HasMeetingPointDeliveryAddress()
     {
         // Arrange
         await using (var context = CreateContext())
@@ -766,16 +830,27 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, _) = await service.SplitJobAsync(1, "TestUser");
+        var (pickupJobId, _) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
         {
             var pickupJob = await context.TucJobs.FindAsync(pickupJobId);
-            pickupJob!.UcjbToAddr.Should().Contain("TBA");
-            pickupJob.UcjbToAddr.Should().Contain("Final Destination Address");
+            pickupJob!.UcjbTo.Should().Be(TestMeetingPointSuburbId);
+            pickupJob.UcjbToAddr.Should().Be(meetingPoint.FullAddress);
+            pickupJob.DeliveryLatitude.Should().Be(meetingPoint.Latitude);
+            pickupJob.DeliveryLongitude.Should().Be(meetingPoint.Longitude);
+            pickupJob.DeliveryAddressLine1.Should().Be(meetingPoint.AddressLine1);
+            pickupJob.DeliveryAddressLine2.Should().Be(meetingPoint.AddressLine2);
+            pickupJob.DeliveryAddressLine3.Should().Be(meetingPoint.AddressLine3);
+            pickupJob.DeliveryAddressLine4.Should().Be(meetingPoint.AddressLine4);
+            pickupJob.DeliveryAddressLine5.Should().Be(meetingPoint.AddressLine5);
+            pickupJob.DeliveryAddressLine6.Should().Be(meetingPoint.AddressLine6);
+            pickupJob.DeliveryAddressLine7.Should().Be(meetingPoint.AddressLine7);
+            pickupJob.DeliveryAddressLine8.Should().Be(meetingPoint.AddressLine8);
         }
     }
 
@@ -792,15 +867,144 @@ public class SplitJobServiceTests
         }
 
         var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (_, deliveryJobId) = await service.SplitJobAsync(1, "TestUser");
+        var (_, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
         {
             var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId);
             deliveryJob!.UcjbToAddr.Should().Be("Final Destination Address");
+        }
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_DeliveryJob_HasMeetingPointFromAddress()
+    {
+        // Arrange
+        await using (var context = CreateContext())
+        {
+            var job = CreateTestJob(1, "JOB-001");
+            job.UcjbToAddr = "Final Destination Address";
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        var (_, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+
+        // Assert
+        await using (var context = CreateContext())
+        {
+            var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId);
+            deliveryJob!.UcjbFrom.Should().Be(TestMeetingPointSuburbId);
+            deliveryJob.UcjbFromAddr.Should().Be(meetingPoint.FullAddress);
+            deliveryJob.PickUpLatitude.Should().Be(meetingPoint.Latitude);
+            deliveryJob.PickUpLongitude.Should().Be(meetingPoint.Longitude);
+            deliveryJob.PickupAddressLine1.Should().Be(meetingPoint.AddressLine1);
+            deliveryJob.PickupAddressLine2.Should().Be(meetingPoint.AddressLine2);
+            deliveryJob.PickupAddressLine3.Should().Be(meetingPoint.AddressLine3);
+            deliveryJob.PickupAddressLine4.Should().Be(meetingPoint.AddressLine4);
+            deliveryJob.PickupAddressLine5.Should().Be(meetingPoint.AddressLine5);
+            deliveryJob.PickupAddressLine6.Should().Be(meetingPoint.AddressLine6);
+            deliveryJob.PickupAddressLine7.Should().Be(meetingPoint.AddressLine7);
+            deliveryJob.PickupAddressLine8.Should().Be(meetingPoint.AddressLine8);
+        }
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_PickupAndDeliveryJobs_HaveMatchingMeetingPointAddresses()
+    {
+        // Arrange
+        await using (var context = CreateContext())
+        {
+            var job = CreateTestJob(1, "JOB-001");
+            job.UcjbToAddr = "Final Destination Address";
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+
+        // Assert - Pickup's TO address should match Delivery's FROM address
+        await using (var context = CreateContext())
+        {
+            var pickupJob = await context.TucJobs.FindAsync(pickupJobId);
+            var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId);
+
+            pickupJob!.UcjbTo.Should().Be(deliveryJob!.UcjbFrom);
+            pickupJob.UcjbToAddr.Should().Be(deliveryJob.UcjbFromAddr);
+            pickupJob.DeliveryLatitude.Should().Be(deliveryJob.PickUpLatitude);
+            pickupJob.DeliveryLongitude.Should().Be(deliveryJob.PickUpLongitude);
+        }
+    }
+
+    #endregion
+
+    #region SplitJobBookingAsync Address Tests
+
+    [Fact]
+    public async Task SplitJobBookingAsync_DeliveryBooking_HasMeetingPointFromAddress()
+    {
+        // Arrange
+        await using (var context = CreateContext())
+        {
+            var booking = CreateTestJobBooking(1, "BOOK-001");
+            booking.UcbkToAddr = "Final Destination Address";
+            context.TucJobBookings.Add(booking);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        var (_, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+
+        // Assert
+        await using (var context = CreateContext())
+        {
+            var deliveryBooking = await context.TucJobBookings.FindAsync(deliveryId);
+            deliveryBooking!.UcbkFrom.Should().Be(TestMeetingPointSuburbId);
+            deliveryBooking.UcbkFromAddr.Should().Be(meetingPoint.FullAddress);
+        }
+    }
+
+    [Fact]
+    public async Task SplitJobBookingAsync_PickupAndDeliveryBookings_HaveMatchingMeetingPointAddresses()
+    {
+        // Arrange
+        await using (var context = CreateContext())
+        {
+            var booking = CreateTestJobBooking(1, "BOOK-001");
+            booking.UcbkToAddr = "Final Destination Address";
+            context.TucJobBookings.Add(booking);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+
+        // Assert - Pickup's TO address should match Delivery's FROM address
+        await using (var context = CreateContext())
+        {
+            var pickupBooking = await context.TucJobBookings.FindAsync(pickupId);
+            var deliveryBooking = await context.TucJobBookings.FindAsync(deliveryId);
+
+            pickupBooking!.UcbkTo.Should().Be(deliveryBooking!.UcbkFrom);
+            pickupBooking.UcbkToAddr.Should().Be(deliveryBooking.UcbkFromAddr);
         }
     }
 

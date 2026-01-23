@@ -80,19 +80,9 @@ public interface IJobRepository
     Task RestoreSplitJobsAsync(List<int> jobIds);
     Task RestoreJobsAsync(List<int> jobIds);
     Task VoidJobAsync(VoidJobRequest data);
-    Task VoidBulkJobAsync(VoidBulkJobRequest data); 
+    Task VoidArchivedJobAsync(VoidJobRequest data);
+    Task VoidBulkJobAsync(VoidBulkJobRequest data);
     Task<string> UnSplitJobAsync(int jobId);
-
-    Task UpdateSplitJobAddressAsync(
-        int jobId,
-        int toSuburbId,
-        string address,
-        decimal deliveryLat,
-        decimal deliveryLng
-    );
-
-    Task ReRateSplitJobAsync(int jobId);
-    Task FinishSplitJobProcessAsync(int jobId, string despatcher);
     Task<List<Suggestion>> GetSpeedsAsync();
     Task<List<Suggestion>> GetSpeedsBySearchTermAsync(string searchTerm);
     Task<List<Suggestion>> GetContactsByClientIdAsync(int clientId);

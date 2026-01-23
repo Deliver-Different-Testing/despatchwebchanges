@@ -542,13 +542,16 @@ public class BaseJobRepository(
             // If a note type is not found, default to the internal note
             noteType = await ConfirmNoteTypeExists(noteType);
 
+            var now = infoService.GetCurrentTenantTime();
+            
             var newNotes = jobIds.Select(jobId => new TucNote
                 {
                     JobId = isRecurringJobs ? null : jobId,
                     JobBookingId = isRecurringJobs ? jobId : null,
                     NoteText = noteText,
                     IsImportant = isImportant,
-                    NoteTypeId = (int)noteType
+                    NoteTypeId = (int)noteType,
+                    CreatedDate = now
                 })
                 .ToList();
 
@@ -558,6 +561,40 @@ public class BaseJobRepository(
         {
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository), nameof(SaveNoteAsync)));
+        }
+    }
+
+    protected async Task SaveNoteToMultipleArchivedJobsAsync(
+        List<int> jobIds,
+        string noteText,
+        bool isImportant = false,
+        NoteType noteType = NoteType.InternalNote)
+    {
+        try
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(noteText);
+
+            // If a note type is not found, default to the internal note
+            noteType = await ConfirmNoteTypeExists(noteType);
+
+            var now = infoService.GetCurrentTenantTime();
+
+            var newNotes = jobIds.Select(jobId => new TucNoteArchive
+                {
+                    JobId = jobId,
+                    NoteText = noteText,
+                    IsImportant = isImportant,
+                    NoteTypeId = (int)noteType,
+                    CreatedDate = now
+                })
+                .ToList();
+
+            await Context.TucNoteArchives.AddRangeAsync(newNotes);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository), nameof(SaveNoteToMultipleArchivedJobsAsync)));
         }
     }
 
@@ -572,13 +609,16 @@ public class BaseJobRepository(
             var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
             if (!noteTypeExists) noteType = NoteType.InternalNote;
 
+            var now = infoService.GetCurrentTenantTime();
+            
             var viewModel = new TucNoteViewModel
             {
                 JobId = isRecurringJob ? null : jobId,
                 JobBookingId = isRecurringJob ? jobId : null,
                 NoteText = noteText,
                 IsImportant = isImportant,
-                NoteTypeId = (int)noteType
+                NoteTypeId = (int)noteType,
+                CreatedDate = now
             };
 
             await SaveNoteAsync(viewModel);

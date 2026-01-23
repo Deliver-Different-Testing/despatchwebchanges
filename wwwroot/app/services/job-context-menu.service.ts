@@ -467,6 +467,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         }
 
         try {
+            // Show confirmation dialog
             await this.$mdDialog.show(
                 this.$mdDialog
                     .confirm()
@@ -478,8 +479,39 @@ class JobContextMenuService implements angular.IServiceProvider {
                     .cancel("No")
             );
 
-            await this.DispatchData.splitJob(job.id);
-            await this.handleSplitJobMeetingPoint($event, job);
+            // Show address dialog to get meeting point BEFORE splitting
+            if (!job.deliveryAddress) {
+                this.toastrService.showErrorToast("No delivery address found");
+                return;
+            }
+
+            const meetingPointAddress = await this.editAddressDialogService.openEditAddressDialog(
+                job.deliveryAddress,
+                $event,
+                'Set Meeting Point',
+                'Split Job'
+            );
+
+            if (!meetingPointAddress) {
+                console.log("Split job cancelled - no meeting point selected");
+                return;
+            }
+
+            const meetingPointSuburbId = Number(meetingPointAddress.toSuburbId);
+            if (!meetingPointAddress.fullAddress || !meetingPointSuburbId) {
+                this.toastrService.showErrorToast("Invalid meeting point address");
+                return;
+            }
+
+            // Single API call to split job with meeting point
+            await this.DispatchData.splitJob(
+                job.id,
+                meetingPointSuburbId,
+                meetingPointAddress
+            );
+
+            this.toastrService.showSuccessToast("Job Successfully Split");
+            console.log("Job splitting complete!");
 
             if (onRefresh) {
                 onRefresh();
@@ -490,55 +522,6 @@ class JobContextMenuService implements angular.IServiceProvider {
                 this.toastrService.showErrorToast("Error splitting job");
             }
         }
-    }
-
-    private async handleSplitJobMeetingPoint($event: MouseEvent, job: IDispatchJob): Promise<void> {
-        try {
-            if (!job.deliveryAddress) return;
-
-            const newAddress = await this.editAddressDialogService.openEditAddressDialog(
-                job.deliveryAddress,
-                $event,
-                'Set Meeting Point',
-                'Save'
-            );
-
-            if (!newAddress) return;
-
-            await this.processSplitJobAddress(newAddress, job);
-        } catch (error: any) {
-            console.log("Meeting point dialog cancelled or error:", error?.message);
-        }
-    }
-
-    private async processSplitJobAddress(addressDetails: IAddressViewModel, job: IDispatchJob): Promise<void> {
-        if (!addressDetails) {
-            console.log("Split jobs canceled!");
-            return;
-        }
-
-        const callData = {
-            jobID: job.id,
-            lat: Number(addressDetails.latitude),
-            long: Number(addressDetails.longitude),
-            toSuburbId: Number(addressDetails.toSuburbId),
-            toAddress: addressDetails.address,
-        };
-
-        if (!callData.toAddress || !callData.toSuburbId) return;
-
-        await this.DispatchData.updateSplitJobAddress(
-            callData.jobID,
-            callData.toSuburbId,
-            callData.toAddress,
-            callData.lat,
-            callData.long
-        );
-        await this.DispatchData.reRateSplitJob(callData.jobID);
-        await this.DispatchData.finishSplitJobProcess(callData.jobID);
-
-        this.toastrService.showSuccessToast("Job Successfully Split");
-        console.log("Job splitting complete!");
     }
 
     private async setFirstJobAction(

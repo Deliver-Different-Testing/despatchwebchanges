@@ -5,14 +5,13 @@
 import {
     splitJobApi,
     splitJob,
-    updateSplitJobAddress,
-    reRateSplitJob,
-    finishSplitJobProcess,
     restoreSplitJobs,
     unSplitJob,
+    SplitJobRequest,
 } from './splitJobApi';
 import {apiClient} from './apiClient';
 import {createMockApiError} from '../__testUtils__';
+import {AddressViewModel} from '../interfaces';
 
 jest.mock('./apiClient', () => ({
     apiClient: {
@@ -23,52 +22,36 @@ jest.mock('./apiClient', () => ({
 
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
+const createMockAddress = (): AddressViewModel => ({
+    addressLine1: '123 Main St',
+    addressLine2: '',
+    addressLine3: '',
+    addressLine4: '',
+    addressLine5: 'Auckland',
+    addressLine6: '',
+    addressLine7: '1010',
+    addressLine8: '',
+    latitude: -36.8485,
+    longitude: 174.7633,
+    fullAddress: '123 Main St, Auckland, 1010',
+    toSuburbId: 456,
+});
+
 describe('splitJobApi', () => {
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
     describe('splitJob', () => {
-        it('should call apiClient.post with correct URL and job ID', async () => {
+        it('should call apiClient.post with correct URL and request body', async () => {
             mockApiClient.post.mockResolvedValueOnce(undefined);
-            await splitJob(123);
-            expect(mockApiClient.post).toHaveBeenCalledWith('job/splitJob', {jobId: 123});
-        });
-    });
-
-    describe('updateSplitJobAddress', () => {
-        it('should call apiClient.post with correct URL and parameters', async () => {
-            mockApiClient.post.mockResolvedValueOnce(undefined);
-            await updateSplitJobAddress(123, 456, '123 Main St', -36.8485, 174.7633);
-            expect(mockApiClient.post).toHaveBeenCalledWith(
-                'job/UpdateSplitJobAddress',
-                null,
-                {
-                    params: {
-                        jobId: 123,
-                        toSuburbId: 456,
-                        address: '123 Main St',
-                        deliveryLat: -36.8485,
-                        deliveryLng: 174.7633,
-                    },
-                }
-            );
-        });
-    });
-
-    describe('reRateSplitJob', () => {
-        it('should call apiClient.post with correct URL and job ID', async () => {
-            mockApiClient.post.mockResolvedValueOnce(undefined);
-            await reRateSplitJob(123);
-            expect(mockApiClient.post).toHaveBeenCalledWith('job/ReRateSplitJob', {jobId: 123});
-        });
-    });
-
-    describe('finishSplitJobProcess', () => {
-        it('should call apiClient.post with correct URL and job ID', async () => {
-            mockApiClient.post.mockResolvedValueOnce(undefined);
-            await finishSplitJobProcess(123);
-            expect(mockApiClient.post).toHaveBeenCalledWith('job/finishSplitJobProcess', {jobId: 123});
+            const request: SplitJobRequest = {
+                jobId: 123,
+                meetingPointSuburbId: 456,
+                meetingPointAddress: createMockAddress(),
+            };
+            await splitJob(request);
+            expect(mockApiClient.post).toHaveBeenCalledWith('job/splitJob', request);
         });
     });
 
@@ -96,10 +79,7 @@ describe('splitJobApi', () => {
 
     describe('error handling', () => {
         it.each([
-            ['splitJob', () => splitJob(123)],
-            ['updateSplitJobAddress', () => updateSplitJobAddress(123, 456, 'Test', 0, 0)],
-            ['reRateSplitJob', () => reRateSplitJob(123)],
-            ['finishSplitJobProcess', () => finishSplitJobProcess(123)],
+            ['splitJob', () => splitJob({jobId: 123, meetingPointSuburbId: 456, meetingPointAddress: createMockAddress()})],
             ['restoreSplitJobs', () => restoreSplitJobs([123])],
             ['unSplitJob', () => unSplitJob(123)],
         ])('%s should propagate errors', async (_, apiCall) => {
@@ -112,9 +92,6 @@ describe('splitJobApi', () => {
     describe('splitJobApi object', () => {
         it('should export all functions', () => {
             expect(splitJobApi.splitJob).toBe(splitJob);
-            expect(splitJobApi.updateSplitJobAddress).toBe(updateSplitJobAddress);
-            expect(splitJobApi.reRateSplitJob).toBe(reRateSplitJob);
-            expect(splitJobApi.finishSplitJobProcess).toBe(finishSplitJobProcess);
             expect(splitJobApi.restoreSplitJobs).toBe(restoreSplitJobs);
             expect(splitJobApi.unSplitJob).toBe(unSplitJob);
         });
