@@ -531,32 +531,22 @@ class DispatchCoreService implements angular.IServiceProvider {
         });
     }
 
-    async splitJob(jobId: number): Promise<void> {
-        const data: IJobUpdateBaseRequest = {
-            jobId
+    async splitJob(
+        jobId: number,
+        meetingPointSuburbId: number,
+        meetingPointAddress: IAddressViewModel
+    ): Promise<void> {
+        const data = {
+            jobId,
+            meetingPointSuburbId,
+            meetingPointAddress
         };
 
         await this.$http.post(`job/splitJob`, data);
     }
 
-    async finishSplitJobProcess(jobId: number): Promise<void> {
-        const data: IJobUpdateBaseRequest = {
-            jobId
-        };
-
-        await this.$http.post(`job/finishSplitJobProcess`, data);
-    }
-
     async updatePODDetail(data: UpdatePodDetailsRequest): Promise<void> {
         await this.$http.post("job/UpdatePODDetails", data);
-    }
-
-    async reRateSplitJob(jobId: number): Promise<void> {
-        const data: IJobUpdateBaseRequest = {
-            jobId
-        };
-
-        await this.$http.post(`job/ReRateSplitJob`, data);
     }
 
     private async updateAddress(
@@ -602,27 +592,6 @@ class DispatchCoreService implements angular.IServiceProvider {
         addressData: IAddressViewModel
     ): Promise<void> {
         return this.updateAddress(jobId, prebook, addressData, 'pickup');
-    }
-
-    async updateSplitJobAddress(
-        jobId: number,
-        toSuburbId: number,
-        address: string,
-        lat: number,
-        lng: number
-    ): Promise<void> {
-        await this.$http.post(
-            `job/UpdateSplitJobAddress`,
-            null, {
-                params: {
-                    jobId,
-                    toSuburbId,
-                    address,
-                    deliveryLat: lat,
-                    deliveryLng: lng,
-                }
-            }
-        );
     }
 
     async updateJobDetail(

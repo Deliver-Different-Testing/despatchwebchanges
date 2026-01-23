@@ -6,47 +6,24 @@
  */
 
 import {apiClient} from './apiClient';
+import {AddressViewModel} from '../interfaces';
 
 /**
- * Split a job into multiple child jobs for separate delivery handling.
+ * Request model for splitting a job with a meeting point address.
  */
-export async function splitJob(jobId: number): Promise<void> {
-    await apiClient.post<void>('job/splitJob', {jobId});
+export interface SplitJobRequest {
+    jobId: number;
+    meetingPointSuburbId: number;
+    meetingPointAddress: AddressViewModel;
 }
 
 /**
- * Update the meeting address for a split job handoff point.
+ * Split a job into multiple child jobs with a specified meeting point.
+ * This is a combined operation that creates both child jobs with the
+ * meeting point address already set, re-rates them, and finalizes the split.
  */
-export async function updateSplitJobAddress(
-    jobId: number,
-    toSuburbId: number,
-    address: string,
-    deliveryLat: number,
-    deliveryLng: number
-): Promise<void> {
-    await apiClient.post<void>('job/UpdateSplitJobAddress', null, {
-        params: {
-            jobId,
-            toSuburbId,
-            address,
-            deliveryLat,
-            deliveryLng,
-        },
-    });
-}
-
-/**
- * Re-rate a split job after address changes.
- */
-export async function reRateSplitJob(jobId: number): Promise<void> {
-    await apiClient.post<void>('job/ReRateSplitJob', {jobId});
-}
-
-/**
- * Complete the split job process by consolidating information.
- */
-export async function finishSplitJobProcess(jobId: number): Promise<void> {
-    await apiClient.post<void>('job/finishSplitJobProcess', {jobId});
+export async function splitJob(request: SplitJobRequest): Promise<void> {
+    await apiClient.post<void>('job/splitJob', request);
 }
 
 /**
@@ -69,9 +46,6 @@ export async function unSplitJob(jobId: number): Promise<string> {
 
 export const splitJobApi = {
     splitJob,
-    updateSplitJobAddress,
-    reRateSplitJob,
-    finishSplitJobProcess,
     restoreSplitJobs,
     unSplitJob,
 };

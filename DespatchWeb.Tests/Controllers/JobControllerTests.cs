@@ -1073,12 +1073,31 @@ public class JobControllerTests
     public async Task SplitJob_ValidRequest_ReturnsOk()
     {
         // Arrange
-        var request = new JobUpdateBaseRequest { JobId = 1 };
+        var meetingPointAddress = new AddressViewModel(
+            addressLine1: "123 Meeting St",
+            addressLine2: string.Empty,
+            addressLine3: string.Empty,
+            addressLine4: string.Empty,
+            addressLine5: "Auckland",
+            addressLine6: string.Empty,
+            addressLine7: "1010",
+            addressLine8: string.Empty)
+        {
+            Latitude = -36.8485m,
+            Longitude = 174.7633m
+        };
+
+        var request = new SplitJobRequest
+        {
+            JobId = 1,
+            MeetingPointSuburbId = 50,
+            MeetingPointAddress = meetingPointAddress
+        };
         var staffInfo = new Suggestion { Id = 1, Text = "John Doe" };
 
         _tenantInfoServiceMock.Setup(x => x.GetStaffInfoAsync())
             .ReturnsAsync(staffInfo);
-        _splitJobServiceMock.Setup(x => x.SplitJobAsync(1, "John Doe"))
+        _splitJobServiceMock.Setup(x => x.SplitJobAsync(1, "John Doe", 50, It.IsAny<AddressViewModel>()))
             .ReturnsAsync((1, 2));
 
         var controller = CreateController();

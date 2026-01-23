@@ -19,10 +19,6 @@ public partial class DespatchContext
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobs.Any(j => j.UcjbId == jobId));
 
-    private static readonly Func<DespatchContext, int, Task<bool>> StaffExistsCompiled =
-        EF.CompileAsyncQuery((DespatchContext context, int staffId) =>
-            context.TucStaffs.Any(j => j.UcstId == staffId));
-
     private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveJobIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobs

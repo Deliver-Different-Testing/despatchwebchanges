@@ -1713,6 +1713,79 @@ public partial class JobRepository(
     }
 
     /// <summary>
+    /// Voids an archived job and optionally its related archived jobs, clearing all pricing fields.
+    /// Unlike live job voiding, this does not update courier statuses or close tasks (not applicable to archived jobs).
+    /// </summary>
+    /// <param name="data">Void request containing job ID, reason, and options for voiding related jobs.</param>
+    public async Task VoidArchivedJobAsync(VoidJobRequest data)
+    {
+        try
+        {
+            // Use selected job IDs if provided, otherwise fall back to legacy behavior
+            var jobsToVoid = data.SelectedJobIds is { Count: > 0 }
+                ? data.SelectedJobIds
+                : data.VoidSingleJobOnly
+                    ? await GetArchivedJobWithChildrenAsync(data.JobId)
+                    : await GetAllRelatedArchivedJobIdsIncludingParentAsync(data.JobId);
+
+            if (jobsToVoid.Count == 0) return;
+
+            // Verify all jobs are actually archived (reject mixed scenarios)
+            var liveJobCount = await Context.TucJobs
+                .CountAsync(j => jobsToVoid.Contains(j.UcjbId));
+
+            if (liveJobCount > 0)
+                throw new InvalidOperationException(
+                    $"Cannot void archived jobs: {liveJobCount} job(s) are not archived. Mixed live/archived voiding is not supported.");
+
+            // Execute a void operation and clear all pricing fields on archived jobs
+            await Context.TucJobArchives
+                .Where(j => jobsToVoid.Contains(j.UcjbId))
+                .TagWith($"VoidArchivedJob - Update {jobsToVoid.Count} archived jobs")
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.UcjbStatus, (int)JobStatus.Void)
+                    .SetProperty(j => j.UcjbVoid, true)
+                    .SetProperty(j => j.UcjbAmount, 0)
+                    .SetProperty(j => j.FuelSurchargeAmount, 0m)
+                    .SetProperty(j => j.Ppdamount, 0)
+                    .SetProperty(j => j.PpdexclusiveAmount, 0)
+                    .SetProperty(j => j.PickupAmount, 0)
+                    .SetProperty(j => j.DropoffAmount, 0)
+                    .SetProperty(j => j.Nwamount, 0)
+                    .SetProperty(j => j.Gssamount, 0)
+                    .SetProperty(j => j.RawAmount, 0)
+                    .SetProperty(j => j.PickupRawAmount, 0)
+                    .SetProperty(j => j.DropoffRawAmount, 0)
+                    .SetProperty(j => j.NwrawAmount, 0)
+                    .SetProperty(j => j.RawBaseAmount, 0));
+
+            // Clear pricing breakdowns for voided archived jobs
+            await Context.PricingBreakdownArchives
+                .Where(p => p.JobId.HasValue && jobsToVoid.Contains(p.JobId.Value))
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(p => p.ChargeAmount, 0m)
+                    .SetProperty(p => p.Total, 0)
+                    .SetProperty(p => p.Included, 0)
+                    .SetProperty(p => p.Charged, 0)
+                    .SetProperty(p => p.CostAmount, 0));
+
+            // Skip: courier status updates (not applicable to archived jobs)
+            // Skip: task closing (not applicable to archived jobs)
+
+            // Add void note to archived notes
+            await SaveNoteToMultipleArchivedJobsAsync(jobsToVoid, data.VoidReason);
+
+            await Context.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error voiding archived job {JobId} (SingleOnly: {VoidSingleJobOnly})",
+                data.JobId, data.VoidSingleJobOnly);
+            throw;
+        }
+    }
+
+    /// <summary>
     /// Voids a bulk job and optionally its related jobs, updating courier statuses and closing tasks.
     /// </summary>
     /// <param name="data">Void request containing bulk job ID, reason, and options for voiding related jobs.</param>
@@ -1806,55 +1879,6 @@ public partial class JobRepository(
             .Where(j => j.ParentId == parentJobId)
             .Select(j => j.UcjbId)
             .ToListAsync();
-    }
-
-    /// <summary>
-    /// Updates the meeting address for a split job handoff point.
-    /// </summary>
-    /// <param name="jobId">The split job ID.</param>
-    /// <param name="toSuburbId">The destination suburb ID.</param>
-    /// <param name="address">The meeting address.</param>
-    /// <param name="deliveryLat">Meeting point latitude.</param>
-    /// <param name="deliveryLng">Meeting point longitude.</param>
-    public async Task UpdateSplitJobAddressAsync(
-        int jobId,
-        int toSuburbId,
-        string address,
-        decimal deliveryLat,
-        decimal deliveryLng
-    )
-    {
-        await Context.Procedures.DESWEB_stpUpdateSplitJobMeetingAddressAsync(
-            jobId,
-            toSuburbId,
-            address,
-            deliveryLat,
-            deliveryLng
-        );
-    }
-
-    /// <summary>
-    /// Re-rates a split job after address changes.
-    /// </summary>
-    public async Task ReRateSplitJobAsync(int jobId) =>
-        await Context.Procedures.DES_stpJob_SplitJob_ReRateAsync(jobId, false);
-
-    /// <summary>
-    /// Completes the split job process by consolidating information and updating dispatch display.
-    /// </summary>
-    /// <param name="jobId">The split job ID.</param>
-    /// <param name="despatcher">The dispatcher username.</param>
-    public async Task FinishSplitJobProcessAsync(int jobId,
-        string despatcher)
-    {
-        await Context.Procedures.DES_stpJob_ColsolidateMarsInformationAsync(
-            jobId,
-            false,
-            despatcher,
-            null
-        );
-
-        await UpdateJobDisplayInDespatchAsync(jobId);
     }
 
     /// <summary>
@@ -4264,6 +4288,50 @@ public partial class JobRepository(
         relatedBulkJobIds.Add(jobWithRelations.ParentId ?? bulkJobId);
 
         return relatedBulkJobIds;
+    }
+
+    /// <summary>
+    /// Gets the archived job ID along with all its children IDs (if any).
+    /// </summary>
+    private async Task<List<int>> GetArchivedJobWithChildrenAsync(int jobId)
+    {
+        var childIds = await Context.TucJobArchives
+            .Where(j => j.ParentId == jobId)
+            .Select(j => j.UcjbId)
+            .TagWith($"GetArchivedJobWithChildren - Get children for archived job {jobId}")
+            .ToListAsync();
+
+        childIds.Add(jobId);
+        return childIds;
+    }
+
+    /// <summary>
+    /// Gets all related archived job IDs including parent and siblings.
+    /// </summary>
+    private async Task<List<int>> GetAllRelatedArchivedJobIdsIncludingParentAsync(int jobId)
+    {
+        // Single query to get both parent ID and all related job IDs
+        var jobWithRelations = await Context.TucJobArchives
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new
+            {
+                j.ParentId,
+                // If it has parent, get siblings; otherwise get children
+                RelatedJobIds = j.ParentId.HasValue
+                    ? j.Parent.InverseParent.Select(child => child.UcjbId).ToList()
+                    : j.InverseParent.Select(child => child.UcjbId).ToList()
+            })
+            .FirstOrDefaultAsync();
+
+        if (jobWithRelations == null)
+            return [];
+
+        var relatedJobIds = jobWithRelations.RelatedJobIds;
+
+        // Add the appropriate ID (parent or self)
+        relatedJobIds.Add(jobWithRelations.ParentId ?? jobId);
+
+        return relatedJobIds;
     }
 
     private async Task UpdateJobDisplayInDespatchAsync(int jobId) =>
