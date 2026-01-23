@@ -295,6 +295,7 @@ public class FlightStatsServiceTests(ITestOutputHelper testOutputHelper)
             "SendAsync",
             Times.Once(),
             ItExpr.Is<HttpRequestMessage>(req =>
+                req.RequestUri != null &&
                 req.RequestUri.ToString().Contains("includeAirlines=NZ") &&
                 req.RequestUri.ToString().Contains("QF") &&
                 req.RequestUri.ToString().Contains("AA")),

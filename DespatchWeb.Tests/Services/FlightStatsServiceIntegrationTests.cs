@@ -36,10 +36,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         _appKey = Environment.GetEnvironmentVariable("FlightStatusApiAppKey");
 
         // Fallback to launchSettings.json if environment variables not set
-        if (string.IsNullOrEmpty(_appId) || string.IsNullOrEmpty(_appKey))
-        {
-            (_appId, _appKey) = LoadCredentialsFromLaunchSettings();
-        }
+        if (string.IsNullOrEmpty(_appId) || string.IsNullOrEmpty(_appKey)) (_appId, _appKey) = LoadCredentialsFromLaunchSettings();
 
         _hasCredentials = !string.IsNullOrEmpty(_appId) && !string.IsNullOrEmpty(_appKey);
 
@@ -103,10 +100,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         return (null, null);
     }
 
-    public void Dispose()
-    {
-        _httpClient.Dispose();
-    }
+    public void Dispose() => _httpClient.Dispose();
 
     /// <summary>
     /// Checks if credentials are available and skips the test if not.
@@ -114,12 +108,9 @@ public class FlightStatsServiceIntegrationTests : IDisposable
     /// </summary>
     private bool ShouldSkipTest()
     {
-        if (!_hasCredentials)
-        {
-            _output.WriteLine("SKIPPED: FlightStats API credentials not configured.");
-            return true;
-        }
-        return false;
+        if (_hasCredentials) return false;
+        _output.WriteLine("SKIPPED: FlightStats API credentials not configured.");
+        return true;
     }
 
     #region Connections API Tests

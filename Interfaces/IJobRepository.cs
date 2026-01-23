@@ -82,8 +82,6 @@ public interface IJobRepository
     Task VoidJobAsync(VoidJobRequest data);
     Task VoidBulkJobAsync(VoidBulkJobRequest data); 
     Task<string> UnSplitJobAsync(int jobId);
-    Task<bool> CanJobBeSplitAsync(int jobId);
-    Task<List<int>> GetSplitJobChildrenAsync(int parentJobId);
 
     Task UpdateSplitJobAddressAsync(
         int jobId,
