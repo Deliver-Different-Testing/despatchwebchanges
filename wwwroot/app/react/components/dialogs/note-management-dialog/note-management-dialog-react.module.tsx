@@ -50,11 +50,12 @@ function renderDialog(): void {
         return notesApi.getNoteTypes();
     };
 
-    const handleCreateNote = async (request: CreateNoteRequest): Promise<JobNote> => {
+    const handleCreateNote = async (request: CreateNoteRequest): Promise<void> => {
         if (request.bulkJobId) {
-            return notesApi.createBulkJobNote(request);
+            await notesApi.createBulkJobNote(request);
+        } else {
+            await notesApi.createNote(request);
         }
-        return notesApi.createNote(request);
     };
 
     const handleUpdateNote = async (request: UpdateNoteRequest): Promise<void> => {
@@ -64,8 +65,8 @@ function renderDialog(): void {
         return notesApi.updateNote(request);
     };
 
-    const handleCreateNoteType = async (noteType: NoteType): Promise<NoteType> => {
-        return notesApi.createNoteType(noteType);
+    const handleCreateNoteType = async (noteType: NoteType): Promise<void> => {
+        await notesApi.createNoteType(noteType);
     };
 
     const handleShowToast = (message: string, type: 'success' | 'error' | 'warning' | 'info') => {

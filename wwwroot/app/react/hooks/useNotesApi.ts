@@ -99,7 +99,7 @@ export function useNoteTypes(options?: { enabled?: boolean }) {
 export function useCreateNote() {
     const queryClient = useQueryClient();
 
-    return useMutation<JobNote, Error, CreateNoteRequest>({
+    return useMutation<void, Error, CreateNoteRequest>({
         mutationFn: (note) => notesApi.createNote(note),
         onSuccess: async (_, variables) => {
             // Invalidate job notes query to refetch
@@ -131,7 +131,7 @@ export function useCreateNote() {
 export function useCreateBulkJobNote() {
     const queryClient = useQueryClient();
 
-    return useMutation<JobNote, Error, CreateNoteRequest>({
+    return useMutation<void, Error, CreateNoteRequest>({
         mutationFn: (note) => notesApi.createBulkJobNote(note),
         onSuccess: async (_, variables) => {
             if (variables.bulkJobId) {
@@ -246,7 +246,7 @@ export function useDeleteNote() {
 export function useCreateNoteType() {
     const queryClient = useQueryClient();
 
-    return useMutation<NoteType, Error, NoteType>({
+    return useMutation<void, Error, NoteType>({
         mutationFn: (noteType) => notesApi.createNoteType(noteType),
         onSuccess: async () => {
             // Invalidate note types query to refetch

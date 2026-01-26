@@ -311,7 +311,7 @@ describe('StickyNotes', () => {
             expect(props.noteManagementDialogService.openNoteDialog).toHaveBeenCalled();
         });
 
-        it('shows success toast after adding note', async () => {
+        it('reloads notes after dialog closes', async () => {
             const user = userEvent.setup();
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
@@ -320,12 +320,16 @@ describe('StickyNotes', () => {
                 expect(screen.getByText('This is an internal note')).toBeInTheDocument();
             });
 
+            // Clear the mock to track new calls
+            mockedNotesApi.getJobNotes.mockClear();
+
             const addIcon = screen.getByText('note_add');
             const addButton = addIcon.closest('button');
             await user.click(addButton!);
 
+            // Notes should be reloaded after dialog closes
             await waitFor(() => {
-                expect(props.showSuccessToast).toHaveBeenCalledWith('Note added successfully');
+                expect(mockedNotesApi.getJobNotes).toHaveBeenCalled();
             });
         });
     });
@@ -345,7 +349,7 @@ describe('StickyNotes', () => {
             expect(props.noteManagementDialogService.openNoteDialog).toHaveBeenCalled();
         });
 
-        it('shows success toast after editing note', async () => {
+        it('reloads notes after edit dialog closes', async () => {
             const user = userEvent.setup();
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
@@ -354,10 +358,14 @@ describe('StickyNotes', () => {
                 expect(screen.getByText('This is an internal note')).toBeInTheDocument();
             });
 
+            // Clear the mock to track new calls
+            mockedNotesApi.getJobNotes.mockClear();
+
             await user.click(screen.getByText('This is an internal note'));
 
+            // Notes should be reloaded after dialog closes
             await waitFor(() => {
-                expect(props.showSuccessToast).toHaveBeenCalledWith('Note updated successfully');
+                expect(mockedNotesApi.getJobNotes).toHaveBeenCalled();
             });
         });
     });

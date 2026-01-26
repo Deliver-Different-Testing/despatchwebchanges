@@ -53,9 +53,9 @@ export interface NoteManagementDialogProps {
     onClose: () => void;
     onSave: () => void;
     onLoadNoteTypes: () => Promise<NoteType[]>;
-    onCreateNote: (note: CreateNoteRequest) => Promise<JobNote>;
+    onCreateNote: (note: CreateNoteRequest) => Promise<void>;
     onUpdateNote: (note: UpdateNoteRequest) => Promise<void>;
-    onCreateNoteType: (noteType: NoteType) => Promise<NoteType>;
+    onCreateNoteType: (noteType: NoteType) => Promise<void>;
     showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
 }
 

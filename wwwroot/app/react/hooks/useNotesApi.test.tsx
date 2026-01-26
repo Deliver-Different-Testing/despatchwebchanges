@@ -211,15 +211,7 @@ describe('useCreateNote', () => {
     });
 
     it('should create a note successfully', async () => {
-        const createdNote: JobNote = {
-            noteId: 3,
-            noteTypeId: 1,
-            noteText: 'New note',
-            isImportant: false,
-            jobId: 100,
-            createdDate: dayjs(),
-        };
-        mockNotesApi.createNote.mockResolvedValueOnce(createdNote);
+        mockNotesApi.createNote.mockResolvedValueOnce(undefined);
 
         const {result} = renderHook(() => useCreateNote(), {wrapper: createWrapper()});
 
@@ -272,15 +264,7 @@ describe('useCreateBulkJobNote', () => {
     });
 
     it('should create a bulk job note successfully', async () => {
-        const createdNote: JobNote = {
-            noteId: 4,
-            noteTypeId: 1,
-            noteText: 'Bulk note',
-            isImportant: false,
-            bulkJobId: 200,
-            createdDate: dayjs(),
-        };
-        mockNotesApi.createBulkJobNote.mockResolvedValueOnce(createdNote);
+        mockNotesApi.createBulkJobNote.mockResolvedValueOnce(undefined);
 
         const {result} = renderHook(() => useCreateBulkJobNote(), {wrapper: createWrapper()});
 
@@ -402,8 +386,7 @@ describe('useCreateNoteType', () => {
     });
 
     it('should create a note type successfully', async () => {
-        const createdNoteType: NoteType = {id: 4, text: 'Custom', isPublic: true};
-        mockNotesApi.createNoteType.mockResolvedValueOnce(createdNoteType);
+        mockNotesApi.createNoteType.mockResolvedValueOnce(undefined);
 
         const {result} = renderHook(() => useCreateNoteType(), {wrapper: createWrapper()});
 
@@ -416,6 +399,5 @@ describe('useCreateNoteType', () => {
         });
 
         expect(mockNotesApi.createNoteType).toHaveBeenCalledWith({text: 'Custom', isPublic: true});
-        expect(result.current.data).toEqual(createdNoteType);
     });
 });

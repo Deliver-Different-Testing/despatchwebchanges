@@ -128,6 +128,70 @@ public class BaseJobRepositoryTests : IDisposable
         result.First().NoteText.Should().Be("Note for job 1");
     }
 
+    [Fact]
+    public async Task GetBulkJobNotesByBulkJobIdAsync_ReturnsNotesSortedByCreatedDateDescending()
+    {
+        // Arrange
+        const int bulkJobId = 100;
+        var oldestDate = new DateTime(2024, 1, 1, 10, 0, 0);
+        var middleDate = new DateTime(2024, 6, 15, 14, 30, 0);
+        var newestDate = new DateTime(2024, 12, 31, 23, 59, 0);
+
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
+        _context.TblBulkJobNotes.AddRange(
+            CreateBulkJobNote(1, bulkJobId, "Middle note", middleDate),
+            CreateBulkJobNote(2, bulkJobId, "Oldest note", oldestDate),
+            CreateBulkJobNote(3, bulkJobId, "Newest note", newestDate)
+        );
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetBulkJobNotesByBulkJobIdAsync(bulkJobId);
+
+        // Assert
+        result.Should().HaveCount(3);
+        result[0].NoteText.Should().Be("Newest note");
+        result[1].NoteText.Should().Be("Middle note");
+        result[2].NoteText.Should().Be("Oldest note");
+    }
+
+    #endregion
+
+    #region GetNotesByJobIdAsync Tests (Archived Notes)
+
+    [Fact]
+    public async Task GetNotesByJobIdAsync_WithArchivedNotes_ReturnsNotesSortedByCreatedDateDescending()
+    {
+        // Arrange
+        const int jobId = 100;
+        var oldestDate = new DateTime(2024, 1, 1, 10, 0, 0);
+        var middleDate = new DateTime(2024, 6, 15, 14, 30, 0);
+        var newestDate = new DateTime(2024, 12, 31, 23, 59, 0);
+
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TucJobArchives.Add(CreateArchivedJob(jobId, "ARCH001"));
+        _context.TucNoteArchives.AddRange(
+            CreateArchivedNote(1, jobId, "Middle note", middleDate),
+            CreateArchivedNote(2, jobId, "Oldest note", oldestDate),
+            CreateArchivedNote(3, jobId, "Newest note", newestDate)
+        );
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetNotesByJobIdAsync(jobId);
+
+        // Assert
+        result.Should().HaveCount(3);
+        result[0].NoteText.Should().Be("Newest note");
+        result[1].NoteText.Should().Be("Middle note");
+        result[2].NoteText.Should().Be("Oldest note");
+    }
+
     #endregion
 
     #region DeleteNoteAsync Tests
@@ -443,14 +507,14 @@ public class BaseJobRepositoryTests : IDisposable
         JobNumber = jobNumber
     };
 
-    private static TblBulkJobNote CreateBulkJobNote(int noteId, int bulkJobId, string noteText) => new()
+    private static TblBulkJobNote CreateBulkJobNote(int noteId, int bulkJobId, string noteText, DateTime? createdDate = null) => new()
     {
         NoteId = noteId,
         BulkJobId = bulkJobId,
         NoteText = noteText,
         NoteTypeId = 1,
         IsImportant = false,
-        CreatedDate = DateTime.Now // Explicit to avoid SQLite getdate() issue
+        CreatedDate = createdDate ?? DateTime.Now // Explicit to avoid SQLite getdate() issue
     };
 
     private static TucJob CreateJob(int id, string jobNumber) => new()
@@ -488,6 +552,17 @@ public class BaseJobRepositoryTests : IDisposable
         UcjbId = id,
         UcjbNumber = jobNumber,
         ParentId = parentId
+    };
+
+    private static TucNoteArchive CreateArchivedNote(int noteId, int jobId, string noteText, DateTime? createdDate = null) => new()
+    {
+        NoteId = noteId,
+        JobId = jobId,
+        NoteText = noteText,
+        NoteTypeId = 1,
+        IsImportant = false,
+        CreatedDate = createdDate,
+        UpdatedDate = createdDate // Explicit to avoid SQLite getdate() issue
     };
 
     #endregion

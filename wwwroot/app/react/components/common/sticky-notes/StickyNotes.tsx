@@ -174,7 +174,7 @@ export class StickyNotes extends React.Component<StickyNotesProps, StickyNotesSt
     };
 
     private handleAddNote = async (event: React.MouseEvent<HTMLElement>): Promise<void> => {
-        const {jobId, bulkJobId, isRecurringJob, noteManagementDialogService, showSuccessToast} = this.props;
+        const {jobId, bulkJobId, isRecurringJob, noteManagementDialogService} = this.props;
 
         const emptyNote: JobNote = {
             noteId: 0,
@@ -189,7 +189,6 @@ export class StickyNotes extends React.Component<StickyNotesProps, StickyNotesSt
         try {
             await noteManagementDialogService.openNoteDialog(event.nativeEvent, emptyNote);
             await this.loadNotes();
-            showSuccessToast?.('Note added successfully');
         } catch (error) {
             // Dialog was canceled
             if (!error) return;
@@ -198,12 +197,11 @@ export class StickyNotes extends React.Component<StickyNotesProps, StickyNotesSt
     };
 
     private handleEditNote = async (event: React.MouseEvent<HTMLElement>, note: JobNote): Promise<void> => {
-        const {noteManagementDialogService, showSuccessToast} = this.props;
+        const {noteManagementDialogService} = this.props;
 
         try {
             await noteManagementDialogService.openNoteDialog(event.nativeEvent, note);
             await this.loadNotes();
-            showSuccessToast?.('Note updated successfully');
         } catch (error) {
             // Dialog was canceled
             if (!error) return;

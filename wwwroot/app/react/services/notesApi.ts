@@ -50,17 +50,15 @@ export async function getNoteTypes(): Promise<NoteType[]> {
 /**
  * Create a new note
  */
-export async function createNote(note: CreateNoteRequest): Promise<JobNote> {
-    const created = await apiClient.post<JobNoteDto>('note/CreateNote', note);
-    return transformJobNoteDto(created);
+export async function createNote(note: CreateNoteRequest): Promise<void> {
+    await apiClient.post('note/CreateNote', note);
 }
 
 /**
  * Create a new bulk job note
  */
-export async function createBulkJobNote(note: CreateNoteRequest): Promise<JobNote> {
-    const created = await apiClient.post<JobNoteDto>('note/CreateBulkJobNote', note);
-    return transformJobNoteDto(created);
+export async function createBulkJobNote(note: CreateNoteRequest): Promise<void> {
+    await apiClient.post('note/CreateBulkJobNote', note);
 }
 
 /**
@@ -87,8 +85,8 @@ export async function deleteNote(noteId: number): Promise<void> {
 /**
  * Create a new note type
  */
-export async function createNoteType(noteType: NoteType): Promise<NoteType> {
-    return apiClient.post<NoteType>('note/CreateNoteType', noteType);
+export async function createNoteType(noteType: NoteType): Promise<void> {
+    await apiClient.post('note/CreateNoteType', noteType);
 }
 
 export const notesApi = {
