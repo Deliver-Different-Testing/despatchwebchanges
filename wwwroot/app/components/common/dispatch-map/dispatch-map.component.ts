@@ -129,7 +129,13 @@ class DispatchMapController extends BaseController {
 
                 // Check if we have jobs data already
                 if ((this.jobs && this.jobs.length > 0) || this.currentJob) {
-                    return this.updateDisplayedJobs();
+                    this.updateDisplayedJobs();
+                }
+
+                // Apply pending showAvailableCouriers if it was set before map initialized
+                if (this.pendingChanges.showAvailableCouriers || this.showAvailableCouriers) {
+                    this.fetchCourierPositions()
+                        .catch(error => console.error('[DispatchMapController] Error fetching initial couriers:', error));
                 }
             })
             .catch((error) => {

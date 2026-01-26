@@ -622,7 +622,7 @@ public class CourierRepository(
                 .Where(c => c.Active && c.TblClearListAreaOrder != null)
                 .Where(c => c.CourierFleetId == (int)CourierFleet.UaAucklandP2P ||
                             (c.CourierLogInOut != null &&
-                             c.CourierLogInOut.LogInTime >= currentDateOnly &&  // ✅ SARGable
+                             c.CourierLogInOut.LogInTime >= currentDateOnly && 
                              c.CourierLogInOut.LogOutTime == null))
                 .Where(c => c.CourierFleet.DisplayOnClearlistsDespatch)
                 .GroupJoin(
@@ -729,10 +729,7 @@ public class CourierRepository(
                 .GroupBy(j => j.CourierId)
                 .ToDictionary(g => g.Key, g => g.Count());
 
-            foreach (var courier in allCourierData)
-            {
-                courier.JobCount = jobCountsByCourier.GetValueOrDefault(courier.UccrId, 0);
-            }
+            foreach (var courier in allCourierData) courier.JobCount = jobCountsByCourier.GetValueOrDefault(courier.UccrId, 0);
 
             var jobsByCourier = allJobs
                 .GroupBy(j => j.CourierId)
@@ -1142,14 +1139,12 @@ public class CourierRepository(
         };
     }
 
-    private static List<Destination> BuildDestinations(string deliver)
-    {
-        return deliver
+    private static List<Destination> BuildDestinations(string deliver) =>
+        deliver
             ?.Split(',')
             .Select((d, index) => new Destination { Id = index + 1, Label = d.Trim() })
             .Where(y => !string.IsNullOrWhiteSpace(y.Label))
             .ToList() ?? [];
-    }
 
     public async Task<List<Suggestion>> SearchAllCouriersAsync(string searchTerm)
     {
@@ -1176,9 +1171,8 @@ public class CourierRepository(
         return couriers;
     }
 
-    public async Task<CourierDataDashboardViewModel> GetCourierDetailsForDashboardAsync(int courierId)
-    {
-        var courierData = await Context.TucCouriers
+    public async Task<CourierDataDashboardViewModel> GetCourierDetailsForDashboardAsync(int courierId) =>
+        await Context.TucCouriers
             .AsNoTracking()
             .Where(c => c.UccrId == courierId)
             .Select(c => new CourierDataDashboardViewModel
@@ -1227,9 +1221,6 @@ public class CourierRepository(
                 }
             })
             .FirstOrDefaultAsync();
-
-        return courierData;
-    }
 
     public async Task<CourierCompliancePaginatedResponse> GetAllCourierComplianceAsync(
         CourierComplianceFilterRequest request)
@@ -1287,6 +1278,7 @@ public class CourierRepository(
 
         // Get all counts in a single query using GroupBy
         var aggregates = await query
+            .AsNoTracking()
             .GroupBy(c => 1)
             .Select(g => new
             {
@@ -1348,11 +1340,9 @@ public class CourierRepository(
             .ToListAsync();
 
         foreach (var compliance in couriersCompliance)
-        {
             compliance.ExpiryDate = compliance.ExpiryDate.HasValue
                 ? TimeZoneHelper.SetDateTimeWithTimeZone(compliance.ExpiryDate.Value, tenantTimezone)
                 : null;
-        }
 
         return new CourierCompliancePaginatedResponse
         {
@@ -1420,6 +1410,7 @@ public class CourierRepository(
         }
 
         var totalActiveDrivers = await query
+            .AsNoTracking()
             .Where(c => c.Courier != null &&
                         c.Courier.CourierLogInOut != null &&
                         (c.Courier.CourierLogInOut.LogOutTime == null || c.Courier.CourierLogInOut.LogOutTime > now))
@@ -1476,6 +1467,7 @@ public class CourierRepository(
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
         var afterHoursScheduleData = await groupedQuery
+            .AsNoTracking()
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
@@ -1528,8 +1520,8 @@ public class CourierRepository(
         var pageSize = Math.Max(1, Math.Min(100, request.PageSize));
 
         var query = Context.TucCouriers
-            .AsSplitQuery()
             .AsNoTracking()
+            .AsSplitQuery()
             .Where(c => c.CourierLogInOut != null &&
                         c.CourierLogInOut.LogInTime.Date == today.Date);
 
@@ -1573,7 +1565,6 @@ public class CourierRepository(
 
         var totalCount = sessionData.Count;
 
-        // Early return if no data (Article tip #4 - Use Any())
         if (totalCount == 0)
         {
             return new TodayActiveDriversPaginatedResponse
@@ -1636,7 +1627,6 @@ public class CourierRepository(
             .ToListAsync();
 
         if (couriers.Count == 0)
-        {
             return new TodayActiveDriversPaginatedResponse
             {
                 Items = new List<TodayActiveDriversViewModel>(),
@@ -1647,12 +1637,11 @@ public class CourierRepository(
                 TotalDriversActiveToday = totalDriversActiveToday,
                 AverageSessionTime = averageSessionTime
             };
-        }
 
         var courierIds = couriers.Select(c => c.UccrId).ToList();
 
         var deliveryCounts = await Context.TucJobs
-            .AsNoTracking() // Article tip #2
+            .AsNoTracking()
             .Where(j => j.UcjbCourierId.HasValue &&
                         courierIds.Contains(j.UcjbCourierId.Value) &&
                         j.UcjbDate.Date == today.Date)
@@ -1804,7 +1793,6 @@ public class CourierRepository(
 
         // Early return if pagination beyond data
         if (couriers.Count == 0)
-        {
             return new CourierDailyEarningsPaginatedResponse
             {
                 Items = new List<CourierDailyEarningsViewModel>(),
@@ -1816,7 +1804,6 @@ public class CourierRepository(
                 TotalActiveDrivers = totalCount,
                 TotalDeliveriesToday = totalDeliveriesToday
             };
-        }
 
         var courierIds = couriers.Select(c => c.UccrId).ToList();
 
