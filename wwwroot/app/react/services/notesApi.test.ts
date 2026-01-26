@@ -163,33 +163,18 @@ describe('notesApi', () => {
             jobId: 100,
         };
 
-        const mockCreatedDto = {
-            noteId: 3,
-            noteTypeId: 1,
-            noteText: 'New note',
-            isImportant: false,
-            jobId: 100,
-            createdDate: '2024-01-18T12:00:00Z',
-            createdBy: 1,
-            createdByName: 'Admin',
-        };
-
         it('should call correct endpoint with create request', async () => {
-            mockApiClient.post.mockResolvedValueOnce(mockCreatedDto);
+            mockApiClient.post.mockResolvedValueOnce(undefined);
 
             await notesApi.createNote(createRequest);
 
             expect(mockApiClient.post).toHaveBeenCalledWith('note/CreateNote', createRequest);
         });
 
-        it('should transform returned DTO to JobNote', async () => {
-            mockApiClient.post.mockResolvedValueOnce(mockCreatedDto);
+        it('should complete without returning data', async () => {
+            mockApiClient.post.mockResolvedValueOnce(undefined);
 
-            const result = await notesApi.createNote(createRequest);
-
-            expect(result.noteId).toBe(3);
-            expect(dayjs.isDayjs(result.createdDate)).toBe(true);
-            expect(result._createdDateStr).toBeDefined();
+            await expect(notesApi.createNote(createRequest)).resolves.toBeUndefined();
         });
     });
 
@@ -246,13 +231,11 @@ describe('notesApi', () => {
     describe('createNoteType', () => {
         it('should call correct endpoint with note type', async () => {
             const newNoteType = {text: 'Custom Type', isPublic: true, description: 'A custom note type'};
-            const mockCreatedType = {...newNoteType, id: 5};
-            mockApiClient.post.mockResolvedValueOnce(mockCreatedType);
+            mockApiClient.post.mockResolvedValueOnce(undefined);
 
-            const result = await notesApi.createNoteType(newNoteType);
+            await notesApi.createNoteType(newNoteType);
 
             expect(mockApiClient.post).toHaveBeenCalledWith('note/CreateNoteType', newNoteType);
-            expect(result).toEqual(mockCreatedType);
         });
     });
 });

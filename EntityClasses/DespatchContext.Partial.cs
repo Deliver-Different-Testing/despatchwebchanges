@@ -172,6 +172,7 @@ public partial class DespatchContext
                 context.TucNotes
                     .AsNoTracking()
                     .Where(n => n.JobId == jobId)
+                    .OrderByDescending(n => n.CreatedDate)
                     .Select(NoteMappings.ActiveNoteMap));
 
     private static readonly Func<DespatchContext, int, Task<int>> GetUnreadMessageCountCompiled =

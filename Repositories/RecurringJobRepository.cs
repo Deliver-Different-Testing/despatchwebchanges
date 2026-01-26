@@ -518,6 +518,7 @@ public class RecurringJobRepository(
             .AsSplitQuery()
             .AsNoTracking()
             .Where(n => n.JobBookingId == effectivePrebookId)
+            .OrderByDescending(n => n.CreatedDate)
             .Select(NoteMappings.ActiveNoteMap)
             .ToListAsync();
 

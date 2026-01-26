@@ -1242,6 +1242,42 @@ public class RecurringJobRepositoryTests : IDisposable
 
     #endregion
 
+    #region GetRecurringNotesByJobIdAsync Tests
+
+    [Fact]
+    public async Task GetRecurringNotesByJobIdAsync_ReturnsNotesSortedByCreatedDateDescending()
+    {
+        // Arrange
+        const int jobBookingId = 100;
+        var oldestDate = new DateTime(2024, 1, 1, 10, 0, 0);
+        var middleDate = new DateTime(2024, 6, 15, 14, 30, 0);
+        var newestDate = new DateTime(2024, 12, 31, 23, 59, 0);
+
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
+
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TucJobBookings.Add(CreateJobBooking(jobBookingId));
+        _context.TucNotes.AddRange(
+            CreateNote(1, jobBookingId, "Middle note", middleDate),
+            CreateNote(2, jobBookingId, "Oldest note", oldestDate),
+            CreateNote(3, jobBookingId, "Newest note", newestDate)
+        );
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetRecurringNotesByJobIdAsync(jobBookingId);
+
+        // Assert
+        result.Should().HaveCount(3);
+        result[0].NoteText.Should().Be("Newest note");
+        result[1].NoteText.Should().Be("Middle note");
+        result[2].NoteText.Should().Be("Oldest note");
+    }
+
+    #endregion
+
     #region GetRecurringJobsListAsync - Filtering Tests
 
     [Fact]
@@ -1452,6 +1488,17 @@ public class RecurringJobRepositoryTests : IDisposable
         IsActive = true,
         IsPublic = false,
         IsSystemDefined = true
+    };
+
+    private static TucNote CreateNote(int noteId, int jobBookingId, string noteText, DateTime createdDate) => new()
+    {
+        NoteId = noteId,
+        JobBookingId = jobBookingId,
+        NoteText = noteText,
+        NoteTypeId = 1,
+        IsImportant = false,
+        CreatedDate = createdDate,
+        UpdatedDate = createdDate // Explicit to avoid SQLite getdate() issue
     };
 
     #endregion

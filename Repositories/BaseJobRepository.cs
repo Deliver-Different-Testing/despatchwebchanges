@@ -413,6 +413,7 @@ public class BaseJobRepository(
             .AsSplitQuery()
             .AsNoTracking()
             .Where(n => n.BulkJobId == bulkJobId)
+            .OrderByDescending(n => n.CreatedDate)
             .Select(n => new TucNoteViewModel
             {
                 NoteId = n.NoteId,
@@ -778,7 +779,9 @@ public class BaseJobRepository(
         var query = CreateArchivedNoteQuery()
             .Where(note => note.JobId == effectiveJobId || note.JobBookingId == effectiveJobId);
 
-        return await query.ToListAsync();
+        var notes = await query.ToListAsync();
+        // Order in memory as TucNoteViewModel.CreatedDate is DateTimeOffset which some providers don't support in ORDER BY
+        return notes.OrderByDescending(note => note.CreatedDate).ToList();
     }
 
     private IQueryable<TucNoteViewModel> CreateArchivedNoteQuery() => CreateArchivedNoteQuery(Context);
