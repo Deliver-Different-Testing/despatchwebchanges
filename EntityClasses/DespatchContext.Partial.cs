@@ -510,5 +510,46 @@ public partial class DespatchContext
                 .HasForeignKey(n => n.UpdatedBy)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        // JobDeliveryJourneyArchive - navigation properties to match JobDeliveryJourney
+        modelBuilder.Entity<JobDeliveryJourneyArchive>(entity =>
+        {
+            entity.HasOne(d => d.Courier).WithMany()
+                .HasForeignKey(d => d.CourierId);
+
+            entity.HasOne(d => d.Flight).WithMany()
+                .HasForeignKey(d => d.FlightId);
+
+            entity.HasOne(d => d.Job).WithMany()
+                .HasForeignKey(d => d.JobId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(d => d.NewAgent).WithMany()
+                .HasForeignKey(d => d.NewAgentId);
+
+            entity.HasOne(d => d.NewCourier).WithMany()
+                .HasForeignKey(d => d.NewCourierId);
+
+            entity.HasOne(d => d.NewInternalStatus).WithMany()
+                .HasForeignKey(d => d.NewInternalStatusId);
+
+            entity.HasOne(d => d.NewJobStatus).WithMany()
+                .HasForeignKey(d => d.NewJobStatusId);
+
+            entity.HasOne(d => d.OldAgent).WithMany()
+                .HasForeignKey(d => d.OldAgentId);
+
+            entity.HasOne(d => d.OldCourier).WithMany()
+                .HasForeignKey(d => d.OldCourierId);
+
+            entity.HasOne(d => d.OldInternalStatus).WithMany()
+                .HasForeignKey(d => d.OldInternalStatusId);
+
+            entity.HasOne(d => d.OldJobStatus).WithMany()
+                .HasForeignKey(d => d.OldJobStatusId);
+
+            entity.HasOne(d => d.Staff).WithMany()
+                .HasForeignKey(d => d.StaffId);
+        });
     }
 }

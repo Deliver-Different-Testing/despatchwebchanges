@@ -275,7 +275,11 @@ public partial class TucCourier
 
     public virtual TblCourierLogInOut CourierLogInOut { get; set; }
 
-    public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneys { get; set; } = new List<JobDeliveryJourney>();
+    public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneyCouriers { get; set; } = new List<JobDeliveryJourney>();
+
+    public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneyNewCouriers { get; set; } = new List<JobDeliveryJourney>();
+
+    public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneyOldCouriers { get; set; } = new List<JobDeliveryJourney>();
 
     public virtual TblBulkRegion Region { get; set; }
 

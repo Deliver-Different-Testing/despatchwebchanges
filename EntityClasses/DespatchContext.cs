@@ -924,7 +924,7 @@ public partial class DespatchContext : DbContext
                 .IsRequired()
                 .HasMaxLength(20);
 
-            entity.HasOne(d => d.Courier).WithMany(p => p.JobDeliveryJourneys)
+            entity.HasOne(d => d.Courier).WithMany(p => p.JobDeliveryJourneyCouriers)
                 .HasForeignKey(d => d.CourierId)
                 .HasConstraintName("FK_JobDeliveryJourney_Courier");
 
@@ -941,6 +941,10 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.NewAgentId)
                 .HasConstraintName("FK_JobDeliveryJourney_NewAgent");
 
+            entity.HasOne(d => d.NewCourier).WithMany(p => p.JobDeliveryJourneyNewCouriers)
+                .HasForeignKey(d => d.NewCourierId)
+                .HasConstraintName("FK_JobDeliveryJourney_NewCourier");
+
             entity.HasOne(d => d.NewInternalStatus).WithMany(p => p.JobDeliveryJourneyNewInternalStatuses)
                 .HasForeignKey(d => d.NewInternalStatusId)
                 .HasConstraintName("FK_JobDeliveryJourney_NewInternalStatus");
@@ -952,6 +956,10 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.OldAgent).WithMany(p => p.JobDeliveryJourneyOldAgents)
                 .HasForeignKey(d => d.OldAgentId)
                 .HasConstraintName("FK_JobDeliveryJourney_OldAgent");
+
+            entity.HasOne(d => d.OldCourier).WithMany(p => p.JobDeliveryJourneyOldCouriers)
+                .HasForeignKey(d => d.OldCourierId)
+                .HasConstraintName("FK_JobDeliveryJourney_OldCourier");
 
             entity.HasOne(d => d.OldInternalStatus).WithMany(p => p.JobDeliveryJourneyOldInternalStatuses)
                 .HasForeignKey(d => d.OldInternalStatusId)
@@ -1006,6 +1014,55 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UpdatedByType)
                 .IsRequired()
                 .HasMaxLength(20);
+
+            entity.HasOne(d => d.Courier).WithMany()
+                .HasForeignKey(d => d.CourierId)
+                .HasConstraintName("FK_JobDeliveryJourneyArchive_Courier");
+
+            entity.HasOne(d => d.Flight).WithMany()
+                .HasForeignKey(d => d.FlightId)
+                .HasConstraintName("FK_JobDeliveryJourneyArchive_Flight");
+
+            entity.HasOne(d => d.Job).WithMany()
+                .HasForeignKey(d => d.JobId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_JobDeliveryJourneyArchive_Job");
+
+            entity.HasOne(d => d.NewAgent).WithMany()
+                .HasForeignKey(d => d.NewAgentId)
+                .HasConstraintName("FK_JobDeliveryJourneyArchive_NewAgent");
+
+            entity.HasOne(d => d.NewCourier).WithMany()
+                .HasForeignKey(d => d.NewCourierId)
+                .HasConstraintName("FK_JobDeliveryJourneyArchive_NewCourier");
+
+            entity.HasOne(d => d.NewInternalStatus).WithMany()
+                .HasForeignKey(d => d.NewInternalStatusId)
+                .HasConstraintName("FK_JobDeliveryJourneyArchive_NewInternalStatus");
+
+            entity.HasOne(d => d.NewJobStatus).WithMany()
+                .HasForeignKey(d => d.NewJobStatusId)
+                .HasConstraintName("FK_JobDeliveryJourneyArchive_NewJobStatus");
+
+            entity.HasOne(d => d.OldAgent).WithMany()
+                .HasForeignKey(d => d.OldAgentId)
+                .HasConstraintName("FK_JobDeliveryJourneyArchive_OldAgent");
+
+            entity.HasOne(d => d.OldCourier).WithMany()
+                .HasForeignKey(d => d.OldCourierId)
+                .HasConstraintName("FK_JobDeliveryJourneyArchive_OldCourier");
+
+            entity.HasOne(d => d.OldInternalStatus).WithMany()
+                .HasForeignKey(d => d.OldInternalStatusId)
+                .HasConstraintName("FK_JobDeliveryJourneyArchive_OldInternalStatus");
+
+            entity.HasOne(d => d.OldJobStatus).WithMany()
+                .HasForeignKey(d => d.OldJobStatusId)
+                .HasConstraintName("FK_JobDeliveryJourneyArchive_OldJobStatus");
+
+            entity.HasOne(d => d.Staff).WithMany()
+                .HasForeignKey(d => d.StaffId)
+                .HasConstraintName("FK_JobDeliveryJourneyArchive_Staff");
         });
 
         modelBuilder.Entity<JobRecoveryAgent>(entity =>

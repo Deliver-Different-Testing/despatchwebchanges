@@ -60,8 +60,8 @@ public partial class DeliveryJourneyService(
         var timezone = infoService.GetTenantTimeZone();
 
         var eventDtos = await context.TucEvents
-            .AsSplitQuery()
             .AsNoTracking()
+            .AsSplitQuery()
             .Where(e => e.UcevJobId == jobId)
             .Select(e => new DeliveryJourneyDto
             {
@@ -71,18 +71,18 @@ public partial class DeliveryJourneyService(
                 Time = e.UcevTime,
                 Closed = e.UcevClosed,
                 Despatcher = e.UcevDespatcher,
-                AssignedToFirstName = e.UcevStaffIdinNavigation.UcstFirstName,
-                AssignedToLastName = e.UcevStaffIdinNavigation.UcstLastName,
-                CompletedByFirstName = e.UcevStaffIdoutNavigation.UcstFirstName,
-                CompletedByLastName = e.UcevStaffIdoutNavigation.UcstLastName,
+                AssignedToFirstName = e.UcevStaffIdinNavigation != null ? e.UcevStaffIdinNavigation.UcstFirstName : null,
+                AssignedToLastName = e.UcevStaffIdinNavigation != null ? e.UcevStaffIdinNavigation.UcstLastName : null,
+                CompletedByFirstName = e.UcevStaffIdoutNavigation != null ? e.UcevStaffIdoutNavigation.UcstFirstName : null,
+                CompletedByLastName = e.UcevStaffIdoutNavigation != null ? e.UcevStaffIdoutNavigation.UcstLastName : null,
                 Audits = e.TucEventAudits
                     .OrderByDescending(a => a.UceaChangedAt)
                     .Select(a => new EventAuditDto
                     {
                         ChangeType = a.UceaChangeType,
                         ColumnName = a.UceaColumnName,
-                        StaffFirstName = a.UceaStaff.UcstFirstName,
-                        StaffLastName = a.UceaStaff.UcstLastName,
+                        StaffFirstName = a.UceaStaff != null ? a.UceaStaff.UcstFirstName : null,
+                        StaffLastName = a.UceaStaff != null ? a.UceaStaff.UcstLastName : null,
                         ChangedAt = a.UceaChangedAt
                     })
                     .ToList()
@@ -133,8 +133,8 @@ public partial class DeliveryJourneyService(
         if (isLiveJob)
         {
             var noteDtos = await context.TucNotes
-                .AsSplitQuery()
                 .AsNoTracking()
+                .AsSplitQuery()
                 .Where(n => n.JobId == jobId)
                 .Select(n => new NoteDto
                 {
@@ -142,10 +142,10 @@ public partial class DeliveryJourneyService(
                     NoteText = n.NoteText,
                     CreatedDate = n.CreatedDate,
                     UpdatedDate = n.UpdatedDate,
-                    CreatedByFirstName = n.CreatedByNavigation.UcstFirstName,
-                    CreatedByLastName = n.CreatedByNavigation.UcstLastName,
-                    UpdatedByFirstName = n.UpdatedByNavigation.UcstFirstName,
-                    UpdatedByLastName = n.UpdatedByNavigation.UcstLastName
+                    CreatedByFirstName = n.CreatedByNavigation != null ? n.CreatedByNavigation.UcstFirstName : null,
+                    CreatedByLastName = n.CreatedByNavigation != null ? n.CreatedByNavigation.UcstLastName : null,
+                    UpdatedByFirstName = n.UpdatedByNavigation != null ? n.UpdatedByNavigation.UcstFirstName : null,
+                    UpdatedByLastName = n.UpdatedByNavigation != null ? n.UpdatedByNavigation.UcstLastName : null
                 })
                 .TagWith("DeliveryJourney - Live Notes")
                 .ToListAsync();
@@ -174,7 +174,6 @@ public partial class DeliveryJourneyService(
         }
 
         var archivedNoteDtos = await context.TucNoteArchives
-            .AsSplitQuery()
             .AsNoTracking()
             .Where(n => n.JobId == jobId)
             .Select(n => new ArchivedNoteDto
@@ -218,8 +217,8 @@ public partial class DeliveryJourneyService(
         var timezone = infoService.GetTenantTimeZone();
 
         var messageDtos = await context.TucManualMessages
-            .AsSplitQuery()
             .AsNoTracking()
+            .AsSplitQuery()
             .Where(m => m.JobId == jobId)
             .Select(m => new ManualMessageDto
             {
@@ -232,14 +231,14 @@ public partial class DeliveryJourneyService(
                 SendToEmailAddress = m.SendToEmailAddress,
                 SendToMobile = m.SendToMobile,
                 TimeRead = m.TimeRead,
-                SendToCourierName = m.UcmmSendToCourier.UccrName,
-                SendToCourierSurname = m.UcmmSendToCourier.UccrSurname,
-                SendToStaffFirstName = m.UcmmSendToStaff.UcstFirstName,
-                SendToStaffLastName = m.UcmmSendToStaff.UcstLastName,
-                SendFromCourierName = m.UcmmSendFromCourier.UccrName,
-                SendFromCourierSurname = m.UcmmSendFromCourier.UccrSurname,
-                SendFromStaffFirstName = m.UcmmSendFromStaff.UcstFirstName,
-                SendFromStaffLastName = m.UcmmSendFromStaff.UcstLastName
+                SendToCourierName = m.UcmmSendToCourier != null ? m.UcmmSendToCourier.UccrName : null,
+                SendToCourierSurname = m.UcmmSendToCourier != null ? m.UcmmSendToCourier.UccrSurname : null,
+                SendToStaffFirstName = m.UcmmSendToStaff != null ? m.UcmmSendToStaff.UcstFirstName : null,
+                SendToStaffLastName = m.UcmmSendToStaff != null ? m.UcmmSendToStaff.UcstLastName : null,
+                SendFromCourierName = m.UcmmSendFromCourier != null ? m.UcmmSendFromCourier.UccrName : null,
+                SendFromCourierSurname = m.UcmmSendFromCourier != null ? m.UcmmSendFromCourier.UccrSurname : null,
+                SendFromStaffFirstName = m.UcmmSendFromStaff != null ? m.UcmmSendFromStaff.UcstFirstName : null,
+                SendFromStaffLastName = m.UcmmSendFromStaff != null ? m.UcmmSendFromStaff.UcstLastName : null
             })
             .TagWith("DeliveryJourney - Messages")
             .ToListAsync();
@@ -313,66 +312,11 @@ public partial class DeliveryJourneyService(
     {
         if (isLiveJob)
         {
-            var statusUpdateDtos = await (
-                    from s in context.JobDeliveryJourneys.AsNoTracking()
-                    where s.JobId == jobId && s.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus)
-                    join newCourier in context.TucCouriers on s.NewCourierId equals newCourier.UccrId into
-                        newCourierJoin
-                    from newCourier in newCourierJoin.DefaultIfEmpty()
-                    join oldCourier in context.TucCouriers on s.OldCourierId equals oldCourier.UccrId into
-                        oldCourierJoin
-                    from oldCourier in oldCourierJoin.DefaultIfEmpty()
-                    select new JobDeliveryJourneyDto
-                    {
-                        Id = s.JourneyId,
-                        UpdatedAt = s.UpdatedAt,
-                        ChangeType = s.ChangeType,
-                        Comments = s.Comments,
-                        FieldName = s.FieldName,
-                        OldValue = s.OldValue,
-                        NewValue = s.NewValue,
-                        StaffFirstName = s.Staff.UcstFirstName,
-                        StaffLastName = s.Staff.UcstLastName,
-                        CourierName = s.Courier.UccrName,
-                        CourierSurname = s.Courier.UccrSurname,
-                        FlightNumber = s.Flight.UcnwFlightNo,
-                        NewAgentName = s.NewAgent.UcagName,
-                        OldAgentName = s.OldAgent.UcagName,
-                        NewJobStatusName = s.NewJobStatus.UcjsName,
-                        OldJobStatusName = s.OldJobStatus.UcjsName,
-                        NewCourierName = newCourier != null ? newCourier.UccrName + " " + newCourier.UccrSurname : null,
-                        OldCourierName = oldCourier != null ? oldCourier.UccrName + " " + oldCourier.UccrSurname : null
-                    })
-                .TagWith("DeliveryJourney - Live Status Updates")
-                .ToListAsync();
-
-            return MapStatusUpdatesToViewModels(statusUpdateDtos, jobId);
-        }
-
-        var archivedStatusUpdateDtos = await (
-                from s in context.JobDeliveryJourneyArchives.AsNoTracking()
-                where s.JobId == jobId && s.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus)
-                join staff in context.TucStaffs on s.StaffId equals staff.UcstId into staffJoin
-                from staff in staffJoin.DefaultIfEmpty()
-                join courier in context.TucCouriers on s.CourierId equals courier.UccrId into courierJoin
-                from courier in courierJoin.DefaultIfEmpty()
-                join flight in context.TucJobNationwides on s.FlightId equals flight.UcnwId into flightJoin
-                from flight in flightJoin.DefaultIfEmpty()
-                join newAgent in context.TucAgents on s.NewAgentId equals newAgent.UcagId into newAgentJoin
-                from newAgent in newAgentJoin.DefaultIfEmpty()
-                join oldAgent in context.TucAgents on s.OldAgentId equals oldAgent.UcagId into oldAgentJoin
-                from oldAgent in oldAgentJoin.DefaultIfEmpty()
-                join newJobStatus in context.TucJobStatuses on s.NewJobStatusId equals newJobStatus.UcjsId into
-                    newJobStatusJoin
-                from newJobStatus in newJobStatusJoin.DefaultIfEmpty()
-                join oldJobStatus in context.TucJobStatuses on s.OldJobStatusId equals oldJobStatus.UcjsId into
-                    oldJobStatusJoin
-                from oldJobStatus in oldJobStatusJoin.DefaultIfEmpty()
-                join newCourier in context.TucCouriers on s.NewCourierId equals newCourier.UccrId into newCourierJoin
-                from newCourier in newCourierJoin.DefaultIfEmpty()
-                join oldCourier in context.TucCouriers on s.OldCourierId equals oldCourier.UccrId into oldCourierJoin
-                from oldCourier in oldCourierJoin.DefaultIfEmpty()
-                select new JobDeliveryJourneyArchiveDto
+            var statusUpdates = await context.JobDeliveryJourneys
+                .AsNoTracking()
+                .AsSplitQuery()
+                .Where(s => s.JobId == jobId && s.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus))
+                .Select(s => new JobDeliveryJourneyDto
                 {
                     Id = s.JourneyId,
                     UpdatedAt = s.UpdatedAt,
@@ -381,23 +325,54 @@ public partial class DeliveryJourneyService(
                     FieldName = s.FieldName,
                     OldValue = s.OldValue,
                     NewValue = s.NewValue,
-                    UpdatedByType = s.UpdatedByType,
-                    StaffFirstName = staff != null ? staff.UcstFirstName : null,
-                    StaffLastName = staff != null ? staff.UcstLastName : null,
-                    CourierName = courier != null ? courier.UccrName : null,
-                    CourierSurname = courier != null ? courier.UccrSurname : null,
-                    FlightNumber = flight != null ? flight.UcnwFlightNo : null,
-                    NewAgentName = newAgent != null ? newAgent.UcagName : null,
-                    OldAgentName = oldAgent != null ? oldAgent.UcagName : null,
-                    NewJobStatusName = newJobStatus != null ? newJobStatus.UcjsName : null,
-                    OldJobStatusName = oldJobStatus != null ? oldJobStatus.UcjsName : null,
-                    NewCourierName = newCourier != null ? newCourier.UccrName + " " + newCourier.UccrSurname : null,
-                    OldCourierName = oldCourier != null ? oldCourier.UccrName + " " + oldCourier.UccrSurname : null
+                    StaffFirstName = s.Staff.UcstFirstName,
+                    StaffLastName = s.Staff.UcstLastName,
+                    CourierName = s.Courier.UccrName,
+                    CourierSurname = s.Courier.UccrSurname,
+                    FlightNumber = s.Flight.UcnwFlightNo,
+                    NewAgentName = s.NewAgent.UcagName,
+                    OldAgentName = s.OldAgent.UcagName,
+                    NewJobStatusName = s.NewJobStatus.UcjsName,
+                    OldJobStatusName = s.OldJobStatus.UcjsName,
+                    NewCourierName = s.NewCourier != null ? s.NewCourier.UccrName + " " + s.NewCourier.UccrSurname : null,
+                    OldCourierName = s.OldCourier != null ? s.OldCourier.UccrName + " " + s.OldCourier.UccrSurname : null
                 })
+                .TagWith("DeliveryJourney - Live Status Updates")
+                .ToListAsync();
+
+            return MapStatusUpdatesToViewModels(statusUpdates, jobId);
+        }
+
+        var archivedStatusUpdates = await context.JobDeliveryJourneyArchives
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Where(s => s.JobId == jobId && s.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus))
+            .Select(s => new JobDeliveryJourneyArchiveDto
+            {
+                Id = s.JourneyId,
+                UpdatedAt = s.UpdatedAt,
+                ChangeType = s.ChangeType,
+                Comments = s.Comments,
+                FieldName = s.FieldName,
+                OldValue = s.OldValue,
+                NewValue = s.NewValue,
+                UpdatedByType = s.UpdatedByType,
+                StaffFirstName = s.Staff.UcstFirstName,
+                StaffLastName = s.Staff.UcstLastName,
+                CourierName = s.Courier.UccrName,
+                CourierSurname = s.Courier.UccrSurname,
+                FlightNumber = s.Flight.UcnwFlightNo,
+                NewAgentName = s.NewAgent.UcagName,
+                OldAgentName = s.OldAgent.UcagName,
+                NewJobStatusName = s.NewJobStatus.UcjsName,
+                OldJobStatusName = s.OldJobStatus.UcjsName,
+                NewCourierName = s.NewCourier != null ? s.NewCourier.UccrName + " " + s.NewCourier.UccrSurname : null,
+                OldCourierName = s.OldCourier != null ? s.OldCourier.UccrName + " " + s.OldCourier.UccrSurname : null
+            })
             .TagWith("DeliveryJourney - Archived Status Updates")
             .ToListAsync();
-
-        return MapArchivedStatusUpdatesToViewModels(archivedStatusUpdateDtos, jobId);
+        
+        return MapArchivedStatusUpdatesToViewModels(archivedStatusUpdates, jobId);
     }
 
     /// <summary>

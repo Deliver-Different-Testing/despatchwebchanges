@@ -593,4 +593,259 @@ public class FlightStatsServiceTests(ITestOutputHelper testOutputHelper)
     };
 
     #endregion
+
+    #region Issue #1: Past Flight Filtering Tests - CalculateFlightSearchStartTime
+
+    /// <summary>
+    /// Tests for Issue #1: Available flights ignores current date time so a lazy dispatcher
+    /// could assign a job to a flight that has already left.
+    ///
+    /// The CalculateFlightSearchStartTime method should ensure that when a requested departure
+    /// date/time is in the past, the current tenant time is used instead.
+    /// </summary>
+
+    [Fact]
+    public async Task GetFlightsAsync_WhenDepartureDateIsInPast_UsesCurrentTenantTimeInsteadOfPastDate()
+    {
+        // Arrange
+        var currentTenantTime = new DateTime(2024, 6, 15, 14, 0, 0); // 2:00 PM today
+        var pastDepartureDate = new DateTimeOffset(2024, 6, 15, 8, 0, 0, TimeSpan.Zero); // 8:00 AM (past)
+        const int airportBufferMinutes = 60;
+
+        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
+        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
+            .ReturnsAsync(["NZ"]);
+        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
+            .Returns(currentTenantTime);
+
+        string? capturedUrl = null;
+        _httpHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, _) =>
+            {
+                capturedUrl = req.RequestUri?.ToString();
+            })
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(new FlightConnectionsRoot { Connections = null }))
+            });
+
+        var service = CreateService();
+
+        // Act
+        await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: pastDepartureDate, // Requesting flights from 8:00 AM which has already passed
+            departureAirportId: 1,
+            arrivalAirportId: 2);
+
+        // Assert - URL should use current time (14:00) + buffer (60 min) = 15:00, NOT the past time (08:00)
+        capturedUrl.Should().NotBeNull();
+
+        // The URL should contain the time based on currentTenantTime + buffer, not the past departure time
+        // Expected: leaving_after/2024/6/15/15/0 (current time 14:00 + 60 min buffer)
+        // NOT: leaving_after/2024/6/15/8/0 (past departure time)
+        capturedUrl.Should().Contain("leaving_after/2024/6/15/15/0",
+            "When departure date is in the past, the search should use current tenant time + buffer");
+        capturedUrl.Should().NotContain("leaving_after/2024/6/15/8",
+            "Past departure times should not be used in the search URL");
+    }
+
+    [Fact]
+    public async Task GetFlightsAsync_WhenDepartureDateIsFuture_UsesDepartureDatePlusBuffer()
+    {
+        // Arrange
+        var currentTenantTime = new DateTime(2024, 6, 15, 8, 0, 0); // 8:00 AM
+        var futureDepartureDate = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero); // 2:00 PM (future)
+        const int airportBufferMinutes = 60;
+
+        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
+        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
+            .ReturnsAsync(["NZ"]);
+        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
+            .Returns(currentTenantTime);
+
+        string? capturedUrl = null;
+        _httpHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, _) =>
+            {
+                capturedUrl = req.RequestUri?.ToString();
+            })
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(new FlightConnectionsRoot { Connections = null }))
+            });
+
+        var service = CreateService();
+
+        // Act
+        await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: futureDepartureDate, // Requesting flights from 2:00 PM
+            departureAirportId: 1,
+            arrivalAirportId: 2);
+
+        // Assert - URL should use future departure time + buffer = 15:00
+        capturedUrl.Should().NotBeNull();
+        capturedUrl.Should().Contain("leaving_after/2024/6/15/15/0",
+            "When departure date is in the future, the search should use departure time + buffer");
+    }
+
+    [Fact]
+    public async Task GetFlightsAsync_WhenNoDepartureDateProvided_UsesCurrentTenantTimePlusBuffer()
+    {
+        // Arrange
+        var currentTenantTime = new DateTime(2024, 6, 15, 10, 30, 0); // 10:30 AM
+        const int airportBufferMinutes = 60;
+
+        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
+        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
+            .ReturnsAsync(["NZ"]);
+        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
+            .Returns(currentTenantTime);
+
+        string? capturedUrl = null;
+        _httpHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, _) =>
+            {
+                capturedUrl = req.RequestUri?.ToString();
+            })
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(new FlightConnectionsRoot { Connections = null }))
+            });
+
+        var service = CreateService();
+
+        // Act
+        await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: null, // No departure date specified
+            departureAirportId: 1,
+            arrivalAirportId: 2);
+
+        // Assert - URL should use current time (10:30) + buffer (60 min) = 11:30
+        capturedUrl.Should().NotBeNull();
+        capturedUrl.Should().Contain("leaving_after/2024/6/15/11/30",
+            "When no departure date is provided, the search should use current tenant time + buffer");
+    }
+
+    [Fact]
+    public async Task GetFlightsAsync_WhenDepartureDateIsExactlyCurrentTime_UsesCurrentTimePlusBuffer()
+    {
+        // Arrange - Edge case: departure time equals current time exactly
+        var currentTenantTime = new DateTime(2024, 6, 15, 12, 0, 0);
+        var departureDateSameAsCurrent = new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
+        const int airportBufferMinutes = 60;
+
+        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
+        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
+            .ReturnsAsync(["NZ"]);
+        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
+            .Returns(currentTenantTime);
+
+        string? capturedUrl = null;
+        _httpHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, _) =>
+            {
+                capturedUrl = req.RequestUri?.ToString();
+            })
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(new FlightConnectionsRoot { Connections = null }))
+            });
+
+        var service = CreateService();
+
+        // Act
+        await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: departureDateSameAsCurrent,
+            departureAirportId: 1,
+            arrivalAirportId: 2);
+
+        // Assert - Should use departure time (which equals current time) + buffer = 13:00
+        capturedUrl.Should().NotBeNull();
+        capturedUrl.Should().Contain("leaving_after/2024/6/15/13/0",
+            "When departure date equals current time, the search should use that time + buffer");
+    }
+
+    [Fact]
+    public async Task GetFlightsAsync_WithDifferentAirportBuffers_AppliesCorrectBuffer()
+    {
+        // Arrange - Airport with 90 minute buffer
+        var currentTenantTime = new DateTime(2024, 6, 15, 10, 0, 0);
+        var departureDate = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
+        const int customBufferMinutes = 90;
+
+        // Setup airport with custom buffer
+        _nationwideJobRepositoryMock.Setup(x => x.GetAllActiveAirportsAsync())
+            .ReturnsAsync(
+            [
+                new GetAirportsDto
+                {
+                    AirportId = 1,
+                    AirportCode = "LAX",
+                    FlightBufferMinutes = customBufferMinutes, // 90 minutes
+                    Timezone = "America/Los_Angeles"
+                },
+                new GetAirportsDto
+                {
+                    AirportId = 2,
+                    AirportCode = "JFK",
+                    FlightBufferMinutes = 60,
+                    Timezone = "America/New_York"
+                }
+            ]);
+        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
+            .ReturnsAsync(["AA"]);
+        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
+            .Returns(currentTenantTime);
+
+        string? capturedUrl = null;
+        _httpHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, _) =>
+            {
+                capturedUrl = req.RequestUri?.ToString();
+            })
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(new FlightConnectionsRoot { Connections = null }))
+            });
+
+        var service = CreateService();
+
+        // Act
+        await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: departureDate,
+            departureAirportId: 1, // LAX with 90 min buffer
+            arrivalAirportId: 2);
+
+        // Assert - Should use departure time (14:00) + 90 min buffer = 15:30
+        capturedUrl.Should().NotBeNull();
+        capturedUrl.Should().Contain("leaving_after/2024/6/15/15/30",
+            "Search should apply the departure airport's specific buffer time");
+    }
+
+    #endregion
 }
