@@ -218,6 +218,9 @@ public partial class DespatchContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
+#if DEBUG
+        // Only enable detailed SQL logging when debugger is attached in DEBUG builds
+        // This prevents sensitive query data from leaking to console in production
         if (Debugger.IsAttached)
         {
             optionsBuilder.LogTo(Console.WriteLine,
@@ -225,6 +228,7 @@ public partial class DespatchContext
                     LogLevel.Information)
                 .EnableSensitiveDataLogging();
         }
+#endif
     }
 
     // Access compiled queries

@@ -108,6 +108,38 @@ describe('dateUtils', () => {
             expect(result.format('YYYY-MM-DD')).toBe('2024-01-15');
             expect(result.utcOffset()).toBe(-300);
         });
+
+        it('returns invalid dayjs for empty string', () => {
+            const result = parseDateFromApi('');
+            expect(result.isValid()).toBe(false);
+        });
+
+        it('handles Z (UTC) timezone offset', () => {
+            const result = parseDateFromApi('2024-01-15T10:00:00Z');
+            expect(result.isValid()).toBe(true);
+            expect(result.format('HH:mm')).toBe('10:00');
+            expect(result.utcOffset()).toBe(0);
+        });
+
+        it('handles positive timezone offset', () => {
+            const result = parseDateFromApi('2024-01-15T10:00:00+05:30');
+            expect(result.isValid()).toBe(true);
+            expect(result.format('HH:mm')).toBe('10:00');
+            expect(result.utcOffset()).toBe(330);
+        });
+
+        it('handles date string without timezone offset', () => {
+            const result = parseDateFromApi('2024-01-15T10:00:00');
+            expect(result.isValid()).toBe(true);
+            expect(result.format('YYYY-MM-DD')).toBe('2024-01-15');
+        });
+
+        it('preserves wall-clock time regardless of local timezone', () => {
+            // This test verifies the fix for the double-conversion bug
+            // The time should be 07:00 as specified, not shifted by local timezone
+            const result = parseDateFromApi('2024-01-15T07:00:00-08:00');
+            expect(result.format('HH:mm')).toBe('07:00');
+        });
     });
 
     describe('locale-aware formatting', () => {

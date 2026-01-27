@@ -2,6 +2,7 @@
  * Recurring Jobs API Service Tests
  */
 
+import axios from 'axios';
 import {recurringJobsApi} from './recurringJobsApi';
 import {apiClient} from './apiClient';
 import {
@@ -10,6 +11,10 @@ import {
     SpeedOption,
 } from '../interfaces';
 
+// Mock axios
+jest.mock('axios');
+const mockedAxios = axios as jest.Mocked<typeof axios>;
+
 // Mock the apiClient
 jest.mock('./apiClient', () => ({
     apiClient: {
@@ -17,10 +22,6 @@ jest.mock('./apiClient', () => ({
         post: jest.fn(),
     },
 }));
-
-// Mock fetch for exportToCsv
-const mockFetch = jest.fn();
-global.fetch = mockFetch;
 
 // Mock URL.createObjectURL and URL.revokeObjectURL
 const mockCreateObjectURL = jest.fn(() => 'blob:test-url');
@@ -263,24 +264,22 @@ describe('recurringJobsApi', () => {
             document.body.innerHTML = '';
         });
 
-        it('should call fetch with correct URL and options', async () => {
+        it('should call axios.post with correct URL and options', async () => {
             const mockBlob = new Blob(['csv,data'], {type: 'text/csv'});
-            mockFetch.mockResolvedValueOnce({
-                ok: true,
-                headers: new Headers(),
-                blob: () => Promise.resolve(mockBlob),
+            mockedAxios.post.mockResolvedValueOnce({
+                data: mockBlob,
+                headers: {},
             });
 
             await recurringJobsApi.exportToCsv(mockQuery);
 
-            expect(mockFetch).toHaveBeenCalledWith('job/RecurringJobsExportCsv', {
-                method: 'POST',
+            expect(mockedAxios.post).toHaveBeenCalledWith('job/RecurringJobsExportCsv', mockQuery, {
+                responseType: 'blob',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                 },
-                body: JSON.stringify(mockQuery),
-                credentials: 'same-origin',
+                withCredentials: true,
             });
         });
 
@@ -296,10 +295,9 @@ describe('recurringJobsApi', () => {
             jest.spyOn(document.body, 'appendChild').mockImplementation(() => mockLink as any);
             jest.spyOn(document.body, 'removeChild').mockImplementation(() => mockLink as any);
 
-            mockFetch.mockResolvedValueOnce({
-                ok: true,
-                headers: new Headers(),
-                blob: () => Promise.resolve(mockBlob),
+            mockedAxios.post.mockResolvedValueOnce({
+                data: mockBlob,
+                headers: {},
             });
 
             await recurringJobsApi.exportToCsv(mockQuery);
@@ -319,10 +317,9 @@ describe('recurringJobsApi', () => {
             jest.spyOn(document.body, 'appendChild').mockImplementation(() => mockLink as any);
             jest.spyOn(document.body, 'removeChild').mockImplementation(() => mockLink as any);
 
-            mockFetch.mockResolvedValueOnce({
-                ok: true,
-                headers: new Headers(),
-                blob: () => Promise.resolve(mockBlob),
+            mockedAxios.post.mockResolvedValueOnce({
+                data: mockBlob,
+                headers: {},
             });
 
             const inactiveQuery = {...mockQuery, active: false};
@@ -343,13 +340,11 @@ describe('recurringJobsApi', () => {
             jest.spyOn(document.body, 'appendChild').mockImplementation(() => mockLink as any);
             jest.spyOn(document.body, 'removeChild').mockImplementation(() => mockLink as any);
 
-            const headers = new Headers();
-            headers.set('content-disposition', 'attachment; filename="custom-export.csv"');
-
-            mockFetch.mockResolvedValueOnce({
-                ok: true,
-                headers,
-                blob: () => Promise.resolve(mockBlob),
+            mockedAxios.post.mockResolvedValueOnce({
+                data: mockBlob,
+                headers: {
+                    'content-disposition': 'attachment; filename="custom-export.csv"',
+                },
             });
 
             await recurringJobsApi.exportToCsv(mockQuery);
@@ -357,13 +352,11 @@ describe('recurringJobsApi', () => {
             expect(mockLink.download).toBe('custom-export.csv');
         });
 
-        it('should throw error when fetch fails', async () => {
-            mockFetch.mockResolvedValueOnce({
-                ok: false,
-                status: 500,
-            });
+        it('should propagate errors from axios', async () => {
+            const axiosError = new Error('Network Error');
+            mockedAxios.post.mockRejectedValueOnce(axiosError);
 
-            await expect(recurringJobsApi.exportToCsv(mockQuery)).rejects.toThrow('Failed to export CSV');
+            await expect(recurringJobsApi.exportToCsv(mockQuery)).rejects.toThrow('Network Error');
         });
 
         it('should create and click download link', async () => {
@@ -379,15 +372,14 @@ describe('recurringJobsApi', () => {
             const appendSpy = jest.spyOn(document.body, 'appendChild').mockImplementation(() => mockLink as any);
             const removeSpy = jest.spyOn(document.body, 'removeChild').mockImplementation(() => mockLink as any);
 
-            mockFetch.mockResolvedValueOnce({
-                ok: true,
-                headers: new Headers(),
-                blob: () => Promise.resolve(mockBlob),
+            mockedAxios.post.mockResolvedValueOnce({
+                data: mockBlob,
+                headers: {},
             });
 
             await recurringJobsApi.exportToCsv(mockQuery);
 
-            expect(mockCreateObjectURL).toHaveBeenCalledWith(mockBlob);
+            expect(mockCreateObjectURL).toHaveBeenCalled();
             expect(mockLink.href).toBe('blob:test-url');
             expect(mockClick).toHaveBeenCalled();
             expect(appendSpy).toHaveBeenCalled();

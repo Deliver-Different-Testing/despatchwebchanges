@@ -24,10 +24,8 @@ public partial class JobRepository
         {
             var jobDetails = await Context.TucJobs
                 .AsNoTracking()
-                .Where(j => j.UcjbId == jobId)
-                .Include(j => j.UcjbClient)
-                .Include(j => j.UcjbSpeedNavigation)
                 .AsSplitQuery()
+                .Where(j => j.UcjbId == jobId)
                 .Select(job => new JobRatingDetailsDto
                 {
                     // Map the entity properties to our model
@@ -104,10 +102,8 @@ public partial class JobRepository
             {
                 var jobDetailsForRating = await Context.TucJobArchives
                     .AsNoTracking()
-                    .Where(j => j.UcjbId == jobId)
-                    .Include(j => j.UcjbClient)
-                    .Include(j => j.TucJobItemsArchives)
                     .AsSplitQuery()
+                    .Where(j => j.UcjbId == jobId)
                     .Select(job => new JobRatingDetailsDtoNz
                     {
                         JobId = job.UcjbId,
@@ -127,14 +123,15 @@ public partial class JobRepository
                         RefA = job.UcjbClientRefa,
                         RefB = job.UcjbClientRefb,
                         Quantity = job.UcjbQty ?? 1,
-                        BookedDate = new DateTime(
-                            job.UcjbDate.HasValue ? job.UcjbDate.Value.Year : 0,
-                            job.UcjbDate.HasValue ? job.UcjbDate.Value.Month : 0,
-                            job.UcjbDate.HasValue ? job.UcjbDate.Value.Day : 0,
-                            job.UcjbTime.HasValue ? job.UcjbTime.Value.Hour : 0,
-                            job.UcjbTime.HasValue ? job.UcjbTime.Value.Minute : 0,
-                            job.UcjbTime.HasValue ? job.UcjbTime.Value.Second : 0
-                        ),
+                        BookedDate = job.UcjbDate.HasValue
+                            ? new DateTime(
+                                job.UcjbDate.Value.Year,
+                                job.UcjbDate.Value.Month,
+                                job.UcjbDate.Value.Day,
+                                job.UcjbTime.HasValue ? job.UcjbTime.Value.Hour : 0,
+                                job.UcjbTime.HasValue ? job.UcjbTime.Value.Minute : 0,
+                                job.UcjbTime.HasValue ? job.UcjbTime.Value.Second : 0)
+                            : DateTime.MinValue,
 
                         // Coordinates
                         PickupLat = job.PickUpLatitude ?? 0,
@@ -197,7 +194,7 @@ public partial class JobRepository
                                          job.TucJobItemsArchives.Any(i => i.Pu == true),
                         DropoffTailLift = job.TucJobItemsArchives != null &&
                                           job.TucJobItemsArchives.Any(i => i.Do == true),
-                        PrivateRes = job.TucJobItemsArchives != null &
+                        PrivateRes = job.TucJobItemsArchives != null &&
                                      job.TucJobItemsArchives.Any(i => i.PrivateRes == true),
                         HasDgDocuments = job.Dgdocument,
                         TruckStartTime = job.TruckStartTime.HasValue ? job.TruckStartTime.ToString() : null,
@@ -215,11 +212,8 @@ public partial class JobRepository
             {
                 var jobDetailsForRating = await Context.TucJobs
                     .AsNoTracking()
-                    .Where(j => j.UcjbId == jobId)
-                    .Include(j => j.UcjbClient)
-                    .Include(j => j.UcjbSpeedNavigation)
-                    .Include(j => j.TucJobItemJobs)
                     .AsSplitQuery()
+                    .Where(j => j.UcjbId == jobId)
                     .Select(job => new JobRatingDetailsDtoNz
                     {
                         JobId = job.UcjbId,
@@ -307,7 +301,7 @@ public partial class JobRepository
 
                         PickupTailLift = job.TucJobItemJobs != null && job.TucJobItemJobs.Any(i => i.Pu == true),
                         DropoffTailLift = job.TucJobItemJobs != null && job.TucJobItemJobs.Any(i => i.Do == true),
-                        PrivateRes = job.TucJobItemJobs != null & job.TucJobItemJobs.Any(i => i.PrivateRes == true),
+                        PrivateRes = job.TucJobItemJobs != null && job.TucJobItemJobs.Any(i => i.PrivateRes == true),
                         HasDgDocuments = job.Dgdocument,
                         TruckStartTime = job.TruckStartTime.HasValue ? job.TruckStartTime.ToString() : null,
                         TruckHours = job.TruckHours.HasValue ? (int)job.TruckHours : null,
@@ -339,10 +333,8 @@ public partial class JobRepository
         {
             var jobDetails = await Context.TucJobBookings
                 .AsNoTracking()
-                .Where(j => j.UcbkId == jobId)
-                .Include(j => j.UcbkClient) // Include client info
-                .Include(j => j.UcbkSpeedNavigation) // Include job type info
                 .AsSplitQuery()
+                .Where(j => j.UcbkId == jobId)
                 .Select(job => new JobRatingDetailsDto
                 {
                     JobId = job.UcbkId,
@@ -416,11 +408,8 @@ public partial class JobRepository
         {
             var jobDetails = await Context.TucJobBookings
                 .AsNoTracking()
-                .Where(j => j.UcbkId == jobId)
-                .Include(j => j.UcbkClient)
-                .Include(j => j.UcbkSpeedNavigation)
-                .Include(j => j.TucJobBookingItemBookings)
                 .AsSplitQuery()
+                .Where(j => j.UcbkId == jobId)
                 .Select(job => new JobRatingDetailsDtoNz
                 {
                     JobId = job.UcbkId,
@@ -483,19 +472,19 @@ public partial class JobRepository
 
                     FromCompanyName = job.PickupAddressLine1,
                     FromBuildingName = job.PickupAddressLine2,
-                    FromStreetAddress = job.PickupAddressLine3,
-                    FromCity = job.PickupAddressLine4,
-                    FromState = job.PickupAddressLine5,
-                    FromSuburb = job.PickupAddressLine6,
+                    FromStreetAddress = job.PickupAddressLine3 + " " + job.PickupAddressLine4,
+                    FromSuburb = job.PickupAddressLine5,
+                    FromCity = job.PickupAddressLine6,
+                    FromState = null,
                     FromPostCode = job.PickupAddressLine7,
                     FromCountryCode = job.PickupAddressLine8,
 
                     ToCompanyName = job.DeliveryAddressLine1,
                     ToBuildingName = job.DeliveryAddressLine2,
-                    ToStreetAddress = job.DeliveryAddressLine3,
-                    ToCity = job.DeliveryAddressLine4,
-                    ToState = job.DeliveryAddressLine5,
-                    ToSuburb = job.DeliveryAddressLine6,
+                    ToStreetAddress = job.DeliveryAddressLine3 + " " + job.DeliveryAddressLine4,
+                    ToSuburb = job.DeliveryAddressLine5,
+                    ToCity = job.DeliveryAddressLine6,
+                    ToState = null,
                     ToPostCode = job.DeliveryAddressLine7,
                     ToCountryCode = job.DeliveryAddressLine8,
 
@@ -551,11 +540,11 @@ public partial class JobRepository
         await Context.Procedures.DD_stpJob_Rate_DescribedAsync(
             clientID: dto.ClientId,
             speedID: dto.Speed,
-            fromZipCode: string.IsNullOrEmpty(dto.FromZip) ? null : int.Parse(dto.FromZip),
+            fromZipCode: int.TryParse(dto.FromZip, out var fromZip) ? fromZip : null,
             fromState: null,
             fromLat: dto.FromLat,
             fromLong: dto.FromLong,
-            toZipCode: string.IsNullOrEmpty(dto.ToZip) ? null : int.Parse(dto.ToZip),
+            toZipCode: int.TryParse(dto.ToZip, out var toZip) ? toZip : null,
             toState: null,
             toLat: dto.ToLat,
             toLong: dto.ToLong,
@@ -620,10 +609,10 @@ public partial class JobRepository
     private async Task<bool> DoesAddressMatchAirportAsync(int jobId, bool isPickupAddress)
     {
         var hasMatchingAirport = await Context.TucJobs
+            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Where(j => Context.TblAirports
                 .Any(a => a.AddressLine2 == (isPickupAddress ? j.PickupAddressLine2 : j.DeliveryAddressLine2)))
-            .AsNoTracking()
             .AnyAsync();
 
         return hasMatchingAirport;
@@ -678,11 +667,11 @@ public partial class JobRepository
         await Context.Procedures.DD_stpJob_Rate_DescribedAsync(
             clientID: dto.ClientId,
             speedID: dto.Speed,
-            fromZipCode: string.IsNullOrEmpty(dto.FromZip) ? null : int.Parse(dto.FromZip),
+            fromZipCode: int.TryParse(dto.FromZip, out var fromZipPreview) ? fromZipPreview : null,
             fromState: null,
             fromLat: dto.FromLat,
             fromLong: dto.FromLong,
-            toZipCode: string.IsNullOrEmpty(dto.ToZip) ? null : int.Parse(dto.ToZip),
+            toZipCode: int.TryParse(dto.ToZip, out var toZipPreview) ? toZipPreview : null,
             toState: null,
             toLat: dto.ToLat,
             toLong: dto.ToLong,

@@ -251,18 +251,4 @@ describe('StandaloneToastService', () => {
             consoleErrorSpy.mockRestore();
         });
     });
-
-    describe('setAngularToastr (deprecated)', () => {
-        it('should be a no-op for backwards compatibility', () => {
-            const consoleSpy = jest.spyOn(console, 'debug').mockImplementation(() => {});
-
-            // Should not throw
-            toastService.setAngularToastr({});
-
-            expect(consoleSpy).toHaveBeenCalledWith(
-                '[ToastService] setAngularToastr called - AngularJS bridge no longer needed'
-            );
-            consoleSpy.mockRestore();
-        });
-    });
 });

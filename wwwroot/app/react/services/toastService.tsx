@@ -256,14 +256,6 @@ class StandaloneToastService {
     showInfoToast(message: string): void {
         this.showToast(message, 'info');
     }
-
-    /**
-     * @deprecated No longer needed - toast service is now fully independent
-     */
-    setAngularToastr(_toastr: unknown): void {
-        // No-op for backwards compatibility
-        console.debug('[ToastService] setAngularToastr called - AngularJS bridge no longer needed');
-    }
 }
 
 // Singleton instance for standalone use

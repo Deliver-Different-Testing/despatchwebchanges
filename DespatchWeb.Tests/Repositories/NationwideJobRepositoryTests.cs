@@ -1045,8 +1045,8 @@ public class NationwideJobRepositoryTests : IDisposable
         var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
         flightJob.ToAirportId = 2;
 
-        // Create delivery job (ends with '2' and has Agent speed grouping)
-        var deliveryJob = CreateAgentJob(102, "JOB0012", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        // Create delivery job (ends with '3' and has Agent speed grouping)
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
@@ -1323,8 +1323,8 @@ public class NationwideJobRepositoryTests : IDisposable
         var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
         flightJob.ToAirportId = 2;
 
-        // Create delivery job (final mile job - ends with '2' and has Agent speed grouping)
-        var deliveryJob = CreateAgentJob(102, "JOB0012", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        // Create delivery job (final mile job - ends with '3' and has Agent speed grouping)
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
@@ -1372,7 +1372,7 @@ public class NationwideJobRepositoryTests : IDisposable
         var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
         flightJob.ToAirportId = 2;
 
-        var deliveryJob = CreateAgentJob(102, "JOB0012", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
@@ -1418,7 +1418,7 @@ public class NationwideJobRepositoryTests : IDisposable
         var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
         flightJob.ToAirportId = 2;
 
-        var deliveryJob = CreateAgentJob(102, "JOB0012", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
@@ -1462,7 +1462,7 @@ public class NationwideJobRepositoryTests : IDisposable
         var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
         flightJob.ToAirportId = 2;
 
-        var deliveryJob = CreateAgentJob(102, "JOB0012", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
@@ -1523,7 +1523,7 @@ public class NationwideJobRepositoryTests : IDisposable
         var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
         flightJob.ToAirportId = 3; // Final destination
 
-        var deliveryJob = CreateAgentJob(102, "JOB0012", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland", "AKL", true, 60);
@@ -1570,6 +1570,66 @@ public class NationwideJobRepositoryTests : IDisposable
             trackedDeliveryJob.UcjbTime.Should().Be(expectedStartTime.DateTime,
                 "Final mile job should use last segment's arrival time + arrival airport processing time");
         }
+    }
+
+    [Fact]
+    public async Task AddJobNationwideAsync_WhenBothJob2AndJob3Exist_SelectsJob3ForDeliveryTimeUpdate()
+    {
+        // Arrange - This test verifies that when both job '2' and job '3' exist,
+        // the query specifically selects job '3' (the drop-off job) for the delivery time update.
+        // Previously, the OR condition would find job '2' first due to ordering.
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+
+        var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
+        var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
+        const int airportProcessingTime = 60;
+
+        var parentJob = CreateJobWithParent(1, "JOB001");
+        var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
+        flightJob.ToAirportId = 2;
+
+        // Create shared grouping to avoid EF tracking conflicts
+        var sharedGrouping = new TucJobTypeGrouping { GroupingId = (int)DespatchWeb.Enums.SpeedGrouping.Agent, GroupingName = "Agent" };
+
+        // Create BOTH job '2' (flight leg) and job '3' (drop-off) with Agent speed grouping
+        var job2 = CreateAgentJobWithGrouping(102, "JOB0012", parentJob, sharedGrouping);
+        var job3 = CreateAgentJobWithGrouping(103, "JOB0013", parentJob, sharedGrouping);
+        _context.TucJobs.AddRange(parentJob, flightJob, job2, job3);
+
+        var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
+        var arrivalAirport = CreateAirportWithProcessingTime(2, "Sydney Airport", "SYD", true, airportProcessingTime);
+        _context.TblAirports.AddRange(departureAirport, arrivalAirport);
+
+        var timeZone1 = CreateTimeZone(1, "Pacific/Auckland", "NZST");
+        var timeZone2 = CreateTimeZone(2, "Australia/Sydney", "AEST");
+        _context.TimeZones.AddRange(timeZone1, timeZone2);
+
+        await _context.SaveChangesAsync();
+
+        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime);
+        request.PackageReadyTime = null;
+        var webhookIds = new List<string> { "webhook-123" };
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AddJobNationwideAsync(request, webhookIds);
+
+        // Assert - Job '3' should have its start time updated, not job '2'
+        var updatedJob3 = await _context.TucJobs.FindAsync(103);
+        var expectedStartTime = arrivalTime.AddMinutes(airportProcessingTime);
+
+        updatedJob3.Should().NotBeNull();
+        updatedJob3!.UcjbDate.Should().Be(expectedStartTime.Date,
+            "Job '3' (drop-off) should have its date set to arrival + processing time");
+        updatedJob3.UcjbTime.Should().Be(expectedStartTime.DateTime,
+            "Job '3' (drop-off) should have its time set to arrival + processing time");
+
+        // Job '2' should NOT have its start time modified to the delivery time
+        var updatedJob2 = await _context.TucJobs.FindAsync(102);
+        updatedJob2.Should().NotBeNull();
+        // Job '2' time should remain unchanged (not set to arrival + processing time)
+        updatedJob2!.UcjbTime.Should().NotBe(expectedStartTime.DateTime,
+            "Job '2' should not be updated with the delivery time - only job '3' should be updated");
     }
 
     #endregion
@@ -1766,7 +1826,7 @@ public class NationwideJobRepositoryTests : IDisposable
         // Create shared grouping to avoid EF tracking conflicts
         var sharedGrouping = new TucJobTypeGrouping { GroupingId = (int)DespatchWeb.Enums.SpeedGrouping.Agent, GroupingName = "Agent" };
         var pickupJob = CreateAgentJobWithGrouping(101, "JOB0011", parentJob, sharedGrouping);
-        var deliveryJob = CreateAgentJobWithGrouping(102, "JOB0012", parentJob, sharedGrouping);
+        var deliveryJob = CreateAgentJobWithGrouping(102, "JOB0013", parentJob, sharedGrouping);
         _context.TucJobs.AddRange(parentJob, flightJob, pickupJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland", "AKL", true, departureProcessingTime);

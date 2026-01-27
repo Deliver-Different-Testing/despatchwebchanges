@@ -58,7 +58,12 @@ public class SecurityMiddlewareTests
                         headers.ContentSecurityPolicy =
                             "default-src 'self'; " +
                             "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com; " +
-                            "frame-ancestors 'none';";
+                            "img-src 'self' data: blob: https:; " +
+                            "frame-ancestors 'none'; " +
+                            "frame-src 'none'; " +
+                            "object-src 'none'; " +
+                            "worker-src 'self' blob:; " +
+                            "upgrade-insecure-requests;";
 
                         await next();
                     });
@@ -292,6 +297,25 @@ public class SecurityMiddlewareTests
         var cspValue = response.Headers.GetValues("Content-Security-Policy").First();
         cspValue.Should().Contain("default-src 'self'");
         cspValue.Should().Contain("frame-ancestors 'none'");
+        cspValue.Should().Contain("object-src 'none'"); // Prevents Flash/plugin attacks
+        cspValue.Should().Contain("frame-src 'none'"); // Prevents iframe embedding
+        cspValue.Should().Contain("upgrade-insecure-requests"); // Forces HTTPS
+    }
+
+    [Fact]
+    public async Task Response_CspBlocksInsecureImages()
+    {
+        // Arrange
+        using var host = CreateTestHost();
+        var client = host.GetTestClient();
+
+        // Act
+        var response = await client.GetAsync("/api/test");
+
+        // Assert - img-src should only allow https:, not http:
+        var cspValue = response.Headers.GetValues("Content-Security-Policy").First();
+        cspValue.Should().Contain("img-src 'self' data: blob: https:");
+        cspValue.Should().NotContain("img-src 'self' data: blob: https: http:");
     }
 
     [Fact]

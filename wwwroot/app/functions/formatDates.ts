@@ -125,10 +125,24 @@ export function formatInfoLogDateTimeString(dateTimeString: string): string {
 }
 
 export function formatDateFromApi(dateString: string): Dayjs {
-    const originalTimezone = dateString.slice(-6);
-    const dateFormatted = dayjs(dateString).utcOffset(originalTimezone);
-    console.log("DateFormatted: ", dateFormatted.format());
-    return dateFormatted
+    if (!dateString) {
+        return dayjs(null);
+    }
+
+    // Extract timezone offset (e.g., "-08:00", "+05:30", or "Z")
+    const offsetMatch = dateString.match(/([+-]\d{2}:\d{2}|Z)$/);
+
+    if (!offsetMatch) {
+        return dayjs(dateString);
+    }
+
+    const originalOffset = offsetMatch[1] === 'Z' ? '+00:00' : offsetMatch[1];
+
+    // Strip the timezone offset from the date string to prevent automatic conversion
+    const dateWithoutOffset = dateString.replace(/([+-]\d{2}:\d{2}|Z)$/, '');
+
+    // Parse as UTC (no conversion), then apply the original offset while keeping the time
+    return dayjs.utc(dateWithoutOffset).utcOffset(originalOffset, true);
 }
 
 export function getIanaTimezone(timezone?: string): string {

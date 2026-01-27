@@ -6,7 +6,7 @@
  */
 
 import {apiClient} from './apiClient';
-import {EventType, JobEventData} from '../interfaces/event';
+import {EventType, JobEventData} from '../interfaces';
 
 /**
  * Event API Service Class
@@ -37,25 +37,9 @@ export class EventApiService {
         clientId: number,
         jobNumber: string
     ): Promise<void> {
-        const params = new URLSearchParams({
-            eventName,
-            notes,
-            clientId: String(clientId),
-            jobNumber,
+        await apiClient.post<void>('job/ExsalerateActivity', null, {
+            params: {eventName, notes, clientId, jobNumber},
         });
-
-        const response = await fetch(`job/ExsalerateActivity?${params.toString()}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            credentials: 'same-origin',
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to log exsalerate activity: ${response.statusText}`);
-        }
     }
 
     /**

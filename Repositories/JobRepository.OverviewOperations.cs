@@ -114,7 +114,7 @@ public partial class JobRepository
 
         var pages = (int)Math.Ceiling(total / (double)parameters.Limit);
 
-        var jobs = await query
+        var jobs = await query  
             .Skip((parameters.Page - 1) * parameters.Limit)
             .Take(parameters.Limit)
             .Select(j => new DeliveryJob
@@ -139,7 +139,7 @@ public partial class JobRepository
                             c.UcjbJobDone
                             || (c.UcjbStatus.HasValue
                                 && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))
-                        ) / j.InverseParent.Count()
+                        ) / j.InverseParent.Count
                     )
                     : 0,
                 ChildJobs = j.InverseParent
@@ -194,14 +194,14 @@ public partial class JobRepository
                         c.UcjbJobDone
                         || (c.UcjbStatus.HasValue
                             && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))
-                    ) / j.InverseParent.Count()
+                    ) / j.InverseParent.Count
                 )
                 : query.OrderByDescending(j =>
                     100.0 * j.InverseParent.Count(c =>
                         c.UcjbJobDone
                         || (c.UcjbStatus.HasValue
                             && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))
-                    ) / j.InverseParent.Count()
+                    ) / j.InverseParent.Count
                 ),
 
             "pickup" => isAscending
@@ -235,8 +235,10 @@ public partial class JobRepository
     {
         var isUsCustomer = _infoService.IsUsTenant();
 
-        var locations = await Context
-            .TucJobs.Where(j => j.UcjbId == jobId)
+        var locations = await Context.TucJobs
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Where(j => j.UcjbId == jobId)
             .Select(j => new OverviewDeliveryMapResponse
             {
                 Center = new Coordinates { Lat = (decimal)39.8097343, Lng = (decimal)-98.5556199 },
@@ -277,7 +279,6 @@ public partial class JobRepository
                         .ToList()
                 }
             })
-            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         return locations;
@@ -295,9 +296,8 @@ public partial class JobRepository
         {
             var now = _infoService.GetCurrentTenantTime();
             var tenantTimeZone = _infoService.GetTenantTimeZone();
-            var currentDate = now.Date; // #12: Pre-calculate for server-evaluable predicate
+            var currentDate = now.Date; 
 
-            // #2: Apply AsNoTracking early
             var query = Context.TucJobs
                 .AsNoTracking()
                 .Where(j =>
@@ -329,8 +329,6 @@ public partial class JobRepository
             // Order
             query = query.OrderBy(j => j.PickUpTime.Value);
 
-            // #3: Project only needed fields early
-            // #10: Add TagWith for debugging
             var jobDtos = await query
                 .Select(j => new OpenJobDto
                 {
@@ -370,17 +368,14 @@ public partial class JobRepository
                 .TagWith("GetOpenJobs - Step 1: Job Data")
                 .ToListAsync();
 
-            // Early return if no jobs
             if (jobDtos.Count == 0) return new List<OpenJobResponse>();
 
-            // Get unique courier IDs
             var courierIds = jobDtos
                 .Where(j => j.CourierId.HasValue)
                 .Select(j => j.CourierId.Value)
                 .Distinct()
                 .ToList();
 
-            // Query 2: Get courier completion data separately (avoids N+1)
             Dictionary<int, CourierCompletionData> courierCompletionDict = new();
 
             if (courierIds.Count > 0)
@@ -412,7 +407,6 @@ public partial class JobRepository
                 );
             }
 
-            // Map DTOs to ViewModels with courier data
             var openJobs = jobDtos.Select(dto =>
             {
                 var courierData = dto.CourierId.HasValue &&

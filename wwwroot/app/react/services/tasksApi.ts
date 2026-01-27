@@ -82,6 +82,7 @@ export async function updateTaskTime(eventId: number, time: Dayjs): Promise<void
         eventId,
         time: formatDateForApi(time),
     };
+    
     await apiClient.post('task/UpdateTaskTime', data);
 }
 
