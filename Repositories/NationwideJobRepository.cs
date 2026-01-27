@@ -170,8 +170,7 @@ public class NationwideJobRepository(
             // Set delivery job pick-up time
             if (job.ToAirportId != null || requestData.ToAirportId != null)
             {
-                var deliveryJob = job.Parent.InverseParent.FirstOrDefault(j => (j.UcjbNumber.EndsWith('2')
-                                                                                   || j.UcjbNumber.EndsWith('3'))
+                var deliveryJob = job.Parent.InverseParent.FirstOrDefault(j => j.UcjbNumber.EndsWith('3')
                                                                                && j.UcjbSpeedNavigation?.Grouping
                                                                                    ?.GroupingId ==
                                                                                (isUsCustomer

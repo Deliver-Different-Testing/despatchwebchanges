@@ -44,20 +44,9 @@ import {
     Save as SaveIcon,
     NoteAlt as NoteAltIcon,
 } from '@mui/icons-material';
-import {JobNote, NoteType, CreateNoteRequest, UpdateNoteRequest} from '../../../interfaces';
+import {NoteType, CreateNoteRequest, UpdateNoteRequest} from '../../../interfaces';
 import {getTimezoneAbbreviation} from '../../../utils/dateUtils';
-
-export interface NoteManagementDialogProps {
-    open: boolean;
-    note: JobNote | null;
-    onClose: () => void;
-    onSave: () => void;
-    onLoadNoteTypes: () => Promise<NoteType[]>;
-    onCreateNote: (note: CreateNoteRequest) => Promise<void>;
-    onUpdateNote: (note: UpdateNoteRequest) => Promise<void>;
-    onCreateNoteType: (noteType: NoteType) => Promise<void>;
-    showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
-}
+import {NoteManagementDialogProps} from "./types";
 
 const MAX_NOTE_LENGTH = 1000;
 const MAX_DESCRIPTION_LENGTH = 500;

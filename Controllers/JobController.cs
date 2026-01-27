@@ -1463,7 +1463,8 @@ public class JobController(
             Environment.GetEnvironmentVariable("SMTPUser"),
             Environment.GetEnvironmentVariable("SMTPPass")
         );
-        smtp.Port = int.Parse(Environment.GetEnvironmentVariable("SMTP_Port") ?? string.Empty);
+        var smtpPortEnv = Environment.GetEnvironmentVariable("SMTP_Port");
+        smtp.Port = int.TryParse(smtpPortEnv, out var smtpPort) ? smtpPort : 587; // Default to 587 (TLS)
         smtp.Send(message);
     }
 

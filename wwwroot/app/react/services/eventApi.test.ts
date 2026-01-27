@@ -13,10 +13,6 @@ jest.mock('./apiClient', () => ({
     },
 }));
 
-// Mock fetch globally for exsalerateActivity
-const mockFetch = jest.fn();
-global.fetch = mockFetch;
-
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
 describe('EventApiService', () => {
@@ -25,7 +21,6 @@ describe('EventApiService', () => {
     beforeEach(() => {
         service = new EventApiService();
         jest.clearAllMocks();
-        mockFetch.mockClear();
     });
 
     describe('getEventTypes', () => {
@@ -81,54 +76,51 @@ describe('EventApiService', () => {
     });
 
     describe('exsalerateActivity', () => {
-        const createMockResponse = (ok: boolean = true, statusText: string = 'OK') => {
-            return Promise.resolve({
-                ok,
-                status: ok ? 200 : 500,
-                statusText,
-            } as Response);
-        };
-
-        it('should call fetch with correct URL and query parameters', async () => {
-            mockFetch.mockReturnValueOnce(createMockResponse());
+        it('should call apiClient.post with correct endpoint and params', async () => {
+            mockApiClient.post.mockResolvedValueOnce(undefined);
 
             await service.exsalerateActivity('Compliment', 'Great service', 456, 'JOB-001');
 
-            expect(mockFetch).toHaveBeenCalledWith(
-                expect.stringContaining('job/ExsalerateActivity?'),
-                expect.objectContaining({
-                    method: 'POST',
-                    headers: expect.objectContaining({
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    }),
-                    credentials: 'same-origin',
-                })
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                'job/ExsalerateActivity',
+                null,
+                {
+                    params: {
+                        eventName: 'Compliment',
+                        notes: 'Great service',
+                        clientId: 456,
+                        jobNumber: 'JOB-001',
+                    },
+                }
             );
-
-            // Verify query parameters
-            const callUrl = mockFetch.mock.calls[0][0] as string;
-            expect(callUrl).toContain('eventName=Compliment');
-            expect(callUrl).toContain('notes=Great+service');
-            expect(callUrl).toContain('clientId=456');
-            expect(callUrl).toContain('jobNumber=JOB-001');
         });
 
-        it('should throw error when response is not ok', async () => {
-            mockFetch.mockReturnValueOnce(createMockResponse(false, 'Internal Server Error'));
+        it('should propagate errors from apiClient', async () => {
+            const error = {status: 500, statusText: 'Internal Server Error', message: 'Server error'};
+            mockApiClient.post.mockRejectedValueOnce(error);
 
             await expect(
                 service.exsalerateActivity('Compliment', 'Test', 123, 'JOB-001')
-            ).rejects.toThrow('Failed to log exsalerate activity: Internal Server Error');
+            ).rejects.toEqual(error);
         });
 
-        it('should encode special characters in parameters', async () => {
-            mockFetch.mockReturnValueOnce(createMockResponse());
+        it('should handle special characters in parameters', async () => {
+            mockApiClient.post.mockResolvedValueOnce(undefined);
 
             await service.exsalerateActivity('Complaint', 'Bad & slow service', 789, 'JOB-002');
 
-            const callUrl = mockFetch.mock.calls[0][0] as string;
-            expect(callUrl).toContain('notes=Bad+%26+slow+service');
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                'job/ExsalerateActivity',
+                null,
+                {
+                    params: {
+                        eventName: 'Complaint',
+                        notes: 'Bad & slow service',
+                        clientId: 789,
+                        jobNumber: 'JOB-002',
+                    },
+                }
+            );
         });
     });
 

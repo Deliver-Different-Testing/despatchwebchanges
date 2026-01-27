@@ -6,7 +6,8 @@ import React from 'react';
 import {render, screen, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ThemeProvider, createTheme} from '@mui/material';
-import {NoteManagementDialog, NoteManagementDialogProps} from './NoteManagementDialog';
+import {NoteManagementDialog} from './NoteManagementDialog';
+import {NoteManagementDialogProps} from './types';
 import {JobNote, NoteType} from '../../../interfaces/notes';
 
 // Mock the dateUtils module

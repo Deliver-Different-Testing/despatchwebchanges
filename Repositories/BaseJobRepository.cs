@@ -339,7 +339,11 @@ public class BaseJobRepository(
         // Apply client viewFilters for non-internal users
         if (isInternal || string.IsNullOrEmpty(clientIds)) return query;
 
-        var clientIdList = clientIds.Split(',').Select(id => int.Parse(id.Trim())).ToList();
+        var clientIdList = clientIds.Split(',')
+            .Select(id => int.TryParse(id.Trim(), out var parsed) ? parsed : (int?)null)
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .ToList();
         query = query.Where(j => clientIdList.Contains((int)j.UcjbClientId));
 
         return query;

@@ -114,8 +114,8 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
     options.Secure = CookieSecurePolicy.Always; // Ensure cookies only sent over HTTPS
 });
 
-// Set reasonable file upload limits (100MB max)
-const long maxFileSize = 100 * 1024 * 1024; // 100MB
+// Set reasonable file upload limits (25MB max to prevent DoS)
+const long maxFileSize = 25 * 1024 * 1024; // 25MB
 builder.Services.Configure<FormOptions>(x =>
 {
     x.ValueLengthLimit = (int)maxFileSize;
@@ -301,17 +301,22 @@ app.Use(async (context, next) =>
     headers.StrictTransportSecurity = "max-age=31536000; includeSubDomains";
 
     // Content Security Policy - restrict resource loading
-    // Note: 'unsafe-inline' and 'unsafe-eval' required for AngularJS
+    // Note: 'unsafe-inline' and 'unsafe-eval' required for AngularJS (can be removed once fully migrated to React)
     headers.ContentSecurityPolicy =
         "default-src 'self'; " +
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com https://maps.google.com https://js.api.here.com https://ajax.googleapis.com https://cdnjs.cloudflare.com; " +
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://ajax.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; " +
-        "img-src 'self' data: blob: https: http:; " +
+        "img-src 'self' data: blob: https:; " + // Removed http: - only allow secure images
         "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; " +
-        "connect-src 'self' https://*.here.com https://*.googleapis.com https://*.hereapi.com https://cdn.jsdelivr.net wss: ws:; " +
+        "connect-src 'self' https://*.here.com https://*.googleapis.com https://*.hereapi.com https://cdn.jsdelivr.net wss:; " + // Removed ws: - only allow secure WebSockets
         "frame-ancestors 'none'; " +
+        "frame-src 'none'; " + // Prevent loading any frames/iframes
+        "object-src 'none'; " + // Prevent Flash/plugin attacks
+        "worker-src 'self' blob:; " + // Restrict web workers
+        "manifest-src 'self'; " + // Restrict PWA manifests
         "base-uri 'self'; " +
-        "form-action 'self';";
+        "form-action 'self'; " +
+        "upgrade-insecure-requests;"; // Force HTTPS for all requests
 
     await next();
 });

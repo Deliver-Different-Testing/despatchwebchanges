@@ -462,6 +462,7 @@
     <TypeScriptCompile Include="wwwroot\app\interfaces\state-info.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\task-request.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\materialTheme.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\components\dialogs\note-management-dialog\types.ts" />
     <TypeScriptCompile Include="wwwroot\app\routes.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\address-lookup.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\config.service.ts" />
