@@ -706,9 +706,8 @@ public class RateJobService(
     /// </summary>
     /// <param name="dto">The job rating details DTO containing truck-specific fields.</param>
     /// <returns>An UrgentTruckObject with truck delivery options.</returns>
-    private static UrgentTruckObject CreateTruckObject(JobRatingDetailsDtoNz dto)
-    {
-        return new UrgentTruckObject
+    private static UrgentTruckObject CreateTruckObject(JobRatingDetailsDtoNz dto) =>
+        new()
         {
             PickupTailLift = dto.PickupTailLift,
             DropoffTailLift = dto.DropoffTailLift,
@@ -717,7 +716,6 @@ public class RateJobService(
             TruckStartTime = dto.TruckStartTime,
             TruckHours = dto.TruckHours ?? (dto.WaitTime > 0 ? dto.WaitTime : null)
         };
-    }
 
     /// <summary>
     /// Internal method to recalculate job rate based on tenant type.

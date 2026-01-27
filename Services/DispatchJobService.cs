@@ -49,27 +49,19 @@ public class DispatchJobService(IJobRepository jobRepository, ICourierRepository
             await jobRepository.AssignCourierToChildJobsAsync(jobIds, InternalJobStatus.AwaitingPod);
 
             if (jobIdsList.Count == 1)
-            {
                 Log.Debug("Successfully dispatched job {JobId} to courier {CourierId}", jobIdsList[0], courierId);
-            }
             else
-            {
                 Log.Debug("Successfully dispatched {JobCount} jobs to courier {CourierId}: {JobIds}",
                     jobIdsList.Count, courierId, string.Join(", ", jobIdsList));
-            }
         }
         catch (Exception e)
         {
             var jobIdsList = jobIds.ToList();
             if (jobIdsList.Count == 1)
-            {
                 Log.Error(e, "Error dispatching job {JobId} to courier {CourierId}", jobIdsList[0], courierId);
-            }
             else
-            {
                 Log.Error(e, "Error dispatching {JobCount} jobs to courier {CourierId}: {JobIds}",
                     jobIdsList.Count, courierId, string.Join(", ", jobIdsList));
-            }
 
             throw;
         }
