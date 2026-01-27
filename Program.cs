@@ -288,35 +288,40 @@ app.Use(async (context, next) =>
     // Prevent clickjacking
     headers.XFrameOptions = "DENY";
 
-    // XSS filter (legacy browsers)
-    headers.XXSSProtection = "1; mode=block";
-
     // Control referrer information
     headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
 
     // Restrict browser features
-    headers["Permissions-Policy"] = "geolocation=(self), microphone=()";
+    headers["Permissions-Policy"] = "geolocation=(), microphone=()";
 
-    // HSTS - Force HTTPS for 1 year, include subdomains
-    headers.StrictTransportSecurity = "max-age=31536000; includeSubDomains";
+    // HSTS - Force HTTPS for 1 year, include subdomains (production only)
+    if (!app.Environment.IsDevelopment())
+    {
+        headers.StrictTransportSecurity = "max-age=31536000; includeSubDomains";
+    }
 
     // Content Security Policy - restrict resource loading
-    // Note: 'unsafe-inline' and 'unsafe-eval' required for AngularJS (can be removed once fully migrated to React)
-    headers.ContentSecurityPolicy =
+    var csp =
         "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com https://maps.google.com https://js.api.here.com https://ajax.googleapis.com https://cdnjs.cloudflare.com; " +
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://ajax.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; " +
-        "img-src 'self' data: blob: https:; " + // Removed http: - only allow secure images
-        "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; " +
-        "connect-src 'self' https://*.here.com https://*.googleapis.com https://*.hereapi.com https://cdn.jsdelivr.net wss:; " + // Removed ws: - only allow secure WebSockets
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.google.com https://js.api.here.com https://ajax.googleapis.com https://cdnjs.cloudflare.com; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://ajax.googleapis.com; " +
+        "img-src 'self' data: blob: https:; " +
+        "font-src 'self' https://fonts.gstatic.com data:; " +
+        "connect-src 'self' https://*.here.com https://*.googleapis.com; " +
         "frame-ancestors 'none'; " +
-        "frame-src 'none'; " + // Prevent loading any frames/iframes
-        "object-src 'none'; " + // Prevent Flash/plugin attacks
-        "worker-src 'self' blob:; " + // Restrict web workers
-        "manifest-src 'self'; " + // Restrict PWA manifests
+        "frame-src 'none'; " +
+        "object-src 'none'; " +
+        "manifest-src 'self'; " +
         "base-uri 'self'; " +
-        "form-action 'self'; " +
-        "upgrade-insecure-requests;"; // Force HTTPS for all requests
+        "form-action 'self';";
+
+    // Only upgrade insecure requests in production
+    if (!app.Environment.IsDevelopment())
+    {
+        csp += " upgrade-insecure-requests;";
+    }
+
+    headers.ContentSecurityPolicy = csp;
 
     await next();
 });

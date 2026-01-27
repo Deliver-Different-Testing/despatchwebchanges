@@ -26,10 +26,8 @@ public class ClientAccessValidatorService(IClientRepository clientRepo) : IClien
         // Safely parse client IDs with validation to prevent exceptions from malformed input
         var requestedClientIds = new HashSet<int>();
         foreach (var idString in clientIds.Split(',', StringSplitOptions.RemoveEmptyEntries))
-        {
             if (int.TryParse(idString.Trim(), out var id)) requestedClientIds.Add(id);
-            // Silently ignore non-numeric values to prevent DoS through malformed input
-        }
+        // Silently ignore non-numeric values to prevent DoS through malformed input
 
         if (requestedClientIds.Count == 0) return;
 

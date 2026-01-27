@@ -25,7 +25,6 @@ public class MessageHelperService(ITenantInfoService infoService) : IMessageHelp
         {
             // Message is FROM current staff, so another party is the recipient
             if (message.UcmmSendToCourierId.HasValue)
-            {
                 return new MessageParticipant
                 {
                     Id = message.UcmmSendToCourierId.Value,
@@ -34,10 +33,8 @@ public class MessageHelperService(ITenantInfoService infoService) : IMessageHelp
                     Initials = GetParticipantInitials(courier: message.UcmmSendToCourier),
                     Status = GetCourierStatus(message.UcmmSendToCourier, now)
                 };
-            }
 
             if (message.UcmmSendToStaffId.HasValue)
-            {
                 return new MessageParticipant
                 {
                     Id = message.UcmmSendToStaffId.Value,
@@ -46,13 +43,11 @@ public class MessageHelperService(ITenantInfoService infoService) : IMessageHelp
                     Initials = GetParticipantInitials(staff: message.UcmmSendToStaff),
                     Status = "online" // Assume staff are always online
                 };
-            }
         }
         else
         {
             // Message is TO current staff, so another party is the sender
             if (message.UcmmSendFromCourierId.HasValue)
-            {
                 return new MessageParticipant
                 {
                     Id = message.UcmmSendFromCourierId.Value,
@@ -61,10 +56,8 @@ public class MessageHelperService(ITenantInfoService infoService) : IMessageHelp
                     Initials = GetParticipantInitials(courier: message.UcmmSendFromCourier),
                     Status = GetCourierStatus(message.UcmmSendFromCourier, now)
                 };
-            }
 
             if (message.UcmmSendFromStaffId.HasValue)
-            {
                 return new MessageParticipant
                 {
                     Id = message.UcmmSendFromStaffId.Value,
@@ -73,7 +66,6 @@ public class MessageHelperService(ITenantInfoService infoService) : IMessageHelp
                     Initials = GetParticipantInitials(staff: message.UcmmSendFromStaff),
                     Status = "online"
                 };
-            }
         }
 
         return new MessageParticipant { Id = 0, Type = OtherMessagePartyType.Staff, Name = "Unknown", Initials = "??" };
@@ -90,18 +82,14 @@ public class MessageHelperService(ITenantInfoService infoService) : IMessageHelp
     private static string GetParticipantName(TucCourier courier = null, TucStaff staff = null)
     {
         if (courier != null)
-        {
             return !string.IsNullOrEmpty(courier.UccrName) && !string.IsNullOrEmpty(courier.UccrSurname)
                 ? $"{courier.UccrName} {courier.UccrSurname}"
                 : "Unknown Courier";
-        }
 
         if (staff != null)
-        {
             return !string.IsNullOrEmpty(staff.UcstFirstName) && !string.IsNullOrEmpty(staff.UcstLastName)
                 ? $"{staff.UcstFirstName} {staff.UcstLastName}"
                 : "Unknown Staff";
-        }
 
         return "Unknown";
     }
@@ -112,18 +100,14 @@ public class MessageHelperService(ITenantInfoService infoService) : IMessageHelp
     private static string GetParticipantInitials(TucCourier courier = null, TucStaff staff = null)
     {
         if (courier != null)
-        {
             return !string.IsNullOrEmpty(courier.UccrName) && !string.IsNullOrEmpty(courier.UccrSurname)
                 ? $"{courier.UccrName[0]}{courier.UccrSurname[0]}"
                 : "??";
-        }
 
         if (staff != null)
-        {
             return !string.IsNullOrEmpty(staff.UcstFirstName) && !string.IsNullOrEmpty(staff.UcstLastName)
                 ? $"{staff.UcstFirstName[0]}{staff.UcstLastName[0]}"
                 : "??";
-        }
 
         return "??";
     }
