@@ -676,4 +676,155 @@ describe('FlightAgentConfirmationDialog', () => {
             });
         });
     });
+
+    describe('Issue #3: Package Ready Time Calculation', () => {
+        it('calculates packageReadyTime as arrival + processing time', async () => {
+            const user = userEvent.setup();
+            const onConfirm = jest.fn();
+
+            // Arrival at 10:30, processing time 90 mins = ready at 12:00
+            const cargoProcessing = createCargoProcessing({
+                arrivalTime: dayjs('2024-03-15T10:30:00'),
+                processingTimeMins: 90,
+                cargoOpeningTime: dayjs('2024-03-15T06:00:00'),
+                cargoClosingTime: dayjs('2024-03-15T22:00:00'),
+            });
+
+            const onCalculateCargoTimes = jest.fn().mockResolvedValue(cargoProcessing);
+
+            renderWithTheme(
+                <FlightAgentConfirmationDialog
+                    {...defaultProps}
+                    mode="flight"
+                    flight={createFlight()}
+                    onCalculateCargoTimes={onCalculateCargoTimes}
+                    onConfirm={onConfirm}
+                />
+            );
+
+            // Wait for cargo calculation to complete
+            await waitFor(() => {
+                expect(screen.getByText('06:00 - 22:00')).toBeInTheDocument();
+            });
+
+            // Click confirm
+            await user.click(screen.getByText('Confirm Assignment'));
+
+            // Verify packageReadyTime is set correctly (arrival 10:30 + 90 mins = 12:00)
+            expect(onConfirm).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    shouldAssign: true,
+                    packageReadyTime: expect.any(Object), // Dayjs object
+                })
+            );
+
+            const result = onConfirm.mock.calls[0][0];
+            expect(result.packageReadyTime).toBeDefined();
+            // Package ready should be around 12:00 (10:30 + 90 mins)
+            expect(result.packageReadyTime.hour()).toBe(12);
+            expect(result.packageReadyTime.minute()).toBe(0);
+        });
+
+        it('uses cargo opening time if arrival + processing is before opening', async () => {
+            const user = userEvent.setup();
+            const onConfirm = jest.fn();
+
+            // Arrival at 04:00, processing time 60 mins = 05:00 (before cargo opens at 06:00)
+            const cargoProcessing = createCargoProcessing({
+                arrivalTime: dayjs('2024-03-15T04:00:00'),
+                processingTimeMins: 60,
+                cargoOpeningTime: dayjs('2024-03-15T06:00:00'),
+                cargoClosingTime: dayjs('2024-03-15T22:00:00'),
+            });
+
+            const onCalculateCargoTimes = jest.fn().mockResolvedValue(cargoProcessing);
+
+            renderWithTheme(
+                <FlightAgentConfirmationDialog
+                    {...defaultProps}
+                    mode="flight"
+                    flight={createFlight()}
+                    onCalculateCargoTimes={onCalculateCargoTimes}
+                    onConfirm={onConfirm}
+                />
+            );
+
+            await waitFor(() => {
+                expect(screen.getByText('06:00 - 22:00')).toBeInTheDocument();
+            });
+
+            await user.click(screen.getByText('Confirm Assignment'));
+
+            const result = onConfirm.mock.calls[0][0];
+            expect(result.packageReadyTime).toBeDefined();
+            // Should use cargo opening time (06:00) since 05:00 is before opening
+            expect(result.packageReadyTime.hour()).toBe(6);
+            expect(result.packageReadyTime.minute()).toBe(0);
+        });
+    });
+
+    describe('Issue #4: Delivery By Time', () => {
+        it('includes deliverByTime from API response in confirmation result', async () => {
+            const user = userEvent.setup();
+            const onConfirm = jest.fn();
+
+            const cargoProcessing = createCargoProcessing({
+                deliverByTime: dayjs('2024-03-15T18:00:00'),
+            });
+
+            const onCalculateCargoTimes = jest.fn().mockResolvedValue(cargoProcessing);
+
+            renderWithTheme(
+                <FlightAgentConfirmationDialog
+                    {...defaultProps}
+                    mode="flight"
+                    flight={createFlight()}
+                    onCalculateCargoTimes={onCalculateCargoTimes}
+                    onConfirm={onConfirm}
+                />
+            );
+
+            await waitFor(() => {
+                expect(screen.getByText('06:00 - 22:00')).toBeInTheDocument();
+            });
+
+            await user.click(screen.getByText('Confirm Assignment'));
+
+            const result = onConfirm.mock.calls[0][0];
+            expect(result.packageDeliverByTime).toBeDefined();
+            expect(result.packageDeliverByTime.hour()).toBe(18);
+        });
+
+        it('does not include deliverByTime when not provided by API', async () => {
+            const user = userEvent.setup();
+            const onConfirm = jest.fn();
+
+            // No deliverByTime in the response
+            const cargoProcessing = createCargoProcessing({
+                deliverByTime: undefined,
+            });
+
+            const onCalculateCargoTimes = jest.fn().mockResolvedValue(cargoProcessing);
+
+            renderWithTheme(
+                <FlightAgentConfirmationDialog
+                    {...defaultProps}
+                    mode="flight"
+                    flight={createFlight()}
+                    onCalculateCargoTimes={onCalculateCargoTimes}
+                    onConfirm={onConfirm}
+                />
+            );
+
+            await waitFor(() => {
+                expect(screen.getByText('06:00 - 22:00')).toBeInTheDocument();
+            });
+
+            await user.click(screen.getByText('Confirm Assignment'));
+
+            const result = onConfirm.mock.calls[0][0];
+            // deliverByTime should be undefined if not provided by API
+            expect(result.packageDeliverByTime).toBeUndefined();
+        });
+    });
 });

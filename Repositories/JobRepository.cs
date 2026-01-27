@@ -2785,22 +2785,25 @@ public partial class JobRepository(
 
         // Use a single atomic SQL statement to handle both update and insert
         // This prevents the race condition where multiple pods try to insert the same JobId
-        await Context.Database.ExecuteSqlRawAsync($"""
+        var sql = """
+                  -- Update existing tracker records
+                  UPDATE tucJobReadTracker
+                  SET HasBeenRead = @p0, ReadTimestamp = @p1, ReadByStaffId = @p2
+                  WHERE JobId IN (
+                  """ + parameterPlaceholders + """
+                  );
 
-                                                               -- Update existing tracker records
-                                                               UPDATE tucJobReadTracker
-                                                               SET HasBeenRead = @p0, ReadTimestamp = @p1, ReadByStaffId = @p2
-                                                               WHERE JobId IN ({parameterPlaceholders});
-
-                                                               -- Insert new tracker records only for jobs that exist in tucJob and don't have a tracker yet
-                                                               -- Uses NOT EXISTS to prevent PK violation race condition
-                                                               INSERT INTO tucJobReadTracker (JobId, HasBeenRead, ReadByStaffId, ReadTimestamp)
-                                                               SELECT j.UcjbId, @p0, @p2, @p1
-                                                               FROM tucJob j
-                                                               WHERE j.UcjbId IN ({parameterPlaceholders})
-                                                                 AND NOT EXISTS (SELECT 1 FROM tucJobReadTracker t WHERE t.JobId = j.UcjbId);
-                                                   """,
-            parameters.ToArray());
+                  -- Insert new tracker records only for jobs that exist in tucJob and don't have a tracker yet
+                  -- Uses NOT EXISTS to prevent PK violation race condition
+                  INSERT INTO tucJobReadTracker (JobId, HasBeenRead, ReadByStaffId, ReadTimestamp)
+                  SELECT j.UcjbId, @p0, @p2, @p1
+                  FROM tucJob j
+                  WHERE j.UcjbId IN (
+                  """ + parameterPlaceholders + """
+                  )
+                    AND NOT EXISTS (SELECT 1 FROM tucJobReadTracker t WHERE t.JobId = j.UcjbId);
+                  """;
+        await Context.Database.ExecuteSqlRawAsync(sql, parameters.ToArray());
     }
 
     /// <summary>

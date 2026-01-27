@@ -55,11 +55,15 @@ public partial class JobDeliveryJourney
 
     public virtual TucAgent NewAgent { get; set; }
 
+    public virtual TucCourier NewCourier { get; set; }
+
     public virtual TucJobInternalStatus NewInternalStatus { get; set; }
 
     public virtual TucJobStatus NewJobStatus { get; set; }
 
     public virtual TucAgent OldAgent { get; set; }
+
+    public virtual TucCourier OldCourier { get; set; }
 
     public virtual TucJobInternalStatus OldInternalStatus { get; set; }
 

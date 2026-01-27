@@ -409,14 +409,24 @@ public class FlightStatsService(
 
     /// <summary>
     /// Calculates the effective start time for flight search, applying the airport's buffer time.
+    /// If the requested departure time is in the past, the current tenant time is used instead
+    /// to prevent showing flights that have already departed.
     /// </summary>
     private DateTime CalculateFlightSearchStartTime(DateTimeOffset? departureDateTime, int flightBuffer)
     {
         var currentTenantTime = infoService.GetCurrentTenantTime();
-        var effectiveStartTime = (departureDateTime < currentTenantTime ? currentTenantTime : departureDateTime) ??
-                                 currentTenantTime;
-        var flightsFrom = effectiveStartTime.AddMinutes(flightBuffer);
-        return flightsFrom.DateTime;
+
+        // Compare using DateTime values to avoid timezone conversion issues
+        // when comparing DateTimeOffset with DateTime
+        DateTime effectiveStartTime;
+        if (departureDateTime.HasValue && departureDateTime.Value.DateTime >= currentTenantTime)
+            // Requested departure is in the future, use it
+            effectiveStartTime = departureDateTime.Value.DateTime;
+        else
+            // No departure specified or it's in the past, use current time
+            effectiveStartTime = currentTenantTime;
+
+        return effectiveStartTime.AddMinutes(flightBuffer);
     }
 
     /// <summary>

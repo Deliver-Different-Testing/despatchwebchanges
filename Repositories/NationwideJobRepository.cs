@@ -89,7 +89,7 @@ public class NationwideJobRepository(
                 UcnwClientId = job.UcjbClientId ?? 0,
                 UcnwFlightNo = primaryFlight.CarrierFsCode + primaryFlight.FlightNumber,
                 UcnwEtd = primaryFlight.DepartureTime.DateTime,
-                UcnwEta = primaryFlight.ArrivalTime.DateTime,
+                UcnwEta = lastFlight.ArrivalTime.DateTime, // Use last segment arrival for multi-segment flights
                 WebhookAlertId = webhookIds.First(),
                 GateNumber = primaryFlight.DepartureTerminal,
                 UcnwLegNumber = 1,
@@ -1413,7 +1413,7 @@ public class NationwideJobRepository(
             {
                 ArrivalTime = flightArrivalTime,
                 DeliverByTime = j.DeliverByTime,
-                ProcessingTimeMins = j.ToAirport.ProcessingTime ?? 0,
+                ProcessingTimeMins = j.ToAirport.ProcessingTime ?? 60, // Default to 60 minutes if not set
                 CargoOpeningTime = j.ToAirport.CargoFacilities
                     .Where(c => c.Carrier.CarrierCode == carrierFsCode)
                     .Select(c => c.OpeningTime)
