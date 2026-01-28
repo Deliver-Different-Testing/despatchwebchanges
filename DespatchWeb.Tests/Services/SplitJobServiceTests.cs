@@ -169,8 +169,6 @@ public class SplitJobServiceTests : IDisposable
         };
     }
 
-    private const int TestMeetingPointSuburbId = 50;
-
     private static AddressViewModel CreateTestMeetingPointAddress() => new(
         addressLine1: "Unit 5",
         addressLine2: "Meeting Point Building",
@@ -203,7 +201,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
 
         // Assert
         pickupJobId.Should().BeGreaterThan(0);
@@ -235,7 +233,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -263,7 +261,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -306,7 +304,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        await service.SplitJobAsync(1, "TestUser", meetingPoint);
 
         // Assert - ParentJobCourierId is null since we don't seed TblSettings
         await using (var context = CreateContext())
@@ -332,7 +330,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, _) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var (pickupJobId, _) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -358,7 +356,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (_, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var (_, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -387,7 +385,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -423,7 +421,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -452,7 +450,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, _) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var (pickupJobId, _) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -474,7 +472,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var act = async () => await service.SplitJobAsync(999, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var act = async () => await service.SplitJobAsync(999, "TestUser", meetingPoint);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
@@ -497,7 +495,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var act = async () => await service.SplitJobAsync(2, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var act = async () => await service.SplitJobAsync(2, "TestUser", meetingPoint);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
@@ -522,7 +520,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var act = async () => await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var act = async () => await service.SplitJobAsync(1, "TestUser", meetingPoint);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
@@ -547,7 +545,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var act = async () => await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var act = async () => await service.SplitJobAsync(1, "TestUser", meetingPoint);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
@@ -574,7 +572,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -603,7 +601,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -633,7 +631,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -665,7 +663,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", meetingPoint);
 
         // Assert
         pickupId.Should().BeGreaterThan(0);
@@ -698,7 +696,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -733,7 +731,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -758,7 +756,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var act = async () => await service.SplitJobBookingAsync(999, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var act = async () => await service.SplitJobBookingAsync(999, "TestUser", meetingPoint);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
@@ -781,7 +779,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var act = async () => await service.SplitJobBookingAsync(2, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var act = async () => await service.SplitJobBookingAsync(2, "TestUser", meetingPoint);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
@@ -806,7 +804,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var act = async () => await service.SplitJobBookingAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var act = async () => await service.SplitJobBookingAsync(1, "TestUser", meetingPoint);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
@@ -833,13 +831,13 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, _) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var (pickupJobId, _) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
         {
             var pickupJob = await context.TucJobs.FindAsync(pickupJobId);
-            pickupJob!.UcjbTo.Should().Be(TestMeetingPointSuburbId);
+            pickupJob!.UcjbTo.Should().BeNull();
             pickupJob.UcjbToAddr.Should().Be(meetingPoint.FullAddress);
             pickupJob.DeliveryLatitude.Should().Be(meetingPoint.Latitude);
             pickupJob.DeliveryLongitude.Should().Be(meetingPoint.Longitude);
@@ -870,7 +868,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (_, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var (_, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
@@ -896,13 +894,13 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (_, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var (_, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
         {
             var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId);
-            deliveryJob!.UcjbFrom.Should().Be(TestMeetingPointSuburbId);
+            deliveryJob!.UcjbFrom.Should().BeNull();
             deliveryJob.UcjbFromAddr.Should().Be(meetingPoint.FullAddress);
             deliveryJob.PickUpLatitude.Should().Be(meetingPoint.Latitude);
             deliveryJob.PickUpLongitude.Should().Be(meetingPoint.Longitude);
@@ -933,7 +931,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
 
         // Assert - Pickup's TO address should match Delivery's FROM address
         await using (var context = CreateContext())
@@ -968,13 +966,13 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (_, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var (_, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", meetingPoint);
 
         // Assert
         await using (var context = CreateContext())
         {
             var deliveryBooking = await context.TucJobBookings.FindAsync(deliveryId);
-            deliveryBooking!.UcbkFrom.Should().Be(TestMeetingPointSuburbId);
+            deliveryBooking!.UcbkFrom.Should().Be(0);
             deliveryBooking.UcbkFromAddr.Should().Be(meetingPoint.FullAddress);
         }
     }
@@ -995,7 +993,7 @@ public class SplitJobServiceTests : IDisposable
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act
-        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", TestMeetingPointSuburbId, meetingPoint);
+        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", meetingPoint);
 
         // Assert - Pickup's TO address should match Delivery's FROM address
         await using (var context = CreateContext())
@@ -1005,6 +1003,297 @@ public class SplitJobServiceTests : IDisposable
 
             pickupBooking!.UcbkTo.Should().Be(deliveryBooking!.UcbkFrom);
             pickupBooking.UcbkToAddr.Should().Be(deliveryBooking.UcbkFromAddr);
+        }
+    }
+
+    #endregion
+
+    #region No Suburb ID Behavior Tests
+
+    [Fact]
+    public async Task SplitJobAsync_MeetingPointSuburbId_IsNullForPickupDelivery()
+    {
+        // Arrange - This test verifies the fix for the "Invalid meeting point address" error
+        // When splitting a job, the meeting point suburb IDs should be null since
+        // HERE Maps lookup doesn't provide suburb IDs and we use address lines instead
+        await using (var context = CreateContext())
+        {
+            var job = CreateTestJob(1, "JOB-001");
+            job.UcjbFrom = 100; // Original pickup suburb
+            job.UcjbTo = 200;   // Original delivery suburb
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
+
+        // Assert
+        await using (var context = CreateContext())
+        {
+            var pickupJob = await context.TucJobs.FindAsync(pickupJobId);
+            var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId);
+
+            // Meeting point suburb IDs should be null (pickup's To, delivery's From)
+            pickupJob!.UcjbTo.Should().BeNull("pickup job's delivery suburb should be null for meeting point");
+            deliveryJob!.UcjbFrom.Should().BeNull("delivery job's pickup suburb should be null for meeting point");
+
+            // But the address text and coordinates should be set correctly
+            pickupJob.UcjbToAddr.Should().Be(meetingPoint.FullAddress);
+            deliveryJob.UcjbFromAddr.Should().Be(meetingPoint.FullAddress);
+        }
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_OriginalPickupSuburb_IsPreservedOnPickupJob()
+    {
+        // Arrange
+        const int originalPickupSuburbId = 100;
+        await using (var context = CreateContext())
+        {
+            var job = CreateTestJob(1, "JOB-001");
+            job.UcjbFrom = originalPickupSuburbId;
+            job.UcjbFromAddr = "123 Original Pickup St";
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        var (pickupJobId, _) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
+
+        // Assert - Pickup job should keep the original pickup suburb
+        await using (var context = CreateContext())
+        {
+            var pickupJob = await context.TucJobs.FindAsync(pickupJobId);
+            pickupJob!.UcjbFrom.Should().Be(originalPickupSuburbId);
+            pickupJob.UcjbFromAddr.Should().Be("123 Original Pickup St");
+        }
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_OriginalDeliverySuburb_IsPreservedOnDeliveryJob()
+    {
+        // Arrange
+        const int originalDeliverySuburbId = 200;
+        await using (var context = CreateContext())
+        {
+            var job = CreateTestJob(1, "JOB-001");
+            job.UcjbTo = originalDeliverySuburbId;
+            job.UcjbToAddr = "456 Final Destination Ave";
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        var (_, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
+
+        // Assert - Delivery job should keep the original delivery suburb
+        await using (var context = CreateContext())
+        {
+            var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId);
+            deliveryJob!.UcjbTo.Should().Be(originalDeliverySuburbId);
+            deliveryJob.UcjbToAddr.Should().Be("456 Final Destination Ave");
+        }
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_AddressLinesUsedInsteadOfSuburbId()
+    {
+        // Arrange - Verifies that address lines 1-8 are the primary identifier
+        // for the meeting point, not the suburb ID
+        await using (var context = CreateContext())
+        {
+            var job = CreateTestJob(1, "JOB-001");
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
+
+        // Assert - All 8 address lines should be populated for meeting point
+        await using (var context = CreateContext())
+        {
+            var pickupJob = await context.TucJobs.FindAsync(pickupJobId);
+            var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId);
+
+            // Pickup job delivery address (meeting point)
+            pickupJob!.DeliveryAddressLine1.Should().Be(meetingPoint.AddressLine1);
+            pickupJob.DeliveryAddressLine2.Should().Be(meetingPoint.AddressLine2);
+            pickupJob.DeliveryAddressLine3.Should().Be(meetingPoint.AddressLine3);
+            pickupJob.DeliveryAddressLine4.Should().Be(meetingPoint.AddressLine4);
+            pickupJob.DeliveryAddressLine5.Should().Be(meetingPoint.AddressLine5);
+            pickupJob.DeliveryAddressLine6.Should().Be(meetingPoint.AddressLine6);
+            pickupJob.DeliveryAddressLine7.Should().Be(meetingPoint.AddressLine7); // ZIP code
+            pickupJob.DeliveryAddressLine8.Should().Be(meetingPoint.AddressLine8);
+
+            // Delivery job pickup address (meeting point)
+            deliveryJob!.PickupAddressLine1.Should().Be(meetingPoint.AddressLine1);
+            deliveryJob.PickupAddressLine2.Should().Be(meetingPoint.AddressLine2);
+            deliveryJob.PickupAddressLine3.Should().Be(meetingPoint.AddressLine3);
+            deliveryJob.PickupAddressLine4.Should().Be(meetingPoint.AddressLine4);
+            deliveryJob.PickupAddressLine5.Should().Be(meetingPoint.AddressLine5);
+            deliveryJob.PickupAddressLine6.Should().Be(meetingPoint.AddressLine6);
+            deliveryJob.PickupAddressLine7.Should().Be(meetingPoint.AddressLine7); // ZIP code
+            deliveryJob.PickupAddressLine8.Should().Be(meetingPoint.AddressLine8);
+        }
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_CoordinatesUsedForMeetingPoint()
+    {
+        // Arrange - Verifies that coordinates are set for the meeting point
+        await using (var context = CreateContext())
+        {
+            var job = CreateTestJob(1, "JOB-001");
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
+
+        // Assert
+        await using (var context = CreateContext())
+        {
+            var pickupJob = await context.TucJobs.FindAsync(pickupJobId);
+            var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId);
+
+            // Meeting point coordinates should be set on both jobs
+            pickupJob!.DeliveryLatitude.Should().Be(meetingPoint.Latitude);
+            pickupJob.DeliveryLongitude.Should().Be(meetingPoint.Longitude);
+
+            deliveryJob!.PickUpLatitude.Should().Be(meetingPoint.Latitude);
+            deliveryJob.PickUpLongitude.Should().Be(meetingPoint.Longitude);
+        }
+    }
+
+    #endregion
+
+    #region Job Booking No Suburb ID Tests
+
+    [Fact]
+    public async Task SplitJobBookingAsync_MeetingPointSuburbId_IsZeroForPickupDelivery()
+    {
+        // Arrange - For job bookings, UcbkTo/UcbkFrom are non-nullable doubles,
+        // so we use 0 instead of null to indicate no suburb ID
+        await using (var context = CreateContext())
+        {
+            var booking = CreateTestJobBooking(1, "BOOK-001");
+            booking.UcbkFrom = 100; // Original pickup suburb
+            booking.UcbkTo = 200;   // Original delivery suburb
+            context.TucJobBookings.Add(booking);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", meetingPoint);
+
+        // Assert
+        await using (var context = CreateContext())
+        {
+            var pickupBooking = await context.TucJobBookings.FindAsync(pickupId);
+            var deliveryBooking = await context.TucJobBookings.FindAsync(deliveryId);
+
+            // Meeting point suburb IDs should be 0 (pickup's To, delivery's From)
+            pickupBooking!.UcbkTo.Should().Be(0, "pickup booking's delivery suburb should be 0 for meeting point");
+            deliveryBooking!.UcbkFrom.Should().Be(0, "delivery booking's pickup suburb should be 0 for meeting point");
+
+            // But the address text should be set correctly
+            pickupBooking.UcbkToAddr.Should().Be(meetingPoint.FullAddress);
+            deliveryBooking.UcbkFromAddr.Should().Be(meetingPoint.FullAddress);
+        }
+    }
+
+    [Fact]
+    public async Task SplitJobBookingAsync_OriginalSuburbs_ArePreserved()
+    {
+        // Arrange
+        const double originalPickupSuburbId = 100;
+        const double originalDeliverySuburbId = 200;
+        await using (var context = CreateContext())
+        {
+            var booking = CreateTestJobBooking(1, "BOOK-001");
+            booking.UcbkFrom = originalPickupSuburbId;
+            booking.UcbkFromAddr = "123 Original Pickup St";
+            booking.UcbkTo = originalDeliverySuburbId;
+            booking.UcbkToAddr = "456 Final Destination Ave";
+            context.TucJobBookings.Add(booking);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", meetingPoint);
+
+        // Assert
+        await using (var context = CreateContext())
+        {
+            var pickupBooking = await context.TucJobBookings.FindAsync(pickupId);
+            var deliveryBooking = await context.TucJobBookings.FindAsync(deliveryId);
+
+            // Original pickup suburb preserved on pickup booking
+            pickupBooking!.UcbkFrom.Should().Be(originalPickupSuburbId);
+            pickupBooking.UcbkFromAddr.Should().Be("123 Original Pickup St");
+
+            // Original delivery suburb preserved on delivery booking
+            deliveryBooking!.UcbkTo.Should().Be(originalDeliverySuburbId);
+            deliveryBooking.UcbkToAddr.Should().Be("456 Final Destination Ave");
+        }
+    }
+
+    [Fact]
+    public async Task SplitJobBookingAsync_AddressLinesUsedForMeetingPoint()
+    {
+        // Arrange
+        await using (var context = CreateContext())
+        {
+            var booking = CreateTestJobBooking(1, "BOOK-001");
+            context.TucJobBookings.Add(booking);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", meetingPoint);
+
+        // Assert
+        await using (var context = CreateContext())
+        {
+            var pickupBooking = await context.TucJobBookings.FindAsync(pickupId);
+            var deliveryBooking = await context.TucJobBookings.FindAsync(deliveryId);
+
+            // Pickup booking delivery address lines (meeting point)
+            pickupBooking!.DeliveryAddressLine1.Should().Be(meetingPoint.AddressLine1);
+            pickupBooking.DeliveryAddressLine5.Should().Be(meetingPoint.AddressLine5);
+            pickupBooking.DeliveryAddressLine7.Should().Be(meetingPoint.AddressLine7);
+
+            // Delivery booking pickup address lines (meeting point)
+            deliveryBooking!.PickupAddressLine1.Should().Be(meetingPoint.AddressLine1);
+            deliveryBooking.PickupAddressLine5.Should().Be(meetingPoint.AddressLine5);
+            deliveryBooking.PickupAddressLine7.Should().Be(meetingPoint.AddressLine7);
         }
     }
 

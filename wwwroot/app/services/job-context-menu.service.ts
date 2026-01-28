@@ -13,6 +13,7 @@ import {LateEventType} from "../enums/late-event-type.enum";
 import VoidJobConfirmationDialogService
     from "../components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
 import {EditAddressDialogService} from "../components/dialogs/edit-address-dialog/edit-address-dialog.service";
+import PriceBreakdownDialogService from "../components/dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
 
 class JobContextMenuService implements angular.IServiceProvider {
     static $inject = [
@@ -24,6 +25,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         "jobAddStopService",
         "voidJobConfirmationDialogService",
         "editAddressDialogService",
+        "priceBreakdownDialogService",
     ];
 
     private eventGroupsCache: ISuggestion[] = [];
@@ -37,6 +39,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         private jobAddStopService: JobAddStopService,
         private voidJobConfirmationDialogService: VoidJobConfirmationDialogService,
         private editAddressDialogService: EditAddressDialogService,
+        private priceBreakdownDialogService: PriceBreakdownDialogService,
     ) {
         console.log("JobContextMenuService initialized");
         this.preloadEventGroups();
@@ -115,18 +118,30 @@ class JobContextMenuService implements angular.IServiceProvider {
             });
         }
 
-        // Reprice Job
+        // Reprice Job / Price Breakdown
         if (
             job.internalStatusId &&
             job.internalStatusId != InternalJobStatus.Reprice &&
             job.speedId === 415
         ) {
-            menuOptions.push({
-                text: "Reprice Job",
-                icon: "price_check",
-                click: () => this.moveJobToReprice(job, callbacks.onRefresh),
-                hasBottomDivider: true,
-            });
+            if (job.preBook) {
+                // Schedule orders get Price Breakdown
+                menuOptions.push({
+                    text: "Price Breakdown",
+                    icon: "price_check",
+                    click: (_$itemScope: any, $event: MouseEvent) =>
+                        this.openPriceBreakdown($event, job, callbacks.onRefresh),
+                    hasBottomDivider: true,
+                });
+            } else {
+                // Regular jobs get Reprice Job
+                menuOptions.push({
+                    text: "Reprice Job",
+                    icon: "price_check",
+                    click: () => this.moveJobToReprice(job, callbacks.onRefresh),
+                    hasBottomDivider: true,
+                });
+            }
         }
 
         menuOptions.push({
@@ -337,6 +352,34 @@ class JobContextMenuService implements angular.IServiceProvider {
         }
     }
 
+    private async openPriceBreakdown(
+        $event: MouseEvent,
+        job: IDispatchJob,
+        onRefresh: () => void
+    ): Promise<void> {
+        try {
+            // Adapt IDispatchJob to IJob interface for the dialog
+            const jobForDialog = {
+                id: job.id,
+                preBook: job.preBook ?? false,
+                isArchived: job.isArchived,
+                isBulkJob: job.isBulkJob,
+                charge: 0,
+            } as any;
+
+            await this.priceBreakdownDialogService.openPriceBreakdownDialog($event, jobForDialog);
+
+            if (onRefresh) {
+                onRefresh();
+            }
+        } catch (error) {
+            if (error) {
+                console.error("Error opening price breakdown:", error);
+                this.toastrService.showErrorToast("Failed to open price breakdown");
+            }
+        }
+    }
+
     private async performUnassignment(
         job: IDispatchJob,
         dialogTitle: string,
@@ -497,8 +540,7 @@ class JobContextMenuService implements angular.IServiceProvider {
                 return;
             }
 
-            const meetingPointSuburbId = Number(meetingPointAddress.toSuburbId);
-            if (!meetingPointAddress.fullAddress || !meetingPointSuburbId) {
+            if (!meetingPointAddress.fullAddress) {
                 this.toastrService.showErrorToast("Invalid meeting point address");
                 return;
             }
@@ -506,7 +548,6 @@ class JobContextMenuService implements angular.IServiceProvider {
             // Single API call to split job with meeting point
             await this.DispatchData.splitJob(
                 job.id,
-                meetingPointSuburbId,
                 meetingPointAddress
             );
 

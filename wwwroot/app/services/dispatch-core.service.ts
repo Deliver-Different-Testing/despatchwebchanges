@@ -533,12 +533,10 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async splitJob(
         jobId: number,
-        meetingPointSuburbId: number,
         meetingPointAddress: IAddressViewModel
     ): Promise<void> {
         const data = {
             jobId,
-            meetingPointSuburbId,
             meetingPointAddress
         };
 

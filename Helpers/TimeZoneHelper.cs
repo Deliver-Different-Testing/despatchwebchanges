@@ -6,13 +6,23 @@ namespace DespatchWeb.Helpers;
 
 public static class TimeZoneHelper
 {
+    /// <summary>
+    /// Sets the timezone offset on a DateTimeOffset without converting the time.
+    /// Use this for dates that are already in local time and just need the offset applied.
+    /// For UTC dates that need conversion, use DateExtension.ToTimeZoneOffset instead.
+    /// </summary>
     public static DateTimeOffset SetDateTimeWithTimeZone(DateTimeOffset dateTime, string timeZone)
     {
         var tz = GetTimeZoneInfo(timeZone);
-        var offset = tz.GetUtcOffset(dateTime);
+        var offset = tz.GetUtcOffset(dateTime.DateTime);
         return new DateTimeOffset(dateTime.DateTime, offset);
     }
-    
+
+    /// <summary>
+    /// Sets the timezone offset on a DateTime without converting the time.
+    /// Use this for dates that are already in local time and just need the offset applied.
+    /// For UTC dates that need conversion, use DateExtension.ToTimeZoneOffset instead.
+    /// </summary>
     public static DateTimeOffset SetDateTimeWithTimeZone(DateTime dateTime, string timeZone)
     {
         var tz = GetTimeZoneInfo(timeZone);

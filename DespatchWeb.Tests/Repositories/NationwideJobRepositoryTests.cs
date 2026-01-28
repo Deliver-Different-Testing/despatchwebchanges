@@ -2125,6 +2125,214 @@ public class NationwideJobRepositoryTests : IDisposable
         result.Should().BeNull("Should return null when job is not found");
     }
 
+    [Fact]
+    public async Task CalculateCargoReadyTimeAsync_ReturnsCargoTimesAsDateTimeOffsetWithTimezoneOffset()
+    {
+        // Arrange - Flight arrives June 15, 2024 at 14:00
+        var flightArrivalTime = new DateTime(2024, 6, 15, 14, 0, 0);
+        const string pacificTimeZone = "Pacific Standard Time"; // UTC-8 (PST) / UTC-7 (PDT)
+
+        var job = CreateJobWithAirport(100, "JOB001", 1);
+        _context.TucJobs.Add(job);
+
+        var carrier = CreateFlightCarrier(1, "NZ", "Air New Zealand", true);
+        _context.FlightCarriers.Add(carrier);
+
+        var airport = CreateAirportWithTimezoneAndCargoFacility(
+            id: 1,
+            name: "Los Angeles Airport",
+            code: "LAX",
+            active: true,
+            processingTime: 60,
+            timezone: pacificTimeZone,
+            carrierId: 1,
+            cargoOpeningTime: new DateTime(1900, 1, 1, 6, 0, 0),
+            cargoClosingTime: new DateTime(1900, 1, 1, 22, 0, 0)
+        );
+        _context.TblAirports.Add(airport);
+
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.CalculateCargoReadyTimeAsync(100, "NZ", flightArrivalTime);
+
+        // Assert
+        result.Should().NotBeNull();
+
+        // Cargo times should be DateTimeOffset with the airport's timezone offset applied
+        // The time portion should match the cargo facility times (06:00 and 22:00)
+        result!.CargoOpeningTime.Hour.Should().Be(6, "Opening time should be 06:00");
+        result.CargoOpeningTime.Minute.Should().Be(0);
+        result.CargoClosingTime.Hour.Should().Be(22, "Closing time should be 22:00");
+        result.CargoClosingTime.Minute.Should().Be(0);
+
+        // The date should match the flight arrival date
+        result.CargoOpeningTime.Year.Should().Be(2024);
+        result.CargoOpeningTime.Month.Should().Be(6);
+        result.CargoOpeningTime.Day.Should().Be(15);
+        result.CargoClosingTime.Year.Should().Be(2024);
+        result.CargoClosingTime.Month.Should().Be(6);
+        result.CargoClosingTime.Day.Should().Be(15);
+
+        // The offset should be present (not zero unless actually UTC)
+        // Pacific time in June is PDT (UTC-7), so offset should be -07:00
+        var expectedOffset = TimeZoneInfo.FindSystemTimeZoneById(pacificTimeZone).GetUtcOffset(flightArrivalTime);
+        result.CargoOpeningTime.Offset.Should().Be(expectedOffset,
+            "Cargo opening time should have the airport's timezone offset");
+        result.CargoClosingTime.Offset.Should().Be(expectedOffset,
+            "Cargo closing time should have the airport's timezone offset");
+    }
+
+    [Fact]
+    public async Task CalculateCargoReadyTimeAsync_WhenAirportHasNoTimezone_UsesLocalTimezone()
+    {
+        // Arrange
+        var flightArrivalTime = new DateTime(2024, 6, 15, 14, 0, 0);
+
+        var job = CreateJobWithAirport(100, "JOB001", 1);
+        _context.TucJobs.Add(job);
+
+        var carrier = CreateFlightCarrier(1, "NZ", "Air New Zealand", true);
+        _context.FlightCarriers.Add(carrier);
+
+        // Airport with no timezone set
+        var airport = CreateAirportWithTimezoneAndCargoFacility(
+            id: 1,
+            name: "Test Airport",
+            code: "TST",
+            active: true,
+            processingTime: 60,
+            timezone: null, // No timezone
+            carrierId: 1,
+            cargoOpeningTime: new DateTime(1900, 1, 1, 8, 0, 0),
+            cargoClosingTime: new DateTime(1900, 1, 1, 20, 0, 0)
+        );
+        _context.TblAirports.Add(airport);
+
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.CalculateCargoReadyTimeAsync(100, "NZ", flightArrivalTime);
+
+        // Assert
+        result.Should().NotBeNull();
+
+        // Should fall back to local timezone
+        var localOffset = TimeZoneInfo.Local.GetUtcOffset(flightArrivalTime);
+        result!.CargoOpeningTime.Offset.Should().Be(localOffset,
+            "Should use local timezone when airport has no timezone configured");
+        result.CargoClosingTime.Offset.Should().Be(localOffset);
+
+        // Time portions should still be correct
+        result.CargoOpeningTime.Hour.Should().Be(8);
+        result.CargoClosingTime.Hour.Should().Be(20);
+    }
+
+    [Fact]
+    public async Task CalculateCargoReadyTimeAsync_WhenNoCargoFacility_UsesDefaultTimesWithTimezoneOffset()
+    {
+        // Arrange
+        var flightArrivalTime = new DateTime(2024, 6, 15, 14, 0, 0);
+        const string easternTimeZone = "Eastern Standard Time";
+
+        var job = CreateJobWithAirport(100, "JOB001", 1);
+        _context.TucJobs.Add(job);
+
+        // Airport with timezone but NO cargo facility for this carrier
+        var airport = new TblAirport
+        {
+            AirportId = 1,
+            Name = "New York JFK",
+            AirportCode = "JFK",
+            Active = true,
+            ProcessingTime = 60,
+            Timezone = easternTimeZone,
+            Latitude = 0,
+            Longitude = 0,
+            AddressLine1 = "123 Airport Road",
+            AddressLine5 = "City",
+            AddressLine6 = "State",
+            AddressLine7 = "12345",
+            AddressLine8 = "Country",
+            CargoFacilities = new List<CargoFacility>() // Empty - no cargo facilities
+        };
+        _context.TblAirports.Add(airport);
+
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.CalculateCargoReadyTimeAsync(100, "NZ", flightArrivalTime);
+
+        // Assert
+        result.Should().NotBeNull();
+
+        // Should use default times (start of day 00:00 and end of day 23:59)
+        result!.CargoOpeningTime.Hour.Should().Be(0, "Default opening should be start of day");
+        result.CargoClosingTime.Hour.Should().Be(23, "Default closing should be end of day");
+        result.CargoClosingTime.Minute.Should().Be(59);
+
+        // The offset should still be applied from the airport timezone
+        var expectedOffset = TimeZoneInfo.FindSystemTimeZoneById(easternTimeZone).GetUtcOffset(flightArrivalTime);
+        result.CargoOpeningTime.Offset.Should().Be(expectedOffset);
+        result.CargoClosingTime.Offset.Should().Be(expectedOffset);
+    }
+
+    [Fact]
+    public async Task CalculateCargoReadyTimeAsync_CombinesArrivalDateWithCargoFacilityTimes()
+    {
+        // Arrange - Flight arrives on specific date
+        var flightArrivalTime = new DateTime(2024, 12, 25, 18, 30, 0); // Christmas Day at 6:30 PM
+
+        var job = CreateJobWithAirport(100, "JOB001", 1);
+        _context.TucJobs.Add(job);
+
+        var carrier = CreateFlightCarrier(1, "AA", "American Airlines", true);
+        _context.FlightCarriers.Add(carrier);
+
+        // Cargo facility has times stored with historical date (1900-01-01)
+        var airport = CreateAirportWithTimezoneAndCargoFacility(
+            id: 1,
+            name: "Chicago Airport",
+            code: "ORD",
+            active: true,
+            processingTime: 90,
+            timezone: "Central Standard Time",
+            carrierId: 1,
+            cargoOpeningTime: new DateTime(1900, 1, 1, 5, 30, 0), // 5:30 AM
+            cargoClosingTime: new DateTime(1900, 1, 1, 21, 45, 0) // 9:45 PM
+        );
+        _context.TblAirports.Add(airport);
+
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.CalculateCargoReadyTimeAsync(100, "AA", flightArrivalTime);
+
+        // Assert
+        result.Should().NotBeNull();
+
+        // The cargo times should use the ARRIVAL DATE (2024-12-25), not the stored date (1900-01-01)
+        result!.CargoOpeningTime.Year.Should().Be(2024, "Should use arrival year");
+        result.CargoOpeningTime.Month.Should().Be(12, "Should use arrival month");
+        result.CargoOpeningTime.Day.Should().Be(25, "Should use arrival day");
+        result.CargoOpeningTime.Hour.Should().Be(5, "Should preserve cargo facility opening hour");
+        result.CargoOpeningTime.Minute.Should().Be(30, "Should preserve cargo facility opening minute");
+
+        result.CargoClosingTime.Year.Should().Be(2024);
+        result.CargoClosingTime.Month.Should().Be(12);
+        result.CargoClosingTime.Day.Should().Be(25);
+        result.CargoClosingTime.Hour.Should().Be(21, "Should preserve cargo facility closing hour");
+        result.CargoClosingTime.Minute.Should().Be(45, "Should preserve cargo facility closing minute");
+    }
+
     #endregion
 
     #region Helper Methods
@@ -2297,6 +2505,40 @@ public class NationwideJobRepositoryTests : IDisposable
         AddressLine6 = "State",
         AddressLine7 = "12345",
         AddressLine8 = "Country"
+    };
+
+    private static TblAirport CreateAirportWithTimezoneAndCargoFacility(
+        int id, string name, string code, bool active, int processingTime,
+        string? timezone, int carrierId, DateTime cargoOpeningTime, DateTime cargoClosingTime) => new()
+    {
+        AirportId = id,
+        Name = name,
+        AirportCode = code,
+        Active = active,
+        ProcessingTime = processingTime,
+        Timezone = timezone,
+        Latitude = 0,
+        Longitude = 0,
+        AddressLine1 = "123 Airport Road",
+        AddressLine5 = "City",
+        AddressLine6 = "State",
+        AddressLine7 = "12345",
+        AddressLine8 = "Country",
+        CargoFacilities = new List<CargoFacility>
+        {
+            new()
+            {
+                CargoFacilityId = id,
+                AirportId = id,
+                CarrierId = carrierId,
+                OpeningTime = cargoOpeningTime,
+                ClosingTime = cargoClosingTime,
+                Created = DateTime.Now,
+                CreatedBy = "Test",
+                LastModified = DateTime.Now,
+                LastModifiedBy = "Test"
+            }
+        }
     };
 
     private static EntityClasses.TimeZone CreateTimeZone(int id, string name, string code) => new()

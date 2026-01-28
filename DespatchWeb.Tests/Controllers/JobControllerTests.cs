@@ -1090,14 +1090,13 @@ public class JobControllerTests
         var request = new SplitJobRequest
         {
             JobId = 1,
-            MeetingPointSuburbId = 50,
             MeetingPointAddress = meetingPointAddress
         };
         var staffInfo = new Suggestion { Id = 1, Text = "John Doe" };
 
         _tenantInfoServiceMock.Setup(x => x.GetStaffInfoAsync())
             .ReturnsAsync(staffInfo);
-        _splitJobServiceMock.Setup(x => x.SplitJobAsync(1, "John Doe", 50, It.IsAny<AddressViewModel>()))
+        _splitJobServiceMock.Setup(x => x.SplitJobAsync(1, "John Doe", It.IsAny<AddressViewModel>()))
             .ReturnsAsync((1, 2));
 
         var controller = CreateController();
@@ -1107,6 +1106,150 @@ public class JobControllerTests
 
         // Assert
         result.Should().BeOfType<OkResult>();
+    }
+
+    [Fact]
+    public async Task SplitJob_RequestWithoutSuburbId_CallsServiceWithAddressOnly()
+    {
+        // Arrange - This test verifies the fix where suburb ID is no longer required
+        var meetingPointAddress = new AddressViewModel(
+            addressLine1: "456 New Meeting Point",
+            addressLine2: "Suite 100",
+            addressLine3: string.Empty,
+            addressLine4: string.Empty,
+            addressLine5: "Wellington",
+            addressLine6: string.Empty,
+            addressLine7: "6011",
+            addressLine8: string.Empty)
+        {
+            Latitude = -41.2865m,
+            Longitude = 174.7762m
+        };
+
+        var request = new SplitJobRequest
+        {
+            JobId = 42,
+            MeetingPointAddress = meetingPointAddress
+        };
+        var staffInfo = new Suggestion { Id = 5, Text = "Jane Smith" };
+
+        _tenantInfoServiceMock.Setup(x => x.GetStaffInfoAsync())
+            .ReturnsAsync(staffInfo);
+        _splitJobServiceMock.Setup(x => x.SplitJobAsync(
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<AddressViewModel>()))
+            .ReturnsAsync((10, 11));
+
+        var controller = CreateController();
+
+        // Act
+        await controller.SplitJob(request);
+
+        // Assert - Verify service is called with correct parameters (no suburb ID)
+        _splitJobServiceMock.Verify(x => x.SplitJobAsync(
+            42,
+            "Jane Smith",
+            It.Is<AddressViewModel>(a =>
+                a.AddressLine1 == "456 New Meeting Point" &&
+                a.AddressLine5 == "Wellington" &&
+                a.AddressLine7 == "6011" &&
+                a.Latitude == -41.2865m &&
+                a.Longitude == 174.7762m)),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SplitJob_ServiceException_Returns500()
+    {
+        // Arrange
+        var meetingPointAddress = new AddressViewModel(
+            addressLine1: "Error Address",
+            addressLine2: string.Empty,
+            addressLine3: string.Empty,
+            addressLine4: string.Empty,
+            addressLine5: "Auckland",
+            addressLine6: string.Empty,
+            addressLine7: "1010",
+            addressLine8: string.Empty);
+
+        var request = new SplitJobRequest
+        {
+            JobId = 999,
+            MeetingPointAddress = meetingPointAddress
+        };
+        var staffInfo = new Suggestion { Id = 1, Text = "Test User" };
+
+        _tenantInfoServiceMock.Setup(x => x.GetStaffInfoAsync())
+            .ReturnsAsync(staffInfo);
+        _splitJobServiceMock.Setup(x => x.SplitJobAsync(
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<AddressViewModel>()))
+            .ThrowsAsync(new InvalidOperationException("Job not found"));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.SplitJob(request);
+
+        // Assert
+        var statusCodeResult = result.Should().BeOfType<ObjectResult>().Subject;
+        statusCodeResult.StatusCode.Should().Be(500);
+    }
+
+    [Fact]
+    public async Task SplitJob_AddressWithAllFields_PassesAllFieldsToService()
+    {
+        // Arrange - Verify all address fields are passed correctly
+        var meetingPointAddress = new AddressViewModel(
+            addressLine1: "Unit 5",
+            addressLine2: "Building A",
+            addressLine3: "123",
+            addressLine4: "Main Street",
+            addressLine5: "Auckland",
+            addressLine6: "Auckland Central",
+            addressLine7: "1010",
+            addressLine8: "Near the park")
+        {
+            Latitude = -36.8485m,
+            Longitude = 174.7633m
+        };
+
+        var request = new SplitJobRequest
+        {
+            JobId = 1,
+            MeetingPointAddress = meetingPointAddress
+        };
+        var staffInfo = new Suggestion { Id = 1, Text = "Test User" };
+
+        AddressViewModel? capturedAddress = null;
+        _tenantInfoServiceMock.Setup(x => x.GetStaffInfoAsync())
+            .ReturnsAsync(staffInfo);
+        _splitJobServiceMock.Setup(x => x.SplitJobAsync(
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<AddressViewModel>()))
+            .Callback<int, string, AddressViewModel>((_, _, addr) => capturedAddress = addr)
+            .ReturnsAsync((1, 2));
+
+        var controller = CreateController();
+
+        // Act
+        await controller.SplitJob(request);
+
+        // Assert - All address fields should be passed
+        capturedAddress.Should().NotBeNull();
+        capturedAddress!.AddressLine1.Should().Be("Unit 5");
+        capturedAddress.AddressLine2.Should().Be("Building A");
+        capturedAddress.AddressLine3.Should().Be("123");
+        capturedAddress.AddressLine4.Should().Be("Main Street");
+        capturedAddress.AddressLine5.Should().Be("Auckland");
+        capturedAddress.AddressLine6.Should().Be("Auckland Central");
+        capturedAddress.AddressLine7.Should().Be("1010");
+        capturedAddress.AddressLine8.Should().Be("Near the park");
+        capturedAddress.Latitude.Should().Be(-36.8485m);
+        capturedAddress.Longitude.Should().Be(174.7633m);
     }
 
     #endregion

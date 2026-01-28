@@ -12,6 +12,7 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { FlightCargoProcessing } from '../components/dialogs/flight-agent-confirmation-dialog/types';
 import { Dayjs } from 'dayjs';
+import { parseDateFromApi } from '../utils/dateUtils';
 
 // Extend dayjs with plugins so returned Dayjs objects have all required methods
 dayjs.extend(isBetween);
@@ -159,12 +160,13 @@ export class NationwideApiService {
             if (!dto) return null;
 
             // Transform DTO to domain model with Dayjs objects
+            // Use parseDateFromApi to preserve airport-local times without conversion
             return {
-                arrivalTime: dayjs(dto.arrivalTime),
+                arrivalTime: parseDateFromApi(dto.arrivalTime),
                 processingTimeMins: dto.processingTimeMins,
-                cargoOpeningTime: dayjs(dto.cargoOpeningTime),
-                cargoClosingTime: dayjs(dto.cargoClosingTime),
-                deliverByTime: dto.deliverByTime ? dayjs(dto.deliverByTime) : undefined,
+                cargoOpeningTime: parseDateFromApi(dto.cargoOpeningTime),
+                cargoClosingTime: parseDateFromApi(dto.cargoClosingTime),
+                deliverByTime: dto.deliverByTime ? parseDateFromApi(dto.deliverByTime) : undefined,
             };
         } catch (error) {
             console.error('Error fetching cargo ready time:', error);
@@ -207,12 +209,12 @@ export class NationwideApiService {
     private transformFlightDto = (dto: FlightViewModelDto): FlightViewModel => {
         return {
             ...dto,
-            departureTime: dayjs(dto.departureTime),
-            arrivalTime: dayjs(dto.arrivalTime),
+            departureTime: parseDateFromApi(dto.departureTime),
+            arrivalTime: parseDateFromApi(dto.arrivalTime),
             flightSegments: dto.flightSegments?.map((segment) => ({
                 ...segment,
-                departureTime: dayjs(segment.departureTime),
-                arrivalTime: dayjs(segment.arrivalTime),
+                departureTime: parseDateFromApi(segment.departureTime),
+                arrivalTime: parseDateFromApi(segment.arrivalTime),
             })) ?? [],
         };
     };

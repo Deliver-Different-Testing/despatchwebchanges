@@ -65,10 +65,9 @@ public class NationwideJobRepository(
                 .ThenInclude(jt => jt.Grouping)
                 .Where(j => j.UcjbId == requestData.JobId)
                 .FirstOrDefaultAsync();
-            
-            var timeZones = await Context.TimeZones.ToListAsync();
-
             ArgumentNullException.ThrowIfNull(job);
+
+            var timeZones = await Context.TimeZones.AsNoTracking().ToListAsync();
             
             Log.Information("Job {JobNumber} retrieved for PrimaryFlight: {PrimaryFlightNumber}, ClientId: {ClientId}",
                 job.UcjbNumber, primaryFlightNumber, job.UcjbClientId);
@@ -88,8 +87,8 @@ public class NationwideJobRepository(
                 UcnwJobNumber = job.UcjbNumber,
                 UcnwClientId = job.UcjbClientId ?? 0,
                 UcnwFlightNo = primaryFlight.CarrierFsCode + primaryFlight.FlightNumber,
-                UcnwEtd = primaryFlight.DepartureTime.DateTime,
-                UcnwEta = lastFlight.ArrivalTime.DateTime, // Use last segment arrival for multi-segment flights
+                UcnwEtd = primaryFlight.DepartureTime.UtcDateTime,
+                UcnwEta = lastFlight.ArrivalTime.UtcDateTime,
                 WebhookAlertId = webhookIds.First(),
                 GateNumber = primaryFlight.DepartureTerminal,
                 UcnwLegNumber = 1,
@@ -146,7 +145,7 @@ public class NationwideJobRepository(
                         pickUpJob.UcjbNumber, primaryFlightNumber);
                     
                     var airportProcessingTime = await GetAirportProcessingTimeAsync(departureAirportId.Value);
-                    pickUpJob.DeliverByTime = primaryFlight.DepartureTime.AddMinutes(-airportProcessingTime).DateTime;
+                    pickUpJob.DeliverByTime = primaryFlight.DepartureTime.DateTime.AddMinutes(-airportProcessingTime);
                     pickUpJob.DeliverByTimeZoneId = firstFlightDepartureTimeZoneId;
 
                     // Update delivery address with airport
@@ -171,8 +170,7 @@ public class NationwideJobRepository(
             if (job.ToAirportId != null || requestData.ToAirportId != null)
             {
                 var deliveryJob = job.Parent.InverseParent.FirstOrDefault(j => j.UcjbNumber.EndsWith('3')
-                                                                               && j.UcjbSpeedNavigation?.Grouping
-                                                                                   ?.GroupingId ==
+                                                                               && j.UcjbSpeedNavigation?.Grouping?.GroupingId ==
                                                                                (isUsCustomer
                                                                                    ? (int)SpeedGrouping.Agent
                                                                                    : (int)UrgentSpeedGrouping
@@ -246,8 +244,8 @@ public class NationwideJobRepository(
                         UcnwJobNumber = job.UcjbNumber,
                         UcnwClientId = job.UcjbClientId ?? 0,
                         UcnwFlightNo = leg.CarrierFsCode + leg.FlightNumber,
-                        UcnwEtd = leg.DepartureTime.DateTime,
-                        UcnwEta = leg.ArrivalTime.DateTime,
+                        UcnwEtd = leg.DepartureTime.UtcDateTime,
+                        UcnwEta = leg.ArrivalTime.UtcDateTime,
                         WebhookAlertId = webhookIds[i],
                         UcnwLegNumber = i + 1,
                         UcnwAirlineName = leg.AirlineName,
@@ -310,17 +308,14 @@ public class NationwideJobRepository(
         }
     }
 
-    private static int? GetTimeZoneIdFromList(List<TimeZone> timeZones, string timeZoneName)
-    {
-        return timeZones
+    private static int? GetTimeZoneIdFromList(List<TimeZone> timeZones, string timeZoneName) =>
+        timeZones
             .Where(tz => tz.Name == timeZoneName || tz.Code == timeZoneName)
             .Select(tz => tz.Id)
             .FirstOrDefault();
-    }
 
-    private async Task<List<AirportAddressInfoDto>> GetAirportAddressInfosAsync()
-    {
-        var airports = await Context.TblAirports
+    private async Task<List<AirportAddressInfoDto>> GetAirportAddressInfosAsync() =>
+        await Context.TblAirports
             .AsNoTracking()
             .Where(a => a.Active)
             .Select(a => new AirportAddressInfoDto
@@ -338,9 +333,6 @@ public class NationwideJobRepository(
                 Longitude = a.Longitude
             })
             .ToListAsync();
-
-        return airports;
-    } 
 
     public async Task<List<AirportSuggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true)
     {
@@ -1405,37 +1397,77 @@ public class NationwideJobRepository(
     {
         var now = _infoService.GetCurrentTenantTime();
 
-        var cargoModel = await Context.TucJobs
+        // Fetch cargo data including the arrival airport's timezone
+        var cargoData = await Context.TucJobs
             .AsSplitQuery()
             .Where(j => j.UcjbId == jobId)
-            .Select(j => new FlightCargoProcessingModel
+            .Select(j => new
             {
-                ArrivalTime = flightArrivalTime,
                 DeliverByTime = j.DeliverByTime,
                 ProcessingTimeMins = j.ToAirport.ProcessingTime ?? 60, // Default to 60 minutes if not set
                 CargoOpeningTime = j.ToAirport.CargoFacilities
                     .Where(c => c.Carrier.CarrierCode == carrierFsCode)
                     .Select(c => c.OpeningTime)
-                    .FirstOrDefault() ?? DateTime.MinValue,
+                    .FirstOrDefault(),
                 CargoClosingTime = j.ToAirport.CargoFacilities
                     .Where(c => c.Carrier.CarrierCode == carrierFsCode)
                     .Select(c => c.ClosingTime)
-                    .FirstOrDefault() ?? DateTime.MinValue
+                    .FirstOrDefault(),
+                ArrivalAirportTimeZone = j.ToAirport.Timezone
             })
             .AsNoTracking()
             .FirstOrDefaultAsync();
 
-        if (cargoModel == null)
+        if (cargoData == null)
             return null;
 
-        // Apply default times if no cargo facility was found for this carrier
-        if (cargoModel.CargoOpeningTime == DateTime.MinValue)
-            cargoModel.CargoOpeningTime = now.ResetTimeToStartOfDay();
+        // Get the arrival airport timezone, default to tenant timezone if not available
+        TimeZoneInfo arrivalTimeZone;
+        try
+        {
+            arrivalTimeZone = !string.IsNullOrEmpty(cargoData.ArrivalAirportTimeZone)
+                ? TimeZoneInfo.FindSystemTimeZoneById(cargoData.ArrivalAirportTimeZone)
+                : TimeZoneInfo.Local;
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            Log.Warning("Timezone {TimeZone} not found for job {JobId}, using local timezone",
+                cargoData.ArrivalAirportTimeZone, jobId);
+            arrivalTimeZone = TimeZoneInfo.Local;
+        }
 
-        if (cargoModel.CargoClosingTime == DateTime.MinValue)
-            cargoModel.CargoClosingTime = now.ResetTimeToEndOfDay();
+        // Get the offset for the arrival airport timezone
+        var arrivalOffset = arrivalTimeZone.GetUtcOffset(flightArrivalTime);
 
-        return cargoModel;
+        // Determine cargo opening/closing times, using defaults if not configured
+        var openingTime = cargoData.CargoOpeningTime ?? now.ResetTimeToStartOfDay();
+        var closingTime = cargoData.CargoClosingTime ?? now.ResetTimeToEndOfDay();
+
+        // Combine the arrival date with the cargo facility time portions and apply the timezone offset
+        var cargoOpeningDateTime = new DateTime(
+            flightArrivalTime.Year,
+            flightArrivalTime.Month,
+            flightArrivalTime.Day,
+            openingTime.Hour,
+            openingTime.Minute,
+            openingTime.Second);
+
+        var cargoClosingDateTime = new DateTime(
+            flightArrivalTime.Year,
+            flightArrivalTime.Month,
+            flightArrivalTime.Day,
+            closingTime.Hour,
+            closingTime.Minute,
+            closingTime.Second);
+
+        return new FlightCargoProcessingModel
+        {
+            ArrivalTime = flightArrivalTime,
+            DeliverByTime = cargoData.DeliverByTime,
+            ProcessingTimeMins = cargoData.ProcessingTimeMins,
+            CargoOpeningTime = new DateTimeOffset(cargoOpeningDateTime, arrivalOffset),
+            CargoClosingTime = new DateTimeOffset(cargoClosingDateTime, arrivalOffset)
+        };
     }
 
     public async Task<bool> CanAssignAgentToJobAsync(int agentJobId)

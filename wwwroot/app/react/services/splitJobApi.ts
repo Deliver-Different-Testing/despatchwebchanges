@@ -13,7 +13,6 @@ import {AddressViewModel} from '../interfaces';
  */
 export interface SplitJobRequest {
     jobId: number;
-    meetingPointSuburbId: number;
     meetingPointAddress: AddressViewModel;
 }
 

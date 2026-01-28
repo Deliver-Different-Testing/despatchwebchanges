@@ -21,5 +21,26 @@ public static class DateExtension
                 time?.Minute ?? 0,
                 time?.Second ?? 0
             );
+
+        public DateTime ToTimeZone(string timeZoneId)
+        {
+            var timeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+            return TimeZoneInfo.ConvertTimeFromUtc(dateTime, timeZone);
+        }
+
+        public DateTimeOffset ToTimeZoneOffset(TimeZoneInfo timeZone)
+        {
+            var converted = TimeZoneInfo.ConvertTimeFromUtc(dateTime, timeZone);
+            var offset = timeZone.GetUtcOffset(converted);
+            return new DateTimeOffset(converted, offset);
+        }
+
+        public DateTimeOffset ToTimeZoneOffset(string timeZoneId)
+        {
+            var timeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+            var converted = TimeZoneInfo.ConvertTimeFromUtc(dateTime, timeZone);
+            var offset = timeZone.GetUtcOffset(converted);
+            return new DateTimeOffset(converted, offset);
+        }
     }
 }
