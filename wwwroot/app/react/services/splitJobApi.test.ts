@@ -47,11 +47,66 @@ describe('splitJobApi', () => {
             mockApiClient.post.mockResolvedValueOnce(undefined);
             const request: SplitJobRequest = {
                 jobId: 123,
-                meetingPointSuburbId: 456,
                 meetingPointAddress: createMockAddress(),
             };
             await splitJob(request);
             expect(mockApiClient.post).toHaveBeenCalledWith('job/splitJob', request);
+        });
+
+        it('should not include meetingPointSuburbId in request', async () => {
+            mockApiClient.post.mockResolvedValueOnce(undefined);
+            const request: SplitJobRequest = {
+                jobId: 123,
+                meetingPointAddress: createMockAddress(),
+            };
+            await splitJob(request);
+
+            // Verify the request doesn't have meetingPointSuburbId property
+            const calledWith = mockApiClient.post.mock.calls[0][1] as SplitJobRequest;
+            expect(calledWith).not.toHaveProperty('meetingPointSuburbId');
+            expect(Object.keys(calledWith)).toEqual(['jobId', 'meetingPointAddress']);
+        });
+
+        it('should work with address that has no toSuburbId', async () => {
+            mockApiClient.post.mockResolvedValueOnce(undefined);
+            const addressWithoutSuburbId: AddressViewModel = {
+                addressLine1: '456 New St',
+                addressLine2: '',
+                addressLine3: '',
+                addressLine4: '',
+                addressLine5: 'Wellington',
+                addressLine6: '',
+                addressLine7: '6011',
+                addressLine8: '',
+                latitude: -41.2865,
+                longitude: 174.7762,
+                fullAddress: '456 New St, Wellington, 6011',
+                // toSuburbId intentionally omitted
+            };
+            const request: SplitJobRequest = {
+                jobId: 456,
+                meetingPointAddress: addressWithoutSuburbId,
+            };
+            await splitJob(request);
+            expect(mockApiClient.post).toHaveBeenCalledWith('job/splitJob', request);
+        });
+
+        it('should include all address fields in request', async () => {
+            mockApiClient.post.mockResolvedValueOnce(undefined);
+            const address = createMockAddress();
+            const request: SplitJobRequest = {
+                jobId: 789,
+                meetingPointAddress: address,
+            };
+            await splitJob(request);
+
+            const calledWith = mockApiClient.post.mock.calls[0][1] as SplitJobRequest;
+            expect(calledWith.meetingPointAddress.addressLine1).toBe(address.addressLine1);
+            expect(calledWith.meetingPointAddress.addressLine5).toBe(address.addressLine5);
+            expect(calledWith.meetingPointAddress.addressLine7).toBe(address.addressLine7);
+            expect(calledWith.meetingPointAddress.latitude).toBe(address.latitude);
+            expect(calledWith.meetingPointAddress.longitude).toBe(address.longitude);
+            expect(calledWith.meetingPointAddress.fullAddress).toBe(address.fullAddress);
         });
     });
 
@@ -79,7 +134,7 @@ describe('splitJobApi', () => {
 
     describe('error handling', () => {
         it.each([
-            ['splitJob', () => splitJob({jobId: 123, meetingPointSuburbId: 456, meetingPointAddress: createMockAddress()})],
+            ['splitJob', () => splitJob({jobId: 123, meetingPointAddress: createMockAddress()})],
             ['restoreSplitJobs', () => restoreSplitJobs([123])],
             ['unSplitJob', () => unSplitJob(123)],
         ])('%s should propagate errors', async (_, apiCall) => {

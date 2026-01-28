@@ -763,6 +763,81 @@ describe('FlightAgentConfirmationDialog', () => {
         });
     });
 
+    describe('Issue #5: Invalid Cargo Hours Handling', () => {
+        it('displays fallback text when cargo opening time is invalid', async () => {
+            // Simulate the bug scenario: backend returns DateTime without timezone offset
+            // which causes parseDateFromApi to create an invalid Dayjs object
+            const invalidCargoProcessing = createCargoProcessing({
+                cargoOpeningTime: dayjs(null), // Invalid Dayjs object
+                cargoClosingTime: dayjs(null), // Invalid Dayjs object
+            });
+
+            const onCalculateCargoTimes = jest.fn().mockResolvedValue(invalidCargoProcessing);
+
+            renderWithTheme(
+                <FlightAgentConfirmationDialog
+                    {...defaultProps}
+                    mode="flight"
+                    flight={createFlight()}
+                    onCalculateCargoTimes={onCalculateCargoTimes}
+                />
+            );
+
+            await waitFor(() => {
+                // Should display fallback text instead of "Invalid Date"
+                expect(screen.getByText('--:-- - --:--')).toBeInTheDocument();
+            });
+        });
+
+        it('displays formatted time when cargo times are valid', async () => {
+            const validCargoProcessing = createCargoProcessing({
+                cargoOpeningTime: dayjs('2024-03-15T06:00:00'),
+                cargoClosingTime: dayjs('2024-03-15T22:00:00'),
+            });
+
+            const onCalculateCargoTimes = jest.fn().mockResolvedValue(validCargoProcessing);
+
+            renderWithTheme(
+                <FlightAgentConfirmationDialog
+                    {...defaultProps}
+                    mode="flight"
+                    flight={createFlight()}
+                    onCalculateCargoTimes={onCalculateCargoTimes}
+                />
+            );
+
+            await waitFor(() => {
+                // Should display properly formatted times
+                expect(screen.getByText('06:00 - 22:00')).toBeInTheDocument();
+            });
+        });
+
+        it('handles cargo times with timezone offset correctly', async () => {
+            // Simulate the fix: backend returns DateTimeOffset with timezone
+            // parseDateFromApi correctly preserves the time
+            const cargoWithTimezone = createCargoProcessing({
+                // These simulate times parsed from "2024-03-15T07:00:00-08:00" format
+                cargoOpeningTime: dayjs('2024-03-15T07:00:00'),
+                cargoClosingTime: dayjs('2024-03-15T23:00:00'),
+            });
+
+            const onCalculateCargoTimes = jest.fn().mockResolvedValue(cargoWithTimezone);
+
+            renderWithTheme(
+                <FlightAgentConfirmationDialog
+                    {...defaultProps}
+                    mode="flight"
+                    flight={createFlight()}
+                    onCalculateCargoTimes={onCalculateCargoTimes}
+                />
+            );
+
+            await waitFor(() => {
+                expect(screen.getByText('07:00 - 23:00')).toBeInTheDocument();
+            });
+        });
+    });
+
     describe('Issue #4: Delivery By Time', () => {
         it('includes deliverByTime from API response in confirmation result', async () => {
             const user = userEvent.setup();

@@ -5,6 +5,9 @@
 import { nationwideApi, NationwideApiService, FlightViewModelDto } from './nationwideApi';
 import { apiClient } from './apiClient';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+
+dayjs.extend(utc);
 
 // Mock the apiClient
 jest.mock('./apiClient', () => ({
@@ -410,6 +413,168 @@ describe('NationwideApiService', () => {
             expect(result[0].airline).toBe('NZ');
             expect(result[0].departureAirport).toBe('AKL');
             expect(result[0].arrivalAirport).toBe('SYD');
+        });
+    });
+
+    describe('timezone offset preservation', () => {
+        const createMockFlightDto = (overrides: Partial<FlightViewModelDto> = {}): FlightViewModelDto => ({
+            airline: 'NZ',
+            flightNumber: 'NZ123',
+            departureTime: '2024-03-15T08:00:00+13:00',
+            arrivalTime: '2024-03-15T11:30:00+11:00',
+            departureAirport: 'AKL',
+            arrivalAirport: 'SYD',
+            duration: '3h 30m',
+            stops: 0,
+            aircraft: 'Boeing 787',
+            serviceClasses: ['Economy'],
+            isCodeShare: false,
+            amount: 150.0,
+            codeShareAirline: '',
+            airlineId: 1,
+            departureTimeZone: 'Pacific/Auckland',
+            arrivalTimeZone: 'Australia/Sydney',
+            isMultiSegment: false,
+            elapsedTime: 210,
+            score: 95,
+            connectionId: 'conn-123',
+            flightSegments: [
+                {
+                    segmentOrder: 1,
+                    carrierFsCode: 'NZ',
+                    flightNumber: '123',
+                    departureTime: '2024-03-15T08:00:00+13:00',
+                    arrivalTime: '2024-03-15T11:30:00+11:00',
+                    departureAirportFsCode: 'AKL',
+                    arrivalAirportFsCode: 'SYD',
+                    flightEquipmentIataCode: '787',
+                    elapsedTime: 210,
+                    stopsInSegment: 0,
+                    departureAirportTimeZone: 'Pacific/Auckland',
+                    arrivalAirportTimeZone: 'Australia/Sydney',
+                },
+            ],
+            ...overrides,
+        });
+
+        it('should preserve departure time without converting to local timezone', async () => {
+            // This tests that 08:00+13:00 stays as 08:00, not converted to user's local time
+            const mockFlights = [createMockFlightDto()];
+            mockApiClient.get.mockResolvedValueOnce(mockFlights);
+
+            const result = await nationwideApi.getScheduledFlightOptions({
+                jobId: 16992,
+                departureDate: '2024-03-15T08:00:00+13:00',
+                departureAirportId: 150,
+                arrivalAirportId: 96,
+            });
+
+            // The formatted time should be 08:00, not shifted by local timezone
+            expect(result[0].departureTime.format('HH:mm')).toBe('08:00');
+        });
+
+        it('should preserve arrival time without converting to local timezone', async () => {
+            // This tests that 11:30+11:00 stays as 11:30
+            const mockFlights = [createMockFlightDto()];
+            mockApiClient.get.mockResolvedValueOnce(mockFlights);
+
+            const result = await nationwideApi.getScheduledFlightOptions({
+                jobId: 16992,
+                departureDate: '2024-03-15T08:00:00+13:00',
+                departureAirportId: 150,
+                arrivalAirportId: 96,
+            });
+
+            expect(result[0].arrivalTime.format('HH:mm')).toBe('11:30');
+        });
+
+        it('should preserve timezone offset in parsed datetime', async () => {
+            const mockFlights = [createMockFlightDto()];
+            mockApiClient.get.mockResolvedValueOnce(mockFlights);
+
+            const result = await nationwideApi.getScheduledFlightOptions({
+                jobId: 16992,
+                departureDate: '2024-03-15T08:00:00+13:00',
+                departureAirportId: 150,
+                arrivalAirportId: 96,
+            });
+
+            // UTC offset should be preserved (+13:00 = 780 minutes)
+            expect(result[0].departureTime.utcOffset()).toBe(780);
+            // Arrival offset (+11:00 = 660 minutes)
+            expect(result[0].arrivalTime.utcOffset()).toBe(660);
+        });
+
+        it('should preserve segment times without timezone conversion', async () => {
+            const mockFlights = [createMockFlightDto()];
+            mockApiClient.get.mockResolvedValueOnce(mockFlights);
+
+            const result = await nationwideApi.getScheduledFlightOptions({
+                jobId: 16992,
+                departureDate: '2024-03-15T08:00:00+13:00',
+                departureAirportId: 150,
+                arrivalAirportId: 96,
+            });
+
+            const segment = result[0].flightSegments[0];
+            expect(segment.departureTime.format('HH:mm')).toBe('08:00');
+            expect(segment.arrivalTime.format('HH:mm')).toBe('11:30');
+            expect(segment.departureTime.utcOffset()).toBe(780); // +13:00
+            expect(segment.arrivalTime.utcOffset()).toBe(660);   // +11:00
+        });
+
+        it('should preserve times for negative timezone offsets', async () => {
+            // Flight in PST timezone (UTC-8)
+            const mockFlights = [createMockFlightDto({
+                departureTime: '2024-01-15T10:30:00-08:00',
+                arrivalTime: '2024-01-15T14:00:00-05:00',
+                flightSegments: [{
+                    segmentOrder: 1,
+                    carrierFsCode: 'AA',
+                    flightNumber: '100',
+                    departureTime: '2024-01-15T10:30:00-08:00',
+                    arrivalTime: '2024-01-15T14:00:00-05:00',
+                    departureAirportFsCode: 'LAX',
+                    arrivalAirportFsCode: 'JFK',
+                    flightEquipmentIataCode: '777',
+                    elapsedTime: 330,
+                    stopsInSegment: 0,
+                    departureAirportTimeZone: 'America/Los_Angeles',
+                    arrivalAirportTimeZone: 'America/New_York',
+                }],
+            })];
+            mockApiClient.get.mockResolvedValueOnce(mockFlights);
+
+            const result = await nationwideApi.getScheduledFlightOptions({
+                jobId: 16992,
+                departureDate: '2024-01-15T10:30:00-08:00',
+                departureAirportId: 1,
+                arrivalAirportId: 2,
+            });
+
+            expect(result[0].departureTime.format('HH:mm')).toBe('10:30');
+            expect(result[0].arrivalTime.format('HH:mm')).toBe('14:00');
+            expect(result[0].departureTime.utcOffset()).toBe(-480); // -08:00
+            expect(result[0].arrivalTime.utcOffset()).toBe(-300);   // -05:00
+        });
+
+        it('should preserve cargo processing times with timezone offset', async () => {
+            const mockResponse = {
+                arrivalTime: '2024-03-15T14:30:00+11:00',
+                processingTimeMins: 90,
+                cargoOpeningTime: '2024-03-15T06:00:00+11:00',
+                cargoClosingTime: '2024-03-15T22:00:00+11:00',
+                deliverByTime: '2024-03-15T18:00:00+11:00',
+            };
+            mockApiClient.get.mockResolvedValueOnce(mockResponse);
+
+            const result = await nationwideApi.calculateCargoReadyTime(123, 'NZ', '2024-03-15T14:30:00+11:00');
+
+            expect(result).not.toBeNull();
+            expect(result!.arrivalTime.format('HH:mm')).toBe('14:30');
+            expect(result!.cargoOpeningTime.format('HH:mm')).toBe('06:00');
+            expect(result!.cargoClosingTime.format('HH:mm')).toBe('22:00');
+            expect(result!.arrivalTime.utcOffset()).toBe(660); // +11:00
         });
     });
 });

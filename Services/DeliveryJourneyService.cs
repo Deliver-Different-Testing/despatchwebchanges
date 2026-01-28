@@ -380,9 +380,8 @@ public partial class DeliveryJourneyService(
     /// </summary>
     private List<DeliveryJourneyViewModel> MapStatusUpdatesToViewModels(
         List<JobDeliveryJourneyDto> dtos,
-        int jobId)
-    {
-        return dtos
+        int jobId) =>
+        dtos
             .GroupBy(s => s.UpdatedAt)
             .Select(group => new DeliveryJourneyViewModel
             {
@@ -395,16 +394,14 @@ public partial class DeliveryJourneyService(
                 Tags = BuildTags(group).ToList()
             })
             .ToList();
-    }
 
     /// <summary>
     /// Maps archived status update DTOs to view models, grouping by timestamp.
     /// </summary>
     private List<DeliveryJourneyViewModel> MapArchivedStatusUpdatesToViewModels(
         List<JobDeliveryJourneyArchiveDto> dtos,
-        int jobId)
-    {
-        return dtos
+        int jobId) =>
+        dtos
             .GroupBy(s => s.UpdatedAt)
             .Select(group => new DeliveryJourneyViewModel
             {
@@ -417,14 +414,12 @@ public partial class DeliveryJourneyService(
                 Tags = BuildTags(group).ToList()
             })
             .ToList();
-    }
 
     /// <summary>
     /// Builds tag strings from live status update DTOs for display in the journey timeline.
     /// </summary>
-    private static IEnumerable<string> BuildTags(IGrouping<DateTime, JobDeliveryJourneyDto> group)
-    {
-        return group.SelectMany(s => new[]
+    private static IEnumerable<string> BuildTags(IGrouping<DateTime, JobDeliveryJourneyDto> group) =>
+        group.SelectMany(s => new[]
             {
                 !string.IsNullOrEmpty(s.StaffFirstName) ? $"By {s.StaffFirstName} {s.StaffLastName}" : null,
                 !string.IsNullOrEmpty(s.CourierName) ? $"By {s.CourierName} {s.CourierSurname}" : null,
@@ -436,14 +431,12 @@ public partial class DeliveryJourneyService(
             })
             .Where(tag => !string.IsNullOrWhiteSpace(tag))
             .Distinct();
-    }
 
     /// <summary>
     /// Builds tag strings from archived status update DTOs for display in the journey timeline.
     /// </summary>
-    private static IEnumerable<string> BuildTags(IGrouping<DateTime, JobDeliveryJourneyArchiveDto> group)
-    {
-        return group.SelectMany(s => new[]
+    private static IEnumerable<string> BuildTags(IGrouping<DateTime, JobDeliveryJourneyArchiveDto> group) =>
+        group.SelectMany(s => new[]
             {
                 !string.IsNullOrEmpty(s.StaffFirstName) ? $"By {s.StaffFirstName} {s.StaffLastName}" : null,
                 !string.IsNullOrEmpty(s.CourierName) ? $"By {s.CourierName} {s.CourierSurname}" : null,
@@ -455,7 +448,6 @@ public partial class DeliveryJourneyService(
             })
             .Where(tag => !string.IsNullOrWhiteSpace(tag))
             .Distinct();
-    }
 
     /// <summary>
     /// Builds a display tag for agent assignment changes.
@@ -512,9 +504,8 @@ public partial class DeliveryJourneyService(
     /// <summary>
     /// Gets a human-readable title for a live status update based on change type.
     /// </summary>
-    private static string GetTitle(JobDeliveryJourneyDto dto)
-    {
-        return dto.ChangeType switch
+    private static string GetTitle(JobDeliveryJourneyDto dto) =>
+        dto.ChangeType switch
         {
             nameof(DeliveryJourneyChangeType.JobStatus) => !string.IsNullOrEmpty(dto.NewJobStatusName)
                 ? $"Status Changed to {dto.NewJobStatusName}"
@@ -537,14 +528,12 @@ public partial class DeliveryJourneyService(
                 : "Job Updated",
             _ => "Job Updated"
         };
-    }
 
     /// <summary>
     /// Gets a human-readable title for an archived status update based on change type.
     /// </summary>
-    private static string GetTitle(JobDeliveryJourneyArchiveDto dto)
-    {
-        return dto.ChangeType switch
+    private static string GetTitle(JobDeliveryJourneyArchiveDto dto) =>
+        dto.ChangeType switch
         {
             nameof(DeliveryJourneyChangeType.JobStatus) => !string.IsNullOrEmpty(dto.NewJobStatusName)
                 ? $"Status Changed to {dto.NewJobStatusName}"
@@ -567,7 +556,6 @@ public partial class DeliveryJourneyService(
                 : "Job Updated",
             _ => "Job Updated"
         };
-    }
 
     /// <summary>
     /// Builds a detailed description from a list of live status updates.
@@ -660,9 +648,8 @@ public partial class DeliveryJourneyService(
     /// <summary>
     /// Gets a Material Design icon name based on the change type and field.
     /// </summary>
-    private static string GetIcon(string changeType, string fieldName = null)
-    {
-        return changeType switch
+    private static string GetIcon(string changeType, string fieldName = null) =>
+        changeType switch
         {
             nameof(DeliveryJourneyChangeType.JobStatus) => "published_with_changes",
             nameof(DeliveryJourneyChangeType.InternalStatus) => "swap_horiz",
@@ -672,7 +659,6 @@ public partial class DeliveryJourneyService(
             nameof(DeliveryJourneyChangeType.JobUpdate) => GetIconForFieldName(fieldName),
             _ => "update"
         };
-    }
 
     /// <summary>
     /// Gets a specific Material Design icon based on field name.

@@ -1,5 +1,6 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Helpers;
+using DespatchWeb.Models;
 using FluentAssertions;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
@@ -1979,6 +1980,236 @@ public class JobMappingsTests
         // Assert - Flight info is always null for archived jobs in the mapping
         result.AssignedFlight.Should().BeNull();
         result.IsFlightAssigned.Should().BeFalse();
+    }
+
+    #endregion
+
+    #region Flight Timezone Conversion Tests
+
+    [Fact]
+    public void ApplyFlightTimezonesToInlineLoadedJobs_ConvertsUtcToLocalTime()
+    {
+        // Arrange - Create a job with flight data (as if loaded from inline mapping)
+        // Times are stored in UTC: 20:30 UTC should become 09:30 NZDT (+13)
+        var job = new JobViewModel
+        {
+            Id = 1,
+            ParentId = null, // Root job
+            IsFlightAssigned = true,
+            AssignedFlight = new AssignedFlight
+            {
+                FlightNumber = "NZ123",
+                ExpectedDeparture = new DateTimeOffset(2024, 1, 15, 20, 30, 0, TimeSpan.Zero), // UTC
+                DepartureTimeZone = "New Zealand Standard Time",
+                ExpectedArrival = new DateTimeOffset(2024, 1, 15, 23, 0, 0, TimeSpan.Zero), // UTC
+                ArrivalTimeZone = "Australia/Sydney", // AEDT = UTC+11 in January
+                FlightSegments = new List<FlightSegmentViewModel>
+                {
+                    new()
+                    {
+                        DepartureTime = new DateTimeOffset(2024, 1, 15, 20, 30, 0, TimeSpan.Zero),
+                        DepartureAirportTimeZone = "New Zealand Standard Time",
+                        ArrivalTime = new DateTimeOffset(2024, 1, 15, 23, 0, 0, TimeSpan.Zero),
+                        ArrivalAirportTimeZone = "Australia/Sydney"
+                    }
+                }
+            }
+        };
+
+        var jobs = new List<JobViewModel> { job };
+
+        // Act - Call the private method via reflection
+        var method = typeof(JobMappings).GetMethod(
+            "ApplyFlightTimezonesToInlineLoadedJobs",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        method!.Invoke(null, new object[] { jobs });
+
+        // Assert - Times should be converted to local time with correct offset
+        // 20:30 UTC = 09:30 NZDT (+13)
+        job.AssignedFlight!.ExpectedDeparture!.Value.Hour.Should().Be(9);
+        job.AssignedFlight.ExpectedDeparture.Value.Minute.Should().Be(30);
+        job.AssignedFlight.ExpectedDeparture.Value.Day.Should().Be(16); // Next day in NZ
+        job.AssignedFlight.ExpectedDeparture.Value.Offset.Should().Be(TimeSpan.FromHours(13));
+
+        // 23:00 UTC = 10:00 AEDT (+11)
+        job.AssignedFlight.ExpectedArrival!.Value.Hour.Should().Be(10);
+        job.AssignedFlight.ExpectedArrival.Value.Day.Should().Be(16);
+        job.AssignedFlight.ExpectedArrival.Value.Offset.Should().Be(TimeSpan.FromHours(11));
+    }
+
+    [Fact]
+    public void ApplyFlightTimezonesToInlineLoadedJobs_ConvertsSegmentTimes()
+    {
+        // Arrange
+        var job = new JobViewModel
+        {
+            Id = 1,
+            ParentId = null,
+            IsFlightAssigned = true,
+            AssignedFlight = new AssignedFlight
+            {
+                FlightNumber = "AA100",
+                ExpectedDeparture = new DateTimeOffset(2024, 1, 15, 18, 30, 0, TimeSpan.Zero),
+                DepartureTimeZone = "Pacific Standard Time",
+                ExpectedArrival = new DateTimeOffset(2024, 1, 16, 2, 0, 0, TimeSpan.Zero),
+                ArrivalTimeZone = "Eastern Standard Time",
+                FlightSegments = new List<FlightSegmentViewModel>
+                {
+                    new()
+                    {
+                        DepartureTime = new DateTimeOffset(2024, 1, 15, 18, 30, 0, TimeSpan.Zero), // UTC
+                        DepartureAirportTimeZone = "Pacific Standard Time", // UTC-8
+                        ArrivalTime = new DateTimeOffset(2024, 1, 16, 2, 0, 0, TimeSpan.Zero), // UTC
+                        ArrivalAirportTimeZone = "Eastern Standard Time" // UTC-5
+                    }
+                }
+            }
+        };
+
+        var jobs = new List<JobViewModel> { job };
+
+        // Act
+        var method = typeof(JobMappings).GetMethod(
+            "ApplyFlightTimezonesToInlineLoadedJobs",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        method!.Invoke(null, new object[] { jobs });
+
+        // Assert segment times
+        var segment = job.AssignedFlight!.FlightSegments[0];
+
+        // 18:30 UTC = 10:30 PST (-8)
+        segment.DepartureTime.Hour.Should().Be(10);
+        segment.DepartureTime.Minute.Should().Be(30);
+        segment.DepartureTime.Offset.Should().Be(TimeSpan.FromHours(-8));
+
+        // 02:00 UTC = 21:00 EST (-5) on previous day
+        segment.ArrivalTime.Hour.Should().Be(21);
+        segment.ArrivalTime.Day.Should().Be(15);
+        segment.ArrivalTime.Offset.Should().Be(TimeSpan.FromHours(-5));
+    }
+
+    [Fact]
+    public void ApplyFlightTimezonesToInlineLoadedJobs_SkipsChildJobs()
+    {
+        // Arrange - Child jobs (with ParentId) should be skipped
+        var childJob = new JobViewModel
+        {
+            Id = 2,
+            ParentId = 1, // This is a child job
+            IsFlightAssigned = true,
+            AssignedFlight = new AssignedFlight
+            {
+                ExpectedDeparture = new DateTimeOffset(2024, 1, 15, 18, 0, 0, TimeSpan.Zero),
+                DepartureTimeZone = "Pacific Standard Time",
+                ExpectedArrival = new DateTimeOffset(2024, 1, 15, 22, 0, 0, TimeSpan.Zero),
+                ArrivalTimeZone = "Eastern Standard Time",
+                FlightSegments = new List<FlightSegmentViewModel>
+                {
+                    new()
+                    {
+                        DepartureTime = new DateTimeOffset(2024, 1, 15, 18, 0, 0, TimeSpan.Zero),
+                        DepartureAirportTimeZone = "Pacific Standard Time",
+                        ArrivalTime = new DateTimeOffset(2024, 1, 15, 22, 0, 0, TimeSpan.Zero),
+                        ArrivalAirportTimeZone = "Eastern Standard Time"
+                    }
+                }
+            }
+        };
+
+        var jobs = new List<JobViewModel> { childJob };
+
+        // Act
+        var method = typeof(JobMappings).GetMethod(
+            "ApplyFlightTimezonesToInlineLoadedJobs",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        method!.Invoke(null, new object[] { jobs });
+
+        // Assert - Times should NOT be changed (child jobs are processed by BatchLoadFlightInfoAsync)
+        childJob.AssignedFlight!.FlightSegments[0].DepartureTime.Hour.Should().Be(18);
+        childJob.AssignedFlight.FlightSegments[0].DepartureTime.Offset.Should().Be(TimeSpan.Zero);
+    }
+
+    [Fact]
+    public void ApplyFlightTimezonesToInlineLoadedJobs_SkipsJobsWithoutFlightData()
+    {
+        // Arrange
+        var jobWithoutFlight = new JobViewModel
+        {
+            Id = 1,
+            ParentId = null,
+            IsFlightAssigned = false,
+            AssignedFlight = null
+        };
+
+        var jobs = new List<JobViewModel> { jobWithoutFlight };
+
+        // Act - Should not throw
+        var method = typeof(JobMappings).GetMethod(
+            "ApplyFlightTimezonesToInlineLoadedJobs",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        var act = () => method!.Invoke(null, new object[] { jobs });
+
+        // Assert
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void ConvertUtcToTimeZone_WithNullDateTime_ReturnsSqlMinDateTime()
+    {
+        // Arrange
+        DateTime? nullDateTime = null;
+
+        // Act
+        var method = typeof(JobMappings).GetMethod(
+            "ConvertUtcToTimeZone",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
+            null,
+            new[] { typeof(DateTime?), typeof(string) },
+            null);
+        var result = (DateTimeOffset)method!.Invoke(null, new object?[] { nullDateTime, "Pacific Standard Time" })!;
+
+        // Assert - Should return SqlMinDateTime (1753-01-01)
+        result.Year.Should().Be(1753);
+    }
+
+    [Fact]
+    public void ConvertUtcToTimeZone_WithNullTimeZone_ReturnsUtcOffset()
+    {
+        // Arrange
+        var utcTime = new DateTime(2024, 1, 15, 12, 0, 0, DateTimeKind.Utc);
+
+        // Act
+        var method = typeof(JobMappings).GetMethod(
+            "ConvertUtcToTimeZone",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
+            null,
+            new[] { typeof(DateTime), typeof(string) },
+            null);
+        var result = (DateTimeOffset)method!.Invoke(null, new object?[] { utcTime, null })!;
+
+        // Assert - Should return with zero offset (UTC)
+        result.Hour.Should().Be(12);
+        result.Offset.Should().Be(TimeSpan.Zero);
+    }
+
+    [Fact]
+    public void ConvertUtcToTimeZone_WithEmptyTimeZone_ReturnsUtcOffset()
+    {
+        // Arrange
+        var utcTime = new DateTime(2024, 1, 15, 12, 0, 0, DateTimeKind.Utc);
+
+        // Act
+        var method = typeof(JobMappings).GetMethod(
+            "ConvertUtcToTimeZone",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
+            null,
+            new[] { typeof(DateTime), typeof(string) },
+            null);
+        var result = (DateTimeOffset)method!.Invoke(null, new object?[] { utcTime, "" })!;
+
+        // Assert
+        result.Hour.Should().Be(12);
+        result.Offset.Should().Be(TimeSpan.Zero);
     }
 
     #endregion

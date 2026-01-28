@@ -28,7 +28,6 @@ public class SplitJobService(
     public async Task<(int PickupJobId, int DeliveryJobId)> SplitJobAsync(
         int jobId,
         string userName,
-        int meetingPointSuburbId,
         AddressViewModel meetingPointAddress)
     {
         var currentTenantTime = tenantInfoService.GetCurrentTenantTime();
@@ -38,8 +37,8 @@ public class SplitJobService(
 
         try
         {
-            Log.Information("Splitting job {JobId} by user {UserName} with meeting point at suburb {SuburbId}",
-                jobId, userName, meetingPointSuburbId);
+            Log.Information("Splitting job {JobId} by user {UserName} with meeting point address",
+                jobId, userName);
 
             // Get relationship type IDs
             var (parentRelTypeId, childRelTypeId) = await GetRelationshipTypeIdsAsync(context);
@@ -83,13 +82,13 @@ public class SplitJobService(
 
             // Create pickup job (leg 1: From → Meeting Point)
             var pickupJob = CreatePickupJob(job, pickupJobNumber, validSpeedId, childRelTypeId,
-                meetingPointSuburbId, meetingPointAddress);
+                meetingPointAddress);
             pickupJob.UcjbCourierId = originalCourierId; // Pickup job keeps original courier
             context.TucJobs.Add(pickupJob);
 
             // Create delivery job (leg 2: Meeting Point → Final Destination)
             var deliveryJob = CreateDeliveryJob(job, deliveryJobNumber, validSpeedId, childRelTypeId,
-                meetingPointSuburbId, meetingPointAddress);
+                meetingPointAddress);
             context.TucJobs.Add(deliveryJob);
 
             await context.SaveChangesAsync();
@@ -147,7 +146,6 @@ public class SplitJobService(
     public async Task<(int PickupBookingId, int DeliveryBookingId)> SplitJobBookingAsync(
         int jobBookingId,
         string userName,
-        int meetingPointSuburbId,
         AddressViewModel meetingPointAddress)
     {
         var currentTenantTime = tenantInfoService.GetCurrentTenantTime();
@@ -157,8 +155,8 @@ public class SplitJobService(
 
         try
         {
-            Log.Information("Splitting job booking {JobBookingId} by user {UserName} with meeting point at suburb {SuburbId}",
-                jobBookingId, userName, meetingPointSuburbId);
+            Log.Information("Splitting job booking {JobBookingId} by user {UserName} with meeting point address",
+                jobBookingId, userName);
 
             // Get relationship type IDs
             var (parentRelTypeId, childRelTypeId) = await GetRelationshipTypeIdsAsync(context);
@@ -195,12 +193,12 @@ public class SplitJobService(
 
             // Create pickup job booking
             var pickupJobBooking = CreatePickupJobBooking(jobBooking, pickupJobNumber, validSpeedId, childRelTypeId,
-                meetingPointSuburbId, meetingPointAddress);
+                meetingPointAddress);
             context.TucJobBookings.Add(pickupJobBooking);
 
             // Create delivery job booking
             var deliveryJobBooking = CreateDeliveryJobBooking(jobBooking, deliveryJobNumber, validSpeedId, childRelTypeId,
-                meetingPointSuburbId, meetingPointAddress);
+                meetingPointAddress);
             context.TucJobBookings.Add(deliveryJobBooking);
 
             await context.SaveChangesAsync();
@@ -299,7 +297,6 @@ public class SplitJobService(
         string jobNumber,
         int? speedId,
         int childRelTypeId,
-        int meetingPointSuburbId,
         AddressViewModel meetingPointAddress)
     {
         return new TucJob
@@ -315,7 +312,7 @@ public class SplitJobService(
             UcjbSpeed = speedId,
             UcjbFrom = parentJob.UcjbFrom,
             UcjbFromAddr = parentJob.UcjbFromAddr,
-            UcjbTo = meetingPointSuburbId,
+            UcjbTo = null,
             UcjbToAddr = meetingPointAddress.FullAddress,
             UcjbSize = parentJob.UcjbSize,
             UcjbQty = parentJob.UcjbQty,
@@ -383,7 +380,6 @@ public class SplitJobService(
         string jobNumber,
         int? speedId,
         int childRelTypeId,
-        int meetingPointSuburbId,
         AddressViewModel meetingPointAddress)
     {
         return new TucJob
@@ -397,7 +393,7 @@ public class SplitJobService(
             UcjbChargeType = parentJob.UcjbChargeType,
             UcjbAmount = parentJob.UcjbAmount,
             UcjbSpeed = speedId,
-            UcjbFrom = meetingPointSuburbId,
+            UcjbFrom = null,
             UcjbFromAddr = meetingPointAddress.FullAddress,
             UcjbTo = parentJob.UcjbTo,
             UcjbToAddr = parentJob.UcjbToAddr,
@@ -467,7 +463,6 @@ public class SplitJobService(
         string jobNumber,
         int? speedId,
         int childRelTypeId,
-        int meetingPointSuburbId,
         AddressViewModel meetingPointAddress)
     {
         return new TucJobBooking
@@ -483,7 +478,7 @@ public class SplitJobService(
             UcbkSpeed = speedId,
             UcbkFrom = parentJob.UcbkFrom,
             UcbkFromAddr = parentJob.UcbkFromAddr,
-            UcbkTo = meetingPointSuburbId,
+            UcbkTo = 0, // No suburb ID for meeting point - using address lines instead
             UcbkToAddr = meetingPointAddress.FullAddress,
             UcbkSize = parentJob.UcbkSize,
             Quantity = parentJob.Quantity,
@@ -538,7 +533,6 @@ public class SplitJobService(
         string jobNumber,
         int? speedId,
         int childRelTypeId,
-        int meetingPointSuburbId,
         AddressViewModel meetingPointAddress)
     {
         return new TucJobBooking
@@ -552,7 +546,7 @@ public class SplitJobService(
             UcbkChargeType = parentJob.UcbkChargeType,
             UcbkAmount = parentJob.UcbkAmount,
             UcbkSpeed = speedId,
-            UcbkFrom = meetingPointSuburbId,
+            UcbkFrom = 0, // No suburb ID for meeting point - using address lines instead
             UcbkFromAddr = meetingPointAddress.FullAddress,
             UcbkTo = parentJob.UcbkTo,
             UcbkToAddr = parentJob.UcbkToAddr,

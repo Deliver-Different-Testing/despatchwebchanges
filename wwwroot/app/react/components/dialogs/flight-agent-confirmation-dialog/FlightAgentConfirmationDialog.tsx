@@ -77,8 +77,9 @@ function getDangerousGoodsClassName(dgClass?: number): string | undefined {
     return classNames[dgClass] || `Class ${dgClass}`;
 }
 
-// Format time as HH:mm
+// Format time as HH:mm with validation
 function formatTime(time: Dayjs): string {
+    if (!time || !time.isValid()) return '--:--';
     return time.format('HH:mm');
 }
 

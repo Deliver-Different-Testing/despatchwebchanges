@@ -11,11 +11,6 @@ public class SplitJobRequest
     public int JobId { get; set; }
 
     /// <summary>
-    /// The suburb ID of the meeting point.
-    /// </summary>
-    public int MeetingPointSuburbId { get; set; }
-
-    /// <summary>
     /// The meeting point address data including all address lines.
     /// </summary>
     public required AddressViewModel MeetingPointAddress { get; set; }

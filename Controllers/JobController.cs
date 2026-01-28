@@ -1003,7 +1003,6 @@ public class JobController(
             await splitJobService.SplitJobAsync(
                 request.JobId,
                 staffInfo.Text,
-                request.MeetingPointSuburbId,
                 request.MeetingPointAddress);
             return Ok();
         }

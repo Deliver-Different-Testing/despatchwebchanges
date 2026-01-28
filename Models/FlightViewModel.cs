@@ -54,15 +54,8 @@ public class FlightSegmentViewModel: ScheduledFlight
     public string FlightNumber { get; set; }
     public string DepartureAirportFsCode { get; set; }
     public string ArrivalAirportFsCode { get; set; }
-    public int? Stops { get; set; }
     public string FlightEquipmentIataCode { get; set; }
-    public bool? IsCodeshare { get; set; }
-    public bool? IsWetlease { get; set; }
-    public string ServiceType { get; set; }
-    public List<string> ServiceClasses { get; set; }
-    public List<object> TrafficRestrictions { get; set; }
     public int? ElapsedTime { get; set; }
     public string ArrivalTerminal { get; set; }
     public string DepartureTerminal { get; set; }
-    public List<Codeshare> Codeshares { get; set; }
 }
