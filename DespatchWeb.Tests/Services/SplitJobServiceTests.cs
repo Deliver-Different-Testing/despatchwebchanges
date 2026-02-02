@@ -676,8 +676,8 @@ public class SplitJobServiceTests : IDisposable
 
             pickupBooking.Should().NotBeNull();
             deliveryBooking.Should().NotBeNull();
-            pickupBooking!.UcbkJobNumber.Should().Be("BOOK-001-1");
-            deliveryBooking!.UcbkJobNumber.Should().Be("BOOK-001-2");
+            pickupBooking.UcbkJobNumber.Should().Be("BOOK-001-1");
+            deliveryBooking.UcbkJobNumber.Should().Be("BOOK-001-2");
         }
     }
 
@@ -740,11 +740,11 @@ public class SplitJobServiceTests : IDisposable
             var deliveryNote = await context.TucNotes.FirstOrDefaultAsync(n => n.JobBookingId == deliveryId);
 
             pickupNote.Should().NotBeNull();
-            pickupNote!.NoteText.Should().Contain("SPLIT Part 1 of 2");
+            pickupNote.NoteText.Should().Contain("SPLIT Part 1 of 2");
             pickupNote.NoteTypeId.Should().Be((int)NoteType.InternalNote);
 
             deliveryNote.Should().NotBeNull();
-            deliveryNote!.NoteText.Should().Contain("SPLIT Part 2 of 2");
+            deliveryNote.NoteText.Should().Contain("SPLIT Part 2 of 2");
         }
     }
 

@@ -102,7 +102,7 @@ public class JobControllerTests
         var jsonResult = (JsonResult)result;
         var jobs = jsonResult.Value as JobSearchResult;
         jobs.Should().NotBeNull();
-        jobs!.Jobs.Should().HaveCount(2);
+        jobs.Jobs.Should().HaveCount(2);
         jobs.TotalCount.Should().Be(2);
     }
 
@@ -285,7 +285,7 @@ public class JobControllerTests
         var jsonResult = (JsonResult)result;
         var breakdown = jsonResult.Value as List<ChargeViewModel>;
         breakdown.Should().HaveCount(2);
-        breakdown![0].Name.Should().Be("Base Rate");
+        breakdown[0].Name.Should().Be("Base Rate");
     }
 
     [Fact]
@@ -546,7 +546,7 @@ public class JobControllerTests
         var jsonResult = (JsonResult)result;
         var job = jsonResult.Value as JobGroupViewModel;
         job.Should().NotBeNull();
-        job!.Job.Id.Should().Be(jobId);
+        job.Job.Id.Should().Be(jobId);
     }
 
     [Fact]
@@ -2620,7 +2620,7 @@ public class JobControllerTests
         var jsonResult = (JsonResult)result;
         var journey = jsonResult.Value as List<DeliveryJourneyViewModel>;
         journey!.Should().HaveCount(1);
-        journey![0].JobId.Should().Be(jobId);
+        journey[0].JobId.Should().Be(jobId);
     }
 
     #endregion

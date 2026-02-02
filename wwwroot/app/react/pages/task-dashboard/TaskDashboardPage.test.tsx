@@ -879,6 +879,9 @@ describe('TaskDashboardPage', () => {
             });
 
             it('handles corrupted localStorage data gracefully', async () => {
+                // Suppress expected console.warn for this test
+                const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
                 localStorageMock.setStore({
                     'taskDashboardSavedLayouts-1': 'invalid-json-{{{',
                 });
@@ -891,6 +894,14 @@ describe('TaskDashboardPage', () => {
                 await waitFor(() => {
                     expect(screen.getByText('Filters')).toBeInTheDocument();
                 });
+
+                // Verify the warning was logged
+                expect(warnSpy).toHaveBeenCalledWith(
+                    'Failed to load saved layouts:',
+                    expect.any(SyntaxError)
+                );
+
+                warnSpy.mockRestore();
             });
         });
 

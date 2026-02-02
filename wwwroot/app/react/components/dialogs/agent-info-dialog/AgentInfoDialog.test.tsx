@@ -83,7 +83,11 @@ describe('AgentInfoDialog', () => {
             const props = createMockProps();
             renderWithTheme(<AgentInfoDialog {...props} />);
 
-            expect(screen.getByText(/Agent Details: John Smith/)).toBeInTheDocument();
+            // Header now shows title and agent name separately
+            expect(screen.getByText('Agent Details')).toBeInTheDocument();
+            // Agent name appears in header subtitle and potentially elsewhere
+            const agentNames = screen.getAllByText('John Smith');
+            expect(agentNames.length).toBeGreaterThanOrEqual(1);
         });
 
         it('displays close button', () => {
@@ -115,7 +119,9 @@ describe('AgentInfoDialog', () => {
             const props = createMockProps();
             renderWithTheme(<AgentInfoDialog {...props} />);
 
-            expect(screen.getByText('John Smith')).toBeInTheDocument();
+            // Agent name appears in both header and content
+            const agentNames = screen.getAllByText('John Smith');
+            expect(agentNames.length).toBeGreaterThanOrEqual(1);
         });
 
         it('displays formatted rate with currency', () => {

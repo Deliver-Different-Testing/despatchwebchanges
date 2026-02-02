@@ -1895,7 +1895,6 @@ class JobDetailController extends BaseController {
             const newAmount = await this.priceBreakdownDialogService.openPriceBreakdownDialog($event, job);
             if (!newAmount || !this.job) return;
 
-            this.job.charge = newAmount;
             await this.refreshJobDetails(job.id);
         } catch (error) {
             console.error("Error in displayPriceBreakdown:", error);

@@ -350,11 +350,7 @@ public static class JobMappings
         OurRef = j.UcjbOurRef,
 
         // Pricing
-        Charge = j.Parent != null && j.Parent.PricingBreakdowns != null && j.Parent.PricingBreakdowns.Any() == true
-            ? j.Parent.PricingBreakdowns.Sum(p => p.ChargeAmount)
-            : j.PricingBreakdowns != null && j.PricingBreakdowns.Any() == true
-                ? j.PricingBreakdowns.Sum(p => p.ChargeAmount)
-                : j.UcjbAmount ?? 0,
+        Charge = j.UcjbAmount ?? 0,
 
         StatusId = j.UcjbStatus,
         Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsCode : null,
@@ -588,11 +584,7 @@ public static class JobMappings
             OurRef = j.UcbkOurRef,
 
             // Pricing
-            Charge = j.BookingParent != null && j.BookingParent.PricingBreakdownPrebookJobs != null
-                ? j.BookingParent.PricingBreakdownPrebookJobs.Sum(p => p.ChargeAmount)
-                : j.PricingBreakdownPrebookJobs != null
-                    ? j.PricingBreakdownPrebookJobs.Sum(p => p.ChargeAmount)
-                    : j.UcbkAmount ?? 0,
+            Charge = j.UcbkAmount ?? 0,
 
             // Size - has navigation in the archive
             Size =
@@ -1051,10 +1043,8 @@ public static class JobMappings
         RefB = j.UcjbClientRefb,
         OurRef = j.UcjbOurRef,
 
-        // Charge - use pricing breakdown sum if available, otherwise fall back to base amount
-        Charge = j.PricingBreakdownJobs.Any()
-            ? j.PricingBreakdownJobs.Sum(p => p.ChargeAmount)
-            : j.UcjbAmount,
+        // Charge - use amount that we will charge to the client
+        Charge = j.UcjbAmount,
 
         // Status
         StatusId = j.UcjbStatus,
@@ -1497,11 +1487,7 @@ public static class JobMappings
             BookDate = j.UcjbDate.CombineWithTime(j.UcjbTime),
             PickedUpDate = j.PickUpTime,
             DeliveredDate = j.UcjbComplTime,
-            Amount = j.Parent != null && j.Parent.PricingBreakdownJobs.Any()
-                ? j.Parent.PricingBreakdownJobs.Sum(pb => pb.ChargeAmount)
-                : j.PricingBreakdownJobs.Any()
-                    ? j.PricingBreakdownJobs.Sum(pb => pb.ChargeAmount)
-                    : j.UcjbAmount ?? 0,
+            Amount = j.UcjbAmount ?? 0,
             Fuel = j.FuelSurchargeAmount,
             Ppd = j.PpdexclusiveAmount,
             AgentAirlineName = j.TucJobNationwides.Select(nw => nw.UcnwAirlineName).FirstOrDefault()
@@ -1558,11 +1544,7 @@ public static class JobMappings
             BookDate = j.UcjbDate.HasValue ? j.UcjbDate.Value.CombineWithTime(j.UcjbTime) : default,
             PickedUpDate = j.PickUpTime,
             DeliveredDate = j.UcjbComplTime,
-            Amount = j.Parent != null && j.Parent.PricingBreakdowns.Any()
-                ? j.Parent.PricingBreakdowns.Sum(pb => pb.ChargeAmount)
-                : j.PricingBreakdowns.Any()
-                    ? j.PricingBreakdowns.Sum(pb => pb.ChargeAmount)
-                    : j.UcjbAmount ?? 0,
+            Amount = j.UcjbAmount ?? 0,
             Fuel = j.FuelSurchargeAmount,
             Ppd = j.PpdexclusiveAmount,
             AgentAirlineName = j.Agent != null ? j.Agent.UcagName : null,
