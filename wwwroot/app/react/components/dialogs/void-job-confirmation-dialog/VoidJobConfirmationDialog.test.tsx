@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ThemeProvider, createTheme} from '@mui/material';
 import {VoidJobConfirmationDialog, VoidJobDialogJob, RelatedJob} from './VoidJobConfirmationDialog';
@@ -556,17 +556,21 @@ describe('VoidJobConfirmationDialog', () => {
             await userEvent.type(textarea, 'Test reason');
 
             // Close and reopen dialog
-            rerender(
-                <ThemeProvider theme={theme}>
-                    <VoidJobConfirmationDialog {...props} open={false} />
-                </ThemeProvider>
-            );
+            await act(async () => {
+                rerender(
+                    <ThemeProvider theme={theme}>
+                        <VoidJobConfirmationDialog {...props} open={false} />
+                    </ThemeProvider>
+                );
+            });
 
-            rerender(
-                <ThemeProvider theme={theme}>
-                    <VoidJobConfirmationDialog {...props} open={true} />
-                </ThemeProvider>
-            );
+            await act(async () => {
+                rerender(
+                    <ThemeProvider theme={theme}>
+                        <VoidJobConfirmationDialog {...props} open={true} />
+                    </ThemeProvider>
+                );
+            });
 
             // Reason should be cleared
             const newTextarea = screen.getByLabelText(/Reason for voiding/);

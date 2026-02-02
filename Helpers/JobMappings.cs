@@ -135,7 +135,7 @@ public static class JobMappings
         Done = j.Done,
         AlertLatePickup = j.Client != null ? j.Client.AlertLatePickUp : null,
         AlertLateDelivery = j.Client != null ? j.Client.AlertLateDelivery : null,
-        Items = j.Qty,
+        Items = j.TblBulkJobItems.Count,
 
         FromContactName = j.PickupFromContact ?? "N/A",
         FromContactNumber = j.PickupFromPhone ?? "Not specified",
@@ -222,7 +222,7 @@ public static class JobMappings
                 Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
             }
             : null,
-
+        
         // Address information - directly available in the archive
         PickupAddress = new AddressViewModel
         {
@@ -318,7 +318,7 @@ public static class JobMappings
         Done = j.UcjbJobDone,
         Lp = j.UcjbLatePick,
         Ld = j.UcjbLateDel,
-        Items = j.UcjbQty,
+        Items = j.TucJobItemsArchives.Count,
 
         PickupFrom = j.UcjbPickUpFrom,
         Notify = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName : null,
@@ -568,7 +568,7 @@ public static class JobMappings
 
             // Job status and details
             Done = j.UcbkDone,
-            Items = j.Quantity,
+            Items = j.TucJobBookingItemBookings.Count,
 
             PickupFrom = j.UcbkPickUpFrom.HasValue ? (short)j.UcbkPickUpFrom : null,
             FromContactName = j.PickupFromContact ?? "N/A",
@@ -1022,7 +1022,7 @@ public static class JobMappings
         AlertLateDelivery = j.UcjbClient != null ? j.UcjbClient.AlertLateDelivery : null,
         Lp = j.UcjbLatePick,
         Ld = j.UcjbLateDel,
-        Items = j.UcjbQty,
+        Items = j.TucJobItemJobs.Count,
 
         PickupFrom = j.UcjbPickUpFrom,
         Notify = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName : null,
@@ -1254,9 +1254,8 @@ public static class JobMappings
     private static List<ParcelDimensions> ConvertToParcelDimensions(ICollection<TblBulkJobItem> items) =>
         items?.Select(CreateParcelDimensions).ToList() ?? [];
 
-    private static ParcelDimensions CreateParcelDimensions(TblBulkJobItem item)
-    {
-        return new ParcelDimensions
+    private static ParcelDimensions CreateParcelDimensions(TblBulkJobItem item) =>
+        new()
         {
             ItemId = item.ItemId,
             ItemName = item.Notes,
@@ -1265,7 +1264,6 @@ public static class JobMappings
             Length = item.Length,
             Barcode = item.Barcode
         };
-    }
 
     public static Expression<Func<TucJob, DispatchJobViewModel>> PodSearchMapping(bool isUsCustomer) =>
         j => new DispatchJobViewModel

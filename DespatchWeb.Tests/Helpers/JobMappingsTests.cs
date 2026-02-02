@@ -775,6 +775,12 @@ public class JobMappingsTests
             UcjbAttention = true,
             CustomJobName = "Custom Job",
             PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>
+            {
+                new() { ItemId = 1, Items = 1 },
+                new() { ItemId = 2, Items = 1 },
+                new() { ItemId = 3, Items = 1 }
+            },
             UcjbClient = new TucClient { UcclName = "Test Client" },
             UcjbStatusNavigation = new TucJobStatus { UcjsCode = "DEL", UcjsName = "Delivered" }
         };

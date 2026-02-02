@@ -39,10 +39,9 @@ import {ITask, ITaskDto, TaskTableFiltersRequest,} from "../components/task-dash
 import {JobProperty} from "../enums/job-property.enum";
 import {
     IAllocateJobsToCourierRequest,
-    IJobUpdateBaseRequest,
     UpdatePodDetailsRequest
 } from "../interfaces/requests.interfaces";
-import {JobEventData} from "../react/interfaces/event";
+import {JobEventData} from "../react/interfaces";
 import {IDeliveryJourney, IDeliveryJourneyDto} from "../react/components/common/task-history/TaskHistory.interfaces";
 import {formatDateForApiWithTzs} from "../functions/formatDates";
 import IInterCourierData from "../components/dialogs/inter-courier-charge-dialog/interfaces/IInterCourierData";
@@ -886,26 +885,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             throw error;
         }
     }
-
-    async addStopToRecurringJob(
-        jobId: number,
-        pickUpAddress?: IEditAddressDialogViewModel,
-        deliveryAddress?: IEditAddressDialogViewModel
-    ): Promise<number> {
-        try {
-            const response = await this.$http.post<number>("job/AddStopToRecurringJob", {
-                jobId,
-                pickUpAddress,
-                deliveryAddress,
-            });
-
-            return response.data;
-        } catch (error) {
-            console.error("Error updating packages:", error);
-            throw error;
-        }
-    }
-
+    
     async restoreNationwideJob(jobId: number): Promise<void> {
         await this.$http.post("nationwideJob/RestoreJob", {
             jobId,
