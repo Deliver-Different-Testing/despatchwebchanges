@@ -414,8 +414,8 @@ public class BaseJobRepository(
     public async Task<List<TucNoteViewModel>> GetBulkJobNotesByBulkJobIdAsync(int bulkJobId)
     {
         var bulkNotes = await Context.TblBulkJobNotes
-            .AsSplitQuery()
             .AsNoTracking()
+            .AsSplitQuery()
             .Where(n => n.BulkJobId == bulkJobId)
             .OrderByDescending(n => n.CreatedDate)
             .Select(n => new TucNoteViewModel
@@ -451,7 +451,6 @@ public class BaseJobRepository(
 
     public async Task<TucNoteViewModel> GetNoteByIdAsync(int noteId)
     {
-        // Run both queries in parallel using separate contexts (DbContext is not thread-safe)
         await using var activeContext = CreateNewContext();
         await using var archivedContext = CreateNewContext();
 

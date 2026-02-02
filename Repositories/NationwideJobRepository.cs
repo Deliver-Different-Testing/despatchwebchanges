@@ -29,7 +29,7 @@ public class NationwideJobRepository(
 {
     private readonly ITenantInfoService _infoService = infoService;
 
-  public async Task AddJobNationwideAsync(AssignFlightToJobRequest requestData,
+    public async Task AddJobNationwideAsync(AssignFlightToJobRequest requestData,
         List<string> webhookIds)
     {
         ArgumentNullException.ThrowIfNull(webhookIds);
@@ -48,7 +48,8 @@ public class NationwideJobRepository(
         var lastFlight = orderedSegments.Last();
         var primaryFlightNumber = primaryFlight.FlightNumber;
 
-        Log.Information("Starting AddJobNationwideAsync for JobId: {JobId}, PrimaryFlight: {PrimaryFlightNumber}, TotalSegments: {SegmentCount}",
+        Log.Information(
+            "Starting AddJobNationwideAsync for JobId: {JobId}, PrimaryFlight: {PrimaryFlightNumber}, TotalSegments: {SegmentCount}",
             requestData.JobId, primaryFlightNumber, requestData.FlightSegments.Count);
 
         ArgumentException.ThrowIfNullOrWhiteSpace(primaryFlight.CarrierFsCode);
@@ -72,7 +73,8 @@ public class NationwideJobRepository(
             Log.Information("Job {JobNumber} retrieved for PrimaryFlight: {PrimaryFlightNumber}, ClientId: {ClientId}",
                 job.UcjbNumber, primaryFlightNumber, job.UcjbClientId);
 
-            var firstFlightDepartureTimeZoneId = GetTimeZoneIdFromList(timeZones, primaryFlight.DepartureAirportTimeZone);
+            var firstFlightDepartureTimeZoneId =
+                GetTimeZoneIdFromList(timeZones, primaryFlight.DepartureAirportTimeZone);
             var lastFlightArrivalTimeZoneId = GetTimeZoneIdFromList(timeZones, lastFlight.ArrivalAirportTimeZone);
 
             var airports = await GetAirportAddressInfosAsync();
@@ -83,7 +85,8 @@ public class NationwideJobRepository(
             var arrivalAirportId = requestData.ToAirportId ?? job.ToAirportId;
             if (!arrivalAirportId.HasValue) throw new ArgumentNullException(nameof(arrivalAirportId));
 
-            Log.Debug("Processing airports for PrimaryFlight: {PrimaryFlightNumber}, DepartureAirportId: {DepartureAirportId}, ArrivalAirportId: {ArrivalAirportId}",
+            Log.Debug(
+                "Processing airports for PrimaryFlight: {PrimaryFlightNumber}, DepartureAirportId: {DepartureAirportId}, ArrivalAirportId: {ArrivalAirportId}",
                 primaryFlightNumber, departureAirportId, arrivalAirportId);
 
             // Update flight job status
@@ -92,7 +95,8 @@ public class NationwideJobRepository(
             // Update pickup job if applicable
             if (job.FromAirportId != null || requestData.FromAirportId != null)
             {
-                var pickUpJob = await FindRelatedAgentJobAsync(job.ParentId, NationwideJobConstants.PickupJobSuffix, isUsCustomer);
+                var pickUpJob = await FindRelatedAgentJobAsync(job.ParentId, NationwideJobConstants.PickupJobSuffix,
+                    isUsCustomer);
                 await UpdatePickupJobAsync(pickUpJob, primaryFlight, departureAirportId.Value,
                     firstFlightDepartureTimeZoneId, airports, primaryFlightNumber);
             }
@@ -105,12 +109,14 @@ public class NationwideJobRepository(
                 lastFlightArrivalTimeZoneId, true);
 
             // Update delivery job if applicable
-            Log.Information("Checking delivery job update: job.ToAirportId={ToAirportId}, requestData.ToAirportId={RequestToAirportId}, job.ParentId={ParentId}",
+            Log.Information(
+                "Checking delivery job update: job.ToAirportId={ToAirportId}, requestData.ToAirportId={RequestToAirportId}, job.ParentId={ParentId}",
                 job.ToAirportId, requestData.ToAirportId, job.ParentId);
 
             if (job.ToAirportId != null || requestData.ToAirportId != null)
             {
-                var deliveryJob = await FindRelatedAgentJobAsync(job.ParentId, NationwideJobConstants.DeliveryJobSuffix, isUsCustomer);
+                var deliveryJob = await FindRelatedAgentJobAsync(job.ParentId, NationwideJobConstants.DeliveryJobSuffix,
+                    isUsCustomer);
 
                 Log.Information("Delivery job lookup result: Found={Found}, DeliveryJobId={DeliveryJobId}",
                     deliveryJob != null, deliveryJob?.UcjbId);
@@ -120,7 +126,8 @@ public class NationwideJobRepository(
             }
             else
             {
-                Log.Warning("Skipping delivery job update: Neither job.ToAirportId nor requestData.ToAirportId is set for JobId={JobId}",
+                Log.Warning(
+                    "Skipping delivery job update: Neither job.ToAirportId nor requestData.ToAirportId is set for JobId={JobId}",
                     requestData.JobId);
             }
 
@@ -159,7 +166,8 @@ public class NationwideJobRepository(
             await Context.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            Log.Information("Successfully completed AddJobNationwideAsync for PrimaryFlight: {PrimaryFlightNumber}, JobId: {JobId}, FlightId: {FlightId}",
+            Log.Information(
+                "Successfully completed AddJobNationwideAsync for PrimaryFlight: {PrimaryFlightNumber}, JobId: {JobId}, FlightId: {FlightId}",
                 primaryFlightNumber, requestData.JobId, primaryFlightRecord.UcnwId);
         }
         catch (Exception e)
@@ -174,7 +182,8 @@ public class NationwideJobRepository(
 
     private static void UpdateFlightJobStatus(TucJob job, FlightSegmentViewModel primaryFlight)
     {
-        Log.Debug("Updating job status for PrimaryFlight: {PrimaryFlightNumber}, OldStatus: {OldStatus}, NewStatus: {NewStatus}",
+        Log.Debug(
+            "Updating job status for PrimaryFlight: {PrimaryFlightNumber}, OldStatus: {OldStatus}, NewStatus: {NewStatus}",
             primaryFlight.FlightNumber, job.UcjbStatus, (int)JobStatus.Dispatched);
 
         job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
@@ -195,13 +204,14 @@ public class NationwideJobRepository(
             ? (int)SpeedGrouping.Agent
             : (int)UrgentSpeedGrouping.NationwideAgent;
 
-        Log.Debug("FindRelatedAgentJobAsync: Searching for job with ParentId={ParentId}, Suffix='{Suffix}', TargetGroupingId={GroupingId}",
+        Log.Debug(
+            "FindRelatedAgentJobAsync: Searching for job with ParentId={ParentId}, Suffix='{Suffix}', TargetGroupingId={GroupingId}",
             parentJobId, jobSuffix, targetGroupingId);
 
         var agentJob = await Context.TucJobs
             .AsSplitQuery()
             .Include(j => j.UcjbSpeedNavigation)
-                .ThenInclude(s => s.Grouping)
+            .ThenInclude(s => s.Grouping)
             .Where(j => j.ParentId == parentJobId &&
                         j.UcjbNumber != null &&
                         j.UcjbNumber.EndsWith(jobSuffix.ToString()) &&
@@ -215,12 +225,14 @@ public class NationwideJobRepository(
             // Diagnostic: Find any jobs with matching suffix to understand why they didn't match
             var candidateJobs = await Context.TucJobs
                 .AsNoTracking()
+                .AsSplitQuery()
                 .Include(j => j.UcjbSpeedNavigation)
-                    .ThenInclude(s => s.Grouping)
+                .ThenInclude(s => s.Grouping)
                 .Where(j => j.ParentId == parentJobId &&
                             j.UcjbNumber != null &&
                             j.UcjbNumber.EndsWith(jobSuffix.ToString()))
-                .Select(j => new {
+                .Select(j => new
+                {
                     j.UcjbId,
                     j.UcjbNumber,
                     SpeedId = j.UcjbSpeed,
@@ -231,9 +243,10 @@ public class NationwideJobRepository(
                 })
                 .ToListAsync();
 
-            if (candidateJobs.Any())
+            if (candidateJobs.Count != 0)
             {
-                Log.Warning("FindRelatedAgentJobAsync: Found {Count} jobs with suffix '{Suffix}' for parent {ParentJobId}, but none matched grouping {TargetGroupingId}. Candidates: {@Candidates}",
+                Log.Warning(
+                    "FindRelatedAgentJobAsync: Found {Count} jobs with suffix '{Suffix}' for parent {ParentJobId}, but none matched grouping {TargetGroupingId}. Candidates: {@Candidates}",
                     candidateJobs.Count, jobSuffix, parentJobId, targetGroupingId, candidateJobs);
             }
             else
@@ -245,7 +258,8 @@ public class NationwideJobRepository(
                     .Select(j => new { j.UcjbId, j.UcjbNumber })
                     .ToListAsync();
 
-                Log.Warning("FindRelatedAgentJobAsync: No jobs found with suffix '{Suffix}' for parent {ParentJobId}. All child jobs: {@AllChildren}",
+                Log.Warning(
+                    "FindRelatedAgentJobAsync: No jobs found with suffix '{Suffix}' for parent {ParentJobId}. All child jobs: {@AllChildren}",
                     jobSuffix, parentJobId, allChildJobs);
             }
         }
@@ -296,12 +310,14 @@ public class NationwideJobRepository(
     {
         if (deliveryJob == null)
         {
-            Log.Warning("UpdateDeliveryJobAsync: No delivery job provided for PrimaryFlight: {PrimaryFlightNumber}, JobId: {JobId}",
+            Log.Warning(
+                "UpdateDeliveryJobAsync: No delivery job provided for PrimaryFlight: {PrimaryFlightNumber}, JobId: {JobId}",
                 primaryFlightNumber, requestData.JobId);
             return;
         }
 
-        Log.Information("UpdateDeliveryJobAsync: Updating delivery job {DeliveryJobNumber} (ID: {DeliveryJobId}) for PrimaryFlight: {PrimaryFlightNumber}",
+        Log.Information(
+            "UpdateDeliveryJobAsync: Updating delivery job {DeliveryJobNumber} (ID: {DeliveryJobId}) for PrimaryFlight: {PrimaryFlightNumber}",
             deliveryJob.UcjbNumber, deliveryJob.UcjbId, primaryFlightNumber);
 
         var airportProcessingTime = await GetAirportProcessingTimeAsync(arrivalAirportId);
@@ -309,7 +325,8 @@ public class NationwideJobRepository(
         var packageReadyTime = requestData.PackageReadyTime ??
                                lastFlight.ArrivalTime.AddMinutes(airportProcessingTime);
 
-        Log.Information("UpdateDeliveryJobAsync: Setting delivery job start time. RequestPackageReadyTime={RequestTime}, CalculatedTime={CalculatedTime}, UsingTime={UsingTime}",
+        Log.Information(
+            "UpdateDeliveryJobAsync: Setting delivery job start time. RequestPackageReadyTime={RequestTime}, CalculatedTime={CalculatedTime}, UsingTime={UsingTime}",
             requestData.PackageReadyTime, lastFlight.ArrivalTime.AddMinutes(airportProcessingTime), packageReadyTime);
 
         deliveryJob.UcjbDate = packageReadyTime.Date;
@@ -343,7 +360,8 @@ public class NationwideJobRepository(
         List<TimeZone> timeZones,
         DateTimeOffset? overrideEta = null)
     {
-        Log.Debug("Creating TucJobNationwide record for Flight: {FlightNumber}, Route: {DepartureAirport} -> {ArrivalAirport}, Leg: {LegNumber}",
+        Log.Debug(
+            "Creating TucJobNationwide record for Flight: {FlightNumber}, Route: {DepartureAirport} -> {ArrivalAirport}, Leg: {LegNumber}",
             segment.FlightNumber, segment.DepartureAirportFsCode, segment.ArrivalAirportFsCode, legNumber);
 
         return new TucJobNationwide
@@ -412,7 +430,8 @@ public class NationwideJobRepository(
             var leg = segments[i];
             var legNumber = i + 1;
 
-            Log.Debug("Adding connection leg {LegNumber} for PrimaryFlight: {PrimaryFlightNumber}, Flight: {ConnectionFlight}",
+            Log.Debug(
+                "Adding connection leg {LegNumber} for PrimaryFlight: {PrimaryFlightNumber}, Flight: {ConnectionFlight}",
                 legNumber, primaryFlightNumber, leg.FlightNumber);
 
             var connectionRecord = CreateFlightRecord(job, leg, webhookIds[i], legNumber, timeZones);
@@ -626,9 +645,9 @@ public class NationwideJobRepository(
         List<int> selectedViewIds)
     {
         if (!isInternal && string.IsNullOrEmpty(clientIds))
-            return new JobSearchResult 
-            { 
-                Jobs = [], 
+            return new JobSearchResult
+            {
+                Jobs = [],
                 TotalCount = 0,
                 HasMore = false
             };
@@ -1122,7 +1141,8 @@ public class NationwideJobRepository(
         return stateZone?.ZoneName;
     }
 
-    public async Task<int?> GetAirFreightRateIdFromZoneComboAsync(int carrierId, string fromZoneName, string toZoneName) =>
+    public async Task<int?>
+        GetAirFreightRateIdFromZoneComboAsync(int carrierId, string fromZoneName, string toZoneName) =>
         await Context.FlightZoneCombos
             .AsNoTracking()
             .Where(c => c.CarrierId == carrierId &&
@@ -1390,7 +1410,7 @@ public class NationwideJobRepository(
             .Include(j => j.JobRecoveryAgents)
             .FirstOrDefaultAsync(j => j.JobRecoveryAgents.Any(ra => ra.RecoveryId == recoveryId));
         ArgumentNullException.ThrowIfNull(recoveryJob);
-        
+
         // Get the recovery agent to remove
         var recoveryAgent = await Context.JobRecoveryAgents.FindAsync(recoveryId);
         ArgumentNullException.ThrowIfNull(recoveryAgent);
@@ -1402,7 +1422,8 @@ public class NationwideJobRepository(
         await Context.SaveChangesAsync();
     }
 
-    private static void UpdateJobAddressWithAirportInfo(List<AirportAddressInfoDto> airports, TucJob job, int airportId, int? timeZoneId,
+    private static void UpdateJobAddressWithAirportInfo(List<AirportAddressInfoDto> airports, TucJob job, int airportId,
+        int? timeZoneId,
         bool isDeliveryAddress)
     {
         var airport = airports.FirstOrDefault(a => a.AirportId == airportId);

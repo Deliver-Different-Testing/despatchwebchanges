@@ -15,46 +15,31 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
     public async Task<ClientViewModel> ValidateClientAsync(int contactId) =>
         await Context.TucClientContacts
             .AsNoTracking()
-            .Where(contact => contact.UcctId == contactId)
-            .Join(
-                Context.TucClients,
-                contact => contact.UcctClientId,
-                client => client.UcclId,
-                (contact, client) =>
-                    new ClientViewModel
-                    {
-                        Active = client.UcclActive,
-                        FirstName = contact.UcctFirstname,
-                        FullName = contact.UcctFirstname + " " + contact.UcctSurname,
-                        Email = contact.UcctEmail,
-                        Internal = client.UcclInternal,
-                        StaffID = contact.StaffId
-                    }
-            )
+            .AsSplitQuery()
+            .Where(c => c.UcctId == contactId)
+            .Select(c => new ClientViewModel
+            {
+                Active = c.UcctClient != null && c.UcctClient.UcclActive,
+                FirstName = c.UcctFirstname,
+                FullName = c.UcctFirstname + " " + c.UcctSurname,
+                Email = c.UcctEmail,
+                Internal = c.UcctClient != null && c.UcctClient.UcclInternal,
+                StaffID = c.StaffId
+            })
             .FirstOrDefaultAsync();
 
     public async Task<List<Suggestion>> ClientContactsAsync(int contactId) =>
         await Context.TblClientContacts
             .AsNoTracking()
+            .AsSplitQuery()
             .Where(c => c.ContactId == contactId)
-            .Join(
-                Context.TblClientContactInternetPermissions,
-                c => c.ClientContactId,
-                cip => cip.ClientContactId,
-                (c, cip) => new { c, cip }
-            )
-            .Join(
-                Context.TblInternetPermissions,
-                joined => joined.cip.InternetPermissionId,
-                ip => ip.InternetPermissionId,
-                (joined, ip) => new { joined.c, ip }
-            )
-            .Where(joined => joined.ip.SystemName == "DespatchWeb")
-            .OrderByDescending(joined => joined.c.IsDefaultAccount)
-            .Select(joined => new Suggestion
+            .Where(c => c.TblClientContactInternetPermissions
+                .Any(cip => cip.InternetPermission.SystemName == "DespatchWeb"))
+            .OrderByDescending(c => c.IsDefaultAccount)
+            .Select(c => new Suggestion
             {
-                Id = joined.c.ClientId,
-                Text = joined.c.Client.UcclName
+                Id = c.ClientId,
+                Text = c.Client != null ? c.Client.UcclName : null
             })
             .Distinct()
             .ToListAsync();
