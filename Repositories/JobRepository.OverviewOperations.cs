@@ -300,6 +300,7 @@ public partial class JobRepository
 
             var query = Context.TucJobs
                 .AsNoTracking()
+                .AsSplitQuery()
                 .Where(j =>
                     j.UcjbStatus != (int)JobStatus.Completed &&
                     j.UcjbStatus != (int)JobStatus.Rejected &&
@@ -361,7 +362,7 @@ public partial class JobRepository
                     CourierSurname = j.UcjbCourier != null ? j.UcjbCourier.UccrSurname : null,
                     Quantity = j.UcjbQty ?? 0,
                     PackageTypeName = j.AcceptedJobType != null ? j.AcceptedJobType.UcjtName : null,
-                    TotalDistance = j.TotalDistance ?? 0,
+                    TotalDistance = j.TotalDistance ?? 0m,
                     DeliveryTime = j.DeliverByTime,
                     SpeedMinutes = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.Minutes : null
                 })
@@ -382,6 +383,7 @@ public partial class JobRepository
             {
                 var courierCompletions = await Context.TucJobs
                     .AsNoTracking()
+                    .AsSplitQuery()
                     .Where(j => j.UcjbCourierId.HasValue &&
                                 courierIds.Contains(j.UcjbCourierId.Value) &&
                                 j.UcjbStatus == (int)JobStatus.Completed &&

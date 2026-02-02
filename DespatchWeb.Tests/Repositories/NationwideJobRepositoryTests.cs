@@ -1128,14 +1128,14 @@ public class NationwideJobRepositoryTests : IDisposable
 
         var leg1 = addedFlightRecords.FirstOrDefault(f => f.UcnwLegNumber == 1);
         leg1.Should().NotBeNull();
-        leg1!.UcnwFlightNo.Should().Be("NZ123");
+        leg1.UcnwFlightNo.Should().Be("NZ123");
         leg1.WebhookAlertId.Should().Be("webhook-leg1");
         leg1.DepartureAirportFsCode.Should().Be("AKL");
         leg1.ArrivalAirportFsCode.Should().Be("MEL");
 
         var leg2 = addedFlightRecords.FirstOrDefault(f => f.UcnwLegNumber == 2);
         leg2.Should().NotBeNull();
-        leg2!.UcnwFlightNo.Should().Be("NZ456");
+        leg2.UcnwFlightNo.Should().Be("NZ456");
         leg2.WebhookAlertId.Should().Be("webhook-leg2");
         leg2.DepartureAirportFsCode.Should().Be("MEL");
         leg2.ArrivalAirportFsCode.Should().Be("SYD");
@@ -1298,6 +1298,238 @@ public class NationwideJobRepositoryTests : IDisposable
         updatedFlightJob?.DeliverByTime.Should().Be(arrivalTime.DateTime);
     }
 
+    [Fact]
+    public async Task AddJobNationwideAsync_UsesTransactionForAtomicOperation()
+    {
+        // Arrange
+        var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
+        var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
+
+        var parentJob = CreateJobWithParent(1, "JOB001");
+        var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
+        _context.TucJobs.AddRange(parentJob, flightJob);
+
+        var airport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
+        _context.TblAirports.Add(airport);
+
+        var timeZone = CreateTimeZone(1, "Pacific/Auckland", "NZST");
+        _context.TimeZones.Add(timeZone);
+
+        await _context.SaveChangesAsync();
+
+        var request = CreateFlightRequest(100, 1, 1, departureTime, arrivalTime);
+        var webhookIds = new List<string> { "webhook-123" };
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AddJobNationwideAsync(request, webhookIds);
+
+        // Assert - both flight record and journey record should exist (atomic save)
+        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100);
+        var journeyRecord = await _context.JobDeliveryJourneys.FirstOrDefaultAsync(j => j.JobId == 100);
+
+        flightRecord.Should().NotBeNull();
+        journeyRecord.Should().NotBeNull();
+        journeyRecord.FlightId.Should().Be(flightRecord.UcnwId);
+    }
+
+    [Fact]
+    public async Task AddJobNationwideAsync_UsesPickupJobSuffixConstant()
+    {
+        // Arrange - verifies the '1' suffix is used for pickup jobs
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+
+        var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
+        var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
+
+        var parentJob = CreateJobWithParent(1, "JOB001");
+        var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
+        flightJob.FromAirportId = 1;
+
+        // Create shared grouping to avoid EF tracking conflicts
+        var agentGrouping = new TucJobTypeGrouping { GroupingId = (int)DespatchWeb.Enums.SpeedGrouping.Agent, GroupingName = "Agent" };
+
+        // Create pickup job with suffix '1'
+        var pickupJob = CreateAgentJobWithGrouping(101, "JOB0011", parentJob, agentGrouping);
+
+        // Create another job that doesn't match (different suffix)
+        var otherJob = CreateAgentJobWithGrouping(102, "JOB0012", parentJob, agentGrouping);
+
+        _context.TucJobs.AddRange(parentJob, flightJob, pickupJob, otherJob);
+
+        var airport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
+        _context.TblAirports.Add(airport);
+
+        var timeZone = CreateTimeZone(1, "Pacific/Auckland", "NZST");
+        _context.TimeZones.Add(timeZone);
+
+        await _context.SaveChangesAsync();
+
+        var request = CreateFlightRequest(100, 1, 1, departureTime, arrivalTime);
+        var webhookIds = new List<string> { "webhook-123" };
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AddJobNationwideAsync(request, webhookIds);
+
+        // Assert - only the pickup job (suffix '1') should have DeliverByTime updated
+        var updatedPickupJob = await _context.TucJobs.FindAsync(101);
+        var unchangedOtherJob = await _context.TucJobs.FindAsync(102);
+
+        updatedPickupJob?.DeliverByTime.Should().NotBeNull();
+        unchangedOtherJob?.DeliverByTime.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task AddJobNationwideAsync_UsesDeliveryJobSuffixConstant()
+    {
+        // Arrange - verifies the '3' suffix is used for delivery jobs
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+
+        var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
+        var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
+
+        var parentJob = CreateJobWithParent(1, "JOB001");
+        var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
+        flightJob.ToAirportId = 1;
+
+        // Create shared grouping to avoid EF tracking conflicts
+        var agentGrouping = new TucJobTypeGrouping { GroupingId = (int)DespatchWeb.Enums.SpeedGrouping.Agent, GroupingName = "Agent" };
+
+        // Create delivery job with suffix '3'
+        var deliveryJob = CreateAgentJobWithGrouping(103, "JOB0013", parentJob, agentGrouping);
+
+        // Create another job that doesn't match (different suffix)
+        var otherJob = CreateAgentJobWithGrouping(104, "JOB0014", parentJob, agentGrouping);
+
+        _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob, otherJob);
+
+        var airport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
+        _context.TblAirports.Add(airport);
+
+        var timeZone = CreateTimeZone(1, "Pacific/Auckland", "NZST");
+        _context.TimeZones.Add(timeZone);
+
+        await _context.SaveChangesAsync();
+
+        var request = CreateFlightRequest(100, 1, 1, departureTime, arrivalTime);
+        var webhookIds = new List<string> { "webhook-123" };
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AddJobNationwideAsync(request, webhookIds);
+
+        // Assert - only the delivery job (suffix '3') should have UcjbDate/UcjbTime updated
+        var updatedDeliveryJob = await _context.TucJobs.FindAsync(103);
+        var unchangedOtherJob = await _context.TucJobs.FindAsync(104);
+
+        // Delivery job should have its date set to after the arrival time (arrival + 60 min processing)
+        var expectedReadyTime = arrivalTime.AddMinutes(60);
+        updatedDeliveryJob?.UcjbDate.Should().Be(expectedReadyTime.Date);
+        updatedDeliveryJob?.UcjbTime.Should().Be(expectedReadyTime.DateTime);
+
+        // Other job (suffix '4') should NOT have its time updated - it stays at the default
+        // It will have the default DateTime value set by CreateAgentJobWithGrouping
+        unchangedOtherJob?.UcjbTime.Should().NotBe(expectedReadyTime.DateTime);
+    }
+
+    [Fact]
+    public async Task AddJobNationwideAsync_UsesPrimaryFlightLegNumberConstant()
+    {
+        // Arrange
+        var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
+        var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
+
+        var parentJob = CreateJobWithParent(1, "JOB001");
+        var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
+        _context.TucJobs.AddRange(parentJob, flightJob);
+
+        var airport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
+        _context.TblAirports.Add(airport);
+
+        var timeZone = CreateTimeZone(1, "Pacific/Auckland", "NZST");
+        _context.TimeZones.Add(timeZone);
+
+        await _context.SaveChangesAsync();
+
+        var request = CreateFlightRequest(100, 1, 1, departureTime, arrivalTime);
+        var webhookIds = new List<string> { "webhook-123" };
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AddJobNationwideAsync(request, webhookIds);
+
+        // Assert - primary flight should have leg number 1 (constant value)
+        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100);
+        flightRecord.Should().NotBeNull();
+        flightRecord.UcnwLegNumber.Should().Be(1, "primary flight leg number constant is 1");
+    }
+
+    [Fact]
+    public async Task AddJobNationwideAsync_PrimaryFlightHasGateNumber_ConnectionFlightsDoNot()
+    {
+        // Note: SQLite test DB has a unique constraint that may cause issues with multiple flight legs.
+        // We verify the correct gate number assignment in the change tracker before any constraint violation.
+
+        // Arrange
+        var departureTime1 = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
+        var arrivalTime1 = new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
+        var departureTime2 = new DateTimeOffset(2024, 6, 15, 13, 0, 0, TimeSpan.Zero);
+        var arrivalTime2 = new DateTimeOffset(2024, 6, 15, 17, 0, 0, TimeSpan.Zero);
+
+        var parentJob = CreateJobWithParent(1, "JOB001");
+        var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
+        _context.TucJobs.AddRange(parentJob, flightJob);
+
+        var airport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
+        _context.TblAirports.Add(airport);
+
+        var timeZone = CreateTimeZone(1, "Pacific/Auckland", "NZST");
+        _context.TimeZones.Add(timeZone);
+
+        await _context.SaveChangesAsync();
+
+        var request = CreateFlightRequestWithMultipleLegs(100, 1, 1,
+            departureTime1, arrivalTime1, departureTime2, arrivalTime2);
+        // Add departure terminal to first segment
+        request.FlightSegments[0].DepartureTerminal = "Terminal 1";
+        request.FlightSegments[1].DepartureTerminal = "Terminal 2";
+        var webhookIds = new List<string> { "webhook-leg1", "webhook-leg2" };
+
+        var repository = CreateRepository();
+
+        // Act & Assert - verify gate number assignment before save
+        try
+        {
+            await repository.AddJobNationwideAsync(request, webhookIds);
+        }
+        catch (DbUpdateException)
+        {
+            // Expected due to SQLite unique constraint
+        }
+
+        var addedFlightRecords = _context.ChangeTracker.Entries<TucJobNationwide>()
+            .Where(e => e.State == EntityState.Added || e.State == EntityState.Unchanged)
+            .Select(e => e.Entity)
+            .Where(f => f.UcnwJobId == 100)
+            .ToList();
+
+        var leg1 = addedFlightRecords.FirstOrDefault(f => f.UcnwLegNumber == 1);
+        var leg2 = addedFlightRecords.FirstOrDefault(f => f.UcnwLegNumber == 2);
+
+        // Primary flight (leg 1) should have gate number
+        leg1.Should().NotBeNull();
+        leg1.GateNumber.Should().Be("Terminal 1");
+
+        // Connection flight (leg 2) should NOT have gate number (only primary flight gets it)
+        leg2.Should().NotBeNull();
+        leg2.GateNumber.Should().BeNull();
+    }
+
     #endregion
 
     #region Issue #3: Final Mile Job Start Time Tests
@@ -1352,7 +1584,7 @@ public class NationwideJobRepositoryTests : IDisposable
         var expectedStartTime = arrivalTime.AddMinutes(airportProcessingTime);
 
         updatedDeliveryJob.Should().NotBeNull();
-        updatedDeliveryJob!.UcjbDate.Should().Be(expectedStartTime.Date,
+        updatedDeliveryJob.UcjbDate.Should().Be(expectedStartTime.Date,
             "Final mile job date should be arrival date (or next day if time crosses midnight)");
         updatedDeliveryJob.UcjbTime.Should().Be(expectedStartTime.DateTime,
             "Final mile job time should be arrival time + airport processing time");
@@ -1398,7 +1630,7 @@ public class NationwideJobRepositoryTests : IDisposable
         var updatedDeliveryJob = await _context.TucJobs.FindAsync(102);
 
         updatedDeliveryJob.Should().NotBeNull();
-        updatedDeliveryJob!.UcjbDate.Should().Be(customPackageReadyTime.Date,
+        updatedDeliveryJob.UcjbDate.Should().Be(customPackageReadyTime.Date,
             "Final mile job date should use provided PackageReadyTime date");
         updatedDeliveryJob.UcjbTime.Should().Be(customPackageReadyTime.DateTime,
             "Final mile job time should use provided PackageReadyTime");
@@ -1445,7 +1677,7 @@ public class NationwideJobRepositoryTests : IDisposable
         var expectedStartTime = arrivalTime.AddMinutes(customProcessingTime);
 
         updatedDeliveryJob.Should().NotBeNull();
-        updatedDeliveryJob!.UcjbTime.Should().Be(expectedStartTime.DateTime,
+        updatedDeliveryJob.UcjbTime.Should().Be(expectedStartTime.DateTime,
             "Final mile job time should be arrival time + airport-specific processing time (90 mins)");
     }
 
@@ -1504,7 +1736,7 @@ public class NationwideJobRepositoryTests : IDisposable
         var expectedStartTime = arrivalTime.AddMinutes(60); // Default processing time
 
         updatedDeliveryJob.Should().NotBeNull();
-        updatedDeliveryJob!.UcjbTime.Should().Be(expectedStartTime.DateTime,
+        updatedDeliveryJob.UcjbTime.Should().Be(expectedStartTime.DateTime,
             "Final mile job should default to 60 minute processing time when airport has none set");
     }
 
@@ -1557,7 +1789,7 @@ public class NationwideJobRepositoryTests : IDisposable
         }
 
         // Assert - Final mile job start should be based on LAST segment arrival + processing time
-        var updatedDeliveryJob = await _context.TucJobs.FindAsync(102);
+        await _context.TucJobs.FindAsync(102);
         var expectedStartTime = arrivalTime2.AddMinutes(45); // Last leg arrival + SYD processing time
 
         // Note: Due to SQLite constraint, the delivery job update may not persist,
@@ -1619,7 +1851,7 @@ public class NationwideJobRepositoryTests : IDisposable
         var expectedStartTime = arrivalTime.AddMinutes(airportProcessingTime);
 
         updatedJob3.Should().NotBeNull();
-        updatedJob3!.UcjbDate.Should().Be(expectedStartTime.Date,
+        updatedJob3.UcjbDate.Should().Be(expectedStartTime.Date,
             "Job '3' (drop-off) should have its date set to arrival + processing time");
         updatedJob3.UcjbTime.Should().Be(expectedStartTime.DateTime,
             "Job '3' (drop-off) should have its time set to arrival + processing time");
@@ -1628,7 +1860,7 @@ public class NationwideJobRepositoryTests : IDisposable
         var updatedJob2 = await _context.TucJobs.FindAsync(102);
         updatedJob2.Should().NotBeNull();
         // Job '2' time should remain unchanged (not set to arrival + processing time)
-        updatedJob2!.UcjbTime.Should().NotBe(expectedStartTime.DateTime,
+        updatedJob2.UcjbTime.Should().NotBe(expectedStartTime.DateTime,
             "Job '2' should not be updated with the delivery time - only job '3' should be updated");
     }
 
@@ -1681,7 +1913,7 @@ public class NationwideJobRepositoryTests : IDisposable
         var expectedDeliverByTime = departureTime.AddMinutes(-departureAirportProcessingTime).DateTime;
 
         updatedPickupJob.Should().NotBeNull();
-        updatedPickupJob!.DeliverByTime.Should().Be(expectedDeliverByTime,
+        updatedPickupJob.DeliverByTime.Should().Be(expectedDeliverByTime,
             "Pickup job DeliverByTime should be departure time minus airport processing time");
     }
 
@@ -1723,7 +1955,7 @@ public class NationwideJobRepositoryTests : IDisposable
         var expectedDeliverByTime = departureTime.AddMinutes(-customProcessingTime).DateTime;
 
         updatedPickupJob.Should().NotBeNull();
-        updatedPickupJob!.DeliverByTime.Should().Be(expectedDeliverByTime,
+        updatedPickupJob.DeliverByTime.Should().Be(expectedDeliverByTime,
             "Pickup job DeliverByTime should use departure airport's specific processing time (90 mins)");
     }
 
@@ -1802,7 +2034,7 @@ public class NationwideJobRepositoryTests : IDisposable
         var updatedPickupJob = await _context.TucJobs.FindAsync(101);
 
         updatedPickupJob.Should().NotBeNull();
-        updatedPickupJob!.DeliverByTimeZoneId.Should().NotBeNull(
+        updatedPickupJob.DeliverByTimeZoneId.Should().NotBeNull(
             "Pickup job should have DeliverByTimeZoneId set to departure airport timezone");
     }
 
@@ -1855,12 +2087,12 @@ public class NationwideJobRepositoryTests : IDisposable
         // Pickup: departure - processing time
         var expectedPickupDeliverBy = departureTime.AddMinutes(-departureProcessingTime).DateTime;
         updatedPickupJob.Should().NotBeNull();
-        updatedPickupJob!.DeliverByTime.Should().Be(expectedPickupDeliverBy,
+        updatedPickupJob.DeliverByTime.Should().Be(expectedPickupDeliverBy,
             "Pickup job DeliverByTime should be departure - processing time");
 
         // Delivery: explicitly set PackageDeliverByTime
         updatedDeliveryJob.Should().NotBeNull();
-        updatedDeliveryJob!.DeliverByTime.Should().Be(packageDeliverByTime.DateTime,
+        updatedDeliveryJob.DeliverByTime.Should().Be(packageDeliverByTime.DateTime,
             "Delivery job DeliverByTime should be the provided PackageDeliverByTime");
     }
 
@@ -1907,7 +2139,7 @@ public class NationwideJobRepositoryTests : IDisposable
         var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100);
 
         flightRecord.Should().NotBeNull();
-        flightRecord!.UcnwEtd.Should().Be(departureTime.DateTime,
+        flightRecord.UcnwEtd.Should().Be(departureTime.DateTime,
             "Flight ETD should match the segment's departure time exactly");
         flightRecord.UcnwEta.Should().Be(arrivalTime.DateTime,
             "Flight ETA should match the segment's arrival time exactly");
@@ -1946,7 +2178,7 @@ public class NationwideJobRepositoryTests : IDisposable
         var updatedFlightJob = await _context.TucJobs.FindAsync(100);
 
         updatedFlightJob.Should().NotBeNull();
-        updatedFlightJob!.UcjbDate.Should().Be(departureTime.DateTime,
+        updatedFlightJob.UcjbDate.Should().Be(departureTime.DateTime,
             "Flight job date should be updated to match departure time");
         updatedFlightJob.UcjbTime.Should().Be(departureTime.DateTime,
             "Flight job time should be updated to match departure time");
@@ -2042,7 +2274,7 @@ public class NationwideJobRepositoryTests : IDisposable
 
         // Assert
         result.Should().NotBeNull();
-        result!.ProcessingTimeMins.Should().Be(configuredProcessingTime,
+        result.ProcessingTimeMins.Should().Be(configuredProcessingTime,
             "Should return the airport's configured processing time");
     }
 
@@ -2082,7 +2314,7 @@ public class NationwideJobRepositoryTests : IDisposable
 
         // Assert - Should default to 60 minutes, consistent with AddJobNationwideAsync
         result.Should().NotBeNull();
-        result!.ProcessingTimeMins.Should().Be(60,
+        result.ProcessingTimeMins.Should().Be(60,
             "Should default to 60 minutes when airport has no processing time configured");
     }
 
@@ -2107,7 +2339,7 @@ public class NationwideJobRepositoryTests : IDisposable
 
         // Assert
         result.Should().NotBeNull();
-        result!.ArrivalTime.Should().Be(flightArrivalTime,
+        result.ArrivalTime.Should().Be(flightArrivalTime,
             "Should return the flight arrival time passed to the method");
     }
 
@@ -2163,7 +2395,7 @@ public class NationwideJobRepositoryTests : IDisposable
 
         // Cargo times should be DateTimeOffset with the airport's timezone offset applied
         // The time portion should match the cargo facility times (06:00 and 22:00)
-        result!.CargoOpeningTime.Hour.Should().Be(6, "Opening time should be 06:00");
+        result.CargoOpeningTime.Hour.Should().Be(6, "Opening time should be 06:00");
         result.CargoOpeningTime.Minute.Should().Be(0);
         result.CargoClosingTime.Hour.Should().Be(22, "Closing time should be 22:00");
         result.CargoClosingTime.Minute.Should().Be(0);
@@ -2223,7 +2455,7 @@ public class NationwideJobRepositoryTests : IDisposable
 
         // Should fall back to local timezone
         var localOffset = TimeZoneInfo.Local.GetUtcOffset(flightArrivalTime);
-        result!.CargoOpeningTime.Offset.Should().Be(localOffset,
+        result.CargoOpeningTime.Offset.Should().Be(localOffset,
             "Should use local timezone when airport has no timezone configured");
         result.CargoClosingTime.Offset.Should().Be(localOffset);
 
@@ -2273,7 +2505,7 @@ public class NationwideJobRepositoryTests : IDisposable
         result.Should().NotBeNull();
 
         // Should use default times (start of day 00:00 and end of day 23:59)
-        result!.CargoOpeningTime.Hour.Should().Be(0, "Default opening should be start of day");
+        result.CargoOpeningTime.Hour.Should().Be(0, "Default opening should be start of day");
         result.CargoClosingTime.Hour.Should().Be(23, "Default closing should be end of day");
         result.CargoClosingTime.Minute.Should().Be(59);
 
@@ -2320,7 +2552,7 @@ public class NationwideJobRepositoryTests : IDisposable
         result.Should().NotBeNull();
 
         // The cargo times should use the ARRIVAL DATE (2024-12-25), not the stored date (1900-01-01)
-        result!.CargoOpeningTime.Year.Should().Be(2024, "Should use arrival year");
+        result.CargoOpeningTime.Year.Should().Be(2024, "Should use arrival year");
         result.CargoOpeningTime.Month.Should().Be(12, "Should use arrival month");
         result.CargoOpeningTime.Day.Should().Be(25, "Should use arrival day");
         result.CargoOpeningTime.Hour.Should().Be(5, "Should preserve cargo facility opening hour");
@@ -2639,6 +2871,253 @@ public class NationwideJobRepositoryTests : IDisposable
             }
         ]
     };
+
+    #endregion
+
+    #region Diagnostic Tests - Delivery Job Start Time Issue
+
+    /// <summary>
+    /// Verify that with ToAirportId set, delivery job IS updated.
+    /// This is the expected working scenario.
+    /// </summary>
+    [Fact]
+    public async Task DiagnosticTest_WhenToAirportIdSet_DeliveryJobIsUpdated()
+    {
+        // Arrange
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+
+        var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
+        var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
+        var packageReadyTime = new DateTimeOffset(2024, 6, 15, 15, 0, 0, TimeSpan.Zero);
+
+        var parentJob = CreateJobWithParent(1, "JOB001");
+        var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
+        flightJob.ToAirportId = 2; // Set the destination airport
+
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
+
+        var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
+        var arrivalAirport = CreateAirportWithProcessingTime(2, "Sydney Airport", "SYD", true, 45);
+        _context.TblAirports.AddRange(departureAirport, arrivalAirport);
+
+        var timeZone1 = CreateTimeZone(1, "Pacific/Auckland", "NZST");
+        var timeZone2 = CreateTimeZone(2, "Australia/Sydney", "AEST");
+        _context.TimeZones.AddRange(timeZone1, timeZone2);
+
+        await _context.SaveChangesAsync();
+
+        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime);
+        request.PackageReadyTime = packageReadyTime;
+        var webhookIds = new List<string> { "webhook-123" };
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AddJobNationwideAsync(request, webhookIds);
+
+        // Assert - Delivery job's time SHOULD be updated to packageReadyTime
+        var updatedDeliveryJob = await _context.TucJobs.FindAsync(102);
+
+        updatedDeliveryJob.Should().NotBeNull();
+        updatedDeliveryJob.UcjbDate.Should().Be(packageReadyTime.Date);
+        updatedDeliveryJob.UcjbTime.Should().Be(packageReadyTime.DateTime,
+            "When ToAirportId is set and delivery job exists with correct grouping, it should be updated to packageReadyTime");
+    }
+
+    /// <summary>
+    /// Test Scenario 3: Verify what happens when delivery job has WRONG grouping.
+    /// Expected: Delivery job should NOT be found and NOT updated.
+    /// </summary>
+    [Fact]
+    public async Task DiagnosticTest_WhenDeliveryJobHasWrongGrouping_DeliveryJobNotUpdated()
+    {
+        // Arrange
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+
+        var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
+        var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
+        var packageReadyTime = new DateTimeOffset(2024, 6, 15, 15, 0, 0, TimeSpan.Zero);
+
+        var parentJob = CreateJobWithParent(1, "JOB001");
+        var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
+        flightJob.ToAirportId = 2;
+
+        // Create delivery job with FLIGHT grouping instead of AGENT grouping
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Flight);
+        var originalTime = deliveryJob.UcjbTime;
+        _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
+
+        var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
+        var arrivalAirport = CreateAirportWithProcessingTime(2, "Sydney Airport", "SYD", true, 45);
+        _context.TblAirports.AddRange(departureAirport, arrivalAirport);
+
+        var timeZone1 = CreateTimeZone(1, "Pacific/Auckland", "NZST");
+        var timeZone2 = CreateTimeZone(2, "Australia/Sydney", "AEST");
+        _context.TimeZones.AddRange(timeZone1, timeZone2);
+
+        await _context.SaveChangesAsync();
+
+        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime);
+        request.PackageReadyTime = packageReadyTime;
+        var webhookIds = new List<string> { "webhook-123" };
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AddJobNationwideAsync(request, webhookIds);
+
+        // Assert - Delivery job should NOT be updated because it has wrong grouping
+        var updatedDeliveryJob = await _context.TucJobs.FindAsync(102);
+
+        updatedDeliveryJob?.UcjbTime.Should().NotBe(packageReadyTime.DateTime,
+            "Delivery job with Flight grouping (not Agent) should NOT be updated");
+    }
+
+    /// <summary>
+    /// Test Scenario 4: Verify that toAirportId from REQUEST is used when job.ToAirportId is null.
+    /// This tests the OR condition: (job.ToAirportId != null || requestData.ToAirportId != null)
+    /// </summary>
+    [Fact]
+    public async Task DiagnosticTest_WhenOnlyRequestToAirportIdSet_DeliveryJobIsUpdated()
+    {
+        // Arrange
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+
+        var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
+        var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
+        var packageReadyTime = new DateTimeOffset(2024, 6, 15, 15, 0, 0, TimeSpan.Zero);
+
+        var parentJob = CreateJobWithParent(1, "JOB001");
+        var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
+        // NOTE: flightJob.ToAirportId is NOT set (null)
+
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
+
+        var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
+        var arrivalAirport = CreateAirportWithProcessingTime(2, "Sydney Airport", "SYD", true, 45);
+        _context.TblAirports.AddRange(departureAirport, arrivalAirport);
+
+        var timeZone1 = CreateTimeZone(1, "Pacific/Auckland", "NZST");
+        var timeZone2 = CreateTimeZone(2, "Australia/Sydney", "AEST");
+        _context.TimeZones.AddRange(timeZone1, timeZone2);
+
+        await _context.SaveChangesAsync();
+
+        // Create request WITH toAirportId even though job doesn't have it
+        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime);
+        request.PackageReadyTime = packageReadyTime;
+        var webhookIds = new List<string> { "webhook-123" };
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AddJobNationwideAsync(request, webhookIds);
+
+        // Assert - Delivery job SHOULD be updated because request.ToAirportId is set
+        var updatedDeliveryJob = await _context.TucJobs.FindAsync(102);
+
+        updatedDeliveryJob.Should().NotBeNull();
+        updatedDeliveryJob.UcjbDate.Should().Be(packageReadyTime.Date);
+        updatedDeliveryJob.UcjbTime.Should().Be(packageReadyTime.DateTime,
+            "When request.ToAirportId is set (even if job.ToAirportId is null), delivery job should be updated");
+    }
+
+    /// <summary>
+    /// Test Scenario 5: Verify NZ/Nationwide tenant uses correct grouping ID (6 instead of 3).
+    /// </summary>
+    [Fact]
+    public async Task DiagnosticTest_NZTenant_UsesNationwideAgentGrouping()
+    {
+        // Arrange - NZ tenant
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
+        var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
+        var packageReadyTime = new DateTimeOffset(2024, 6, 15, 15, 0, 0, TimeSpan.Zero);
+
+        var parentJob = CreateJobWithParent(1, "JOB001");
+        var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
+        flightJob.ToAirportId = 2;
+
+        // Create delivery job with NationwideAgent grouping (6) - correct for NZ
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.UrgentSpeedGrouping.NationwideAgent);
+        _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
+
+        var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
+        var arrivalAirport = CreateAirportWithProcessingTime(2, "Sydney Airport", "SYD", true, 45);
+        _context.TblAirports.AddRange(departureAirport, arrivalAirport);
+
+        var timeZone1 = CreateTimeZone(1, "Pacific/Auckland", "NZST");
+        var timeZone2 = CreateTimeZone(2, "Australia/Sydney", "AEST");
+        _context.TimeZones.AddRange(timeZone1, timeZone2);
+
+        await _context.SaveChangesAsync();
+
+        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime);
+        request.PackageReadyTime = packageReadyTime;
+        var webhookIds = new List<string> { "webhook-123" };
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AddJobNationwideAsync(request, webhookIds);
+
+        // Assert - Delivery job SHOULD be updated for NZ tenant with NationwideAgent grouping
+        var updatedDeliveryJob = await _context.TucJobs.FindAsync(102);
+
+        updatedDeliveryJob.Should().NotBeNull();
+        updatedDeliveryJob.UcjbTime.Should().Be(packageReadyTime.DateTime,
+            "NZ tenant with NationwideAgent grouping (6) should have delivery job updated");
+    }
+
+    /// <summary>
+    /// Test Scenario 6: NZ tenant with US grouping (Agent=3) should NOT find delivery job.
+    /// </summary>
+    [Fact]
+    public async Task DiagnosticTest_NZTenant_WithUSGrouping_DeliveryJobNotFound()
+    {
+        // Arrange - NZ tenant
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
+        var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
+        var packageReadyTime = new DateTimeOffset(2024, 6, 15, 15, 0, 0, TimeSpan.Zero);
+
+        var parentJob = CreateJobWithParent(1, "JOB001");
+        var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
+        flightJob.ToAirportId = 2;
+
+        // Create delivery job with US Agent grouping (3) - WRONG for NZ tenant
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
+
+        var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
+        var arrivalAirport = CreateAirportWithProcessingTime(2, "Sydney Airport", "SYD", true, 45);
+        _context.TblAirports.AddRange(departureAirport, arrivalAirport);
+
+        var timeZone1 = CreateTimeZone(1, "Pacific/Auckland", "NZST");
+        var timeZone2 = CreateTimeZone(2, "Australia/Sydney", "AEST");
+        _context.TimeZones.AddRange(timeZone1, timeZone2);
+
+        await _context.SaveChangesAsync();
+
+        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime);
+        request.PackageReadyTime = packageReadyTime;
+        var webhookIds = new List<string> { "webhook-123" };
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AddJobNationwideAsync(request, webhookIds);
+
+        // Assert - Delivery job should NOT be updated because NZ tenant expects grouping 6, not 3
+        var updatedDeliveryJob = await _context.TucJobs.FindAsync(102);
+
+        updatedDeliveryJob?.UcjbTime.Should().NotBe(packageReadyTime.DateTime,
+            "NZ tenant looking for grouping 6, but job has grouping 3 - should NOT be found");
+    }
 
     #endregion
 }

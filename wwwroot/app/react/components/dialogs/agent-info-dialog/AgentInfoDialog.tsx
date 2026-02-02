@@ -16,9 +16,10 @@ import {
     Box,
     IconButton,
     Typography,
-    Tooltip,
     CircularProgress,
     Chip,
+    Paper,
+    alpha,
 } from '@mui/material';
 import {
     Close as CloseIcon,
@@ -34,6 +35,7 @@ import {
     Schedule as ScheduleIcon,
     MyLocation as MyLocationIcon,
     Star as StarIcon,
+    StarBorder as StarBorderIcon,
 } from '@mui/icons-material';
 import { AgentInfo, AirportViewModel, AddressViewModel } from '../../../interfaces';
 
@@ -57,11 +59,11 @@ function formatPhone(phone: string | undefined): string {
     return phone;
 }
 
-function getRankingArray(ranking: string | undefined): number[] {
-    if (!ranking) return [];
+function getRankingValue(ranking: string | undefined): number {
+    if (!ranking) return 0;
     const rankNum = parseFloat(ranking);
-    if (isNaN(rankNum)) return [];
-    return new Array(Math.round(rankNum)).fill(0);
+    if (isNaN(rankNum)) return 0;
+    return Math.round(rankNum);
 }
 
 function formatCoordinates(lat: number | undefined, lng: number | undefined): string {
@@ -79,26 +81,11 @@ function formatCurrency(value: number | undefined): string {
     }).format(value);
 }
 
-// Styled components using sx prop
-const sectionHeaderSx = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 1.5,
-    p: 2,
-    pb: 1.5,
-    borderBottom: 1,
-    borderColor: 'divider',
-    bgcolor: 'grey.50',
-};
-
-const iconSx = {
-    color: 'grey.600',
-    fontSize: 20,
-};
-
 export class AgentInfoDialog extends React.Component<AgentInfoDialogProps> {
     render(): React.ReactNode {
         const { open, agent, isLoading, onClose } = this.props;
+        const rankingValue = getRankingValue(agent?.agentRanking);
+        const maxStars = 5;
 
         return (
             <Dialog
@@ -109,7 +96,7 @@ export class AgentInfoDialog extends React.Component<AgentInfoDialogProps> {
                 PaperProps={{
                     elevation: 24,
                     sx: {
-                        borderRadius: 2,
+                        borderRadius: 3,
                         overflow: 'hidden',
                         minWidth: { xs: '95%', sm: '90%', md: 800 },
                         maxWidth: 900,
@@ -120,10 +107,10 @@ export class AgentInfoDialog extends React.Component<AgentInfoDialogProps> {
                 {/* Header */}
                 <Box
                     sx={(theme) => ({
-                        background: `linear-gradient(135deg, ${theme.palette.grey[600]} 0%, ${theme.palette.grey[700]} 100%)`,
+                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
                         color: 'white',
                         px: 3,
-                        py: 2,
+                        py: 2.5,
                         display: 'flex',
                         alignItems: 'center',
                         gap: 2,
@@ -131,385 +118,417 @@ export class AgentInfoDialog extends React.Component<AgentInfoDialogProps> {
                 >
                     <Box
                         sx={{
-                            width: 44,
-                            height: 44,
-                            borderRadius: 1.5,
+                            width: 48,
+                            height: 48,
+                            borderRadius: 2,
                             bgcolor: 'rgba(255,255,255,0.15)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                         }}
                     >
-                        <EngineeringIcon sx={{ fontSize: 24 }} />
+                        <EngineeringIcon sx={{ fontSize: 28 }} />
                     </Box>
                     <Box sx={{ flex: 1 }}>
-                        <Typography variant="h6" fontWeight={600}>
-                            Agent Details{agent ? `: ${agent.agentName}` : ''}
+                        <Typography variant="h5" fontWeight={600}>
+                            Agent Details
                         </Typography>
+                        {agent && (
+                            <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
+                                {agent.agentName}
+                            </Typography>
+                        )}
                     </Box>
-                    <Tooltip title="Close">
-                        <IconButton
-                            onClick={onClose}
-                            sx={{
-                                color: 'white',
-                                '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-                            }}
-                        >
-                            <CloseIcon />
-                        </IconButton>
-                    </Tooltip>
+                    <IconButton
+                        onClick={onClose}
+                        sx={{
+                            color: 'white',
+                            '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
+                        }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
                 </Box>
 
                 {/* Content */}
-                <DialogContent sx={{ p: 0, bgcolor: 'grey.100' }}>
+                <DialogContent sx={{ p: 0, bgcolor: '#fafafa' }}>
                     {isLoading ? (
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 8 }}>
                             <CircularProgress size={40} />
                         </Box>
                     ) : agent ? (
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                flexDirection: { xs: 'column', md: 'row' },
-                                p: 2,
-                                gap: 2,
-                            }}
-                        >
-                            {/* Agent Details Section */}
-                            <Box sx={{ flex: '0 0 60%', minWidth: 0 }}>
-                                <Box
-                                    sx={{
-                                        bgcolor: 'background.paper',
-                                        borderRadius: 2,
-                                        boxShadow: 1,
-                                        overflow: 'hidden',
-                                        height: '100%',
-                                    }}
-                                >
-                                    {/* Basic Information Header */}
-                                    <Box sx={sectionHeaderSx}>
-                                        <PersonIcon sx={iconSx} />
-                                        <Typography variant="subtitle1" fontWeight={600}>
-                                            Basic Information
-                                        </Typography>
-                                    </Box>
-
-                                    {/* Info Grid */}
-                                    <Box
-                                        sx={{
-                                            p: 2,
-                                            display: 'grid',
-                                            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-                                            gap: 2.5,
-                                        }}
+                        <Box sx={{ p: 3 }}>
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    flexDirection: { xs: 'column', md: 'row' },
+                                    gap: 3,
+                                }}
+                            >
+                                {/* Left Column - Agent Details */}
+                                <Box sx={{ flex: '0 0 60%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                    {/* Basic Information Card */}
+                                    <Paper
+                                        elevation={0}
+                                        sx={(theme) => ({
+                                            borderRadius: 3,
+                                            border: `1px solid ${theme.palette.divider}`,
+                                            overflow: 'hidden',
+                                        })}
                                     >
-                                        {/* Name */}
-                                        <InfoItem label="Name" value={agent.agentName} />
-
-                                        {/* Rate */}
-                                        <InfoItem
-                                            label="Rate"
-                                            value={formatCurrency(agent.agentRate)}
-                                            valueProps={{
-                                                sx: {
-                                                    fontWeight: 600,
-                                                    color: 'success.main',
-                                                    fontSize: '1.1rem',
-                                                },
-                                            }}
-                                        />
-
-                                        {/* Ranking */}
-                                        <Box>
-                                            <Typography
-                                                variant="caption"
-                                                sx={{
-                                                    color: 'text.secondary',
-                                                    textTransform: 'uppercase',
-                                                    letterSpacing: 0.5,
-                                                    fontWeight: 500,
-                                                }}
-                                            >
-                                                Ranking
+                                        <Box
+                                            sx={(theme) => ({
+                                                px: 2.5,
+                                                py: 2,
+                                                bgcolor: alpha(theme.palette.primary.main, 0.04),
+                                                borderBottom: `1px solid ${theme.palette.divider}`,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 1.5,
+                                            })}
+                                        >
+                                            <PersonIcon sx={{ color: 'primary.main', fontSize: 22 }} />
+                                            <Typography variant="subtitle1" fontWeight={600}>
+                                                Basic Information
                                             </Typography>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, mt: 0.5 }}>
-                                                {getRankingArray(agent.agentRanking).map((_, index) => (
-                                                    <StarIcon
-                                                        key={index}
-                                                        sx={{ color: '#fbbf24', fontSize: 18 }}
-                                                    />
-                                                ))}
-                                                {getRankingArray(agent.agentRanking).length === 0 && (
+                                        </Box>
+
+                                        <Box
+                                            sx={{
+                                                p: 2.5,
+                                                display: 'grid',
+                                                gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                                                gap: 3,
+                                            }}
+                                        >
+                                            {/* Name */}
+                                            <InfoField label="Name" value={agent.agentName} />
+
+                                            {/* Rate */}
+                                            <InfoField
+                                                label="Rate"
+                                                value={formatCurrency(agent.agentRate)}
+                                                valueColor="success.main"
+                                                valueFontWeight={600}
+                                            />
+
+                                            {/* Ranking */}
+                                            <Box>
+                                                <Typography
+                                                    variant="caption"
+                                                    sx={{
+                                                        color: 'text.secondary',
+                                                        textTransform: 'uppercase',
+                                                        letterSpacing: 0.5,
+                                                        fontWeight: 500,
+                                                        display: 'block',
+                                                        mb: 0.75,
+                                                    }}
+                                                >
+                                                    Ranking
+                                                </Typography>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                                                    {[...Array(maxStars)].map((_, index) => (
+                                                        index < rankingValue ? (
+                                                            <StarIcon
+                                                                key={index}
+                                                                sx={{ color: '#f59e0b', fontSize: 20 }}
+                                                            />
+                                                        ) : (
+                                                            <StarBorderIcon
+                                                                key={index}
+                                                                sx={{ color: 'grey.300', fontSize: 20 }}
+                                                            />
+                                                        )
+                                                    ))}
+                                                    {rankingValue === 0 && (
+                                                        <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                                                            No ranking
+                                                        </Typography>
+                                                    )}
+                                                </Box>
+                                            </Box>
+
+                                            {/* Phone */}
+                                            <Box>
+                                                <Typography
+                                                    variant="caption"
+                                                    sx={{
+                                                        color: 'text.secondary',
+                                                        textTransform: 'uppercase',
+                                                        letterSpacing: 0.5,
+                                                        fontWeight: 500,
+                                                        display: 'block',
+                                                        mb: 0.75,
+                                                    }}
+                                                >
+                                                    Phone
+                                                </Typography>
+                                                {agent.agentPhone ? (
+                                                    <Box
+                                                        component="a"
+                                                        href={`tel:${agent.agentPhone}`}
+                                                        sx={{
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            gap: 0.75,
+                                                            color: 'primary.main',
+                                                            textDecoration: 'none',
+                                                            '&:hover': { textDecoration: 'underline' },
+                                                        }}
+                                                    >
+                                                        <PhoneIcon sx={{ fontSize: 16 }} />
+                                                        <Typography variant="body2">
+                                                            {formatPhone(agent.agentPhone)}
+                                                        </Typography>
+                                                    </Box>
+                                                ) : (
                                                     <Typography variant="body2" color="text.secondary">
-                                                        No ranking
+                                                        Not provided
                                                     </Typography>
                                                 )}
                                             </Box>
-                                        </Box>
 
-                                        {/* Phone */}
-                                        <Box>
-                                            <Typography
-                                                variant="caption"
-                                                sx={{
-                                                    color: 'text.secondary',
-                                                    textTransform: 'uppercase',
-                                                    letterSpacing: 0.5,
-                                                    fontWeight: 500,
-                                                }}
-                                            >
-                                                Phone
-                                            </Typography>
-                                            {agent.agentPhone ? (
-                                                <Box
-                                                    component="a"
-                                                    href={`tel:${agent.agentPhone}`}
+                                            {/* Email */}
+                                            <Box sx={{ gridColumn: { sm: '1 / -1' } }}>
+                                                <Typography
+                                                    variant="caption"
                                                     sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 0.5,
-                                                        color: 'grey.700',
-                                                        textDecoration: 'none',
-                                                        mt: 0.5,
-                                                        '&:hover': { color: 'grey.900' },
+                                                        color: 'text.secondary',
+                                                        textTransform: 'uppercase',
+                                                        letterSpacing: 0.5,
+                                                        fontWeight: 500,
+                                                        display: 'block',
+                                                        mb: 0.75,
                                                     }}
                                                 >
-                                                    <PhoneIcon sx={{ fontSize: 16 }} />
-                                                    <Typography variant="body2">
-                                                        {formatPhone(agent.agentPhone)}
-                                                    </Typography>
-                                                </Box>
-                                            ) : (
-                                                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                                                    Not provided
+                                                    Email
                                                 </Typography>
-                                            )}
-                                        </Box>
+                                                {agent.agentEmail ? (
+                                                    <Box
+                                                        component="a"
+                                                        href={`mailto:${agent.agentEmail}`}
+                                                        sx={{
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            gap: 0.75,
+                                                            color: 'primary.main',
+                                                            textDecoration: 'none',
+                                                            '&:hover': { textDecoration: 'underline' },
+                                                        }}
+                                                    >
+                                                        <EmailIcon sx={{ fontSize: 16 }} />
+                                                        <Typography variant="body2">
+                                                            {agent.agentEmail}
+                                                        </Typography>
+                                                    </Box>
+                                                ) : (
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        Not provided
+                                                    </Typography>
+                                                )}
+                                            </Box>
 
-                                        {/* Email */}
-                                        <Box>
-                                            <Typography
-                                                variant="caption"
-                                                sx={{
-                                                    color: 'text.secondary',
-                                                    textTransform: 'uppercase',
-                                                    letterSpacing: 0.5,
-                                                    fontWeight: 500,
-                                                }}
-                                            >
-                                                Email
-                                            </Typography>
-                                            {agent.agentEmail ? (
-                                                <Box
-                                                    component="a"
-                                                    href={`mailto:${agent.agentEmail}`}
+                                            {/* Address */}
+                                            <Box sx={{ gridColumn: '1 / -1' }}>
+                                                <Typography
+                                                    variant="caption"
                                                     sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 0.5,
-                                                        color: 'grey.700',
-                                                        textDecoration: 'none',
-                                                        mt: 0.5,
-                                                        '&:hover': { color: 'grey.900' },
+                                                        color: 'text.secondary',
+                                                        textTransform: 'uppercase',
+                                                        letterSpacing: 0.5,
+                                                        fontWeight: 500,
+                                                        display: 'block',
+                                                        mb: 0.75,
                                                     }}
                                                 >
-                                                    <EmailIcon sx={{ fontSize: 16 }} />
+                                                    Address
+                                                </Typography>
+                                                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75 }}>
+                                                    <LocationOnIcon sx={{ fontSize: 16, color: 'text.secondary', mt: 0.25 }} />
                                                     <Typography variant="body2">
-                                                        {agent.agentEmail}
+                                                        {agent.address?.fullAddress || 'No address available'}
                                                     </Typography>
                                                 </Box>
-                                            ) : (
-                                                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                                                    Not provided
-                                                </Typography>
-                                            )}
-                                        </Box>
-
-                                        {/* Address - Full Width */}
-                                        <Box sx={{ gridColumn: '1 / -1' }}>
-                                            <Typography
-                                                variant="caption"
-                                                sx={{
-                                                    color: 'text.secondary',
-                                                    textTransform: 'uppercase',
-                                                    letterSpacing: 0.5,
-                                                    fontWeight: 500,
-                                                }}
-                                            >
-                                                Address
-                                            </Typography>
-                                            <Box
-                                                sx={{
-                                                    display: 'flex',
-                                                    alignItems: 'flex-start',
-                                                    gap: 0.5,
-                                                    mt: 0.5,
-                                                }}
-                                            >
-                                                <LocationOnIcon sx={{ fontSize: 16, color: 'text.secondary', mt: 0.25, flexShrink: 0 }} />
-                                                <Typography variant="body2">
-                                                    {agent.address?.fullAddress || 'No address available'}
-                                                </Typography>
                                             </Box>
                                         </Box>
-                                    </Box>
+                                    </Paper>
 
-                                    {/* Notes Section */}
-                                    <Box sx={{ borderTop: 1, borderColor: 'divider' }}>
-                                        <Box sx={sectionHeaderSx}>
-                                            <NoteIcon sx={iconSx} />
+                                    {/* Notes Card */}
+                                    <Paper
+                                        elevation={0}
+                                        sx={(theme) => ({
+                                            borderRadius: 3,
+                                            border: `1px solid ${theme.palette.divider}`,
+                                            overflow: 'hidden',
+                                        })}
+                                    >
+                                        <Box
+                                            sx={(theme) => ({
+                                                px: 2.5,
+                                                py: 2,
+                                                bgcolor: alpha(theme.palette.info.main, 0.04),
+                                                borderBottom: `1px solid ${theme.palette.divider}`,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 1.5,
+                                            })}
+                                        >
+                                            <NoteIcon sx={{ color: 'info.main', fontSize: 22 }} />
                                             <Typography variant="subtitle1" fontWeight={600}>
                                                 Notes
                                             </Typography>
                                         </Box>
-                                        <Box
-                                            sx={{
-                                                p: 2,
-                                                bgcolor: 'grey.50',
-                                                whiteSpace: 'pre-line',
-                                                lineHeight: 1.6,
-                                            }}
-                                        >
-                                            <Typography variant="body2">
+                                        <Box sx={{ p: 2.5 }}>
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    whiteSpace: 'pre-line',
+                                                    lineHeight: 1.7,
+                                                    color: agent.agentNotes ? 'text.primary' : 'text.secondary',
+                                                    fontStyle: agent.agentNotes ? 'normal' : 'italic',
+                                                }}
+                                            >
                                                 {agent.agentNotes || 'No notes available.'}
                                             </Typography>
                                         </Box>
-                                    </Box>
+                                    </Paper>
                                 </Box>
-                            </Box>
 
-                            {/* Airports Section */}
-                            <Box sx={{ flex: '0 0 40%', minWidth: 0 }}>
-                                <Box
-                                    sx={{
-                                        bgcolor: 'background.paper',
-                                        borderRadius: 2,
-                                        boxShadow: 1,
-                                        overflow: 'hidden',
-                                        height: '100%',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                    }}
-                                >
-                                    {/* Airports Header */}
-                                    <Box sx={sectionHeaderSx}>
-                                        <FlightIcon sx={iconSx} />
-                                        <Typography variant="subtitle1" fontWeight={600}>
-                                            Assigned Airports
-                                        </Typography>
-                                    </Box>
-
-                                    {/* Airports List */}
-                                    {agent.airports && agent.airports.length > 0 ? (
+                                {/* Right Column - Airports */}
+                                <Box sx={{ flex: '0 0 40%', minWidth: 0 }}>
+                                    <Paper
+                                        elevation={0}
+                                        sx={(theme) => ({
+                                            borderRadius: 3,
+                                            border: `1px solid ${theme.palette.divider}`,
+                                            overflow: 'hidden',
+                                            height: '100%',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                        })}
+                                    >
                                         <Box
-                                            sx={{
-                                                maxHeight: 400,
-                                                overflowY: 'auto',
-                                                '&::-webkit-scrollbar': { width: 6 },
-                                                '&::-webkit-scrollbar-track': { bgcolor: 'grey.100' },
-                                                '&::-webkit-scrollbar-thumb': {
-                                                    bgcolor: 'grey.400',
-                                                    borderRadius: 3,
-                                                    '&:hover': { bgcolor: 'grey.500' },
-                                                },
-                                            }}
-                                        >
-                                            {agent.airports.map((airport, index) => (
-                                                <Box
-                                                    key={airport.code || index}
-                                                    sx={{
-                                                        p: 2,
-                                                        borderBottom: 1,
-                                                        borderColor: 'divider',
-                                                        transition: 'background-color 0.15s',
-                                                        '&:hover': { bgcolor: 'action.hover' },
-                                                        '&:last-child': { borderBottom: 0 },
-                                                    }}
-                                                >
-                                                    {/* Airport Header */}
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                                                        <Chip
-                                                            label={airport.code}
-                                                            size="small"
-                                                            sx={{
-                                                                bgcolor: 'grey.700',
-                                                                color: 'white',
-                                                                fontWeight: 600,
-                                                                letterSpacing: 0.5,
-                                                                fontSize: '0.75rem',
-                                                            }}
-                                                        />
-                                                        <Typography variant="body2" fontWeight={500} sx={{ flex: 1 }}>
-                                                            {airport.name}
-                                                        </Typography>
-                                                    </Box>
-
-                                                    {/* Airport Location */}
-                                                    <Box
-                                                        sx={{
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: 0.75,
-                                                            mb: 1.5,
-                                                            color: 'text.secondary',
-                                                        }}
-                                                    >
-                                                        <PlaceIcon sx={{ fontSize: 16 }} />
-                                                        <Typography variant="caption">
-                                                            {airport.city}, {airport.country}
-                                                        </Typography>
-                                                    </Box>
-
-                                                    {/* Airport Details */}
-                                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                                                        <Box
-                                                            sx={{
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                gap: 0.75,
-                                                                color: 'text.secondary',
-                                                            }}
-                                                        >
-                                                            <ScheduleIcon sx={{ fontSize: 14 }} />
-                                                            <Typography variant="caption">
-                                                                {airport.timezone}
-                                                            </Typography>
-                                                        </Box>
-                                                        <Box
-                                                            sx={{
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                gap: 0.75,
-                                                                color: 'text.secondary',
-                                                            }}
-                                                        >
-                                                            <MyLocationIcon sx={{ fontSize: 14 }} />
-                                                            <Typography variant="caption">
-                                                                {formatCoordinates(airport.latitude, airport.longitude)}
-                                                            </Typography>
-                                                        </Box>
-                                                    </Box>
-                                                </Box>
-                                            ))}
-                                        </Box>
-                                    ) : (
-                                        <Box
-                                            sx={{
+                                            sx={(theme) => ({
+                                                px: 2.5,
+                                                py: 2,
+                                                bgcolor: alpha(theme.palette.success.main, 0.04),
+                                                borderBottom: `1px solid ${theme.palette.divider}`,
                                                 display: 'flex',
-                                                flexDirection: 'column',
                                                 alignItems: 'center',
-                                                justifyContent: 'center',
-                                                py: 6,
-                                                px: 2,
-                                                color: 'text.secondary',
-                                            }}
+                                                gap: 1.5,
+                                            })}
                                         >
-                                            <FlightOffIcon sx={{ fontSize: 48, opacity: 0.5, mb: 1 }} />
-                                            <Typography variant="body2" fontStyle="italic">
-                                                No airports assigned
+                                            <FlightIcon sx={{ color: 'success.main', fontSize: 22 }} />
+                                            <Typography variant="subtitle1" fontWeight={600}>
+                                                Assigned Airports
                                             </Typography>
+                                            {agent.airports && agent.airports.length > 0 && (
+                                                <Chip
+                                                    label={agent.airports.length}
+                                                    size="small"
+                                                    sx={{ ml: 'auto', bgcolor: 'success.main', color: 'white', fontWeight: 600, height: 24 }}
+                                                />
+                                            )}
                                         </Box>
-                                    )}
+
+                                        {agent.airports && agent.airports.length > 0 ? (
+                                            <Box
+                                                sx={{
+                                                    flex: 1,
+                                                    maxHeight: 420,
+                                                    overflowY: 'auto',
+                                                    '&::-webkit-scrollbar': { width: 6 },
+                                                    '&::-webkit-scrollbar-track': { bgcolor: 'grey.100' },
+                                                    '&::-webkit-scrollbar-thumb': {
+                                                        bgcolor: 'grey.300',
+                                                        borderRadius: 3,
+                                                        '&:hover': { bgcolor: 'grey.400' },
+                                                    },
+                                                }}
+                                            >
+                                                {agent.airports.map((airport, index) => (
+                                                    <Box
+                                                        key={airport.code || index}
+                                                        sx={(theme) => ({
+                                                            p: 2,
+                                                            borderBottom: index < agent.airports!.length - 1 ? `1px solid ${theme.palette.divider}` : 'none',
+                                                            transition: 'background-color 0.15s',
+                                                            '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.02) },
+                                                        })}
+                                                    >
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                                                            <Chip
+                                                                label={airport.code}
+                                                                size="small"
+                                                                sx={(theme) => ({
+                                                                    bgcolor: theme.palette.primary.main,
+                                                                    color: 'white',
+                                                                    fontWeight: 700,
+                                                                    letterSpacing: 0.5,
+                                                                    fontSize: '0.75rem',
+                                                                })}
+                                                            />
+                                                            <Typography variant="body2" fontWeight={500} sx={{ flex: 1 }} noWrap>
+                                                                {airport.name}
+                                                            </Typography>
+                                                        </Box>
+
+                                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pl: 0.5 }}>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: 'text.secondary' }}>
+                                                                <PlaceIcon sx={{ fontSize: 14 }} />
+                                                                <Typography variant="caption">
+                                                                    {airport.city}, {airport.country}
+                                                                </Typography>
+                                                            </Box>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: 'text.secondary' }}>
+                                                                <ScheduleIcon sx={{ fontSize: 14 }} />
+                                                                <Typography variant="caption">
+                                                                    {airport.timezone}
+                                                                </Typography>
+                                                            </Box>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: 'text.secondary' }}>
+                                                                <MyLocationIcon sx={{ fontSize: 14 }} />
+                                                                <Typography variant="caption">
+                                                                    {formatCoordinates(airport.latitude, airport.longitude)}
+                                                                </Typography>
+                                                            </Box>
+                                                        </Box>
+                                                    </Box>
+                                                ))}
+                                            </Box>
+                                        ) : (
+                                            <Box
+                                                sx={{
+                                                    flex: 1,
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    py: 6,
+                                                    px: 2,
+                                                }}
+                                            >
+                                                <Box
+                                                    sx={(theme) => ({
+                                                        width: 64,
+                                                        height: 64,
+                                                        borderRadius: '50%',
+                                                        bgcolor: alpha(theme.palette.grey[500], 0.08),
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        mb: 2,
+                                                    })}
+                                                >
+                                                    <FlightOffIcon sx={{ fontSize: 32, color: 'grey.400' }} />
+                                                </Box>
+                                                <Typography variant="body2" color="text.secondary" fontStyle="italic">
+                                                    No airports assigned
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                    </Paper>
                                 </Box>
                             </Box>
                         </Box>
@@ -524,16 +543,15 @@ export class AgentInfoDialog extends React.Component<AgentInfoDialogProps> {
     }
 }
 
-// Helper component for info items
-interface InfoItemProps {
+// Helper component for info fields
+interface InfoFieldProps {
     label: string;
     value: string;
-    valueProps?: {
-        sx?: object;
-    };
+    valueColor?: string;
+    valueFontWeight?: number;
 }
 
-function InfoItem({ label, value, valueProps }: InfoItemProps): React.ReactElement {
+function InfoField({ label, value, valueColor, valueFontWeight }: InfoFieldProps): React.ReactElement {
     return (
         <Box>
             <Typography
@@ -543,11 +561,19 @@ function InfoItem({ label, value, valueProps }: InfoItemProps): React.ReactEleme
                     textTransform: 'uppercase',
                     letterSpacing: 0.5,
                     fontWeight: 500,
+                    display: 'block',
+                    mb: 0.75,
                 }}
             >
                 {label}
             </Typography>
-            <Typography variant="body2" sx={{ mt: 0.5, ...valueProps?.sx }}>
+            <Typography
+                variant="body2"
+                sx={{
+                    color: valueColor || 'text.primary',
+                    fontWeight: valueFontWeight || 400,
+                }}
+            >
                 {value || 'Not provided'}
             </Typography>
         </Box>

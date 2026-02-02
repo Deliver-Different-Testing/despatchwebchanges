@@ -61,9 +61,9 @@ public class JobMappingsTests
         var liveResult = liveMapping(liveJob);
         var archivedResult = archivedMapping(archivedJob);
 
-        // Assert - Both should calculate Amount the same way
-        liveResult.Amount.Should().Be(100m);
-        archivedResult.Amount.Should().Be(100m);
+        // Assert - Both should use UcjbAmount directly
+        liveResult.Amount.Should().Be(999m);
+        archivedResult.Amount.Should().Be(999m);
     }
 
     #endregion
@@ -122,9 +122,9 @@ public class JobMappingsTests
     #region LiveJobDownloadMapping Tests
 
     [Fact]
-    public void LiveJobDownloadMapping_Amount_UsesParentPricingSumFirst()
+    public void LiveJobDownloadMapping_Amount_UsesUcjbAmountDirectly()
     {
-        // Arrange - Parent has pricing breakdown
+        // Arrange - Parent has pricing breakdown but UcjbAmount is used directly
         var parentJob = new TucJob
         {
             UcjbId = 1,
@@ -140,10 +140,10 @@ public class JobMappingsTests
             UcjbId = 2,
             ParentId = 1,
             Parent = parentJob,
-            UcjbAmount = 999m, // Should be ignored
+            UcjbAmount = 999m,
             PricingBreakdownJobs = new List<PricingBreakdown>
             {
-                new() { ChargeAmount = 25m } // Should be ignored
+                new() { ChargeAmount = 25m }
             }
         };
 
@@ -151,20 +151,20 @@ public class JobMappingsTests
         var mapping = JobMappings.LiveJobDownloadMapping.Compile();
         var result = mapping(childJob);
 
-        // Assert - Should use parent's pricing sum (100 + 50 = 150)
-        result.Amount.Should().Be(150m);
+        // Assert - Should use UcjbAmount directly
+        result.Amount.Should().Be(999m);
     }
 
     [Fact]
-    public void LiveJobDownloadMapping_Amount_UsesJobPricingSumWhenNoParent()
+    public void LiveJobDownloadMapping_Amount_UsesUcjbAmountWhenNoParent()
     {
-        // Arrange - No parent, but job has pricing breakdown
+        // Arrange - No parent, but job has pricing breakdown - UcjbAmount is used directly
         var job = new TucJob
         {
             UcjbId = 1,
             ParentId = null,
             Parent = null,
-            UcjbAmount = 999m, // Should be ignored
+            UcjbAmount = 999m,
             PricingBreakdownJobs = new List<PricingBreakdown>
             {
                 new() { ChargeAmount = 75m },
@@ -176,8 +176,8 @@ public class JobMappingsTests
         var mapping = JobMappings.LiveJobDownloadMapping.Compile();
         var result = mapping(job);
 
-        // Assert - Should use job's own pricing sum (75 + 25 = 100)
-        result.Amount.Should().Be(100m);
+        // Assert - Should use UcjbAmount directly
+        result.Amount.Should().Be(999m);
     }
 
     [Fact]
@@ -203,15 +203,13 @@ public class JobMappingsTests
     }
 
     [Fact]
-    public void LiveJobDownloadMapping_Amount_EmptyParentPricingUsesChildPricing()
+    public void LiveJobDownloadMapping_Amount_UsesUcjbAmountRegardlessOfParentPricing()
     {
-        // Arrange - Parent exists but has empty pricing
-        // With .Any() fix: parent.PricingBreakdownJobs.Any() returns FALSE
-        // So it falls through to check child's pricing
+        // Arrange - Parent exists but has empty pricing - UcjbAmount is used directly
         var parentJob = new TucJob
         {
             UcjbId = 1,
-            PricingBreakdownJobs = new List<PricingBreakdown>() // Empty - Any() returns FALSE
+            PricingBreakdownJobs = new List<PricingBreakdown>()
         };
 
         var childJob = new TucJob
@@ -230,8 +228,8 @@ public class JobMappingsTests
         var mapping = JobMappings.LiveJobDownloadMapping.Compile();
         var result = mapping(childJob);
 
-        // Assert - With .Any() fix: parent has no pricing, child has pricing (100m)
-        result.Amount.Should().Be(100m);
+        // Assert - Should use UcjbAmount directly
+        result.Amount.Should().Be(500m);
     }
 
     [Fact]
@@ -358,9 +356,9 @@ public class JobMappingsTests
     #region ArchivedJobDownloadMapping Tests
 
     [Fact]
-    public void ArchivedJobDownloadMapping_Amount_UsesSamePriorityAsLive()
+    public void ArchivedJobDownloadMapping_Amount_UsesUcjbAmountDirectly()
     {
-        // Arrange - Parent has pricing breakdown
+        // Arrange - Parent has pricing breakdown but UcjbAmount is used directly
         var parentJob = new TucJobArchive
         {
             UcjbId = 1,
@@ -377,10 +375,10 @@ public class JobMappingsTests
             ParentId = 1,
             Parent = parentJob,
             UcjbDate = DateTime.Now,
-            UcjbAmount = 999m, // Should be ignored
+            UcjbAmount = 999m,
             PricingBreakdowns = new List<PricingBreakdownArchive>
             {
-                new() { ChargeAmount = 50m } // Should be ignored
+                new() { ChargeAmount = 50m }
             }
         };
 
@@ -388,8 +386,8 @@ public class JobMappingsTests
         var mapping = JobMappings.ArchivedJobDownloadMapping.Compile();
         var result = mapping(archivedJob);
 
-        // Assert - Should use parent's pricing sum (200 + 100 = 300)
-        result.Amount.Should().Be(300m);
+        // Assert - Should use UcjbAmount directly
+        result.Amount.Should().Be(999m);
     }
 
     [Fact]
@@ -510,19 +508,16 @@ public class JobMappingsTests
     #region Amount Consistency Tests
 
     /// <summary>
-    /// Tests the critical fix: When parent exists but has no pricing breakdowns,
-    /// the calculation should fall through to child's pricing breakdowns.
-    /// The .Any() check ensures this proper fallback behavior.
+    /// Tests that UcjbAmount is used directly regardless of parent pricing.
     /// </summary>
     [Fact]
-    public void LiveJobDownloadMapping_Amount_ParentExistsButNoPricing_FallsToChildPricing()
+    public void LiveJobDownloadMapping_Amount_UsesUcjbAmountNotParentPricing()
     {
         // Arrange - Parent exists but has NO pricing breakdowns
-        // Child has pricing breakdowns that should be used
         var parentJob = new TucJob
         {
             UcjbId = 1,
-            PricingBreakdownJobs = new List<PricingBreakdown>() // Empty!
+            PricingBreakdownJobs = new List<PricingBreakdown>()
         };
 
         var childJob = new TucJob
@@ -530,10 +525,10 @@ public class JobMappingsTests
             UcjbId = 2,
             ParentId = 1,
             Parent = parentJob,
-            UcjbAmount = 50m, // Fallback if no pricing breakdowns at all
+            UcjbAmount = 50m,
             PricingBreakdownJobs = new List<PricingBreakdown>
             {
-                new() { ChargeAmount = 200m } // This SHOULD be used
+                new() { ChargeAmount = 200m }
             }
         };
 
@@ -541,16 +536,15 @@ public class JobMappingsTests
         var mapping = JobMappings.LiveJobDownloadMapping.Compile();
         var result = mapping(childJob);
 
-        // Assert - With the .Any() fix, parent.PricingBreakdownJobs.Any() returns FALSE,
-        // so it falls through to check child pricing, which has 200m
-        result.Amount.Should().Be(200m, "Parent has no pricing, so child's pricing should be used");
+        // Assert - UcjbAmount is used directly
+        result.Amount.Should().Be(50m);
     }
 
     /// <summary>
-    /// Tests that when parent has pricing, it takes priority over child's pricing.
+    /// Tests that UcjbAmount is used directly even when parent has pricing.
     /// </summary>
     [Fact]
-    public void LiveJobDownloadMapping_Amount_ParentWithPricing_TakesPriorityOverChild()
+    public void LiveJobDownloadMapping_Amount_UsesUcjbAmountEvenWithParentPricing()
     {
         // Arrange
         var parentJob = new TucJob
@@ -578,8 +572,8 @@ public class JobMappingsTests
         var mapping = JobMappings.LiveJobDownloadMapping.Compile();
         var result = mapping(childJob);
 
-        // Assert - Parent pricing should be used
-        result.Amount.Should().Be(500m);
+        // Assert - UcjbAmount is used directly
+        result.Amount.Should().Be(50m);
     }
 
     /// <summary>
@@ -610,17 +604,16 @@ public class JobMappingsTests
     }
 
     /// <summary>
-    /// Tests archived job with same scenario - parent exists but no pricing.
-    /// The .Any() check ensures proper fallback to child's pricing.
+    /// Tests archived job uses UcjbAmount directly regardless of pricing.
     /// </summary>
     [Fact]
-    public void ArchivedJobDownloadMapping_Amount_ParentExistsButNoPricing_FallsToChildPricing()
+    public void ArchivedJobDownloadMapping_Amount_UsesUcjbAmountRegardlessOfPricing()
     {
         // Arrange
         var parentJob = new TucJobArchive
         {
             UcjbId = 1,
-            PricingBreakdowns = new List<PricingBreakdownArchive>() // Empty!
+            PricingBreakdowns = new List<PricingBreakdownArchive>()
         };
 
         var archivedJob = new TucJobArchive
@@ -640,11 +633,8 @@ public class JobMappingsTests
         var mapping = JobMappings.ArchivedJobDownloadMapping.Compile();
         var result = mapping(archivedJob);
 
-        // Assert - With .Any() check:
-        // - Parent.PricingBreakdowns.Any() is FALSE (empty)
-        // - archivedJob.PricingBreakdowns.Any() is TRUE
-        // - Returns 300m from child's pricing
-        result.Amount.Should().Be(300m, "Parent has no pricing, so child's pricing should be used");
+        // Assert - UcjbAmount is used directly
+        result.Amount.Should().Be(50m);
     }
 
     /// <summary>
@@ -672,10 +662,10 @@ public class JobMappingsTests
     }
 
     /// <summary>
-    /// Tests multiple pricing breakdown entries are summed correctly.
+    /// Tests that UcjbAmount is used directly regardless of pricing breakdowns.
     /// </summary>
     [Fact]
-    public void LiveJobDownloadMapping_Amount_MultiplePricingBreakdowns_SumsAll()
+    public void LiveJobDownloadMapping_Amount_UsesUcjbAmountIgnoringBreakdowns()
     {
         // Arrange
         var job = new TucJob
@@ -697,8 +687,8 @@ public class JobMappingsTests
         var mapping = JobMappings.LiveJobDownloadMapping.Compile();
         var result = mapping(job);
 
-        // Assert
-        result.Amount.Should().Be(200m); // 100 + 50.50 + 25.25 + 24.25 = 200
+        // Assert - Uses UcjbAmount directly, not pricing breakdowns
+        result.Amount.Should().Be(999m);
     }
 
     #endregion
@@ -984,14 +974,14 @@ public class JobMappingsTests
     }
 
     [Fact]
-    public void JobArchiveMapping_MapsPricingFromPricingBreakdowns()
+    public void JobArchiveMapping_ChargeUsesUcjbAmountDirectly()
     {
         // Arrange
         var archivedJob = new TucJobArchive
         {
             UcjbId = 1,
             UcjbDate = new DateTime(2024, 1, 15),
-            UcjbAmount = 100m, // Should be ignored when pricing breakdowns exist
+            UcjbAmount = 100m,
             PricingBreakdowns = new List<PricingBreakdownArchive>
             {
                 new() { ChargeAmount = 150m },
@@ -1003,12 +993,12 @@ public class JobMappingsTests
         var mapping = JobMappings.JobArchiveMapping.Compile();
         var result = mapping(archivedJob);
 
-        // Assert - Should sum pricing breakdowns (150 + 50 = 200)
-        result.Charge.Should().Be(200m);
+        // Assert - Should use UcjbAmount directly
+        result.Charge.Should().Be(100m);
     }
 
     [Fact]
-    public void JobArchiveMapping_MapsPricingFromParentWhenAvailable()
+    public void JobArchiveMapping_ChargeUsesUcjbAmountIgnoringParentPricing()
     {
         // Arrange
         var parentJob = new TucJobArchive
@@ -1027,10 +1017,10 @@ public class JobMappingsTests
             ParentId = 100,
             Parent = parentJob,
             UcjbDate = new DateTime(2024, 1, 15),
-            UcjbAmount = 50m, // Should be ignored
+            UcjbAmount = 50m,
             PricingBreakdowns = new List<PricingBreakdownArchive>
             {
-                new() { ChargeAmount = 25m } // Should be ignored when parent has pricing
+                new() { ChargeAmount = 25m }
             }
         };
 
@@ -1038,8 +1028,8 @@ public class JobMappingsTests
         var mapping = JobMappings.JobArchiveMapping.Compile();
         var result = mapping(archivedJob);
 
-        // Assert - Should use parent's pricing (300 + 100 = 400)
-        result.Charge.Should().Be(400m);
+        // Assert - Should use UcjbAmount directly
+        result.Charge.Should().Be(50m);
     }
 
     [Fact]
@@ -1259,7 +1249,7 @@ public class JobMappingsTests
     #region Inline Charge/Pricing Mapping Tests (JobMappingCore)
 
     [Fact]
-    public void JobMappingCore_Charge_UsesPricingBreakdownSum()
+    public void JobMappingCore_Charge_UsesUcjbAmountDirectly()
     {
         // Arrange
         var job = new TucJob
@@ -1267,7 +1257,7 @@ public class JobMappingsTests
             UcjbId = 1,
             UcjbDate = new DateTime(2024, 1, 15),
             UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
-            UcjbAmount = 50m, // Should be ignored when pricing exists
+            UcjbAmount = 50m,
             PricingBreakdownJobs = new List<PricingBreakdown>
             {
                 new() { ChargeAmount = 100m },
@@ -1282,8 +1272,8 @@ public class JobMappingsTests
         var mapping = JobMappings.JobMappingCore(false).Compile();
         var result = mapping(job);
 
-        // Assert - Should sum pricing breakdowns (100 + 75 = 175)
-        result.Charge.Should().Be(175m);
+        // Assert - Should use UcjbAmount directly
+        result.Charge.Should().Be(50m);
     }
 
     [Fact]

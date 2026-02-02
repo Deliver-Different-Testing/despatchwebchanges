@@ -136,7 +136,7 @@ public class NationwideJobControllerTests
         var flights = jsonResult.Value as List<FlightViewModel>;
         flights.Should().NotBeNull();
         flights.Should().HaveCount(1);
-        flights![0].AirlineCode.Should().Be("QF");
+        flights[0].AirlineCode.Should().Be("QF");
 
         // Verify airline filter was passed
         _flightServiceMock.Verify(x => x.GetFlightsAsync(

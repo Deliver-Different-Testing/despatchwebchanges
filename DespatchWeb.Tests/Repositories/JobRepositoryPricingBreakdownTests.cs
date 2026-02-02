@@ -229,7 +229,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
         chargeId.Should().BeGreaterThan(0);
         var breakdown = await _context.PricingBreakdowns.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
         breakdown.Should().NotBeNull();
-        breakdown!.ChargeName.Should().Be("New Charge");
+        breakdown.ChargeName.Should().Be("New Charge");
         breakdown.ChargeAmount.Should().Be(50.00m);
         breakdown.JobId.Should().Be(jobId);
     }
@@ -259,7 +259,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
         chargeId.Should().BeGreaterThan(0);
         var breakdown = await _context.PricingBreakdownArchives.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
         breakdown.Should().NotBeNull();
-        breakdown!.ChargeName.Should().Be("Archive Charge");
+        breakdown.ChargeName.Should().Be("Archive Charge");
         breakdown.ChargeAmount.Should().Be(75.00m);
         breakdown.JobId.Should().Be(jobId);
     }
@@ -289,7 +289,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
         chargeId.Should().BeGreaterThan(0);
         var breakdown = await _context.PricingBreakdowns.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
         breakdown.Should().NotBeNull();
-        breakdown!.ChargeName.Should().Be("Prebook Charge");
+        breakdown.ChargeName.Should().Be("Prebook Charge");
         breakdown.PrebookJobId.Should().Be(prebookId);
         breakdown.JobId.Should().BeNull();
     }
@@ -345,7 +345,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
         _context.ChangeTracker.Clear();
         var breakdown = await _context.PricingBreakdowns.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
         breakdown.Should().NotBeNull();
-        breakdown!.ChargeName.Should().Be("Updated");
+        breakdown.ChargeName.Should().Be("Updated");
         breakdown.ChargeAmount.Should().Be(150.00m);
         breakdown.CostAmount.Should().Be(50.00m);
     }
@@ -378,7 +378,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
         _context.ChangeTracker.Clear();
         var breakdown = await _context.PricingBreakdownArchives.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
         breakdown.Should().NotBeNull();
-        breakdown!.ChargeName.Should().Be("Updated Archive");
+        breakdown.ChargeName.Should().Be("Updated Archive");
         breakdown.ChargeAmount.Should().Be(175.00m);
         breakdown.CostAmount.Should().Be(60.00m);
     }
