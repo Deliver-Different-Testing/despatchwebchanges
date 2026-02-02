@@ -529,7 +529,7 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> PodSearchDownload(PodSearchDownloadRequest requestData)
+    public async Task<IActionResult> PodSearchDownload([FromQuery] PodSearchDownloadRequest requestData)
     {
         try
         {
@@ -1282,10 +1282,9 @@ public class JobController(
         }
     }
 
-    private static bool ShouldRecalculateRate(JobProperty property)
-    {
+    private static bool ShouldRecalculateRate(JobProperty property) =>
         // Properties that affect job rating
-        return property switch
+        property switch
         {
             JobProperty.AirportOnly => true,
             JobProperty.Date => true,
@@ -1308,7 +1307,6 @@ public class JobController(
             JobProperty.DeliverToPrivateRes => true,
             _ => false
         };
-    }
 
     public async Task<IActionResult> UpdateBulkJob(
         int bulkJobId,

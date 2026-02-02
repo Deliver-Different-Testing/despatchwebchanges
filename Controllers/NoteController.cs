@@ -11,7 +11,7 @@ namespace DespatchWeb.Controllers;
 
 [Authorize]
 public class NoteController(
-    IJobRepository jobRepository,
+    INoteRepository noteRepository,
     IRecurringJobRepository recurringJobRepository
     ) : Controller
 {
@@ -20,12 +20,12 @@ public class NoteController(
         try
         {
 
-            var notes = await jobRepository.GetNotesByJobIdAsync(jobId);
+            var notes = await noteRepository.GetNotesByJobIdAsync(jobId);
             return Json(notes);
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "{Message}", 
+            Log.Error(ex, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(GetNotes)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
@@ -36,12 +36,12 @@ public class NoteController(
         try
         {
 
-            var bulkJobNotes = await jobRepository.GetBulkJobNotesByBulkJobIdAsync(bulkJobId);
+            var bulkJobNotes = await noteRepository.GetBulkJobNotesByBulkJobIdAsync(bulkJobId);
             return Json(bulkJobNotes);
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "{Message}", 
+            Log.Error(ex, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(GetBulkJobNotes)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
@@ -57,7 +57,7 @@ public class NoteController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "{Message}", 
+            Log.Error(ex, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(GetRecurringNotes)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
@@ -73,9 +73,9 @@ public class NoteController(
             if (noteViewModel.JobBookingId.HasValue)
                 await recurringJobRepository.SaveRecurringJobNote(noteViewModel);
             else if (noteViewModel.BulkJobId.HasValue)
-                await jobRepository.SaveBulkNoteAsync(noteViewModel);
+                await noteRepository.SaveBulkNoteAsync(noteViewModel);
             else
-                await jobRepository.SaveNoteAsync(noteViewModel);
+                await noteRepository.SaveNoteAsync(noteViewModel);
 
             return Ok();
         }
@@ -86,7 +86,7 @@ public class NoteController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
-    
+
    [HttpPost]
     public async Task<ActionResult<TucNoteViewModel>> CreateBulkJobNote([FromBody] TucNoteViewModel noteViewModel)
     {
@@ -94,12 +94,12 @@ public class NoteController(
         {
             ArgumentNullException.ThrowIfNull(noteViewModel);
 
-            await jobRepository.SaveBulkNoteAsync(noteViewModel);
+            await noteRepository.SaveBulkNoteAsync(noteViewModel);
             return Ok();
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "{Message}", 
+            Log.Error(ex, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(CreateBulkJobNote)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
@@ -113,16 +113,16 @@ public class NoteController(
             ArgumentNullException.ThrowIfNull(noteViewModel);
 
             // Check if a note exists
-            var existingNote = await jobRepository.GetNoteByIdAsync(noteViewModel.NoteId);
+            var existingNote = await noteRepository.GetNoteByIdAsync(noteViewModel.NoteId);
             if (existingNote == null)
                 return NotFound($"Note with ID {noteViewModel.NoteId} not found.");
 
             if (noteViewModel.JobBookingId.HasValue)
                 await recurringJobRepository.SaveRecurringJobNote(noteViewModel);
             else if (noteViewModel.BulkJobId.HasValue)
-                await jobRepository.SaveBulkNoteAsync(noteViewModel);
+                await noteRepository.SaveBulkNoteAsync(noteViewModel);
             else
-                await jobRepository.SaveNoteAsync(noteViewModel);
+                await noteRepository.SaveNoteAsync(noteViewModel);
 
             return Ok();
         }
@@ -132,8 +132,8 @@ public class NoteController(
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(UpdateNote)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
-    }   
-    
+    }
+
     [HttpPost]
     public async Task<IActionResult> UpdateBulkJobNote([FromBody] TucNoteViewModel noteViewModel)
     {
@@ -142,17 +142,17 @@ public class NoteController(
             ArgumentNullException.ThrowIfNull(noteViewModel);
 
             // Check if a note exists
-            var existingNote = await jobRepository.GetNoteByIdAsync(noteViewModel.NoteId);
+            var existingNote = await noteRepository.GetNoteByIdAsync(noteViewModel.NoteId);
             if (existingNote == null)
                 return NotFound($"Note with ID {noteViewModel.NoteId} not found.");
 
-            await jobRepository.SaveBulkNoteAsync(noteViewModel);
+            await noteRepository.SaveBulkNoteAsync(noteViewModel);
 
             return Ok();
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "{Message}", 
+            Log.Error(ex, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(UpdateBulkJobNote)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
@@ -163,16 +163,16 @@ public class NoteController(
     {
         try
         {
-            var note = await jobRepository.GetNoteByIdAsync(noteId);
+            var note = await noteRepository.GetNoteByIdAsync(noteId);
             ArgumentNullException.ThrowIfNull(note);
 
-            await jobRepository.DeleteNoteAsync(noteId);
+            await noteRepository.DeleteNoteAsync(noteId);
 
             return Ok();
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "{Message}", 
+            Log.Error(ex, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(DeleteNote)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
@@ -182,12 +182,12 @@ public class NoteController(
     {
         try
         {
-            var noteTypes = await jobRepository.GetNoteTypesAsync();
+            var noteTypes = await noteRepository.GetNoteTypesAsync();
             return Json(noteTypes);
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "{Message}", 
+            Log.Error(ex, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(GetNoteTypes)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
@@ -198,12 +198,12 @@ public class NoteController(
     {
         try
         {
-            await jobRepository.AddNewTucNoteTypeAsync(noteType);
+            await noteRepository.AddNewTucNoteTypeAsync(noteType);
             return Ok();
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "{Message}", 
+            Log.Error(ex, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(CreateNoteType)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
