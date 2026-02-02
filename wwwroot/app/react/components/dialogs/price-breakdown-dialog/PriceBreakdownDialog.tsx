@@ -5,7 +5,7 @@
  * Displays revenue, cost, and profit calculations with CRUD operations.
  */
 
-import React, {useState, useMemo} from 'react';
+import React, {useState, useMemo, useEffect} from 'react';
 import {
     Dialog,
     DialogContent,
@@ -98,6 +98,16 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
     onDeleteItem,
 }) => {
     const [priceBreakdowns, setPriceBreakdowns] = useState<PriceBreakdown[]>(initialBreakdowns);
+
+    // Sync state when props change (e.g., when a new job is selected)
+    useEffect(() => {
+        setPriceBreakdowns(initialBreakdowns);
+        // Reset editing state when data changes (new job selected)
+        setIsEditing(false);
+        setIsNew(false);
+        setSelectedItem(null);
+    }, [initialBreakdowns]);
+
     const [isEditing, setIsEditing] = useState(false);
     const [isNew, setIsNew] = useState(false);
     const [selectedItem, setSelectedItem] = useState<PriceBreakdown | null>(null);

@@ -2,7 +2,7 @@ import DispatchCoreService from "./dispatch-core.service";
 import ToastrService from "./toastr.service";
 import {EventGroupDialogService} from "../components/dialogs/event-group-dialog/event-group-dialog.service";
 import {openAddEventDialog} from "../react/components/dialogs/add-event-dialog";
-import {IAddressViewModel, IDispatchJob, ILateCallRequest, ISuggestion,} from "../interfaces/job.interface";
+import {IDispatchJob, ILateCallRequest, ISuggestion,} from "../interfaces/job.interface";
 import IContextMenuOption from "../interfaces/context-menu-option.interface";
 import InternalJobStatus from "../enums/job-internal-status.enum";
 import JobInternalStatusEnum from "../enums/job-internal-status.enum";
@@ -14,6 +14,7 @@ import VoidJobConfirmationDialogService
     from "../components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
 import {EditAddressDialogService} from "../components/dialogs/edit-address-dialog/edit-address-dialog.service";
 import PriceBreakdownDialogService from "../components/dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
+import {JobStatus} from "../enums/job-status.enum";
 
 class JobContextMenuService implements angular.IServiceProvider {
     static $inject = [
@@ -213,6 +214,13 @@ class JobContextMenuService implements angular.IServiceProvider {
             text: "Restore",
             icon: "redo",
             click: () => this.restoreJob(job, callbacks.onRefresh),
+        }); 
+        
+        // Missing
+        menuOptions.push({
+            text: "Mark Missing",
+            icon: "checked_bag_question",
+            click: () => this.markJobMissing(job, callbacks.onRefresh),
         });
 
         return menuOptions;
@@ -229,7 +237,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         try {
             const result = await this.voidJobConfirmationDialogService.showVoidConfirmationDialog($event, job);
 
-            // Only refresh if the void operation was successful (not cancelled)
+            // Only refresh if the void operation was successful (not canceled)
             if (result?.success && onRefresh) {
                 onRefresh();
             }
@@ -609,6 +617,22 @@ class JobContextMenuService implements angular.IServiceProvider {
         } catch(error) {
             console.error("Error restoring job:", error);
             this.toastrService.showErrorToast("Error restoring job");
+        }
+    }   
+    
+    private async markJobMissing(
+        job: IDispatchJob,
+        onRefresh?: () => void) {
+        try {
+            await this.DispatchData.updateJobDetail(job.id, JobProperty.Status, JobStatus.Missing, job.preBook ?? false);
+            this.toastrService.showSuccessToast("Job successfully marked as missing.");
+            
+            if (onRefresh) {
+                onRefresh();
+            }
+        } catch(error) {
+            console.error("Error updating job status to missing:", error);
+            this.toastrService.showErrorToast("An unexpected error occured marking this job as missing.");
         }
     }
 

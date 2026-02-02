@@ -1872,46 +1872,39 @@ public partial class JobRepository(
     /// </summary>
     /// <param name="parentJobId">The parent job ID.</param>
     /// <returns>List of child job IDs.</returns>
-    public async Task<List<int>> GetSplitJobChildrenAsync(int parentJobId)
-    {
-        return await Context.TucJobs
+    public async Task<List<int>> GetSplitJobChildrenAsync(int parentJobId) =>
+        await Context.TucJobs
             .AsNoTracking()
             .Where(j => j.ParentId == parentJobId)
             .Select(j => j.UcjbId)
             .ToListAsync();
-    }
 
     /// <summary>
     /// Retrieves all available job speeds/types.
     /// </summary>
-    public async Task<List<Suggestion>> GetSpeedsAsync()
-    {
-        return await Context.DesQryAllJobTypes
+    public async Task<List<Suggestion>> GetSpeedsAsync() =>
+        await Context.DesQryAllJobTypes
             .AsNoTracking()
             .Select(x => new Suggestion { Id = x.JobTypeId, Text = x.Name })
             .ToListAsync();
-    }
 
     /// <summary>
     /// Searches job speeds/types by name.
     /// </summary>
     /// <param name="searchTerm">The search term to filter speeds by.</param>
-    public async Task<List<Suggestion>> GetSpeedsBySearchTermAsync(string searchTerm)
-    {
-        return await Context.DesQryAllJobTypes
+    public async Task<List<Suggestion>> GetSpeedsBySearchTermAsync(string searchTerm) =>
+        await Context.DesQryAllJobTypes
             .AsNoTracking()
             .Where(jt => EF.Functions.Like(jt.Name, $"%{searchTerm}%"))
             .Select(jt => new Suggestion { Id = jt.JobTypeId, Text = jt.Name })
             .ToListAsync();
-    }
 
     /// <summary>
     /// Retrieves active contacts for a specific client.
     /// </summary>
     /// <param name="clientId">The client ID to get contacts for.</param>
-    public async Task<List<Suggestion>> GetContactsByClientIdAsync(int clientId)
-    {
-        var contacts = await Context.UtlQryContactLookups
+    public async Task<List<Suggestion>> GetContactsByClientIdAsync(int clientId) =>
+        await Context.UtlQryContactLookups
             .AsNoTracking()
             .Join(
                 Context.TblClientContacts,
@@ -1924,27 +1917,21 @@ public partial class JobRepository(
             .Distinct()
             .ToListAsync();
 
-        return contacts;
-    }
-
     /// <summary>
     /// Retrieves available locations where parcels can be left if recipient not home.
     /// </summary>
-    public async Task<List<Lookup>> LeaveParcelLocationsAsync()
-    {
-        return await Context.TblJobLeaveNotHomes
+    public async Task<List<Lookup>> LeaveParcelLocationsAsync() =>
+        await Context.TblJobLeaveNotHomes
             .AsNoTracking()
             .OrderBy(l => l.Sequence)
             .Select(x => new Lookup { Id = x.LeaveNotHomeId, Text = x.Name })
             .ToListAsync();
-    }
 
     /// <summary>
     /// Retrieves available undeliverable location options (e.g., wrong address, refused).
     /// </summary>
-    public async Task<List<UndeliverableLocation>> UndeliverableLocationsAsync()
-    {
-        return await Context.TblUndeliverableLocations
+    public async Task<List<UndeliverableLocation>> UndeliverableLocationsAsync() =>
+        await Context.TblUndeliverableLocations
             .AsNoTracking()
             .OrderBy(u => u.Name)
             .Select(x => new UndeliverableLocation
@@ -1954,7 +1941,6 @@ public partial class JobRepository(
                 JobStatusId = x.JobTypeId
             })
             .ToListAsync();
-    }
 
     /// <summary>
     /// Retrieves available internal job statuses for dispatch workflow.

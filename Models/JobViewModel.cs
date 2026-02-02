@@ -36,7 +36,7 @@ public class JobViewModel : DispatchJobViewModel
     public int? AcceptedJobTypeId { get; set; }
     public int? NotifiedJobTypeId { get; set; }
     public double? Weight { get; set; }
-    public short? Items { get; set; }
+    public int Items { get; set; }
     public string RefA { get; set; }
     public string RefB { get; set; }
     public string OurRef { get; set; }

@@ -17,5 +17,6 @@ export enum JobStatus {
     ReadyToPickup = 15,
     AwaitingProcessing = 16,
     OutForDelivery = 17,
-    Preassigned = 18
+    Preassigned = 18,
+    Missing = 1001
 }
