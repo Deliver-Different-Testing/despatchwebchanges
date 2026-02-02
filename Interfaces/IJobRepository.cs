@@ -157,19 +157,10 @@ public interface IJobRepository
 
     Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(List<int> selectedViewIds);
 
-    Task SaveNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default);
-    Task SaveBulkNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default);
-
-    Task<TucNoteViewModel> GetNoteByIdAsync(int noteId);
-    Task DeleteNoteAsync(int noteId, CancellationToken cancellationToken = default);
-    Task<List<NoteTypeViewModel>> GetNoteTypesAsync();
-    Task<List<TucNoteViewModel>> GetBulkJobNotesByBulkJobIdAsync(int bulkJobId);
-    Task<List<TucNoteViewModel>> GetNotesByJobIdAsync(int jobId);
     Task<bool> IsJobParentAsync(int jobId);
     Task<bool> IsBulkJobParent(int bulkJobId);
     Task<JobLateCallDto> GetJobForLateCallAsync(int jobId);
     Task UpdateJobReadStatusAsync(int jobId, bool hasBeenRead);
-    Task AddNewTucNoteTypeAsync(NoteTypeViewModel noteType);
     Task<JobRatingDetailsDto> GetJobDetailsForRatingAsync(int jobId);
     Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId, bool isArchived);
     Task<JobRatingDetailsDtoNz> GetJobBookingDetailsForRatingNzAsync(int jobId);

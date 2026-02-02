@@ -1095,20 +1095,26 @@ public partial class JobRepository(
         await Task.WhenAll(liveJobsTask, archivedJobsTask);
 
         // Combine and sort by job number
+        // Note: No parent/child filtering applied - download returns all jobs matching search criteria
+        // to maintain consistency with PodSearchAsync results
         var allJobs = (await liveJobsTask)
             .Concat(await archivedJobsTask)
             .OrderBy(j => j.JobNumber)
             .ToList();
 
-        // Filter out parent jobs that have children in results (keep children only)
-        var parentIdsWithChildren = allJobs
-            .Where(j => j.ParentId.HasValue && j.ParentId != j.Id)
-            .Select(j => j.ParentId!.Value)
-            .ToHashSet();
+        // Apply timezone conversion to pickup and delivery times for consistent export
+        var tenantTimeZone = _infoService.GetTenantTimeZone();
+        foreach (var downloadJob in allJobs)
+        {
+            if (downloadJob.PickedUpDate.HasValue)
+                downloadJob.PickedUpDate = TimeZoneHelper.SetDateTimeWithTimeZone(
+                    downloadJob.PickedUpDate.Value, tenantTimeZone).DateTime;
+            if (downloadJob.DeliveredDate.HasValue)
+                downloadJob.DeliveredDate = TimeZoneHelper.SetDateTimeWithTimeZone(
+                    downloadJob.DeliveredDate.Value, tenantTimeZone).DateTime;
+        }
 
-        return allJobs
-            .Where(j => j.Id != (j.ParentId ?? j.Id) || !parentIdsWithChildren.Contains(j.Id))
-            .ToList();
+        return allJobs;
     }
 
     /// <summary>
@@ -1174,7 +1180,8 @@ public partial class JobRepository(
                     LatePickup = j.UcjbLatePick == 1,
                     LateDelivery = j.UcjbLateDel == 1,
                     ClientLegalName = j.UcjbClient != null ? j.UcjbClient.UcclLegalName : null,
-                    Speed = j.UcjbSpeed,
+                    Speed = j.SpeedNavigation != null ? j.SpeedNavigation.UcjtName : null,
+                    AcceptedSpeed = j.AcceptedJobType != null ? j.AcceptedJobType.UcjtName  : null,
                     Notes = j.UcjbNotes,
                     Amount = j.UcjbAmount,
                     RefA = j.UcjbClientRefa,
@@ -1285,9 +1292,8 @@ public partial class JobRepository(
         bool isUsTenant,
         string clientIds,
         List<int> selectedViewIds,
-        int? selectedClearListId = null)
-    {
-        return await DespatchQry(
+        int? selectedClearListId = null) =>
+        await DespatchQry(
             AppPage.Dispatch,
             queryParams,
             isInternal,
@@ -1297,7 +1303,6 @@ public partial class JobRepository(
             null,
             selectedClearListId
         );
-    }
 
     /// <summary>
     /// Swaps POD (proof of delivery) data between two jobs.
@@ -1387,10 +1392,8 @@ public partial class JobRepository(
             var archivedJob =
                 await Context.TucJobArchives.AsNoTracking().FirstOrDefaultAsync(j => j.UcjbId == data.JobId);
             if (archivedJob == null)
-            {
                 // Job isn't found in either table
                 return;
-            }
 
             parentId = archivedJob.ParentId;
         }
@@ -2982,25 +2985,6 @@ public partial class JobRepository(
 
         return await archivedJobQuery.AsNoTracking().FirstOrDefaultAsync();
     }
-
-    /// <summary>
-    /// Creates a new note type for job notes.
-    /// </summary>
-    /// <param name="noteType">The note type details to create.</param>
-    public async Task AddNewTucNoteTypeAsync(NoteTypeViewModel noteType)
-    {
-        var newType = new TucNoteType
-        {
-            IsActive = true,
-            IsPublic = noteType.IsPublic,
-            NoteTypeName = noteType.Text,
-            Description = noteType.Description
-        };
-
-        await Context.TucNoteTypes.AddAsync(newType);
-        await Context.SaveChangesAsync();
-    }
-
     /// <summary>
     /// Determines if a job has a parent (is a child job in a split or family).
     /// </summary>
@@ -3036,21 +3020,6 @@ public partial class JobRepository(
             .Where(j => j.BulkJobId == bulkJobId)
             .Select(j => j.ParentId.HasValue || j.BulkParentId.HasValue)
             .FirstOrDefaultAsync();
-
-    /// <summary>
-    /// Retrieves all active note types for job notes.
-    /// </summary>
-    public async Task<List<NoteTypeViewModel>> GetNoteTypesAsync() =>
-        await Context.TucNoteTypes
-            .Where(x => x.IsActive)
-            .Select(x => new NoteTypeViewModel
-            {
-                Id = x.NoteTypeId,
-                Text = x.NoteTypeName,
-                IsPublic = x.IsPublic
-            })
-            .AsNoTracking()
-            .ToListAsync();
 
     /// <summary>
     /// Updates or creates package/parcel items for a job.
@@ -3861,7 +3830,7 @@ public partial class JobRepository(
             DeliveryMins = totalTime != null && row.Minutes != null ? (totalTime - row.Minutes)?.ToString() : null,
             PodName = row.PodName,
             Booker = row.BookedBy,
-            AchievedSpeed = row.JobTypeDescription,
+            AchievedSpeed = row.AcceptedSpeed,
             From = row.FromSuburb,
             FromPostcode = row.FromPostcode,
             To = string.IsNullOrEmpty(row.ToSuburb) || row.ToSuburb == "Unknown"
@@ -3874,7 +3843,7 @@ public partial class JobRepository(
             LatePickup = row.LatePickup?.ToString(),
             LateDelivery = row.LateDelivery?.ToString(),
             UcclLegalName = row.ClientLegalName,
-            UcjbSpeed = row.Speed?.ToString(),
+            UcjbSpeed = row.Speed,
             Notes = row.Notes,
             ChargeExclGst = row.Amount?.ToString("F2"),
             RefA = row.RefA,
@@ -4154,7 +4123,7 @@ public partial class JobRepository(
                 archivedJob.UcjbJobDone = true;
                 archivedJob.UcjbStatus = jobStatus;
                 archivedJob.UcjbPodname ??= podName;
-                archivedJob.UcjbComplTime ??= DateTime.Parse(podTime);
+                archivedJob.UcjbComplTime ??= ParsePodTime(podTime);
                 archivedJob.InternalStatus = (int)InternalJobStatus.Reprice;
             }
         }
@@ -4168,7 +4137,7 @@ public partial class JobRepository(
                 activeJob.UcjbJobDone = true;
                 activeJob.UcjbStatus = jobStatus;
                 activeJob.UcjbPodname ??= podName;
-                activeJob.UcjbComplTime ??= DateTime.Parse(podTime);
+                activeJob.UcjbComplTime ??= ParsePodTime(podTime);
                 activeJob.InternalStatus = (int)InternalJobStatus.Reprice;
             }
         }
@@ -4193,7 +4162,7 @@ public partial class JobRepository(
                 parentJob.UcjbJobDone = true;
                 parentJob.UcjbStatus = jobStatus;
                 parentJob.UcjbPodname ??= podName;
-                parentJob.UcjbComplTime ??= DateTime.Parse(podTime);
+                parentJob.UcjbComplTime ??= ParsePodTime(podTime);
             }
         }
         else
@@ -4208,9 +4177,40 @@ public partial class JobRepository(
                 parentJob.UcjbJobDone = true;
                 parentJob.UcjbStatus = jobStatus;
                 parentJob.UcjbPodname ??= podName;
-                parentJob.UcjbComplTime ??= DateTime.Parse(podTime);
+                parentJob.UcjbComplTime ??= ParsePodTime(podTime);
             }
         }
+    }
+
+    /// <summary>
+    /// Parses a POD time string with proper tenant timezone handling.
+    /// Handles time-only inputs by combining with tenant's current date.
+    /// Falls back to tenant's current time if parsing fails.
+    /// </summary>
+    private DateTime ParsePodTime(string podTime)
+    {
+        var tenantNow = _infoService.GetCurrentTenantTime();
+
+        if (string.IsNullOrWhiteSpace(podTime))
+        {
+            Log.Warning("Empty POD time provided, using current tenant time");
+            return tenantNow;
+        }
+
+        if (!DateTime.TryParse(podTime, out var parsedTime))
+        {
+            Log.Warning("Failed to parse POD time '{PodTime}', using current tenant time", podTime);
+            return tenantNow;
+        }
+
+        // If the parsed time has only a time component (date is MinValue or Year 1),
+        // combine with tenant's current date
+        if (parsedTime.Date == DateTime.MinValue.Date || parsedTime.Year == 1)
+        {
+            return tenantNow.Date.Add(parsedTime.TimeOfDay);
+        }
+
+        return parsedTime;
     }
 
     /// <summary>
@@ -4487,9 +4487,8 @@ public partial class JobRepository(
         }
     }
 
-    private async Task<Suggestion> GetSpeedSuggestionBySpeedIdAsync(int speedId)
-    {
-        var speed = await Context.TucJobTypes
+    private async Task<Suggestion> GetSpeedSuggestionBySpeedIdAsync(int speedId) =>
+        await Context.TucJobTypes
             .AsNoTracking()
             .Where(s => s.UcjtId == speedId)
             .Select(s => new Suggestion
@@ -4498,9 +4497,6 @@ public partial class JobRepository(
                 Text = s.UcjtName
             })
             .FirstOrDefaultAsync();
-
-        return speed;
-    }
 
     private async Task<Suggestion> GetDefaultSpeedType() => await Context.TucJobTypes
         .AsNoTracking()
@@ -4740,9 +4736,8 @@ public partial class JobRepository(
         TucCourier courier,
         TucCourier transferTo,
         TucCourier runViewerTransferTo,
-        string runName)
-    {
-        return scanType switch
+        string runName) =>
+        scanType switch
         {
             (int)ScanType.Transfer when courier.UccrId == 999 =>
                 $"Ops (Run Viewer){(runViewerTransferTo != null ? $" to {runViewerTransferTo.Code} {runViewerTransferTo.UccrName} {runViewerTransferTo.UccrSurname}" : string.Empty)}",
@@ -4757,7 +4752,6 @@ public partial class JobRepository(
 
             _ => $"{courier?.Code} {courier?.UccrName}"
         };
-    }
 
     public async Task UpdateClearListAreaOrderStatus(List<int> courierIds)
     {
@@ -4805,31 +4799,24 @@ public partial class JobRepository(
                 else
                 {
                     var nonPickedUpCount = nonPickedUpCountsByCourier.GetValueOrDefault(courierId, 0);
-                    if (nonPickedUpCount == 0)
-                    {
-                        couriersToSetPickedUp.Add(courierId);
-                    }
+                    if (nonPickedUpCount == 0) couriersToSetPickedUp.Add(courierId);
                 }
             }
 
             // Bulk update using ExecuteUpdateAsync
             if (couriersToSetRejected.Count > 0)
-            {
                 await Context.TblClearListAreaOrders
                     .Where(c => couriersToSetRejected.Contains(c.CourierId))
                     .ExecuteUpdateAsync(setters => setters
                         .SetProperty(c => c.Status, (int)JobStatus.Rejected)
                         .SetProperty(c => c.OrderTime, now));
-            }
 
             if (couriersToSetPickedUp.Count > 0)
-            {
                 await Context.TblClearListAreaOrders
                     .Where(c => couriersToSetPickedUp.Contains(c.CourierId))
                     .ExecuteUpdateAsync(setters => setters
                         .SetProperty(c => c.Status, (int)JobStatus.PickedUp)
                         .SetProperty(c => c.OrderTime, now));
-            }
         }
         catch (Exception e)
         {
@@ -4856,4 +4843,23 @@ public partial class JobRepository(
                 .SetProperty(j => j.InternalStatus, (int)InternalJobStatus.AwaitingPod)
             );
     }
+
+    #region IJobRepository Interface Methods (delegating to protected base methods)
+
+    public new async Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(List<int> selectedViewIds)
+        => await base.GetJobCoordinatesAsync(selectedViewIds);
+
+    public new async Task<bool> IsJobArchived(int jobId)
+        => await base.IsJobArchived(jobId);
+
+    public new async Task<List<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived)
+        => await base.GetRelatedJobsMultiSelectListAsync(jobId, isArchived);
+
+    public new async Task<int?> GetJobParentIdAsync(int jobId)
+        => await base.GetJobParentIdAsync(jobId);
+
+    public new async Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(List<int> jobIds)
+        => await base.GetJobCurrentAmountsAsync(jobIds);
+
+    #endregion
 }

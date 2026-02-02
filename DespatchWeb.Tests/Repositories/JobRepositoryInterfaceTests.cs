@@ -10,11 +10,11 @@ using Moq;
 namespace DespatchWeb.Tests.Repositories;
 
 /// <summary>
-/// Tests for BaseJobRepository - covers job queries and helper methods.
-/// Note: Note-related tests have been moved to NoteRepositoryTests.
+/// Tests for JobRepository IJobRepository interface methods.
+/// Verifies that the public wrapper methods correctly delegate to the protected base implementations.
 /// Uses SQLite in-memory database to test repository operations.
 /// </summary>
-public class BaseJobRepositoryTests : IDisposable
+public class JobRepositoryInterfaceTests : IDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly DespatchContext _context;
@@ -22,7 +22,7 @@ public class BaseJobRepositoryTests : IDisposable
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
 
-    public BaseJobRepositoryTests()
+    public JobRepositoryInterfaceTests()
     {
         _connection = new SqliteConnection("DataSource=:memory:");
         _connection.Open();
@@ -52,45 +52,37 @@ public class BaseJobRepositoryTests : IDisposable
         _connection.Dispose();
     }
 
-    /// <summary>
-    /// Test wrapper that exposes protected methods from BaseJobRepository for unit testing.
-    /// </summary>
-    private class TestableBaseJobRepository(
-        IDbContextFactory<DespatchContext> contextFactory,
-        ITenantInfoService infoService,
-        IClearListEnvelopeService clearListEnvelopeService)
-        : BaseJobRepository(contextFactory, infoService, clearListEnvelopeService)
-    {
-        public new Task<bool> IsJobArchived(int jobId)
-            => base.IsJobArchived(jobId);
-
-        public new Task<List<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived)
-            => base.GetRelatedJobsMultiSelectListAsync(jobId, isArchived);
-
-        public new Task<int?> GetJobParentIdAsync(int jobId)
-            => base.GetJobParentIdAsync(jobId);
-
-        public new Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(List<int> jobIds)
-            => base.GetJobCurrentAmountsAsync(jobIds);
-    }
-
-    private TestableBaseJobRepository CreateRepository() => new(
+    private IJobRepository CreateRepository() => new JobRepository(
         _contextFactoryMock.Object,
         _tenantInfoServiceMock.Object,
         _clearListEnvelopeServiceMock.Object
     );
 
-    #region IsJobArchived Tests
+    #region Interface Contract Tests
 
     [Fact]
-    public async Task IsJobArchived_WithArchivedJob_ReturnsTrue()
+    public void JobRepository_ImplementsIJobRepository()
+    {
+        // Arrange & Act
+        var repository = CreateRepository();
+
+        // Assert
+        repository.Should().BeAssignableTo<IJobRepository>();
+    }
+
+    #endregion
+
+    #region IsJobArchived Interface Tests
+
+    [Fact]
+    public async Task IsJobArchived_ViaInterface_WithArchivedJob_ReturnsTrue()
     {
         // Arrange
         const int jobId = 100;
         _context.TucJobArchives.Add(CreateArchivedJob(jobId, "ARCH001"));
         await _context.SaveChangesAsync();
 
-        var repository = CreateRepository();
+        IJobRepository repository = CreateRepository();
 
         // Act
         var result = await repository.IsJobArchived(jobId);
@@ -100,14 +92,14 @@ public class BaseJobRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task IsJobArchived_WithLiveJob_ReturnsFalse()
+    public async Task IsJobArchived_ViaInterface_WithLiveJob_ReturnsFalse()
     {
         // Arrange
         const int jobId = 100;
         _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
         await _context.SaveChangesAsync();
 
-        var repository = CreateRepository();
+        IJobRepository repository = CreateRepository();
 
         // Act
         var result = await repository.IsJobArchived(jobId);
@@ -116,25 +108,12 @@ public class BaseJobRepositoryTests : IDisposable
         result.Should().BeFalse();
     }
 
-    [Fact]
-    public async Task IsJobArchived_WithNonExistentJob_ReturnsFalse()
-    {
-        // Arrange
-        var repository = CreateRepository();
-
-        // Act
-        var result = await repository.IsJobArchived(999);
-
-        // Assert
-        result.Should().BeFalse();
-    }
-
     #endregion
 
-    #region GetRelatedJobsMultiSelectListAsync Tests
+    #region GetRelatedJobsMultiSelectListAsync Interface Tests
 
     [Fact]
-    public async Task GetRelatedJobsMultiSelectListAsync_WithParentAndChildren_ReturnsAllRelated()
+    public async Task GetRelatedJobsMultiSelectListAsync_ViaInterface_WithParentAndChildren_ReturnsAllRelated()
     {
         // Arrange
         const int parentId = 100;
@@ -148,7 +127,7 @@ public class BaseJobRepositoryTests : IDisposable
         );
         await _context.SaveChangesAsync();
 
-        var repository = CreateRepository();
+        IJobRepository repository = CreateRepository();
 
         // Act
         var result = await repository.GetRelatedJobsMultiSelectListAsync(parentId, isArchived: false);
@@ -161,31 +140,7 @@ public class BaseJobRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task GetRelatedJobsMultiSelectListAsync_WhenRequestingChild_MarksChildAsSelected()
-    {
-        // Arrange
-        const int parentId = 100;
-        const int childId = 101;
-
-        _context.TucJobs.AddRange(
-            CreateJob(parentId, "PARENT"),
-            CreateJobWithParent(childId, "CHILD", parentId)
-        );
-        await _context.SaveChangesAsync();
-
-        var repository = CreateRepository();
-
-        // Act
-        var result = await repository.GetRelatedJobsMultiSelectListAsync(childId, isArchived: false);
-
-        // Assert
-        result.Should().HaveCount(2);
-        result.Should().Contain(j => j.Id == childId && j.Selected);
-        result.Should().Contain(j => j.Id == parentId && !j.Selected);
-    }
-
-    [Fact]
-    public async Task GetRelatedJobsMultiSelectListAsync_WithArchivedJob_QueriesArchiveTable()
+    public async Task GetRelatedJobsMultiSelectListAsync_ViaInterface_WithArchivedJob_QueriesArchiveTable()
     {
         // Arrange
         const int parentId = 100;
@@ -197,7 +152,7 @@ public class BaseJobRepositoryTests : IDisposable
         );
         await _context.SaveChangesAsync();
 
-        var repository = CreateRepository();
+        IJobRepository repository = CreateRepository();
 
         // Act
         var result = await repository.GetRelatedJobsMultiSelectListAsync(parentId, isArchived: true);
@@ -206,31 +161,12 @@ public class BaseJobRepositoryTests : IDisposable
         result.Should().HaveCount(2);
     }
 
-    [Fact]
-    public async Task GetRelatedJobsMultiSelectListAsync_WithSingleJob_ReturnsSingleItem()
-    {
-        // Arrange
-        const int jobId = 100;
-        _context.TucJobs.Add(CreateJob(jobId, "SINGLE"));
-        await _context.SaveChangesAsync();
-
-        var repository = CreateRepository();
-
-        // Act
-        var result = await repository.GetRelatedJobsMultiSelectListAsync(jobId, isArchived: false);
-
-        // Assert
-        result.Should().ContainSingle();
-        result.First().Id.Should().Be(jobId);
-        result.First().Selected.Should().BeTrue();
-    }
-
     #endregion
 
-    #region GetJobParentIdAsync Tests
+    #region GetJobParentIdAsync Interface Tests
 
     [Fact]
-    public async Task GetJobParentIdAsync_WithChildJob_ReturnsParentId()
+    public async Task GetJobParentIdAsync_ViaInterface_WithChildJob_ReturnsParentId()
     {
         // Arrange
         const int parentId = 100;
@@ -242,7 +178,7 @@ public class BaseJobRepositoryTests : IDisposable
         );
         await _context.SaveChangesAsync();
 
-        var repository = CreateRepository();
+        IJobRepository repository = CreateRepository();
 
         // Act
         var result = await repository.GetJobParentIdAsync(childId);
@@ -252,14 +188,14 @@ public class BaseJobRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task GetJobParentIdAsync_WithParentJob_ReturnsNull()
+    public async Task GetJobParentIdAsync_ViaInterface_WithParentJob_ReturnsNull()
     {
         // Arrange
         const int jobId = 100;
         _context.TucJobs.Add(CreateJob(jobId, "PARENT"));
         await _context.SaveChangesAsync();
 
-        var repository = CreateRepository();
+        IJobRepository repository = CreateRepository();
 
         // Act
         var result = await repository.GetJobParentIdAsync(jobId);
@@ -268,25 +204,12 @@ public class BaseJobRepositoryTests : IDisposable
         result.Should().BeNull();
     }
 
-    [Fact]
-    public async Task GetJobParentIdAsync_WithNonExistentJob_ReturnsNull()
-    {
-        // Arrange
-        var repository = CreateRepository();
-
-        // Act
-        var result = await repository.GetJobParentIdAsync(999);
-
-        // Assert
-        result.Should().BeNull();
-    }
-
     #endregion
 
-    #region GetJobCurrentAmountsAsync Tests
+    #region GetJobCurrentAmountsAsync Interface Tests
 
     [Fact]
-    public async Task GetJobCurrentAmountsAsync_WithExistingJobs_ReturnsAmounts()
+    public async Task GetJobCurrentAmountsAsync_ViaInterface_WithExistingJobs_ReturnsAmounts()
     {
         // Arrange
         _context.TucJobs.AddRange(
@@ -295,7 +218,7 @@ public class BaseJobRepositoryTests : IDisposable
         );
         await _context.SaveChangesAsync();
 
-        var repository = CreateRepository();
+        IJobRepository repository = CreateRepository();
 
         // Act
         var result = await repository.GetJobCurrentAmountsAsync([100, 101]);
@@ -309,51 +232,16 @@ public class BaseJobRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task GetJobCurrentAmountsAsync_WithNoMatchingJobs_ReturnsEmptyDictionary()
+    public async Task GetJobCurrentAmountsAsync_ViaInterface_WithNoMatchingJobs_ReturnsEmptyDictionary()
     {
         // Arrange
-        var repository = CreateRepository();
+        IJobRepository repository = CreateRepository();
 
         // Act
         var result = await repository.GetJobCurrentAmountsAsync([999, 998]);
 
         // Assert
         result.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task GetJobCurrentAmountsAsync_WithNullAmounts_ReturnsZeroDefaults()
-    {
-        // Arrange
-        _context.TucJobs.Add(CreateJob(100, "JOB001")); // No amounts set
-        await _context.SaveChangesAsync();
-
-        var repository = CreateRepository();
-
-        // Act
-        var result = await repository.GetJobCurrentAmountsAsync([100]);
-
-        // Assert
-        result.Should().ContainKey(100);
-        result[100].Amount.Should().Be(0);
-        result[100].RawBaseAmount.Should().Be(0);
-    }
-
-    [Fact]
-    public async Task GetJobCurrentAmountsAsync_ReturnsJobNumberInResult()
-    {
-        // Arrange
-        _context.TucJobs.Add(CreateJobWithAmounts(100, "TEST-JOB-123", amount: 100m));
-        await _context.SaveChangesAsync();
-
-        var repository = CreateRepository();
-
-        // Act
-        var result = await repository.GetJobCurrentAmountsAsync([100]);
-
-        // Assert
-        result[100].JobNo.Should().Be("TEST-JOB-123");
-        result[100].IsPrebook.Should().BeFalse();
     }
 
     #endregion

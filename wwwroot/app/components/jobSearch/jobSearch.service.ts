@@ -68,9 +68,15 @@ class JobSearchService implements angular.IServiceProvider {
         const params = new URLSearchParams();
         params.append('fromDate', formatDateForApiWithTzs(fromDate));
         params.append('toDate', formatDateForApiWithTzs(toDate));
-        if (courierIds?.length) params.append('courierIds', courierIds.join(','));
-        if (clientIds?.length) params.append('clientIds', clientIds.join(','));
-        if (speedIds?.length) params.append('speedIds', speedIds.join(','));
+        if (courierIds?.length) {
+            courierIds.forEach(id => params.append('courierIds', id.toString()));
+        }
+        if (clientIds?.length) {
+            clientIds.forEach(id => params.append('clientIds', id.toString()));
+        }
+        if (speedIds?.length) {
+            speedIds.forEach(id => params.append('speedIds', id.toString()));
+        }
         if (wild) params.append('wild', wild);
         if (job) params.append('job', job);
         return `/Job/PodSearchDownload?${params.toString()}`;

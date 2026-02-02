@@ -255,9 +255,12 @@ public class JobRepositoryPodSearchDownloadTests
     }
 
     [Fact]
-    public async Task PodSearchDownloadAsync_ParentChildFilter_ExcludesParentsWithChildren()
+    public async Task PodSearchDownloadAsync_ParentChildJobs_ReturnsAllJobsToMatchSearchBehavior()
     {
         // Arrange - Parent job 1 has child job 2
+        // Note: Previously the download method excluded parents with children, but this caused
+        // a mismatch between search results and download counts. The behavior was changed to
+        // include all jobs (parents and children) to match PodSearchAsync behavior.
         var liveJobs = new List<TucJob>
         {
             CreateLiveJob(1, "PARENT-001", new DateTime(2024, 1, 15), parentId: 1), // Parent (self-reference)
@@ -282,11 +285,11 @@ public class JobRepositoryPodSearchDownloadTests
             clientIds: []
         );
 
-        // Assert - Parent should be excluded because it has a child in results
-        result.Should().HaveCount(2);
+        // Assert - All jobs should be included (parents and children) to match search behavior
+        result.Should().HaveCount(3);
+        result.Should().Contain(j => j.JobNumber == "PARENT-001");
         result.Should().Contain(j => j.JobNumber == "CHILD-001");
         result.Should().Contain(j => j.JobNumber == "SINGLE-001");
-        result.Should().NotContain(j => j.JobNumber == "PARENT-001");
     }
 
     [Fact]

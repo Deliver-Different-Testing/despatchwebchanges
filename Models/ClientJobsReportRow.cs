@@ -29,7 +29,7 @@ internal class ClientJobsReportRow
     public bool? LatePickup { get; init; }
     public bool? LateDelivery { get; init; }
     public string ClientLegalName { get; init; }
-    public int? Speed { get; init; }
+    public string Speed { get; init; }
     public string Notes { get; init; }
     public decimal? Amount { get; init; }
     public string RefA { get; init; }
@@ -48,4 +48,5 @@ internal class ClientJobsReportRow
     public bool? Locked { get; init; }
     public int? ClientId { get; init; }
     public string ClientNote { get; init; }
+    public string AcceptedSpeed { get; set; }
 }

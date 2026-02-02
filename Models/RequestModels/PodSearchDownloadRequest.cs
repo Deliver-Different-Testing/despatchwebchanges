@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace DespatchWeb.Models.RequestModels;
 
@@ -14,7 +13,9 @@ public class PodSearchDownloadRequest
     public DateTimeOffset FromDate { get; set; }
     public DateTimeOffset ToDate { get; set; }
 
-    public bool ClientSet => ClientIds != null && ClientIds.Any();
-    public bool CourierSet => CourierIds != null && CourierIds.Any();
-    public bool SpeedSet => SpeedIds != null && SpeedIds.Any();
+    public bool ClientSet => ClientIds != null && ClientIds.Count != 0;
+    public bool CourierSet => CourierIds != null && CourierIds.Count != 0;
+    public bool SpeedSet => SpeedIds != null && SpeedIds.Count != 0;
+    public bool WildSet => !string.IsNullOrWhiteSpace(Wild);
+    public bool JobSet => !string.IsNullOrWhiteSpace(Job);
 }
