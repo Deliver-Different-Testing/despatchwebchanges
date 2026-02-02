@@ -1161,11 +1161,11 @@ public static class JobMappings
                         ExpectedDeparture = first.UcnwEtd,
                         DepartureTimeZone = first.DepartureAirportTimeZoneNavigation != null
                             ? first.DepartureAirportTimeZoneNavigation.Name
-                            : null,
+                            : first.DepartureAirportTimeZone,
                         ExpectedArrival = last.UcnwEta,
                         ArrivalTimeZone = last.ArrivalAirportTimeZoneNavigation != null
                             ? last.ArrivalAirportTimeZoneNavigation.Name
-                            : null,
+                            : last.ArrivalAirportTimeZone,
                         FlightNumber = first.UcnwFlightNo ?? "",
                         Notes = first.UcnwNotes,
                         FlightSegments = j.TucJobNationwides
@@ -1187,7 +1187,7 @@ public static class JobMappings
                                 DepartureAirportCountry = n.DepartureAirportCountry,
                                 DepartureAirportTimeZone = n.DepartureAirportTimeZoneNavigation != null
                                     ? n.DepartureAirportTimeZoneNavigation.Name
-                                    : null,
+                                    : n.DepartureAirportTimeZone,
                                 DepartureAirportTimeZoneId = n.DepartureAirportTimeZoneId ?? 0,
                                 DepartureTerminal = n.DepartureTerminal,
                                 ArrivalAirportFsCode = n.ArrivalAirportFsCode,
@@ -1196,7 +1196,7 @@ public static class JobMappings
                                 ArrivalAirportCountry = n.ArrivalAirportCountry,
                                 ArrivalAirportTimeZone = n.ArrivalAirportTimeZoneNavigation != null
                                     ? n.ArrivalAirportTimeZoneNavigation.Name
-                                    : null,
+                                    : n.ArrivalAirportTimeZone,
                                 ArrivalAirportTimeZoneId = n.ArrivalAirportTimeZoneId ?? 0,
                                 ArrivalTerminal = n.ArrivalTerminal,
                                 ElapsedTime = n.UcnwEta.HasValue && n.UcnwEtd.HasValue
@@ -1717,13 +1717,17 @@ public static class JobMappings
             if (!segmentsGroupedByJob.TryGetValue(effectiveJobId, out var segments) || segments.Count == 0)
                 continue;
 
-            var departureTimeZone = segments[0].DepartureAirportTimeZoneNavigation?.Name;
-            var arrivalTimeZone = segments[^1].ArrivalAirportTimeZoneNavigation?.Name;
+            var departureTimeZone = segments[0].DepartureAirportTimeZoneNavigation?.Name
+                ?? segments[0].DepartureAirportTimeZone;
+            var arrivalTimeZone = segments[^1].ArrivalAirportTimeZoneNavigation?.Name
+                ?? segments[^1].ArrivalAirportTimeZone;
 
             var flightSegments = segments.Select(segment =>
             {
-                var segmentDepartureTimeZone = segment.DepartureAirportTimeZoneNavigation?.Name;
-                var segmentArrivalTimeZone = segment.ArrivalAirportTimeZoneNavigation?.Name;
+                var segmentDepartureTimeZone = segment.DepartureAirportTimeZoneNavigation?.Name
+                    ?? segment.DepartureAirportTimeZone;
+                var segmentArrivalTimeZone = segment.ArrivalAirportTimeZoneNavigation?.Name
+                    ?? segment.ArrivalAirportTimeZone;
 
                 return new FlightSegmentViewModel
                 {

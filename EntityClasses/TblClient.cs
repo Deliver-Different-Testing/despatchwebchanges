@@ -577,6 +577,8 @@ public partial class TblClient
 
     public string AccountsEmail { get; set; }
 
+    public int? InvoiceMode { get; set; }
+
     public int ClientId { get; set; }
 
     public string Name { get; set; }

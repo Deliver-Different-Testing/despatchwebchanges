@@ -1014,55 +1014,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UpdatedByType)
                 .IsRequired()
                 .HasMaxLength(20);
-
-            entity.HasOne(d => d.Courier).WithMany()
-                .HasForeignKey(d => d.CourierId)
-                .HasConstraintName("FK_JobDeliveryJourneyArchive_Courier");
-
-            entity.HasOne(d => d.Flight).WithMany()
-                .HasForeignKey(d => d.FlightId)
-                .HasConstraintName("FK_JobDeliveryJourneyArchive_Flight");
-
-            entity.HasOne(d => d.Job).WithMany()
-                .HasForeignKey(d => d.JobId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_JobDeliveryJourneyArchive_Job");
-
-            entity.HasOne(d => d.NewAgent).WithMany()
-                .HasForeignKey(d => d.NewAgentId)
-                .HasConstraintName("FK_JobDeliveryJourneyArchive_NewAgent");
-
-            entity.HasOne(d => d.NewCourier).WithMany()
-                .HasForeignKey(d => d.NewCourierId)
-                .HasConstraintName("FK_JobDeliveryJourneyArchive_NewCourier");
-
-            entity.HasOne(d => d.NewInternalStatus).WithMany()
-                .HasForeignKey(d => d.NewInternalStatusId)
-                .HasConstraintName("FK_JobDeliveryJourneyArchive_NewInternalStatus");
-
-            entity.HasOne(d => d.NewJobStatus).WithMany()
-                .HasForeignKey(d => d.NewJobStatusId)
-                .HasConstraintName("FK_JobDeliveryJourneyArchive_NewJobStatus");
-
-            entity.HasOne(d => d.OldAgent).WithMany()
-                .HasForeignKey(d => d.OldAgentId)
-                .HasConstraintName("FK_JobDeliveryJourneyArchive_OldAgent");
-
-            entity.HasOne(d => d.OldCourier).WithMany()
-                .HasForeignKey(d => d.OldCourierId)
-                .HasConstraintName("FK_JobDeliveryJourneyArchive_OldCourier");
-
-            entity.HasOne(d => d.OldInternalStatus).WithMany()
-                .HasForeignKey(d => d.OldInternalStatusId)
-                .HasConstraintName("FK_JobDeliveryJourneyArchive_OldInternalStatus");
-
-            entity.HasOne(d => d.OldJobStatus).WithMany()
-                .HasForeignKey(d => d.OldJobStatusId)
-                .HasConstraintName("FK_JobDeliveryJourneyArchive_OldJobStatus");
-
-            entity.HasOne(d => d.Staff).WithMany()
-                .HasForeignKey(d => d.StaffId)
-                .HasConstraintName("FK_JobDeliveryJourneyArchive_Staff");
         });
 
         modelBuilder.Entity<JobRecoveryAgent>(entity =>
@@ -1156,7 +1107,7 @@ public partial class DespatchContext : DbContext
         {
             entity.HasKey(e => e.PricingBreakdownId).HasName("PK__PricingBreakdownArchive");
 
-            entity.ToTable("PricingBreakdownArchive");
+            entity.ToTable("PricingBreakdownArchive", tb => tb.HasTrigger("TR_PricingBreakdownArchive_tucJobArchive_Sync"));
 
             entity.Property(e => e.PricingBreakdownId).HasColumnName("PricingBreakdownID");
             entity.Property(e => e.ChargeAmount).HasColumnType("money");

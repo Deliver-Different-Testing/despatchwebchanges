@@ -94,16 +94,31 @@ public class DateExtensionTests
     }
 
     [Fact]
-    public void ToTimeZone_WithInvalidTimeZone_ThrowsException()
+    public void ToTimeZone_WithInvalidTimeZone_FallsBackToUtc()
     {
         // Arrange
         var utcTime = new DateTime(2024, 1, 15, 12, 0, 0, DateTimeKind.Utc);
 
-        // Act
-        var act = () => utcTime.ToTimeZone("Invalid TimeZone");
+        // Act - Invalid timezone IDs now fall back to UTC instead of throwing
+        var result = utcTime.ToTimeZone("Invalid TimeZone");
 
-        // Assert
-        act.Should().Throw<TimeZoneNotFoundException>();
+        // Assert - Should return UTC time unchanged
+        result.Hour.Should().Be(12);
+        result.Day.Should().Be(15);
+    }
+
+    [Fact]
+    public void ToTimeZone_WithIanaTimeZone_ConvertsSuccessfully()
+    {
+        // Arrange - IANA timezone ID from FlightStats API
+        var utcTime = new DateTime(2024, 1, 15, 18, 0, 0, DateTimeKind.Utc);
+
+        // Act - IANA timezone IDs are now converted to Windows IDs
+        var result = utcTime.ToTimeZone("America/Los_Angeles");
+
+        // Assert - 18:00 UTC = 10:00 PST (UTC-8)
+        result.Hour.Should().Be(10);
+        result.Day.Should().Be(15);
     }
 
     #endregion
@@ -199,16 +214,33 @@ public class DateExtensionTests
     }
 
     [Fact]
-    public void ToTimeZoneOffset_String_WithInvalidTimeZone_ThrowsException()
+    public void ToTimeZoneOffset_String_WithInvalidTimeZone_FallsBackToUtc()
     {
         // Arrange
         var utcTime = new DateTime(2024, 1, 15, 12, 0, 0, DateTimeKind.Utc);
 
-        // Act
-        var act = () => utcTime.ToTimeZoneOffset("Invalid TimeZone");
+        // Act - Invalid timezone IDs now fall back to UTC instead of throwing
+        var result = utcTime.ToTimeZoneOffset("Invalid TimeZone");
 
-        // Assert
-        act.Should().Throw<TimeZoneNotFoundException>();
+        // Assert - Should return UTC time with zero offset
+        result.Hour.Should().Be(12);
+        result.Day.Should().Be(15);
+        result.Offset.Should().Be(TimeSpan.Zero);
+    }
+
+    [Fact]
+    public void ToTimeZoneOffset_String_WithIanaTimeZone_ConvertsSuccessfully()
+    {
+        // Arrange - IANA timezone ID from FlightStats API
+        var utcTime = new DateTime(2024, 1, 15, 18, 0, 0, DateTimeKind.Utc);
+
+        // Act - IANA timezone IDs are now converted to Windows IDs
+        var result = utcTime.ToTimeZoneOffset("America/Los_Angeles");
+
+        // Assert - 18:00 UTC = 10:00 PST with -8 offset
+        result.Hour.Should().Be(10);
+        result.Day.Should().Be(15);
+        result.Offset.Should().Be(TimeSpan.FromHours(-8));
     }
 
     #endregion
