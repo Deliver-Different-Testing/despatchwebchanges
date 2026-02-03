@@ -11,14 +11,6 @@ interface ApiKeyResponse {
 }
 
 /**
- * Get Google Maps API key
- */
-export async function getGoogleMapsKey(): Promise<string> {
-    const response = await apiClient.get<ApiKeyResponse>('config/GetGoogleMapsKey');
-    return response.apiKey;
-}
-
-/**
  * Get HERE Maps API key
  */
 export async function getHereMapsKey(): Promise<string> {
@@ -27,7 +19,6 @@ export async function getHereMapsKey(): Promise<string> {
 }
 
 export const configApi = {
-    getGoogleMapsKey,
     getHereMapsKey,
 };
 

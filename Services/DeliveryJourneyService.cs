@@ -399,9 +399,9 @@ public partial class DeliveryJourneyService(
     /// Maps archived status update DTOs to view models, grouping by timestamp.
     /// </summary>
     private List<DeliveryJourneyViewModel> MapArchivedStatusUpdatesToViewModels(
-        List<JobDeliveryJourneyArchiveDto> dtos,
+        List<JobDeliveryJourneyArchiveDto> dtoList,
         int jobId) =>
-        dtos
+        dtoList
             .GroupBy(s => s.UpdatedAt)
             .Select(group => new DeliveryJourneyViewModel
             {

@@ -191,9 +191,8 @@ public class AddAgentRecoveryJobService(
     /// <summary>
     /// Creates a note entity recording the addition of a recovery agent to a job.
     /// </summary>
-    private static TucNote CreateNote(int jobId, string newAgent, int staffId, DateTime currentDate)
-    {
-        return new TucNote
+    private static TucNote CreateNote(int jobId, string newAgent, int staffId, DateTime currentDate) =>
+        new()
         {
             JobId = jobId,
             NoteText = $"Recovery agent {newAgent} has been added.",
@@ -203,15 +202,13 @@ public class AddAgentRecoveryJobService(
             UpdatedBy = staffId,
             UpdatedDate = currentDate
         };
-    }
 
     /// <summary>
     /// Creates a JobRecoveryAgent entity linking a recovery agent to a job at a specific airport.
     /// </summary>
     private static JobRecoveryAgent CreateJobRecoveryAgent(int jobId, int agentId, int airportId, int staffId,
-        bool isPrimaryRecoveryAgent)
-    {
-        return new JobRecoveryAgent
+        bool isPrimaryRecoveryAgent) =>
+        new()
         {
             JobId = jobId,
             AgentId = agentId,
@@ -220,5 +217,4 @@ public class AddAgentRecoveryJobService(
             UpdatedBy = staffId,
             IsPrimary = isPrimaryRecoveryAgent
         };
-    }
 }

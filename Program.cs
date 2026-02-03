@@ -41,13 +41,13 @@ builder.Services.AddControllersWithViews()
     });
 
 builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-Log.Logger =  new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).WriteTo.Console().CreateLogger();
+Log.Logger = new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).WriteTo.Console().CreateLogger();
 
 if (builder.Environment.IsDevelopment())
 {
     var keyDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "DeliverDifferent", "DataProtection-Keys");
-    
+
     // Ensure the directory exists with proper permissions
     if (!Directory.Exists(keyDirectory))
     {
@@ -82,13 +82,14 @@ if (builder.Environment.IsDevelopment())
             .PersistKeysToFileSystem(new DirectoryInfo(keyDirectory))
             .SetApplicationName("DeliverDifferent")
             .ProtectKeysWithDpapi();
-        
+
         Log.Information("DataProtection configured to use directory: {KeyDirectory}", keyDirectory);
     }
 }
 else
 {
-    builder.Services.AddDataProtection().PersistKeysToAWSSystemsManager("/Hub/DataProtection").SetApplicationName("DeliverDifferent");
+    builder.Services.AddDataProtection().PersistKeysToAWSSystemsManager("/Hub/DataProtection")
+        .SetApplicationName("DeliverDifferent");
 }
 
 
@@ -122,15 +123,9 @@ builder.Services.Configure<FormOptions>(x =>
     x.MultipartBodyLengthLimit = maxFileSize;
     x.MultipartHeadersLengthLimit = 32768; // 32KB for headers
 });
-builder.Services.Configure<IISServerOptions>(options =>
-{
-    options?.MaxRequestBodySize = maxFileSize;
-});
+builder.Services.Configure<IISServerOptions>(options => { options?.MaxRequestBodySize = maxFileSize; });
 
-builder.Services.Configure<KestrelServerOptions>(options =>
-{
-    options?.Limits.MaxRequestBodySize = maxFileSize;
-});
+builder.Services.Configure<KestrelServerOptions>(options => { options?.Limits.MaxRequestBodySize = maxFileSize; });
 
 builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
@@ -164,25 +159,22 @@ builder.Services.AddScoped<ISplitJobService, SplitJobService>();
 
 // Register DespatchContext with a fake connection string
 builder.Services.AddDbContextFactory<DespatchContext>(options =>
-    options.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=dummy;Trusted_Connection=True;"), ServiceLifetime.Transient);
+        options.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=dummy;Trusted_Connection=True;"),
+    ServiceLifetime.Transient);
 
 builder.Services.AddScoped<IDbContextFactory<DespatchContext>, DynamicDespatchDbContextFactory>();
 
 
 var domain = Environment.GetEnvironmentVariable("Domain") ?? string.Empty;
 if (string.IsNullOrEmpty(domain))
-{
     throw new InvalidOperationException(
         "Could not find a env var string named 'Domain'.");
-}
 
 // Configure Redis Based Distributed Session
 var redisConfig = Environment.GetEnvironmentVariable("RedisConfig");
 if (string.IsNullOrEmpty(redisConfig))
-{
     throw new InvalidOperationException(
         "Could not find a Redis Env Var named 'RedisConfig'.");
-}
 var redisConfigurationOptions = ConfigurationOptions.Parse(redisConfig);
 
 builder.Services.AddStackExchangeRedisCache(redisCacheConfig =>
@@ -209,7 +201,8 @@ builder.Services.AddAuthentication("Identity.Application")
         options.Cookie.Domain = domain;
     });
 
-builder.Services.AddSession(options => {
+builder.Services.AddSession(options =>
+{
     options.Cookie.Name = "hub_session";
     options.IdleTimeout = TimeSpan.FromMinutes(60 * 24);
 });
@@ -238,9 +231,11 @@ app.MapHealthChecks("/healthz", new HealthCheckOptions
     }
 });
 // Configure the HTTP request pipeline.
-var provider = new FileExtensionContentTypeProvider {
-    Mappings = {
-        [".map"] = "application/json" 
+var provider = new FileExtensionContentTypeProvider
+{
+    Mappings =
+    {
+        [".map"] = "application/json"
     }
 };
 
@@ -254,7 +249,7 @@ app.UseStaticFiles(new StaticFileOptions
     FileProvider = new PhysicalFileProvider(
         Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "dist")),
     RequestPath = "/dist",
-    ContentTypeProvider = provider  // Make sure to use the same provider here
+    ContentTypeProvider = provider // Make sure to use the same provider here
 });
 
 // CSRF protection for API requests - verify X-Requested-With header
@@ -296,15 +291,12 @@ app.Use(async (context, next) =>
     headers["Permissions-Policy"] = "geolocation=(), microphone=()";
 
     // HSTS - Force HTTPS for 1 year, include subdomains (production only)
-    if (!app.Environment.IsDevelopment())
-    {
-        headers.StrictTransportSecurity = "max-age=31536000; includeSubDomains";
-    }
+    if (!app.Environment.IsDevelopment()) headers.StrictTransportSecurity = "max-age=31536000; includeSubDomains";
 
     // Content Security Policy - restrict resource loading
     var csp =
         "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.google.com https://js.api.here.com https://ajax.googleapis.com https://cdnjs.cloudflare.com; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.api.here.com https://ajax.googleapis.com https://cdnjs.cloudflare.com; " +
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://ajax.googleapis.com https://js.api.here.com; " +
         "img-src 'self' data: blob: https:; " +
         "font-src 'self' https://fonts.gstatic.com data:; " +
@@ -353,4 +345,3 @@ static AWSCredentials LoadSsoCredentials(string profile)
 #pragma warning restore CS0618 // Type or member is obsolete
     return credentials ?? throw new Exception($"Failed to find the {profile} profile or any fallback credentials");
 }
-

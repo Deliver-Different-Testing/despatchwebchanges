@@ -71,9 +71,6 @@ export const queryKeys = {
     hereMaps: {
         apiKey: ['hereMaps', 'apiKey'] as const,
     },
-    googleMaps: {
-        apiKey: ['googleMaps', 'apiKey'] as const,
-    },
     recurringJobs: {
         all: ['recurringJobs'] as const,
         list: (query: {

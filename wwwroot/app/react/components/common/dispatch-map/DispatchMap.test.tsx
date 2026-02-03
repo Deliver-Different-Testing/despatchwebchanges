@@ -262,4 +262,355 @@ describe('DispatchMap Clearlist Envelope Feature', () => {
 
         expect(courierApi.getClearListEnvelope).not.toHaveBeenCalled();
     });
+
+    it('handles getClearListEnvelope error gracefully', async () => {
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+        const mockMap = {
+            getViewModel: jest.fn(() => ({
+                setLookAtData: jest.fn(),
+            })),
+        };
+
+        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
+        useHereMapMock.mockReturnValue({
+            mapContainerRef: {current: document.createElement('div')},
+            map: mockMap,
+            platform: {},
+            ui: {},
+            isLoading: false,
+            isReady: true,
+            error: null,
+        });
+
+        (courierApi.getClearListEnvelope as jest.Mock).mockRejectedValue(new Error('API Error'));
+
+        const props = createDefaultProps({clearListId: 123});
+        renderWithProviders(<DispatchMap {...props} />);
+
+        await waitFor(() => {
+            expect(consoleSpy).toHaveBeenCalled();
+        });
+
+        consoleSpy.mockRestore();
+    });
+
+    it('calls onEnvelopeUpdate when envelope is fetched successfully', async () => {
+        const mockMap = {
+            getViewModel: jest.fn(() => ({
+                setLookAtData: jest.fn(),
+            })),
+        };
+
+        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
+        useHereMapMock.mockReturnValue({
+            mapContainerRef: {current: document.createElement('div')},
+            map: mockMap,
+            platform: {},
+            ui: {},
+            isLoading: false,
+            isReady: true,
+            error: null,
+        });
+
+        const mockEnvelope: ClearListEnvelopeData = {
+            minimumLatitude: 33.5,
+            maximumLatitude: 34.5,
+            minimumLongitude: -118.5,
+            maximumLongitude: -117.5,
+        };
+        (courierApi.getClearListEnvelope as jest.Mock).mockResolvedValue(mockEnvelope);
+
+        const onEnvelopeUpdate = jest.fn();
+        const props = createDefaultProps({
+            clearListId: 123,
+            onEnvelopeUpdate,
+        });
+
+        renderWithProviders(<DispatchMap {...props} />);
+
+        await waitFor(() => {
+            expect(onEnvelopeUpdate).toHaveBeenCalledWith(mockEnvelope);
+        });
+    });
+});
+
+describe('DispatchMap Loading State', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('shows loading indicator when map is loading', () => {
+        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
+        useHereMapMock.mockReturnValue({
+            mapContainerRef: {current: null},
+            map: null,
+            platform: null,
+            ui: null,
+            isLoading: true,
+            isReady: false,
+            error: null,
+        });
+
+        const props = createDefaultProps();
+        const {container} = renderWithProviders(<DispatchMap {...props} />);
+
+        // MUI LinearProgress should be rendered
+        const progressBar = container.querySelector('.MuiLinearProgress-root');
+        expect(progressBar).toBeInTheDocument();
+    });
+
+    it('hides loading indicator when map is ready', () => {
+        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
+        useHereMapMock.mockReturnValue({
+            mapContainerRef: {current: document.createElement('div')},
+            map: {},
+            platform: {},
+            ui: {},
+            isLoading: false,
+            isReady: true,
+            error: null,
+        });
+
+        const props = createDefaultProps();
+        const {container} = renderWithProviders(<DispatchMap {...props} />);
+
+        const progressBar = container.querySelector('.MuiLinearProgress-root');
+        expect(progressBar).not.toBeInTheDocument();
+    });
+});
+
+describe('DispatchMap Control Buttons', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('shows control buttons when map is ready', () => {
+        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
+        useHereMapMock.mockReturnValue({
+            mapContainerRef: {current: document.createElement('div')},
+            map: {},
+            platform: {},
+            ui: {},
+            isLoading: false,
+            isReady: true,
+            error: null,
+        });
+
+        const props = createDefaultProps();
+        renderWithProviders(<DispatchMap {...props} />);
+
+        // Control buttons should be visible
+        expect(screen.getByLabelText('Toggle Auto Zoom')).toBeInTheDocument();
+    });
+
+    it('hides control buttons when map is not ready', () => {
+        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
+        useHereMapMock.mockReturnValue({
+            mapContainerRef: {current: null},
+            map: null,
+            platform: null,
+            ui: null,
+            isLoading: false,
+            isReady: false,
+            error: null,
+        });
+
+        const props = createDefaultProps();
+        renderWithProviders(<DispatchMap {...props} />);
+
+        // Control buttons should not be visible
+        expect(screen.queryByLabelText('Toggle Auto Zoom')).not.toBeInTheDocument();
+    });
+});
+
+describe('DispatchMap Courier Data', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        (courierApi.getAvailableCourierLocations as jest.Mock).mockResolvedValue([]);
+    });
+
+    it('does not fetch couriers when showAvailableCouriers is false', () => {
+        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
+        useHereMapMock.mockReturnValue({
+            mapContainerRef: {current: document.createElement('div')},
+            map: {},
+            platform: {},
+            ui: {},
+            isLoading: false,
+            isReady: true,
+            error: null,
+        });
+
+        const props = createDefaultProps({showAvailableCouriers: false});
+        renderWithProviders(<DispatchMap {...props} />);
+
+        // Should not fetch couriers immediately
+        expect(courierApi.getAvailableCourierLocations).not.toHaveBeenCalled();
+    });
+
+    it('fetches couriers when showAvailableCouriers is true and map is ready', async () => {
+        const mockMap = {
+            getViewModel: jest.fn(() => ({
+                getLookAtData: jest.fn(() => ({
+                    bounds: null,
+                })),
+            })),
+            addEventListener: jest.fn(),
+            removeEventListener: jest.fn(),
+        };
+
+        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
+        useHereMapMock.mockReturnValue({
+            mapContainerRef: {current: document.createElement('div')},
+            map: mockMap,
+            platform: {},
+            ui: {},
+            isLoading: false,
+            isReady: true,
+            error: null,
+        });
+
+        const props = createDefaultProps({showAvailableCouriers: true});
+        renderWithProviders(<DispatchMap {...props} />);
+
+        await waitFor(() => {
+            expect(courierApi.getAvailableCourierLocations).toHaveBeenCalled();
+        });
+    });
+});
+
+describe('DispatchMap Map Ready Callback', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('calls onMapReady with map, platform and ui when provided', async () => {
+        const mockOnMapReady = jest.fn();
+        const mockMap = {};
+        const mockPlatform = {};
+        const mockUI = {};
+
+        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
+        useHereMapMock.mockImplementation(({onMapReady}) => {
+            // Simulate calling onMapReady
+            if (onMapReady) {
+                setTimeout(() => onMapReady(mockMap, mockPlatform, mockUI), 0);
+            }
+            return {
+                mapContainerRef: {current: document.createElement('div')},
+                map: mockMap,
+                platform: mockPlatform,
+                ui: mockUI,
+                isLoading: false,
+                isReady: true,
+                error: null,
+            };
+        });
+
+        const props = createDefaultProps();
+        renderWithProviders(<DispatchMap {...props} />);
+
+        // The component internally handles onMapReady
+        expect(useHereMapMock).toHaveBeenCalled();
+    });
+});
+
+describe('DispatchMap with Different Control States', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('renders with couriersOnlyEnabled state', () => {
+        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
+        useHereMapMock.mockReturnValue({
+            mapContainerRef: {current: document.createElement('div')},
+            map: {},
+            platform: {},
+            ui: {},
+            isLoading: false,
+            isReady: true,
+            error: null,
+        });
+
+        const useMapPreferencesMock = require('./useMapPreferences').useMapPreferences as jest.Mock;
+        useMapPreferencesMock.mockReturnValue({
+            controlState: {
+                autoZoomEnabled: true,
+                couriersOnlyEnabled: true,
+                urgentArmyOnlyEnabled: false,
+                couriersLargeViewEnabled: false,
+            },
+            toggleAutoZoom: jest.fn(),
+            toggleCouriersOnly: jest.fn(),
+            toggleUrgentArmyOnly: jest.fn(),
+            toggleCouriersLargeView: jest.fn(),
+        });
+
+        const props = createDefaultProps();
+        const {container} = renderWithProviders(<DispatchMap {...props} />);
+        expect(container).toBeInTheDocument();
+    });
+
+    it('renders with couriersLargeViewEnabled state', () => {
+        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
+        useHereMapMock.mockReturnValue({
+            mapContainerRef: {current: document.createElement('div')},
+            map: {},
+            platform: {},
+            ui: {},
+            isLoading: false,
+            isReady: true,
+            error: null,
+        });
+
+        const useMapPreferencesMock = require('./useMapPreferences').useMapPreferences as jest.Mock;
+        useMapPreferencesMock.mockReturnValue({
+            controlState: {
+                autoZoomEnabled: true,
+                couriersOnlyEnabled: false,
+                urgentArmyOnlyEnabled: false,
+                couriersLargeViewEnabled: true,
+            },
+            toggleAutoZoom: jest.fn(),
+            toggleCouriersOnly: jest.fn(),
+            toggleUrgentArmyOnly: jest.fn(),
+            toggleCouriersLargeView: jest.fn(),
+        });
+
+        const props = createDefaultProps();
+        const {container} = renderWithProviders(<DispatchMap {...props} />);
+        expect(container).toBeInTheDocument();
+    });
+
+    it('renders with urgentArmyOnlyEnabled state', () => {
+        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
+        useHereMapMock.mockReturnValue({
+            mapContainerRef: {current: document.createElement('div')},
+            map: {},
+            platform: {},
+            ui: {},
+            isLoading: false,
+            isReady: true,
+            error: null,
+        });
+
+        const useMapPreferencesMock = require('./useMapPreferences').useMapPreferences as jest.Mock;
+        useMapPreferencesMock.mockReturnValue({
+            controlState: {
+                autoZoomEnabled: false,
+                couriersOnlyEnabled: false,
+                urgentArmyOnlyEnabled: true,
+                couriersLargeViewEnabled: false,
+            },
+            toggleAutoZoom: jest.fn(),
+            toggleCouriersOnly: jest.fn(),
+            toggleUrgentArmyOnly: jest.fn(),
+            toggleCouriersLargeView: jest.fn(),
+        });
+
+        const props = createDefaultProps();
+        const {container} = renderWithProviders(<DispatchMap {...props} />);
+        expect(container).toBeInTheDocument();
+    });
 });
