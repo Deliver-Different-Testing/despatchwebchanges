@@ -38,6 +38,10 @@ import {
 export {DateFilterMenu} from '../date-filter-menu/DateFilterMenu';
 export type {DateFilterData, DateFilterMenuProps, DateRangeOption} from '../date-filter-menu/DateFilterMenu';
 
+// Re-export ActionsMenu
+export {ActionsMenu} from './ActionsMenu';
+export type {ActionsMenuProps} from './ActionsMenu';
+
 // Shared icon button styles for consistent appearance
 const toolbarIconButtonSx = {
     p: 1,

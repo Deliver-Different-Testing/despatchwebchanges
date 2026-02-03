@@ -51,6 +51,8 @@ export const queryKeys = {
     couriers: {
         all: ['couriers'] as const,
         search: (searchText: string) => ['couriers', 'search', searchText] as const,
+        locations: (bounds: { minLng: number; minLat: number; maxLng: number; maxLat: number }) =>
+            ['couriers', 'locations', bounds] as const,
     },
     timeZones: {
         all: ['timeZones'] as const,
@@ -68,6 +70,9 @@ export const queryKeys = {
     },
     hereMaps: {
         apiKey: ['hereMaps', 'apiKey'] as const,
+    },
+    googleMaps: {
+        apiKey: ['googleMaps', 'apiKey'] as const,
     },
     recurringJobs: {
         all: ['recurringJobs'] as const,

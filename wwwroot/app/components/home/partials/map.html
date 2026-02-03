@@ -1,17 +1,17 @@
-<dispatch-map
-        class="full-height-map"
-        current-job="ctrl.currentJob"
-        jobs="ctrl.mapJobList"
-        map-center="ctrl.mapCenter"
-        map-zoom="ctrl.mapZoom"
-        on-marker-click="ctrl.selectJob(job)"
-        show-available-couriers="true"
-        clear-list-id="ctrl.clearListId"
-        on-envelope-update="ctrl.onEnvelopeUpdate(data)">
-</dispatch-map>
+<dispatch-map-react
+    class="full-height-map"
+    current-job="ctrl.currentJob"
+    jobs="ctrl.mapJobList"
+    map-center="ctrl.mapCenter"
+    map-zoom="ctrl.mapZoom"
+    on-marker-click="ctrl.selectJobFromMap(job)"
+    show-available-couriers="true"
+    clear-list-id="ctrl.clearListId"
+    on-envelope-update="ctrl.onEnvelopeUpdate(data)">
+</dispatch-map-react>
 
 <style>
-    dispatch-map {
+    dispatch-map-react {
         display: block;
         flex: 1;
         height: 100% !important;
@@ -23,37 +23,8 @@
         height: 100% !important;
     }
 
-    .dispatch-map-component {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        height: 100% !important;
-        width: 100%;
-    }
-
-    .dispatch-map-container {
-        height: 100% !important;
-    }
-
-    /* Fix for the Google Map container */
-    .map-wrapper,
-    ng-map,
-    .gm-style {
-        height: 100% !important;
-        width: 100% !important;
-    }
-
     /* Handle resize in progress */
     .box.resizable-dragging .box-content {
         pointer-events: none; /* Prevents map interaction during resize */
-    }
-
-    /* Add transition for smoother resizing */
-    .dispatch-map-component,
-    .dispatch-map-container,
-    .map-wrapper {
-        transition: height 0.1s ease;
     }
 </style>

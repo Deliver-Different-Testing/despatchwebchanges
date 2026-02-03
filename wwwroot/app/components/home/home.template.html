@@ -16,7 +16,9 @@
             on-settings-click="ctrl.openSettingsDialog($event)"
             date-filter-data="ctrl.dateFilterData"
             app-page="home"
-            on-date-filter-refresh="ctrl.refreshDataTimeSpan(dateFilterData)">
+            on-date-filter-refresh="ctrl.refreshDataTimeSpan(dateFilterData)"
+            on-create-new-job="ctrl.createNewJob($event)"
+            on-inter-courier-charge="ctrl.interCourierCharge($event)">
     </react-app-shell>
 
     <div ng-if="ctrl.isDataLoading">
@@ -348,15 +350,5 @@
     </div>
 
     <div id="draggingItems"></div>
-
-    <ul active-icon="close" effect="slidein" mfb-menu position="br" resting-icon="menu"
-        template-url="ng-mfb-menu-md.tpl.html" toggling-method="hover">
-        <mfb-button icon="add" label="Add New Job" ng-click="ctrl.createNewJob($event)"
-                    template-url="ng-mfb-button-md.tpl.html">
-        </mfb-button>
-        <mfb-button icon="attach_money" label="Inter-Courier Charge" ng-click="ctrl.interCourierCharge($event)"
-                    template-url="ng-mfb-button-md.tpl.html">
-        </mfb-button>
-    </ul>
 
 </md-content>

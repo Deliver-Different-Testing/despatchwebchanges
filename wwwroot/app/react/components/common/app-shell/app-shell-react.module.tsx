@@ -17,6 +17,7 @@ import {
     ViewsMenu,
     LayoutsMenu,
     DateFilterMenu,
+    ActionsMenu,
     View,
     Layout,
     DateFilterData,
@@ -62,6 +63,11 @@ export interface ToolbarActionsConfig {
         onRefreshData: (dateFilterData: DateFilterData) => void;
         onShowToast?: (message: string, type: 'success' | 'warning' | 'error') => void;
     };
+    // Actions Menu (Add New Job, Inter-Courier Charge)
+    actionsMenu?: {
+        onCreateNewJob: (event: React.MouseEvent) => void;
+        onInterCourierCharge: (event: React.MouseEvent) => void;
+    };
     // Custom children (for any other content)
     customContent?: React.ReactNode;
 }
@@ -91,6 +97,17 @@ function buildToolbarChildren(): React.ReactNode {
     if (!toolbarActions) return null;
 
     const elements: React.ReactNode[] = [];
+
+    // Actions menu (Add New Job, Inter-Courier Charge)
+    if (toolbarActions.actionsMenu) {
+        elements.push(
+            <ActionsMenu
+                key="actionsMenu"
+                onCreateNewJob={toolbarActions.actionsMenu.onCreateNewJob}
+                onInterCourierCharge={toolbarActions.actionsMenu.onInterCourierCharge}
+            />
+        );
+    }
 
     // Messages button
     if (toolbarActions.messages) {

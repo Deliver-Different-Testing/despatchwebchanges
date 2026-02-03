@@ -25,6 +25,9 @@ interface ReactAppShellScope extends angular.IScope {
     dateFilterData?: any;
     appPage?: string;
     onDateFilterRefresh?: (args: { dateFilterData: any }) => void;
+    // Actions menu
+    onCreateNewJob?: (event: { $event: MouseEvent }) => void;
+    onInterCourierCharge?: (event: { $event: MouseEvent }) => void;
 }
 
 function reactAppShellDirective(
@@ -57,6 +60,9 @@ function reactAppShellDirective(
             dateFilterData: '<?',
             appPage: '@?',
             onDateFilterRefresh: '&?',
+            // Actions menu
+            onCreateNewJob: '&?',
+            onInterCourierCharge: '&?',
         },
         template: '<div class="react-app-shell-container"></div>',
         link: function(
@@ -188,6 +194,22 @@ function reactAppShellDirective(
                         onClick: (event: MouseEvent) => {
                             scope.$apply(() => {
                                 scope.onSettingsClick!({ $event: event });
+                            });
+                        },
+                    };
+                }
+
+                // Actions menu (Add New Job, Inter-Courier Charge)
+                if (scope.onCreateNewJob && scope.onInterCourierCharge) {
+                    actions.actionsMenu = {
+                        onCreateNewJob: (event: MouseEvent) => {
+                            scope.$apply(() => {
+                                scope.onCreateNewJob!({ $event: event });
+                            });
+                        },
+                        onInterCourierCharge: (event: MouseEvent) => {
+                            scope.$apply(() => {
+                                scope.onInterCourierCharge!({ $event: event });
                             });
                         },
                     };

@@ -1359,6 +1359,35 @@ class HomeController extends BaseController {
         this.applyScope();
     }
 
+    /**
+     * Handle job selection from map marker click.
+     * Map items use jobId instead of id, so we need to look up the full job.
+     */
+    async selectJobFromMap(mapItem: IDispatchMapItem): Promise<void> {
+        if (!mapItem || !mapItem.jobId) {
+            console.warn('selectJobFromMap: Invalid map item', mapItem);
+            return;
+        }
+
+        // Try to find the job in our loaded list first
+        let job = this.jobList.find(j => j.id === mapItem.jobId);
+
+        // If not found in list, fetch from server
+        if (!job) {
+            try {
+                job = await this.DispatchData.getDispatchJobDetail(mapItem.jobId);
+            } catch (error) {
+                console.error('Error fetching job details for map selection:', error);
+                this.toastrService.showErrorToast('Error loading job details');
+                return;
+            }
+        }
+
+        if (job) {
+            await this.selectJob(job);
+        }
+    }
+
     private mapToDispatchMapItem(job: IDispatchJob): IDispatchMapItem {
         return {
             jobId: job.id,
