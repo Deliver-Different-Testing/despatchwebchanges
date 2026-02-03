@@ -1,9 +1,7 @@
 using System;
 using DespatchWeb.Models.Response;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Hosting;
 
 namespace DespatchWeb.Controllers;
 
@@ -14,7 +12,7 @@ namespace DespatchWeb.Controllers;
 /// </summary>
 [Authorize]
 [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-public class ConfigController(IWebHostEnvironment environment) : Controller
+public class ConfigController : Controller
 {
     [HttpGet]
     public IActionResult GetHereMapsKey()
@@ -30,17 +28,5 @@ public class ConfigController(IWebHostEnvironment environment) : Controller
         var appCode = Environment.GetEnvironmentVariable("HereMapsCode");
 
         return Json(new { appId, appCode });
-    }
-
-    [HttpGet]
-    public IActionResult GetGoogleMapsKey()
-    {
-        var apiKey = new ApiKeyResponse(
-            environment.IsDevelopment()
-            ? Environment.GetEnvironmentVariable("GoogleMapsDevKey")
-            : Environment.GetEnvironmentVariable("GoogleMapsKey")
-        );
-
-        return Json(apiKey);
     }
 }

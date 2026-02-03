@@ -15,11 +15,6 @@ class ConfigService implements angular.IServiceProvider {
         const response = await this.$http.get<ApiConfig>("/config/GetHereMapsKey");
         return response.data.apiKey;
     }
-    
-    async getGoogleMapsKey(): Promise<string> {
-        const response = await this.$http.get<ApiConfig>("/config/GetGoogleMapsKey");
-        return response.data.apiKey;
-    }
 }
 
 export default ConfigService;

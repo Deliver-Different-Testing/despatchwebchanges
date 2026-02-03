@@ -616,15 +616,13 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
     /// <summary>
     /// Gets the S3 folder names for a photo type (signatures/documents and photos).
     /// </summary>
-    private static string[] GetFoldersByPhotoType(JobPhotoType photoType)
-    {
-        return photoType switch
+    private static string[] GetFoldersByPhotoType(JobPhotoType photoType) =>
+        photoType switch
         {
             JobPhotoType.Delivery => ["DeliverySignatures", "DeliveryPhotos"],
             JobPhotoType.Pickup => ["PickupScannedDocuments", "PickupPhotos"],
             _ => throw new ArgumentOutOfRangeException(nameof(photoType), photoType, null)
         };
-    }
 
     /// <summary>
     /// Gets the appropriate upload folder based on photo type and whether it's a POD photo or signature.
@@ -638,9 +636,8 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
     /// <summary>
     /// Determines the MIME content type based on file extension.
     /// </summary>
-    private static string DetermineContentType(string fileExtension)
-    {
-        return fileExtension.ToLower() switch
+    private static string DetermineContentType(string fileExtension) =>
+        fileExtension.ToLower() switch
         {
             ".jpg" or ".jpeg" => "image/jpeg",
             ".png" => "image/png",
@@ -648,5 +645,4 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
             ".pdf" => "application/pdf",
             _ => "application/octet-stream" // Default content type
         };
-    }
 }

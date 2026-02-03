@@ -57,7 +57,7 @@ public class SecurityMiddlewareTests
                         headers.StrictTransportSecurity = "max-age=31536000; includeSubDomains";
                         headers.ContentSecurityPolicy =
                             "default-src 'self'; " +
-                            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com; " +
+                            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.api.here.com; " +
                             "img-src 'self' data: blob: https:; " +
                             "frame-ancestors 'none'; " +
                             "frame-src 'none'; " +

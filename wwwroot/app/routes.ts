@@ -527,16 +527,14 @@ class RouterConfig {
                     } catch {
                         console.warn('[ROUTES] Failed to load manifest for courierMap state, using fallback names');
                         return {
-                            'courierMap.js': 'courierMap.js',
-                            'courierMap.css': 'courierMap.css'
+                            'courierMap.js': 'courierMap.js'
                         };
                     }
                 }],
                 loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
                     const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
                     return $ocLazyLoad.load([
-                        getAssetPath('courierMap.js'),
-                        getAssetPath('courierMap.css')
+                        getAssetPath('courierMap.js')
                     ]);
                 }]
             },
