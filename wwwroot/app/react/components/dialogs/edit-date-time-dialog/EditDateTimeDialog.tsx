@@ -146,6 +146,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
             slotProps: {
                 textField: {
                     fullWidth: true,
+                    autoFocus: true,
                     sx: { '& .MuiOutlinedInput-root': { bgcolor: 'white' } },
                 },
             },
@@ -188,6 +189,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                 onClose={onClose}
                 maxWidth="sm"
                 fullWidth
+                disableEnforceFocus
                 PaperProps={{
                     elevation: 24,
                     sx: {
@@ -257,6 +259,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                                         slotProps={{
                                             textField: {
                                                 fullWidth: true,
+                                                autoFocus: true,
                                                 sx: { '& .MuiOutlinedInput-root': { bgcolor: 'white' } },
                                             },
                                         }}

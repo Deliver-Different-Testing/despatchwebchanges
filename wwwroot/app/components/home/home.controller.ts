@@ -2257,6 +2257,7 @@ class HomeController extends BaseController {
 
         // Clear the selected clear list and status filter
         this.selectedClearListId = undefined;
+        this.clearListId = undefined;
         this.queryParams.statusFilter = undefined;
         this.defaultJobCategory = undefined; // Reset job list UI category
 

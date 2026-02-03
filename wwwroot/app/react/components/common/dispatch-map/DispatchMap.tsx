@@ -34,6 +34,7 @@ export function DispatchMap({
     const jobMarkerManagerRef = useRef<JobMarkerManager | null>(null);
     const courierMarkerManagerRef = useRef<DispatchCourierMarkerManager | null>(null);
     const uiRef = useRef<any>(null);
+    const mapInstanceRef = useRef<any>(null);
 
     // Map preferences (auto zoom, couriers only, etc.)
     const {
@@ -62,6 +63,11 @@ export function DispatchMap({
         zoom: mapZoom,
         onMapReady: handleMapReady,
     });
+
+    // Keep map ref in sync for use in async callbacks
+    useEffect(() => {
+        mapInstanceRef.current = map;
+    }, [map]);
 
     // Get map bounds for courier query
     const getMapBounds = useCallback(() => {
@@ -226,10 +232,16 @@ export function DispatchMap({
 
     // Fetch and apply envelope when clearListId changes
     useEffect(() => {
-        if (!clearListId || !map || !isReady) return;
+        if (!clearListId || !isReady) return;
+
+        const currentMap = mapInstanceRef.current;
+        if (!currentMap) return;
 
         getClearListEnvelope(clearListId)
             .then((envelope) => {
+                // Re-check map is still available (component might have unmounted)
+                if (!mapInstanceRef.current) return;
+
                 // Create bounds rectangle (top, left, bottom, right)
                 const bounds = new H.geo.Rect(
                     envelope.maximumLatitude,
@@ -239,7 +251,7 @@ export function DispatchMap({
                 );
 
                 // Fit map to the envelope bounds
-                map.getViewModel().setLookAtData({
+                mapInstanceRef.current.getViewModel().setLookAtData({
                     bounds: bounds,
                 });
 
@@ -249,7 +261,7 @@ export function DispatchMap({
             .catch((error) => {
                 console.error('Failed to fetch clearlist envelope:', error);
             });
-    }, [clearListId, map, isReady, onEnvelopeUpdate]);
+    }, [clearListId, isReady]);
 
     // Update marker click callback when it changes
     useEffect(() => {
