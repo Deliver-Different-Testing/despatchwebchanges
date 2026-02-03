@@ -296,16 +296,18 @@ export class DispatchCourierMarkerManager {
 
     /**
      * Create flag SVG with colored background based on status
+     * Sizing matches old Google Maps implementation: 36px min width, 12px height flag, 10px font
      */
     private createFlagSvg(displayText: string, courier: IAvailableCourierPosition): string {
         const colors = this.getLabelColors(courier);
         const escapedText = this.escapeHtml(displayText);
-        const textWidth = Math.min(displayText.length * 7 + 16, 200);
+        // Old sizing: 36px minimum width, variable for longer text
+        const textWidth = Math.max(36, Math.min(displayText.length * 6 + 8, 200));
 
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${textWidth + 10}" height="44" viewBox="0 0 ${textWidth + 10} 44">
-            <rect x="0" y="0" width="8" height="44" fill="#333333"/>
-            <rect x="8" y="4" width="${textWidth}" height="20" rx="2" ry="2" fill="${colors.bg}" stroke="#333333" stroke-width="1"/>
-            <text x="${8 + textWidth / 2}" y="18" font-family="Arial,sans-serif" font-size="11" font-weight="bold" fill="${colors.text}" text-anchor="middle">${escapedText}</text>
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${textWidth + 10}" height="40" viewBox="0 0 ${textWidth + 10} 40">
+            <rect x="0" y="0" width="8" height="40" fill="#333333"/>
+            <rect x="8" y="2" width="${textWidth}" height="14" rx="1" ry="1" fill="${colors.bg}" stroke="#333333" stroke-width="1"/>
+            <text x="${8 + textWidth / 2}" y="12" font-family="Arial,sans-serif" font-size="10" font-weight="normal" fill="${colors.text}" text-anchor="middle">${escapedText}</text>
         </svg>`;
     }
 
