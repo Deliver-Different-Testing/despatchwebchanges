@@ -46,7 +46,7 @@ export async function getAvailableCourierLocations(
  * Get envelope (bounding box) for a clearlist area
  */
 export async function getClearListEnvelope(clearListId: number): Promise<ClearListEnvelopeData> {
-    return apiClient.get<ClearListEnvelopeData>('courier/DriverDestinationEnvelope', {
+    return apiClient.get<ClearListEnvelopeData>('courier/ClearListEnvelope', {
         clearListId,
     });
 }

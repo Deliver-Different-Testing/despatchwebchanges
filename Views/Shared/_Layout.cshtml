@@ -149,15 +149,15 @@
 
     <script>
         (function() {
-            var resourcesLoaded = false;
-            var angularReady = false;
-            
+            let resourcesLoaded = false;
+            let angularReady = false;
+
             setTimeout(function() {
                 hideLoader();
             }, 15000);
 
             function hideLoader() {
-                var loaderElement = document.getElementById('appLoader');
+                const loaderElement = document.getElementById('appLoader');
                 if (loaderElement && !loaderElement.classList.contains('hidden')) {
                     loaderElement.classList.add('hidden');
 
@@ -176,7 +176,7 @@
                 }
             });
 
-            window.angular.module('uDispatch').run(['$timeout', function($timeout) {
+            window.angular.module('uDispatch').run(['$timeout', $timeout => {
                 $timeout(function() {
                     angularReady = true;
                     if (resourcesLoaded) {

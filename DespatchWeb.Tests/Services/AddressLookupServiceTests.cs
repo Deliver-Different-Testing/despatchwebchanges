@@ -40,7 +40,7 @@ public class AddressLookupServiceTests
     [InlineData("")]
     [InlineData("  ")]
     [InlineData("ab")]
-    public async Task AutocompleteAddressSearchAsync_InvalidText_ReturnsEmptyList(string text)
+    public async Task AutocompleteAddressSearchAsync_InvalidText_ReturnsEmptyList(string? text)
     {
         // Arrange
         var service = CreateService();
@@ -85,7 +85,7 @@ public class AddressLookupServiceTests
             "SendAsync",
             Times.Once(),
             ItExpr.Is<HttpRequestMessage>(req =>
-                req.RequestUri.ToString().Contains("countryCode%3AUSA")),
+                req.RequestUri != null && req.RequestUri.ToString().Contains("countryCode%3AUSA")),
             ItExpr.IsAny<CancellationToken>());
     }
 
@@ -105,7 +105,7 @@ public class AddressLookupServiceTests
             "SendAsync",
             Times.Once(),
             ItExpr.Is<HttpRequestMessage>(req =>
-                req.RequestUri.ToString().Contains("countryCode%3ANZL")),
+                req.RequestUri != null && req.RequestUri.ToString().Contains("countryCode%3ANZL")),
             ItExpr.IsAny<CancellationToken>());
     }
 

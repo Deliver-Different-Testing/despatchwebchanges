@@ -94,7 +94,7 @@ export function useHereMap({
                 ui.removeControl('zoom');
                 behavior.disable(H.mapevents.Behavior.Feature.FRACTIONAL_ZOOM);
                 const zoomControl = new H.ui.ZoomControl({ fractionalZoom: false });
-                ui.addControl('zoom', zoomControl);
+                ui.addControl('zoom', zoomControl, H.ui.LayoutAlignment.RIGHT_TOP);
 
                 // Handle resize
                 window.addEventListener('resize', () => {
