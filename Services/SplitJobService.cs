@@ -53,32 +53,39 @@ public class SplitJobService(
                           .FirstOrDefaultAsync(j => j.UcjbId == jobId)
                       ?? throw new InvalidOperationException($"Job {jobId} not found");
 
-            // Validate the job can be split
-            if (job.ParentId.HasValue && job.ParentId != job.UcjbId)
-                throw new InvalidOperationException($"Job {jobId} is already a child job and cannot be split");
-
-            // Check if job has children (already been split)
-            var hasChildren = await context.TucJobs
-                .AnyAsync(j => j.ParentId == jobId && j.UcjbId != jobId);
-            if (hasChildren)
-                throw new InvalidOperationException($"Job {jobId} has child jobs and cannot be split");
+            // Validate the job can be split - only restriction is flight assignment
+            var hasFlightAssigned = await context.TucJobNationwides
+                .AnyAsync(n => n.UcnwJobId == jobId);
+            if (hasFlightAssigned)
+                throw new InvalidOperationException($"Job {jobId} has flights assigned and cannot be split");
 
             // Validate and get a valid speed ID
             var validSpeedId = await GetValidSpeedIdAsync(context, job.UcjbSpeed);
 
-            // Generate child job numbers
-            var pickupJobNumber = GenerateChildJobNumber(job.UcjbNumber, 1);
-            var deliveryJobNumber = GenerateChildJobNumber(job.UcjbNumber, 2);
+            // Generate child job numbers using letter suffixes
+            var (pickupJobNumber, deliveryJobNumber) = await GenerateChildJobNumbersAsync(context, job);
 
             // Capture original courier ID before modifying parent
             var originalCourierId = job.UcjbCourierId;
 
-            // Update parent job
+            // Determine root parent ID - preserve existing if job is already a child
+            var rootParentId = job.RootParentId ?? job.UcjbId;
+
+            // Update parent job (only set parent IDs if not already set)
             job.JobRelationshipTypeId = parentRelTypeId;
             job.UcjbCourierId = parentJobCourierId;
-            job.ParentId = jobId;
-            job.RootParentId = jobId;
-            job.InformationParentId = jobId;
+            if (!job.ParentId.HasValue || job.ParentId == job.UcjbId)
+            {
+                job.ParentId = jobId;
+            }
+            if (!job.RootParentId.HasValue)
+            {
+                job.RootParentId = jobId;
+            }
+            if (!job.InformationParentId.HasValue)
+            {
+                job.InformationParentId = job.RootParentId;
+            }
 
             // Create pickup job (leg 1: From → Meeting Point)
             var pickupJob = CreatePickupJob(job, pickupJobNumber, validSpeedId, childRelTypeId,
@@ -94,14 +101,16 @@ public class SplitJobService(
             await context.SaveChangesAsync();
 
             // Update child job relationships after we have their IDs
+            // Child jobs point to the job being split as their ParentId
+            // All children share the same RootParentId
             pickupJob.ParentId = jobId;
-            pickupJob.RootParentId = jobId;
-            pickupJob.InformationParentId = jobId;
+            pickupJob.RootParentId = rootParentId;
+            pickupJob.InformationParentId = rootParentId;
             pickupJob.Sequence = 1;
 
             deliveryJob.ParentId = jobId;
-            deliveryJob.RootParentId = jobId;
-            deliveryJob.InformationParentId = jobId;
+            deliveryJob.RootParentId = rootParentId;
+            deliveryJob.InformationParentId = rootParentId;
             deliveryJob.Sequence = 2;
 
             // Set status for pickup job based on whether courier is assigned
@@ -125,7 +134,7 @@ public class SplitJobService(
             await ConsolidateMarsInformationAsync(context, jobId, userName);
 
             // Update display in dispatch
-            await UpdateJobDisplayInDespatchAsync(context, jobId);
+            await UpdateJobDisplayInDespatchAsync(context, rootParentId);
 
             await transaction.CommitAsync();
 
@@ -167,29 +176,35 @@ public class SplitJobService(
                                  .FirstOrDefaultAsync(j => j.UcbkId == jobBookingId)
                              ?? throw new InvalidOperationException($"Job booking {jobBookingId} not found");
 
-            // Validate the job can be split
-            if (jobBooking.ParentId.HasValue && jobBooking.ParentId != jobBooking.UcbkId)
-                throw new InvalidOperationException(
-                    $"Job booking {jobBookingId} is already a child job and cannot be split");
-
-            // Check if job booking has children (already been split)
-            var hasChildren = await context.TucJobBookings
-                .AnyAsync(j => j.ParentId == jobBookingId && j.UcbkId != jobBookingId);
-            if (hasChildren)
-                throw new InvalidOperationException($"Job booking {jobBookingId} has child jobs and cannot be split");
+            // Validate the job booking can be split - only restriction is flight assignment
+            var hasFlightAssigned = await context.TucJobNationwides
+                .AnyAsync(n => n.JobBookingId == jobBookingId);
+            if (hasFlightAssigned)
+                throw new InvalidOperationException($"Job booking {jobBookingId} has flights assigned and cannot be split");
 
             // Validate and get a valid speed ID
             var validSpeedId = await GetValidSpeedIdAsync(context, jobBooking.UcbkSpeed);
 
-            // Generate child job numbers
-            var pickupJobNumber = GenerateChildJobNumber(jobBooking.UcbkJobNumber, 1);
-            var deliveryJobNumber = GenerateChildJobNumber(jobBooking.UcbkJobNumber, 2);
+            // Generate child job numbers using letter suffixes
+            var (pickupJobNumber, deliveryJobNumber) = await GenerateChildJobNumbersAsync(context, jobBooking);
 
-            // Update parent job booking
+            // Determine root parent ID - preserve existing if booking is already a child
+            var rootParentId = jobBooking.BookingRootParentId ?? jobBooking.UcbkId;
+
+            // Update parent job booking (only set parent IDs if not already set)
             jobBooking.JobRelationshipTypeId = parentRelTypeId;
-            jobBooking.ParentId = jobBookingId;
-            jobBooking.BookingRootParentId = jobBookingId;
-            jobBooking.BookingInformationParentId = jobBookingId;
+            if (!jobBooking.ParentId.HasValue || jobBooking.ParentId == jobBooking.UcbkId)
+            {
+                jobBooking.ParentId = jobBookingId;
+            }
+            if (!jobBooking.BookingRootParentId.HasValue)
+            {
+                jobBooking.BookingRootParentId = jobBookingId;
+            }
+            if (!jobBooking.BookingInformationParentId.HasValue)
+            {
+                jobBooking.BookingInformationParentId = jobBooking.BookingRootParentId;
+            }
 
             // Create pickup job booking
             var pickupJobBooking = CreatePickupJobBooking(jobBooking, pickupJobNumber, validSpeedId, childRelTypeId,
@@ -204,13 +219,15 @@ public class SplitJobService(
             await context.SaveChangesAsync();
 
             // Update child job relationships
+            // Child bookings point to the booking being split as their ParentId
+            // All children share the same BookingRootParentId
             pickupJobBooking.ParentId = jobBookingId;
-            pickupJobBooking.BookingRootParentId = jobBookingId;
-            pickupJobBooking.BookingInformationParentId = jobBookingId;
+            pickupJobBooking.BookingRootParentId = rootParentId;
+            pickupJobBooking.BookingInformationParentId = rootParentId;
 
             deliveryJobBooking.ParentId = jobBookingId;
-            deliveryJobBooking.BookingRootParentId = jobBookingId;
-            deliveryJobBooking.BookingInformationParentId = jobBookingId;
+            deliveryJobBooking.BookingRootParentId = rootParentId;
+            deliveryJobBooking.BookingInformationParentId = rootParentId;
 
             await context.SaveChangesAsync();
 
@@ -289,8 +306,96 @@ public class SplitJobService(
         return fallbackSpeed;
     }
 
-    private static string GenerateChildJobNumber(string parentJobNumber, int childIndex) =>
-        $"{parentJobNumber}-{childIndex}";
+    /// <summary>
+    /// Converts a 0-based index to Excel-style letter suffix (0=A, 25=Z, 26=AA, 27=AB, etc.)
+    /// </summary>
+    public static string GetLetterSuffix(int index)
+    {
+        var result = string.Empty;
+        var n = index;
+
+        do
+        {
+            result = (char)('A' + (n % 26)) + result;
+            n = (n / 26) - 1;
+        } while (n >= 0);
+
+        return result;
+    }
+
+    /// <summary>
+    /// Generates child job numbers using letter suffixes based on total split count from root job.
+    /// </summary>
+    private async Task<(string PickupJobNumber, string DeliveryJobNumber)> GenerateChildJobNumbersAsync(
+        DespatchContext context,
+        TucJob job)
+    {
+        // Find root parent ID - use existing RootParentId if present, otherwise this job is the root
+        var rootParentId = job.RootParentId ?? job.UcjbId;
+
+        // Get the main job number from the root parent
+        string mainJobNumber;
+        if (rootParentId == job.UcjbId)
+        {
+            mainJobNumber = job.UcjbNumber;
+        }
+        else
+        {
+            mainJobNumber = await context.TucJobs
+                .AsNoTracking()
+                .Where(j => j.UcjbId == rootParentId)
+                .Select(j => j.UcjbNumber)
+                .FirstOrDefaultAsync() ?? job.UcjbNumber;
+        }
+
+        // Count all existing descendants under the root (excluding the root itself)
+        var existingChildCount = await context.TucJobs
+            .AsNoTracking()
+            .CountAsync(j => j.RootParentId == rootParentId && j.UcjbId != rootParentId);
+
+        // Generate letter suffixes for the two new jobs
+        var pickupSuffix = GetLetterSuffix(existingChildCount);
+        var deliverySuffix = GetLetterSuffix(existingChildCount + 1);
+
+        return ($"{mainJobNumber}{pickupSuffix}", $"{mainJobNumber}{deliverySuffix}");
+    }
+
+    /// <summary>
+    /// Generates child job booking numbers using letter suffixes based on total split count from root booking.
+    /// </summary>
+    private async Task<(string PickupJobNumber, string DeliveryJobNumber)> GenerateChildJobNumbersAsync(
+        DespatchContext context,
+        TucJobBooking jobBooking)
+    {
+        // Find root parent ID - use existing BookingRootParentId if present, otherwise this booking is the root
+        var rootParentId = jobBooking.BookingRootParentId ?? jobBooking.UcbkId;
+
+        // Get the main job number from the root parent
+        string mainJobNumber;
+        if (rootParentId == jobBooking.UcbkId)
+        {
+            mainJobNumber = jobBooking.UcbkJobNumber;
+        }
+        else
+        {
+            mainJobNumber = await context.TucJobBookings
+                .AsNoTracking()
+                .Where(j => j.UcbkId == rootParentId)
+                .Select(j => j.UcbkJobNumber)
+                .FirstOrDefaultAsync() ?? jobBooking.UcbkJobNumber;
+        }
+
+        // Count all existing descendants under the root (excluding the root itself)
+        var existingChildCount = await context.TucJobBookings
+            .AsNoTracking()
+            .CountAsync(j => j.BookingRootParentId == rootParentId && j.UcbkId != rootParentId);
+
+        // Generate letter suffixes for the two new jobs
+        var pickupSuffix = GetLetterSuffix(existingChildCount);
+        var deliverySuffix = GetLetterSuffix(existingChildCount + 1);
+
+        return ($"{mainJobNumber}{pickupSuffix}", $"{mainJobNumber}{deliverySuffix}");
+    }
 
     private static TucJob CreatePickupJob(
         TucJob parentJob,

@@ -241,8 +241,9 @@ public class SplitJobServiceTests : IDisposable
             var pickupJob = await context.TucJobs.FindAsync(pickupJobId);
             var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId);
 
-            pickupJob!.UcjbNumber.Should().Be("JOB-001-1");
-            deliveryJob!.UcjbNumber.Should().Be("JOB-001-2");
+            // First split creates A and B suffixes
+            pickupJob!.UcjbNumber.Should().Be("JOB-001A");
+            deliveryJob!.UcjbNumber.Should().Be("JOB-001B");
         }
     }
 
@@ -480,13 +481,16 @@ public class SplitJobServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task SplitJobAsync_JobIsAlreadyChild_ThrowsInvalidOperationException()
+    public async Task SplitJobAsync_ChildJob_SuccessfullySplits()
     {
-        // Arrange
+        // Arrange - Create a parent job with a child job that we'll split
         await using (var context = CreateContext())
         {
             var parentJob = CreateTestJob(1, "PARENT-001");
-            var childJob = CreateTestJob(2, "CHILD-001", parentId: 1);
+            parentJob.ParentId = 1;
+            parentJob.RootParentId = 1;
+            var childJob = CreateTestJob(2, "PARENT-001A", parentId: 1);
+            childJob.RootParentId = 1;
             context.TucJobs.AddRange(parentJob, childJob);
             await context.SaveChangesAsync();
         }
@@ -494,12 +498,26 @@ public class SplitJobServiceTests : IDisposable
         var service = CreateService();
         var meetingPoint = CreateTestMeetingPointAddress();
 
-        // Act
-        var act = async () => await service.SplitJobAsync(2, "TestUser", meetingPoint);
+        // Act - Split the child job
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(2, "TestUser", meetingPoint);
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*already a child job*");
+        pickupJobId.Should().BeGreaterThan(0);
+        deliveryJobId.Should().BeGreaterThan(0);
+
+        await using (var context = CreateContext())
+        {
+            var pickupJob = await context.TucJobs.FindAsync(pickupJobId);
+            var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId);
+
+            // Both new jobs should have the child job (2) as their ParentId
+            pickupJob!.ParentId.Should().Be(2);
+            deliveryJob!.ParentId.Should().Be(2);
+
+            // Both should share the original root parent
+            pickupJob.RootParentId.Should().Be(1);
+            deliveryJob.RootParentId.Should().Be(1);
+        }
     }
 
     [Fact]
@@ -528,16 +546,28 @@ public class SplitJobServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task SplitJobAsync_JobHasChildren_ThrowsInvalidOperationException()
+    public async Task SplitJobAsync_JobWithFlightAssigned_ThrowsInvalidOperationException()
     {
-        // Arrange - Create a parent job with existing children
+        // Arrange - Create a job with a flight assigned
         await using (var context = CreateContext())
         {
-            var parentJob = CreateTestJob(1, "PARENT-001");
-            parentJob.ParentId = 1; // Self-referencing parent
-            var childJob1 = CreateTestJob(2, "PARENT-001-1", parentId: 1);
-            var childJob2 = CreateTestJob(3, "PARENT-001-2", parentId: 1);
-            context.TucJobs.AddRange(parentJob, childJob1, childJob2);
+            var job = CreateTestJob(1, "JOB-001");
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync();
+
+            // Add a flight assignment
+            context.TucJobNationwides.Add(new TucJobNationwide
+            {
+                UcnwJobId = 1,
+                UcnwJobNumber = "JOB-001",
+                UcnwClientId = 1,
+                UcnwDestinationId = 1,
+                UcnwItb = 0,
+                UcnwPickUpJobId = 0,
+                UcnwDeliveryJobId = 0,
+                UcnwAirportOnly = false,
+                UcnwLegNumber = 1
+            });
             await context.SaveChangesAsync();
         }
 
@@ -549,7 +579,45 @@ public class SplitJobServiceTests : IDisposable
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*has child jobs*cannot be split*");
+            .WithMessage("*has flights assigned*cannot be split*");
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_JobWithExistingChildren_CanStillBeSplit()
+    {
+        // Arrange - Create a parent job with existing children
+        await using (var context = CreateContext())
+        {
+            var parentJob = CreateTestJob(1, "PARENT-001");
+            parentJob.ParentId = 1;
+            parentJob.RootParentId = 1;
+            var childJob1 = CreateTestJob(2, "PARENT-001A", parentId: 1);
+            childJob1.RootParentId = 1;
+            var childJob2 = CreateTestJob(3, "PARENT-001B", parentId: 1);
+            childJob2.RootParentId = 1;
+            context.TucJobs.AddRange(parentJob, childJob1, childJob2);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act - Split the parent job again (this should now be allowed)
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
+
+        // Assert
+        pickupJobId.Should().BeGreaterThan(0);
+        deliveryJobId.Should().BeGreaterThan(0);
+
+        await using (var context = CreateContext())
+        {
+            var pickupJob = await context.TucJobs.FindAsync(pickupJobId);
+            var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId);
+
+            // New jobs should have letter suffixes continuing from existing children
+            pickupJob!.UcjbNumber.Should().Be("PARENT-001C");
+            deliveryJob!.UcjbNumber.Should().Be("PARENT-001D");
+        }
     }
 
     #endregion
@@ -676,8 +744,9 @@ public class SplitJobServiceTests : IDisposable
 
             pickupBooking.Should().NotBeNull();
             deliveryBooking.Should().NotBeNull();
-            pickupBooking.UcbkJobNumber.Should().Be("BOOK-001-1");
-            deliveryBooking.UcbkJobNumber.Should().Be("BOOK-001-2");
+            // First split creates A and B suffixes
+            pickupBooking.UcbkJobNumber.Should().Be("BOOK-001A");
+            deliveryBooking.UcbkJobNumber.Should().Be("BOOK-001B");
         }
     }
 
@@ -764,13 +833,16 @@ public class SplitJobServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task SplitJobBookingAsync_BookingIsAlreadyChild_ThrowsInvalidOperationException()
+    public async Task SplitJobBookingAsync_ChildBooking_SuccessfullySplits()
     {
-        // Arrange
+        // Arrange - Create a parent booking with a child booking that we'll split
         await using (var context = CreateContext())
         {
             var parentBooking = CreateTestJobBooking(1, "PARENT-001");
-            var childBooking = CreateTestJobBooking(2, "CHILD-001", parentId: 1);
+            parentBooking.ParentId = 1;
+            parentBooking.BookingRootParentId = 1;
+            var childBooking = CreateTestJobBooking(2, "PARENT-001A", parentId: 1);
+            childBooking.BookingRootParentId = 1;
             context.TucJobBookings.AddRange(parentBooking, childBooking);
             await context.SaveChangesAsync();
         }
@@ -778,25 +850,51 @@ public class SplitJobServiceTests : IDisposable
         var service = CreateService();
         var meetingPoint = CreateTestMeetingPointAddress();
 
-        // Act
-        var act = async () => await service.SplitJobBookingAsync(2, "TestUser", meetingPoint);
+        // Act - Split the child booking
+        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(2, "TestUser", meetingPoint);
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*already a child job*");
+        pickupId.Should().BeGreaterThan(0);
+        deliveryId.Should().BeGreaterThan(0);
+
+        await using (var context = CreateContext())
+        {
+            var pickupBooking = await context.TucJobBookings.FindAsync(pickupId);
+            var deliveryBooking = await context.TucJobBookings.FindAsync(deliveryId);
+
+            // Both new bookings should have the child booking (2) as their ParentId
+            pickupBooking!.ParentId.Should().Be(2);
+            deliveryBooking!.ParentId.Should().Be(2);
+
+            // Both should share the original root parent
+            pickupBooking.BookingRootParentId.Should().Be(1);
+            deliveryBooking.BookingRootParentId.Should().Be(1);
+        }
     }
 
     [Fact]
-    public async Task SplitJobBookingAsync_BookingHasChildren_ThrowsInvalidOperationException()
+    public async Task SplitJobBookingAsync_BookingWithFlightAssigned_ThrowsInvalidOperationException()
     {
-        // Arrange - Create a parent booking with existing children
+        // Arrange - Create a booking with a flight assigned
         await using (var context = CreateContext())
         {
-            var parentBooking = CreateTestJobBooking(1, "PARENT-001");
-            parentBooking.ParentId = 1; // Self-referencing parent
-            var childBooking1 = CreateTestJobBooking(2, "PARENT-001-1", parentId: 1);
-            var childBooking2 = CreateTestJobBooking(3, "PARENT-001-2", parentId: 1);
-            context.TucJobBookings.AddRange(parentBooking, childBooking1, childBooking2);
+            var booking = CreateTestJobBooking(1, "BOOK-001");
+            context.TucJobBookings.Add(booking);
+            await context.SaveChangesAsync();
+
+            // Add a flight assignment
+            context.TucJobNationwides.Add(new TucJobNationwide
+            {
+                JobBookingId = 1,
+                UcnwJobNumber = "BOOK-001",
+                UcnwClientId = 1,
+                UcnwDestinationId = 1,
+                UcnwItb = 0,
+                UcnwPickUpJobId = 0,
+                UcnwDeliveryJobId = 0,
+                UcnwAirportOnly = false,
+                UcnwLegNumber = 1
+            });
             await context.SaveChangesAsync();
         }
 
@@ -808,7 +906,7 @@ public class SplitJobServiceTests : IDisposable
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*has child jobs*cannot be split*");
+            .WithMessage("*has flights assigned*cannot be split*");
     }
 
     #endregion
@@ -1294,6 +1392,67 @@ public class SplitJobServiceTests : IDisposable
             deliveryBooking!.PickupAddressLine1.Should().Be(meetingPoint.AddressLine1);
             deliveryBooking.PickupAddressLine5.Should().Be(meetingPoint.AddressLine5);
             deliveryBooking.PickupAddressLine7.Should().Be(meetingPoint.AddressLine7);
+        }
+    }
+
+    #endregion
+
+    #region GetLetterSuffix Tests
+
+    [Theory]
+    [InlineData(0, "A")]
+    [InlineData(1, "B")]
+    [InlineData(25, "Z")]
+    [InlineData(26, "AA")]
+    [InlineData(27, "AB")]
+    [InlineData(51, "AZ")]
+    [InlineData(52, "BA")]
+    [InlineData(701, "ZZ")]
+    [InlineData(702, "AAA")]
+    public void GetLetterSuffix_VariousIndices_ReturnsCorrectLetters(int index, string expected)
+    {
+        // Act
+        var result = SplitJobService.GetLetterSuffix(index);
+
+        // Assert
+        result.Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_MultipleGenerations_CorrectLetterSequence()
+    {
+        // Arrange - Create a job with existing children A and B
+        await using (var context = CreateContext())
+        {
+            var rootJob = CreateTestJob(1, "JOB-001");
+            rootJob.ParentId = 1;
+            rootJob.RootParentId = 1;
+
+            var childA = CreateTestJob(2, "JOB-001A", parentId: 1);
+            childA.RootParentId = 1;
+
+            var childB = CreateTestJob(3, "JOB-001B", parentId: 1);
+            childB.RootParentId = 1;
+
+            context.TucJobs.AddRange(rootJob, childA, childB);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act - Split child A (should create C and D)
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(2, "TestUser", meetingPoint);
+
+        // Assert
+        await using (var context = CreateContext())
+        {
+            var pickupJob = await context.TucJobs.FindAsync(pickupJobId);
+            var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId);
+
+            // Should continue with C and D based on existing children count under root
+            pickupJob!.UcjbNumber.Should().Be("JOB-001C");
+            deliveryJob!.UcjbNumber.Should().Be("JOB-001D");
         }
     }
 

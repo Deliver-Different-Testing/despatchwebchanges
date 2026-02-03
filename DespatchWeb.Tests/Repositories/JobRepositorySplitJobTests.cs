@@ -24,6 +24,10 @@ public class JobRepositorySplitJobTests : IDisposable
         _connection = new SqliteConnection("DataSource=:memory:");
         _connection.Open();
 
+        // Register SQL Server functions that SQLite doesn't have
+        _connection.CreateFunction("getdate", () => DateTime.Now);
+        _connection.CreateFunction("getutcdate", () => DateTime.UtcNow);
+
         using (var command = _connection.CreateCommand())
         {
             command.CommandText = "PRAGMA foreign_keys = OFF;";
@@ -66,8 +70,9 @@ public class JobRepositorySplitJobTests : IDisposable
     }
 
     [Fact]
-    public async Task CanJobBeSplitAsync_ChildJob_ReturnsFalse()
+    public async Task CanJobBeSplitAsync_ChildJob_ReturnsTrue()
     {
+        // Child jobs can now be split (unless they have flights assigned)
         _context.TucJobs.AddRange(
             new TucJob { UcjbId = 100, UcjbNumber = "PARENT" },
             new TucJob { UcjbId = 101, UcjbNumber = "CHILD", ParentId = 100 }
@@ -76,7 +81,7 @@ public class JobRepositorySplitJobTests : IDisposable
 
         var result = await CreateRepository().CanJobBeSplitAsync(101);
 
-        result.Should().BeFalse();
+        result.Should().BeTrue();
     }
 
     [Fact]
@@ -87,13 +92,38 @@ public class JobRepositorySplitJobTests : IDisposable
     }
 
     [Fact]
-    public async Task CanJobBeSplitAsync_JobWithChildren_ReturnsFalse()
+    public async Task CanJobBeSplitAsync_JobWithChildren_ReturnsTrue()
     {
+        // Jobs with children can now be split (unless they have flights assigned)
         _context.TucJobs.AddRange(
             new TucJob { UcjbId = 100, UcjbNumber = "PARENT", ParentId = 100 }, // Self-referencing parent
             new TucJob { UcjbId = 101, UcjbNumber = "CHILD-1", ParentId = 100 },
             new TucJob { UcjbId = 102, UcjbNumber = "CHILD-2", ParentId = 100 }
         );
+        await _context.SaveChangesAsync();
+
+        var result = await CreateRepository().CanJobBeSplitAsync(100);
+
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CanJobBeSplitAsync_JobWithFlightAssigned_ReturnsFalse()
+    {
+        // Jobs with flights assigned cannot be split
+        _context.TucJobs.Add(new TucJob { UcjbId = 100, UcjbNumber = "JOB-FLIGHT" });
+        _context.TucJobNationwides.Add(new TucJobNationwide
+        {
+            UcnwJobId = 100,
+            UcnwJobNumber = "JOB-FLIGHT",
+            UcnwClientId = 1,
+            UcnwDestinationId = 1,
+            UcnwItb = 0,
+            UcnwPickUpJobId = 0,
+            UcnwDeliveryJobId = 0,
+            UcnwAirportOnly = false,
+            UcnwLegNumber = 1
+        });
         await _context.SaveChangesAsync();
 
         var result = await CreateRepository().CanJobBeSplitAsync(100);

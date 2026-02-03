@@ -173,7 +173,7 @@ describe('courierApi', () => {
 
             const result = await getClearListEnvelope(123);
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('courier/DriverDestinationEnvelope', {
+            expect(mockApiClient.get).toHaveBeenCalledWith('courier/ClearListEnvelope', {
                 clearListId: 123,
             });
             expect(result).toEqual(mockEnvelope);
@@ -197,7 +197,7 @@ describe('courierApi', () => {
 
             const result = await courierApi.getClearListEnvelope(789);
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('courier/DriverDestinationEnvelope', {
+            expect(mockApiClient.get).toHaveBeenCalledWith('courier/ClearListEnvelope', {
                 clearListId: 789,
             });
             expect(result).toEqual(mockEnvelope);

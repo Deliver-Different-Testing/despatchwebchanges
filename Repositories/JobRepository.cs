@@ -1847,7 +1847,8 @@ public partial class JobRepository(
 
     /// <summary>
     /// Checks if a job can be split.
-    /// A job can be split if it has no parent (is not already a child job) and has no children.
+    /// A job can be split if it has no flights assigned via TucJobNationwides.
+    /// Child jobs can now be split.
     /// </summary>
     /// <param name="jobId">The job ID to check.</param>
     /// <returns>True if the job can be split, false otherwise.</returns>
@@ -1855,19 +1856,13 @@ public partial class JobRepository(
     {
         var job = await Context.TucJobs
             .AsNoTracking()
+            .Include(j => j.TucJobNationwides)
             .FirstOrDefaultAsync(j => j.UcjbId == jobId);
 
         if (job == null) return false;
 
-        // Cannot split a child job (has parent that is not itself)
-        if (job.ParentId.HasValue && job.ParentId != job.UcjbId)
-            return false;
-
-        // Cannot split a job that already has children
-        var hasChildren = await Context.TucJobs
-            .AnyAsync(j => j.ParentId == jobId && j.UcjbId != jobId);
-
-        return !hasChildren;
+        // Only restriction: cannot split jobs with flights assigned
+        return !job.TucJobNationwides.Any();
     }
 
     /// <summary>
