@@ -12,7 +12,6 @@ import {
 } from "../dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
 import AdditionalServicesDialogController
     from "../dialogs/additional-services-dialog/additional-services-dialog.controller";
-import DispatchMapComponent from "../common/dispatch-map/dispatch-map.component";
 import { CurrentWorkAllDriversReactComponent } from "../../react/components/common/current-work-all-drivers";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import JobHighlightService from "../common/job-list/job-highlight.service";
@@ -34,7 +33,6 @@ const homeModule = angular.module('uDispatch.home', [
     'ui.bootstrap.contextMenu',
     'cfp.hotkeys',
     'angularResizable',
-    'ng-mfb',
     'ngFileUpload',
     'ngMaterialDatePicker'
 ]);
@@ -43,7 +41,6 @@ const homeModule = angular.module('uDispatch.home', [
 homeModule
     .component("homeComponent", HomeComponent)
     .component("jobsList", JobsListComponent)
-    .component("dispatchMap", DispatchMapComponent)
     .component("currentWorkAllDriversReact", CurrentWorkAllDriversReactComponent);
 
 // Register services

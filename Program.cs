@@ -305,10 +305,11 @@ app.Use(async (context, next) =>
     var csp =
         "default-src 'self'; " +
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.google.com https://js.api.here.com https://ajax.googleapis.com https://cdnjs.cloudflare.com; " +
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://ajax.googleapis.com; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://ajax.googleapis.com https://js.api.here.com; " +
         "img-src 'self' data: blob: https:; " +
         "font-src 'self' https://fonts.gstatic.com data:; " +
-        "connect-src 'self' https://*.here.com https://*.googleapis.com; " +
+        "connect-src 'self' blob: https://*.here.com https://*.hereapi.com https://*.googleapis.com; " +
+        "worker-src 'self' blob:; " +
         "frame-ancestors 'none'; " +
         "frame-src 'none'; " +
         "object-src 'none'; " +

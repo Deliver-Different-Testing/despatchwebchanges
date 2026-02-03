@@ -5,7 +5,6 @@
 // Style imports
 import "../css/udispatch.less";
 import "../css/toasts.less";
-import "../lib/ng-material-floating-button/mfb/dist/mfb.css";
 import "angular-resizable/angular-resizable.min.css";
 import "ng-material-datetimepicker/css/material-datetimepicker.css";
 import "angular-material-data-table/dist/md-data-table.css";
@@ -27,11 +26,15 @@ import "angular-heremaps/dist/angular-heremaps";
 
 // Local libs
 import "../lib/ModernizerLocalStorage";
-import "../lib/ng-material-floating-button/src/mfb-directive";
-import "../lib/ng-material-floating-button/mfb/dist/mfb";
 
 // React HereMap component
 import {HereMapReactComponent} from "./react/components/common/here-map";
+
+// React CourierMap component
+import {CourierMapReactComponent} from "./react/components/common/courier-map";
+
+// React DispatchMap component
+import {DispatchMapReactComponent} from "./react/components/common/dispatch-map";
 
 // Create the main Angular module
 const app = angular.module("uDispatch", [
@@ -47,7 +50,6 @@ const app = angular.module("uDispatch", [
     "ngMessages",
     "ngSanitize",
     "ngMaterial",
-    "ng-mfb",
     "md.data.table",
     "ngFileUpload",
     "ngMaterialDatePicker"
@@ -55,6 +57,12 @@ const app = angular.module("uDispatch", [
 
 // Register React HereMap component
 app.component("hereMapReact", HereMapReactComponent);
+
+// Register React CourierMap component
+app.component("courierMapReact", CourierMapReactComponent);
+
+// Register React DispatchMap component
+app.component("dispatchMapReact", DispatchMapReactComponent);
 
 // Make the module available globally
 (window as any).uDispatchApp = app;

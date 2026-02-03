@@ -2,7 +2,7 @@
  * Courier API Service Tests
  */
 
-import {courierApi} from './courierApi';
+import {courierApi, getAvailableCourierLocations, getClearListEnvelope} from './courierApi';
 import {apiClient} from './apiClient';
 import {createMockApiError} from '../__testUtils__';
 
@@ -92,6 +92,123 @@ describe('courierApi', () => {
         ])('should propagate %s errors from apiClient', async (_, error) => {
             mockApiClient.get.mockRejectedValueOnce(error);
             await expect(courierApi.getTimeZoneOptions()).rejects.toEqual(error);
+        });
+    });
+
+    describe('getAvailableCourierLocations', () => {
+        const mockCouriers = [
+            {
+                courierId: 1,
+                courierInitials: 'JS',
+                firstName: 'John',
+                lastName: 'Smith',
+                latitude: 40.7128,
+                longitude: -74.006,
+                jobCount: 3,
+                overdueJobCount: 0,
+                isUrgentArmy: false,
+            },
+            {
+                courierId: 2,
+                courierInitials: 'JD',
+                firstName: 'Jane',
+                lastName: 'Doe',
+                latitude: 34.0522,
+                longitude: -118.2437,
+                jobCount: 1,
+                overdueJobCount: 1,
+                isUrgentArmy: true,
+            },
+        ];
+
+        it('should call apiClient.get with correct endpoint and bounds', async () => {
+            mockApiClient.get.mockResolvedValueOnce(mockCouriers);
+
+            const result = await getAvailableCourierLocations(-125, 24, -65, 50);
+
+            expect(mockApiClient.get).toHaveBeenCalledWith('courier/AvailableCourierLocation', {
+                minLng: -125,
+                minLat: 24,
+                maxLng: -65,
+                maxLat: 50,
+            });
+            expect(result).toEqual(mockCouriers);
+        });
+
+        it('should return empty array when no couriers in bounds', async () => {
+            mockApiClient.get.mockResolvedValueOnce([]);
+
+            const result = await getAvailableCourierLocations(0, 0, 1, 1);
+
+            expect(result).toEqual([]);
+        });
+
+        it('should work with courierApi object', async () => {
+            mockApiClient.get.mockResolvedValueOnce(mockCouriers);
+
+            const result = await courierApi.getAvailableCourierLocations(-125, 24, -65, 50);
+
+            expect(result).toEqual(mockCouriers);
+        });
+
+        it.each([
+            ['404 Not Found', createMockApiError({status: 404, statusText: 'Not Found', message: 'Not found'})],
+            ['500 Server Error', createMockApiError({status: 500, statusText: 'Internal Server Error', message: 'Database error'})],
+        ])('should propagate %s errors from apiClient', async (_, error) => {
+            mockApiClient.get.mockRejectedValueOnce(error);
+            await expect(getAvailableCourierLocations(-125, 24, -65, 50)).rejects.toEqual(error);
+        });
+    });
+
+    describe('getClearListEnvelope', () => {
+        const mockEnvelope = {
+            minimumLatitude: 33.5,
+            maximumLatitude: 34.5,
+            minimumLongitude: -118.5,
+            maximumLongitude: -117.5,
+        };
+
+        it('should call apiClient.get with correct endpoint and clearListId', async () => {
+            mockApiClient.get.mockResolvedValueOnce(mockEnvelope);
+
+            const result = await getClearListEnvelope(123);
+
+            expect(mockApiClient.get).toHaveBeenCalledWith('courier/DriverDestinationEnvelope', {
+                clearListId: 123,
+            });
+            expect(result).toEqual(mockEnvelope);
+        });
+
+        it('should return envelope data with correct coordinate structure', async () => {
+            mockApiClient.get.mockResolvedValueOnce(mockEnvelope);
+
+            const result = await getClearListEnvelope(456);
+
+            expect(result).toHaveProperty('minimumLatitude');
+            expect(result).toHaveProperty('maximumLatitude');
+            expect(result).toHaveProperty('minimumLongitude');
+            expect(result).toHaveProperty('maximumLongitude');
+            expect(result.minimumLatitude).toBe(33.5);
+            expect(result.maximumLatitude).toBe(34.5);
+        });
+
+        it('should work with courierApi object', async () => {
+            mockApiClient.get.mockResolvedValueOnce(mockEnvelope);
+
+            const result = await courierApi.getClearListEnvelope(789);
+
+            expect(mockApiClient.get).toHaveBeenCalledWith('courier/DriverDestinationEnvelope', {
+                clearListId: 789,
+            });
+            expect(result).toEqual(mockEnvelope);
+        });
+
+        it.each([
+            ['404 Not Found', createMockApiError({status: 404, statusText: 'Not Found', message: 'Clearlist not found'})],
+            ['500 Server Error', createMockApiError({status: 500, statusText: 'Internal Server Error', message: 'Database error'})],
+        ])('should propagate %s errors from apiClient', async (_, error) => {
+            mockApiClient.get.mockRejectedValueOnce(error);
+            await expect(getClearListEnvelope(123)).rejects.toEqual(error);
         });
     });
 });
