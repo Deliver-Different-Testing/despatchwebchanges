@@ -53,7 +53,8 @@ public class JobReportService(
         var csvBytes = await GeneratePodSearchCsvAsync(data);
         var filename = $"Jobs {currentDate:yyyyMMddHHmmssfff}.csv";
 
-        await UploadToS3Async(csvBytes, $"Jobs/{currentDate:yyyyMM}/Jobs-{currentDate:yyyyMMddHHmmss}", "S3Bucket");
+        // Fire and forget S3 upload to avoid blocking the response
+        _ = Task.Run(() => UploadToS3Async(csvBytes, $"Jobs/{currentDate:yyyyMM}/Jobs-{currentDate:yyyyMMddHHmmss}", "S3Bucket"));
 
         return new JobsReportResult
         {
@@ -149,11 +150,12 @@ public class JobReportService(
 
             if (!Debugger.IsAttached)
             {
-                await UploadToS3Async(
+                // Fire and forget S3 upload to avoid blocking the response
+                _ = Task.Run(() => UploadToS3Async(
                     csvBytes,
                     $"ClientJobsReports/{currentDate:yyyyMM}/ClientJobsReport_{clientCode}_{currentDate:yyyyMMddHHmmss}.csv",
                     "S3BucketMars"
-                );
+                ));
             }
 
             return (csvBytes, filename);

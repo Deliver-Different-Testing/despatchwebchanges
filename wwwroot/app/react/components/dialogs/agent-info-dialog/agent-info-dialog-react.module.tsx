@@ -13,6 +13,7 @@ import { AgentInfoDialog } from './AgentInfoDialog';
 import { AgentInfo } from '../../../interfaces';
 import { getTheme } from '../../../theme/muiTheme';
 import { agentApi } from '../../../services/agentApi';
+import angular from 'angular';
 
 interface DialogState {
     open: boolean;

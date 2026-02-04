@@ -13,6 +13,7 @@ import { DispatchMap } from './DispatchMap';
 import type { IDispatchMapItem, ClearListEnvelopeData } from './DispatchMap.types';
 import { getTheme } from '../../../theme/muiTheme';
 import { queryClient } from '../../../query/queryClient';
+import angular from 'angular';
 
 /**
  * AngularJS Component Controller for React DispatchMap

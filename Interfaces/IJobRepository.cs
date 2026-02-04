@@ -185,6 +185,7 @@ public interface IJobRepository
     Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType);
     Task SimpleRepriceJobManualAsync(SimpleRepriceJobModel data);
     Task<decimal> RepriceJobWithBaseAmountAsync(RepriceJobWithBaseAmountModel data);
+    Task<decimal> GetTotalAmountFromBaseAsync(int jobId, decimal baseAmount);
     Task<decimal> GetJobRateUsAsync(RateJobUsDto dto);
     Task AssignCourierToJobAsync(List<int> jobIds, int courierId);
     Task AssignCourierToChildJobsAsync(List<int> jobIds, InternalJobStatus internalStatus);

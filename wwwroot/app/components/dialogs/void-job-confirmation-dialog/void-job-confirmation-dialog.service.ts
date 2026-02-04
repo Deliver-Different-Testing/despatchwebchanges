@@ -1,6 +1,7 @@
 import {IDispatchJob, IJob} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
 import {VoidJobResult, VoidJobDialogJob} from "../../../react/interfaces";
+import angular from 'angular';
 
 // Type declaration for the React dialog on window
 declare global {

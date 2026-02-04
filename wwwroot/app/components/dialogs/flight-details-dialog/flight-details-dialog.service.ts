@@ -1,4 +1,5 @@
 import { IFlightViewModel } from "../../Nationwide/nationwide.interfaces";
+import angular from 'angular';
 
 // Type declaration for the React dialog on window
 declare global {

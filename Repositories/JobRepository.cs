@@ -46,13 +46,11 @@ public partial class JobRepository(
                 .FirstOrDefaultAsync();
 
             if (parentIdQuery == 0)
-            {
                 return new JobGroupViewModel
                 {
                     Job = null,
                     RelatedJobs = []
                 };
-            }
 
             var familyRootId = parentIdQuery;
 
@@ -243,7 +241,21 @@ public partial class JobRepository(
                         + " "
                         + j.JobNumber.ToLower()
                         + " "
-                        + j.Barcode.ToLower(),
+                        + j.Barcode.ToLower()
+                        + " "
+                        + (j.PickupFromContact ?? string.Empty)
+                        + " "
+                        + (j.PickupFromPhone ?? string.Empty)
+                        + " "
+                        + (j.DeliverToPhone ?? string.Empty)
+                        + " "
+                        + (j.ProofOfDeliveryEmail ?? string.Empty)
+                        + " "
+                        + (j.ProofOfDeliveryMobile ?? string.Empty)
+                        + " "
+                        + (j.TrackingEmail ?? string.Empty)
+                        + " "
+                        + (j.TrackingMobile ?? string.Empty),
                         wildSearch
                     )
                 )
@@ -431,7 +443,15 @@ public partial class JobRepository(
                         j.UcjbNumber + " " +
                         (j.Barcode ?? string.Empty) + " " +
                         (j.UcjbContact ?? string.Empty) + " " +
-                        (j.CustomJobName ?? string.Empty),
+                        (j.CustomJobName ?? string.Empty) + " " +
+                        (j.UcjbPodname ?? string.Empty) + " " +
+                        (j.UcjbContactPhone ?? string.Empty) + " " +
+                        (j.PickupFromPhone ?? string.Empty) + " " +
+                        (j.DeliverToPhone ?? string.Empty) + " " +
+                        (j.ProofOfDeliveryEmail ?? string.Empty) + " " +
+                        (j.ProofOfDeliveryMobile ?? string.Empty) + " " +
+                        (j.TrackingEmail ?? string.Empty) + " " +
+                        (j.TrackingMobile ?? string.Empty),
                         wildSearch
                     )
                     ||
@@ -454,7 +474,15 @@ public partial class JobRepository(
                         j.UcjbNumber + " " +
                         (j.Barcode ?? string.Empty) + " " +
                         (j.UcjbContact ?? string.Empty) + " " +
-                        (j.CustomJobName ?? string.Empty),
+                        (j.CustomJobName ?? string.Empty) + " " +
+                        (j.UcjbPodname ?? string.Empty) + " " +
+                        (j.UcjbContactPhone ?? string.Empty) + " " +
+                        (j.PickUpFromPhone ?? string.Empty) + " " +
+                        (j.DeliverToPhone ?? string.Empty) + " " +
+                        (j.ProofOfDeliveryEmail ?? string.Empty) + " " +
+                        (j.ProofOfDeliveryMobile ?? string.Empty) + " " +
+                        (j.TrackingEmail ?? string.Empty) + " " +
+                        (j.TrackingMobile ?? string.Empty),
                         wildSearch
                     )
                 );
@@ -994,6 +1022,10 @@ public partial class JobRepository(
         await using var liveJobsContext = await _contextFactory.CreateDbContextAsync();
         await using var archivedJobsContext = await _contextFactory.CreateDbContextAsync();
 
+        // Increase command timeout for large multi-client queries (5 minutes)
+        liveJobsContext.Database.SetCommandTimeout(TimeSpan.FromMinutes(5));
+        archivedJobsContext.Database.SetCommandTimeout(TimeSpan.FromMinutes(5));
+
         // Build live jobs query with SAME filters as PodSearchAsync
         var liveJobsQuery = liveJobsContext.TucJobs
             .AsNoTracking()
@@ -1046,7 +1078,15 @@ public partial class JobRepository(
                     j.UcjbNumber + " " +
                     (j.Barcode ?? string.Empty) + " " +
                     (j.UcjbContact ?? string.Empty) + " " +
-                    (j.CustomJobName ?? string.Empty),
+                    (j.CustomJobName ?? string.Empty) + " " +
+                    (j.UcjbPodname ?? string.Empty) + " " +
+                    (j.UcjbContactPhone ?? string.Empty) + " " +
+                    (j.PickupFromPhone ?? string.Empty) + " " +
+                    (j.DeliverToPhone ?? string.Empty) + " " +
+                    (j.ProofOfDeliveryEmail ?? string.Empty) + " " +
+                    (j.ProofOfDeliveryMobile ?? string.Empty) + " " +
+                    (j.TrackingEmail ?? string.Empty) + " " +
+                    (j.TrackingMobile ?? string.Empty),
                     wildSearch
                 )
                 ||
@@ -1069,7 +1109,15 @@ public partial class JobRepository(
                     j.UcjbNumber + " " +
                     (j.Barcode ?? string.Empty) + " " +
                     (j.UcjbContact ?? string.Empty) + " " +
-                    (j.CustomJobName ?? string.Empty),
+                    (j.CustomJobName ?? string.Empty) + " " +
+                    (j.UcjbPodname ?? string.Empty) + " " +
+                    (j.UcjbContactPhone ?? string.Empty) + " " +
+                    (j.PickUpFromPhone ?? string.Empty) + " " +
+                    (j.DeliverToPhone ?? string.Empty) + " " +
+                    (j.ProofOfDeliveryEmail ?? string.Empty) + " " +
+                    (j.ProofOfDeliveryMobile ?? string.Empty) + " " +
+                    (j.TrackingEmail ?? string.Empty) + " " +
+                    (j.TrackingMobile ?? string.Empty),
                     wildSearch
                 )
             );
@@ -1129,6 +1177,9 @@ public partial class JobRepository(
             var clientIds = request.ClientIds;
             var startDate = request.StartDate.Date;
             var endDate = request.EndDate.Date;
+
+            // Increase command timeout for large multi-client queries (5 minutes)
+            Context.Database.SetCommandTimeout(TimeSpan.FromMinutes(5));
 
             var results = await Context.TucJobArchives
                 .AsNoTracking()
@@ -1808,7 +1859,9 @@ public partial class JobRepository(
                 .Where(j => jobsToVoid.Contains(j.BulkJobId))
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(j => j.JobStatus, (int)JobStatus.Void)
-                    .SetProperty(j => j.Void, true));
+                    .SetProperty(j => j.Void, true)
+                    .SetProperty(j => j.Amount, (decimal?)0)
+                    .SetProperty(j => j.CourierPayment, (decimal?)0));
 
             var courierIds = await Context.TblBulkJobs
                 .Where(jt => jobsToVoid.Contains(jt.BulkJobId) && jt.CourierId.HasValue)
@@ -2083,6 +2136,13 @@ public partial class JobRepository(
     {
         try
         {
+            // Validate charge name (required by database constraint)
+            if (string.IsNullOrWhiteSpace(viewModel.Name))
+                throw new ArgumentException("Charge name is required", nameof(viewModel));
+
+            if (viewModel.Name.Length > 100)
+                throw new ArgumentException("Charge name cannot exceed 100 characters", nameof(viewModel));
+
             if (viewModel.ChildJobId is null && viewModel.PrebookJobId is null)
                 return 0;
 
@@ -2098,6 +2158,13 @@ public partial class JobRepository(
             else
             {
                 effectiveJobId = await Context.GetEffectiveJobBookingIdAsync(viewModel.PrebookJobId ?? 0);
+            }
+
+            // Validate job was found (effectiveJobId of 0 indicates job not found)
+            if (effectiveJobId == 0)
+            {
+                var jobIdentifier = isPrebook ? $"PrebookJobId {viewModel.PrebookJobId}" : $"ChildJobId {viewModel.ChildJobId}";
+                throw new InvalidOperationException($"Job not found: {jobIdentifier}");
             }
 
             var note = $"Added price component: {viewModel.Name} for ${viewModel.Amount:F2}";
@@ -2143,6 +2210,13 @@ public partial class JobRepository(
             await Context.SaveChangesAsync();
 
             return item.PricingBreakdownId;
+        }
+        catch (DbUpdateException e)
+        {
+            Log.Error(e.InnerException ?? e,
+                "Database error in AddJobPriceBreakdownAsync. ViewModel: {@ViewModel}, IsArchived: {IsArchived}",
+                viewModel, isArchived);
+            throw;
         }
         catch (Exception e)
         {
@@ -3691,6 +3765,17 @@ public partial class JobRepository(
             throw;
         }
     }
+
+    /// <summary>
+    /// Calculates the total amount (including fuel surcharge) from a base amount using the database function.
+    /// </summary>
+    /// <param name="jobId">The job ID to calculate the total for.</param>
+    /// <param name="baseAmount">The raw base amount without fuel.</param>
+    /// <returns>The calculated total amount including fuel surcharge.</returns>
+    public async Task<decimal> GetTotalAmountFromBaseAsync(int jobId, decimal baseAmount) =>
+        await Context.TucJobs
+            .Select(_ => DespatchContext.UTL_fncJob_RawBaseToAmount(jobId, baseAmount))
+            .FirstOrDefaultAsync() ?? 0m;
 
     /// <summary>
     /// Assigns a courier to one or more jobs.

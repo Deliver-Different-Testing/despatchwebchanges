@@ -15,6 +15,7 @@ import VoidJobConfirmationDialogService
 import {EditAddressDialogService} from "../components/dialogs/edit-address-dialog/edit-address-dialog.service";
 import PriceBreakdownDialogService from "../components/dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
 import {JobStatus} from "../enums/job-status.enum";
+import angular from 'angular';
 
 class JobContextMenuService implements angular.IServiceProvider {
     static $inject = [
@@ -624,7 +625,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         job: IDispatchJob,
         onRefresh?: () => void) {
         try {
-            await this.DispatchData.updateJobDetail(job.id, JobProperty.Status, JobStatus.Missing, job.preBook ?? false);
+            await this.DispatchData.updateJobDetail(job.id, JobProperty.Status, JobStatus.Missing, false);
             this.toastrService.showSuccessToast("Job successfully marked as missing.");
             
             if (onRefresh) {

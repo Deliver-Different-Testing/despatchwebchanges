@@ -1,7 +1,7 @@
 /**
- * CourierMap Types and Constants Tests
+ * CourierMapPage Types and Constants Tests
  *
- * Tests for the type definitions and constants used by the CourierMap component.
+ * Tests for the type definitions and constants used by the CourierMapPage component.
  */
 
 import {
@@ -16,18 +16,18 @@ import {
     DRIVER_FOCUS_ZOOM,
     OVERVIEW_ZOOM,
     AVATAR_COLORS,
-} from './CourierMap.types';
+} from './CourierMapPage.types';
 import type {
     CourierMarker,
     RegionalBounds,
-    CourierMapProps,
+    CourierMapPageProps,
     DriversPanelProps,
     DriverListItemProps,
     MapControlsProps,
     UseCourierMapReturn,
-} from './CourierMap.types';
+} from './CourierMapPage.types';
 
-describe('CourierMap Constants', () => {
+describe('CourierMapPage Constants', () => {
     describe('US_BOUNDS', () => {
         it('should have correct US regional bounds', () => {
             expect(US_BOUNDS).toEqual({
@@ -71,7 +71,7 @@ describe('CourierMap Constants', () => {
         });
 
         it('should cover New Zealand', () => {
-            // NZ is in the southern hemisphere
+            // NZ is in the Southern Hemisphere
             expect(NZ_BOUNDS.minLat).toBeLessThan(0);
             expect(NZ_BOUNDS.maxLat).toBeLessThan(0);
             // NZ is near the date line
@@ -208,7 +208,7 @@ describe('CourierMap Constants', () => {
     });
 });
 
-describe('CourierMap Type Definitions', () => {
+describe('CourierMapPage Type Definitions', () => {
     describe('CourierMarker', () => {
         it('should accept valid courier marker data', () => {
             const marker: CourierMarker = {
@@ -256,9 +256,9 @@ describe('CourierMap Type Definitions', () => {
         });
     });
 
-    describe('CourierMapProps', () => {
+    describe('CourierMapPageProps', () => {
         it('should accept valid props', () => {
-            const props: CourierMapProps = {
+            const props: CourierMapPageProps = {
                 isUsCustomer: true,
                 mapCenter: {lat: 39.8097343, lng: -98.5556199},
             };
@@ -269,7 +269,7 @@ describe('CourierMap Type Definitions', () => {
         });
 
         it('should work with NZ customer', () => {
-            const props: CourierMapProps = {
+            const props: CourierMapPageProps = {
                 isUsCustomer: false,
                 mapCenter: {lat: -41.2865, lng: 174.7762},
             };

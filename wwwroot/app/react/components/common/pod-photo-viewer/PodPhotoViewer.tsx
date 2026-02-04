@@ -18,29 +18,9 @@ import {
     ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
 import {getTimezoneAbbreviation} from '../../../utils/dateUtils';
+import {PodPhotoViewerProps, PodPhoto} from "./pod-photo-viewer.types";
 
-export interface Coordinates {
-    lat: number;
-    lng: number;
-}
-
-export interface PodPhoto {
-    url: string;
-    timestamp?: string;
-    uploadedBy: string;
-    coordinates?: Coordinates;
-    contentType?: string;
-    fileName?: string;
-    s3Key?: string;
-}
-
-export interface PodPhotoViewerProps {
-    photos: PodPhoto[];
-    isOpen: boolean;
-    initialPhotoIndex?: number;
-    timeZone?: string;
-    onClose: () => void;
-}
+export type {PodPhoto};
 
 export const PodPhotoViewer: React.FC<PodPhotoViewerProps> = ({
     photos,

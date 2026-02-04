@@ -14,7 +14,6 @@ import "angular-hotkeys/build/hotkeys.css";
 import "bootstrap/dist/css/bootstrap.css";
 
 // Third-party Angular plugins
-import "ngmap";
 import "ng-file-upload";
 import "angular-ui-sortable/dist/sortable";
 import "angular-resizable/angular-resizable.min";
@@ -22,7 +21,6 @@ import "ng-material-datetimepicker/js/angular-material-datetimepicker";
 import "angular-material-data-table";
 import "angular-hotkeys/build/hotkeys";
 import "angular-bootstrap-contextmenu/contextMenu";
-import "angular-heremaps/dist/angular-heremaps";
 
 // Local libs
 import "../lib/ModernizerLocalStorage";
@@ -31,7 +29,7 @@ import "../lib/ModernizerLocalStorage";
 import {HereMapReactComponent} from "./react/components/common/here-map";
 
 // React CourierMap component
-import {CourierMapReactComponent} from "./react/components/common/courier-map";
+import {CourierMapReactComponent} from "./react/pages/courier-map";
 
 // React DispatchMap component
 import {DispatchMapReactComponent} from "./react/components/common/dispatch-map";
@@ -44,8 +42,6 @@ const app = angular.module("uDispatch", [
     "ui.sortable",
     "ui.bootstrap.contextMenu",
     "cfp.hotkeys",
-    "ngMap",
-    "heremaps",
     "ngAnimate",
     "ngMessages",
     "ngSanitize",

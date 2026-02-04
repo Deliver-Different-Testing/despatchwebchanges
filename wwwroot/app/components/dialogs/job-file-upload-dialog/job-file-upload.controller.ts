@@ -5,6 +5,7 @@ import {IJobFile, IUploadProgressFile} from "./job-file-upload-dialog.interfaces
 import dayjs from "dayjs";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import {formatDateForApiWithTzs} from "../../../functions/formatDates";
+import angular from 'angular';
 
 class JobFileUploadController extends BaseController {
     static $inject = [

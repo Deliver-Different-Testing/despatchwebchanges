@@ -1,7 +1,7 @@
 /**
  * CourierMap React Module
  *
- * Entry point for the React-based CourierMap component.
+ * Entry point for the React-based CourierMapPage component.
  * Provides AngularJS integration via react2angular pattern.
  */
 
@@ -9,12 +9,13 @@ import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import { CssBaseline, ThemeProvider } from '@mui/material';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { CourierMap } from './CourierMap';
-import { getTheme } from '../../../theme/muiTheme';
-import { queryClient } from '../../../query/queryClient';
+import { CourierMapPage } from './CourierMapPage';
+import { getTheme } from '../../theme/muiTheme';
+import { queryClient } from '../../query/queryClient';
+import angular from 'angular';
 
 /**
- * AngularJS Component Controller for React CourierMap
+ * AngularJS Component Controller for React CourierMapPage
  */
 class CourierMapReactController implements angular.IController {
     static $inject = ['$element', '$scope', 'configService', 'APP_CONFIG'];
@@ -67,7 +68,7 @@ class CourierMapReactController implements angular.IController {
             <QueryClientProvider client={queryClient}>
                 <ThemeProvider theme={currentTheme}>
                     <CssBaseline />
-                    <CourierMap
+                    <CourierMapPage
                         isUsCustomer={isUsCustomer}
                         mapCenter={mapCenter}
                         apiKey={this.apiKey}
@@ -79,7 +80,7 @@ class CourierMapReactController implements angular.IController {
 }
 
 /**
- * AngularJS component definition for React CourierMap
+ * AngularJS component definition for React CourierMapPage
  */
 export const CourierMapReactComponent: angular.IComponentOptions = {
     controller: CourierMapReactController,

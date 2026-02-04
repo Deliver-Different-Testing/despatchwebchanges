@@ -56,6 +56,7 @@ import {
 import {transformJobQueryParamsToDTO} from "../functions/toDtoMappings";
 import {IAppConfig} from "../interfaces/app-config.interface";
 import {BulkPricePreviewResponse, PricingMode} from "../components/dialogs/bulk-price-upload-dialog/bulk-price-upload-dialog.interfaces";
+import angular from 'angular';
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = [

@@ -1,5 +1,6 @@
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import {EventGroupDialogController} from "./event-group-dialog.controller";
+import angular from 'angular';
 
 export class EventGroupDialogService implements angular.IServiceProvider {
     static $inject = [

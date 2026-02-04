@@ -11,6 +11,7 @@ import {CssBaseline, ThemeProvider} from '@mui/material';
 import {HereMap} from './HereMap';
 import type {HereMapConfig, HereMapCredentials,} from './HereMap.types';
 import {getTheme} from '../../../theme/muiTheme';
+import angular from 'angular';
 
 /**
  * AngularJS Component Controller for React HereMap

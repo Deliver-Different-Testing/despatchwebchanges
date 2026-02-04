@@ -1,5 +1,5 @@
 /**
- * CourierMap Component
+ * CourierMapPage Component
  *
  * Main React component for the courier map view.
  * Displays a HERE map with courier positions and a drivers panel sidebar.
@@ -7,30 +7,30 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { IAvailableCourierPosition } from '../../../../interfaces/courier.interface';
-import type { CourierMapProps } from './CourierMap.types';
+import type { IAvailableCourierPosition } from '../../../interfaces/courier.interface';
+import type { CourierMapPageProps } from './CourierMapPage.types';
 import {
     US_BOUNDS,
     NZ_BOUNDS,
     REFRESH_INTERVAL_MS,
     SEARCH_DEBOUNCE_MS,
-} from './CourierMap.types';
+} from './CourierMapPage.types';
 import { useCourierMap } from './useCourierMap';
-import { DriversPanel } from './DriversPanel';
-import { MapControls } from './MapControls';
-import { queryKeys } from '../../../query/queryClient';
-import { getAvailableCourierLocations } from '../../../services/courierApi';
-import styles from './CourierMap.module.css';
+import { DriversPanel } from './components/DriversPanel';
+import { MapControls } from './components/MapControls';
+import { queryKeys } from '../../query';
+import { getAvailableCourierLocations } from '../../services/courierApi';
+import styles from './CourierMapPage.module.css';
 
-interface CourierMapInternalProps extends CourierMapProps {
+interface CourierMapPageInternalProps extends CourierMapPageProps {
     apiKey: string | null;
 }
 
-export function CourierMap({
+export function CourierMapPage({
     isUsCustomer,
     mapCenter,
     apiKey,
-}: CourierMapInternalProps) {
+}: CourierMapPageInternalProps) {
     // Panel state
     const [isPanelHidden, setIsPanelHidden] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -111,8 +111,8 @@ export function CourierMap({
         [centerOnCourier]
     );
 
-    const handleRefresh = useCallback(() => {
-        refetch();
+    const handleRefresh = useCallback(async () => {
+        await refetch();
     }, [refetch]);
 
     const handleTogglePanel = useCallback(() => {
@@ -154,4 +154,4 @@ export function CourierMap({
     );
 }
 
-export default CourierMap;
+export default CourierMapPage;

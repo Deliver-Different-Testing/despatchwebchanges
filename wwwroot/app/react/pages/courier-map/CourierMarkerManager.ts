@@ -5,14 +5,14 @@
  * icon caching, and position threshold checks.
  */
 
-import type { IAvailableCourierPosition } from '../../../../interfaces/courier.interface';
-import type { CourierMarker } from './CourierMap.types';
+import type { IAvailableCourierPosition } from '../../../interfaces/courier.interface';
+import type { CourierMarker } from './CourierMapPage.types';
 import {
     ICON_CACHE_LIMIT,
     MARKER_LABEL_MAX_LENGTH,
     POSITION_THRESHOLD,
     DRIVER_FOCUS_ZOOM,
-} from './CourierMap.types';
+} from './CourierMapPage.types';
 
 declare const H: any;
 

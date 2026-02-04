@@ -1,5 +1,6 @@
 ﻿import {MapDialogController} from "./map-dialog.controller";
 import {OverviewTableParentJob} from "../../overview/overview.interfaces";
+import angular from 'angular';
 
 class MapDialogService implements  angular.IServiceProvider {
     static $inject = [

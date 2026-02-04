@@ -1,6 +1,7 @@
 ﻿import ComposeEmailDialogController from "./compose-email-dialog.controller";
 import IGroupEmailData from "../../driver-management-dashboard/interfaces/IGroupEmailData";
 import IDriverEmail from "../../driver-management-dashboard/interfaces/IDriverEmail";
+import angular from 'angular';
 
 export class ComposeEmailDialogService implements angular.IServiceProvider {
     static $inject = [

@@ -544,7 +544,7 @@ async function buildDev(): Promise<void> {
         esbuild.context(getBuildConfig(false, {"vendor-react": vendorEntries["vendor-react"]}, "vendor-react")),
         esbuild.context(getBuildConfig(false, moduleEntries, "modules")),
         ...(Object.keys(reactModuleEntries).length > 0
-            ? [esbuild.context(getBuildConfig(false, reactModuleEntries, "react-modules"))]
+            ? [await esbuild.context(getBuildConfig(false, reactModuleEntries, "react-modules"))]
             : []),
     ]);
 
@@ -581,16 +581,16 @@ async function buildProd(): Promise<void> {
 
     // Build all bundle types in parallel
     const buildPromises = [
-        esbuild.build(getBuildConfig(true, { "vendor-core": vendorEntries["vendor-core"] }, "vendor-core")),
-        esbuild.build(getBuildConfig(true, { "vendor-plugins": vendorEntries["vendor-plugins"] }, "vendor-plugins")),
-        esbuild.build(getBuildConfig(true, {"vendor-react": vendorEntries["vendor-react"]}, "vendor-react")),
-        esbuild.build(getBuildConfig(true, moduleEntries, "modules")),
+        await esbuild.build(getBuildConfig(true, { "vendor-core": vendorEntries["vendor-core"] }, "vendor-core")),
+        await esbuild.build(getBuildConfig(true, { "vendor-plugins": vendorEntries["vendor-plugins"] }, "vendor-plugins")),
+        await esbuild.build(getBuildConfig(true, {"vendor-react": vendorEntries["vendor-react"]}, "vendor-react")),
+        await esbuild.build(getBuildConfig(true, moduleEntries, "modules")),
     ];
 
     // Add React modules build if there are any
     if (Object.keys(reactModuleEntries).length > 0) {
         buildPromises.push(
-            esbuild.build(getBuildConfig(true, reactModuleEntries, "react-modules"))
+            await esbuild.build(getBuildConfig(true, reactModuleEntries, "react-modules"))
         );
     }
 

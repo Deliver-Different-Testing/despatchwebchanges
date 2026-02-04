@@ -61,6 +61,7 @@ import {
     FlightAgentDataTableReactComponent
 } from "./react/components/common/flight-agent-data-table/flight-agent-data-table-react.module";
 import reactAppShellDirective from "./components/common/react-app-shell/react-app-shell.directive";
+import angular from 'angular';
 
 const app = (window as any).uDispatchApp;
 

@@ -4,6 +4,7 @@ import DispatchCoreService from "../../../services/dispatch-core.service";
 import {IParcelDimensions} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
+import angular from 'angular';
 
 class EditParcelDimensionsDialogController extends BaseController {
     static $inject = [

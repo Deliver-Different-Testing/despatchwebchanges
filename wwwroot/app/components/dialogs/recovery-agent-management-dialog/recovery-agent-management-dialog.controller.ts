@@ -3,6 +3,7 @@ import {ISuggestion} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import NationwideService from "../../Nationwide/nationwide.service";
 import ToastrService from "../../../services/toastr.service";
+import angular from 'angular';
 import {
     AddAgentRecoveryRequest,
     RecoveryAgentJobViewModel, RecoveryAgentViewModel,

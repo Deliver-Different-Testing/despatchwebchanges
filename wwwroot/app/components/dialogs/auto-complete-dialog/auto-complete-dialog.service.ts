@@ -1,5 +1,6 @@
 import {ISuggestion} from "../../../interfaces/job.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";
+import angular from 'angular';
 
 // Type declaration for the React dialog on window
 declare global {

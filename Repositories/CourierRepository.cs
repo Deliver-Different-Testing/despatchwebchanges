@@ -67,7 +67,6 @@ public class CourierRepository(
             if (courierData == null) return null;
 
             if (courierData.UccrVehicle != truckVehicleName)
-            {
                 return new TruckCourierStatusViewModel
                 {
                     CourierId = courierData.UccrId,
@@ -81,7 +80,6 @@ public class CourierRepository(
                     AvailablePallets = null,
                     AvailablePalletCapacity = null
                 };
-            }
 
             var jobItemsAggregate = await Context.TucJobs
                 .AsNoTracking()
@@ -410,7 +408,7 @@ public class CourierRepository(
         }
     }
 
-    public async Task<List<Suggestion>> AllActiveCouriersAsync(string searchTerm, bool dgOnly = false)
+    public async Task<List<Suggestion>> AllActiveCouriersAsync(string searchTerm, bool dgOnly = false, bool loggedInOnly = false)
     {
         var isUsTenant = infoService.IsUsTenant();
         var now = infoService.GetCurrentTenantTime();
@@ -418,13 +416,15 @@ public class CourierRepository(
         try
         {
             Log.Information(
-                "Starting AllActiveCouriersAsync search with term: {SearchTerm}, DG Only: {DgOnly}",
+                "Starting AllActiveCouriersAsync search with term: {SearchTerm}, DG Only: {DgOnly}, Logged In Only: {LoggedInOnly}",
                 searchTerm,
-                dgOnly
+                dgOnly,
+                loggedInOnly
             );
 
             var query = Context.TucCouriers
                 .AsNoTracking()
+                .AsSplitQuery()
                 .Where(c =>
                     c.Active == true
                     && EF.Functions.Like(
@@ -440,6 +440,17 @@ public class CourierRepository(
                     c.UccrDangerousGoods == 1
                     && c.DglicenseExpiry != null
                     && c.DglicenseExpiry >= now.AddDays(-1)
+                );
+            }
+
+            // Filter for logged-in couriers if loggedInOnly is true
+            if (loggedInOnly)
+            {
+                var today = now.Date;
+                query = query.Where(c =>
+                    c.CourierLogInOut != null &&
+                    c.CourierLogInOut.LogInTime.Date == today &&
+                    c.CourierLogInOut.LogOutTime == null
                 );
             }
 

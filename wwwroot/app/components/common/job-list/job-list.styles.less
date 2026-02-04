@@ -223,6 +223,35 @@
           }
         }
       }
+
+      .courier-filter-toggle {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+
+        md-switch.logged-in-toggle {
+          margin: 0;
+          font-size: 11px;
+          font-weight: @weight-medium;
+          white-space: nowrap;
+
+          .md-container {
+            margin-right: 6px;
+          }
+
+          .md-label {
+            color: #1e293b;
+          }
+
+          &.md-checked .md-bar {
+            background-color: rgba(16, 185, 129, 0.5);
+          }
+
+          &.md-checked .md-thumb {
+            background-color: #10b981;
+          }
+        }
+      }
     }
   }
 
@@ -1090,6 +1119,15 @@
           padding: 4px 8px;
           font-size: 10px;
         }
+
+        .courier-filter-toggle md-switch.logged-in-toggle {
+          font-size: 10px;
+
+          .md-container {
+            transform: scale(0.85);
+            margin-right: 4px;
+          }
+        }
       }
     }
 
@@ -1260,6 +1298,15 @@
         .column-controls .reset-columns-btn {
           padding: 3px 6px;
           font-size: 9px;
+        }
+
+        .courier-filter-toggle md-switch.logged-in-toggle {
+          font-size: 9px;
+
+          .md-container {
+            transform: scale(0.75);
+            margin-right: 2px;
+          }
         }
       }
     }
@@ -1435,6 +1482,18 @@
           .reset-columns-btn {
             padding: 4px 8px;
             font-size: 10px;
+          }
+        }
+
+        .courier-filter-toggle {
+          justify-content: center;
+
+          md-switch.logged-in-toggle {
+            font-size: 10px;
+
+            .md-container {
+              transform: scale(0.85);
+            }
           }
         }
       }

@@ -13,6 +13,7 @@ import { FlightDetailsDialog } from './FlightDetailsDialog';
 import { getTheme } from '../../../theme/muiTheme';
 import { FlightData } from './types';
 import { IFlightViewModel } from '../../../../components/Nationwide/nationwide.interfaces';
+import angular from 'angular';
 
 interface DialogState {
     open: boolean;

@@ -3,6 +3,7 @@ import {Dayjs} from "dayjs";
 import {formatDateForApiWithTzs} from "../../functions/formatDates";
 import IScanDetailResult from "./interfaces/IScanDetailResult";
 import {transformDispatchJobDTO} from "../../functions/dtoMappings";
+import angular from 'angular';
 
 class JobSearchService implements angular.IServiceProvider {
     static $inject = [

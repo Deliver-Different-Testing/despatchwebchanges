@@ -3,6 +3,7 @@ import BaseController from "../../base-controller";
 import ToastrService from "../../../services/toastr.service";
 import IGroupEmailData from "../../driver-management-dashboard/interfaces/IGroupEmailData";
 import IDriverEmail from "../../driver-management-dashboard/interfaces/IDriverEmail";
+import angular from 'angular';
 
 class ComposeEmailDialogController extends BaseController {
     static $inject = [

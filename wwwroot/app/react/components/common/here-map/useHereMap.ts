@@ -11,18 +11,11 @@ import type {
     HereMapCredentials,
     IHereMapChildJob,
     IHereMapJob,
-    MapInstance,
+    MapInstance, UseHereMapOptions,
     UseHereMapReturn,
 } from './HereMap.types';
 import {MAP_CONSTANTS} from './HereMap.types';
 import * as utils from './hereMapUtils';
-
-interface UseHereMapOptions {
-    mapId: string;
-    credentials?: HereMapCredentials;
-    config?: HereMapConfig;
-    onMapReady?: (params: { map: any; platform: any }) => void;
-}
 
 export function useHereMap({
                                mapId,

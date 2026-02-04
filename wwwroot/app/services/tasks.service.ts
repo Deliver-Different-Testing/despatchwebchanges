@@ -16,6 +16,7 @@ import {
 } from "../interfaces/task-request.interfaces";
 import {Dayjs} from "dayjs";
 import {formatDateForApiWithTzs} from "../functions/formatDates";
+import angular from 'angular';
 
 interface PageFilterNames {
     staff: string;

@@ -1,6 +1,7 @@
 import {IDispatchJob, IJob} from "../../../interfaces/job.interface";
 import JobFileUploadController from "./job-file-upload.controller";
 import { FileUploadType } from "../../../enums/file-upload-type.enum";
+import angular from 'angular';
 
 class JobFileUploadDialogService implements angular.IServiceProvider {
     static $inject = [

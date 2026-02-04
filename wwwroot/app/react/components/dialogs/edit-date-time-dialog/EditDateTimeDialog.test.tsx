@@ -245,6 +245,156 @@ describe('EditDateTimeDialog', () => {
                 'warning'
             );
         });
+
+        it('shows warning toast when submitting with invalid date', async () => {
+            const user = userEvent.setup();
+            const onSubmit = jest.fn();
+            const showToast = jest.fn();
+            const props = createDefaultProps({
+                onSubmit,
+                showToast,
+            });
+            renderWithProviders(props);
+
+            // Find the date input and clear it, then type an incomplete/invalid date
+            const dateInput = screen.getByLabelText('Date') as HTMLInputElement;
+            await user.clear(dateInput);
+            await user.type(dateInput, '2024-01');
+
+            await user.click(screen.getByRole('button', { name: /Save/i }));
+
+            await waitFor(() => {
+                expect(showToast).toHaveBeenCalledWith(
+                    'Please provide valid date/time information',
+                    'warning'
+                );
+            });
+            expect(onSubmit).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('Text Input Editability', () => {
+        it('allows typing in the date input field', async () => {
+            const user = userEvent.setup();
+            const props = createDefaultProps();
+            renderWithProviders(props);
+
+            // Find date input by aria-label
+            const dateInput = screen.getByLabelText('Date') as HTMLInputElement;
+
+            // Clear the input and type a new date
+            await user.clear(dateInput);
+            await user.type(dateInput, '2025-06-15');
+
+            // The input should reflect what was typed
+            expect(dateInput).toHaveValue('2025-06-15');
+        });
+
+        it('allows typing in the time input field', async () => {
+            const user = userEvent.setup();
+            const props = createDefaultProps({ showDate: true, showTime: true });
+            renderWithProviders(props);
+
+            // Find time input by aria-label
+            const timeInput = screen.getByLabelText('Time (24-hour)') as HTMLInputElement;
+
+            // Clear and type a new time
+            await user.clear(timeInput);
+            await user.type(timeInput, '09:45');
+
+            expect(timeInput).toHaveValue('09:45');
+        });
+
+        it('accepts intermediate invalid values during typing without freezing', async () => {
+            const user = userEvent.setup();
+            const props = createDefaultProps();
+            renderWithProviders(props);
+
+            const dateInput = screen.getByLabelText('Date') as HTMLInputElement;
+
+            // Type character by character - intermediate values like "2" or "20" are invalid dates
+            await user.clear(dateInput);
+            await user.type(dateInput, '2');
+            expect(dateInput).toHaveValue('2');
+
+            await user.type(dateInput, '0');
+            expect(dateInput).toHaveValue('20');
+
+            await user.type(dateInput, '25');
+            expect(dateInput).toHaveValue('2025');
+        });
+
+        it('submits successfully after typing a valid date', async () => {
+            const user = userEvent.setup();
+            const onSubmit = jest.fn();
+            const props = createDefaultProps({ onSubmit });
+            renderWithProviders(props);
+
+            const dateInput = screen.getByLabelText('Date') as HTMLInputElement;
+
+            // Type a complete valid date
+            await user.clear(dateInput);
+            await user.type(dateInput, '2025-12-25');
+
+            await user.click(screen.getByRole('button', { name: /Save/i }));
+
+            await waitFor(() => {
+                expect(onSubmit).toHaveBeenCalled();
+                const result = onSubmit.mock.calls[0][0];
+                expect(result.value.year()).toBe(2025);
+                expect(result.value.month()).toBe(11); // December is month 11 (0-indexed)
+                expect(result.value.date()).toBe(25);
+            });
+        });
+
+        it('allows editing date-only picker via text input', async () => {
+            const user = userEvent.setup();
+            const onSubmit = jest.fn();
+            const props = createDefaultProps({
+                showDate: true,
+                showTime: false,
+                onSubmit,
+            });
+            renderWithProviders(props);
+
+            const dateInput = screen.getByLabelText('Date') as HTMLInputElement;
+            // Use fireEvent.change to directly set value (avoids calendar popup stealing focus)
+            fireEvent.change(dateInput, { target: { value: '2026-01-01' } });
+
+            await user.click(screen.getByRole('button', { name: /Save/i }));
+
+            await waitFor(() => {
+                expect(onSubmit).toHaveBeenCalled();
+                const result = onSubmit.mock.calls[0][0];
+                expect(result.value.year()).toBe(2026);
+                expect(result.value.month()).toBe(0);
+                expect(result.value.date()).toBe(1);
+            });
+        });
+
+        it('allows editing time-only picker via text input', async () => {
+            const user = userEvent.setup();
+            const onSubmit = jest.fn();
+            const props = createDefaultProps({
+                showDate: false,
+                showTime: true,
+                onSubmit,
+            });
+            renderWithProviders(props);
+
+            const timeInput = screen.getByLabelText('Time (24-hour)') as HTMLInputElement;
+            await user.clear(timeInput);
+            await user.type(timeInput, '16:30');
+
+            await user.click(screen.getByRole('button', { name: /Save/i }));
+
+            await waitFor(() => {
+                expect(onSubmit).toHaveBeenCalled();
+                const result = onSubmit.mock.calls[0][0];
+                expect(result.value.hour()).toBe(16);
+                expect(result.value.minute()).toBe(30);
+            });
+        });
     });
 
     describe('Date Processing', () => {

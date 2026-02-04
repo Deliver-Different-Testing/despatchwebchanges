@@ -1,19 +1,19 @@
 /**
- * CourierMap Component Tests
+ * CourierMapPage Component Tests
  *
- * Tests for the CourierMap React component.
+ * Tests for the CourierMapPage React component.
  */
 
 import React from 'react';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ThemeProvider, createTheme} from '@mui/material';
-import {CourierMap} from './CourierMap';
-import type {CourierMapProps} from './CourierMap.types';
-import * as courierApi from '../../../services/courierApi';
+import {CourierMapPage} from './CourierMapPage';
+import type {CourierMapPageProps} from './CourierMapPage.types';
+import * as courierApi from '../../services/courierApi';
 
 // Mock the courier API
-jest.mock('../../../services/courierApi', () => ({
+jest.mock('../../services/courierApi', () => ({
     getAvailableCourierLocations: jest.fn(),
 }));
 
@@ -51,11 +51,11 @@ const renderWithProviders = (ui: React.ReactElement, queryClient?: QueryClient) 
     );
 };
 
-interface CourierMapInternalProps extends CourierMapProps {
+interface CourierMapPageInternalProps extends CourierMapPageProps {
     apiKey: string | null;
 }
 
-const createDefaultProps = (overrides?: Partial<CourierMapInternalProps>): CourierMapInternalProps => ({
+const createDefaultProps = (overrides?: Partial<CourierMapPageInternalProps>): CourierMapPageInternalProps => ({
     isUsCustomer: true,
     mapCenter: {lat: 39.8097343, lng: -98.5556199},
     apiKey: 'test-api-key',
@@ -93,7 +93,7 @@ const mockCouriers = [
     },
 ];
 
-describe('CourierMap Component', () => {
+describe('CourierMapPage Component', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         (courierApi.getAvailableCourierLocations as jest.Mock).mockResolvedValue(mockCouriers);
@@ -102,20 +102,20 @@ describe('CourierMap Component', () => {
     describe('Rendering', () => {
         it('renders without crashing', () => {
             const props = createDefaultProps();
-            const {container} = renderWithProviders(<CourierMap {...props} />);
+            const {container} = renderWithProviders(<CourierMapPage {...props} />);
             expect(container).toBeInTheDocument();
         });
 
         it('renders map container', () => {
             const props = createDefaultProps();
-            const {container} = renderWithProviders(<CourierMap {...props} />);
+            const {container} = renderWithProviders(<CourierMapPage {...props} />);
             // The component renders a div container - check container has children
             expect(container.firstChild).toBeInTheDocument();
         });
 
         it('renders drivers panel', async () => {
             const props = createDefaultProps();
-            renderWithProviders(<CourierMap {...props} />);
+            renderWithProviders(<CourierMapPage {...props} />);
 
             await waitFor(() => {
                 expect(screen.getByText(/Active Drivers/i)).toBeInTheDocument();
@@ -124,7 +124,7 @@ describe('CourierMap Component', () => {
 
         it('renders map controls', () => {
             const props = createDefaultProps();
-            renderWithProviders(<CourierMap {...props} />);
+            renderWithProviders(<CourierMapPage {...props} />);
 
             // Should have fit-all and refresh buttons
             expect(screen.getByLabelText('Return to overview')).toBeInTheDocument();
@@ -135,25 +135,25 @@ describe('CourierMap Component', () => {
     describe('Props', () => {
         it('accepts isUsCustomer prop', () => {
             const props = createDefaultProps({isUsCustomer: true});
-            const {container} = renderWithProviders(<CourierMap {...props} />);
+            const {container} = renderWithProviders(<CourierMapPage {...props} />);
             expect(container).toBeInTheDocument();
         });
 
         it('accepts mapCenter prop', () => {
             const props = createDefaultProps({mapCenter: {lat: 40.7128, lng: -74.006}});
-            const {container} = renderWithProviders(<CourierMap {...props} />);
+            const {container} = renderWithProviders(<CourierMapPage {...props} />);
             expect(container).toBeInTheDocument();
         });
 
         it('accepts apiKey prop', () => {
             const props = createDefaultProps({apiKey: 'custom-api-key'});
-            const {container} = renderWithProviders(<CourierMap {...props} />);
+            const {container} = renderWithProviders(<CourierMapPage {...props} />);
             expect(container).toBeInTheDocument();
         });
 
         it('renders with null apiKey', () => {
             const props = createDefaultProps({apiKey: null});
-            const {container} = renderWithProviders(<CourierMap {...props} />);
+            const {container} = renderWithProviders(<CourierMapPage {...props} />);
             expect(container).toBeInTheDocument();
         });
     });
@@ -161,7 +161,7 @@ describe('CourierMap Component', () => {
     describe('API Integration', () => {
         it('fetches courier locations on mount', async () => {
             const props = createDefaultProps();
-            renderWithProviders(<CourierMap {...props} />);
+            renderWithProviders(<CourierMapPage {...props} />);
 
             await waitFor(() => {
                 expect(courierApi.getAvailableCourierLocations).toHaveBeenCalled();
@@ -170,7 +170,7 @@ describe('CourierMap Component', () => {
 
         it('uses US bounds when isUsCustomer is true', async () => {
             const props = createDefaultProps({isUsCustomer: true});
-            renderWithProviders(<CourierMap {...props} />);
+            renderWithProviders(<CourierMapPage {...props} />);
 
             await waitFor(() => {
                 expect(courierApi.getAvailableCourierLocations).toHaveBeenCalledWith(
@@ -184,7 +184,7 @@ describe('CourierMap Component', () => {
 
         it('uses NZ bounds when isUsCustomer is false', async () => {
             const props = createDefaultProps({isUsCustomer: false});
-            renderWithProviders(<CourierMap {...props} />);
+            renderWithProviders(<CourierMapPage {...props} />);
 
             await waitFor(() => {
                 expect(courierApi.getAvailableCourierLocations).toHaveBeenCalledWith(
@@ -200,7 +200,7 @@ describe('CourierMap Component', () => {
     describe('Drivers Panel Interaction', () => {
         it('can toggle panel visibility', async () => {
             const props = createDefaultProps();
-            renderWithProviders(<CourierMap {...props} />);
+            renderWithProviders(<CourierMapPage {...props} />);
 
             // Find toggle button (chevron)
             const toggleButton = screen.getByLabelText(/toggle drivers panel/i);
@@ -215,7 +215,7 @@ describe('CourierMap Component', () => {
 
         it('filters drivers by search term', async () => {
             const props = createDefaultProps();
-            renderWithProviders(<CourierMap {...props} />);
+            renderWithProviders(<CourierMapPage {...props} />);
 
             const searchInput = screen.getByPlaceholderText(/search drivers/i);
 
@@ -239,7 +239,7 @@ describe('CourierMap Component', () => {
             });
 
             const props = createDefaultProps();
-            renderWithProviders(<CourierMap {...props} />);
+            renderWithProviders(<CourierMapPage {...props} />);
 
             const fitAllButton = screen.getByLabelText('Return to overview');
             fireEvent.click(fitAllButton);
@@ -249,7 +249,7 @@ describe('CourierMap Component', () => {
 
         it('refresh button is clickable', async () => {
             const props = createDefaultProps();
-            renderWithProviders(<CourierMap {...props} />);
+            renderWithProviders(<CourierMapPage {...props} />);
 
             // Initial fetch
             await waitFor(() => {
@@ -277,7 +277,7 @@ describe('CourierMap Component', () => {
             });
 
             const props = createDefaultProps();
-            renderWithProviders(<CourierMap {...props} />);
+            renderWithProviders(<CourierMapPage {...props} />);
 
             await waitFor(() => {
                 // Wait for couriers to load
@@ -324,7 +324,7 @@ describe('CourierMap Component', () => {
             });
 
             const props = createDefaultProps();
-            renderWithProviders(<CourierMap {...props} />);
+            renderWithProviders(<CourierMapPage {...props} />);
 
             await waitFor(() => {
                 // updateCouriers should only receive valid couriers (2, not 3)

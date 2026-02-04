@@ -1,6 +1,7 @@
 ﻿import NationwideService from "../../Nationwide/nationwide.service";
 import {RecoveryAgentJobViewModel} from "./recovery-agent-management-dialog.interfaces";
 import RecoveryAgentManagementController from "./recovery-agent-management-dialog.controller";
+import angular from 'angular';
 
 class RecoveryAgentManagementService implements angular.IServiceProvider {
     static $inject = [

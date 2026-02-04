@@ -1,11 +1,9 @@
-using System.Linq.Expressions;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
 using FluentAssertions;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query;
-using MockQueryable.Moq;
 using Moq;
 
 namespace DespatchWeb.Tests.Repositories;
@@ -13,54 +11,78 @@ namespace DespatchWeb.Tests.Repositories;
 /// <summary>
 /// Tests for JobRepository.PodSearchDownloadAsync method.
 /// Tests the refactored query that now uses direct mappings and queries both live and archived tables.
+/// Uses SQLite in-memory database with shared connection for parallel context queries.
 /// </summary>
-public class JobRepositoryPodSearchDownloadTests
+public class JobRepositoryPodSearchDownloadTests : IDisposable
 {
+    private readonly SqliteConnection _connection;
+    private readonly DbContextOptions<DespatchContext> _contextOptions;
     private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
 
-    private void SetupContextMocks(List<TucJob> liveJobs,
-        List<TucJobArchive> archivedJobs)
+    public JobRepositoryPodSearchDownloadTests()
     {
-        // Create mock DbSets using MockQueryable
-        var liveJobsDbSet = liveJobs.BuildMockDbSet();
-        var archivedJobsDbSet = archivedJobs.BuildMockDbSet();
+        // Use a shared connection so multiple contexts can access the same in-memory database
+        _connection = new SqliteConnection("DataSource=:memory:");
+        _connection.Open();
 
-        // Create two separate mock contexts (the repository uses separate contexts for parallel queries)
-        var liveContextMock = new Mock<DespatchContext>(new DbContextOptions<DespatchContext>());
-        var archivedContextMock = new Mock<DespatchContext>(new DbContextOptions<DespatchContext>());
+        // Disable foreign keys for simpler test setup
+        using (var command = _connection.CreateCommand())
+        {
+            command.CommandText = "PRAGMA foreign_keys = OFF;";
+            command.ExecuteNonQuery();
+        }
 
-        liveContextMock.Setup(c => c.TucJobs).Returns(liveJobsDbSet.Object);
-        archivedContextMock.Setup(c => c.TucJobArchives).Returns(archivedJobsDbSet.Object);
+        _contextOptions = new DbContextOptionsBuilder<DespatchContext>()
+            .UseSqlite(_connection)
+            .Options;
 
-        // Setup factory to return contexts in sequence
-        var callCount = 0;
+        // Create the schema
+        using var context = new DespatchContext(_contextOptions);
+        context.Database.EnsureCreated();
+
+        // Setup factory to return new contexts that share the same connection
         _contextFactoryMock.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() =>
-            {
-                callCount++;
-                return callCount == 1 ? liveContextMock.Object : archivedContextMock.Object;
-            });
+            .ReturnsAsync(() => new DespatchContext(_contextOptions));
+
+        _contextFactoryMock.Setup(f => f.CreateDbContext())
+            .Returns(() => new DespatchContext(_contextOptions));
+
+        // Default tenant setup
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
     }
+
+    public void Dispose()
+    {
+        _connection.Dispose();
+    }
+
+    private JobRepository CreateRepository() => new(
+        _contextFactoryMock.Object,
+        _tenantInfoServiceMock.Object,
+        _clearListEnvelopeServiceMock.Object
+    );
+
+    private DespatchContext CreateContext() => new(_contextOptions);
 
     [Fact]
     public async Task PodSearchDownloadAsync_ReturnsLiveAndArchivedJobs()
     {
         // Arrange
-        var liveJobs = new List<TucJob>
+        using (var context = CreateContext())
         {
-            CreateLiveJob(1, "LIVE-001", new DateTime(2024, 1, 15)),
-            CreateLiveJob(2, "LIVE-002", new DateTime(2024, 1, 16))
-        };
-
-        var archivedJobs = new List<TucJobArchive>
-        {
-            CreateArchivedJob(101, "ARCH-001", new DateTime(2024, 1, 15)),
-            CreateArchivedJob(102, "ARCH-002", new DateTime(2024, 1, 16))
-        };
-
-        SetupContextMocks(liveJobs, archivedJobs);
+            context.TucJobs.AddRange(
+                CreateLiveJob(1, "LIVE-001", new DateTime(2024, 1, 15)),
+                CreateLiveJob(2, "LIVE-002", new DateTime(2024, 1, 16))
+            );
+            context.TucJobArchives.AddRange(
+                CreateArchivedJob(101, "ARCH-001", new DateTime(2024, 1, 15)),
+                CreateArchivedJob(102, "ARCH-002", new DateTime(2024, 1, 16))
+            );
+            await context.SaveChangesAsync();
+        }
 
         var repository = CreateRepository();
 
@@ -87,16 +109,15 @@ public class JobRepositoryPodSearchDownloadTests
     public async Task PodSearchDownloadAsync_DateFilter_FiltersCorrectly()
     {
         // Arrange
-        var liveJobs = new List<TucJob>
+        using (var context = CreateContext())
         {
-            CreateLiveJob(1, "JOB-JAN", new DateTime(2024, 1, 15)),
-            CreateLiveJob(2, "JOB-FEB", new DateTime(2024, 2, 15)), // Outside range
-            CreateLiveJob(3, "JOB-JAN2", new DateTime(2024, 1, 20))
-        };
-
-        var archivedJobs = new List<TucJobArchive>();
-
-        SetupContextMocks(liveJobs, archivedJobs);
+            context.TucJobs.AddRange(
+                CreateLiveJob(1, "JOB-JAN", new DateTime(2024, 1, 15)),
+                CreateLiveJob(2, "JOB-FEB", new DateTime(2024, 2, 15)), // Outside range
+                CreateLiveJob(3, "JOB-JAN2", new DateTime(2024, 1, 20))
+            );
+            await context.SaveChangesAsync();
+        }
 
         var repository = CreateRepository();
 
@@ -122,16 +143,15 @@ public class JobRepositoryPodSearchDownloadTests
     public async Task PodSearchDownloadAsync_ClientFilter_FiltersCorrectly()
     {
         // Arrange
-        var liveJobs = new List<TucJob>
+        using (var context = CreateContext())
         {
-            CreateLiveJob(1, "CLIENT1-JOB", new DateTime(2024, 1, 15), clientId: 100),
-            CreateLiveJob(2, "CLIENT2-JOB", new DateTime(2024, 1, 15), clientId: 200),
-            CreateLiveJob(3, "CLIENT1-JOB2", new DateTime(2024, 1, 15), clientId: 100)
-        };
-
-        var archivedJobs = new List<TucJobArchive>();
-
-        SetupContextMocks(liveJobs, archivedJobs);
+            context.TucJobs.AddRange(
+                CreateLiveJob(1, "CLIENT1-JOB", new DateTime(2024, 1, 15), clientId: 100),
+                CreateLiveJob(2, "CLIENT2-JOB", new DateTime(2024, 1, 15), clientId: 200),
+                CreateLiveJob(3, "CLIENT1-JOB2", new DateTime(2024, 1, 15), clientId: 100)
+            );
+            await context.SaveChangesAsync();
+        }
 
         var repository = CreateRepository();
 
@@ -155,16 +175,15 @@ public class JobRepositoryPodSearchDownloadTests
     public async Task PodSearchDownloadAsync_CourierFilter_FiltersCorrectly()
     {
         // Arrange
-        var liveJobs = new List<TucJob>
+        using (var context = CreateContext())
         {
-            CreateLiveJob(1, "COURIER1-JOB", new DateTime(2024, 1, 15), courierId: 10),
-            CreateLiveJob(2, "COURIER2-JOB", new DateTime(2024, 1, 15), courierId: 20),
-            CreateLiveJob(3, "COURIER1-JOB2", new DateTime(2024, 1, 15), courierId: 10)
-        };
-
-        var archivedJobs = new List<TucJobArchive>();
-
-        SetupContextMocks(liveJobs, archivedJobs);
+            context.TucJobs.AddRange(
+                CreateLiveJob(1, "COURIER1-JOB", new DateTime(2024, 1, 15), courierId: 10),
+                CreateLiveJob(2, "COURIER2-JOB", new DateTime(2024, 1, 15), courierId: 20),
+                CreateLiveJob(3, "COURIER1-JOB2", new DateTime(2024, 1, 15), courierId: 10)
+            );
+            await context.SaveChangesAsync();
+        }
 
         var repository = CreateRepository();
 
@@ -188,16 +207,15 @@ public class JobRepositoryPodSearchDownloadTests
     public async Task PodSearchDownloadAsync_SpeedFilter_FiltersCorrectly()
     {
         // Arrange
-        var liveJobs = new List<TucJob>
+        using (var context = CreateContext())
         {
-            CreateLiveJob(1, "SPEED1-JOB", new DateTime(2024, 1, 15), speedId: 1),
-            CreateLiveJob(2, "SPEED2-JOB", new DateTime(2024, 1, 15), speedId: 2),
-            CreateLiveJob(3, "SPEED1-JOB2", new DateTime(2024, 1, 15), speedId: 1)
-        };
-
-        var archivedJobs = new List<TucJobArchive>();
-
-        SetupContextMocks(liveJobs, archivedJobs);
+            context.TucJobs.AddRange(
+                CreateLiveJob(1, "SPEED1-JOB", new DateTime(2024, 1, 15), speedId: 1),
+                CreateLiveJob(2, "SPEED2-JOB", new DateTime(2024, 1, 15), speedId: 2),
+                CreateLiveJob(3, "SPEED1-JOB2", new DateTime(2024, 1, 15), speedId: 1)
+            );
+            await context.SaveChangesAsync();
+        }
 
         var repository = CreateRepository();
 
@@ -217,24 +235,19 @@ public class JobRepositoryPodSearchDownloadTests
         result.Should().OnlyContain(j => j.JobNumber.StartsWith("SPEED1"));
     }
 
-    [Fact(Skip = "EF.Functions.Like cannot be mocked in-memory - requires integration test")]
+    [Fact]
     public async Task PodSearchDownloadAsync_JobNumberSearch_FiltersCorrectly()
     {
-        // Note: This test requires EF.Functions.Like which only works with a real database.
-        // The repository uses EF.Functions.Like for job number search which can't be evaluated client-side.
-        // This test should be run as an integration test with a real database connection.
-
         // Arrange
-        var liveJobs = new List<TucJob>
+        using (var context = CreateContext())
         {
-            CreateLiveJob(1, "ABC-001", new DateTime(2024, 1, 15)),
-            CreateLiveJob(2, "ABC-002", new DateTime(2024, 1, 15)),
-            CreateLiveJob(3, "XYZ-001", new DateTime(2024, 1, 15))
-        };
-
-        var archivedJobs = new List<TucJobArchive>();
-
-        SetupContextMocks(liveJobs, archivedJobs);
+            context.TucJobs.AddRange(
+                CreateLiveJob(1, "ABC-001", new DateTime(2024, 1, 15)),
+                CreateLiveJob(2, "ABC-002", new DateTime(2024, 1, 15)),
+                CreateLiveJob(3, "XYZ-001", new DateTime(2024, 1, 15))
+            );
+            await context.SaveChangesAsync();
+        }
 
         var repository = CreateRepository();
 
@@ -258,19 +271,15 @@ public class JobRepositoryPodSearchDownloadTests
     public async Task PodSearchDownloadAsync_ParentChildJobs_ReturnsAllJobsToMatchSearchBehavior()
     {
         // Arrange - Parent job 1 has child job 2
-        // Note: Previously the download method excluded parents with children, but this caused
-        // a mismatch between search results and download counts. The behavior was changed to
-        // include all jobs (parents and children) to match PodSearchAsync behavior.
-        var liveJobs = new List<TucJob>
+        using (var context = CreateContext())
         {
-            CreateLiveJob(1, "PARENT-001", new DateTime(2024, 1, 15), parentId: 1), // Parent (self-reference)
-            CreateLiveJob(2, "CHILD-001", new DateTime(2024, 1, 15), parentId: 1),  // Child of 1
-            CreateLiveJob(3, "SINGLE-001", new DateTime(2024, 1, 15))                // No parent/child relationship
-        };
-
-        var archivedJobs = new List<TucJobArchive>();
-
-        SetupContextMocks(liveJobs, archivedJobs);
+            context.TucJobs.AddRange(
+                CreateLiveJob(1, "PARENT-001", new DateTime(2024, 1, 15), parentId: 1), // Parent (self-reference)
+                CreateLiveJob(2, "CHILD-001", new DateTime(2024, 1, 15), parentId: 1),  // Child of 1
+                CreateLiveJob(3, "SINGLE-001", new DateTime(2024, 1, 15))                // No parent/child relationship
+            );
+            await context.SaveChangesAsync();
+        }
 
         var repository = CreateRepository();
 
@@ -296,16 +305,15 @@ public class JobRepositoryPodSearchDownloadTests
     public async Task PodSearchDownloadAsync_ResultsSortedByJobNumber()
     {
         // Arrange
-        var liveJobs = new List<TucJob>
+        using (var context = CreateContext())
         {
-            CreateLiveJob(1, "C-JOB", new DateTime(2024, 1, 15)),
-            CreateLiveJob(2, "A-JOB", new DateTime(2024, 1, 15)),
-            CreateLiveJob(3, "B-JOB", new DateTime(2024, 1, 15))
-        };
-
-        var archivedJobs = new List<TucJobArchive>();
-
-        SetupContextMocks(liveJobs, archivedJobs);
+            context.TucJobs.AddRange(
+                CreateLiveJob(1, "C-JOB", new DateTime(2024, 1, 15)),
+                CreateLiveJob(2, "A-JOB", new DateTime(2024, 1, 15)),
+                CreateLiveJob(3, "B-JOB", new DateTime(2024, 1, 15))
+            );
+            await context.SaveChangesAsync();
+        }
 
         var repository = CreateRepository();
 
@@ -328,17 +336,12 @@ public class JobRepositoryPodSearchDownloadTests
     public async Task PodSearchDownloadAsync_IsArchivedFlag_SetCorrectly()
     {
         // Arrange
-        var liveJobs = new List<TucJob>
+        using (var context = CreateContext())
         {
-            CreateLiveJob(1, "LIVE-001", new DateTime(2024, 1, 15))
-        };
-
-        var archivedJobs = new List<TucJobArchive>
-        {
-            CreateArchivedJob(101, "ARCH-001", new DateTime(2024, 1, 15))
-        };
-
-        SetupContextMocks(liveJobs, archivedJobs);
+            context.TucJobs.Add(CreateLiveJob(1, "LIVE-001", new DateTime(2024, 1, 15)));
+            context.TucJobArchives.Add(CreateArchivedJob(101, "ARCH-001", new DateTime(2024, 1, 15)));
+            await context.SaveChangesAsync();
+        }
 
         var repository = CreateRepository();
 
@@ -365,17 +368,12 @@ public class JobRepositoryPodSearchDownloadTests
     public async Task PodSearchDownloadAsync_EmptyFilters_ReturnsAllJobsInDateRange()
     {
         // Arrange
-        var liveJobs = new List<TucJob>
+        using (var context = CreateContext())
         {
-            CreateLiveJob(1, "JOB-001", new DateTime(2024, 1, 15))
-        };
-
-        var archivedJobs = new List<TucJobArchive>
-        {
-            CreateArchivedJob(101, "JOB-002", new DateTime(2024, 1, 15))
-        };
-
-        SetupContextMocks(liveJobs, archivedJobs);
+            context.TucJobs.Add(CreateLiveJob(1, "JOB-001", new DateTime(2024, 1, 15)));
+            context.TucJobArchives.Add(CreateArchivedJob(101, "JOB-002", new DateTime(2024, 1, 15)));
+            await context.SaveChangesAsync();
+        }
 
         var repository = CreateRepository();
 
@@ -394,16 +392,303 @@ public class JobRepositoryPodSearchDownloadTests
         result.Should().HaveCount(2);
     }
 
-    #region Helper Methods
-
-    private JobRepository CreateRepository()
+    [Fact]
+    public async Task PodSearchDownloadAsync_WildcardSearch_SearchesPodName()
     {
-        return new JobRepository(
-            _contextFactoryMock.Object,
-            _tenantInfoServiceMock.Object,
-            _clearListEnvelopeServiceMock.Object
+        // Arrange
+        using (var context = CreateContext())
+        {
+            context.TucJobs.AddRange(
+                CreateLiveJob(1, "JOB-001", new DateTime(2024, 1, 15), podName: "John Smith"),
+                CreateLiveJob(2, "JOB-002", new DateTime(2024, 1, 15), podName: "Jane Doe"),
+                CreateLiveJob(3, "JOB-003", new DateTime(2024, 1, 15), podName: "Bob Johnson")
+            );
+            await context.SaveChangesAsync();
+        }
+
+        var repository = CreateRepository();
+
+        // Act - Search for "John"
+        var result = await repository.PodSearchDownloadAsync(
+            fromDate: new DateTime(2024, 1, 1),
+            toDate: new DateTime(2024, 1, 31),
+            courierIds: [],
+            speedIds: [],
+            job: null,
+            wild: "John",
+            clientIds: []
         );
+
+        // Assert - Should find "John Smith" and "Bob Johnson"
+        result.Should().HaveCount(2);
+        result.Should().Contain(j => j.JobNumber == "JOB-001");
+        result.Should().Contain(j => j.JobNumber == "JOB-003");
     }
+
+    [Fact]
+    public async Task PodSearchDownloadAsync_WildcardSearch_SearchesContactPhone()
+    {
+        // Arrange
+        using (var context = CreateContext())
+        {
+            context.TucJobs.AddRange(
+                CreateLiveJob(1, "JOB-001", new DateTime(2024, 1, 15), contactPhone: "0412345678"),
+                CreateLiveJob(2, "JOB-002", new DateTime(2024, 1, 15), contactPhone: "0498765432"),
+                CreateLiveJob(3, "JOB-003", new DateTime(2024, 1, 15), contactPhone: "0412999888")
+            );
+            await context.SaveChangesAsync();
+        }
+
+        var repository = CreateRepository();
+
+        // Act - Search for "0412"
+        var result = await repository.PodSearchDownloadAsync(
+            fromDate: new DateTime(2024, 1, 1),
+            toDate: new DateTime(2024, 1, 31),
+            courierIds: [],
+            speedIds: [],
+            job: null,
+            wild: "0412",
+            clientIds: []
+        );
+
+        // Assert - Should find jobs with phone starting with 0412
+        result.Should().HaveCount(2);
+        result.Should().Contain(j => j.JobNumber == "JOB-001");
+        result.Should().Contain(j => j.JobNumber == "JOB-003");
+    }
+
+    [Fact]
+    public async Task PodSearchDownloadAsync_WildcardSearch_SearchesPickupFromPhone()
+    {
+        // Arrange
+        using (var context = CreateContext())
+        {
+            context.TucJobs.AddRange(
+                CreateLiveJob(1, "JOB-AAA", new DateTime(2024, 1, 15), pickupFromPhone: "0312345678"),
+                CreateLiveJob(2, "JOB-BBB", new DateTime(2024, 1, 15), pickupFromPhone: "0398765432"),
+                CreateLiveJob(3, "JOB-CCC", new DateTime(2024, 1, 15), pickupFromPhone: "0212345678")
+            );
+            await context.SaveChangesAsync();
+        }
+
+        var repository = CreateRepository();
+
+        // Act - Search for "031" (more specific to avoid matching other fields)
+        var result = await repository.PodSearchDownloadAsync(
+            fromDate: new DateTime(2024, 1, 1),
+            toDate: new DateTime(2024, 1, 31),
+            courierIds: [],
+            speedIds: [],
+            job: null,
+            wild: "031",
+            clientIds: []
+        );
+
+        // Assert - Should find job with pickup phone starting with 031
+        result.Should().HaveCount(1);
+        result.Should().Contain(j => j.JobNumber == "JOB-AAA");
+    }
+
+    [Fact]
+    public async Task PodSearchDownloadAsync_WildcardSearch_SearchesDeliverToPhone()
+    {
+        // Arrange
+        using (var context = CreateContext())
+        {
+            context.TucJobs.AddRange(
+                CreateLiveJob(1, "JOB-001", new DateTime(2024, 1, 15), deliverToPhone: "0712345678"),
+                CreateLiveJob(2, "JOB-002", new DateTime(2024, 1, 15), deliverToPhone: "0798765432"),
+                CreateLiveJob(3, "JOB-003", new DateTime(2024, 1, 15), deliverToPhone: "0812345678")
+            );
+            await context.SaveChangesAsync();
+        }
+
+        var repository = CreateRepository();
+
+        // Act - Search for "07"
+        var result = await repository.PodSearchDownloadAsync(
+            fromDate: new DateTime(2024, 1, 1),
+            toDate: new DateTime(2024, 1, 31),
+            courierIds: [],
+            speedIds: [],
+            job: null,
+            wild: "07",
+            clientIds: []
+        );
+
+        // Assert - Should find jobs with delivery phone starting with 07
+        result.Should().HaveCount(2);
+        result.Should().Contain(j => j.JobNumber == "JOB-001");
+        result.Should().Contain(j => j.JobNumber == "JOB-002");
+    }
+
+    [Fact]
+    public async Task PodSearchDownloadAsync_WildcardSearch_SearchesProofOfDeliveryEmail()
+    {
+        // Arrange
+        using (var context = CreateContext())
+        {
+            context.TucJobs.AddRange(
+                CreateLiveJob(1, "JOB-001", new DateTime(2024, 1, 15), podEmail: "john@example.com"),
+                CreateLiveJob(2, "JOB-002", new DateTime(2024, 1, 15), podEmail: "jane@other.com"),
+                CreateLiveJob(3, "JOB-003", new DateTime(2024, 1, 15), podEmail: "bob@example.com")
+            );
+            await context.SaveChangesAsync();
+        }
+
+        var repository = CreateRepository();
+
+        // Act - Search for "example.com"
+        var result = await repository.PodSearchDownloadAsync(
+            fromDate: new DateTime(2024, 1, 1),
+            toDate: new DateTime(2024, 1, 31),
+            courierIds: [],
+            speedIds: [],
+            job: null,
+            wild: "example.com",
+            clientIds: []
+        );
+
+        // Assert - Should find jobs with POD email at example.com
+        result.Should().HaveCount(2);
+        result.Should().Contain(j => j.JobNumber == "JOB-001");
+        result.Should().Contain(j => j.JobNumber == "JOB-003");
+    }
+
+    [Fact]
+    public async Task PodSearchDownloadAsync_WildcardSearch_SearchesProofOfDeliveryMobile()
+    {
+        // Arrange
+        using (var context = CreateContext())
+        {
+            context.TucJobs.AddRange(
+                CreateLiveJob(1, "JOB-001", new DateTime(2024, 1, 15), podMobile: "0400111222"),
+                CreateLiveJob(2, "JOB-002", new DateTime(2024, 1, 15), podMobile: "0400333444"),
+                CreateLiveJob(3, "JOB-003", new DateTime(2024, 1, 15), podMobile: "0411555666")
+            );
+            await context.SaveChangesAsync();
+        }
+
+        var repository = CreateRepository();
+
+        // Act - Search for "0400"
+        var result = await repository.PodSearchDownloadAsync(
+            fromDate: new DateTime(2024, 1, 1),
+            toDate: new DateTime(2024, 1, 31),
+            courierIds: [],
+            speedIds: [],
+            job: null,
+            wild: "0400",
+            clientIds: []
+        );
+
+        // Assert - Should find jobs with POD mobile starting with 0400
+        result.Should().HaveCount(2);
+        result.Should().Contain(j => j.JobNumber == "JOB-001");
+        result.Should().Contain(j => j.JobNumber == "JOB-002");
+    }
+
+    [Fact]
+    public async Task PodSearchDownloadAsync_WildcardSearch_SearchesTrackingEmail()
+    {
+        // Arrange
+        using (var context = CreateContext())
+        {
+            context.TucJobs.AddRange(
+                CreateLiveJob(1, "JOB-001", new DateTime(2024, 1, 15), trackingEmail: "tracking@company.com"),
+                CreateLiveJob(2, "JOB-002", new DateTime(2024, 1, 15), trackingEmail: "notify@company.com"),
+                CreateLiveJob(3, "JOB-003", new DateTime(2024, 1, 15), trackingEmail: "tracking@other.com")
+            );
+            await context.SaveChangesAsync();
+        }
+
+        var repository = CreateRepository();
+
+        // Act - Search for "company.com"
+        var result = await repository.PodSearchDownloadAsync(
+            fromDate: new DateTime(2024, 1, 1),
+            toDate: new DateTime(2024, 1, 31),
+            courierIds: [],
+            speedIds: [],
+            job: null,
+            wild: "company.com",
+            clientIds: []
+        );
+
+        // Assert - Should find jobs with tracking email at company.com
+        result.Should().HaveCount(2);
+        result.Should().Contain(j => j.JobNumber == "JOB-001");
+        result.Should().Contain(j => j.JobNumber == "JOB-002");
+    }
+
+    [Fact]
+    public async Task PodSearchDownloadAsync_WildcardSearch_SearchesTrackingMobile()
+    {
+        // Arrange
+        using (var context = CreateContext())
+        {
+            context.TucJobs.AddRange(
+                CreateLiveJob(1, "JOB-001", new DateTime(2024, 1, 15), trackingMobile: "0422111222"),
+                CreateLiveJob(2, "JOB-002", new DateTime(2024, 1, 15), trackingMobile: "0422333444"),
+                CreateLiveJob(3, "JOB-003", new DateTime(2024, 1, 15), trackingMobile: "0433555666")
+            );
+            await context.SaveChangesAsync();
+        }
+
+        var repository = CreateRepository();
+
+        // Act - Search for "0422"
+        var result = await repository.PodSearchDownloadAsync(
+            fromDate: new DateTime(2024, 1, 1),
+            toDate: new DateTime(2024, 1, 31),
+            courierIds: [],
+            speedIds: [],
+            job: null,
+            wild: "0422",
+            clientIds: []
+        );
+
+        // Assert - Should find jobs with tracking mobile starting with 0422
+        result.Should().HaveCount(2);
+        result.Should().Contain(j => j.JobNumber == "JOB-001");
+        result.Should().Contain(j => j.JobNumber == "JOB-002");
+    }
+
+    [Fact]
+    public async Task PodSearchDownloadAsync_WildcardSearch_SearchesArchivedJobFields()
+    {
+        // Arrange
+        using (var context = CreateContext())
+        {
+            context.TucJobArchives.AddRange(
+                CreateArchivedJob(1, "ARCH-001", new DateTime(2024, 1, 15), podName: "John Smith", contactPhone: "0412345678"),
+                CreateArchivedJob(2, "ARCH-002", new DateTime(2024, 1, 15), podName: "Jane Doe", contactPhone: "0498765432"),
+                CreateArchivedJob(3, "ARCH-003", new DateTime(2024, 1, 15), podName: "Bob Johnson", contactPhone: "0412999888")
+            );
+            await context.SaveChangesAsync();
+        }
+
+        var repository = CreateRepository();
+
+        // Act - Search for "John"
+        var result = await repository.PodSearchDownloadAsync(
+            fromDate: new DateTime(2024, 1, 1),
+            toDate: new DateTime(2024, 1, 31),
+            courierIds: [],
+            speedIds: [],
+            job: null,
+            wild: "John",
+            clientIds: []
+        );
+
+        // Assert - Should find archived jobs with "John" in POD name
+        result.Should().HaveCount(2);
+        result.Should().Contain(j => j.JobNumber == "ARCH-001");
+        result.Should().Contain(j => j.JobNumber == "ARCH-003");
+    }
+
+    #region Helper Methods
 
     private static TucJob CreateLiveJob(
         int id,
@@ -412,7 +697,15 @@ public class JobRepositoryPodSearchDownloadTests
         int? clientId = null,
         int? courierId = null,
         int? speedId = null,
-        int? parentId = null)
+        int? parentId = null,
+        string? podName = null,
+        string? contactPhone = null,
+        string? pickupFromPhone = null,
+        string? deliverToPhone = null,
+        string? podEmail = null,
+        string? podMobile = null,
+        string? trackingEmail = null,
+        string? trackingMobile = null)
     {
         return new TucJob
         {
@@ -427,8 +720,14 @@ public class JobRepositoryPodSearchDownloadTests
             UcjbAmount = 100m,
             FuelSurchargeAmount = 10m,
             PpdexclusiveAmount = 5m,
-            PricingBreakdownJobs = new List<PricingBreakdown>(),
-            TucJobNationwides = new List<TucJobNationwide>()
+            UcjbPodname = podName,
+            UcjbContactPhone = contactPhone,
+            PickupFromPhone = pickupFromPhone,
+            DeliverToPhone = deliverToPhone,
+            ProofOfDeliveryEmail = podEmail,
+            ProofOfDeliveryMobile = podMobile,
+            TrackingEmail = trackingEmail,
+            TrackingMobile = trackingMobile
         };
     }
 
@@ -439,7 +738,15 @@ public class JobRepositoryPodSearchDownloadTests
         int? clientId = null,
         int? courierId = null,
         int? speedId = null,
-        int? parentId = null)
+        int? parentId = null,
+        string? podName = null,
+        string? contactPhone = null,
+        string? pickupFromPhone = null,
+        string? deliverToPhone = null,
+        string? podEmail = null,
+        string? podMobile = null,
+        string? trackingEmail = null,
+        string? trackingMobile = null)
     {
         return new TucJobArchive
         {
@@ -454,85 +761,16 @@ public class JobRepositoryPodSearchDownloadTests
             UcjbAmount = 100m,
             FuelSurchargeAmount = 10m,
             PpdexclusiveAmount = 5m,
-            PricingBreakdowns = new List<PricingBreakdownArchive>()
+            UcjbPodname = podName,
+            UcjbContactPhone = contactPhone,
+            PickUpFromPhone = pickupFromPhone,
+            DeliverToPhone = deliverToPhone,
+            ProofOfDeliveryEmail = podEmail,
+            ProofOfDeliveryMobile = podMobile,
+            TrackingEmail = trackingEmail,
+            TrackingMobile = trackingMobile
         };
     }
 
     #endregion
 }
-
-#region Async Query Helpers
-
-internal class TestAsyncQueryProvider<TEntity> : IAsyncQueryProvider
-{
-    private readonly IQueryProvider _inner;
-
-    internal TestAsyncQueryProvider(IQueryProvider inner)
-    {
-        _inner = inner;
-    }
-
-    public IQueryable CreateQuery(Expression expression)
-    {
-        return new TestAsyncEnumerable<TEntity>(expression);
-    }
-
-    public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
-    {
-        return new TestAsyncEnumerable<TElement>(expression);
-    }
-
-    public object? Execute(Expression expression)
-    {
-        return _inner.Execute(expression);
-    }
-
-    public TResult Execute<TResult>(Expression expression)
-    {
-        return _inner.Execute<TResult>(expression);
-    }
-
-    public TResult ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken = default)
-    {
-        var resultType = typeof(TResult).GetGenericArguments()[0];
-        var executeMethod = typeof(IQueryProvider).GetMethods()
-            .First(m => m is { Name: nameof(IQueryProvider.Execute), IsGenericMethodDefinition: true })
-            .MakeGenericMethod(resultType);
-
-        var result = executeMethod.Invoke(_inner, [expression]);
-        return (TResult)typeof(Task).GetMethod(nameof(Task.FromResult))!
-            .MakeGenericMethod(resultType)
-            .Invoke(null, [result])!;
-    }
-}
-
-internal class TestAsyncEnumerable<T> : EnumerableQuery<T>, IAsyncEnumerable<T>, IQueryable<T>
-{
-    public TestAsyncEnumerable(IEnumerable<T> enumerable) : base(enumerable) { }
-    public TestAsyncEnumerable(Expression expression) : base(expression) { }
-
-    public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
-    {
-        return new TestAsyncEnumerator<T>(this.AsEnumerable().GetEnumerator());
-    }
-
-    IQueryProvider IQueryable.Provider => new TestAsyncQueryProvider<T>(this);
-}
-
-internal class TestAsyncEnumerator<T>(IEnumerator<T> inner) : IAsyncEnumerator<T>
-{
-    public T Current => inner.Current;
-
-    public ValueTask<bool> MoveNextAsync()
-    {
-        return ValueTask.FromResult(inner.MoveNext());
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        inner.Dispose();
-        return ValueTask.CompletedTask;
-    }
-}
-
-#endregion

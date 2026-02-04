@@ -1,5 +1,6 @@
 import {IHereMapsLocationResult} from "../interfaces/heremaps-autocomplete.interfaces";
 import {HereMapsLookupResponse} from "../interfaces/hereMapsLookUp.interfaces";
+import angular from 'angular';
 
 class AddressLookupService implements angular.IServiceProvider {
     static $inject = [

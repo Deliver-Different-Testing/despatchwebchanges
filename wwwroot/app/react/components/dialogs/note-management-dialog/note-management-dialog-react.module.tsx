@@ -13,6 +13,7 @@ import {getTheme} from '../../../theme/muiTheme';
 import {notesApi} from '../../../services/notesApi';
 import {toastService} from '../../../services/toastService';
 import {JobNote, NoteType, CreateNoteRequest, UpdateNoteRequest} from '../../../interfaces';
+import angular from 'angular';
 
 // State management for the dialog
 interface DialogState {

@@ -3,6 +3,7 @@ import {BulkPricePreviewRow, PricingMode} from "./bulk-price-upload-dialog.inter
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 import BaseController from "../../base-controller";
+import angular from 'angular';
 
 type DialogState = 'upload' | 'mode-select' | 'result' | 'loading';
 

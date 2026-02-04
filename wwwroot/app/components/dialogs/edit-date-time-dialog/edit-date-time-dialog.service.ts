@@ -2,6 +2,7 @@ import { IDialogDateTimeResult } from "../../../interfaces/dialog-result.interfa
 import { ISuggestion } from "../../../interfaces/job.interface";
 import { JobProperty } from "../../../enums/job-property.enum";
 import dayjs from "dayjs";
+import angular from 'angular';
 
 // Type for the result from React dialog
 interface EditDateTimeDialogResultFromReact {

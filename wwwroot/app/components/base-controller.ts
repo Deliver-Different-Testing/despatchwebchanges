@@ -1,6 +1,7 @@
 import {getIanaTimezone} from "../functions/formatDates";
 import {TimeZone} from "../contants";
 import {timezoneShortFilter} from "../filters";
+import angular from 'angular';
 
 class BaseController implements angular.IController {
     protected eventDeregistrations: Array<() => void> = [];

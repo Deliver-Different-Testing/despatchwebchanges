@@ -468,7 +468,7 @@ public class JobReportServiceLargeDataTests
                 PickupAddressLine5 = "Auckland",
                 PickupAddressLine6 = "New Zealand",
                 PickupAddressLine7 = $"{1000 + i % 100}",
-                PickupAddressLine8 = "",
+                PickupAddressLine8 = string.Empty,
                 DeliveryAddressLine1 = $"{i + 200} Delivery Ave",
                 DeliveryAddressLine2 = $"Unit {i % 50}",
                 DeliveryAddressLine3 = $"Level {i % 10}",
@@ -476,7 +476,7 @@ public class JobReportServiceLargeDataTests
                 DeliveryAddressLine5 = "Wellington",
                 DeliveryAddressLine6 = "New Zealand",
                 DeliveryAddressLine7 = $"{2000 + i % 100}",
-                DeliveryAddressLine8 = "",
+                DeliveryAddressLine8 = string.Empty,
                 ClientReferenceA = $"REF-A-{i:D6}",
                 ClientReferenceB = $"REF-B-{i:D6}",
                 ClientReferenceC = i % 10 == 0 ? $"REF-C-{i:D6}" : null,
@@ -538,7 +538,7 @@ public class JobReportServiceLargeDataTests
                 LatePickup = i % 5 == 0 ? "Yes" : null,
                 LateDelivery = i % 7 == 0 ? "Yes" : null,
                 Courier = $"{i % 50}",
-                DeliveryMins = ((i % 60) + 30).ToString(),
+                DeliveryMins = (i % 60 + 30).ToString(),
                 Minutes = "60"
             });
         }

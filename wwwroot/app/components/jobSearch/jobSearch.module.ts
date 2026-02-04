@@ -15,10 +15,9 @@ import InterCourierChargeDialogService
 import InterCourierChargeDialogController
     from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.controller";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
+import angular from 'angular';
 
 const jobSearchModule = angular.module('uDispatch.jobSearch', [
-    'ngMap',
-    'heremaps',
     'ui.router',
     'ngMaterial',
     'ngAnimate',

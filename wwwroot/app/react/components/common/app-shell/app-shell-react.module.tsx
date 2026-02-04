@@ -23,6 +23,7 @@ import {
     DateFilterData,
 } from '../app-toolbar/ToolbarActions';
 import dayjs from 'dayjs';
+import angular from 'angular';
 
 // Toolbar Actions Configuration
 export interface ToolbarActionsConfig {

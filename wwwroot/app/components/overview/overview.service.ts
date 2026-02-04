@@ -9,6 +9,7 @@ import {
 import dayjs from "dayjs";
 import {formatDateForApiWithTzs} from "../../functions/formatDates";
 import {transformOpenJobResponseDto} from "../../functions/dtoMappings";
+import angular from 'angular';
 
 class OverviewService implements angular.IServiceProvider {
     static $inject = [

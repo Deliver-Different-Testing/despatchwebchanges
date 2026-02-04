@@ -13,6 +13,7 @@ import {TaskDashboardPage} from './TaskDashboardPage';
 import {getTheme} from '../../theme/muiTheme';
 import {MountTaskDashboardConfig, LayoutActions} from './TaskDashboardPage.interfaces';
 import {queryClient} from '../../query';
+import angular from 'angular';
 
 let taskDashboardRoot: Root | null = null;
 let taskDashboardContainer: HTMLElement | null = null;

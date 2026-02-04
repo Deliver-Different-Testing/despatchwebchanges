@@ -10,6 +10,7 @@ import OverviewService from "../overview/overview.service";
 import {IAppConfig} from "../../interfaces/app-config.interface";
 import GreetUser from "../../functions/greetUser";
 import {IAssignedFlight} from "../../interfaces/job.interface";
+import angular from 'angular';
 
 class MegaMapController extends BaseController {
     static $inject = [

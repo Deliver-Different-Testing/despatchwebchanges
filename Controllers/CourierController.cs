@@ -86,11 +86,11 @@ public class CourierController(
         return Task.FromResult<IActionResult>(Json(new List<PotentialCouriersViewModel>()));
     }
 
-    public async Task<IActionResult> AllActiveSearch(string searchTerm, bool dgOnly = false)
+    public async Task<IActionResult> AllActiveSearch(string searchTerm, bool dgOnly = false, bool loggedInOnly = false)
     {
         try
         {
-            var result = await courierRepository.AllActiveCouriersAsync(searchTerm, dgOnly);
+            var result = await courierRepository.AllActiveCouriersAsync(searchTerm, dgOnly, loggedInOnly);
             return Json(result);
         }
         catch (Exception ex)

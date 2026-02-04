@@ -3,6 +3,7 @@ import {IDispatchJob, ISuggestion} from "../../../interfaces/job.interface";
 import {FlightAgentConfirmationDialogResult} from "../../../interfaces/dialog-result.interfaces";
 import countSubJobs from "../../../functions/countSubJobs";
 import {Dayjs} from "dayjs";
+import angular from 'angular';
 
 // Type for the flight data passed to React dialog (with Dayjs dates)
 interface FlightViewModelForReact {

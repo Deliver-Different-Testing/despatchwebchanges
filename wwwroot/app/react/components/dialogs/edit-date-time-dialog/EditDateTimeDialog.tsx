@@ -85,7 +85,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
 
     // Handle date/time change
     const handleDateTimeChange = useCallback((newValue: Dayjs | null) => {
-        if (newValue && newValue.isValid()) {
+        if (newValue) {
             setDateTime(newValue);
         }
     }, []);

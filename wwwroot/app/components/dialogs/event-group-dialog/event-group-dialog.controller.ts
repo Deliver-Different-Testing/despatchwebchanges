@@ -5,6 +5,7 @@ import {IEventGroupViewModel} from "../../../interfaces/event-group-view-model.i
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
 import NavigationService from "../../../services/navigation.service";
+import angular from 'angular';
 
 export class EventGroupDialogController extends BaseController {
     searchText?: string;

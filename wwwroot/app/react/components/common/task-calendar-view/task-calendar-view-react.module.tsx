@@ -13,6 +13,7 @@ import {Task} from '../task-item/TaskItem.interfaces';
 import {TasksServiceInterface} from './TaskCalendarView.interfaces';
 import {getTheme} from '../../../theme/muiTheme';
 import {toastService} from '../../../services/toastService';
+import angular from 'angular';
 
 /**
  * AngularJS Component Controller for React TaskCalendarView

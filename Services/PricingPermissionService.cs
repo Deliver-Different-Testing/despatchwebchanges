@@ -141,10 +141,9 @@ public class PricingPermissionService(
     }
 
     /// <inheritdoc />
-    public Task<PricingPermissions> GetPricingPermissionsAsync()
-    {
+    public Task<PricingPermissions> GetPricingPermissionsAsync() =>
         // Return all permissions enabled
-        return Task.FromResult(new PricingPermissions
+        Task.FromResult(new PricingPermissions
         {
             CanModifyPrices = true,
             CanBulkUpdate = true,
@@ -152,5 +151,4 @@ public class PricingPermissionService(
             CanSetBaseAmount = true,
             CanManageBreakdown = true
         });
-    }
 }

@@ -15,6 +15,7 @@ import {toastService} from '../../../services/toastService';
 import {IAppConfig} from "../../../../interfaces/app-config.interface";
 import {JobNote} from '../../../interfaces';
 import {openNoteManagementDialog} from '../../dialogs/note-management-dialog/note-management-dialog-react.module';
+import angular from 'angular';
 
 /**
  * Wrapper service that uses React dialog but conforms to old interface

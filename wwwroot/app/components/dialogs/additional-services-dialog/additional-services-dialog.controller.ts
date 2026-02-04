@@ -2,6 +2,7 @@ import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 import {IJob} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
+import angular from 'angular';
 
 class AdditionalServicesDialogController extends BaseController {
     static $inject = [

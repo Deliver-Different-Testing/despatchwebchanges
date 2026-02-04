@@ -12,6 +12,7 @@ import {VoidJobConfirmationDialog, VoidJobDialogJob, VoidJobResult, RelatedJob} 
 import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
 import {jobApi} from '../../../services/jobApi';
+import angular from 'angular';
 
 interface ToastService {
     showToast: (message: string, type: 'success' | 'warning' | 'error') => void;

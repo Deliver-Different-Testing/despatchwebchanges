@@ -22,6 +22,7 @@ import {
     transformTodayActiveDriversDTO
 } from "../../functions/dtoMappings";
 import {ICourierCompliance} from "./interfaces/ICourierCompliance";
+import angular from 'angular';
 
 class DriverManagementService implements angular.IServiceProvider {
     static $inject = [

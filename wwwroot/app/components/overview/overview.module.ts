@@ -4,6 +4,7 @@ import OverviewService from "./overview.service";
 import OverviewFiltersService from "./services/overview-filters.service";
 import {MapDialogController} from "../dialogs/map-dialog/map-dialog.controller";
 import MapDialogService from "../dialogs/map-dialog/map-dialog.service";
+import angular from 'angular';
 
 const overviewModule = angular.module('uDispatch.overview', [
     'ui.router',
@@ -11,9 +12,7 @@ const overviewModule = angular.module('uDispatch.overview', [
     'ngAnimate',
     'ngAria',
     'ngMessages',
-    'md.data.table',
-    'ngMap',
-    'heremaps'
+    'md.data.table'
 ]);
 
 overviewModule

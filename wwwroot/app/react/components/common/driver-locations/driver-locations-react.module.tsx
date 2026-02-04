@@ -16,6 +16,7 @@ import type {
     TruckMode,
 } from './DriverLocations.types';
 import { getTheme } from '../../../theme/muiTheme';
+import angular from 'angular';
 
 /**
  * AngularJS Component Controller for React DriverLocations

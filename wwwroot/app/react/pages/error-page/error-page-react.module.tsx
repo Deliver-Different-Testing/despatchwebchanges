@@ -10,6 +10,7 @@ import {createRoot, Root} from 'react-dom/client';
 import {ThemeProvider, CssBaseline} from '@mui/material';
 import {ErrorPage, ErrorPageProps, ErrorType} from './ErrorPage';
 import {getTheme} from '../../theme/muiTheme';
+import angular from 'angular';
 
 let errorPageRoot: Root | null = null;
 let errorPageContainer: HTMLElement | null = null;

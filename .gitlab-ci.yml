@@ -57,7 +57,11 @@ test:backend:
     paths:
       - node_modules/
       - .npm/
+      - .jest-cache/
     policy: pull-push
+    fallback_keys:
+      - npm-master
+      - npm-staging
   before_script:
     - npm ci --cache .npm --prefer-offline
   extends: .test-rules
@@ -71,13 +75,37 @@ test:frontend:lint:
     - npm run lint --if-present
     - npm run type-check --if-present
 
-# Unit tests - runs in parallel with lint
+# Fast unit tests for MR pipelines (no coverage)
 test:frontend:unit:
   stage: .pre
   extends: .frontend-base
   allow_failure: false
   script:
-    - npm test -- --ci --coverage --maxWorkers=2
+    - npm test -- --ci
+
+# Coverage job only runs on merge to protected branches
+test:frontend:coverage:
+  stage: .pre
+  image: node:20-alpine
+  retry:
+    max: 2
+    when: runner_system_failure
+  variables:
+    NODE_OPTIONS: "--max-old-space-size=4096"
+  cache:
+    key: npm-${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/
+      - .npm/
+      - .jest-cache/
+    policy: pull-push
+    fallback_keys:
+      - npm-master
+      - npm-staging
+  before_script:
+    - npm ci --cache .npm --prefer-offline
+  script:
+    - npm test -- --ci --coverage
   artifacts:
     when: always
     reports:
@@ -87,3 +115,6 @@ test:frontend:unit:
     paths:
       - coverage/
     expire_in: 1 week
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+    - if: $CI_COMMIT_BRANCH == "staging"

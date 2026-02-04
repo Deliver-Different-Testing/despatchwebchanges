@@ -4,6 +4,7 @@ import DispatchCoreService from "./dispatch-core.service";
 import dayjs from "dayjs";
 import {DfrntPageViewModel} from "../interfaces/dfrnt-page-view-model.interface";
 import {DispatchState, ValidationResult} from "../interfaces/dispatch-executor-service.interfaces";
+import angular from 'angular';
 
 class DispatchExecutorService implements angular.IServiceProvider {
     static $inject = [

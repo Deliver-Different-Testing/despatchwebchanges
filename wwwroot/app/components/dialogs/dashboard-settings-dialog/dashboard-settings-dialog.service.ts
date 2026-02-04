@@ -5,6 +5,7 @@ import IDashboardSettingsConfig from "./interfaces/IDashboardSettingsConfig";
 import ISettingsDialogResult from "./interfaces/IDashboardSettingsDialogResult";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
 import isDefaultLayout from "../../../functions/isDefaultLayout";
+import angular from 'angular';
 
 // Type declaration for the React dialog on window
 declare global {

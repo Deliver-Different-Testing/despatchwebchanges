@@ -1,4 +1,5 @@
 import IDfrntStateParams from "./interfaces/DfrntStateParams.interface";
+import angular from 'angular';
 
 class RouterConfig {
     constructor(
