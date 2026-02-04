@@ -29,27 +29,7 @@ import {
     Favorite as FavoriteIcon,
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
-
-export interface NavItem {
-    id: string;
-    label: string;
-    icon: React.ReactNode;
-    state: string;
-    usOnly?: boolean;
-    nzOnly?: boolean;
-}
-
-export interface SideNavProps {
-    open: boolean;
-    userName: string;
-    companyName?: string;
-    isUsCustomer: boolean;
-    currentState: string;
-    onClose: () => void;
-    onNavigate: (state: string) => void;
-    onMouseEnter?: () => void;
-    onMouseLeave?: () => void;
-}
+import {NavItem, SideNavProps} from "./SideNav.types";
 
 const drawerWidth = 280;
 

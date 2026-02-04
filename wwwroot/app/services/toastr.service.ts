@@ -1,3 +1,4 @@
+import angular from 'angular';
 enum ToastType {
     SUCCESS = 'success',
     ERROR = 'error',

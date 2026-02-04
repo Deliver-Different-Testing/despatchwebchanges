@@ -23,6 +23,7 @@ import IFlightCargoProcessing, {
 import {formatDateForApiWithTzs} from "../../functions/formatDates";
 import {Dayjs} from "dayjs";
 import {transformCargoHoursDTO, transformDispatchJobDTO, transformFlightDTO} from "../../functions/dtoMappings";
+import angular from 'angular';
 
 class NationwideService implements angular.IServiceProvider {
     static $inject = [

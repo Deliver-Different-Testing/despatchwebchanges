@@ -1,4 +1,5 @@
 import BulkPriceUploadDialogController from "./bulk-price-upload-dialog.controller";
+import angular from 'angular';
 
 class BulkPriceUploadDialogService implements angular.IServiceProvider {
     static $inject = [

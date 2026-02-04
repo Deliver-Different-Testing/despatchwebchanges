@@ -1,25 +1,25 @@
 /**
- * CourierMap Component
+ * CourierMapPage Component
  *
- * Exports for the CourierMap React component and AngularJS integration.
+ * Exports for the CourierMapPage React component and AngularJS integration.
  */
 
-export { CourierMap } from './CourierMap';
+export { CourierMapPage } from './CourierMapPage';
 export { CourierMapReactComponent } from './courier-map-react.module';
 export { useCourierMap } from './useCourierMap';
 export { CourierMarkerManager } from './CourierMarkerManager';
-export { DriversPanel } from './DriversPanel';
-export { DriverListItem } from './DriverListItem';
-export { MapControls } from './MapControls';
+export { DriversPanel } from './components/DriversPanel';
+export { DriverListItem } from './components/DriverListItem';
+export { MapControls } from './components/MapControls';
 export type {
-    CourierMapProps,
+    CourierMapPageProps,
     CourierMarker,
     DriversPanelProps,
     DriverListItemProps,
     MapControlsProps,
     UseCourierMapReturn,
     RegionalBounds,
-} from './CourierMap.types';
+} from './CourierMapPage.types';
 export {
     US_BOUNDS,
     NZ_BOUNDS,
@@ -32,4 +32,4 @@ export {
     DRIVER_FOCUS_ZOOM,
     OVERVIEW_ZOOM,
     AVATAR_COLORS,
-} from './CourierMap.types';
+} from './CourierMapPage.types';

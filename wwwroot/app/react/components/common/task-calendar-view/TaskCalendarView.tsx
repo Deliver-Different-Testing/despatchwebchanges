@@ -41,8 +41,6 @@ import {
     CalendarWeek,
 } from './TaskCalendarView.interfaces';
 import {Task} from '../task-item/TaskItem.interfaces';
-import {TaskItem} from '../task-item/TaskItem';
-import {getIanaTimezone, getTenantTimezone, getTimezoneAbbreviation} from '../../../utils/dateUtils';
 
 dayjs.extend(isoWeek);
 dayjs.extend(weekday);
@@ -52,7 +50,6 @@ dayjs.extend(timezone);
 const DAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export class TaskCalendarView extends React.Component<TaskCalendarViewProps, TaskCalendarViewState> {
-    private readonly timeZoneShort: string;
 
     constructor(props: TaskCalendarViewProps) {
         super(props);
@@ -64,9 +61,6 @@ export class TaskCalendarView extends React.Component<TaskCalendarViewProps, Tas
             selectedDate: dayjs(),
             timeSlots: this.generateTimeSlots(),
         };
-
-        const ianaTimeZone = getIanaTimezone(getTenantTimezone());
-        this.timeZoneShort = getTimezoneAbbreviation(ianaTimeZone);
     }
 
     componentDidMount(): void {

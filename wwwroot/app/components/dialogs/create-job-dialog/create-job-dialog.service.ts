@@ -1,4 +1,5 @@
 ﻿import {CreateJobDialogController} from "./create-job-dialog.controller";
+import angular from 'angular';
 
 class CreateJobDialogService implements angular.IServiceProvider {
     static $inject = [

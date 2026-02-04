@@ -12,6 +12,7 @@ import {TaskItem} from './TaskItem';
 import {Task, TaskItemConfig, TasksServiceInterface, DispatchServiceInterface} from './TaskItem.interfaces';
 import {getTheme} from '../../../theme/muiTheme';
 import {toastService} from '../../../services/toastService';
+import angular from 'angular';
 
 /**
  * AngularJS Component Controller for React TaskItem

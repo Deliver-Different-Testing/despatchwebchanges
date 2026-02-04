@@ -324,7 +324,10 @@
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\enums\jobCategory.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\job-highlight.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\job-list.component.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\components\common\app-shell\app-shell.types.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\no-data\types.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\components\common\pod-photo-viewer\pod-photo-viewer.types.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\components\common\side-nav\SideNav.types.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\StickyNotes.tsx" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\StickyNotes.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\sticky-notes-react.module.tsx" />

@@ -74,18 +74,9 @@ public class SplitJobService(
             // Update parent job (only set parent IDs if not already set)
             job.JobRelationshipTypeId = parentRelTypeId;
             job.UcjbCourierId = parentJobCourierId;
-            if (!job.ParentId.HasValue || job.ParentId == job.UcjbId)
-            {
-                job.ParentId = jobId;
-            }
-            if (!job.RootParentId.HasValue)
-            {
-                job.RootParentId = jobId;
-            }
-            if (!job.InformationParentId.HasValue)
-            {
-                job.InformationParentId = job.RootParentId;
-            }
+            if (!job.ParentId.HasValue || job.ParentId == job.UcjbId) job.ParentId = jobId;
+            job.RootParentId ??= jobId;
+            job.InformationParentId ??= job.RootParentId;
 
             // Create pickup job (leg 1: From → Meeting Point)
             var pickupJob = CreatePickupJob(job, pickupJobNumber, validSpeedId, childRelTypeId,
@@ -193,18 +184,9 @@ public class SplitJobService(
 
             // Update parent job booking (only set parent IDs if not already set)
             jobBooking.JobRelationshipTypeId = parentRelTypeId;
-            if (!jobBooking.ParentId.HasValue || jobBooking.ParentId == jobBooking.UcbkId)
-            {
-                jobBooking.ParentId = jobBookingId;
-            }
-            if (!jobBooking.BookingRootParentId.HasValue)
-            {
-                jobBooking.BookingRootParentId = jobBookingId;
-            }
-            if (!jobBooking.BookingInformationParentId.HasValue)
-            {
-                jobBooking.BookingInformationParentId = jobBooking.BookingRootParentId;
-            }
+            if (!jobBooking.ParentId.HasValue || jobBooking.ParentId == jobBooking.UcbkId) jobBooking.ParentId = jobBookingId;
+            jobBooking.BookingRootParentId ??= jobBookingId;
+            jobBooking.BookingInformationParentId ??= jobBooking.BookingRootParentId;
 
             // Create pickup job booking
             var pickupJobBooking = CreatePickupJobBooking(jobBooking, pickupJobNumber, validSpeedId, childRelTypeId,
@@ -316,8 +298,8 @@ public class SplitJobService(
 
         do
         {
-            result = (char)('A' + (n % 26)) + result;
-            n = (n / 26) - 1;
+            result = (char)('A' + n % 26) + result;
+            n = n / 26 - 1;
         } while (n >= 0);
 
         return result;
@@ -336,17 +318,13 @@ public class SplitJobService(
         // Get the main job number from the root parent
         string mainJobNumber;
         if (rootParentId == job.UcjbId)
-        {
             mainJobNumber = job.UcjbNumber;
-        }
         else
-        {
             mainJobNumber = await context.TucJobs
                 .AsNoTracking()
                 .Where(j => j.UcjbId == rootParentId)
                 .Select(j => j.UcjbNumber)
                 .FirstOrDefaultAsync() ?? job.UcjbNumber;
-        }
 
         // Count all existing descendants under the root (excluding the root itself)
         var existingChildCount = await context.TucJobs
@@ -373,17 +351,13 @@ public class SplitJobService(
         // Get the main job number from the root parent
         string mainJobNumber;
         if (rootParentId == jobBooking.UcbkId)
-        {
             mainJobNumber = jobBooking.UcbkJobNumber;
-        }
         else
-        {
             mainJobNumber = await context.TucJobBookings
                 .AsNoTracking()
                 .Where(j => j.UcbkId == rootParentId)
                 .Select(j => j.UcbkJobNumber)
                 .FirstOrDefaultAsync() ?? jobBooking.UcbkJobNumber;
-        }
 
         // Count all existing descendants under the root (excluding the root itself)
         var existingChildCount = await context.TucJobBookings
@@ -402,9 +376,8 @@ public class SplitJobService(
         string jobNumber,
         int? speedId,
         int childRelTypeId,
-        AddressViewModel meetingPointAddress)
-    {
-        return new TucJob
+        AddressViewModel meetingPointAddress) =>
+        new()
         {
             UcjbNumber = jobNumber,
             UcjbDate = parentJob.UcjbDate,
@@ -478,16 +451,14 @@ public class SplitJobService(
             DeliveryLatitude = meetingPointAddress.Latitude,
             DeliveryLongitude = meetingPointAddress.Longitude
         };
-    }
 
     private static TucJob CreateDeliveryJob(
         TucJob parentJob,
         string jobNumber,
         int? speedId,
         int childRelTypeId,
-        AddressViewModel meetingPointAddress)
-    {
-        return new TucJob
+        AddressViewModel meetingPointAddress) =>
+        new()
         {
             UcjbNumber = jobNumber,
             UcjbDate = parentJob.UcjbDate,
@@ -561,16 +532,14 @@ public class SplitJobService(
             DeliveryLatitude = parentJob.DeliveryLatitude,
             DeliveryLongitude = parentJob.DeliveryLongitude
         };
-    }
 
     private static TucJobBooking CreatePickupJobBooking(
         TucJobBooking parentJob,
         string jobNumber,
         int? speedId,
         int childRelTypeId,
-        AddressViewModel meetingPointAddress)
-    {
-        return new TucJobBooking
+        AddressViewModel meetingPointAddress) =>
+        new()
         {
             UcbkJobNumber = jobNumber,
             UcbkDate = parentJob.UcbkDate,
@@ -631,16 +600,14 @@ public class SplitJobService(
             DeliveryAddressLine7 = meetingPointAddress.AddressLine7,
             DeliveryAddressLine8 = meetingPointAddress.AddressLine8
         };
-    }
 
     private static TucJobBooking CreateDeliveryJobBooking(
         TucJobBooking parentJob,
         string jobNumber,
         int? speedId,
         int childRelTypeId,
-        AddressViewModel meetingPointAddress)
-    {
-        return new TucJobBooking
+        AddressViewModel meetingPointAddress) =>
+        new()
         {
             UcbkJobNumber = jobNumber,
             UcbkDate = parentJob.UcbkDate,
@@ -701,7 +668,6 @@ public class SplitJobService(
             DeliveryAddressLine7 = parentJob.DeliveryAddressLine7,
             DeliveryAddressLine8 = parentJob.DeliveryAddressLine8
         };
-    }
 
     private static async Task ReRateSplitJobsAsync(DespatchContext context, int parentJobId)
     {
@@ -728,12 +694,10 @@ public class SplitJobService(
         }
     }
 
-    private static async Task UpdateJobDisplayInDespatchAsync(DespatchContext context, int jobId)
-    {
+    private static async Task UpdateJobDisplayInDespatchAsync(DespatchContext context, int jobId) =>
         await context.TucJobs
             .Where(j => j.RootParentId == jobId)
             .ExecuteUpdateAsync(j => j.SetProperty(x => x.DisplayInDespatch, true));
-    }
 
     private static async Task CreateSplitJobNotesAsync(
         DespatchContext context,

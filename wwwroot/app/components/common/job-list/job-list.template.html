@@ -67,6 +67,16 @@
                     Reset Columns
                 </button>
             </div>
+
+            <div class="courier-filter-toggle" ng-if="ctrl.allowDispatch">
+                <md-switch
+                        class="md-primary logged-in-toggle"
+                        ng-model="ctrl.loggedInCouriersOnly"
+                        ng-change="ctrl.toggleLoggedInCouriersOnly()"
+                        aria-label="Show only logged-in couriers">
+                    Logged-in only
+                </md-switch>
+            </div>
         </div>
     </div>
 

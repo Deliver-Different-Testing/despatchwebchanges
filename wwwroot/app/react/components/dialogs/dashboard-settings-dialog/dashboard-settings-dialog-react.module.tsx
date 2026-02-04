@@ -16,6 +16,7 @@ import {
     RefreshOption,
 } from './DashboardSettingsDialog';
 import {getTheme} from '../../../theme/muiTheme';
+import angular from 'angular';
 
 // State management for the dialog
 interface DialogState {

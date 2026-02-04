@@ -19,10 +19,9 @@ import RecoveryAgentManagementController
 import RecoveryAgentManagementService
     from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.service";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
+import angular from 'angular';
 
 const nationwideModule = angular.module('uDispatch.nationwide', [
-    'ngMap',
-    'heremaps',
     'ui.router',
     'ngMaterial',
     'ngAnimate',

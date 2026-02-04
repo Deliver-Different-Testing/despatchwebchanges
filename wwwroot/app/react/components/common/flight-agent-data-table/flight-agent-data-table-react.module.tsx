@@ -11,6 +11,7 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import { FlightAgentDataTable } from './FlightAgentDataTable';
 import { getTheme } from '../../../theme/muiTheme';
 import { IAppConfig } from '../../../../interfaces/app-config.interface';
+import angular from 'angular';
 import {
     FlightAgentDataTableProps,
     FlightOption,

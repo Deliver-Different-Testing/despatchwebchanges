@@ -1,3 +1,4 @@
+import angular from 'angular';
 /**
  * React App Shell Directive
  *

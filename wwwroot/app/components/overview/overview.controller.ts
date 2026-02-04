@@ -17,6 +17,7 @@ import MapDialogService from "../dialogs/map-dialog/map-dialog.service";
 import {IPaginatedResponse} from "../../interfaces/paginated-response.interface";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import {IDataTableColumn, IDataTableSort} from "../common/data-table/data-table.interfaces";
+import angular from 'angular';
 
 // Type declaration for the React dialog on window
 declare global {

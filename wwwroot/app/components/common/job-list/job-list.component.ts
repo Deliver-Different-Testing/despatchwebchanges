@@ -13,6 +13,7 @@ import DensityMode from "../../../enums/densityMode";
 import AutoCompleteDialogService from "../../dialogs/auto-complete-dialog/auto-complete-dialog.service";
 import ToastrService from "../../../services/toastr.service";
 import {formatLongDateTime, formatMins} from "../../../functions/formatDates";
+import angular from 'angular';
 
 class JobsListController extends BaseController {
     static $inject = [
@@ -31,6 +32,7 @@ class JobsListController extends BaseController {
     private readonly DENSE_MODE_SAVE_KEY: string = `jobListComponentDenseViewMode_${ContactID}`;
     private readonly COLUMN_WIDTHS_SAVE_KEY: string = `jobListColumnWidths_${ContactID}`;
     private readonly SORT_STATE_SAVE_KEY: string = `jobListSortState_${ContactID}`;
+    private readonly LOGGED_IN_ONLY_KEY: string = `jobListLoggedInCouriersOnly_${ContactID}`;
     private readonly COURIER_URL: string = "/courier/AllActiveSearch";
 
     unsubscribeFromHighlights?: () => void;
@@ -64,6 +66,7 @@ class JobsListController extends BaseController {
     selectedCategory: JobCategory = JobCategory.All;
     searchQuery: string = '';
     densityMode: DensityMode = DensityMode.Normal;
+    loggedInCouriersOnly: boolean = false;
 
     // Stats for the header
     stats = {
@@ -225,6 +228,10 @@ class JobsListController extends BaseController {
         if (Modernizr.localstorage) {
             const savedDenseMode = localStorage.getItem(`${this.DENSE_MODE_SAVE_KEY}_${this.jobListType}`);
             if (savedDenseMode) this.densityMode = savedDenseMode as DensityMode;
+
+            // Load saved logged-in couriers only preference
+            const savedLoggedInOnly = localStorage.getItem(`${this.LOGGED_IN_ONLY_KEY}_${this.jobListType}`);
+            if (savedLoggedInOnly) this.loggedInCouriersOnly = savedLoggedInOnly === 'true';
         }
     }
 
@@ -351,6 +358,13 @@ class JobsListController extends BaseController {
                 }
             }
         });
+    }
+
+    toggleLoggedInCouriersOnly(): void {
+        // ng-model has already updated loggedInCouriersOnly, just persist it
+        if (Modernizr.localstorage) {
+            localStorage.setItem(`${this.LOGGED_IN_ONLY_KEY}_${this.jobListType}`, String(this.loggedInCouriersOnly));
+        }
     }
 
     getDensityClass(): string {
@@ -911,9 +925,13 @@ class JobsListController extends BaseController {
             // Check if this is a DG job
             const isDgJob = job && job.dgClass !== null && job.dgClass !== undefined && job.dgClass > 0;
 
-            // Add dgOnly parameter if it's a DG job
-            const url = isDgJob
-                ? `${this.COURIER_URL}?dgOnly=true`
+            // Build URL with parameters
+            const params: string[] = [];
+            if (isDgJob) params.push('dgOnly=true');
+            if (this.loggedInCouriersOnly) params.push('loggedInOnly=true');
+
+            const url = params.length > 0
+                ? `${this.COURIER_URL}?${params.join('&')}`
                 : this.COURIER_URL;
 
             const results = await this.DispatchData.autocompleteSearch(searchText, url);
@@ -1303,8 +1321,13 @@ class JobsListController extends BaseController {
         try {
             if (!this.canBulkAssign()) return;
 
+            // Build URL with loggedInOnly parameter if enabled
+            const url = this.loggedInCouriersOnly
+                ? `${this.COURIER_URL}?loggedInOnly=true`
+                : this.COURIER_URL;
+
             const selectedCourier = await this.autoCompleteDialogService.showAutocompleteDialog($event,
-                this.COURIER_URL,
+                url,
                 "Search couriers...",
                 "Courier",
                 "Bulk Assign Courier",

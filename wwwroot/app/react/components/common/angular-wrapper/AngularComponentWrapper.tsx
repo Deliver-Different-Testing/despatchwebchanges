@@ -7,6 +7,7 @@
  */
 
 import React, {useEffect, useRef, useCallback} from 'react';
+import angular from 'angular';
 
 interface AngularComponentWrapperProps {
     /**

@@ -1,4 +1,5 @@
 import { IAppConfig } from "./interfaces/app-config.interface";
+import angular from 'angular';
 
 class ThemeConfig {
     private readonly isUsCustomer: boolean;

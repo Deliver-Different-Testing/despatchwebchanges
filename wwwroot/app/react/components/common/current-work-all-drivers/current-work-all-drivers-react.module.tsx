@@ -11,6 +11,7 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import { CurrentWorkAllDrivers } from './CurrentWorkAllDrivers';
 import type { IDriverWorkOverview } from './CurrentWorkAllDrivers.types';
 import { getTheme } from '../../../theme/muiTheme';
+import angular from 'angular';
 
 /**
  * AngularJS Component Controller for React CurrentWorkAllDrivers

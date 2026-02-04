@@ -6,6 +6,7 @@ import SimplePriceEditDialogService, {
 } from "../simple-price-edit-dialog/simple-price-edit-dialog.service";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
 import {pricingBreakdownApi} from "../../../react/services/pricingBreakdownApi";
+import angular from 'angular';
 
 // Type declaration for the React dialog on window
 declare global {

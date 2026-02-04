@@ -14,6 +14,7 @@ import ToastrService from "../../../services/toastr.service";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import {OtherMessagePartyType} from "./messaging-dailog.enums";
 import {DEFAULT_QUICK_RESPONSES} from "./DEFAULT_QUICK_RESPONSES";
+import angular from 'angular';
 
 class MessagingDialogController extends BaseController {
     static $inject = [

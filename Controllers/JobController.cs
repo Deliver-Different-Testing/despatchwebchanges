@@ -190,6 +190,9 @@ public class JobController(
     {
         try
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             var jobId = breakdown.ChildJobId ?? breakdown.PrebookJobId;
             if (!jobId.HasValue) throw new ArgumentNullException(nameof(jobId));
 

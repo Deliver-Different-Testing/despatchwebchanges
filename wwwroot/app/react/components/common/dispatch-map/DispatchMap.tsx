@@ -8,7 +8,7 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Box, LinearProgress } from '@mui/material';
-import type { DispatchMapProps, IAvailableCourierPosition } from './DispatchMap.types';
+import type { DispatchMapProps } from './DispatchMap.types';
 import { COURIER_REFRESH_INTERVAL_MS } from './DispatchMap.types';
 import { useHereMap } from './useHereMap';
 import { useMapPreferences } from './useMapPreferences';

@@ -6,9 +6,9 @@
  */
 
 import React from 'react';
-import type { DriverListItemProps } from './CourierMap.types';
-import { AVATAR_COLORS } from './CourierMap.types';
-import styles from './CourierMap.module.css';
+import type { DriverListItemProps } from '../CourierMapPage.types';
+import { AVATAR_COLORS } from '../CourierMapPage.types';
+import styles from '../CourierMapPage.module.css';
 
 /**
  * Get a consistent color based on courier ID

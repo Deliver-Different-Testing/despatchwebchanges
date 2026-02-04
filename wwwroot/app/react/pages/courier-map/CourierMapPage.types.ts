@@ -1,13 +1,13 @@
 /**
- * CourierMap Type Definitions
+ * CourierMapPage Type Definitions
  *
- * Type definitions for the CourierMap React component.
+ * Type definitions for the CourierMapPage React component.
  */
 
-import type { HereMapConfig, HereMapCredentials } from '../here-map/HereMap.types';
-
 // Re-export from courier interface for convenience
-export type { IAvailableCourierPosition } from '../../../../interfaces/courier.interface';
+import React from "react";
+
+export type { IAvailableCourierPosition } from '../../../interfaces/courier.interface';
 
 /**
  * Internal marker tracking state
@@ -31,9 +31,9 @@ export interface RegionalBounds {
 }
 
 /**
- * Props for the main CourierMap component
+ * Props for the main CourierMapPage component
  */
-export interface CourierMapProps {
+export interface CourierMapPageProps {
     /** Whether this is a US customer (affects bounds and labels) */
     isUsCustomer: boolean;
     /** Map center coordinates */
@@ -45,7 +45,7 @@ export interface CourierMapProps {
  */
 export interface DriversPanelProps {
     /** List of drivers to display */
-    drivers: import('../../../../interfaces/courier.interface').IAvailableCourierPosition[];
+    drivers: import('../../../interfaces/courier.interface').IAvailableCourierPosition[];
     /** Total count of active drivers */
     totalActiveDrivers: number;
     /** Whether data is currently loading */
@@ -57,7 +57,7 @@ export interface DriversPanelProps {
     /** Callback when search term changes */
     onSearchChange: (term: string) => void;
     /** Callback when a driver is clicked */
-    onDriverClick: (driver: import('../../../../interfaces/courier.interface').IAvailableCourierPosition) => void;
+    onDriverClick: (driver: import('../../../interfaces/courier.interface').IAvailableCourierPosition) => void;
     /** Callback when refresh button is clicked */
     onRefresh: () => void;
     /** Whether panel is hidden */
@@ -71,7 +71,7 @@ export interface DriversPanelProps {
  */
 export interface DriverListItemProps {
     /** Driver data */
-    driver: import('../../../../interfaces/courier.interface').IAvailableCourierPosition;
+    driver: import('../../../interfaces/courier.interface').IAvailableCourierPosition;
     /** Callback when clicked */
     onClick: () => void;
 }
@@ -97,9 +97,9 @@ export interface UseCourierMapReturn {
     /** Whether the map is initialized */
     isInitialized: boolean;
     /** Update courier markers on the map */
-    updateCouriers: (couriers: import('../../../../interfaces/courier.interface').IAvailableCourierPosition[]) => void;
+    updateCouriers: (couriers: import('../../../interfaces/courier.interface').IAvailableCourierPosition[]) => void;
     /** Center map on a specific courier */
-    centerOnCourier: (driver: import('../../../../interfaces/courier.interface').IAvailableCourierPosition) => void;
+    centerOnCourier: (driver: import('../../../interfaces/courier.interface').IAvailableCourierPosition) => void;
     /** Fit all couriers in view / return to overview */
     returnToOverview: () => void;
 }

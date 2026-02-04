@@ -5,7 +5,7 @@
  * stored in localStorage.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import type { MapControlState } from './DispatchMap.types';
 import { PREFERENCE_KEYS } from './DispatchMap.types';
 

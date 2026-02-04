@@ -38,6 +38,7 @@ import PodPhotoType from "../../../enums/podPhotoType";
 import {formatLongDateTime} from "../../../functions/formatDates";
 import {ViewDensity, ViewDensityLabels} from "../../../enums/view-density.enum";
 import DispatchExecutorService from "../../../services/dispatch-executor.service";
+import angular from 'angular';
 
 class JobDetailController extends BaseController {
     static $inject = [

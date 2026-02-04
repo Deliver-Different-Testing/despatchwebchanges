@@ -11,6 +11,7 @@ import {ThemeProvider, CssBaseline} from '@mui/material';
 import {PriceBreakdownDialog, PriceBreakdown} from './PriceBreakdownDialog';
 import {getTheme} from '../../../theme/muiTheme';
 import {pricingBreakdownApi} from '../../../services/pricingBreakdownApi';
+import angular from 'angular';
 
 // API interface for making requests
 interface ApiService {

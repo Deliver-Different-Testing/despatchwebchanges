@@ -6,9 +6,9 @@
 
 import React, { useMemo } from 'react';
 import { CircularProgress } from '@mui/material';
-import type { DriversPanelProps } from './CourierMap.types';
+import type { DriversPanelProps } from '../CourierMapPage.types';
 import { DriverListItem } from './DriverListItem';
-import styles from './CourierMap.module.css';
+import styles from '../CourierMapPage.module.css';
 
 export function DriversPanel({
     drivers,

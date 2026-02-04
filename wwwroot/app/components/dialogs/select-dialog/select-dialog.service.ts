@@ -1,6 +1,7 @@
 import {ISuggestion} from "../../../interfaces/job.interface";
 import {ISelectDialogResult} from "../../../interfaces/dialog-result.interfaces";
 import {SelectDialogController} from "./select-dialog.controller";
+import angular from 'angular';
 
 export class SelectDialogService implements angular.IServiceProvider {
     static $inject = [

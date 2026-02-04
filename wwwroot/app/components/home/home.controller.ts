@@ -4,7 +4,6 @@ import DispatchCoreService from "../../services/dispatch-core.service";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
 import {IAppConfig} from "../../interfaces/app-config.interface";
 import {
-    IAddressViewModel,
     IAreaClearList,
     IClearListViewModel,
     ICourierData,
@@ -55,6 +54,7 @@ import DispatchBoxes from "./enums/DispatchBoxes";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 import ITaskItemConfig from "../../enums/task-item-config";
 import CurrentWorkLists from "./enums/CurrentWorkLists";
+import angular from "angular";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);

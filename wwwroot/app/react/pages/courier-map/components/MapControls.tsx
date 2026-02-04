@@ -6,8 +6,8 @@
 
 import React from 'react';
 import { Tooltip } from '@mui/material';
-import type { MapControlsProps } from './CourierMap.types';
-import styles from './CourierMap.module.css';
+import type { MapControlsProps } from '../CourierMapPage.types';
+import styles from '../CourierMapPage.module.css';
 
 export function MapControls({ onFitAll, onRefresh, isLoading }: MapControlsProps) {
     return (

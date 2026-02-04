@@ -6,10 +6,10 @@
  */
 
 import { useRef, useEffect, useState, useCallback } from 'react';
-import type { IAvailableCourierPosition } from '../../../../interfaces/courier.interface';
-import type { UseCourierMapReturn } from './CourierMap.types';
-import { DEFAULT_ZOOM, OVERVIEW_ZOOM } from './CourierMap.types';
-import { initPlatform, createMap } from '../here-map/hereMapUtils';
+import type { IAvailableCourierPosition } from '../../../interfaces/courier.interface';
+import type { UseCourierMapReturn } from './CourierMapPage.types';
+import { DEFAULT_ZOOM, OVERVIEW_ZOOM } from './CourierMapPage.types';
+import { initPlatform, createMap } from '../../components/common/here-map/hereMapUtils';
 import { CourierMarkerManager } from './CourierMarkerManager';
 
 interface UseCourierMapOptions {

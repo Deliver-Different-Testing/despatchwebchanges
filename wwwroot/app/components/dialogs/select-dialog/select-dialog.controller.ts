@@ -3,6 +3,7 @@ import {ISuggestion} from "../../../interfaces/job.interface";
 import {ISelectDialogResult} from "../../../interfaces/dialog-result.interfaces";
 import {JobProperty} from "../../../enums/job-property.enum";
 import BaseController from "../../base-controller";
+import angular from 'angular';
 
 export class SelectDialogController extends BaseController {
     static $inject = ["$mdDialog",

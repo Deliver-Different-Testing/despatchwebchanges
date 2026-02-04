@@ -1,5 +1,6 @@
 ﻿import {IJob} from "../../../interfaces/job.interface";
 import SimplePriceEditDialogController from "./simple-price-edit-dialog.controller";
+import angular from 'angular';
 
 export type PricingMode = 'recalculate' | 'base' | 'gross';
 

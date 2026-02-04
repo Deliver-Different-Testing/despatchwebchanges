@@ -4,9 +4,9 @@
  * Manages HERE Maps initialization and lifecycle for the dispatch map.
  */
 
-import { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { queryKeys } from '../../../query/queryClient';
+import { queryKeys } from '../../../query';
 import { getHereMapsKey } from '../../../services/configApi';
 import { DEFAULT_MAP_ZOOM } from './DispatchMap.types';
 

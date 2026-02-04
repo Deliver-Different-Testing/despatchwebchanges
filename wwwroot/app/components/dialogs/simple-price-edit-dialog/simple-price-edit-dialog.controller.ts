@@ -3,6 +3,7 @@ import {IJob} from "../../../interfaces/job.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 import BaseController from "../../base-controller";
+import angular from 'angular';
 
 type PricingMode = 'recalculate' | 'base' | 'gross';
 

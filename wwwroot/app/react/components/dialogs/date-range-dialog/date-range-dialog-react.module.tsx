@@ -10,6 +10,7 @@ import {createRoot, Root} from 'react-dom/client';
 import {ThemeProvider, CssBaseline} from '@mui/material';
 import {DateRangeDialog, DateRange} from './DateRangeDialog';
 import {getTheme} from '../../../theme/muiTheme';
+import angular from 'angular';
 
 // State management for the dialog
 interface DialogState {

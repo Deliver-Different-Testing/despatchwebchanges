@@ -26,6 +26,7 @@ import {IAfterHoursCourierSchedule} from "./interfaces/IAfterHoursCourierSchedul
 import {AppPage} from "../../enums/app-pages.enum";
 import {ITodayActiveDrivers} from "./interfaces/ITodayActiveDrivers";
 import {ICourierCompliance} from "./interfaces/ICourierCompliance";
+import angular from 'angular';
 
 class DriverManagementController extends BaseController {
     static $inject = [

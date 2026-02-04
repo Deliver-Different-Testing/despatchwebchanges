@@ -9,23 +9,7 @@ import React from 'react';
 import {Box} from '@mui/material';
 import {AppToolbar} from '../app-toolbar/AppToolbar';
 import {SideNav} from '../side-nav/SideNav';
-
-export interface AppShellProps {
-    title: string;
-    firstName: string;
-    fullName: string;
-    isUsCustomer: boolean;
-    currentState: string;
-    logoUrl?: string;
-    companyName?: string;
-    children?: React.ReactNode;
-    onLogoClick?: () => void;
-    onNavigate: (state: string) => void;
-}
-
-interface AppShellState {
-    sidenavOpen: boolean;
-}
+import {AppShellProps, AppShellState} from "./app-shell.types";
 
 export class AppShell extends React.Component<AppShellProps, AppShellState> {
     private closeTimeoutRef: number | null = null;

@@ -112,15 +112,16 @@ public class ClearListEnvelopeService(
         var currentDate = infoService.GetCurrentTenantTime();
 
         return Context.TucCouriers
-            .SelectMany(c => c.TucJobUcjbCouriers
-                .Where(jt => !jt.UcjbJobDone && !jt.UcjbVoid)
-                .SelectMany(jt => Context.ZipPolygons
-                    .Where(zp => zp.Latitude == jt.PickUpLatitude && 
-                                 zp.Longitude == jt.PickUpLongitude)
+            .AsSplitQuery()
+            .SelectMany(courier => courier.TucJobUcjbCouriers
+                .Where(job => !job.UcjbJobDone && !job.UcjbVoid)
+                .SelectMany(job => Context.ZipPolygons
+                    .Where(zp => zp.Latitude == job.PickUpLatitude && 
+                                 zp.Longitude == job.PickUpLongitude)
                     .SelectMany(zp => zp.TblClearListAreaPolygons
-                        .Where(clap => clap.ClearListArea.ClearListAreaId == clearListAreaId && 
-                                      clap.ClearListArea.ChannelId == c.UccrChannelId)
-                        .Select(clap => new { Courier = c, Job = jt }))))
+                        .Where(areaPolygon => areaPolygon.ClearListArea.ClearListAreaId == clearListAreaId && 
+                                      areaPolygon.ClearListArea.ChannelId == courier.UccrChannelId)
+                        .Select(areaPolygon => new { Courier = courier, Job = job }))))
             .Where(x => x.Courier.CourierLogInOut.LogInTime <= currentDate &&
                        x.Courier.CourierLogInOut.LogOutTime == null)
             .Select(x => new EnvelopeCoordinate
@@ -140,8 +141,8 @@ public class ClearListEnvelopeService(
                 .Where(zp => zp.Latitude == jt.PickUpLatitude && 
                              zp.Longitude == jt.PickUpLongitude)
                 .SelectMany(zp => zp.TblClearListAreaPolygons
-                    .Where(clazp => clazp.ClearListAreaId == clearListAreaId)
-                    .Select(clazp => new EnvelopeCoordinate
+                    .Where(areaPolygon => areaPolygon.ClearListAreaId == clearListAreaId)
+                    .Select(areaPolygon => new EnvelopeCoordinate
                     {
                         Longitude = (decimal)jt.DeliveryLongitude,
                         Latitude = (decimal)jt.DeliveryLatitude
@@ -155,10 +156,10 @@ public class ClearListEnvelopeService(
             .Where(cla => cla.ClearListAreaId == clearListAreaId)
             .SelectMany(cla => cla.TblClearListAreaPolygons
                 .SelectMany(clap => clap.Polygon.TblPolygonGps
-                    .Select(pgps => new EnvelopeCoordinate
+                    .Select(polygonGp => new EnvelopeCoordinate
                     {
-                        Longitude = pgps.Longitude,
-                        Latitude = pgps.Latitude
+                        Longitude = polygonGp.Longitude,
+                        Latitude = polygonGp.Latitude
                     })));
 
     /// <summary>
@@ -172,9 +173,9 @@ public class ClearListEnvelopeService(
                 .Where(jt => !jt.UcjbJobDone && !jt.UcjbVoid)
                 .SelectMany(jt => jt.UcjbToNavigation.TblPolygonSuburbs
                     .SelectMany(dps => dps.Polygon.TblClearListAreaPolygons
-                        .Where(dclap => dclap.ClearListArea.ClearListAreaId == clearListAreaId && 
-                                        dclap.ClearListArea.ChannelId == c.UccrChannelId)
-                        .Select(dclap => new EnvelopeCoordinate
+                        .Where(areaPolygon => areaPolygon.ClearListArea.ClearListAreaId == clearListAreaId && 
+                                        areaPolygon.ClearListArea.ChannelId == c.UccrChannelId)
+                        .Select(areaPolygon => new EnvelopeCoordinate
                         {
                             Longitude = (decimal)c.CourierGps.Longitude,
                             Latitude = (decimal)c.CourierGps.Latitude

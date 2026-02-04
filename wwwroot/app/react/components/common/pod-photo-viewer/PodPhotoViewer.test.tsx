@@ -6,7 +6,8 @@ import React from 'react';
 import {render, screen, waitFor, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ThemeProvider, createTheme} from '@mui/material';
-import {PodPhotoViewer, PodPhoto, PodPhotoViewerProps} from './PodPhotoViewer';
+import {PodPhoto, PodPhotoViewerProps } from "./pod-photo-viewer.types";
+import PodPhotoViewer from "./PodPhotoViewer";
 
 // Mock the dateUtils module
 jest.mock('../../../utils/dateUtils', () => ({

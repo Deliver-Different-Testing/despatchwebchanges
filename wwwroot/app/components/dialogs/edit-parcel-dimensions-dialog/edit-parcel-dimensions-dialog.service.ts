@@ -1,5 +1,6 @@
 import {IJob} from "../../../interfaces/job.interface";
 import EditParcelDimensionsDialogController from "./edit-parcel-dimensions-dialog.controller";
+import angular from 'angular';
 
 class EditParcelDimensionsDialogService {
     static $inject = [

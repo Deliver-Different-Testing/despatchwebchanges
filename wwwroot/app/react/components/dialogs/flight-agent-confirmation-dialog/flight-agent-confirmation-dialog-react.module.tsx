@@ -18,6 +18,7 @@ import { FlightAgentConfirmationDialog } from './FlightAgentConfirmationDialog';
 import { getTheme } from '../../../theme/muiTheme';
 import { getIanaTimezone, formatDateForApi, getTenantTimezone } from '../../../utils/dateUtils';
 import { nationwideApi } from '../../../services/nationwideApi';
+import angular from 'angular';
 import {
     FlightAgentDialogResult,
     FlightViewModel,

@@ -1,3 +1,4 @@
+import angular from 'angular';
 import "./feature-in-development-dialog.styles.less";
 
 export class FeatureInDevelopmentDialogController {

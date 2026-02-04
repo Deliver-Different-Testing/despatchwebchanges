@@ -1,5 +1,6 @@
 import {ISuggestion} from "../../../interfaces/job.interface";
 import {IOverViewDateSearchRange} from "../overview.interfaces";
+import angular from 'angular';
 
 class OverviewFiltersService implements angular.IServiceProvider {
     selectedRegions: ISuggestion[];

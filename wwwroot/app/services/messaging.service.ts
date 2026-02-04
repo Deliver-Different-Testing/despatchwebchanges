@@ -5,6 +5,7 @@ import {
 } from "../components/dialogs/messaging-dialog/messaging-dialog.interfaces";
 import {ISuggestion} from "../interfaces/job.interface";
 import {OtherMessagePartyType} from "../components/dialogs/messaging-dialog/messaging-dailog.enums";
+import angular from 'angular';
 
 class MessagingService implements angular.IServiceProvider {
     static $inject = [

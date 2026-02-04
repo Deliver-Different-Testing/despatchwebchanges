@@ -1,5 +1,6 @@
 import InterCourierChargeDialogController from "./inter-courier-charge-dialog.controller";
 import ToastrService from "../../../services/toastr.service";
+import angular from 'angular';
 
 class InterCourierChargeDialogService implements angular.IServiceProvider {
     static $inject = [

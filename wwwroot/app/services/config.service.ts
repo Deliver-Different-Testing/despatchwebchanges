@@ -1,4 +1,5 @@
 import ApiConfig from "../interfaces/apiConfig.interface";
+import angular from 'angular';
 
 class ConfigService implements angular.IServiceProvider {
     static $inject = ["$http"];

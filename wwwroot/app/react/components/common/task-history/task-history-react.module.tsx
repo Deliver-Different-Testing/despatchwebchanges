@@ -12,6 +12,7 @@ import {TaskHistory} from './TaskHistory';
 import {DeliveryJourney, DeliveryHistoryConfig, DispatchServiceInterface} from './TaskHistory.interfaces';
 import {getTheme} from '../../../theme/muiTheme';
 import {toastService} from '../../../services/toastService';
+import angular from 'angular';
 
 /**
  * AngularJS Component Controller for React TaskHistory

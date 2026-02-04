@@ -5,6 +5,7 @@
  */
 
 import {ErrorType} from '../../react/pages/error-page/ErrorPage';
+import angular from 'angular';
 
 interface ReactErrorPageScope extends angular.IScope {
     errorType?: string;

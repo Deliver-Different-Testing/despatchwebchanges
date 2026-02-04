@@ -3,6 +3,7 @@ import DriverManagementComponent from "./driver-management.component";
 import ComposeEmailDialogController from "../dialogs/compose-email-dialog/compose-email-dialog.controller";
 import {ComposeEmailDialogService} from "../dialogs/compose-email-dialog/compose-email-dialog.service";
 import EditAfterhoursDialogService from "../dialogs/edit-afterhours-dialog/edit-afterhours-dialog.service";
+import angular from 'angular';
 
 const driverManagementModule = angular.module('uDispatch.driverManagementModule', [
     'ui.router',

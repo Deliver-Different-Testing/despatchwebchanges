@@ -7,6 +7,7 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
+import angular from 'angular';
 
 /**
  * Wraps a React component for use as an AngularJS component

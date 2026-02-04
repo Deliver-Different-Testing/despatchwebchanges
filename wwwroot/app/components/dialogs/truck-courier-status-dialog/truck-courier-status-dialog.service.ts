@@ -1,6 +1,7 @@
 import TruckCourierStatusDialogController from "./truck-courier-status-dialog.controller";
 import {ITruckCourierStatus} from "../../../interfaces/courier.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";
+import angular from 'angular';
 
 class TruckCourierStatusDialogService implements angular.IServiceProvider {
     static $inject = [

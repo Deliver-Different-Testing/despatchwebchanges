@@ -486,7 +486,6 @@ describe('DispatchMap Map Ready Callback', () => {
     });
 
     it('calls onMapReady with map, platform and ui when provided', async () => {
-        const mockOnMapReady = jest.fn();
         const mockMap = {};
         const mockPlatform = {};
         const mockUI = {};

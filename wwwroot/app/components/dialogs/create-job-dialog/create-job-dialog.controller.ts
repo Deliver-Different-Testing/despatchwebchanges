@@ -19,6 +19,7 @@ import {formatDateForApiWithTzs, getIanaTimezone} from "../../../functions/forma
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import {TimeZone} from "../../../contants";
+import angular from 'angular';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);

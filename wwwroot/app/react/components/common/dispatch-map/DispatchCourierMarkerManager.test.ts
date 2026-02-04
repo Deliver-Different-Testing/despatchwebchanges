@@ -10,8 +10,7 @@ import type { IAvailableCourierPosition } from './DispatchMap.types';
 import {
     COURIER_LABEL_COLORS,
     MARKER_COLORS,
-    POSITION_THRESHOLD,
-    ICON_CACHE_LIMIT,
+    POSITION_THRESHOLD
 } from './DispatchMap.types';
 
 // Mock HERE Maps marker
@@ -54,7 +53,7 @@ const mockMarkerInstances: any[] = [];
 const mockH = {
     map: {
         Group: jest.fn(() => createMockMarkerGroup()),
-        Marker: jest.fn((point, options) => {
+        Marker: jest.fn((_point, options) => {
             const marker = createMockMarker(options?.data);
             mockMarkerInstances.push(marker);
             return marker;

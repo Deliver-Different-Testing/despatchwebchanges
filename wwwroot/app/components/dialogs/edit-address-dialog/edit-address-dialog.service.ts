@@ -2,6 +2,7 @@ import {IAddressViewModel, IEditAddressDialogViewModel} from "../../../interface
 import {EditAddressDialogViewModel} from "../../../react/interfaces";
 import ToastrService from "../../../services/toastr.service";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
+import angular from 'angular';
 
 // Type declaration for the React dialog on window
 declare global {

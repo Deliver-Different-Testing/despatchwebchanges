@@ -1,6 +1,7 @@
 ﻿import "./dayjs-date-picker.styles.less";
 import BaseController from "../../base-controller";
 import dayjs, {Dayjs} from "dayjs";
+import angular from 'angular';
 
 class DayjsDatePickerController extends BaseController {
     dateTime?: Dayjs;

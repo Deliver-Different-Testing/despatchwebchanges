@@ -24,7 +24,7 @@ public static class DateExtension
 
         public DateTime ToTimeZone(string timeZoneId)
         {
-            var timeZone = FindTimeZoneById(timeZoneId);
+            var timeZone = DateTime.FindTimeZoneById(timeZoneId);
             return TimeZoneInfo.ConvertTimeFromUtc(dateTime, timeZone);
         }
 
@@ -37,7 +37,7 @@ public static class DateExtension
 
         public DateTimeOffset ToTimeZoneOffset(string timeZoneId)
         {
-            var timeZone = FindTimeZoneById(timeZoneId);
+            var timeZone = DateTime.FindTimeZoneById(timeZoneId);
             var converted = TimeZoneInfo.ConvertTimeFromUtc(dateTime, timeZone);
             var offset = timeZone.GetUtcOffset(converted);
             return new DateTimeOffset(converted, offset);
@@ -52,14 +52,9 @@ public static class DateExtension
             catch (TimeZoneNotFoundException)
             {
                 // On Windows, IANA timezone IDs (e.g., "America/Los_Angeles") are not recognized.
-                // .NET 6+ supports TryConvertIanaIdToWindowsId for conversion.
-                if (TimeZoneInfo.TryConvertIanaIdToWindowsId(timeZoneId, out var windowsId))
-                {
-                    return TimeZoneInfo.FindSystemTimeZoneById(windowsId);
-                }
-
-                // If conversion fails, fall back to UTC
-                return TimeZoneInfo.Utc;
+                return TimeZoneInfo.TryConvertIanaIdToWindowsId(timeZoneId, out var windowsId) ? TimeZoneInfo.FindSystemTimeZoneById(windowsId) :
+                    // If conversion fails, fall back to UTC
+                    TimeZoneInfo.Utc;
             }
         }
     }

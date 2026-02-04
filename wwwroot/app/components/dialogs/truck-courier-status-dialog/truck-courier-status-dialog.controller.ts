@@ -3,6 +3,7 @@ import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 import {ITruckCourierStatus} from "../../../interfaces/courier.interface";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
+import angular from 'angular';
 
 class TruckCourierStatusDialogController extends BaseController {
     static $inject = [

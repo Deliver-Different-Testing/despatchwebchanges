@@ -317,28 +317,64 @@ public class RateJobService(
             }
             case "base":
             {
-                // For base mode, save the raw base amount directly to ucjbamount
+                // For base mode, calculate fuel surcharge and update all pricing fields
+                var updateModels = new List<JobManualPriceModel>();
+
                 foreach (var data in parsedData)
                 {
                     if (!currentAmounts.TryGetValue(data.Id, out var jobInfo))
                         continue;
 
                     var oldAmount = jobInfo.Amount;
-                    var newAmount = data.Amount ?? oldAmount; //set these as ucjbAmounts for final comparison
+                    var baseAmount = data.RawBaseAmount ?? 0;
+                    decimal newAmount;
 
                     try
                     {
-                        newAmount = await jobRepository.RepriceJobWithBaseAmountAsync(
-                            new RepriceJobWithBaseAmountModel
-                            {
-                                JobId = data.Id,
-                                IsPrebook = jobInfo.IsPrebook,
-                                BaseAmount = data.RawBaseAmount ?? 0 //Pass RBA here to get new amount
-                            });
+                        // Calculate total amount with fuel surcharge using DB function
+                        newAmount = await jobRepository.GetTotalAmountFromBaseAsync(data.Id, baseAmount);
                     }
                     catch (Exception ex)
                     {
-                        Log.Warning(ex, "Failed to reprice job with base amount for job {JobId}", data.Id);
+                        Log.Warning(ex, "Failed to calculate total from base amount for job {JobId}", data.Id);
+                        newAmount = baseAmount; // Fallback to base amount if calculation fails
+                    }
+
+                    var fuelAmount = newAmount - baseAmount;
+
+                    // For prebook jobs, use existing RepriceJobWithBaseAmountAsync (TucJobBooking lacks RawBaseAmount field)
+                    if (jobInfo.IsPrebook)
+                    {
+                        try
+                        {
+                            newAmount = await jobRepository.RepriceJobWithBaseAmountAsync(
+                                new RepriceJobWithBaseAmountModel
+                                {
+                                    JobId = data.Id,
+                                    IsPrebook = true,
+                                    BaseAmount = baseAmount
+                                });
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Warning(ex, "Failed to reprice prebook job with base amount for job {JobId}", data.Id);
+                        }
+                    }
+                    else
+                    {
+                        // Build update model for non-prebook jobs with all fields populated
+                        updateModels.Add(new JobManualPriceModel
+                        {
+                            Id = data.Id,
+                            Amount = newAmount,
+                            RawBaseAmount = baseAmount,
+                            Fuel = fuelAmount,
+                            Ppd = 0,
+                            // Use courier values from file if provided, otherwise preserve existing values
+                            CourierPayment = data.CourierPayment ?? jobInfo.CourierPayment,
+                            CourierFuel = data.CourierFuel ?? jobInfo.CourierFuel,
+                            CourierBonus = data.CourierBonus ?? jobInfo.CourierBonus
+                        });
                     }
 
                     resultRows.Add(new BulkPricePreviewRow
@@ -353,6 +389,12 @@ public class RateJobService(
 
                     totalOldAmount += oldAmount;
                     totalNewAmount += newAmount;
+                }
+
+                // Batch update non-prebook jobs using existing robust logic
+                if (updateModels.Count > 0)
+                {
+                    await jobRepository.UpdateManualPriceAsync(updateModels);
                 }
 
                 break;

@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import duration from 'dayjs/plugin/duration';
 import {formatMins} from "../../../functions/formatDates";
 import {IDataTableColumn, IDataTableSort} from "../../common/data-table/data-table.interfaces";
+import angular from 'angular';
 
 class OpenJobsWidgetController extends BaseController {
     static $inject = [

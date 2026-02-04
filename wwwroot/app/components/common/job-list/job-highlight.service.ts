@@ -1,4 +1,5 @@
 ﻿import {IDispatchJob, IJob} from "../../../interfaces/job.interface";
+import angular from 'angular';
 
 class JobHighlightService implements angular.IServiceProvider {
     private highlightedRelatedJobIds: number[] = [];

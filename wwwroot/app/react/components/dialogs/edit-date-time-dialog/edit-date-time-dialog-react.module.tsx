@@ -13,6 +13,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import { EditDateTimeDialog } from './EditDateTimeDialog';
 import { getTheme } from '../../../theme/muiTheme';
 import { EditDateTimeDialogResult, EditDateTimeDialogOptions } from './types';
+import angular from 'angular';
 
 interface DialogState {
     open: boolean;

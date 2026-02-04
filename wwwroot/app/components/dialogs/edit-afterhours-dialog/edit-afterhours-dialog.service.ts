@@ -5,6 +5,7 @@ import {AfterHoursCourierSchedule} from "../../../react/interfaces";
 import ToastrService from "../../../services/toastr.service";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
 import dayjs from "dayjs";
+import angular from 'angular';
 
 // Type declaration for the React dialog on window
 declare global {

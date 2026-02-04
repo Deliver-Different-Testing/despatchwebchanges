@@ -8,18 +8,55 @@
 import React, {forwardRef} from 'react';
 
 // Helper to create a mock dayjs-like object from a date string
-const createMockDayjs = (value: string) => ({
-    toISOString: () => value,
-    format: () => value,
-    isValid: () => !!value,
-    valueOf: () => new Date(value).getTime(),
-    toDate: () => new Date(value),
-    isSame: () => false,
-    isBefore: () => false,
-    isAfter: () => false,
-    add: () => createMockDayjs(value),
-    subtract: () => createMockDayjs(value),
-});
+const createMockDayjs = (value: string) => {
+    // Check if the value represents a valid date
+    // A valid date string should parse to a valid Date object
+    const date = new Date(value);
+    const isValidDate = !isNaN(date.getTime()) && value.length >= 10;
+
+    const pad = (n: number) => String(n).padStart(2, '0');
+
+    const format = (formatStr?: string) => {
+        if (!formatStr || !isValidDate) return value;
+        // Support common formats
+        if (formatStr === 'HH:mm') {
+            return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+        if (formatStr === 'YYYY-MM-DD') {
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+        }
+        if (formatStr === 'YYYY-MM-DDTHH:mm') {
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+        return value;
+    };
+
+    return {
+        toISOString: () => value,
+        format,
+        isValid: () => isValidDate,
+        valueOf: () => date.getTime(),
+        toDate: () => date,
+        isSame: () => false,
+        isBefore: () => false,
+        isAfter: () => false,
+        add: () => createMockDayjs(value),
+        subtract: () => createMockDayjs(value),
+        hour: () => date.getHours(),
+        minute: () => date.getMinutes(),
+        year: () => date.getFullYear(),
+        month: () => date.getMonth(),
+        date: () => date.getDate(),
+        startOf: (unit: string) => {
+            if (unit === 'day') {
+                const newDate = new Date(date);
+                newDate.setHours(0, 0, 0, 0);
+                return createMockDayjs(newDate.toISOString());
+            }
+            return createMockDayjs(value);
+        },
+    };
+};
 
 // Mock DateTimePicker
 export const DateTimePicker = forwardRef<HTMLInputElement, any>(
@@ -92,7 +129,6 @@ export const DatePicker = forwardRef<HTMLInputElement, any>(
                 onClick: handleOpen,
                 disabled,
                 'aria-label': label,
-                readOnly: true,
                 ...props
             }),
             isOpen && React.createElement('div', {role: 'dialog'},

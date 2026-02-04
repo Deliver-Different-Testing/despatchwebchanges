@@ -1,4 +1,5 @@
 import MessagingDialogController from "./messaging-dialog.controller";
+import angular from 'angular';
 
 class MessagingDialogService implements angular.IServiceProvider {
     static $inject = [

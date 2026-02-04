@@ -1,3 +1,4 @@
+import angular from 'angular';
 import "./table-pagination.styles.less";
 
 interface IPaginationBindings {

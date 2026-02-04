@@ -1,9 +1,8 @@
 ﻿import MegaMapComponent from "./mega-map.controller";
 import OverviewService from "../overview/overview.service";
+import angular from 'angular';
 
 const megaMapModule = angular.module('uDispatch.megaMap', [
-    'ngMap',
-    'heremaps',
     'ui.router',
     'ngMaterial',
     'ngAnimate',

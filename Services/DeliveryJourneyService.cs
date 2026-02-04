@@ -173,7 +173,7 @@ public partial class DeliveryJourneyService(
             }).ToList();
         }
 
-        var archivedNoteDtos = await context.TucNoteArchives
+        var archivedNoteTemps = await context.TucNoteArchives
             .AsNoTracking()
             .Where(n => n.JobId == jobId)
             .Select(n => new ArchivedNoteDto
@@ -186,7 +186,7 @@ public partial class DeliveryJourneyService(
             .TagWith("DeliveryJourney - Archived Notes")
             .ToListAsync();
 
-        return archivedNoteDtos.Select(n => new DeliveryJourneyViewModel
+        return archivedNoteTemps.Select(n => new DeliveryJourneyViewModel
         {
             Id = Guid.NewGuid(),
             JobId = jobId,
@@ -216,7 +216,7 @@ public partial class DeliveryJourneyService(
     {
         var timezone = infoService.GetTenantTimeZone();
 
-        var messageDtos = await context.TucManualMessages
+        var messageTemps = await context.TucManualMessages
             .AsNoTracking()
             .AsSplitQuery()
             .Where(m => m.JobId == jobId)
@@ -243,7 +243,7 @@ public partial class DeliveryJourneyService(
             .TagWith("DeliveryJourney - Messages")
             .ToListAsync();
 
-        return messageDtos.Select(m => new DeliveryJourneyViewModel
+        return messageTemps.Select(m => new DeliveryJourneyViewModel
         {
             Id = Guid.NewGuid(),
             JobId = jobId,
@@ -312,7 +312,7 @@ public partial class DeliveryJourneyService(
     {
         if (isLiveJob)
         {
-            var statusUpdates = await context.JobDeliveryJourneys
+            var statusUpdateTemps = await context.JobDeliveryJourneys
                 .AsNoTracking()
                 .AsSplitQuery()
                 .Where(s => s.JobId == jobId && s.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus))
@@ -340,10 +340,10 @@ public partial class DeliveryJourneyService(
                 .TagWith("DeliveryJourney - Live Status Updates")
                 .ToListAsync();
 
-            return MapStatusUpdatesToViewModels(statusUpdates, jobId);
+            return MapStatusUpdatesToViewModels(statusUpdateTemps, jobId);
         }
 
-        var archivedStatusUpdates = await context.JobDeliveryJourneyArchives
+        var archivedStatusUpdateTemps = await context.JobDeliveryJourneyArchives
             .AsNoTracking()
             .AsSplitQuery()
             .Where(s => s.JobId == jobId && s.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus))
@@ -372,16 +372,16 @@ public partial class DeliveryJourneyService(
             .TagWith("DeliveryJourney - Archived Status Updates")
             .ToListAsync();
         
-        return MapArchivedStatusUpdatesToViewModels(archivedStatusUpdates, jobId);
+        return MapArchivedStatusUpdatesToViewModels(archivedStatusUpdateTemps, jobId);
     }
 
     /// <summary>
     /// Maps live status update DTOs to view models, grouping by timestamp.
     /// </summary>
     private List<DeliveryJourneyViewModel> MapStatusUpdatesToViewModels(
-        List<JobDeliveryJourneyDto> dtos,
+        List<JobDeliveryJourneyDto> journeyTemps,
         int jobId) =>
-        dtos
+        journeyTemps
             .GroupBy(s => s.UpdatedAt)
             .Select(group => new DeliveryJourneyViewModel
             {

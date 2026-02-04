@@ -18,10 +18,9 @@ import JobHighlightService from "../common/job-list/job-highlight.service";
 import {CreateJobDialogController} from "../dialogs/create-job-dialog/create-job-dialog.controller";
 import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
+import angular from 'angular';
 
 const homeModule = angular.module('uDispatch.home', [
-    'ngMap',
-    'heremaps',
     'ui.router',
     'ngMaterial',
     'ngAnimate',

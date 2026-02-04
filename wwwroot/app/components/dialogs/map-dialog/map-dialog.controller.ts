@@ -4,6 +4,7 @@ import ConfigService from "../../../services/config.service";
 import {MapConfig, OverviewTableParentJob} from "../../overview/overview.interfaces";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
 import {HereMapCredentials} from "../../../interfaces/hereMapCredentials.interfaces";
+import angular from 'angular';
 
 export class MapDialogController implements angular.IController {
     static $inject = [
