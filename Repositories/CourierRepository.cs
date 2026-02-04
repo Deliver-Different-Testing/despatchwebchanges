@@ -182,7 +182,6 @@ public class CourierRepository(
             var currentDate = infoService.GetCurrentTenantTime();
 
             var courierData = await Context.TucCouriers
-                .AsSplitQuery()
                 .AsNoTracking()
                 .Where(c => c.CourierFleetId != (int)CourierFleet.ClientDriver &&
                             c.CourierGps != null &&
@@ -215,7 +214,6 @@ public class CourierRepository(
             var courierIds = courierData.Select(c => c.UccrId).ToList();
 
             var jobData = await Context.TucJobs
-                .AsSplitQuery()
                 .AsNoTracking()
                 .Where(j => j.UcjbCourierId.HasValue &&
                             courierIds.Contains(j.UcjbCourierId.Value) &&
@@ -282,7 +280,6 @@ public class CourierRepository(
             var now = infoService.GetCurrentTenantTime();
 
             var courierData = await Context.TucCouriers
-                .AsSplitQuery()
                 .AsNoTracking()
                 .Where(c => c.CourierLogInOut != null &&
                             c.CourierLogInOut.LogOutTime == null &&
@@ -315,7 +312,6 @@ public class CourierRepository(
 
             // Single query for all job data
             var jobData = await Context.TucJobs
-                .AsSplitQuery()
                 .AsNoTracking()
                 .Where(j => j.UcjbCourierId.HasValue &&
                             courierIds.Contains(j.UcjbCourierId.Value) &&
@@ -547,63 +543,42 @@ public class CourierRepository(
             var nextDay = currentDateOnly.AddDays(1);
 
             // ===================================================================
-            // QUERY 1: Get all clear list areas
+            // WAVE 1: Independent queries (Clear Lists + Courier Data) - PARALLEL
             // ===================================================================
-            var clearLists = await Context.TblDespatchViews
-                .AsNoTracking()
-                .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
-                .SelectMany(dv => dv.DespatchViewZoneGroups)
-                .Select(dvzg => dvzg.ZoneGroup.ClearListArea)
-                .Where(cla => cla != null)
-                .Distinct()
-                .Select(cl => new ClearListAreaDto
-                {
-                    ClearListAreaId = cl.ClearListAreaId,
-                    AreaName = cl.Name,
-                    AreaOrder = cl.Order
-                })
-                .TagWith("GetClearLists - Step 1: Clear List Areas")
-                .ToListAsync();
+            var clearListsTask = GetClearListAreasAsync(despatchViewIds);
+            var courierDataTask = GetAllCourierDataAsync(currentDateOnly);
 
+            await Task.WhenAll(clearListsTask, courierDataTask);
+
+            var clearLists = clearListsTask.Result;
             if (clearLists.Count == 0) return new ClearListViewModel();
 
+            var allCourierData = courierDataTask.Result;
             var clearListAreaIds = clearLists.Select(cl => cl.ClearListAreaId).ToList();
+            var courierIds = allCourierData.Select(c => c.UccrId).ToList();
 
-            Log.Information("Step 1: Found {Count} clear lists for despatchViewIds: {@Ids}",
-                clearLists.Count, despatchViewIds);
-
-            if (clearLists.Count == 0)
-            {
-                // Debug: Check if despatch views exist
-                var viewCount = await Context.TblDespatchViews
-                    .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
-                    .CountAsync();
-                Log.Warning("Found {Count} despatch views but 0 clear lists", viewCount);
-            }
+            Log.Information("Wave 1 complete: Found {ClearListCount} clear lists, {CourierCount} couriers",
+                clearLists.Count, allCourierData.Count);
 
             // ===================================================================
-            // QUERY 2: Get ALL courier GPS polygon mappings for ALL areas at once (CACHED)
+            // WAVE 2: Queries depending on Wave 1 results - PARALLEL
             // ===================================================================
-            var cacheKey = GetPolygonMappingsCacheKey(clearListAreaIds);
+            var polygonMappingsTask = GetPolygonMappingsAsync(clearListAreaIds);
+            var areaFiltersTask = GetAreaFiltersAsync(clearLists);
+            var displayOrdersTask = GetDisplayOrdersAsync(courierIds);
+            var jobsTask = GetAllJobsAsync(courierIds, nextDay);
 
-            var allValidCourierGpsIds = await cache.GetOrCreateAsync(
-                cacheKey,
-                async entry =>
-                {
-                    // Cache for 5 minutes
-                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+            await Task.WhenAll(polygonMappingsTask, areaFiltersTask, displayOrdersTask, jobsTask);
 
-                    // Set priority (if memory is low, this can be evicted)
-                    entry.Priority = CacheItemPriority.Normal;
+            var allValidCourierGpsIds = polygonMappingsTask.Result;
+            var areaFilterDict = areaFiltersTask.Result;
+            var displayOrders = displayOrdersTask.Result;
+            var allJobs = jobsTask.Result;
 
-                    Log.Information("Cache MISS for polygon mappings - fetching from database");
+            Log.Information("Wave 2 complete: {PolygonCount} polygon mappings, {JobCount} jobs",
+                allValidCourierGpsIds.Count, allJobs.Count);
 
-                    return await Context.GetPolygonMappings(clearListAreaIds);
-                });
-
-            Log.Information("Step 2: Using polygon mappings (Cached: {IsCached})",
-                cache.TryGetValue(cacheKey, out _));
-
+            // Process polygon mappings
             var polygonChannelsByClearListArea = allValidCourierGpsIds
                 .GroupBy(x => x.ClearListAreaId)
                 .ToDictionary(
@@ -611,84 +586,8 @@ public class CourierRepository(
                     g => g.Select(x => new { x.PolygonId, x.ChannelId }).ToList()
                 );
 
-            Log.Information("Step 2b: Polygons grouped into {Count} clear list areas",
-                polygonChannelsByClearListArea.Count);
-
-            // ===================================================================
-            // QUERY 3 & 4: Get ALL courier data with GPS, Fleet, and Job Counts (CONSOLIDATED)
-            // ===================================================================
-            var allCourierData = await Context.TucCouriers
-                .AsNoTracking()
-                .Where(c => c.Active && c.TblClearListAreaOrder != null)
-                .Where(c => c.CourierFleetId == (int)CourierFleet.UaAucklandP2P ||
-                            (c.CourierLogInOut != null &&
-                             c.CourierLogInOut.LogInTime >= currentDateOnly && 
-                             c.CourierLogInOut.LogOutTime == null))
-                .Where(c => c.CourierFleet.DisplayOnClearlistsDespatch)
-                .GroupJoin(
-                    Context.TucCourierFleets.AsNoTracking(),
-                    c => c.CourierFleetId,
-                    cf => cf.UccfId,
-                    (c, cfGroup) => new { Courier = c, FleetGroup = cfGroup }
-                )
-                .SelectMany(
-                    x => x.FleetGroup.DefaultIfEmpty(),
-                    (x, cf) => new { x.Courier, Fleet = cf }
-                )
-                .GroupJoin(
-                    Context.TblCourierGps.AsNoTracking(),
-                    x => x.Courier.CourierGpsid,
-                    gps => gps.CourierGpsid,
-                    (x, gpsGroup) => new { x.Courier, x.Fleet, GpsGroup = gpsGroup }
-                )
-                .SelectMany(
-                    x => x.GpsGroup.DefaultIfEmpty(),
-                    (x, gps) => new { x.Courier, x.Fleet, Gps = gps }
-                )
-                .Select(x => new CourierClearListDto
-                {
-                    UccrId = x.Courier.UccrId,
-                    Code = x.Courier.Code,
-                    Name = x.Courier.UccrName + " " + x.Courier.UccrSurname,
-                    DangerousGoods = x.Courier.UccrDangerousGoods == 1,
-                    DgLicenseExpiry = x.Courier.DglicenseExpiry,
-                    UccrChannelId = x.Courier.UccrChannelId,
-                    SendJobsViaSms = x.Courier.SendJobsViaSms,
-                    AutoDespatch = x.Courier.AutoDespatch,
-                    UccrVehicle = x.Courier.UccrVehicle,
-                    CourierGpsid = x.Courier.CourierGpsid,
-                    GpsCreated = x.Gps != null ? x.Gps.Created : null,
-                    PolygonId = x.Gps != null ? x.Gps.PolygonId : null,
-                    JobCount = 0  // Placeholder, will populate after Step 5
-                })
-                .OrderBy(c => c.Code)
-                .TagWith("GetClearLists - Step 3&4: All Courier Data with GPS and Job Counts")
-                .ToListAsync();
-
-            Log.Information("Step 3&4: Found {Count} couriers with full data", allCourierData.Count);
-
-            var courierIds = allCourierData.Select(c => c.UccrId).ToList();
-
-            // ===================================================================
-            // QUERY 4b: Get ALL display orders in ONE query (FIXES N+1)
-            // ===================================================================
-            var displayOrders = await Context.TblClearListAreaOrders
-                .AsNoTracking()
-                .Where(cao => courierIds.Contains(cao.CourierId))
-                .Select(cao => new
-                {
-                    cao.CourierId,
-                    cao.Status,
-                    cao.OrderTime
-                })
-                .TagWith("GetClearLists - Step 4b: Display Orders")
-                .ToListAsync();
-
+            // Apply display orders to courier data
             var displayOrderDict = displayOrders.ToDictionary(d => d.CourierId);
-
-            // ===================================================================
-            // Step 4c: Add display orders to courier data in memory
-            // ===================================================================
             foreach (var courier in allCourierData)
             {
                 if (!displayOrderDict.TryGetValue(courier.UccrId, out var order)) continue;
@@ -702,41 +601,20 @@ public class CourierRepository(
                 .GroupBy(c => c.PolygonId.Value)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
-            Log.Information("[STEP 4c - Combined Data] Total allCourierData: {Count}", allCourierData.Count);
-
-
-            // ===================================================================
-            // QUERY 5: Get ALL jobs for ALL couriers at once
-            // ===================================================================
-            var allCourierIds = allCourierData.Select(c => c.UccrId).ToHashSet();
-
-            var allJobs = await Context.TucJobs 
-                .AsNoTracking()
-                .Where(job => !job.UcjbJobDone &&
-                              !job.UcjbVoid &&
-                              job.UcjbDate < nextDay && 
-                              job.UcjbCourierId.HasValue &&
-                              allCourierIds.Contains(job.UcjbCourierId.Value))
-                .Select(job => new CourierJobSuburbDto
-                {
-                    CourierId = job.UcjbCourierId.Value,
-                    ToSuburbId = job.UcjbTo  // Check actual column name
-                })
-                .TagWith("GetClearLists - Step 5: All Jobs")
-                .ToListAsync();
-
+            // Process job counts
             var jobCountsByCourier = allJobs
                 .GroupBy(j => j.CourierId)
                 .ToDictionary(g => g.Key, g => g.Count());
 
-            foreach (var courier in allCourierData) courier.JobCount = jobCountsByCourier.GetValueOrDefault(courier.UccrId, 0);
+            foreach (var courier in allCourierData)
+                courier.JobCount = jobCountsByCourier.GetValueOrDefault(courier.UccrId, 0);
 
             var jobsByCourier = allJobs
                 .GroupBy(j => j.CourierId)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
             // ===================================================================
-            // QUERY 6: Get ALL suburb mappings at once
+            // WAVE 3: Queries depending on Wave 2 results - PARALLEL
             // ===================================================================
             var allSuburbIds = allJobs
                 .Where(j => j.ToSuburbId.HasValue)
@@ -744,63 +622,16 @@ public class CourierRepository(
                 .Distinct()
                 .ToHashSet();
 
-            Dictionary<int, List<SuburbClearListAreaDto>> suburbLookup = [];
+            var suburbMappingsTask = GetSuburbMappingsAsync(allSuburbIds);
+            var areaRemainingTask = GetTotalRemainingForAllAreasAsync(areaFilterDict);
 
-            if (allSuburbIds.Count != 0)
-            {
-                var suburbClearListAreas = await Context.TblPolygonSuburbs
-                    .AsNoTracking()
-                    .Where(ps => allSuburbIds.Contains(ps.SuburbId))
-                    .Join(Context.TblPolygons.AsNoTracking(),
-                        ps => ps.PolygonId,
-                        p => p.PolygonId,
-                        (ps, p) => new { ps.SuburbId, p.PolygonId })
-                    .Join(Context.TblClearListAreaPolygons.AsNoTracking(),
-                        p => p.PolygonId,
-                        cap => cap.PolygonId,
-                        (p, cap) => new { p.SuburbId, cap.ClearListAreaId })
-                    .Join(Context.TblClearListAreas.AsNoTracking(),
-                        cap => cap.ClearListAreaId,
-                        cla => cla.ClearListAreaId,
-                        (cap, cla) => new SuburbClearListAreaDto
-                        {
-                            SuburbId = cap.SuburbId,
-                            ClearListAreaId = cla.ClearListAreaId,
-                            Code = cla.Code,
-                            ChannelId = cla.ChannelId
-                        })
-                    .TagWith("GetClearLists - Step 6: Suburb Mappings")
-                    .ToListAsync();
+            await Task.WhenAll(suburbMappingsTask, areaRemainingTask);
 
-                suburbLookup = suburbClearListAreas
-                    .GroupBy(sca => sca.SuburbId)
-                    .ToDictionary(g => g.Key, g => g.ToList());
-            }
+            var suburbLookup = suburbMappingsTask.Result;
+            var areaRemainingCounts = areaRemainingTask.Result;
 
-            // ===================================================================
-            // QUERY 7: Get area filters for total remaining calculation
-            // ===================================================================
-            var clearListNames = clearLists.Select(cl => cl.AreaName);
-            var areaFilters = await Context.TblDespatchViews
-                .AsNoTracking()
-                .Where(v => v.ShowOnAssistDespatch == true &&
-                            clearListNames.Contains(v.Name))
-                .Select(v => new
-                {
-                    v.Name,
-                    v.WhereCondition
-                })
-                .TagWith("GetClearLists - Step 7: Area Filters")
-                .ToListAsync();
-
-            var areaFilterDict = areaFilters
-                .Where(af => !string.IsNullOrEmpty(af.WhereCondition))
-                .ToDictionary(af => af.Name?.ToLower() ?? "", af => af.WhereCondition);
-
-            // ===================================================================
-            // QUERY 8: Get total remaining for ALL areas (Sequential Batch)
-            // ===================================================================
-            var areaRemainingCounts = await GetTotalRemainingForAllAreasAsync(areaFilterDict);
+            Log.Information("Wave 3 complete: {SuburbCount} suburb mappings, {AreaCount} area remaining counts",
+                suburbLookup.Count, areaRemainingCounts.Count);
 
             // ===================================================================
             // IN-MEMORY PROCESSING: Build clear lists for each area
@@ -1018,6 +849,215 @@ public class CourierRepository(
             .ThenBy(x => x.Code)
             .ThenBy(x => x.Deliver)
             .ToList();
+    }
+
+    // ===================================================================
+    // PARALLEL QUERY HELPER METHODS FOR GetClearListsAsync
+    // ===================================================================
+
+    /// <summary>
+    /// Query 1: Get all clear list areas for the given despatch view IDs.
+    /// </summary>
+    private async Task<List<ClearListAreaDto>> GetClearListAreasAsync(List<int> despatchViewIds)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.TblDespatchViews
+            .AsNoTracking()
+            .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
+            .SelectMany(dv => dv.DespatchViewZoneGroups)
+            .Select(dvzg => dvzg.ZoneGroup.ClearListArea)
+            .Where(cla => cla != null)
+            .Distinct()
+            .Select(cl => new ClearListAreaDto
+            {
+                ClearListAreaId = cl.ClearListAreaId,
+                AreaName = cl.Name,
+                AreaOrder = cl.Order
+            })
+            .TagWith("GetClearLists - Wave 1: Clear List Areas")
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Query 3&4: Get all courier data with GPS, Fleet info.
+    /// </summary>
+    private async Task<List<CourierClearListDto>> GetAllCourierDataAsync(DateTime currentDateOnly)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.TucCouriers
+            .AsNoTracking()
+            .Where(c => c.Active && c.TblClearListAreaOrder != null)
+            .Where(c => c.CourierFleetId == (int)CourierFleet.UaAucklandP2P ||
+                        (c.CourierLogInOut != null &&
+                         c.CourierLogInOut.LogInTime >= currentDateOnly &&
+                         c.CourierLogInOut.LogOutTime == null))
+            .Where(c => c.CourierFleet.DisplayOnClearlistsDespatch)
+            .GroupJoin(
+                context.TucCourierFleets.AsNoTracking(),
+                c => c.CourierFleetId,
+                cf => cf.UccfId,
+                (c, cfGroup) => new { Courier = c, FleetGroup = cfGroup }
+            )
+            .SelectMany(
+                x => x.FleetGroup.DefaultIfEmpty(),
+                (x, cf) => new { x.Courier, Fleet = cf }
+            )
+            .GroupJoin(
+                context.TblCourierGps.AsNoTracking(),
+                x => x.Courier.CourierGpsid,
+                gps => gps.CourierGpsid,
+                (x, gpsGroup) => new { x.Courier, x.Fleet, GpsGroup = gpsGroup }
+            )
+            .SelectMany(
+                x => x.GpsGroup.DefaultIfEmpty(),
+                (x, gps) => new { x.Courier, x.Fleet, Gps = gps }
+            )
+            .Select(x => new CourierClearListDto
+            {
+                UccrId = x.Courier.UccrId,
+                Code = x.Courier.Code,
+                Name = x.Courier.UccrName + " " + x.Courier.UccrSurname,
+                DangerousGoods = x.Courier.UccrDangerousGoods == 1,
+                DgLicenseExpiry = x.Courier.DglicenseExpiry,
+                UccrChannelId = x.Courier.UccrChannelId,
+                SendJobsViaSms = x.Courier.SendJobsViaSms,
+                AutoDespatch = x.Courier.AutoDespatch,
+                UccrVehicle = x.Courier.UccrVehicle,
+                CourierGpsid = x.Courier.CourierGpsid,
+                GpsCreated = x.Gps != null ? x.Gps.Created : null,
+                PolygonId = x.Gps != null ? x.Gps.PolygonId : null,
+                JobCount = 0
+            })
+            .OrderBy(c => c.Code)
+            .TagWith("GetClearLists - Wave 1: All Courier Data with GPS")
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Query 2: Get polygon mappings for clear list areas (cached).
+    /// </summary>
+    private async Task<List<PolygonChannelMapping>> GetPolygonMappingsAsync(List<int> clearListAreaIds)
+    {
+        var cacheKey = GetPolygonMappingsCacheKey(clearListAreaIds);
+
+        return await cache.GetOrCreateAsync(
+            cacheKey,
+            async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+                entry.Priority = CacheItemPriority.Normal;
+
+                Log.Information("Cache MISS for polygon mappings - fetching from database");
+
+                await using var context = await _contextFactory.CreateDbContextAsync();
+                return await context.GetPolygonMappings(clearListAreaIds);
+            }) ?? [];
+    }
+
+    /// <summary>
+    /// Query 7: Get area filters for total remaining calculation.
+    /// </summary>
+    private async Task<Dictionary<string, string>> GetAreaFiltersAsync(List<ClearListAreaDto> clearLists)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var clearListNames = clearLists.Select(cl => cl.AreaName);
+
+        var areaFilters = await context.TblDespatchViews
+            .AsNoTracking()
+            .Where(v => v.ShowOnAssistDespatch == true &&
+                        clearListNames.Contains(v.Name))
+            .Select(v => new
+            {
+                v.Name,
+                v.WhereCondition
+            })
+            .TagWith("GetClearLists - Wave 2: Area Filters")
+            .ToListAsync();
+
+        return areaFilters
+            .Where(af => !string.IsNullOrEmpty(af.WhereCondition))
+            .ToDictionary(af => af.Name?.ToLower() ?? "", af => af.WhereCondition);
+    }
+
+    /// <summary>
+    /// Query 4b: Get display orders for couriers.
+    /// </summary>
+    private async Task<List<DisplayOrderDto>> GetDisplayOrdersAsync(List<int> courierIds)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.TblClearListAreaOrders
+            .AsNoTracking()
+            .Where(cao => courierIds.Contains(cao.CourierId))
+            .Select(cao => new DisplayOrderDto
+            {
+                CourierId = cao.CourierId,
+                Status = cao.Status,
+                OrderTime = cao.OrderTime
+            })
+            .TagWith("GetClearLists - Wave 2: Display Orders")
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Query 5: Get all jobs for couriers.
+    /// </summary>
+    private async Task<List<CourierJobSuburbDto>> GetAllJobsAsync(List<int> courierIds, DateTime nextDay)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var courierIdSet = courierIds.ToHashSet();
+
+        return await context.TucJobs
+            .AsNoTracking()
+            .Where(job => !job.UcjbJobDone &&
+                          !job.UcjbVoid &&
+                          job.UcjbDate < nextDay &&
+                          job.UcjbCourierId.HasValue &&
+                          courierIdSet.Contains(job.UcjbCourierId.Value))
+            .Select(job => new CourierJobSuburbDto
+            {
+                CourierId = job.UcjbCourierId.Value,
+                ToSuburbId = job.UcjbTo
+            })
+            .TagWith("GetClearLists - Wave 2: All Jobs")
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Query 6: Get suburb to clear list area mappings.
+    /// </summary>
+    private async Task<Dictionary<int, List<SuburbClearListAreaDto>>> GetSuburbMappingsAsync(HashSet<int> allSuburbIds)
+    {
+        if (allSuburbIds.Count == 0)
+            return [];
+
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var suburbClearListAreas = await context.TblPolygonSuburbs
+            .AsNoTracking()
+            .Where(ps => allSuburbIds.Contains(ps.SuburbId))
+            .Join(context.TblPolygons.AsNoTracking(),
+                ps => ps.PolygonId,
+                p => p.PolygonId,
+                (ps, p) => new { ps.SuburbId, p.PolygonId })
+            .Join(context.TblClearListAreaPolygons.AsNoTracking(),
+                p => p.PolygonId,
+                cap => cap.PolygonId,
+                (p, cap) => new { p.SuburbId, cap.ClearListAreaId })
+            .Join(context.TblClearListAreas.AsNoTracking(),
+                cap => cap.ClearListAreaId,
+                cla => cla.ClearListAreaId,
+                (cap, cla) => new SuburbClearListAreaDto
+                {
+                    SuburbId = cap.SuburbId,
+                    ClearListAreaId = cla.ClearListAreaId,
+                    Code = cla.Code,
+                    ChannelId = cla.ChannelId
+                })
+            .TagWith("GetClearLists - Wave 3: Suburb Mappings")
+            .ToListAsync();
+
+        return suburbClearListAreas
+            .GroupBy(sca => sca.SuburbId)
+            .ToDictionary(g => g.Key, g => g.ToList());
     }
 
     private async Task<Dictionary<string, int>> GetTotalRemainingForAllAreasAsync(

@@ -368,16 +368,16 @@ describe('DispatchCourierMarkerManager', () => {
     });
 
     describe('Display Text Generation', () => {
-        it('includes courier code and name', () => {
-            const couriers = [createMockCourier({ code: 'JD', courierName: 'John Doe' })];
+        it('includes courier code and job count', () => {
+            const couriers = [createMockCourier({ code: 'JD', courierName: 'John Doe', totalJobs: 3 })];
 
             manager.updateMarkers(couriers);
 
             const iconCalls = mockH.map.Icon.mock.calls;
-            const hasCodeAndName = iconCalls.some(
-                (call: any[]) => call[0] && call[0].includes('JD-John Doe')
+            const hasCodeAndJobs = iconCalls.some(
+                (call: any[]) => call[0] && call[0].includes('JD 3')
             );
-            expect(hasCodeAndName).toBe(true);
+            expect(hasCodeAndJobs).toBe(true);
         });
 
         it('includes total jobs count', () => {

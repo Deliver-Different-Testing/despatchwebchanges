@@ -117,31 +117,34 @@ describe('DispatchMap Constants', () => {
     describe('COURIER_LABEL_COLORS', () => {
         it('should have NO_JOBS colors', () => {
             expect(COURIER_LABEL_COLORS.NO_JOBS).toEqual({
-                bg: '#FFFDD0',
-                text: '#000000',
+                bg: '#E3F2FD',
+                text: '#1565C0',
+                border: '#1976D2',
             });
         });
 
         it('should have HAS_JOBS colors', () => {
             expect(COURIER_LABEL_COLORS.HAS_JOBS).toEqual({
-                bg: '#00FF00',
-                text: '#000000',
+                bg: '#E8F5E9',
+                text: '#2E7D32',
+                border: '#388E3C',
             });
         });
 
         it('should have OVERDUE colors', () => {
             expect(COURIER_LABEL_COLORS.OVERDUE).toEqual({
-                bg: '#FF0000',
+                bg: '#D32F2F',
                 text: '#FFFFFF',
+                border: '#B71C1C',
             });
         });
 
         it('should have contrasting text colors for readability', () => {
             // White text on red background
             expect(COURIER_LABEL_COLORS.OVERDUE.text).toBe('#FFFFFF');
-            // Black text on light backgrounds
-            expect(COURIER_LABEL_COLORS.NO_JOBS.text).toBe('#000000');
-            expect(COURIER_LABEL_COLORS.HAS_JOBS.text).toBe('#000000');
+            // Dark text on light backgrounds
+            expect(COURIER_LABEL_COLORS.NO_JOBS.text).toBe('#1565C0');
+            expect(COURIER_LABEL_COLORS.HAS_JOBS.text).toBe('#2E7D32');
         });
     });
 
