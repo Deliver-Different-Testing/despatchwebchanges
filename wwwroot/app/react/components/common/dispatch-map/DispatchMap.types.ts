@@ -141,9 +141,9 @@ export const MARKER_COLORS = {
  * Courier label colors based on status
  */
 export const COURIER_LABEL_COLORS = {
-    NO_JOBS: { bg: '#FFFDD0', text: '#000000' },
-    HAS_JOBS: { bg: '#00FF00', text: '#000000' },
-    OVERDUE: { bg: '#FF0000', text: '#FFFFFF' },
+    NO_JOBS: { bg: '#E3F2FD', text: '#1565C0', border: '#1976D2' },    // Light blue - neutral
+    HAS_JOBS: { bg: '#E8F5E9', text: '#2E7D32', border: '#388E3C' },   // Soft green - active
+    OVERDUE: { bg: '#D32F2F', text: '#FFFFFF', border: '#B71C1C' },    // Red - urgent
 } as const;
 
 /**

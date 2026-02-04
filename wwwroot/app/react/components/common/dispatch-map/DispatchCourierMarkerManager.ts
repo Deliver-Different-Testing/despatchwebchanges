@@ -268,9 +268,9 @@ export class DispatchCourierMarkerManager {
      */
     private getDisplayText(courier: IAvailableCourierPosition): string {
         if (courier.overDueJobs > 0) {
-            return `${courier.code}-${courier.courierName}${courier.totalJobs}/${courier.overDueJobs}`;
+            return `${courier.code} ${courier.totalJobs}/${courier.overDueJobs}`;
         }
-        return `${courier.code}-${courier.courierName}${courier.totalJobs}`;
+        return `${courier.code} ${courier.totalJobs}`;
     }
 
     /**
@@ -296,25 +296,30 @@ export class DispatchCourierMarkerManager {
 
     /**
      * Create flag SVG with colored background based on status
-     * Sizing matches old Google Maps implementation: 36px min width, 12px height flag, 10px font
+     * Improved sizing for better readability: 50px min width, 22px height flag, 12px font
      */
     private createFlagSvg(displayText: string, courier: IAvailableCourierPosition): string {
         const colors = this.getLabelColors(courier);
         const escapedText = this.escapeHtml(displayText);
-        // Old sizing: 36px minimum width, variable for longer text
-        const textWidth = Math.max(36, Math.min(displayText.length * 6 + 8, 200));
+        const textWidth = Math.max(50, Math.min(displayText.length * 7 + 16, 150));
+        const totalWidth = textWidth + 6;
 
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${textWidth + 10}" height="40" viewBox="0 0 ${textWidth + 10} 40">
-            <rect x="0" y="0" width="8" height="40" fill="#333333"/>
-            <rect x="8" y="2" width="${textWidth}" height="14" rx="1" ry="1" fill="${colors.bg}" stroke="#333333" stroke-width="1"/>
-            <text x="${8 + textWidth / 2}" y="12" font-family="Arial,sans-serif" font-size="10" font-weight="normal" fill="${colors.text}" text-anchor="middle">${escapedText}</text>
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="36" viewBox="0 0 ${totalWidth} 36">
+            <defs>
+                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="1" dy="1" stdDeviation="1" flood-opacity="0.2"/>
+                </filter>
+            </defs>
+            <rect x="0" y="0" width="4" height="36" fill="#424242"/>
+            <rect x="4" y="2" width="${textWidth}" height="22" rx="3" ry="3" fill="${colors.bg}" stroke="${colors.border}" stroke-width="1.5" filter="url(#shadow)"/>
+            <text x="${4 + textWidth / 2}" y="17" font-family="Arial,sans-serif" font-size="12" font-weight="600" fill="${colors.text}" text-anchor="middle">${escapedText}</text>
         </svg>`;
     }
 
     /**
      * Get label colors based on courier status
      */
-    private getLabelColors(courier: IAvailableCourierPosition): { bg: string; text: string } {
+    private getLabelColors(courier: IAvailableCourierPosition): { bg: string; text: string; border: string } {
         if (courier.totalJobs === 0) {
             return COURIER_LABEL_COLORS.NO_JOBS;
         }
