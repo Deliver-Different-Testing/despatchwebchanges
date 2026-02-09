@@ -61,11 +61,7 @@ class ComposeEmailDialogController extends BaseController {
     getSelectedCount(): number {
         return this.selectedCouriers.length;
     }
-
-    getCourierNames(): string {
-        return this.selectedCouriers.map(courier => courier.name).join(', ');
-    }
-
+    
     useTemplate(templateType: string): void {
         switch (templateType) {
             case 'weekly_update':

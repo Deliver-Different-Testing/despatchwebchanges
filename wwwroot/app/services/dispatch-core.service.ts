@@ -34,7 +34,7 @@ import {
     ITruckCourierStatus,
 } from "../interfaces/courier.interface";
 import {IEventGroupViewModel} from "../interfaces/event-group-view-model.interface";
-import {ClearListEnvelopeViewModel, DfrntPageViewModel,} from "../interfaces/dfrnt-page-view-model.interface";
+import {DfrntPageViewModel,} from "../interfaces/dfrnt-page-view-model.interface";
 import {ITask, ITaskDto, TaskTableFiltersRequest,} from "../components/task-dashboard/task-dashboard.interfaces";
 import {JobProperty} from "../enums/job-property.enum";
 import {
@@ -55,7 +55,6 @@ import {
 } from "../functions/dtoMappings";
 import {transformJobQueryParamsToDTO} from "../functions/toDtoMappings";
 import {IAppConfig} from "../interfaces/app-config.interface";
-import {BulkPricePreviewResponse, PricingMode} from "../components/dialogs/bulk-price-upload-dialog/bulk-price-upload-dialog.interfaces";
 import angular from 'angular';
 
 class DispatchCoreService implements angular.IServiceProvider {
@@ -379,17 +378,6 @@ class DispatchCoreService implements angular.IServiceProvider {
             `courier`, {
                 params: {
                     despatchViewIds,
-                }
-            }
-        );
-        return response.data;
-    }
-
-    async getDriverDestinationEnvelope(clearListId: number): Promise<ClearListEnvelopeViewModel> {
-        const response = await this.$http.get<ClearListEnvelopeViewModel>(
-            `courier/ClearListEnvelope`, {
-                params: {
-                    clearListId,
                 }
             }
         );
@@ -1072,22 +1060,6 @@ class DispatchCoreService implements angular.IServiceProvider {
     
     async getDriverWorkOverview(): Promise<IDriverWorkOverview[]> {
         const response = await this.$http.get<IDriverWorkOverview[]>('courier/GetDriverWorkOverview');
-        return response.data;
-    }
-
-    async applyBulkPriceUpdate(file: File, pricingMode: PricingMode): Promise<BulkPricePreviewResponse> {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await this.$http.post<BulkPricePreviewResponse>(
-            '/job/ApplyBulkPriceUpdate',
-            formData,
-            {
-                params: {pricingMode},
-                transformRequest: angular.identity,
-                headers: {'Content-Type': undefined}
-            }
-        );
         return response.data;
     }
 }

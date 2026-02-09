@@ -789,28 +789,28 @@ class DriverManagementController extends BaseController {
     }
 
     // Pagination handlers
-    onActiveDriversPaginate(page: number, pageSize: number): void {
+    async onActiveDriversPaginate(page: number, pageSize: number): Promise<void> {
         this.todayActiveDriversQuery.page = page;
         this.todayActiveDriversQuery.pageSize = pageSize;
-        this.loadTodayActiveDrivers();
+        await this.loadTodayActiveDrivers();
     }
 
-    onCompliancePaginate(page: number, pageSize: number): void {
+    async onCompliancePaginate(page: number, pageSize: number): Promise<void> {
         this.complianceQuery.page = page;
         this.complianceQuery.pageSize = pageSize;
-        this.loadComplianceData();
+       await this.loadComplianceData();
     }
 
-    onAfterHoursPaginate(page: number, pageSize: number): void {
+    async onAfterHoursPaginate(page: number, pageSize: number): Promise<void> {
         this.afterHoursQuery.page = page;
         this.afterHoursQuery.pageSize = pageSize;
-        this.loadAfterHoursSchedule();
+        await this.loadAfterHoursSchedule();
     }
 
-    onDriverEarningsPaginate(page: number, pageSize: number): void {
+    async onDriverEarningsPaginate(page: number, pageSize: number): Promise<void> {
         this.driverEarningsQuery.page = page;
         this.driverEarningsQuery.pageSize = pageSize;
-        this.loadDriverTodayEarnings();
+        await this.loadDriverTodayEarnings();
     }
 }
 

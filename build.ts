@@ -29,7 +29,10 @@ type EntryPointName =
     | 'flightDetailsDialogReact'
     | 'appShellReact'
     | 'errorPageReact'
-    | 'recurringJobsReact';
+    | 'recurringJobsReact'
+    | 'additionalServicesDialogReact'
+    | 'bulkPriceUploadDialogReact'
+    | 'messagingDialogReact';
 type EntryPoints = Record<EntryPointName, string>;
 
 // Configuration
@@ -65,6 +68,9 @@ const entryPoints: EntryPoints = {
     appShellReact: path.join(rootDir, "wwwroot/app/react/components/common/app-shell/app-shell-react.module.tsx"),
     errorPageReact: path.join(rootDir, "wwwroot/app/react/pages/error-page/error-page-react.module.tsx"),
     recurringJobsReact: path.join(rootDir, "wwwroot/app/react/pages/recurring-jobs/recurring-jobs-react.module.tsx"),
+    additionalServicesDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/additional-services-dialog/additional-services-dialog-react.module.tsx"),
+    bulkPriceUploadDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/bulk-price-upload-dialog/bulk-price-upload-dialog-react.module.tsx"),
+    messagingDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/messaging-dialog/messaging-dialog-react.module.tsx"),
 };
 
 // Lazy-load html-minifier-terser only when needed (production builds)

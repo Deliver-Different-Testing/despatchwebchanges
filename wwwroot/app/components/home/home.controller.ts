@@ -40,7 +40,6 @@ import JobAddStopService from "../../services/job-add-stop.service";
 import getJobTableRowClass from "../../functions/getJobTableRowClass";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import timezone from 'dayjs/plugin/timezone';
-import MessagingService from "../../services/messaging.service";
 import {StatusFilter} from "../task-dashboard/enums/status-filter";
 import TasksService from "../../services/tasks.service";
 import JobListType from "../common/job-list/enums/jobListType";
@@ -78,7 +77,6 @@ class HomeController extends BaseController {
         'truckCourierStatusDialogService',
         'jobAddStopService',
         'messagingDialogService',
-        'messagingService',
         'tasksService',
         'createJobDialogService',
         'dashboardSettingsDialogService',
@@ -215,7 +213,6 @@ class HomeController extends BaseController {
         private truckCourierStatusDialog: TruckCourierStatusDialogService,
         private jobAddStopService: JobAddStopService,
         private messagingDialog: MessagingDialogService,
-        private messagingService: MessagingService,
         private tasksService: TasksService,
         private createJobDialog: CreateJobDialogService,
         private dashboardSettingsDialog: DashboardSettingsDialogService,
@@ -1930,7 +1927,7 @@ class HomeController extends BaseController {
     }
 
     private async getUnreadMessageCount(): Promise<void> {
-        this.unReadMessageCount = await this.messagingService.getUnreadMessageCount();
+        this.unReadMessageCount = await this.messagingDialog.getUnreadMessageCount();
         this.applyScope();
     }
 

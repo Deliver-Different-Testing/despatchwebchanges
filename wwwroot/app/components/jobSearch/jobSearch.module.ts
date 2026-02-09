@@ -2,8 +2,6 @@
 import JobSearchService from "./jobSearch.service";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
-import AdditionalServicesDialogController
-    from "../dialogs/additional-services-dialog/additional-services-dialog.controller";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {TaskHistoryReactComponent} from "../../react/components/common/task-history/task-history-react.module";
 import JobsListComponent from "../common/job-list/job-list.component";
@@ -36,7 +34,6 @@ jobSearchModule
     .component("jobsList", JobsListComponent);
 
 jobSearchModule
-    .controller("AdditionalServicesDialogController", AdditionalServicesDialogController)
     .controller("CreateJobDialogController", CreateJobDialogController)
     .controller("InterCourierChargeDialog", InterCourierChargeDialogController);
 

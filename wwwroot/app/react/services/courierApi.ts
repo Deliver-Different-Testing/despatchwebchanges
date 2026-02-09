@@ -7,7 +7,7 @@
 import {apiClient} from './apiClient';
 import {CourierSuggestion, TimeZoneOption} from '../interfaces';
 import type {IAvailableCourierPosition} from '../../interfaces/courier.interface';
-import type {ClearListEnvelopeData} from '../components/common/dispatch-map/DispatchMap.types';
+import type {ClearListEnvelopeData} from '../components/common/dispatch-map';
 
 /**
  * Search for active couriers

@@ -372,12 +372,94 @@ describe('ApiClient', () => {
         });
     });
 
+    describe('POST FormData requests', () => {
+        it('should make POST request with FormData and return data', async () => {
+            const responseData = {id: 1, success: true};
+            mockAxiosInstance.post.mockResolvedValueOnce({data: responseData});
+
+            const formData = new FormData();
+            formData.append('file', new Blob(['test']), 'test.txt');
+
+            const result = await client.postFormData('/api/upload', formData);
+
+            expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+                '/api/upload',
+                formData,
+                {
+                    params: undefined,
+                    signal: undefined,
+                    timeout: undefined,
+                    headers: {'Content-Type': 'multipart/form-data'},
+                }
+            );
+            expect(result).toEqual(responseData);
+        });
+
+        it('should pass query params to POST FormData request', async () => {
+            mockAxiosInstance.post.mockResolvedValueOnce({data: {}});
+
+            const formData = new FormData();
+            formData.append('file', new Blob(['test']), 'test.csv');
+
+            await client.postFormData('/api/upload', formData, {params: {mode: 'recalculate'}});
+
+            expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+                '/api/upload',
+                formData,
+                {
+                    params: {mode: 'recalculate'},
+                    signal: undefined,
+                    timeout: undefined,
+                    headers: {'Content-Type': 'multipart/form-data'},
+                }
+            );
+        });
+
+        it('should pass AbortSignal for request cancellation', async () => {
+            mockAxiosInstance.post.mockResolvedValueOnce({data: {}});
+            const controller = new AbortController();
+
+            const formData = new FormData();
+            await client.postFormData('/api/upload', formData, {signal: controller.signal});
+
+            expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+                '/api/upload',
+                formData,
+                {
+                    params: undefined,
+                    signal: controller.signal,
+                    timeout: undefined,
+                    headers: {'Content-Type': 'multipart/form-data'},
+                }
+            );
+        });
+
+        it('should allow timeout override', async () => {
+            mockAxiosInstance.post.mockResolvedValueOnce({data: {}});
+
+            const formData = new FormData();
+            await client.postFormData('/api/upload', formData, {timeout: 60000});
+
+            expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+                '/api/upload',
+                formData,
+                {
+                    params: undefined,
+                    signal: undefined,
+                    timeout: 60000,
+                    headers: {'Content-Type': 'multipart/form-data'},
+                }
+            );
+        });
+    });
+
     describe('Default singleton', () => {
         it('should export apiClient with lazy-initialized methods', () => {
             expect(typeof apiClient.get).toBe('function');
             expect(typeof apiClient.post).toBe('function');
             expect(typeof apiClient.put).toBe('function');
             expect(typeof apiClient.delete).toBe('function');
+            expect(typeof apiClient.postFormData).toBe('function');
         });
     });
 });

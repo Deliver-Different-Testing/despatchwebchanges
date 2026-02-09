@@ -39,9 +39,7 @@ import TruckCourierStatusDialogController
     from "./components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.controller";
 import TruckCourierStatusDialogService
     from "./components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.service";
-import MessagingService from "./services/messaging.service";
 import MessagingDialogService from "./components/dialogs/messaging-dialog/messaging-dialog.service";
-import MessagingDialogController from "./components/dialogs/messaging-dialog/messaging-dialog.controller";
 import CustomUrlService from "./services/custom-url.service";
 import VoidJobConfirmationDialogService
     from "./components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
@@ -234,7 +232,6 @@ app.controller("SelectDialogController", SelectDialogController);
 app.controller('EventGroupDialogController', EventGroupDialogController);
 app.controller("jobFileUploadController", JobFileUploadController);
 app.controller("TruckCourierStatusDialogController", TruckCourierStatusDialogController);
-app.controller("messagingDialogController", MessagingDialogController);
 app.controller("simplePriceEditDialogController", SimplePriceEditDialogController);
 
 // Services
@@ -253,10 +250,9 @@ app.service("autoCompleteDialogService", AutoCompleteDialogService);
 app.service("jobAddStopService", JobAddStopService);
 app.service("addressLookupService", AddressLookupService);
 app.service("truckCourierStatusDialogService", TruckCourierStatusDialogService);
-app.service("messagingService", MessagingService);
 app.service("messagingDialogService", MessagingDialogService);
 app.service('customUrlService', CustomUrlService);
-app.service('voidJobConfirmationDialogService', VoidJobConfirmationDialogService);
+app.service('voidJobConfirmationDialogService', VoidJobConfirmationDialogService); 
 app.service('simplePriceEditDialogService', SimplePriceEditDialogService);
 app.service('bulkPriceUploadDialogService', BulkPriceUploadDialogService);
 app.service('dispatchJobService', DispatchExecutorService);

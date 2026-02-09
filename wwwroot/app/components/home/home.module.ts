@@ -10,8 +10,6 @@ import DispatchExecutorService from "../../services/dispatch-executor.service";
 import {
     FeatureInDevelopmentDialogService
 } from "../dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
-import AdditionalServicesDialogController
-    from "../dialogs/additional-services-dialog/additional-services-dialog.controller";
 import { CurrentWorkAllDriversReactComponent } from "../../react/components/common/current-work-all-drivers";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import JobHighlightService from "../common/job-list/job-highlight.service";
@@ -55,7 +53,6 @@ homeModule
     .service("dashboardSettingsDialogService", DashboardSettingsDialogService);
 homeModule
     .controller("InterCourierChargeDialog", InterCourierChargeDialogController)
-    .controller("AdditionalServicesDialogController", AdditionalServicesDialogController)
     .controller("CreateJobDialogController", CreateJobDialogController);
 
 export default homeModule;

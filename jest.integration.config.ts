@@ -1,23 +1,39 @@
 import type { JestConfigWithTsJest } from 'ts-jest';
 
+/**
+ * Jest Configuration for Integration Tests
+ *
+ * Uses jest-fixed-jsdom for MSW 2.x compatibility.
+ * This environment provides proper fetch API support required by MSW.
+ */
 const config: JestConfigWithTsJest = {
     preset: 'ts-jest',
-    testEnvironment: 'jsdom',
+    // Use jest-fixed-jsdom which includes fetch API polyfills for MSW 2.x
+    testEnvironment: 'jest-fixed-jsdom',
     roots: ['<rootDir>/wwwroot'],
-    testMatch: ['**/*.spec.ts', '**/*.test.ts', '**/*.spec.tsx', '**/*.test.tsx'],
+
+    // Only run integration tests
+    testMatch: ['**/__integration__/**/*.test.ts', '**/__integration__/**/*.test.tsx'],
+
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 
     transform: {
         '^.+\\.(ts|tsx)$': ['ts-jest', {
             tsconfig: 'tsconfig.test.json',
-        }]
+        }],
+        // Transform ESM modules from MSW dependencies
+        '^.+\\.m?js$': 'babel-jest',
     },
+
+    // MSW and its dependencies use ESM - need to transform them
+    transformIgnorePatterns: [
+        'node_modules[\\\\/](?!(msw|@mswjs|until-async)[\\\\/])',
+    ],
 
     moduleNameMapper: {
         '^angular$': '<rootDir>/node_modules/angular/angular.js',
         '\\.(less|css|scss|sass)$': '<rootDir>/wwwroot/app/tests/mocks/styleMock.ts',
         '\\.html$': '<rootDir>/wwwroot/app/tests/mocks/templateMock.ts',
-        // Mock heavy MUI date picker components for faster tests
         '^@mui/x-date-pickers/DateTimePicker$': '<rootDir>/wwwroot/app/tests/mocks/muiDatePickerMocks.ts',
         '^@mui/x-date-pickers/DatePicker$': '<rootDir>/wwwroot/app/tests/mocks/muiDatePickerMocks.ts',
         '^@mui/x-date-pickers/TimePicker$': '<rootDir>/wwwroot/app/tests/mocks/muiDatePickerMocks.ts',
@@ -27,20 +43,11 @@ const config: JestConfigWithTsJest = {
         '^@mui/x-date-pickers/AdapterDayjs$': '<rootDir>/wwwroot/app/tests/mocks/muiDatePickerMocks.ts',
     },
 
+    // Standard setup files (no need for setupIntegration.ts with jest-fixed-jsdom)
     setupFilesAfterEnv: [
         '<rootDir>/wwwroot/app/tests/setup.ts',
         '<rootDir>/wwwroot/app/tests/setupReact.ts'
     ],
-
-    collectCoverageFrom: [
-        'wwwroot/app/**/*.ts',
-        'wwwroot/app/**/*.tsx',
-        '!wwwroot/app/**/*.d.ts',
-        '!wwwroot/app/tests/**'
-    ],
-    coverageReporters: ['text', 'lcov', 'cobertura'],
-
-    testPathIgnorePatterns: ['/node_modules/', '/DespatchWeb.Tests/', '/__integration__/'],
 
     // Performance optimizations
     maxWorkers: '50%',
@@ -48,16 +55,8 @@ const config: JestConfigWithTsJest = {
     cacheDirectory: '<rootDir>/.jest-cache',
     verbose: false,
 
-    // Reduce memory usage and improve GC
-    workerIdleMemoryLimit: '512MB',
-
-    // Fail fast on hung tests
+    // Increase timeout for integration tests
     testTimeout: 30000,
-
-    // Use modern fake timers for better async handling
-    fakeTimers: {
-        enableGlobally: false,
-    },
 };
 
 export default config;
