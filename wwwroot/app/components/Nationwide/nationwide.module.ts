@@ -10,8 +10,6 @@ import DispatchExecutorService from "../../services/dispatch-executor.service";
 import {
     FeatureInDevelopmentDialogService
 } from "../dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
-import AdditionalServicesDialogController
-    from "../dialogs/additional-services-dialog/additional-services-dialog.controller";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import JobHighlightService from "../common/job-list/job-highlight.service";
 import RecoveryAgentManagementController
@@ -54,7 +52,6 @@ nationwideModule
 
 // Register controllers
 nationwideModule
-    .controller("AdditionalServicesDialogController", AdditionalServicesDialogController)
     .controller("recoveryAgentManagementController", RecoveryAgentManagementController);
 
 export default nationwideModule;

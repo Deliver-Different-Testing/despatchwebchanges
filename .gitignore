@@ -139,6 +139,9 @@ _TeamCity*
 *.coverage
 *.coveragexml
 
+# Jest coverage output
+coverage/
+
 # NCrunch
 _NCrunch_*
 .*crunch*.local.xml

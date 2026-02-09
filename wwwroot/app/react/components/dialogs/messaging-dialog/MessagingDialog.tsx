@@ -1,0 +1,1479 @@
+/**
+ * React Messaging Dialog
+ *
+ * A modern replacement for the AngularJS messaging-dialog using MUI components.
+ * Features real-time messaging, conversation list, quick responses, and multi-recipient support.
+ */
+
+import React from 'react';
+import {
+    Dialog,
+    DialogContent,
+    Box,
+    IconButton,
+    Typography,
+    TextField,
+    Button,
+    List,
+    ListItem,
+    ListItemAvatar,
+    ListItemText,
+    Avatar,
+    Badge,
+    CircularProgress,
+    Divider,
+    Chip,
+    Menu,
+    MenuItem,
+    Select,
+    FormControl,
+    Checkbox,
+    InputAdornment,
+    Paper,
+} from '@mui/material';
+import {
+    Close as CloseIcon,
+    Chat as ChatIcon,
+    Send as SendIcon,
+    Refresh as RefreshIcon,
+    AddComment as AddCommentIcon,
+    ArrowBack as ArrowBackIcon,
+    Search as SearchIcon,
+    QuickreplyOutlined as QuickReplyIcon,
+    DoneAll as DoneAllIcon,
+    Done as DoneIcon,
+    CheckBox as CheckBoxIcon,
+    CheckBoxOutlineBlank as CheckBoxOutlineBlankIcon,
+    SearchOff as SearchOffIcon,
+    PersonSearch as PersonSearchIcon,
+    ChatBubbleOutline as ChatBubbleOutlineIcon,
+    ErrorOutline as ErrorOutlineIcon,
+} from '@mui/icons-material';
+import {
+    MessagingDialogProps,
+    ChatMessage,
+    RecentConversation,
+    MessageContactOption,
+    QuickResponse,
+    OtherMessagePartyType,
+    MessageDeliveryType,
+    SendMessageRequest,
+    SendMultipleMessageRequest,
+} from './types';
+import {
+    useConversations,
+    useMessages,
+    useQuickResponses,
+    useContactSearch,
+    useAutoRefresh,
+} from './useMessaging';
+import { messagingApi } from '../../../services/messagingApi';
+
+interface MessagingDialogState {
+    selectedConversation: RecentConversation | null;
+    showNewChatView: boolean;
+    newMessage: string;
+    messageDeliveryType: MessageDeliveryType;
+    isSending: boolean;
+    showQuickResponses: boolean;
+    isMultiSelectMode: boolean;
+    selectedContacts: MessageContactOption[];
+}
+
+export class MessagingDialog extends React.Component<MessagingDialogProps, MessagingDialogState> {
+    private messagesEndRef = React.createRef<HTMLDivElement>();
+    private conversationRefreshInterval: NodeJS.Timeout | null = null;
+    private messageRefreshInterval: NodeJS.Timeout | null = null;
+
+    constructor(props: MessagingDialogProps) {
+        super(props);
+        this.state = {
+            selectedConversation: null,
+            showNewChatView: false,
+            newMessage: '',
+            messageDeliveryType: MessageDeliveryType.SmartDelivery,
+            isSending: false,
+            showQuickResponses: false,
+            isMultiSelectMode: false,
+            selectedContacts: [],
+        };
+    }
+
+    render() {
+        const { open, onClose } = this.props;
+
+        return (
+            <Dialog
+                open={open}
+                onClose={onClose}
+                maxWidth={false}
+                PaperProps={{
+                    sx: {
+                        width: '90vw',
+                        maxWidth: 1100,
+                        height: '80vh',
+                        maxHeight: 800,
+                        minWidth: 700,
+                        minHeight: 500,
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                    },
+                }}
+            >
+                <MessagingDialogContent
+                    {...this.props}
+                    state={this.state}
+                    setState={(updates) => this.setState(updates as MessagingDialogState)}
+                    messagesEndRef={this.messagesEndRef}
+                />
+            </Dialog>
+        );
+    }
+}
+
+// Functional component for the dialog content (uses hooks)
+interface MessagingDialogContentProps extends MessagingDialogProps {
+    state: MessagingDialogState;
+    setState: (updates: Partial<MessagingDialogState>) => void;
+    messagesEndRef: React.RefObject<HTMLDivElement>;
+}
+
+function MessagingDialogContent({
+    open,
+    onClose,
+    showToast,
+    currentStaffId,
+    state,
+    setState,
+    messagesEndRef,
+}: MessagingDialogContentProps) {
+    const {
+        conversations,
+        isLoading: isConversationsLoading,
+        error: conversationsError,
+        loadConversations,
+        updateConversation,
+        addConversation,
+    } = useConversations();
+
+    const {
+        messages,
+        isLoading: isMessagesLoading,
+        loadMessages,
+        addOptimisticMessage,
+        clearMessages,
+    } = useMessages(currentStaffId);
+
+    const {
+        quickResponses,
+        loadQuickResponses,
+    } = useQuickResponses();
+
+    const {
+        searchTerm,
+        results: searchResults,
+        isSearching,
+        search,
+        clearSearch,
+    } = useContactSearch();
+
+    // Load initial data
+    React.useEffect(() => {
+        if (open) {
+            loadConversations();
+            loadQuickResponses();
+        }
+    }, [open, loadConversations, loadQuickResponses]);
+
+    // Auto-refresh conversations every 20 seconds
+    useAutoRefresh(
+        React.useCallback(async () => {
+            await loadConversations(true);
+        }, [loadConversations]),
+        20000,
+        open && !state.showNewChatView
+    );
+
+    // Auto-refresh messages every 10 seconds when a conversation is selected
+    useAutoRefresh(
+        React.useCallback(async () => {
+            if (state.selectedConversation) {
+                await loadMessages(
+                    state.selectedConversation.otherPartyId,
+                    state.selectedConversation.otherPartyType,
+                    true
+                );
+            }
+        }, [state.selectedConversation, loadMessages]),
+        10000,
+        open && !!state.selectedConversation
+    );
+
+    // Scroll to bottom when messages change
+    React.useEffect(() => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages, messagesEndRef]);
+
+    const handleSelectConversation = async (conversation: RecentConversation) => {
+        if (
+            state.selectedConversation?.otherPartyId === conversation.otherPartyId &&
+            state.selectedConversation?.otherPartyType === conversation.otherPartyType
+        ) {
+            return;
+        }
+
+        setState({ selectedConversation: conversation });
+        clearMessages();
+        await loadMessages(conversation.otherPartyId, conversation.otherPartyType);
+
+        // Mark messages as read
+        if (conversation.unreadCount > 0) {
+            try {
+                await messagingApi.markMessagesAsRead(conversation.otherPartyId, conversation.otherPartyType);
+                updateConversation(conversation.otherPartyId, conversation.otherPartyType, { unreadCount: 0 });
+            } catch (err) {
+                console.error('Failed to mark messages as read:', err);
+            }
+        }
+    };
+
+    const handleSendMessage = async () => {
+        const { selectedConversation, newMessage, messageDeliveryType } = state;
+        if (!newMessage.trim() || !selectedConversation || state.isSending) return;
+
+        const messageContent = newMessage.trim();
+        setState({ isSending: true });
+
+        try {
+            const data: SendMessageRequest = {
+                sendToCourierId: selectedConversation.otherPartyType === OtherMessagePartyType.Courier
+                    ? selectedConversation.otherPartyId : undefined,
+                sendToStaffId: selectedConversation.otherPartyType === OtherMessagePartyType.Staff
+                    ? selectedConversation.otherPartyId : undefined,
+                message: messageContent,
+                messageType: messageDeliveryType,
+            };
+
+            await messagingApi.sendMessage(data);
+
+            // Add optimistic message
+            const optimisticMessage: ChatMessage = {
+                messageId: -Date.now(),
+                sendFromStaffId: currentStaffId,
+                sendToCourierId: data.sendToCourierId,
+                sendToStaffId: data.sendToStaffId,
+                message: messageContent,
+                messageTime: new Date().toISOString(),
+                read: false,
+                sent: true,
+                isSender: true,
+            };
+
+            addOptimisticMessage(optimisticMessage);
+            setState({ newMessage: '' });
+
+            // Update conversation preview
+            updateConversation(
+                selectedConversation.otherPartyId,
+                selectedConversation.otherPartyType,
+                {
+                    lastMessage: messageContent,
+                    lastMessageTime: new Date().toISOString(),
+                }
+            );
+
+            showToast('Message sent', 'success');
+        } catch (err: any) {
+            console.error('Failed to send message:', err);
+            showToast('Failed to send message', 'error');
+        } finally {
+            setState({ isSending: false });
+        }
+    };
+
+    const handleSendMultiMessage = async () => {
+        const { selectedContacts, newMessage, messageDeliveryType } = state;
+        if (!newMessage.trim() || selectedContacts.length === 0 || state.isSending) return;
+
+        const messageContent = newMessage.trim();
+        setState({ isSending: true });
+
+        try {
+            const courierIds = selectedContacts
+                .filter(c => c.otherMessagePartyType === OtherMessagePartyType.Courier)
+                .map(c => c.recordId);
+
+            const staffIds = selectedContacts
+                .filter(c => c.otherMessagePartyType === OtherMessagePartyType.Staff)
+                .map(c => c.recordId);
+
+            const data: SendMultipleMessageRequest = {
+                sendToCourierIds: courierIds.length > 0 ? courierIds : undefined,
+                sendToStaffIds: staffIds.length > 0 ? staffIds : undefined,
+                message: messageContent,
+                messageType: messageDeliveryType,
+            };
+
+            await messagingApi.sendMultiMessage(data);
+
+            setState({
+                newMessage: '',
+                selectedContacts: [],
+                isMultiSelectMode: false,
+                showNewChatView: false,
+            });
+
+            showToast(`Message sent to ${courierIds.length + staffIds.length} contacts`, 'success');
+        } catch (err: any) {
+            console.error('Failed to send multi message:', err);
+            showToast('Failed to send message to all contacts', 'error');
+        } finally {
+            setState({ isSending: false });
+        }
+    };
+
+    const handleKeyPress = async (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            await handleSendMessage();
+        }
+    };
+
+    const handleShowNewChat = () => {
+        setState({ showNewChatView: true });
+        clearSearch();
+    };
+
+    const handleBackToMessaging = () => {
+        setState({
+            showNewChatView: false,
+            selectedContacts: [],
+            isMultiSelectMode: false,
+        });
+        clearSearch();
+    };
+
+    const handleStartConversationWith = async (contact: MessageContactOption | RecentConversation) => {
+        const normalizedContact = normalizeContact(contact);
+        const otherPartyId = normalizedContact.recordId;
+        const otherPartyName = normalizedContact.name || 'Unknown';
+        const otherPartyType = normalizedContact.otherMessagePartyType || OtherMessagePartyType.Courier;
+
+        // Check if conversation already exists
+        const existing = conversations.find(
+            c => c.otherPartyId === otherPartyId && c.otherPartyType === otherPartyType
+        );
+
+        if (existing) {
+            await handleSelectConversation(existing);
+        } else {
+            const newConversation: RecentConversation = {
+                otherPartyId,
+                otherPartyType,
+                otherPartyName,
+                otherPartyInitials: generateInitials(otherPartyName),
+                otherPartyStatus: normalizedContact.status || 'offline',
+                unreadCount: 0,
+                lastMessage: '',
+                lastMessageTime: new Date().toISOString(),
+            };
+
+            addConversation(newConversation);
+            await handleSelectConversation(newConversation);
+        }
+
+        handleBackToMessaging();
+    };
+
+    const handleToggleContactSelection = (contact: MessageContactOption | RecentConversation) => {
+        const normalizedContact = normalizeContact(contact);
+        const { selectedContacts } = state;
+
+        const index = selectedContacts.findIndex(
+            c => c.recordId === normalizedContact.recordId &&
+                 c.otherMessagePartyType === normalizedContact.otherMessagePartyType
+        );
+
+        if (index > -1) {
+            setState({
+                selectedContacts: selectedContacts.filter((_, i) => i !== index),
+            });
+        } else {
+            setState({
+                selectedContacts: [...selectedContacts, normalizedContact],
+            });
+        }
+    };
+
+    const isContactSelected = (contact: MessageContactOption | RecentConversation): boolean => {
+        const normalizedContact = normalizeContact(contact);
+        return state.selectedContacts.some(
+            c => c.recordId === normalizedContact.recordId &&
+                 c.otherMessagePartyType === normalizedContact.otherMessagePartyType
+        );
+    };
+
+    const handleSelectQuickResponse = (response: QuickResponse) => {
+        setState({
+            newMessage: response.text,
+            showQuickResponses: false,
+        });
+    };
+
+    const getTotalUnreadCount = (): number => {
+        return conversations.reduce((total, conv) => total + conv.unreadCount, 0);
+    };
+
+    const recentForNewChat = conversations
+        .filter(c => c.lastMessageTime)
+        .sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime())
+        .slice(0, 5);
+
+    // Show New Chat View
+    if (state.showNewChatView) {
+        return (
+            <>
+                <DialogHeader
+                    title="New Conversation"
+                    showBackButton
+                    onBack={handleBackToMessaging}
+                    onClose={onClose}
+                />
+                <NewChatView
+                    searchTerm={searchTerm}
+                    searchResults={searchResults}
+                    isSearching={isSearching}
+                    recentConversations={recentForNewChat}
+                    isMultiSelectMode={state.isMultiSelectMode}
+                    selectedContacts={state.selectedContacts}
+                    newMessage={state.newMessage}
+                    isSending={state.isSending}
+                    onSearch={search}
+                    onClearSearch={clearSearch}
+                    onToggleMultiSelect={() => setState({ isMultiSelectMode: !state.isMultiSelectMode, selectedContacts: [] })}
+                    onToggleContactSelection={handleToggleContactSelection}
+                    onStartConversation={handleStartConversationWith}
+                    onClearSelectedContacts={() => setState({ selectedContacts: [] })}
+                    onMessageChange={(value) => setState({ newMessage: value })}
+                    onSendMultiMessage={handleSendMultiMessage}
+                    isContactSelected={isContactSelected}
+                />
+            </>
+        );
+    }
+
+    // Show Main Messaging View
+    return (
+        <>
+            <DialogHeader
+                title="Message Center"
+                onClose={onClose}
+            />
+            <DialogContent sx={{ p: 0, display: 'flex', flex: 1, overflow: 'hidden' }}>
+                {conversationsError ? (
+                    <ErrorState
+                        message={conversationsError}
+                        onRetry={() => loadConversations()}
+                    />
+                ) : (
+                    <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
+                        {/* Conversations Panel */}
+                        <ConversationsPanel
+                            conversations={conversations}
+                            selectedConversation={state.selectedConversation}
+                            isLoading={isConversationsLoading}
+                            totalUnreadCount={getTotalUnreadCount()}
+                            onSelectConversation={handleSelectConversation}
+                            onRefresh={() => loadConversations()}
+                            onNewChat={handleShowNewChat}
+                        />
+
+                        {/* Chat Panel */}
+                        <ChatPanel
+                            selectedConversation={state.selectedConversation}
+                            messages={messages}
+                            isMessagesLoading={isMessagesLoading}
+                            newMessage={state.newMessage}
+                            messageDeliveryType={state.messageDeliveryType}
+                            isSending={state.isSending}
+                            showQuickResponses={state.showQuickResponses}
+                            quickResponses={quickResponses}
+                            onMessageChange={(value) => setState({ newMessage: value })}
+                            onDeliveryTypeChange={(value) => setState({ messageDeliveryType: value })}
+                            onSendMessage={handleSendMessage}
+                            onKeyPress={handleKeyPress}
+                            onRefreshMessages={() => state.selectedConversation && loadMessages(
+                                state.selectedConversation.otherPartyId,
+                                state.selectedConversation.otherPartyType
+                            )}
+                            onToggleQuickResponses={() => setState({ showQuickResponses: !state.showQuickResponses })}
+                            onSelectQuickResponse={handleSelectQuickResponse}
+                            messagesEndRef={messagesEndRef}
+                        />
+                    </Box>
+                )}
+            </DialogContent>
+        </>
+    );
+}
+
+// Helper Components
+
+interface DialogHeaderProps {
+    title: string;
+    showBackButton?: boolean;
+    onBack?: () => void;
+    onClose: () => void;
+}
+
+function DialogHeader({ title, showBackButton, onBack, onClose }: DialogHeaderProps) {
+    return (
+        <Box
+            sx={(theme) => ({
+                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                color: 'white',
+                px: 2,
+                py: 1.5,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+            })}
+        >
+            {showBackButton && (
+                <IconButton onClick={onBack} sx={{ color: 'white' }}>
+                    <ArrowBackIcon />
+                </IconButton>
+            )}
+            {!showBackButton && <ChatIcon sx={{ mr: 1 }} />}
+            <Typography variant="h6" fontWeight={600} sx={{ flex: 1 }}>
+                {title}
+            </Typography>
+            <IconButton onClick={onClose} sx={{ color: 'white' }}>
+                <CloseIcon />
+            </IconButton>
+        </Box>
+    );
+}
+
+interface ConversationsPanelProps {
+    conversations: RecentConversation[];
+    selectedConversation: RecentConversation | null;
+    isLoading: boolean;
+    totalUnreadCount: number;
+    onSelectConversation: (conv: RecentConversation) => void;
+    onRefresh: () => void;
+    onNewChat: () => void;
+}
+
+function ConversationsPanel({
+    conversations,
+    selectedConversation,
+    isLoading,
+    totalUnreadCount,
+    onSelectConversation,
+    onRefresh,
+    onNewChat,
+}: ConversationsPanelProps) {
+    return (
+        <Box
+            sx={{
+                width: 320,
+                display: 'flex',
+                flexDirection: 'column',
+                borderRight: '1px solid',
+                borderColor: 'divider',
+                bgcolor: '#fafafa',
+            }}
+        >
+            {/* Panel Header */}
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    p: 1.5,
+                    bgcolor: 'background.paper',
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                }}
+            >
+                <Typography variant="subtitle1" fontWeight={600}>
+                    Conversations
+                </Typography>
+                {totalUnreadCount > 0 && (
+                    <Badge
+                        badgeContent={totalUnreadCount}
+                        color="error"
+                        sx={{ ml: 0.5 }}
+                    />
+                )}
+                <Box sx={{ flex: 1 }} />
+                <IconButton size="small" onClick={onRefresh} disabled={isLoading}>
+                    <RefreshIcon sx={{ animation: isLoading ? 'spin 1s linear infinite' : 'none' }} />
+                </IconButton>
+                <IconButton size="small" color="primary" onClick={onNewChat}>
+                    <AddCommentIcon />
+                </IconButton>
+            </Box>
+
+            {/* Loading indicator */}
+            {isLoading && conversations.length === 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                    <CircularProgress size={32} />
+                </Box>
+            )}
+
+            {/* Conversations List */}
+            <List sx={{ flex: 1, overflow: 'auto', p: 0 }}>
+                {conversations.map((conv) => (
+                    <ListItem
+                        key={`${conv.otherPartyId}-${conv.otherPartyType}`}
+                        onClick={() => onSelectConversation(conv)}
+                        sx={{
+                            cursor: 'pointer',
+                            borderLeft: '3px solid',
+                            borderLeftColor: selectedConversation?.otherPartyId === conv.otherPartyId &&
+                                selectedConversation?.otherPartyType === conv.otherPartyType
+                                ? 'primary.main' : 'transparent',
+                            bgcolor: selectedConversation?.otherPartyId === conv.otherPartyId &&
+                                selectedConversation?.otherPartyType === conv.otherPartyType
+                                ? 'action.selected' : 'transparent',
+                            '&:hover': { bgcolor: 'action.hover' },
+                        }}
+                    >
+                        <ListItemAvatar>
+                            <Badge
+                                overlap="circular"
+                                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                                badgeContent={
+                                    <Box
+                                        sx={{
+                                            width: 10,
+                                            height: 10,
+                                            borderRadius: '50%',
+                                            bgcolor: getStatusColor(conv.otherPartyStatus),
+                                            border: '2px solid white',
+                                        }}
+                                    />
+                                }
+                            >
+                                <Avatar sx={{ bgcolor: 'primary.main' }}>
+                                    {conv.otherPartyInitials || generateInitials(conv.otherPartyName)}
+                                </Avatar>
+                            </Badge>
+                        </ListItemAvatar>
+                        <ListItemText
+                            primary={
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                                    <Typography variant="body2" fontWeight={500} noWrap sx={{ maxWidth: 140 }}>
+                                        {conv.otherPartyName}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                        {formatLastMessageTime(conv.lastMessageTime)}
+                                    </Typography>
+                                </Box>
+                            }
+                            secondary={
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        noWrap
+                                        sx={{ flex: 1 }}
+                                    >
+                                        {conv.lastMessage ? (
+                                            <>
+                                                <Typography component="span" variant="caption" fontWeight={500}>
+                                                    {conv.unreadCount > 0 ? `${conv.otherPartyName}: ` : 'You: '}
+                                                </Typography>
+                                                {conv.lastMessage.substring(0, 40)}
+                                                {conv.lastMessage.length > 40 ? '...' : ''}
+                                            </>
+                                        ) : null}
+                                    </Typography>
+                                    {conv.unreadCount > 0 && (
+                                        <Chip
+                                            label={conv.unreadCount > 99 ? '99+' : conv.unreadCount}
+                                            size="small"
+                                            color="error"
+                                            sx={{ height: 18, fontSize: 11 }}
+                                        />
+                                    )}
+                                </Box>
+                            }
+                        />
+                    </ListItem>
+                ))}
+            </List>
+
+            {/* Empty State */}
+            {!isLoading && conversations.length === 0 && (
+                <EmptyState
+                    icon={<ChatBubbleOutlineIcon sx={{ fontSize: 48 }} />}
+                    message="No conversations yet"
+                    action={
+                        <Button
+                            variant="contained"
+                            startIcon={<AddCommentIcon />}
+                            onClick={onNewChat}
+                        >
+                            Start Conversation
+                        </Button>
+                    }
+                />
+            )}
+        </Box>
+    );
+}
+
+interface ChatPanelProps {
+    selectedConversation: RecentConversation | null;
+    messages: ChatMessage[];
+    isMessagesLoading: boolean;
+    newMessage: string;
+    messageDeliveryType: MessageDeliveryType;
+    isSending: boolean;
+    showQuickResponses: boolean;
+    quickResponses: QuickResponse[];
+    onMessageChange: (value: string) => void;
+    onDeliveryTypeChange: (value: MessageDeliveryType) => void;
+    onSendMessage: () => void;
+    onKeyPress: (e: React.KeyboardEvent) => void;
+    onRefreshMessages: () => void;
+    onToggleQuickResponses: () => void;
+    onSelectQuickResponse: (response: QuickResponse) => void;
+    messagesEndRef: React.RefObject<HTMLDivElement>;
+}
+
+function ChatPanel({
+    selectedConversation,
+    messages,
+    isMessagesLoading,
+    newMessage,
+    messageDeliveryType,
+    isSending,
+    showQuickResponses,
+    quickResponses,
+    onMessageChange,
+    onDeliveryTypeChange,
+    onSendMessage,
+    onKeyPress,
+    onRefreshMessages,
+    onToggleQuickResponses,
+    onSelectQuickResponse,
+    messagesEndRef,
+}: ChatPanelProps) {
+    if (!selectedConversation) {
+        return (
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <ChatIcon sx={{ fontSize: 64, color: 'action.disabled', mb: 2 }} />
+                <Typography color="text.secondary">
+                    Select a conversation or start a new one
+                </Typography>
+            </Box>
+        );
+    }
+
+    return (
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            {/* Chat Header */}
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    p: 1.5,
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                }}
+            >
+                <Avatar sx={{ bgcolor: 'primary.main' }}>
+                    {selectedConversation.otherPartyInitials}
+                </Avatar>
+                <Box sx={{ flex: 1 }}>
+                    <Typography variant="body1" fontWeight={500}>
+                        {selectedConversation.otherPartyName}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
+                        {selectedConversation.otherPartyType === OtherMessagePartyType.Courier ? 'Courier' : 'Staff'}
+                        {' · '}{selectedConversation.otherPartyStatus}
+                    </Typography>
+                </Box>
+                <IconButton size="small" onClick={onRefreshMessages} disabled={isMessagesLoading}>
+                    <RefreshIcon sx={{ animation: isMessagesLoading ? 'spin 1s linear infinite' : 'none' }} />
+                </IconButton>
+            </Box>
+
+            {/* Messages Area */}
+            <Box
+                sx={{
+                    flex: 1,
+                    overflow: 'auto',
+                    p: 2,
+                    bgcolor: '#f5f5f5',
+                    display: 'flex',
+                    flexDirection: 'column',
+                }}
+            >
+                {isMessagesLoading && messages.length === 0 ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                        <CircularProgress size={32} />
+                    </Box>
+                ) : messages.length === 0 ? (
+                    <EmptyState
+                        icon={<ChatBubbleOutlineIcon sx={{ fontSize: 48 }} />}
+                        message="Start the conversation"
+                    />
+                ) : (
+                    <>
+                        {messages.map((msg, index) => {
+                            const showDateSeparator = index === 0 ||
+                                !isSameDay(messages[index - 1].messageTime, msg.messageTime);
+
+                            return (
+                                <React.Fragment key={msg.messageId}>
+                                    {showDateSeparator && (
+                                        <Typography
+                                            variant="caption"
+                                            sx={{
+                                                textAlign: 'center',
+                                                color: 'text.secondary',
+                                                my: 2,
+                                                px: 2,
+                                                py: 0.5,
+                                                bgcolor: '#f5f5f5',
+                                                alignSelf: 'center',
+                                                borderRadius: 2,
+                                                border: '1px solid',
+                                                borderColor: 'divider',
+                                            }}
+                                        >
+                                            {formatDateSeparator(msg.messageTime)}
+                                        </Typography>
+                                    )}
+                                    <MessageBubble message={msg} />
+                                </React.Fragment>
+                            );
+                        })}
+                        <div ref={messagesEndRef} />
+                    </>
+                )}
+            </Box>
+
+            {/* Quick Responses Panel */}
+            {showQuickResponses && (
+                <Box
+                    sx={{
+                        borderTop: '1px solid',
+                        borderColor: 'divider',
+                        bgcolor: '#fafafa',
+                        p: 1.5,
+                    }}
+                >
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                        <Typography variant="caption" fontWeight={500} color="text.secondary" sx={{ textTransform: 'uppercase' }}>
+                            Quick Responses
+                        </Typography>
+                        <IconButton size="small" onClick={onToggleQuickResponses}>
+                            <CloseIcon fontSize="small" />
+                        </IconButton>
+                    </Box>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {quickResponses.map((response) => (
+                            <Chip
+                                key={response.id}
+                                label={response.text}
+                                onClick={() => onSelectQuickResponse(response)}
+                                variant="outlined"
+                                size="small"
+                                sx={{
+                                    '&:hover': {
+                                        bgcolor: 'primary.main',
+                                        color: 'white',
+                                        borderColor: 'primary.main',
+                                    },
+                                }}
+                            />
+                        ))}
+                    </Box>
+                </Box>
+            )}
+
+            {/* Message Input */}
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    gap: 1,
+                    p: 1.5,
+                    borderTop: '1px solid',
+                    borderColor: 'divider',
+                    bgcolor: 'background.paper',
+                }}
+            >
+                <IconButton onClick={onToggleQuickResponses}>
+                    <QuickReplyIcon />
+                </IconButton>
+                <TextField
+                    fullWidth
+                    multiline
+                    maxRows={4}
+                    placeholder="Type a message..."
+                    value={newMessage}
+                    onChange={(e) => onMessageChange(e.target.value)}
+                    onKeyDown={onKeyPress}
+                    size="small"
+                    sx={{
+                        '& .MuiOutlinedInput-root': {
+                            borderRadius: 3,
+                        },
+                    }}
+                />
+                {selectedConversation.otherPartyType === OtherMessagePartyType.Courier && (
+                    <FormControl size="small" sx={{ minWidth: 80 }}>
+                        <Select
+                            value={messageDeliveryType}
+                            onChange={(e) => onDeliveryTypeChange(e.target.value as MessageDeliveryType)}
+                            sx={{ borderRadius: 2, fontSize: 12 }}
+                        >
+                            <MenuItem value={MessageDeliveryType.App}>App</MenuItem>
+                            <MenuItem value={MessageDeliveryType.Sms}>SMS</MenuItem>
+                            <MenuItem value={MessageDeliveryType.SmartDelivery}>Smart</MenuItem>
+                        </Select>
+                    </FormControl>
+                )}
+                <IconButton
+                    color="primary"
+                    onClick={onSendMessage}
+                    disabled={!newMessage.trim() || isSending}
+                    sx={{
+                        bgcolor: 'primary.main',
+                        color: 'white',
+                        '&:hover': { bgcolor: 'primary.dark' },
+                        '&:disabled': { bgcolor: 'action.disabledBackground' },
+                    }}
+                >
+                    {isSending ? <CircularProgress size={24} color="inherit" /> : <SendIcon />}
+                </IconButton>
+            </Box>
+        </Box>
+    );
+}
+
+interface MessageBubbleProps {
+    message: ChatMessage;
+}
+
+function MessageBubble({ message }: MessageBubbleProps) {
+    const isSent = message.isSender;
+
+    return (
+        <Box
+            sx={{
+                display: 'flex',
+                justifyContent: isSent ? 'flex-end' : 'flex-start',
+                mb: 1,
+            }}
+        >
+            <Box
+                sx={{
+                    maxWidth: '70%',
+                    px: 2,
+                    py: 1,
+                    borderRadius: isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                    bgcolor: isSent ? 'primary.main' : 'background.paper',
+                    color: isSent ? 'white' : 'text.primary',
+                    border: isSent ? 'none' : '1px solid',
+                    borderColor: 'divider',
+                }}
+            >
+                <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    {message.message}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5, justifyContent: 'flex-end' }}>
+                    <Typography
+                        variant="caption"
+                        sx={{ opacity: isSent ? 0.8 : 0.6 }}
+                    >
+                        {formatMessageTime(message.messageTime)}
+                    </Typography>
+                    {isSent && message.read && (
+                        <DoneAllIcon sx={{ fontSize: 14, opacity: 0.8 }} />
+                    )}
+                    {isSent && !message.read && message.sent && (
+                        <DoneIcon sx={{ fontSize: 14, opacity: 0.8 }} />
+                    )}
+                </Box>
+            </Box>
+        </Box>
+    );
+}
+
+interface NewChatViewProps {
+    searchTerm: string;
+    searchResults: MessageContactOption[];
+    isSearching: boolean;
+    recentConversations: RecentConversation[];
+    isMultiSelectMode: boolean;
+    selectedContacts: MessageContactOption[];
+    newMessage: string;
+    isSending: boolean;
+    onSearch: (term: string) => void;
+    onClearSearch: () => void;
+    onToggleMultiSelect: () => void;
+    onToggleContactSelection: (contact: MessageContactOption | RecentConversation) => void;
+    onStartConversation: (contact: MessageContactOption | RecentConversation) => void;
+    onClearSelectedContacts: () => void;
+    onMessageChange: (value: string) => void;
+    onSendMultiMessage: () => void;
+    isContactSelected: (contact: MessageContactOption | RecentConversation) => boolean;
+}
+
+function NewChatView({
+    searchTerm,
+    searchResults,
+    isSearching,
+    recentConversations,
+    isMultiSelectMode,
+    selectedContacts,
+    newMessage,
+    isSending,
+    onSearch,
+    onClearSearch,
+    onToggleMultiSelect,
+    onToggleContactSelection,
+    onStartConversation,
+    onClearSelectedContacts,
+    onMessageChange,
+    onSendMultiMessage,
+    isContactSelected,
+}: NewChatViewProps) {
+    return (
+        <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+            {/* Multi-select Header */}
+            {isMultiSelectMode && (
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        p: 1.5,
+                        bgcolor: 'primary.light',
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                    }}
+                >
+                    <Typography fontWeight={500} color="primary.main">
+                        {selectedContacts.length} selected
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                            size="small"
+                            onClick={onClearSelectedContacts}
+                            disabled={selectedContacts.length === 0}
+                        >
+                            Clear
+                        </Button>
+                        <Button
+                            size="small"
+                            color="error"
+                            onClick={onToggleMultiSelect}
+                        >
+                            Cancel
+                        </Button>
+                    </Box>
+                </Box>
+            )}
+
+            {/* Search Section */}
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    p: 2,
+                    bgcolor: '#fafafa',
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                }}
+            >
+                <TextField
+                    fullWidth
+                    placeholder="Search by name or ID..."
+                    value={searchTerm}
+                    onChange={(e) => onSearch(e.target.value)}
+                    size="small"
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon color="action" />
+                            </InputAdornment>
+                        ),
+                        endAdornment: searchTerm && (
+                            <InputAdornment position="end">
+                                <IconButton size="small" onClick={onClearSearch}>
+                                    <CloseIcon fontSize="small" />
+                                </IconButton>
+                            </InputAdornment>
+                        ),
+                    }}
+                    sx={{
+                        '& .MuiOutlinedInput-root': {
+                            borderRadius: 3,
+                            bgcolor: 'background.paper',
+                        },
+                    }}
+                />
+                <Button
+                    variant={isMultiSelectMode ? 'contained' : 'outlined'}
+                    size="small"
+                    onClick={onToggleMultiSelect}
+                    startIcon={isMultiSelectMode ? <CheckBoxIcon /> : <CheckBoxOutlineBlankIcon />}
+                >
+                    Multi
+                </Button>
+            </Box>
+
+            {/* Loading */}
+            {isSearching && (
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, p: 3 }}>
+                    <CircularProgress size={24} />
+                    <Typography color="text.secondary">Searching...</Typography>
+                </Box>
+            )}
+
+            {/* Results */}
+            <Box sx={{ flex: 1, overflow: 'auto' }}>
+                {/* Recent Conversations */}
+                {!searchTerm && recentConversations.length > 0 && (
+                    <Box sx={{ py: 2 }}>
+                        <Typography
+                            variant="caption"
+                            fontWeight={600}
+                            color="text.secondary"
+                            sx={{ px: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}
+                        >
+                            Recent
+                        </Typography>
+                        <List>
+                            {recentConversations.map((conv) => (
+                                <ContactListItem
+                                    key={`${conv.otherPartyId}-${conv.otherPartyType}`}
+                                    contact={conv}
+                                    isMultiSelectMode={isMultiSelectMode}
+                                    isSelected={isContactSelected(conv)}
+                                    onSelect={() => isMultiSelectMode
+                                        ? onToggleContactSelection(conv)
+                                        : onStartConversation(conv)
+                                    }
+                                    onToggleSelection={() => onToggleContactSelection(conv)}
+                                />
+                            ))}
+                        </List>
+                    </Box>
+                )}
+
+                {/* Search Results */}
+                {searchTerm && searchResults.length > 0 && (
+                    <Box sx={{ py: 2 }}>
+                        <Typography
+                            variant="caption"
+                            fontWeight={600}
+                            color="text.secondary"
+                            sx={{ px: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}
+                        >
+                            Results ({searchResults.length})
+                        </Typography>
+                        <List>
+                            {searchResults.map((contact) => (
+                                <ContactListItem
+                                    key={contact.id}
+                                    contact={contact}
+                                    isMultiSelectMode={isMultiSelectMode}
+                                    isSelected={isContactSelected(contact)}
+                                    onSelect={() => isMultiSelectMode
+                                        ? onToggleContactSelection(contact)
+                                        : onStartConversation(contact)
+                                    }
+                                    onToggleSelection={() => onToggleContactSelection(contact)}
+                                    highlightTerm={searchTerm}
+                                />
+                            ))}
+                        </List>
+                    </Box>
+                )}
+
+                {/* No Results */}
+                {searchTerm && !isSearching && searchResults.length === 0 && (
+                    <EmptyState
+                        icon={<SearchOffIcon sx={{ fontSize: 48 }} />}
+                        message={`No results for "${searchTerm}"`}
+                    />
+                )}
+
+                {/* Empty State */}
+                {!searchTerm && recentConversations.length === 0 && (
+                    <EmptyState
+                        icon={<PersonSearchIcon sx={{ fontSize: 48 }} />}
+                        message="Search to start a conversation"
+                    />
+                )}
+
+                {/* Multi-select Compose */}
+                {isMultiSelectMode && selectedContacts.length > 0 && (
+                    <Box sx={{ m: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 2 }}>
+                        <Typography fontWeight={500} sx={{ mb: 1.5 }}>
+                            Send to {selectedContacts.length} contact{selectedContacts.length !== 1 ? 's' : ''}
+                        </Typography>
+                        <TextField
+                            fullWidth
+                            multiline
+                            rows={3}
+                            placeholder="Type your message..."
+                            value={newMessage}
+                            onChange={(e) => onMessageChange(e.target.value)}
+                            sx={{ mb: 1.5 }}
+                        />
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <Button
+                                variant="contained"
+                                startIcon={isSending ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
+                                onClick={onSendMultiMessage}
+                                disabled={!newMessage.trim() || isSending}
+                            >
+                                Send
+                            </Button>
+                        </Box>
+                    </Box>
+                )}
+            </Box>
+        </DialogContent>
+    );
+}
+
+interface ContactListItemProps {
+    contact: MessageContactOption | RecentConversation;
+    isMultiSelectMode: boolean;
+    isSelected: boolean;
+    onSelect: () => void;
+    onToggleSelection: () => void;
+    highlightTerm?: string;
+}
+
+function ContactListItem({
+    contact,
+    isMultiSelectMode,
+    isSelected,
+    onSelect,
+    onToggleSelection,
+    highlightTerm,
+}: ContactListItemProps) {
+    const name = 'otherPartyName' in contact ? contact.otherPartyName : contact.name;
+    const initials = 'otherPartyInitials' in contact ? contact.otherPartyInitials : generateInitials(name);
+    const type = 'otherPartyType' in contact ? contact.otherPartyType : contact.otherMessagePartyType;
+    const status = 'otherPartyStatus' in contact ? contact.otherPartyStatus : contact.status;
+
+    return (
+        <ListItem
+            onClick={onSelect}
+            sx={{
+                cursor: 'pointer',
+                bgcolor: isSelected ? 'action.selected' : 'transparent',
+                '&:hover': { bgcolor: 'action.hover' },
+            }}
+        >
+            {isMultiSelectMode && (
+                <Checkbox
+                    checked={isSelected}
+                    onChange={onToggleSelection}
+                    onClick={(e) => e.stopPropagation()}
+                    sx={{ mr: 1 }}
+                />
+            )}
+            <ListItemAvatar>
+                <Avatar sx={{ bgcolor: 'primary.main' }}>
+                    {initials}
+                </Avatar>
+            </ListItemAvatar>
+            <ListItemText
+                primary={
+                    highlightTerm ? (
+                        <span dangerouslySetInnerHTML={{ __html: highlightSearchTerm(name, highlightTerm) }} />
+                    ) : name
+                }
+                secondary={type === OtherMessagePartyType.Courier ? 'Courier' : 'Staff'}
+            />
+            {status && (
+                <Box
+                    sx={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: '50%',
+                        bgcolor: getStatusColor(status),
+                    }}
+                />
+            )}
+        </ListItem>
+    );
+}
+
+interface EmptyStateProps {
+    icon: React.ReactNode;
+    message: string;
+    action?: React.ReactNode;
+}
+
+function EmptyState({ icon, message, action }: EmptyStateProps) {
+    return (
+        <Box
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                p: 5,
+                color: 'text.secondary',
+            }}
+        >
+            <Box sx={{ color: 'action.disabled', mb: 2 }}>{icon}</Box>
+            <Typography color="text.secondary" sx={{ mb: action ? 2 : 0 }}>
+                {message}
+            </Typography>
+            {action}
+        </Box>
+    );
+}
+
+interface ErrorStateProps {
+    message: string;
+    onRetry: () => void;
+}
+
+function ErrorState({ message, onRetry }: ErrorStateProps) {
+    return (
+        <Box
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flex: 1,
+                p: 5,
+            }}
+        >
+            <ErrorOutlineIcon sx={{ fontSize: 64, color: 'error.main', mb: 2 }} />
+            <Typography variant="h6" gutterBottom>
+                Unable to load messages
+            </Typography>
+            <Typography color="text.secondary" sx={{ mb: 3 }}>
+                {message}
+            </Typography>
+            <Button variant="contained" startIcon={<RefreshIcon />} onClick={onRetry}>
+                Retry
+            </Button>
+        </Box>
+    );
+}
+
+// Utility Functions
+
+function normalizeContact(contact: MessageContactOption | RecentConversation): MessageContactOption {
+    if ('otherPartyId' in contact) {
+        return {
+            id: `${contact.otherPartyId}-${contact.otherPartyType}`,
+            recordId: contact.otherPartyId,
+            name: contact.otherPartyName,
+            otherMessagePartyType: contact.otherPartyType,
+            status: contact.otherPartyStatus || 'unknown',
+        };
+    }
+    return contact;
+}
+
+function generateInitials(name: string): string {
+    if (!name) return '??';
+    const parts = name.split(' ').filter(p => p.length > 0);
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
+
+function getStatusColor(status: string): string {
+    const normalizedStatus = status?.toLowerCase() || '';
+    if (normalizedStatus === 'online' || normalizedStatus === 'active') return '#4caf50';
+    if (normalizedStatus === 'away' || normalizedStatus === 'busy') return '#ff9800';
+    return '#9e9e9e';
+}
+
+function formatMessageTime(messageTime: string): string {
+    const time = new Date(messageTime);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - time.getTime()) / 60000);
+    const diffInHours = Math.floor(diffInMinutes / 60);
+
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInHours < 24) return time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (diffInHours < 48) return `Yesterday ${time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    return time.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ', ' +
+           time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatLastMessageTime(lastMessageTime: string): string {
+    if (!lastMessageTime) return '';
+    const time = new Date(lastMessageTime);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - time.getTime()) / 60000);
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
+
+    if (diffInMinutes < 1) return 'Now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m`;
+    if (diffInHours < 24) return time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (diffInDays < 7) return time.toLocaleDateString([], { weekday: 'short' });
+    return time.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+function formatDateSeparator(messageTime: string): string {
+    const time = new Date(messageTime);
+    return time.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function isSameDay(time1: string, time2: string): boolean {
+    const date1 = new Date(time1);
+    const date2 = new Date(time2);
+    return date1.toDateString() === date2.toDateString();
+}
+
+function highlightSearchTerm(text: string, searchTerm: string): string {
+    if (!searchTerm || !text) return text;
+    const escapeHtml = (str: string) => str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapedText = escapeHtml(text);
+    const escapedSearchTerm = escapeRegex(searchTerm);
+    const regex = new RegExp(`(${escapedSearchTerm})`, 'gi');
+    return escapedText.replace(regex, '<span style="background: rgba(33, 150, 243, 0.2); padding: 0 2px; border-radius: 2px;">$1</span>');
+}
+
+// Add CSS keyframes for spinning animation
+const styleElement = document.createElement('style');
+styleElement.textContent = `
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+`;
+if (!document.querySelector('style[data-messaging-dialog]')) {
+    styleElement.setAttribute('data-messaging-dialog', 'true');
+    document.head.appendChild(styleElement);
+}
+
+export default MessagingDialog;

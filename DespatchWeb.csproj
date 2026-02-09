@@ -280,26 +280,16 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="efpt.config.json.user" />
-    <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.styles.less" />
-    <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.template.html" />
     <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.template.html" />
     <None Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.html" />
     <None Include="wwwroot\css\udispatch.less" />
-    <None Include="wwwroot\lib\ng-material-floating-button\mfb\dist\lib\modernizr.touch.js" />
-    <None Include="wwwroot\lib\ng-material-floating-button\mfb\dist\mfb.css" />
-    <None Include="wwwroot\lib\ng-material-floating-button\mfb\dist\mfb.css.map" />
-    <None Include="wwwroot\lib\ng-material-floating-button\mfb\dist\mfb.js" />
-    <None Include="wwwroot\lib\ng-material-floating-button\mfb\dist\mfb.min.css" />
-    <None Include="wwwroot\lib\ng-material-floating-button\mfb\dist\mfb.min.js" />
-    <None Include="wwwroot\lib\ng-material-floating-button\src\mfb-directive.js" />
-    <None Include="wwwroot\lib\ng-material-floating-button\src\mfb-directive.min.js" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Amazon.AspNetCore.DataProtection.SSM" Version="4.0.1" />
     <PackageReference Include="AspNetCore.HealthChecks.SqlServer" Version="9.0.0" />
-    <PackageReference Include="AWSSDK.S3" Version="4.0.17.3" />
-    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.5.8" />
-    <PackageReference Include="AWSSDK.SSO" Version="4.0.2.12" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.18.2" />
+    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.5.9" />
+    <PackageReference Include="AWSSDK.SSO" Version="4.0.2.13" />
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="ExcelDataReader" Version="3.8.0" />
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.8.0" />
@@ -343,10 +333,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\inter-courier-charge-dialog\interfaces\IInterCourierData.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\DEFAULT_QUICK_RESPONSES.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dailog.enums.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dialog.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dialog.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\simple-price-edit-dialog\simple-price-edit-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\simple-price-edit-dialog\simple-price-edit-dialog.service.ts" />
@@ -374,7 +360,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\interfaces\IScanDetailResult.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\jobSearch.module.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\jobSearch.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\additional-services-dialog\additional-services-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\additional-services-dialog\additional-services-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\create-job-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-address-dialog\edit-address-dialog.service.ts" />

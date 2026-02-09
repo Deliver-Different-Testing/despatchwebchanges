@@ -1,73 +1,126 @@
 import {IDispatchJob, IJob} from "../../../interfaces/job.interface";
-import DispatchCoreService from "../../../services/dispatch-core.service";
-import AdditionalServicesDialogController from "./additional-services-dialog.controller";
+import ToastrService from "../../../services/toastr.service";
 import angular from 'angular';
+
+// Type declaration for the React dialog on window
+declare global {
+    interface Window {
+        ReactAdditionalServicesDialog?: {
+            open: (options: {
+                job: {
+                    id: number;
+                    clientId: number;
+                    speedId: number;
+                    items: number;
+                    speedName: string;
+                };
+                toastService?: {
+                    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+                };
+            }) => Promise<boolean>;
+        };
+    }
+}
 
 class AdditionalServicesDialogService implements angular.IServiceProvider {
     static $inject = [
-        '$log',
-        '$mdDialog',
-        'DispatchData',
-        '$document'
+        'toastrService',
+        '$ocLazyLoad',
+        '$http',
     ];
 
     constructor(
-        private $log: angular.ILogService,
-        private $mdDialog: angular.material.IDialogService,
-        private DispatchData: DispatchCoreService,
-        private $document: angular.IDocumentService,
+        private toastrService: ToastrService,
+        private $ocLazyLoad: oc.ILazyLoad,
+        private $http: angular.IHttpService,
     ) {
-        this.$log.debug('AdditionalServicesDialogService: Service instantiated');
+        console.log('AdditionalServicesDialogService: Service instantiated');
     }
 
     $get() {
         return this;
     }
 
+    /**
+     * Load the React additional services dialog module on demand
+     */
+    private async loadReactDialog(): Promise<void> {
+        // Check if already loaded
+        if (window.ReactAdditionalServicesDialog) {
+            return;
+        }
+
+        try {
+            // Load the manifest to get hashed filenames
+            const manifestResponse = await this.$http.get<Record<string, string>>('dist/manifest.json');
+            const manifest = manifestResponse.data;
+
+            const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
+
+            // Load vendor-react first (if not already loaded)
+            if (!(window as any).React) {
+                await this.$ocLazyLoad.load(getAssetPath('vendor-react.js'));
+            }
+
+            // Load the additional services dialog React module
+            await this.$ocLazyLoad.load({
+                name: 'uDispatch.additionalServicesDialogReact',
+                files: [getAssetPath('additionalServicesDialogReact.js')]
+            });
+        } catch (error) {
+            console.error('[AdditionalServicesDialogService] Failed to load React dialog:', error);
+            throw error;
+        }
+    }
+
     async showAdditionalServicesDialog($event: MouseEvent, job: IJob | IDispatchJob) {
         try {
-            this.$log.debug("Additional Services Dialog opened!");
-            this.$log.debug("Job: ", job);
+            console.log("Additional Services Dialog opened!");
+            console.log("Job: ", job);
 
-            if (!job.clientId || !job.speedId) {
-                this.$log.debug("Speed is: ", job.speedId, "Client is: ", job.clientId, "")
-                this.$log.debug("No client or speed selected!");
-                return;
+            // Load the React dialog module
+            await this.loadReactDialog();
+
+            if (!window.ReactAdditionalServicesDialog) {
+                throw new Error('React additional services dialog not loaded');
             }
 
-            const isClientItemsAvailable = await this.DispatchData.hasClientItemsAvailable(job.clientId, job.speedId);
-
-            if (!isClientItemsAvailable) {
-                await this.$mdDialog.show(this.$mdDialog
-                    .alert()
-                    .clickOutsideToClose(true)
-                    .title("No Additional Services")
-                    .targetEvent($event)
-                    .textContent("No additional services has been set up for this client. Please add a service through Admin Manager and try again.")
-                    .ok("OK"));
-                return;
-            }
-
-            await this.$mdDialog.show({
-                controller: AdditionalServicesDialogController,
-                controllerAs: "ctrl",
-                template: require("./additional-services-dialog.template.html"),
-                parent: this.$document.parent(),
-                clickOutsideToClose: false,
-                targetEvent: $event,
-                fullscreen: true,
-                locals: {
-                    job,
+            // Create toast service wrapper for UI notifications
+            const toastService = {
+                showToast: (message: string, type: 'success' | 'warning' | 'error') => {
+                    switch (type) {
+                        case 'success':
+                            this.toastrService.showSuccessToast(message);
+                            break;
+                        case 'warning':
+                            this.toastrService.showWarningToast(message);
+                            break;
+                        case 'error':
+                            this.toastrService.showErrorToast(message);
+                            break;
+                    }
                 },
-                bindToController: true,
+            };
+
+            // Open the React dialog (validation happens in React)
+            // Note: 'items' and 'speedName' only exist on IJob, not IDispatchJob
+            await window.ReactAdditionalServicesDialog.open({
+                job: {
+                    id: job.id ?? 0,
+                    clientId: job.clientId ?? 0,
+                    speedId: job.speedId ?? 0,
+                    items: 'items' in job ? (job.items ?? 0) : 0,
+                    speedName: 'speedName' in job ? (job.speedName ?? '') : (job.speed ?? ''),
+                },
+                toastService,
             });
 
-            this.$log.debug("Additional Services Dialog closed!");
+            console.log("Additional Services Dialog closed!");
         } catch (error: any) {
             if (error === undefined) {
-                this.$log.debug("User canceled dialog!");
+                console.log("User canceled dialog!");
             } else {
-                this.$log.error("Error in showAdditionalServicesMenu:", error);
+                console.error("Error in showAdditionalServicesMenu:", error);
             }
         }
     }

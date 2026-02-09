@@ -115,10 +115,28 @@ class ApiClient {
 
     async delete<T>(url: string, options?: RequestOptions): Promise<T> {
         const config: AxiosRequestConfig = {
+            params: options?.params,
             signal: options?.signal,
             timeout: options?.timeout,
         };
         const response = await this.instance.delete<T>(url, config);
+        return response.data;
+    }
+
+    async postFormData<T>(
+        url: string,
+        formData: FormData,
+        options?: RequestOptions
+    ): Promise<T> {
+        const config: AxiosRequestConfig = {
+            params: options?.params,
+            signal: options?.signal,
+            timeout: options?.timeout,
+            headers: {
+                'Content-Type': 'multipart/form-data', // Axios will set boundary automatically
+            },
+        };
+        const response = await this.instance.post<T>(url, formData, config);
         return response.data;
     }
 }
@@ -136,6 +154,8 @@ export const apiClient = {
         getInstance().put<T>(url, data, options),
     delete: <T>(url: string, options?: RequestOptions) =>
         getInstance().delete<T>(url, options),
+    postFormData: <T>(url: string, formData: FormData, options?: RequestOptions) =>
+        getInstance().postFormData<T>(url, formData, options),
 };
 
 export default ApiClient;

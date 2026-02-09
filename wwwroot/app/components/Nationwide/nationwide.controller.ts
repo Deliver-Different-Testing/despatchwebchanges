@@ -47,7 +47,6 @@ import FlightAgentConfirmationDialogService
 import {openAgentInfoDialog} from "../../react/components/dialogs/agent-info-dialog";
 import dayjs, {Dayjs} from "dayjs";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
-import MessagingService from "../../services/messaging.service";
 import {ContactID, TimeZone} from "../../contants";
 import {StatusFilter} from "../task-dashboard/enums/status-filter";
 import TasksService from "../../services/tasks.service";
@@ -90,7 +89,6 @@ class NationwideControl extends BaseController {
         '$stateParams',
         'flightAgentConfirmationDialogService',
         'messagingDialogService',
-        'messagingService',
         'tasksService',
         'recoveryAgentManagementService',
         'dashboardSettingsDialogService',
@@ -245,7 +243,6 @@ class NationwideControl extends BaseController {
         private $stateParams: angular.ui.IStateParamsService,
         private flightAgentConfirmationDialogService: FlightAgentConfirmationDialogService,
         private messagingDialogService: MessagingDialogService,
-        private messagingService: MessagingService,
         private tasksService: TasksService,
         private recoveryAgentManagementService: RecoveryAgentManagementService,
         private dashboardSettingsDialog: DashboardSettingsDialogService,
@@ -2079,7 +2076,7 @@ class NationwideControl extends BaseController {
     }
 
     private async getUnreadMessageCount(): Promise<void> {
-        this.unReadMessageCount = await this.messagingService.getUnreadMessageCount();
+        this.unReadMessageCount = await this.messagingDialogService.getUnreadMessageCount();
         this.applyScope();
     }
 
