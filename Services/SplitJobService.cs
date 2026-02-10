@@ -35,6 +35,8 @@ public class SplitJobService(
         await using var context = await contextFactory.CreateDbContextAsync();
         await using var transaction = await context.Database.BeginTransactionAsync();
 
+        (int PickupJobId, int DeliveryJobId) result;
+
         try
         {
             Log.Information("Splitting job {JobId} by user {UserName} with meeting point address",
@@ -118,12 +120,6 @@ public class SplitJobService(
             await CreateSplitJobNotesAsync(context, currentTenantTime, pickupJob.UcjbId, deliveryJob.UcjbId,
                 job.UcjbNotes, staffId);
 
-            // Re-rate the split jobs
-            await ReRateSplitJobsAsync(context, jobId);
-
-            // Consolidate MARS information
-            await ConsolidateMarsInformationAsync(context, jobId, userName);
-
             // Update display in dispatch
             await UpdateJobDisplayInDespatchAsync(context, rootParentId);
 
@@ -132,7 +128,7 @@ public class SplitJobService(
             Log.Information("Successfully split job {JobId} into pickup {PickupId} and delivery {DeliveryId}",
                 jobId, pickupJob.UcjbId, deliveryJob.UcjbId);
 
-            return (pickupJob.UcjbId, deliveryJob.UcjbId);
+            result = (pickupJob.UcjbId, deliveryJob.UcjbId);
         }
         catch (Exception ex)
         {
@@ -140,6 +136,12 @@ public class SplitJobService(
             Log.Error(ex, "Error splitting job {JobId}", jobId);
             throw;
         }
+
+        // Post-split operations run outside the transaction on fresh DbContext instances
+        // so that stored proc failures (e.g., XACT_ABORT ON) don't doom the committed split
+        await PerformPostSplitOperationsAsync(jobId, userName);
+
+        return result;
     }
 
     /// <inheritdoc />
@@ -698,6 +700,29 @@ public class SplitJobService(
         await context.TucJobs
             .Where(j => j.RootParentId == jobId)
             .ExecuteUpdateAsync(j => j.SetProperty(x => x.DisplayInDespatch, true));
+
+    private async Task PerformPostSplitOperationsAsync(int jobId, string userName)
+    {
+        try
+        {
+            await using var reRateContext = await contextFactory.CreateDbContextAsync();
+            await ReRateSplitJobsAsync(reRateContext, jobId);
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Post-split re-rating failed for job {JobId}. Split completed successfully.", jobId);
+        }
+
+        try
+        {
+            await using var marsContext = await contextFactory.CreateDbContextAsync();
+            await ConsolidateMarsInformationAsync(marsContext, jobId, userName);
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Post-split MARS consolidation failed for job {JobId}. Split completed successfully.", jobId);
+        }
+    }
 
     private static async Task CreateSplitJobNotesAsync(
         DespatchContext context,
