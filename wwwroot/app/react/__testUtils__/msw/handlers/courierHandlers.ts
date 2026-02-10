@@ -5,7 +5,7 @@
  */
 
 import { http, HttpResponse } from 'msw';
-import type { CourierSuggestion } from '../../../interfaces';
+import type { CourierSuggestion, TimeZoneOption } from '../../../interfaces';
 
 // Mock data
 export const mockCourierSuggestions: CourierSuggestion[] = [
@@ -46,6 +46,12 @@ export const mockClearListEnvelope = {
     minLng: -0.3,
     maxLng: 0.1,
 };
+
+export const mockTimeZoneOptions: TimeZoneOption[] = [
+    { id: 1, text: 'New Zealand Standard Time', timeZoneIana: 'Pacific/Auckland' },
+    { id: 2, text: 'Eastern Standard Time', timeZoneIana: 'America/New_York' },
+    { id: 3, text: 'Pacific Standard Time', timeZoneIana: 'America/Los_Angeles' },
+];
 
 export const courierHandlers = [
     // Search active couriers
@@ -89,5 +95,10 @@ export const courierHandlers = [
         }
 
         return HttpResponse.json(mockClearListEnvelope);
+    }),
+
+    // Get timezone options
+    http.get('*/job/GetTimeZoneOptions', () => {
+        return HttpResponse.json(mockTimeZoneOptions);
     }),
 ];

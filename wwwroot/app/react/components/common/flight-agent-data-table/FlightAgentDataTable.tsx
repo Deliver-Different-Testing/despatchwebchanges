@@ -916,7 +916,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                             Aircraft
                                         </TableSortLabel>
                                     </TableCell>
-                                    <TableCell sx={compactHeaderSx}>Act</TableCell>
+                                    <TableCell sx={{...compactHeaderSx, width: 'auto', textAlign: 'right', pr: 0.5}}>Act</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -980,7 +980,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                                     <Typography sx={{
                                                         fontSize: 10,
                                                         fontWeight: 600,
-                                                        color: theme.palette.primary.main
+                                                        color: theme.palette.text.primary
                                                     }}>
                                                         {flight.departureAirport}
                                                     </Typography>
@@ -992,7 +992,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                                     <Typography sx={{
                                                         fontSize: 10,
                                                         fontWeight: 600,
-                                                        color: theme.palette.primary.main
+                                                        color: theme.palette.text.primary
                                                     }}>
                                                         {flight.arrivalAirport}
                                                     </Typography>
@@ -1035,8 +1035,8 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                                         {flight.aircraft || '-'}
                                                     </Typography>
                                                 </TableCell>
-                                                <TableCell sx={compactCellSx}>
-                                                    <Box sx={{display: 'flex', gap: 0}}>
+                                                <TableCell sx={{...compactCellSx, width: 'auto', textAlign: 'right', pr: 0.5}}>
+                                                    <Box sx={{display: 'flex', gap: 0, justifyContent: 'flex-end'}}>
                                                         <ActionIcon
                                                             icon={<AddIcon sx={{fontSize: 16}}/>}
                                                             tooltip="Assign Flight"

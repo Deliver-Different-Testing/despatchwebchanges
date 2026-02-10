@@ -571,7 +571,8 @@
                                         ng-if="ctrl.job.assignedAgent.agentEmail"
                                         aria-label="email">
                                     <md-icon md-font-set="material-symbols-outlined">email</md-icon>
-                                    <md-tooltip md-direction="bottom">Email {{ctrl.job.assignedAgent.agentEmail }}</md-tooltip>
+                                    <md-tooltip md-direction="bottom">Email {{ctrl.job.assignedAgent.agentEmail }}
+                                    </md-tooltip>
                                 </md-button>
                             </md-list-item>
                         </md-list>
@@ -667,7 +668,7 @@
                                     </p>
                                 </div>
                             </md-list-item>
-                            
+
                             <md-list-item
                                     class="md-2-line md-long-text"
                                     ng-click="ctrl.showItemNotEditableToaster('Barcode')">
@@ -1475,30 +1476,28 @@
                                 </md-icon>
                             </md-list-item>
 
-                            <div ng-if="ctrl.job.preBook">
-                                <md-list-item
-                                        ng-if="ctrl.isFieldVisible('conNote') || ctrl.isEditMode"
-                                        class="md-2-line md-long-text"
-                                        ng-click="ctrl.editConNote($event, ctrl.job)">
-                                    <md-icon
-                                            class="md-avatar"
-                                            aria-label="Our reference"
-                                            md-font-set="material-symbols-outlined">
-                                        draw
-                                    </md-icon>
-                                    <div class="md-list-item-text">
-                                        <h3>AWB</h3>
-                                        <p>{{ctrl.job.conNote}}</p>
-                                    </div>
+                            <md-list-item
+                                    ng-if="ctrl.isFieldVisible('conNote') || ctrl.isEditMode"
+                                    class="md-2-line md-long-text"
+                                    ng-click="ctrl.editConNote($event, ctrl.job)">
+                                <md-icon
+                                        class="md-avatar"
+                                        aria-label="Our reference"
+                                        md-font-set="material-symbols-outlined">
+                                    draw
+                                </md-icon>
+                                <div class="md-list-item-text">
+                                    <h3>AWB</h3>
+                                    <p>{{ctrl.job.conNote}}</p>
+                                </div>
 
-                                    <md-icon class="md-secondary"
-                                             ng-if="ctrl.isEditMode"
-                                             md-font-set="material-symbols-outlined"
-                                             ng-click="ctrl.toggleFieldVisibility('conNote')">
-                                        {{ ctrl.isFieldVisible('conNote') ? 'visibility' : 'visibility_off' }}
-                                    </md-icon>
-                                </md-list-item>
-                            </div>
+                                <md-icon class="md-secondary"
+                                         ng-if="ctrl.isEditMode"
+                                         md-font-set="material-symbols-outlined"
+                                         ng-click="ctrl.toggleFieldVisibility('conNote')">
+                                    {{ ctrl.isFieldVisible('conNote') ? 'visibility' : 'visibility_off' }}
+                                </md-icon>
+                            </md-list-item>
                         </md-list>
                     </div>
                 </div>
@@ -1824,7 +1823,7 @@
             class="pod-main-photo"
             ng-if="ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex] && ctrl.isImageFile(ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex])"
             ng-click="ctrl.openPodViewer(ctrl.selectedPhotoIndex)">
-        <img ng-src="{{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].url}}"/>
+        <img ng-src="{{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].url}}" alt="photo"/>
 
         <div class="pod-photo-info">
             <p class="timestamp">

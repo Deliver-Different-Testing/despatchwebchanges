@@ -58,6 +58,21 @@ public class JobRepositoryVoidBulkJobTests
     }
 
     /// <summary>
+    /// Mimics the GetBulkJobWithChildrenAsync logic from JobRepository.
+    /// Returns the bulk job ID along with all its children IDs (if any).
+    /// </summary>
+    private static List<int> GetBulkJobWithChildren(int bulkJobId, List<TestBulkJob> allJobs)
+    {
+        var childIds = allJobs
+            .Where(j => j.ParentBulkJobId == bulkJobId)
+            .Select(j => j.BulkJobId)
+            .ToList();
+
+        childIds.Add(bulkJobId);
+        return childIds;
+    }
+
+    /// <summary>
     /// Mimics the bulk job selection logic from VoidBulkJobAsync.
     /// </summary>
     private static List<int> DetermineBulkJobsToVoid(VoidBulkJobRequest data, List<TestBulkJob> allJobs)
@@ -66,7 +81,7 @@ public class JobRepositoryVoidBulkJobTests
             return data.SelectedJobIds;
 
         return data.VoidSingleJobOnly
-            ? [data.BulkJobId]
+            ? GetBulkJobWithChildren(data.BulkJobId, allJobs)
             : GetAllRelatedBulkJobIdsIncludingParent(data.BulkJobId, allJobs);
     }
 
@@ -117,13 +132,14 @@ public class JobRepositoryVoidBulkJobTests
     }
 
     [Fact]
-    public void VoidBulkJob_ClearsPricingFields_WhenVoidingSingleJob()
+    public void VoidBulkJob_ClearsPricingFields_WhenVoidingSingleJob_VoidsParentAndChildren()
     {
         // Arrange
         var allJobs = new List<TestBulkJob>
         {
             new() { BulkJobId = 1, ParentBulkJobId = null, Amount = 100.50m, CourierPayment = 50.25m },
             new() { BulkJobId = 2, ParentBulkJobId = 1, Amount = 75.00m, CourierPayment = 37.50m },
+            new() { BulkJobId = 3, ParentBulkJobId = null, Amount = 200.00m, CourierPayment = 100.00m }, // Unrelated
         };
 
         var request = new VoidBulkJobRequest
@@ -137,18 +153,23 @@ public class JobRepositoryVoidBulkJobTests
         var jobsToVoid = DetermineBulkJobsToVoid(request, allJobs);
         ApplyVoidUpdate(allJobs, jobsToVoid);
 
-        // Assert - Only the parent job should be voided with pricing cleared
+        // Assert - Parent and child should be voided with pricing cleared
         var parentJob = allJobs.First(j => j.BulkJobId == 1);
         var childJob = allJobs.First(j => j.BulkJobId == 2);
+        var unrelatedJob = allJobs.First(j => j.BulkJobId == 3);
 
         parentJob.Amount.Should().Be(0);
         parentJob.CourierPayment.Should().Be(0);
         parentJob.Void.Should().BeTrue();
 
-        // Child should remain unchanged
-        childJob.Amount.Should().Be(75.00m);
-        childJob.CourierPayment.Should().Be(37.50m);
-        childJob.Void.Should().BeFalse();
+        childJob.Amount.Should().Be(0);
+        childJob.CourierPayment.Should().Be(0);
+        childJob.Void.Should().BeTrue();
+
+        // Unrelated job should remain unchanged
+        unrelatedJob.Amount.Should().Be(200.00m);
+        unrelatedJob.CourierPayment.Should().Be(100.00m);
+        unrelatedJob.Void.Should().BeFalse();
     }
 
     [Fact]
@@ -250,7 +271,7 @@ public class JobRepositoryVoidBulkJobTests
     #region Job Selection Tests
 
     [Fact]
-    public void DetermineBulkJobsToVoid_VoidSingleJobOnly_ReturnsOnlyTargetJob()
+    public void DetermineBulkJobsToVoid_VoidSingleJobOnly_ParentWithChildren_ReturnsParentAndChildren()
     {
         // Arrange
         var allJobs = new List<TestBulkJob>
@@ -258,6 +279,7 @@ public class JobRepositoryVoidBulkJobTests
             new() { BulkJobId = 1, ParentBulkJobId = null },
             new() { BulkJobId = 2, ParentBulkJobId = 1 },
             new() { BulkJobId = 3, ParentBulkJobId = 1 },
+            new() { BulkJobId = 4, ParentBulkJobId = null }, // Unrelated job
         };
 
         var request = new VoidBulkJobRequest
@@ -269,9 +291,61 @@ public class JobRepositoryVoidBulkJobTests
         // Act
         var result = DetermineBulkJobsToVoid(request, allJobs);
 
-        // Assert - Only the single job should be returned
+        // Assert - Parent and children should be returned, but not unrelated jobs
+        result.Should().HaveCount(3);
+        result.Should().Contain([1, 2, 3]);
+        result.Should().NotContain(4);
+    }
+
+    [Fact]
+    public void DetermineBulkJobsToVoid_VoidSingleJobOnly_JobWithNoChildren_ReturnsOnlyTargetJob()
+    {
+        // Arrange
+        var allJobs = new List<TestBulkJob>
+        {
+            new() { BulkJobId = 1, ParentBulkJobId = null },
+            new() { BulkJobId = 2, ParentBulkJobId = null }, // Unrelated job
+        };
+
+        var request = new VoidBulkJobRequest
+        {
+            BulkJobId = 1,
+            VoidSingleJobOnly = true
+        };
+
+        // Act
+        var result = DetermineBulkJobsToVoid(request, allJobs);
+
+        // Assert - Only the single job (no children exist)
         result.Should().HaveCount(1);
         result.Should().Contain(1);
+        result.Should().NotContain(2);
+    }
+
+    [Fact]
+    public void DetermineBulkJobsToVoid_VoidSingleJobOnly_ChildJob_ReturnsOnlyChildJob()
+    {
+        // Arrange
+        var allJobs = new List<TestBulkJob>
+        {
+            new() { BulkJobId = 1, ParentBulkJobId = null },
+            new() { BulkJobId = 2, ParentBulkJobId = 1 },
+            new() { BulkJobId = 3, ParentBulkJobId = 1 },
+        };
+
+        var request = new VoidBulkJobRequest
+        {
+            BulkJobId = 2, // Voiding a child job
+            VoidSingleJobOnly = true
+        };
+
+        // Act
+        var result = DetermineBulkJobsToVoid(request, allJobs);
+
+        // Assert - Only the child job (no children of its own), not parent or siblings
+        result.Should().HaveCount(1);
+        result.Should().Contain(2);
+        result.Should().NotContain([1, 3]);
     }
 
     [Fact]
@@ -376,6 +450,118 @@ public class JobRepositoryVoidBulkJobTests
         // Assert - Falls back to VoidSingleJobOnly behavior
         result.Should().HaveCount(2);
         result.Should().Contain([1, 2]);
+    }
+
+    [Fact]
+    public void DetermineBulkJobsToVoid_VoidSingleJobOnly_ParentWithManyChildren_VoidsAll()
+    {
+        // Arrange
+        var allJobs = new List<TestBulkJob>
+        {
+            new() { BulkJobId = 100, ParentBulkJobId = null }
+        };
+
+        // Add 50 children
+        for (var i = 1; i <= 50; i++)
+        {
+            allJobs.Add(new TestBulkJob { BulkJobId = i, ParentBulkJobId = 100 });
+        }
+
+        var request = new VoidBulkJobRequest
+        {
+            BulkJobId = 100,
+            VoidSingleJobOnly = true
+        };
+
+        // Act
+        var result = DetermineBulkJobsToVoid(request, allJobs);
+
+        // Assert - Parent and all 50 children should be voided
+        result.Should().HaveCount(51);
+        result.Should().Contain(100);
+        for (var i = 1; i <= 50; i++) result.Should().Contain(i);
+    }
+
+    #endregion
+
+    #region GetBulkJobWithChildren Tests
+
+    [Fact]
+    public void GetBulkJobWithChildren_ParentWithChildren_ReturnsParentAndChildren()
+    {
+        // Arrange
+        var allJobs = new List<TestBulkJob>
+        {
+            new() { BulkJobId = 1, ParentBulkJobId = null },
+            new() { BulkJobId = 2, ParentBulkJobId = 1 },
+            new() { BulkJobId = 3, ParentBulkJobId = 1 },
+        };
+
+        // Act
+        var result = GetBulkJobWithChildren(1, allJobs);
+
+        // Assert
+        result.Should().HaveCount(3);
+        result.Should().Contain([1, 2, 3]);
+    }
+
+    [Fact]
+    public void GetBulkJobWithChildren_JobWithNoChildren_ReturnsOnlyJobId()
+    {
+        // Arrange
+        var allJobs = new List<TestBulkJob>
+        {
+            new() { BulkJobId = 1, ParentBulkJobId = null },
+            new() { BulkJobId = 2, ParentBulkJobId = null },
+        };
+
+        // Act
+        var result = GetBulkJobWithChildren(1, allJobs);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result.Should().Contain(1);
+    }
+
+    [Fact]
+    public void GetBulkJobWithChildren_ChildJob_ReturnsOnlyChildId()
+    {
+        // Arrange
+        var allJobs = new List<TestBulkJob>
+        {
+            new() { BulkJobId = 1, ParentBulkJobId = null },
+            new() { BulkJobId = 2, ParentBulkJobId = 1 },
+            new() { BulkJobId = 3, ParentBulkJobId = 1 },
+        };
+
+        // Act - Getting children of a child job (which has no children)
+        var result = GetBulkJobWithChildren(2, allJobs);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result.Should().Contain(2);
+    }
+
+    [Fact]
+    public void GetBulkJobWithChildren_DoesNotIncludeSiblings()
+    {
+        // Arrange
+        var allJobs = new List<TestBulkJob>
+        {
+            new() { BulkJobId = 1, ParentBulkJobId = null },  // Parent
+            new() { BulkJobId = 2, ParentBulkJobId = 1 },     // Child 1
+            new() { BulkJobId = 3, ParentBulkJobId = 1 },     // Child 2
+            new() { BulkJobId = 10, ParentBulkJobId = null },  // Another parent
+            new() { BulkJobId = 11, ParentBulkJobId = 10 },   // Unrelated child
+        };
+
+        // Act
+        var result = GetBulkJobWithChildren(1, allJobs);
+
+        // Assert - Only parent 1 and its children, not other families
+        result.Should().HaveCount(3);
+        result.Should().Contain([1, 2, 3]);
+        result.Should().NotContain([10, 11]);
     }
 
     #endregion
