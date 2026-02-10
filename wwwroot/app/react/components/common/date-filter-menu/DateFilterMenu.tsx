@@ -141,6 +141,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
 
     const minsOptions = getMinsSelectionOptions(300, 300, 180);
     const minsUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const prevDateFilterRef = useRef<DateFilterData | null>(null);
 
     // Load saved option from localStorage
     useEffect(() => {
@@ -154,12 +155,17 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
         }
     }, [storageKey]);
 
-    // Update local state when dateFilterData changes
+    // Update local state when dateFilterData changes (compare actual values, not object reference)
     useEffect(() => {
         if (dateFilterData) {
-            setStartDate(dateFilterData.startDate);
-            setEndDate(dateFilterData.endDate);
+            const prev = prevDateFilterRef.current;
+            const startChanged = !prev || !dateFilterData.startDate.isSame(prev.startDate);
+            const endChanged = !prev || !dateFilterData.endDate.isSame(prev.endDate);
+
+            if (startChanged) setStartDate(dateFilterData.startDate);
+            if (endChanged) setEndDate(dateFilterData.endDate);
         }
+        prevDateFilterRef.current = dateFilterData;
     }, [dateFilterData]);
 
     // Cleanup interval on unmount

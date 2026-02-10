@@ -1851,7 +1851,7 @@ public partial class JobRepository(
             var jobsToVoid = data.SelectedJobIds is { Count: > 0 }
                 ? data.SelectedJobIds
                 : data.VoidSingleJobOnly
-                    ? [data.BulkJobId]
+                    ? await GetBulkJobWithChildrenAsync(data.BulkJobId)
                     : await GetAllRelatedBulkJobIdsIncludingParentAsync(data.BulkJobId);
 
             // Combined query: void jobs and get distinct courier IDs in parallel
@@ -4357,6 +4357,20 @@ public partial class JobRepository(
         relatedBulkJobIds.Add(jobWithRelations.ParentId ?? bulkJobId);
 
         return relatedBulkJobIds;
+    }
+
+    /// <summary>
+    /// Gets the bulk job ID along with all its children IDs (if any).
+    /// </summary>
+    private async Task<List<int>> GetBulkJobWithChildrenAsync(int bulkJobId)
+    {
+        var childIds = await Context.TblBulkJobs
+            .Where(j => j.BulkParentId == bulkJobId)
+            .Select(j => j.BulkJobId)
+            .ToListAsync();
+
+        childIds.Add(bulkJobId);
+        return childIds;
     }
 
     /// <summary>

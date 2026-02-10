@@ -78,13 +78,4 @@ export const jobHandlers = [
 
         return new HttpResponse(null, { status: 200 });
     }),
-
-    // Get timezone options (used by courier API but related to jobs)
-    http.get('*/job/GetTimeZoneOptions', () => {
-        return HttpResponse.json([
-            { id: 'Europe/London', displayName: 'Europe/London (GMT)', offset: 0 },
-            { id: 'America/New_York', displayName: 'America/New York (EST)', offset: -5 },
-            { id: 'America/Los_Angeles', displayName: 'America/Los Angeles (PST)', offset: -8 },
-        ]);
-    }),
 ];
