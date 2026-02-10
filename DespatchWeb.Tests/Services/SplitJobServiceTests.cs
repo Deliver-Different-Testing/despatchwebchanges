@@ -1397,6 +1397,271 @@ public class SplitJobServiceTests : IDisposable
 
     #endregion
 
+    #region Post-Split Operations Tests (US Tenant Fix)
+
+    [Fact]
+    public async Task SplitJobAsync_PostSplitStoredProcsUnavailable_SplitStillSucceeds()
+    {
+        // Verifies the fix for the US tenant 500 error.
+        // Stored procs (DES_stpJob_SplitJob_ReRate, DES_stpJob_ColsolidateMarsInformation)
+        // are unavailable on SQLite, simulating the US tenant failure where
+        // XACT_ABORT ON in the stored proc would doom the outer C# transaction.
+        // The split should succeed regardless since post-split ops now run outside the transaction.
+
+        // Arrange
+        await using (var context = CreateContext())
+        {
+            var job = CreateTestJob(1, "JOB-001");
+            job.UcjbFrom = 100;
+            job.UcjbTo = null; // US-style: no suburb ID for delivery side
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act - Should not throw even though stored procs will fail
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
+
+        // Assert - Split completed successfully
+        pickupJobId.Should().BeGreaterThan(0);
+        deliveryJobId.Should().BeGreaterThan(0);
+
+        await using (var context = CreateContext())
+        {
+            var pickupJob = await context.TucJobs.FindAsync(pickupJobId);
+            var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId);
+
+            pickupJob.Should().NotBeNull();
+            deliveryJob.Should().NotBeNull();
+
+            // Core split data is intact
+            pickupJob!.ParentId.Should().Be(1);
+            deliveryJob!.ParentId.Should().Be(1);
+            pickupJob.Sequence.Should().Be(1);
+            deliveryJob.Sequence.Should().Be(2);
+        }
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_PostSplitOps_UseFreshDbContextInstances()
+    {
+        // Verifies that post-split operations create fresh DbContext instances
+        // (separate from the transaction context) to avoid XACT_ABORT contamination
+
+        // Arrange
+        await using (var context = CreateContext())
+        {
+            var job = CreateTestJob(1, "JOB-001");
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        await service.SplitJobAsync(1, "TestUser", meetingPoint);
+
+        // Assert - Context factory should be called 3 times:
+        // 1x for the main transaction, 2x for post-split operations (re-rate + MARS)
+        _contextFactoryMock.Verify(
+            f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()),
+            Times.Exactly(3));
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_PostSplitContextCreationFails_SplitStillReturnsSuccessfully()
+    {
+        // Verifies that if creating a fresh context for post-split operations fails,
+        // the already-committed split result is still returned
+
+        // Arrange
+        await using (var context = CreateContext())
+        {
+            var job = CreateTestJob(1, "JOB-001");
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync();
+        }
+
+        var callCount = 0;
+        var failingContextFactoryMock = new Mock<IDbContextFactory<DespatchContext>>();
+        failingContextFactoryMock.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() =>
+            {
+                callCount++;
+                if (callCount > 1) throw new InvalidOperationException("DB connection pool exhausted");
+                return new DespatchContext(_dbOptions);
+            });
+
+        var service = new SplitJobService(failingContextFactoryMock.Object, _tenantInfoServiceMock.Object);
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act - Should not throw; post-split failures are caught
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
+
+        // Assert - Split completed
+        pickupJobId.Should().BeGreaterThan(0);
+        deliveryJobId.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_DataCommittedBeforePostSplitOps_TransactionIntegrity()
+    {
+        // Verifies that split job data is committed to the database BEFORE
+        // post-split operations run, ensuring data survives post-split failures
+
+        // Arrange
+        await using (var context = CreateContext())
+        {
+            var job = CreateTestJob(1, "JOB-001");
+            job.UcjbCourierId = 42;
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
+
+        // Assert - All transaction data persisted despite post-split stored procs failing
+        await using (var context = CreateContext())
+        {
+            // Parent job modifications committed
+            var parentJob = await context.TucJobs.FindAsync(1);
+            parentJob!.JobRelationshipTypeId.Should().Be(ParentRelationshipTypeId);
+            parentJob.ParentId.Should().Be(1);
+            parentJob.RootParentId.Should().Be(1);
+
+            // Child jobs committed
+            var pickupJob = await context.TucJobs.FindAsync(pickupJobId);
+            var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId);
+            pickupJob.Should().NotBeNull();
+            deliveryJob.Should().NotBeNull();
+
+            // Notes committed
+            var notes = await context.TucNotes
+                .Where(n => n.JobId == pickupJobId || n.JobId == deliveryJobId)
+                .ToListAsync();
+            notes.Should().HaveCount(2);
+
+            // Display in despatch updated
+            var allChildJobs = await context.TucJobs
+                .Where(j => j.RootParentId == 1 && j.UcjbId != 1)
+                .ToListAsync();
+            allChildJobs.Should().AllSatisfy(j => j.DisplayInDespatch.Should().BeTrue());
+        }
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_NullSuburbIds_USStyleAddress_CompleteSplitSuccessfully()
+    {
+        // Simulates a US tenant split where suburb IDs don't exist.
+        // The original bug: NULL suburb IDs caused stored proc rating functions to fail,
+        // which with XACT_ABORT ON doomed the outer C# transaction.
+        // After the fix, the split completes and re-rating failure is non-fatal.
+
+        // Arrange - Job with no suburb IDs (US-style)
+        await using (var context = CreateContext())
+        {
+            var job = CreateTestJob(1, "US-JOB-001");
+            job.UcjbFrom = null; // No NZ suburb lookup
+            job.UcjbFromAddr = "350 Fifth Avenue, New York, NY 10118";
+            job.UcjbTo = null; // No NZ suburb lookup
+            job.UcjbToAddr = "1600 Pennsylvania Avenue NW, Washington, DC 20500";
+            job.UcjbCourierId = 50;
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+        var meetingPoint = new AddressViewModel(
+            addressLine1: "Suite 200",
+            addressLine2: "Meeting Hub",
+            addressLine3: "789",
+            addressLine4: "Market Street",
+            addressLine5: "Philadelphia",
+            addressLine6: "PA",
+            addressLine7: "19103",
+            addressLine8: ""
+        )
+        {
+            Latitude = 39.9526m,
+            Longitude = -75.1652m
+        };
+
+        // Act
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
+
+        // Assert
+        await using (var context = CreateContext())
+        {
+            var pickupJob = await context.TucJobs.FindAsync(pickupJobId);
+            var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId);
+
+            // Pickup: original From (null) -> meeting point (null suburb, address set)
+            pickupJob!.UcjbFrom.Should().BeNull();
+            pickupJob.UcjbFromAddr.Should().Be("350 Fifth Avenue, New York, NY 10118");
+            pickupJob.UcjbTo.Should().BeNull();
+            pickupJob.UcjbToAddr.Should().Be(meetingPoint.FullAddress);
+            pickupJob.UcjbCourierId.Should().Be(50);
+
+            // Delivery: meeting point (null suburb, address set) -> original To (null)
+            deliveryJob!.UcjbFrom.Should().BeNull();
+            deliveryJob.UcjbFromAddr.Should().Be(meetingPoint.FullAddress);
+            deliveryJob.UcjbTo.Should().BeNull();
+            deliveryJob.UcjbToAddr.Should().Be("1600 Pennsylvania Avenue NW, Washington, DC 20500");
+            deliveryJob.UcjbCourierId.Should().BeNull();
+
+            // Meeting point address lines populated
+            pickupJob.DeliveryAddressLine1.Should().Be("Suite 200");
+            pickupJob.DeliveryAddressLine5.Should().Be("Philadelphia");
+            pickupJob.DeliveryAddressLine7.Should().Be("19103");
+
+            deliveryJob.PickupAddressLine1.Should().Be("Suite 200");
+            deliveryJob.PickupAddressLine5.Should().Be("Philadelphia");
+            deliveryJob.PickupAddressLine7.Should().Be("19103");
+
+            // Coordinates set
+            pickupJob.DeliveryLatitude.Should().Be(39.9526m);
+            pickupJob.DeliveryLongitude.Should().Be(-75.1652m);
+            deliveryJob.PickUpLatitude.Should().Be(39.9526m);
+            deliveryJob.PickUpLongitude.Should().Be(-75.1652m);
+
+            // Job numbers correct
+            pickupJob.UcjbNumber.Should().Be("US-JOB-001A");
+            deliveryJob.UcjbNumber.Should().Be("US-JOB-001B");
+        }
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_TransactionRollsBack_WhenCoreOperationFails_PostSplitOpsNotRun()
+    {
+        // Verifies that if the core split fails (e.g., job not found),
+        // the transaction is rolled back and post-split ops are never reached
+
+        // Arrange - No job in the database
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        var act = async () => await service.SplitJobAsync(999, "TestUser", meetingPoint);
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>();
+
+        // Context factory called only once (for the main transaction context),
+        // not 3 times (no post-split contexts created)
+        _contextFactoryMock.Verify(
+            f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    #endregion
+
     #region GetLetterSuffix Tests
 
     [Theory]
