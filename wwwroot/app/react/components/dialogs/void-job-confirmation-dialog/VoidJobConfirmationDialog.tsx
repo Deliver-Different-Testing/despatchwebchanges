@@ -43,7 +43,7 @@ export interface VoidJobConfirmationDialogProps {
     job: VoidJobDialogJob | null;
     onClose: () => void;
     onConfirm: (result: VoidJobResult) => void;
-    onLoadRelatedJobs: (jobId: number, isArchived: boolean) => Promise<RelatedJob[]>;
+    onLoadRelatedJobs: (jobId: number, isArchived: boolean, isBulkJob: boolean) => Promise<RelatedJob[]>;
     onVoidJob: (jobId: number, voidSingleJobOnly: boolean, voidReason: string, selectedJobIds?: number[]) => Promise<void>;
     onVoidBulkJob: (bulkJobId: number, voidSingleJobOnly: boolean, voidReason: string, selectedJobIds?: number[]) => Promise<void>;
     showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
@@ -122,7 +122,7 @@ export class VoidJobConfirmationDialog extends React.Component<VoidJobConfirmati
         if (!checked && relatedJobs.length === 0 && job) {
             this.setState({isLoadingRelatedJobs: true});
             try {
-                const jobs = await onLoadRelatedJobs(job.id, job.isArchived ?? false);
+                const jobs = await onLoadRelatedJobs(job.id, job.isArchived ?? false, job.isBulkJob);
                 this.setState({relatedJobs: jobs});
             } catch (error) {
                 console.error('Error loading related jobs:', error);
@@ -455,6 +455,22 @@ export class VoidJobConfirmationDialog extends React.Component<VoidJobConfirmati
                                                                 fontSize: '0.7rem',
                                                                 bgcolor: 'grey.200',
                                                             }}
+                                                        />
+                                                    )}
+                                                    {relatedJob.isBulkJob && (
+                                                        <Chip
+                                                            label="Bulk"
+                                                            size="small"
+                                                            color="info"
+                                                            sx={{ height: 20, fontSize: '0.7rem', ml: 0.5 }}
+                                                        />
+                                                    )}
+                                                    {relatedJob.isArchived && (
+                                                        <Chip
+                                                            label="Archived"
+                                                            size="small"
+                                                            color="warning"
+                                                            sx={{ height: 20, fontSize: '0.7rem', ml: 0.5 }}
                                                         />
                                                     )}
                                                 </ListItemButton>

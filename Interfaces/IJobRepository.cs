@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -189,7 +188,7 @@ public interface IJobRepository
     Task<decimal> GetJobRateUsAsync(RateJobUsDto dto);
     Task AssignCourierToJobAsync(List<int> jobIds, int courierId);
     Task AssignCourierToChildJobsAsync(List<int> jobIds, InternalJobStatus internalStatus);
-    Task<List<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived);
+    Task<List<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived, bool isBulkJob = false);
     Task<int?> GetJobParentIdAsync(int jobId);
     Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(List<int> jobIds);
 }

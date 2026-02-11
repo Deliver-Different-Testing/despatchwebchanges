@@ -593,4 +593,470 @@ public class DeliveryJourneyServiceTests : IDisposable
     }
 
     #endregion
+
+    #region GetDeliveryJourneyForJobAsync - Status Updates (Live)
+
+    private async Task SeedStatusUpdatesAsync(params JobDeliveryJourney[] updates)
+    {
+        var options = CreateDbContextOptions();
+        await using var context = new DespatchContext(options);
+        context.JobDeliveryJourneys.AddRange(updates);
+        await context.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithJobStatusChange_ReturnsStatusUpdateEntry()
+    {
+        // Arrange
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobStatus",
+            UpdatedByType = "Staff",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].Title.Should().Be("Status Changed");
+        result[0].JobId.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithCourierAssignment_ReturnsCourierEntry()
+    {
+        // Arrange
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "CourierAssignment",
+            UpdatedByType = "Staff",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].Title.Should().Be("Courier Assignment Changed");
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithAgentAssignment_ReturnsAgentEntry()
+    {
+        // Arrange
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "AgentAssignment",
+            UpdatedByType = "Staff",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].Title.Should().Be("Agent Assignment Changed");
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithJobUpdate_ReturnsFieldUpdateEntry()
+    {
+        // Arrange
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "Staff",
+            FieldName = "ucjbStatus",
+            OldValue = "Booked",
+            NewValue = "Dispatched",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].Title.Should().Be("Status Updated");
+        result[0].Tags.Should().Contain("Status: Booked → Dispatched");
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithJobUpdate_FormatsCurrencyFields()
+    {
+        // Arrange
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "Staff",
+            FieldName = "ucjbAmount",
+            OldValue = "100.00",
+            NewValue = "150.50",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].Title.Should().Be("Amount Updated");
+        // Currency formatting is locale-dependent, so check the tag contains the field name
+        result[0].Tags.Should().Contain(t => t.StartsWith("Amount:"));
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithJobUpdate_FormatsBooleanValues()
+    {
+        // Arrange
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "Staff",
+            FieldName = "ucjbVoid",
+            OldValue = "False",
+            NewValue = "True",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].Title.Should().Be("Voided Updated");
+        result[0].Tags.Should().Contain("Voided: No → Yes");
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithJobUpdate_ClearedField()
+    {
+        // Arrange
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "Staff",
+            FieldName = "ucjbClientRefa",
+            OldValue = "REF-123",
+            NewValue = null,
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].Tags.Should().Contain("Client Ref A: REF-123 → (cleared)");
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithJobUpdate_NewFieldValueOnly()
+    {
+        // Arrange
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "Staff",
+            FieldName = "Connote",
+            OldValue = null,
+            NewValue = "CON-456",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].Tags.Should().Contain("Connote: CON-456");
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_FiltersOutInternalStatusChanges()
+    {
+        // Arrange - InternalStatus should be filtered out
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(
+            new JobDeliveryJourney
+            {
+                JourneyId = 1,
+                JobId = 1,
+                ChangeType = "InternalStatus",
+                UpdatedByType = "Staff",
+                UpdatedAt = new DateTime(2024, 1, 15, 13, 0, 0)
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 2,
+                JobId = 1,
+                ChangeType = "JobUpdate",
+                UpdatedByType = "Staff",
+                FieldName = "ucjbLocked",
+                NewValue = "True",
+                UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+            });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert - only the JobUpdate should be returned, not InternalStatus
+        result.Should().HaveCount(1);
+        result[0].Title.Should().Be("Locked Updated");
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_GroupsByTimestamp()
+    {
+        // Arrange - two updates at the same timestamp should be grouped
+        var sharedTimestamp = new DateTime(2024, 1, 15, 14, 0, 0);
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(
+            new JobDeliveryJourney
+            {
+                JourneyId = 1,
+                JobId = 1,
+                ChangeType = "JobUpdate",
+                UpdatedByType = "Staff",
+                FieldName = "ucjbStatus",
+                NewValue = "Dispatched",
+                UpdatedAt = sharedTimestamp
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 2,
+                JobId = 1,
+                ChangeType = "JobUpdate",
+                UpdatedByType = "Staff",
+                FieldName = "ucjbCourierId",
+                NewValue = "5",
+                UpdatedAt = sharedTimestamp
+            });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert - both updates at same timestamp should be grouped into one entry
+        result.Should().HaveCount(1);
+        result[0].Tags.Should().Contain(t => t.StartsWith("Status:"));
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_MultipleStatusUpdatesAtDifferentTimes()
+    {
+        // Arrange
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(
+            new JobDeliveryJourney
+            {
+                JourneyId = 1,
+                JobId = 1,
+                ChangeType = "JobUpdate",
+                UpdatedByType = "Staff",
+                FieldName = "ucjbAmount",
+                NewValue = "100.00",
+                UpdatedAt = new DateTime(2024, 1, 15, 10, 0, 0)
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 2,
+                JobId = 1,
+                ChangeType = "JobUpdate",
+                UpdatedByType = "Staff",
+                FieldName = "ucjbWeight",
+                NewValue = "5.50",
+                UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+            });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert - different timestamps = separate entries
+        result.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithJobUpdate_FormatsWeightField()
+    {
+        // Arrange
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "Staff",
+            FieldName = "ucjbWeight",
+            OldValue = "2.50",
+            NewValue = "5.75",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].Title.Should().Be("Weight Updated");
+        result[0].Tags.Should().Contain("Weight: 2.50 kg → 5.75 kg");
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithJobUpdate_FormatsDistanceField()
+    {
+        // Arrange
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "Staff",
+            FieldName = "ucjbKm",
+            NewValue = "12.3",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].Title.Should().Be("Distance (km) Updated");
+        result[0].Tags.Should().Contain("Distance (km): 12.3 km");
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_StatusUpdates_IntegrateWithOtherEntries()
+    {
+        // Arrange - status update + event + note should all appear
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "Staff",
+            FieldName = "ucjbAttention",
+            NewValue = "True",
+            UpdatedAt = new DateTime(2024, 1, 15, 8, 0, 0)
+        });
+        await SeedNotesAsync(new TucNote
+        {
+            NoteId = 1,
+            JobId = 1,
+            NoteText = "Flagged for attention",
+            NoteTypeId = 1,
+            CreatedDate = new DateTime(2024, 1, 15, 9, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        result.Should().HaveCount(2);
+        result.Should().Contain(e => e.Title == "Attention Flag Updated");
+        result.Should().Contain(e => e.Description == "Flagged for attention");
+    }
+
+    #endregion
+
+    #region GetDeliveryJourneyForJobAsync - FormatFieldName via Field Tags
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_FormatsAddressFieldNames()
+    {
+        // Arrange
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "Staff",
+            FieldName = "ucjbFromAddr",
+            OldValue = "123 Old St",
+            NewValue = "456 New Ave",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].Title.Should().Be("Pickup Address Updated");
+        result[0].Tags.Should().Contain("Pickup Address: 123 Old St → 456 New Ave");
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_FormatsCamelCaseFieldNames()
+    {
+        // Arrange - unknown camelCase field should use ConvertToTitleCase fallback
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "Staff",
+            FieldName = "CustomNewField",
+            NewValue = "SomeValue",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        result.Should().HaveCount(1);
+        // ConvertToTitleCase should split camelCase: "CustomNewField" -> "Custom New Field"
+        result[0].Title.Should().Be("Custom New Field Updated");
+    }
+
+    #endregion
 }

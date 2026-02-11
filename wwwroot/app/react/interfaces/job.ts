@@ -6,6 +6,8 @@ export interface RelatedJobDto {
     id: number;
     text: string;
     selected: boolean;
+    isBulkJob?: boolean;
+    isArchived?: boolean;
 }
 
 export interface VoidJobRequest {
@@ -38,4 +40,6 @@ export interface RelatedJob {
     id: number;
     text: string;
     selected: boolean;
+    isBulkJob?: boolean;
+    isArchived?: boolean;
 }

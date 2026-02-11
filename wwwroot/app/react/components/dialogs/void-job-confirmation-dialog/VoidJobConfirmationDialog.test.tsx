@@ -259,7 +259,7 @@ describe('VoidJobConfirmationDialog', () => {
             await userEvent.click(toggle);
 
             await waitFor(() => {
-                expect(props.onLoadRelatedJobs).toHaveBeenCalledWith(123, false);
+                expect(props.onLoadRelatedJobs).toHaveBeenCalledWith(123, false, false);
             });
         });
 
@@ -591,7 +591,58 @@ describe('VoidJobConfirmationDialog', () => {
             await userEvent.click(toggle);
 
             await waitFor(() => {
-                expect(props.onLoadRelatedJobs).toHaveBeenCalledWith(123, true);
+                expect(props.onLoadRelatedJobs).toHaveBeenCalledWith(123, true, false);
+            });
+        });
+    });
+
+    describe('Bulk Job Multi-Void Flow', () => {
+        it('should pass isBulkJob=true when loading related jobs for bulk job', async () => {
+            const props = createMockProps({job: mockBulkJob});
+            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
+
+            const toggle = screen.getByRole('checkbox');
+            await userEvent.click(toggle);
+
+            await waitFor(() => {
+                expect(props.onLoadRelatedJobs).toHaveBeenCalledWith(456, false, true);
+            });
+        });
+
+        it('should show Bulk chip for bulk related jobs', async () => {
+            const bulkRelatedJobs: RelatedJob[] = [
+                {id: 456, text: 'BULK-001 - Parent', selected: true, isBulkJob: true},
+                {id: 457, text: 'BULK-002 - Child', selected: false, isBulkJob: true},
+            ];
+            const props = createMockProps({
+                job: mockBulkJob,
+                onLoadRelatedJobs: jest.fn().mockResolvedValue(bulkRelatedJobs),
+            });
+            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
+
+            const toggle = screen.getByRole('checkbox');
+            await userEvent.click(toggle);
+
+            await waitFor(() => {
+                expect(screen.getAllByText('Bulk')).toHaveLength(2);
+            });
+        });
+
+        it('should show Archived chip for archived related jobs', async () => {
+            const archivedRelatedJobs: RelatedJob[] = [
+                {id: 100, text: 'ARCH-001 - Parent', selected: true, isArchived: true},
+                {id: 101, text: 'ARCH-002 - Child', selected: false, isArchived: true},
+            ];
+            const props = createMockProps({
+                onLoadRelatedJobs: jest.fn().mockResolvedValue(archivedRelatedJobs),
+            });
+            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
+
+            const toggle = screen.getByRole('checkbox');
+            await userEvent.click(toggle);
+
+            await waitFor(() => {
+                expect(screen.getAllByText('Archived')).toHaveLength(2);
             });
         });
     });

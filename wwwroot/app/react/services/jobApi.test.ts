@@ -33,7 +33,7 @@ describe('jobApi', () => {
 
             expect(mockApiClient.get).toHaveBeenCalledWith(
                 'job/GetRelatedJobsMultiSelectList',
-                {jobId: 123, isArchived: false}
+                {jobId: 123, isArchived: false, isBulkJob: false}
             );
             expect(result).toEqual(mockResponse);
         });
@@ -45,7 +45,18 @@ describe('jobApi', () => {
 
             expect(mockApiClient.get).toHaveBeenCalledWith(
                 'job/GetRelatedJobsMultiSelectList',
-                {jobId: 456, isArchived: true}
+                {jobId: 456, isArchived: true, isBulkJob: false}
+            );
+        });
+
+        it('should pass isBulkJob true for bulk jobs', async () => {
+            mockApiClient.get.mockResolvedValueOnce([]);
+
+            await getRelatedJobsMultiSelectList(789, false, true);
+
+            expect(mockApiClient.get).toHaveBeenCalledWith(
+                'job/GetRelatedJobsMultiSelectList',
+                {jobId: 789, isArchived: false, isBulkJob: true}
             );
         });
 

@@ -4946,8 +4946,8 @@ public partial class JobRepository(
     public new async Task<bool> IsJobArchived(int jobId)
         => await base.IsJobArchived(jobId);
 
-    public new async Task<List<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived)
-        => await base.GetRelatedJobsMultiSelectListAsync(jobId, isArchived);
+    public new async Task<List<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived, bool isBulkJob = false)
+        => await base.GetRelatedJobsMultiSelectListAsync(jobId, isArchived, isBulkJob);
 
     public new async Task<int?> GetJobParentIdAsync(int jobId)
         => await base.GetJobParentIdAsync(jobId);

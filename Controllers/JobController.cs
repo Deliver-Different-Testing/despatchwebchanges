@@ -885,20 +885,26 @@ public class JobController(
             // Don't re-rate if debugging
             if (Debugger.IsAttached) return Ok();
 
-            var isUsTenant = infoService.IsUsTenant();
-            if (isUsTenant)
+            try
             {
-                var jobDetails = await jobRepository.GetJobDetailsForRatingAsync(parentId.Value);
-                if (jobDetails.IsManuallyRated) return Ok();
-
-                await rateJobService.RateJobUsAsync(jobDetails);
+                var isUsTenant = infoService.IsUsTenant();
+                if (isUsTenant)
+                {
+                    var jobDetails = await jobRepository.GetJobDetailsForRatingAsync(parentId.Value);
+                    if (!jobDetails.IsManuallyRated)
+                        await rateJobService.RateJobUsAsync(jobDetails);
+                }
+                else
+                {
+                    var jobDetails = await jobRepository.GetJobDetailsForRatingNzAsync(parentId.Value, false);
+                    if (!jobDetails.IsManuallyRated)
+                        await rateJobService.RateJobNzAsync(jobDetails);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                var jobDetails = await jobRepository.GetJobDetailsForRatingNzAsync(parentId.Value, false);
-                if (jobDetails.IsManuallyRated) return Ok();
-
-                await rateJobService.RateJobNzAsync(jobDetails);
+                Log.Error(ex, "Error re-rating parent job {ParentId} after voiding child {JobId}",
+                    parentId.Value, request.JobId);
             }
 
             return Ok();
@@ -1635,11 +1641,11 @@ public class JobController(
         return Json(isParent);
     }
 
-    public async Task<IActionResult> GetRelatedJobsMultiSelectList(int jobId, bool isArchived)
+    public async Task<IActionResult> GetRelatedJobsMultiSelectList(int jobId, bool isArchived, bool isBulkJob = false)
     {
         try
         {
-            var relatedJobs = await jobRepository.GetRelatedJobsMultiSelectListAsync(jobId, isArchived);
+            var relatedJobs = await jobRepository.GetRelatedJobsMultiSelectListAsync(jobId, isArchived, isBulkJob);
             return Json(relatedJobs);
         }
         catch (Exception ex)

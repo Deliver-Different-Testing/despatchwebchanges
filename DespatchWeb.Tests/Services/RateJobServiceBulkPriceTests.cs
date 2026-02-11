@@ -1,4 +1,3 @@
-using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
@@ -442,7 +441,7 @@ public class RateJobServiceBulkPriceTests
         var service = CreateService();
 
         // Act
-        var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
+        await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
 
         // Assert - all 3 jobs should be batched in one call
         _jobRepositoryMock.Verify(x => x.UpdateManualPriceAsync(It.IsAny<List<JobManualPriceModel>>()), Times.Once);

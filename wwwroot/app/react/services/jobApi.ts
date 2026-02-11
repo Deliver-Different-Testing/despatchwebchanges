@@ -6,18 +6,20 @@
  */
 
 import {apiClient} from './apiClient';
-import {RelatedJobDto, VoidJobRequest, VoidBulkJobRequest} from '../interfaces/job';
+import {RelatedJobDto, VoidJobRequest, VoidBulkJobRequest} from '../interfaces';
 
 /**
  * Get related jobs for multi-select void operation
  */
 export async function getRelatedJobsMultiSelectList(
     jobId: number,
-    isArchived: boolean
+    isArchived: boolean,
+    isBulkJob: boolean = false
 ): Promise<RelatedJobDto[]> {
     return apiClient.get<RelatedJobDto[]>('job/GetRelatedJobsMultiSelectList', {
         jobId,
         isArchived,
+        isBulkJob,
     });
 }
 

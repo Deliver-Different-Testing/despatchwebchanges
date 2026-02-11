@@ -134,7 +134,7 @@ public class JobPhotoServiceTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public async Task DeleteJobPhotoOrSignatureAsync_EmptyKey_ReturnsFalse(string key)
+    public async Task DeleteJobPhotoOrSignatureAsync_EmptyKey_ReturnsFalse(string? key)
     {
         // Arrange
         var service = CreateService();
@@ -287,7 +287,7 @@ public class JobPhotoServiceTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public async Task DownloadFileAsync_EmptyKey_ReturnsFailure(string key)
+    public async Task DownloadFileAsync_EmptyKey_ReturnsFailure(string? key)
     {
         // Arrange
         var service = CreateService();
@@ -307,7 +307,7 @@ public class JobPhotoServiceTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public async Task DeleteFileAsync_EmptyKey_ReturnsFalse(string key)
+    public async Task DeleteFileAsync_EmptyKey_ReturnsFalse(string? key)
     {
         // Arrange
         var service = CreateService();

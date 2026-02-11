@@ -2014,6 +2014,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ShortRoadRunRateCodeId).HasColumnName("ShortRoadRunRateCodeID");
             entity.Property(e => e.ShorthaulKgrateCodeId).HasColumnName("ShorthaulKGRateCodeID");
             entity.Property(e => e.ShorthaulRateCodeId).HasColumnName("ShorthaulRateCodeID");
+            entity.Property(e => e.ShowNwagent).HasColumnName("ShowNWAgent");
             entity.Property(e => e.ShowNwflight).HasColumnName("ShowNWFlight");
             entity.Property(e => e.SigRequiredDefault).HasMaxLength(500);
             entity.Property(e => e.SirateCodeId).HasColumnName("SIRateCodeID");
@@ -4237,6 +4238,9 @@ public partial class DespatchContext : DbContext
                 .HasAnnotation("Relational:DefaultConstraintName", "DF__tucClient__SDREn__6FE376B1")
                 .HasColumnName("SDREnabled");
             entity.Property(e => e.ShowMap).HasAnnotation("Relational:DefaultConstraintName", "DF__tucClient__ShowM__0AC87E64");
+            entity.Property(e => e.ShowNwagent)
+                .HasDefaultValue(true)
+                .HasColumnName("ShowNWAgent");
             entity.Property(e => e.ShowNwflight)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF__tucClient__ShowN__1A0AC1F4")

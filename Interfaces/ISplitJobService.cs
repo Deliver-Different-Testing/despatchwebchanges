@@ -21,16 +21,4 @@ public interface ISplitJobService
         int jobId,
         string userName,
         AddressViewModel meetingPointAddress);
-
-    /// <summary>
-    /// Splits a prebook/recurring job into two child jobs with a specified meeting point.
-    /// </summary>
-    /// <param name="jobBookingId">The ID of the job booking to split.</param>
-    /// <param name="userName">The username performing the split.</param>
-    /// <param name="meetingPointAddress">The meeting point address data including all address lines.</param>
-    /// <returns>A tuple containing the pickup booking ID and delivery booking ID.</returns>
-    Task<(int PickupBookingId, int DeliveryBookingId)> SplitJobBookingAsync(
-        int jobBookingId,
-        string userName,
-        AddressViewModel meetingPointAddress);
 }

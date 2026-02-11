@@ -1266,38 +1266,6 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<List<DES_stpJob_SplitJob_ReRateResult>> DES_stpJob_SplitJob_ReRateAsync(int? parentJobID, bool? preBookJob, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
-        {
-            var parameterreturnValue = new SqlParameter
-            {
-                ParameterName = "returnValue",
-                Direction = System.Data.ParameterDirection.Output,
-                SqlDbType = System.Data.SqlDbType.Int,
-            };
-
-            var sqlParameters = new []
-            {
-                new SqlParameter
-                {
-                    ParameterName = "ParentJobID",
-                    Value = parentJobID ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Int,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "PreBookJob",
-                    Value = preBookJob ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Bit,
-                },
-                parameterreturnValue,
-            };
-            var _ = await _context.SqlQueryAsync<DES_stpJob_SplitJob_ReRateResult>("EXEC @returnValue = [dbo].[DES_stpJob_SplitJob_ReRate] @ParentJobID = @ParentJobID, @PreBookJob = @PreBookJob", sqlParameters, cancellationToken);
-
-            returnValue?.SetValue(parameterreturnValue.Value);
-
-            return _;
-        }
-
         public virtual async Task<int> DES_stpJob_SplitJobRestoreAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter

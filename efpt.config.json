@@ -455,10 +455,6 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[DES_stpJob_SplitJob_ReRate]",
-         "ObjectType": 1
-      },
-      {
          "Name": "[dbo].[DES_stpJob_SplitJobRestore]",
          "ObjectType": 1
       },

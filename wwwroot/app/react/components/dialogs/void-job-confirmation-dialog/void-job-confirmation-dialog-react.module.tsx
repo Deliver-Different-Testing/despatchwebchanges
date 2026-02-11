@@ -12,7 +12,6 @@ import {VoidJobConfirmationDialog, VoidJobDialogJob, VoidJobResult, RelatedJob} 
 import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
 import {jobApi} from '../../../services/jobApi';
-import angular from 'angular';
 
 interface ToastService {
     showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
@@ -50,12 +49,14 @@ function renderDialog(): void {
         renderDialog();
     };
 
-    const handleLoadRelatedJobs = async (jobId: number, isArchived: boolean): Promise<RelatedJob[]> => {
-        const results = await jobApi.getRelatedJobsMultiSelectList(jobId, isArchived);
+    const handleLoadRelatedJobs = async (jobId: number, isArchived: boolean, isBulkJob: boolean): Promise<RelatedJob[]> => {
+        const results = await jobApi.getRelatedJobsMultiSelectList(jobId, isArchived, isBulkJob);
         return results.map(r => ({
             id: r.id,
             text: r.text,
             selected: r.selected,
+            isBulkJob: r.isBulkJob,
+            isArchived: r.isArchived,
         }));
     };
 

@@ -38,7 +38,7 @@ public class FlightStatsServiceTests(ITestOutputHelper testOutputHelper)
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public async Task CreateFlightRuleByDepartureAsync_NullOrEmptyFlightNumber_ThrowsArgumentException(string flightNumber)
+    public async Task CreateFlightRuleByDepartureAsync_NullOrEmptyFlightNumber_ThrowsArgumentException(string? flightNumber)
     {
         // Arrange
         var service = CreateService();
@@ -54,7 +54,7 @@ public class FlightStatsServiceTests(ITestOutputHelper testOutputHelper)
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public async Task CreateFlightRuleByDepartureAsync_NullOrEmptyAirportCode_ThrowsArgumentException(string airportCode)
+    public async Task CreateFlightRuleByDepartureAsync_NullOrEmptyAirportCode_ThrowsArgumentException(string? airportCode)
     {
         // Arrange
         var service = CreateService();
@@ -89,7 +89,7 @@ public class FlightStatsServiceTests(ITestOutputHelper testOutputHelper)
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public async Task DeleteFlightRuleById_NullOrEmptyWebhookId_ReturnsWithoutCalling(string webhookId)
+    public async Task DeleteFlightRuleById_NullOrEmptyWebhookId_ReturnsWithoutCalling(string? webhookId)
     {
         // Arrange
         var service = CreateService();
@@ -610,7 +610,6 @@ public class FlightStatsServiceTests(ITestOutputHelper testOutputHelper)
         // Arrange
         var currentTenantTime = new DateTime(2024, 6, 15, 14, 0, 0); // 2:00 PM today
         var pastDepartureDate = new DateTimeOffset(2024, 6, 15, 8, 0, 0, TimeSpan.Zero); // 8:00 AM (past)
-        const int airportBufferMinutes = 60;
 
         SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
         _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
@@ -660,7 +659,6 @@ public class FlightStatsServiceTests(ITestOutputHelper testOutputHelper)
         // Arrange
         var currentTenantTime = new DateTime(2024, 6, 15, 8, 0, 0); // 8:00 AM
         var futureDepartureDate = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero); // 2:00 PM (future)
-        const int airportBufferMinutes = 60;
 
         SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
         _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
@@ -703,7 +701,6 @@ public class FlightStatsServiceTests(ITestOutputHelper testOutputHelper)
     {
         // Arrange
         var currentTenantTime = new DateTime(2024, 6, 15, 10, 30, 0); // 10:30 AM
-        const int airportBufferMinutes = 60;
 
         SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
         _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
@@ -747,7 +744,6 @@ public class FlightStatsServiceTests(ITestOutputHelper testOutputHelper)
         // Arrange - Edge case: departure time equals current time exactly
         var currentTenantTime = new DateTime(2024, 6, 15, 12, 0, 0);
         var departureDateSameAsCurrent = new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
-        const int airportBufferMinutes = 60;
 
         SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
         _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())

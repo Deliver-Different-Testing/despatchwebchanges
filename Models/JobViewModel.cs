@@ -205,6 +205,8 @@ public class Suggestion
 public class MultiSuggestion : Suggestion
 {
     public bool Selected { get; set; }
+    public bool IsBulkJob { get; set; }
+    public bool IsArchived { get; set; }
 }
 
 public class AirlineSuggestion : Suggestion

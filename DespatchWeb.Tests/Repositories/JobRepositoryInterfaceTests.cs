@@ -1,6 +1,5 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
-using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
@@ -82,7 +81,7 @@ public class JobRepositoryInterfaceTests : IDisposable
         _context.TucJobArchives.Add(CreateArchivedJob(jobId, "ARCH001"));
         await _context.SaveChangesAsync();
 
-        IJobRepository repository = CreateRepository();
+        var repository = CreateRepository();
 
         // Act
         var result = await repository.IsJobArchived(jobId);
@@ -99,7 +98,7 @@ public class JobRepositoryInterfaceTests : IDisposable
         _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
         await _context.SaveChangesAsync();
 
-        IJobRepository repository = CreateRepository();
+        var repository = CreateRepository();
 
         // Act
         var result = await repository.IsJobArchived(jobId);
@@ -127,7 +126,7 @@ public class JobRepositoryInterfaceTests : IDisposable
         );
         await _context.SaveChangesAsync();
 
-        IJobRepository repository = CreateRepository();
+        var repository = CreateRepository();
 
         // Act
         var result = await repository.GetRelatedJobsMultiSelectListAsync(parentId, isArchived: false);
@@ -152,13 +151,36 @@ public class JobRepositoryInterfaceTests : IDisposable
         );
         await _context.SaveChangesAsync();
 
-        IJobRepository repository = CreateRepository();
+        var repository = CreateRepository();
 
         // Act
         var result = await repository.GetRelatedJobsMultiSelectListAsync(parentId, isArchived: true);
 
         // Assert
         result.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task GetRelatedJobsMultiSelectListAsync_ViaInterface_WithBulkJob_QueriesBulkTable()
+    {
+        // Arrange
+        const int parentId = 200;
+        const int childId = 201;
+
+        _context.TblBulkJobs.AddRange(
+            CreateBulkJob(parentId, "BULK-PARENT"),
+            CreateBulkJobWithParent(childId, "BULK-CHILD", parentId)
+        );
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetRelatedJobsMultiSelectListAsync(parentId, isArchived: false, isBulkJob: true);
+
+        // Assert
+        result.Should().HaveCount(2);
+        result.Should().OnlyContain(j => j.IsBulkJob == true);
     }
 
     #endregion
@@ -178,7 +200,7 @@ public class JobRepositoryInterfaceTests : IDisposable
         );
         await _context.SaveChangesAsync();
 
-        IJobRepository repository = CreateRepository();
+        var repository = CreateRepository();
 
         // Act
         var result = await repository.GetJobParentIdAsync(childId);
@@ -195,7 +217,7 @@ public class JobRepositoryInterfaceTests : IDisposable
         _context.TucJobs.Add(CreateJob(jobId, "PARENT"));
         await _context.SaveChangesAsync();
 
-        IJobRepository repository = CreateRepository();
+        var repository = CreateRepository();
 
         // Act
         var result = await repository.GetJobParentIdAsync(jobId);
@@ -218,7 +240,7 @@ public class JobRepositoryInterfaceTests : IDisposable
         );
         await _context.SaveChangesAsync();
 
-        IJobRepository repository = CreateRepository();
+        var repository = CreateRepository();
 
         // Act
         var result = await repository.GetJobCurrentAmountsAsync([100, 101]);
@@ -235,7 +257,7 @@ public class JobRepositoryInterfaceTests : IDisposable
     public async Task GetJobCurrentAmountsAsync_ViaInterface_WithNoMatchingJobs_ReturnsEmptyDictionary()
     {
         // Arrange
-        IJobRepository repository = CreateRepository();
+        var repository = CreateRepository();
 
         // Act
         var result = await repository.GetJobCurrentAmountsAsync([999, 998]);
@@ -283,6 +305,16 @@ public class JobRepositoryInterfaceTests : IDisposable
         UcjbId = id,
         UcjbNumber = jobNumber,
         ParentId = parentId
+    };
+
+    private static TblBulkJob CreateBulkJob(int id, string jobNumber) => new()
+    {
+        BulkJobId = id, JobNumber = jobNumber
+    };
+
+    private static TblBulkJob CreateBulkJobWithParent(int id, string jobNumber, int parentId) => new()
+    {
+        BulkJobId = id, JobNumber = jobNumber, BulkParentId = parentId
     };
 
     #endregion

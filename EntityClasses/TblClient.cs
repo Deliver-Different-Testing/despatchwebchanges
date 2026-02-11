@@ -579,6 +579,8 @@ public partial class TblClient
 
     public int? InvoiceMode { get; set; }
 
+    public bool ShowNwagent { get; set; }
+
     public int ClientId { get; set; }
 
     public string Name { get; set; }
