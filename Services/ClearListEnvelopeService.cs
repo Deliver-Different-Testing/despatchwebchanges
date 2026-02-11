@@ -112,7 +112,6 @@ public class ClearListEnvelopeService(
         var currentDate = infoService.GetCurrentTenantTime();
 
         return Context.TucCouriers
-            .AsSplitQuery()
             .SelectMany(courier => courier.TucJobUcjbCouriers
                 .Where(job => !job.UcjbJobDone && !job.UcjbVoid)
                 .SelectMany(job => Context.ZipPolygons

@@ -735,7 +735,8 @@ public partial class JobRepository(
 
                 // Always update these fields, regardless of price change
                 match.CourierPercentage = null;
-                match.CourierPayment = Math.Round(d.CourierPayment.Value, 4, MidpointRounding.AwayFromZero);
+                if (d.CourierPayment != null)
+                    match.CourierPayment = Math.Round(d.CourierPayment.Value, 4, MidpointRounding.AwayFromZero);
                 match.CourierFuel = Math.Round(d.CourierFuel.Value, 4, MidpointRounding.AwayFromZero);
                 match.CourierBonus = Math.Round(d.CourierBonus.Value, 4, MidpointRounding.AwayFromZero);
 
@@ -1510,7 +1511,7 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Calculates the PPD (Pre-Paid Discount) exclusive amount for a client.
+    /// Calculates the PPD (Prepaid Discount) exclusive amount for a client.
     /// </summary>
     public async Task<decimal> PpdExclusiveAmountAsync(int clientId,
         decimal amount) =>
@@ -1860,8 +1861,8 @@ public partial class JobRepository(
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(j => j.JobStatus, (int)JobStatus.Void)
                     .SetProperty(j => j.Void, true)
-                    .SetProperty(j => j.Amount, (decimal?)0)
-                    .SetProperty(j => j.CourierPayment, (decimal?)0));
+                    .SetProperty(j => j.Amount, 0)
+                    .SetProperty(j => j.CourierPayment, 0));
 
             var courierIds = await Context.TblBulkJobs
                 .Where(jt => jobsToVoid.Contains(jt.BulkJobId) && jt.CourierId.HasValue)
@@ -1900,7 +1901,7 @@ public partial class JobRepository(
 
     /// <summary>
     /// Checks if a job can be split.
-    /// A job can be split if it has no flights assigned via TucJobNationwides.
+    /// A job can be split if it has no flights assigned .
     /// Child jobs can now be split.
     /// </summary>
     /// <param name="jobId">The job ID to check.</param>
@@ -1915,7 +1916,7 @@ public partial class JobRepository(
         if (job == null) return false;
 
         // Only restriction: cannot split jobs with flights assigned
-        return !job.TucJobNationwides.Any();
+        return job.TucJobNationwides.Count == 0;
     }
 
     /// <summary>
@@ -4417,11 +4418,6 @@ public partial class JobRepository(
         return relatedJobIds;
     }
 
-    private async Task UpdateJobDisplayInDespatchAsync(int jobId) =>
-        await Context.TucJobs
-            .Where(j => j.RootParentId == jobId)
-            .ExecuteUpdateAsync(j => j.SetProperty(x => x.DisplayInDespatch, true));
-
     private async Task SetJobAsManuallyPriceAsync(int jobId,
         string note)
     {
@@ -4445,7 +4441,7 @@ public partial class JobRepository(
     }
 
 
-    private async Task<CreateMinimalTucJobResponse> CreateMinimalTucJobAsync(CreateMinimalTucJobInputModel data,
+    public async Task<CreateMinimalTucJobResponse> CreateMinimalTucJobAsync(CreateMinimalTucJobInputModel data,
         CancellationToken cancellationToken = default)
     {
         // Output parameters
