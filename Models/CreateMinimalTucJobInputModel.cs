@@ -121,4 +121,6 @@ public class CreateMinimalTucJobInputModel
     public string BarcodeList { get; set; }
     
     public string RecurringName { get; set; }
+    
+    public bool KeepJobNumber { get; set; }
 }

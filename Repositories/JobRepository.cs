@@ -4542,6 +4542,7 @@ public partial class JobRepository(
                 cubicList: data.CubicList,
                 weightList: data.WeightList,
                 barcodeList: data.BarcodeList,
+                keepJobNumber: data.KeepJobNumber,
                 returnValue: returnValueParam, // OUTPUT parameter
                 cancellationToken: cancellationToken
             );

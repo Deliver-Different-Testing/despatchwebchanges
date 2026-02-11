@@ -134,7 +134,8 @@ public class SplitJobService(
                 PickUpLatitude = meetingPointAddress.Latitude,
                 PickUpLongitude = meetingPointAddress.Longitude,
                 DeliveryLatitude = originalDeliveryAddress.Latitude,
-                DeliveryLongitude = originalDeliveryAddress.Longitude
+                DeliveryLongitude = originalDeliveryAddress.Longitude,
+                KeepJobNumber = true
             };
 
             var spResult = await jobRepository.CreateMinimalTucJobAsync(deliveryInput);
