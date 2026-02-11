@@ -917,6 +917,36 @@ public class JobControllerTests
     }
 
     [Fact]
+    public async Task Void_ChildJob_StillReturnsOkWhenDebuggerSkipsRerating()
+    {
+        // Arrange
+        var request = new VoidJobRequest
+        {
+            JobId = 5,
+            VoidSingleJobOnly = true,
+            VoidReason = "Child void test",
+            SelectedJobIds = [5]
+        };
+
+        _jobRepositoryMock.Setup(x => x.IsJobArchived(5))
+            .ReturnsAsync(false);
+        _jobRepositoryMock.Setup(x => x.GetJobParentIdAsync(5))
+            .ReturnsAsync(1); // Has parent, parent NOT in selected list
+        _jobRepositoryMock.Setup(x => x.VoidJobAsync(request))
+            .Returns(Task.CompletedTask);
+
+        var controller = CreateController();
+
+        // Act
+        // Note: Debugger.IsAttached is true in the test runner, so re-rating
+        // is always skipped and the method returns Ok() before attempting to rate.
+        var result = await controller.Void(request);
+
+        // Assert
+        result.Should().BeOfType<OkResult>();
+    }
+
+    [Fact]
     public async Task Void_Exception_Returns500()
     {
         // Arrange
@@ -2322,13 +2352,39 @@ public class JobControllerTests
             new() { Id = 3, Text = "JOB003" }
         };
 
-        _jobRepositoryMock.Setup(x => x.GetRelatedJobsMultiSelectListAsync(jobId, false))
+        _jobRepositoryMock.Setup(x => x.GetRelatedJobsMultiSelectListAsync(jobId, false, false))
             .ReturnsAsync(expectedJobs);
 
         var controller = CreateController();
 
         // Act
         var result = await controller.GetRelatedJobsMultiSelectList(jobId, isArchived: false);
+
+        // Assert
+        result.Should().BeOfType<JsonResult>();
+        var jsonResult = (JsonResult)result;
+        var jobs = jsonResult.Value as List<MultiSuggestion>;
+        jobs.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task GetRelatedJobsMultiSelectList_WithBulkJob_ReturnsRelatedBulkJobs()
+    {
+        // Arrange
+        const int jobId = 1;
+        var expectedJobs = new List<MultiSuggestion>
+        {
+            new() { Id = 1, Text = "BULK001", IsBulkJob = true },
+            new() { Id = 2, Text = "BULK002", IsBulkJob = true }
+        };
+
+        _jobRepositoryMock.Setup(x => x.GetRelatedJobsMultiSelectListAsync(jobId, false, true))
+            .ReturnsAsync(expectedJobs);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.GetRelatedJobsMultiSelectList(jobId, isArchived: false, isBulkJob: true);
 
         // Assert
         result.Should().BeOfType<JsonResult>();

@@ -9,7 +9,6 @@ using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.EntityFrameworkCore;
-using Serilog;
 
 namespace DespatchWeb.Repositories;
 

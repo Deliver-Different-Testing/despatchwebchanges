@@ -579,6 +579,8 @@ public partial class TucClient
 
     public int? InvoiceMode { get; set; }
 
+    public bool ShowNwagent { get; set; }
+
     public virtual ICollection<TblAfterHour> TblAfterHours { get; set; } = new List<TblAfterHour>();
 
     public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; } = new List<TblBulkJob>();

@@ -22,17 +22,13 @@ public static class AuthenticationExtensions
         {
             var jwtSecretKey = Environment.GetEnvironmentVariable("JWTSecretKey");
             if (string.IsNullOrEmpty(jwtSecretKey))
-            {
                 throw new InvalidOperationException(
                     "JWTSecretKey environment variable is not set. Cannot create secure tokens.");
-            }
 
             var keyBytes = Encoding.UTF8.GetBytes(jwtSecretKey);
             if (keyBytes.Length < MinimumKeyLengthBytes)
-            {
                 throw new InvalidOperationException(
                     $"JWTSecretKey must be at least {MinimumKeyLengthBytes} bytes (256 bits) for secure token signing.");
-            }
 
             var symmetricSecurityKey = new SymmetricSecurityKey(keyBytes);
 
@@ -90,10 +86,7 @@ public static class AuthenticationExtensions
         // Write the IV to the beginning of the stream
         msEncrypt.Write(iv, 0, iv.Length);
         using (var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
-        using (var swEncrypt = new StreamWriter(csEncrypt))
-        {
-            swEncrypt.Write(claims);
-        }
+        using (var swEncrypt = new StreamWriter(csEncrypt)) swEncrypt.Write(claims);
 
         return Convert.ToBase64String(msEncrypt.ToArray());
     }

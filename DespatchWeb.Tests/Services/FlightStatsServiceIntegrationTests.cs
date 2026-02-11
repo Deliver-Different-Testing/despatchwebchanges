@@ -225,13 +225,15 @@ public class FlightStatsServiceIntegrationTests : IDisposable
 
         _output.WriteLine($"American Airlines connections found: {result.Connections?.Count ?? 0}");
 
-        // All returned flights should be American Airlines
+        // Each connection should include at least one AA-operated flight
+        // (connections may include legs operated by regional partners like SkyWest/OO)
         if (result.Connections != null)
         {
-            foreach (var firstFlight in result.Connections.Select(connection => connection.ScheduledFlight?.FirstOrDefault()))
+            foreach (var connection in result.Connections)
             {
-                firstFlight?.CarrierFsCode.Should().Be(airline,
-                    $"Expected only {airline} flights but got {firstFlight.CarrierFsCode}");
+                connection.ScheduledFlight.Should().Contain(
+                    f => f.CarrierFsCode == airline,
+                    $"Expected at least one {airline} flight in connection but got: {string.Join(", ", connection.ScheduledFlight?.Select(f => f.CarrierFsCode) ?? [])}");
             }
         }
     }

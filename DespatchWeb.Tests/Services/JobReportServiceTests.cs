@@ -304,10 +304,10 @@ public class JobReportServiceTests
         fileMock.Setup(f => f.Length).Returns(stream.Length);
         fileMock.Setup(f => f.OpenReadStream()).Returns(stream);
         fileMock.Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .Returns<Stream, CancellationToken>((s, _) =>
+            .Returns<Stream, CancellationToken>((s, x) =>
             {
                 stream.Position = 0;
-                return stream.CopyToAsync(s);
+                return stream.CopyToAsync(s, x);
             });
 
         return fileMock;
@@ -322,10 +322,10 @@ public class JobReportServiceTests
         fileMock.Setup(f => f.Length).Returns(bytes.Length);
         fileMock.Setup(f => f.OpenReadStream()).Returns(() => new MemoryStream(bytes));
         fileMock.Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .Returns<Stream, CancellationToken>((s, _) =>
+            .Returns<Stream, CancellationToken>((s, x) =>
             {
                 var ms = new MemoryStream(bytes);
-                return ms.CopyToAsync(s);
+                return ms.CopyToAsync(s, x);
             });
 
         return fileMock;

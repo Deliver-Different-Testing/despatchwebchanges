@@ -670,8 +670,33 @@ public class BaseJobRepository(
             note.UpdatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(note.UpdatedDate.Value, tenantTimeZone);
     }
 
-    protected async Task<List<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived)
+    protected async Task<List<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived, bool isBulkJob = false)
     {
+        if (isBulkJob)
+        {
+            // Get parent bulk job ID (self if parent, or BulkParentId if child)
+            var parentBulkJobId = await Context.TblBulkJobs
+                .AsNoTracking()
+                .Where(j => j.BulkJobId == jobId)
+                .Select(j => j.BulkParentId ?? j.BulkJobId)
+                .FirstOrDefaultAsync();
+
+            if (parentBulkJobId == 0) return [];
+
+            return await Context.TblBulkJobs
+                .AsNoTracking()
+                .Where(j => j.BulkJobId == parentBulkJobId || j.BulkParentId == parentBulkJobId)
+                .Select(j => new MultiSuggestion
+                {
+                    Id = j.BulkJobId,
+                    Text = j.JobNumber,
+                    Selected = j.BulkJobId == jobId,
+                    IsBulkJob = true
+                })
+                .TagWith($"GetRelatedJobs - Bulk Family for Job {jobId}")
+                .ToListAsync();
+        }
+
         if (isArchived)
         {
             // First, get the parent ID for this job (if it has one)
@@ -684,7 +709,8 @@ public class BaseJobRepository(
                 {
                     Id = j.UcjbId,
                     Text = j.UcjbNumber,
-                    Selected = j.UcjbId == jobId
+                    Selected = j.UcjbId == jobId,
+                    IsArchived = true
                 })
                 .TagWith($"GetRelatedJobs - Archived Family for Job {jobId}")
                 .ToListAsync();

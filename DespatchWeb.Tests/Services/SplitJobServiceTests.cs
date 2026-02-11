@@ -2,6 +2,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Dto;
 using DespatchWeb.Services;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
@@ -19,11 +20,12 @@ public class SplitJobServiceTests : IDisposable
     private readonly DbContextOptions<DespatchContext> _dbOptions;
     private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly Mock<IRateJobService> _rateJobServiceMock = new();
+    private readonly Mock<IJobRepository> _jobRepositoryMock = new();
 
     private const int ParentRelationshipTypeId = 1;
     private const int ChildRelationshipTypeId = 2;
     private const int DefaultSpeedId = 100;
-    private const int ParentJobCourierId = 999;
     private const int StaffId = 1;
 
     public SplitJobServiceTests()
@@ -127,7 +129,9 @@ public class SplitJobServiceTests : IDisposable
 
     private SplitJobService CreateService() => new(
         _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object
+        _tenantInfoServiceMock.Object,
+        _rateJobServiceMock.Object,
+        _jobRepositoryMock.Object
     );
 
     private static TucJob CreateTestJob(int jobId, string jobNumber, int? parentId = null)
@@ -147,25 +151,6 @@ public class SplitJobServiceTests : IDisposable
             UcjbClientId = 1,
             ParentId = parentId,
             UcjbNotes = "Original job notes"
-        };
-    }
-
-    private static TucJobBooking CreateTestJobBooking(int bookingId, string jobNumber, int? parentId = null)
-    {
-        return new TucJobBooking
-        {
-            UcbkId = bookingId,
-            UcbkJobNumber = jobNumber,
-            UcbkDate = DateTime.Today,
-            UcbkTime = DateTime.Now,
-            UcbkSpeed = DefaultSpeedId,
-            UcbkFrom = 1,
-            UcbkFromAddr = "123 Pickup St",
-            UcbkTo = 2,
-            UcbkToAddr = "456 Delivery Ave",
-            UcbkClientId = 1,
-            ParentId = parentId,
-            UcbkNotes = "Original booking notes"
         };
     }
 
@@ -714,203 +699,6 @@ public class SplitJobServiceTests : IDisposable
 
     #endregion
 
-    #region SplitJobBookingAsync Tests
-
-    [Fact]
-    public async Task SplitJobBookingAsync_ValidBooking_CreatesPickupAndDeliveryBookings()
-    {
-        // Arrange
-        await using (var context = CreateContext())
-        {
-            var booking = CreateTestJobBooking(1, "BOOK-001");
-            context.TucJobBookings.Add(booking);
-            await context.SaveChangesAsync();
-        }
-
-        var service = CreateService();
-        var meetingPoint = CreateTestMeetingPointAddress();
-
-        // Act
-        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", meetingPoint);
-
-        // Assert
-        pickupId.Should().BeGreaterThan(0);
-        deliveryId.Should().BeGreaterThan(0);
-
-        await using (var context = CreateContext())
-        {
-            var pickupBooking = await context.TucJobBookings.FindAsync(pickupId);
-            var deliveryBooking = await context.TucJobBookings.FindAsync(deliveryId);
-
-            pickupBooking.Should().NotBeNull();
-            deliveryBooking.Should().NotBeNull();
-            // First split creates A and B suffixes
-            pickupBooking.UcbkJobNumber.Should().Be("BOOK-001A");
-            deliveryBooking.UcbkJobNumber.Should().Be("BOOK-001B");
-        }
-    }
-
-    [Fact]
-    public async Task SplitJobBookingAsync_ValidBooking_SetsParentChildRelationships()
-    {
-        // Arrange
-        await using (var context = CreateContext())
-        {
-            var booking = CreateTestJobBooking(1, "BOOK-001");
-            context.TucJobBookings.Add(booking);
-            await context.SaveChangesAsync();
-        }
-
-        var service = CreateService();
-        var meetingPoint = CreateTestMeetingPointAddress();
-
-        // Act
-        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", meetingPoint);
-
-        // Assert
-        await using (var context = CreateContext())
-        {
-            var parentBooking = await context.TucJobBookings.FindAsync(1);
-            var pickupBooking = await context.TucJobBookings.FindAsync(pickupId);
-            var deliveryBooking = await context.TucJobBookings.FindAsync(deliveryId);
-
-            parentBooking!.JobRelationshipTypeId.Should().Be(ParentRelationshipTypeId);
-            parentBooking.ParentId.Should().Be(1);
-
-            pickupBooking!.JobRelationshipTypeId.Should().Be(ChildRelationshipTypeId);
-            pickupBooking.ParentId.Should().Be(1);
-
-            deliveryBooking!.JobRelationshipTypeId.Should().Be(ChildRelationshipTypeId);
-            deliveryBooking.ParentId.Should().Be(1);
-        }
-    }
-
-    [Fact]
-    public async Task SplitJobBookingAsync_ValidBooking_CreatesNotesInTucNotesTable()
-    {
-        // Arrange
-        await using (var context = CreateContext())
-        {
-            var booking = CreateTestJobBooking(1, "BOOK-001");
-            context.TucJobBookings.Add(booking);
-            await context.SaveChangesAsync();
-        }
-
-        var service = CreateService();
-        var meetingPoint = CreateTestMeetingPointAddress();
-
-        // Act
-        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", meetingPoint);
-
-        // Assert
-        await using (var context = CreateContext())
-        {
-            var pickupNote = await context.TucNotes.FirstOrDefaultAsync(n => n.JobBookingId == pickupId);
-            var deliveryNote = await context.TucNotes.FirstOrDefaultAsync(n => n.JobBookingId == deliveryId);
-
-            pickupNote.Should().NotBeNull();
-            pickupNote.NoteText.Should().Contain("SPLIT Part 1 of 2");
-            pickupNote.NoteTypeId.Should().Be((int)NoteType.InternalNote);
-
-            deliveryNote.Should().NotBeNull();
-            deliveryNote.NoteText.Should().Contain("SPLIT Part 2 of 2");
-        }
-    }
-
-    [Fact]
-    public async Task SplitJobBookingAsync_BookingNotFound_ThrowsInvalidOperationException()
-    {
-        // Arrange
-        var service = CreateService();
-        var meetingPoint = CreateTestMeetingPointAddress();
-
-        // Act
-        var act = async () => await service.SplitJobBookingAsync(999, "TestUser", meetingPoint);
-
-        // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*Job booking 999 not found*");
-    }
-
-    [Fact]
-    public async Task SplitJobBookingAsync_ChildBooking_SuccessfullySplits()
-    {
-        // Arrange - Create a parent booking with a child booking that we'll split
-        await using (var context = CreateContext())
-        {
-            var parentBooking = CreateTestJobBooking(1, "PARENT-001");
-            parentBooking.ParentId = 1;
-            parentBooking.BookingRootParentId = 1;
-            var childBooking = CreateTestJobBooking(2, "PARENT-001A", parentId: 1);
-            childBooking.BookingRootParentId = 1;
-            context.TucJobBookings.AddRange(parentBooking, childBooking);
-            await context.SaveChangesAsync();
-        }
-
-        var service = CreateService();
-        var meetingPoint = CreateTestMeetingPointAddress();
-
-        // Act - Split the child booking
-        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(2, "TestUser", meetingPoint);
-
-        // Assert
-        pickupId.Should().BeGreaterThan(0);
-        deliveryId.Should().BeGreaterThan(0);
-
-        await using (var context = CreateContext())
-        {
-            var pickupBooking = await context.TucJobBookings.FindAsync(pickupId);
-            var deliveryBooking = await context.TucJobBookings.FindAsync(deliveryId);
-
-            // Both new bookings should have the child booking (2) as their ParentId
-            pickupBooking!.ParentId.Should().Be(2);
-            deliveryBooking!.ParentId.Should().Be(2);
-
-            // Both should share the original root parent
-            pickupBooking.BookingRootParentId.Should().Be(1);
-            deliveryBooking.BookingRootParentId.Should().Be(1);
-        }
-    }
-
-    [Fact]
-    public async Task SplitJobBookingAsync_BookingWithFlightAssigned_ThrowsInvalidOperationException()
-    {
-        // Arrange - Create a booking with a flight assigned
-        await using (var context = CreateContext())
-        {
-            var booking = CreateTestJobBooking(1, "BOOK-001");
-            context.TucJobBookings.Add(booking);
-            await context.SaveChangesAsync();
-
-            // Add a flight assignment
-            context.TucJobNationwides.Add(new TucJobNationwide
-            {
-                JobBookingId = 1,
-                UcnwJobNumber = "BOOK-001",
-                UcnwClientId = 1,
-                UcnwDestinationId = 1,
-                UcnwItb = 0,
-                UcnwPickUpJobId = 0,
-                UcnwDeliveryJobId = 0,
-                UcnwAirportOnly = false,
-                UcnwLegNumber = 1
-            });
-            await context.SaveChangesAsync();
-        }
-
-        var service = CreateService();
-        var meetingPoint = CreateTestMeetingPointAddress();
-
-        // Act
-        var act = async () => await service.SplitJobBookingAsync(1, "TestUser", meetingPoint);
-
-        // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*has flights assigned*cannot be split*");
-    }
-
-    #endregion
-
     #region Address Field Tests
 
     [Fact]
@@ -1046,66 +834,6 @@ public class SplitJobServiceTests : IDisposable
 
     #endregion
 
-    #region SplitJobBookingAsync Address Tests
-
-    [Fact]
-    public async Task SplitJobBookingAsync_DeliveryBooking_HasMeetingPointFromAddress()
-    {
-        // Arrange
-        await using (var context = CreateContext())
-        {
-            var booking = CreateTestJobBooking(1, "BOOK-001");
-            booking.UcbkToAddr = "Final Destination Address";
-            context.TucJobBookings.Add(booking);
-            await context.SaveChangesAsync();
-        }
-
-        var service = CreateService();
-        var meetingPoint = CreateTestMeetingPointAddress();
-
-        // Act
-        var (_, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", meetingPoint);
-
-        // Assert
-        await using (var context = CreateContext())
-        {
-            var deliveryBooking = await context.TucJobBookings.FindAsync(deliveryId);
-            deliveryBooking!.UcbkFrom.Should().Be(0);
-            deliveryBooking.UcbkFromAddr.Should().Be(meetingPoint.FullAddress);
-        }
-    }
-
-    [Fact]
-    public async Task SplitJobBookingAsync_PickupAndDeliveryBookings_HaveMatchingMeetingPointAddresses()
-    {
-        // Arrange
-        await using (var context = CreateContext())
-        {
-            var booking = CreateTestJobBooking(1, "BOOK-001");
-            booking.UcbkToAddr = "Final Destination Address";
-            context.TucJobBookings.Add(booking);
-            await context.SaveChangesAsync();
-        }
-
-        var service = CreateService();
-        var meetingPoint = CreateTestMeetingPointAddress();
-
-        // Act
-        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", meetingPoint);
-
-        // Assert - Pickup's TO address should match Delivery's FROM address
-        await using (var context = CreateContext())
-        {
-            var pickupBooking = await context.TucJobBookings.FindAsync(pickupId);
-            var deliveryBooking = await context.TucJobBookings.FindAsync(deliveryId);
-
-            pickupBooking!.UcbkTo.Should().Be(deliveryBooking!.UcbkFrom);
-            pickupBooking.UcbkToAddr.Should().Be(deliveryBooking.UcbkFromAddr);
-        }
-    }
-
-    #endregion
-
     #region No Suburb ID Behavior Tests
 
     [Fact]
@@ -1113,12 +841,12 @@ public class SplitJobServiceTests : IDisposable
     {
         // Arrange - This test verifies the fix for the "Invalid meeting point address" error
         // When splitting a job, the meeting point suburb IDs should be null since
-        // HERE Maps lookup doesn't provide suburb IDs and we use address lines instead
+        // HERE Maps lookup doesn't provide suburb IDs, and we use address lines instead
         await using (var context = CreateContext())
         {
             var job = CreateTestJob(1, "JOB-001");
             job.UcjbFrom = 100; // Original pickup suburb
-            job.UcjbTo = 200;   // Original delivery suburb
+            job.UcjbTo = 200; // Original delivery suburb
             context.TucJobs.Add(job);
             await context.SaveChangesAsync();
         }
@@ -1283,120 +1011,6 @@ public class SplitJobServiceTests : IDisposable
 
     #endregion
 
-    #region Job Booking No Suburb ID Tests
-
-    [Fact]
-    public async Task SplitJobBookingAsync_MeetingPointSuburbId_IsZeroForPickupDelivery()
-    {
-        // Arrange - For job bookings, UcbkTo/UcbkFrom are non-nullable doubles,
-        // so we use 0 instead of null to indicate no suburb ID
-        await using (var context = CreateContext())
-        {
-            var booking = CreateTestJobBooking(1, "BOOK-001");
-            booking.UcbkFrom = 100; // Original pickup suburb
-            booking.UcbkTo = 200;   // Original delivery suburb
-            context.TucJobBookings.Add(booking);
-            await context.SaveChangesAsync();
-        }
-
-        var service = CreateService();
-        var meetingPoint = CreateTestMeetingPointAddress();
-
-        // Act
-        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", meetingPoint);
-
-        // Assert
-        await using (var context = CreateContext())
-        {
-            var pickupBooking = await context.TucJobBookings.FindAsync(pickupId);
-            var deliveryBooking = await context.TucJobBookings.FindAsync(deliveryId);
-
-            // Meeting point suburb IDs should be 0 (pickup's To, delivery's From)
-            pickupBooking!.UcbkTo.Should().Be(0, "pickup booking's delivery suburb should be 0 for meeting point");
-            deliveryBooking!.UcbkFrom.Should().Be(0, "delivery booking's pickup suburb should be 0 for meeting point");
-
-            // But the address text should be set correctly
-            pickupBooking.UcbkToAddr.Should().Be(meetingPoint.FullAddress);
-            deliveryBooking.UcbkFromAddr.Should().Be(meetingPoint.FullAddress);
-        }
-    }
-
-    [Fact]
-    public async Task SplitJobBookingAsync_OriginalSuburbs_ArePreserved()
-    {
-        // Arrange
-        const double originalPickupSuburbId = 100;
-        const double originalDeliverySuburbId = 200;
-        await using (var context = CreateContext())
-        {
-            var booking = CreateTestJobBooking(1, "BOOK-001");
-            booking.UcbkFrom = originalPickupSuburbId;
-            booking.UcbkFromAddr = "123 Original Pickup St";
-            booking.UcbkTo = originalDeliverySuburbId;
-            booking.UcbkToAddr = "456 Final Destination Ave";
-            context.TucJobBookings.Add(booking);
-            await context.SaveChangesAsync();
-        }
-
-        var service = CreateService();
-        var meetingPoint = CreateTestMeetingPointAddress();
-
-        // Act
-        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", meetingPoint);
-
-        // Assert
-        await using (var context = CreateContext())
-        {
-            var pickupBooking = await context.TucJobBookings.FindAsync(pickupId);
-            var deliveryBooking = await context.TucJobBookings.FindAsync(deliveryId);
-
-            // Original pickup suburb preserved on pickup booking
-            pickupBooking!.UcbkFrom.Should().Be(originalPickupSuburbId);
-            pickupBooking.UcbkFromAddr.Should().Be("123 Original Pickup St");
-
-            // Original delivery suburb preserved on delivery booking
-            deliveryBooking!.UcbkTo.Should().Be(originalDeliverySuburbId);
-            deliveryBooking.UcbkToAddr.Should().Be("456 Final Destination Ave");
-        }
-    }
-
-    [Fact]
-    public async Task SplitJobBookingAsync_AddressLinesUsedForMeetingPoint()
-    {
-        // Arrange
-        await using (var context = CreateContext())
-        {
-            var booking = CreateTestJobBooking(1, "BOOK-001");
-            context.TucJobBookings.Add(booking);
-            await context.SaveChangesAsync();
-        }
-
-        var service = CreateService();
-        var meetingPoint = CreateTestMeetingPointAddress();
-
-        // Act
-        var (pickupId, deliveryId) = await service.SplitJobBookingAsync(1, "TestUser", meetingPoint);
-
-        // Assert
-        await using (var context = CreateContext())
-        {
-            var pickupBooking = await context.TucJobBookings.FindAsync(pickupId);
-            var deliveryBooking = await context.TucJobBookings.FindAsync(deliveryId);
-
-            // Pickup booking delivery address lines (meeting point)
-            pickupBooking!.DeliveryAddressLine1.Should().Be(meetingPoint.AddressLine1);
-            pickupBooking.DeliveryAddressLine5.Should().Be(meetingPoint.AddressLine5);
-            pickupBooking.DeliveryAddressLine7.Should().Be(meetingPoint.AddressLine7);
-
-            // Delivery booking pickup address lines (meeting point)
-            deliveryBooking!.PickupAddressLine1.Should().Be(meetingPoint.AddressLine1);
-            deliveryBooking.PickupAddressLine5.Should().Be(meetingPoint.AddressLine5);
-            deliveryBooking.PickupAddressLine7.Should().Be(meetingPoint.AddressLine7);
-        }
-    }
-
-    #endregion
-
     #region Post-Split Operations Tests (US Tenant Fix)
 
     [Fact]
@@ -1437,8 +1051,8 @@ public class SplitJobServiceTests : IDisposable
             deliveryJob.Should().NotBeNull();
 
             // Core split data is intact
-            pickupJob!.ParentId.Should().Be(1);
-            deliveryJob!.ParentId.Should().Be(1);
+            pickupJob.ParentId.Should().Be(1);
+            deliveryJob.ParentId.Should().Be(1);
             pickupJob.Sequence.Should().Be(1);
             deliveryJob.Sequence.Should().Be(2);
         }
@@ -1495,7 +1109,7 @@ public class SplitJobServiceTests : IDisposable
                 return new DespatchContext(_dbOptions);
             });
 
-        var service = new SplitJobService(failingContextFactoryMock.Object, _tenantInfoServiceMock.Object);
+        var service = new SplitJobService(failingContextFactoryMock.Object, _tenantInfoServiceMock.Object, _rateJobServiceMock.Object, _jobRepositoryMock.Object);
         var meetingPoint = CreateTestMeetingPointAddress();
 
         // Act - Should not throw; post-split failures are caught
@@ -1719,6 +1333,246 @@ public class SplitJobServiceTests : IDisposable
             pickupJob!.UcjbNumber.Should().Be("JOB-001C");
             deliveryJob!.UcjbNumber.Should().Be("JOB-001D");
         }
+    }
+
+    #endregion
+
+    #region ReRateSplitJobs Tests
+
+    [Fact]
+    public async Task SplitJobAsync_ReRate_UsTenant_DistributesParentAmountProportionally()
+    {
+        // Arrange
+        await using (var context = CreateContext())
+        {
+            var job = CreateTestJob(1, "JOB-001");
+            job.UcjbAmount = 100m;
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync();
+        }
+
+        _tenantInfoServiceMock.Setup(t => t.IsUsTenant()).Returns(true);
+        _jobRepositoryMock.Setup(r => r.GetJobDetailsForRatingAsync(It.IsAny<int>()))
+            .ReturnsAsync(new JobRatingDetailsDto());
+        _rateJobServiceMock.SetupSequence(r => r.GetJobRateUsAsync(It.IsAny<JobRatingDetailsDto>()))
+            .ReturnsAsync(60m)
+            .ReturnsAsync(40m);
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
+
+        // Assert
+        await using (var context = CreateContext())
+        {
+            var pickupJob = await context.TucJobs.FindAsync(pickupJobId);
+            var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId);
+
+            // 60/(60+40) * 100 = 60, last child = 100 - 60 = 40
+            pickupJob!.UcjbAmount.Should().Be(60m);
+            deliveryJob!.UcjbAmount.Should().Be(40m);
+            pickupJob.RatedManually.Should().BeFalse();
+            deliveryJob.RatedManually.Should().BeFalse();
+        }
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_ReRate_NzTenant_DistributesParentAmountProportionally()
+    {
+        // Arrange
+        await using (var context = CreateContext())
+        {
+            var job = CreateTestJob(1, "JOB-001");
+            job.UcjbAmount = 200m;
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync();
+        }
+
+        _tenantInfoServiceMock.Setup(t => t.IsUsTenant()).Returns(false);
+        _jobRepositoryMock.Setup(r => r.GetJobDetailsForRatingNzAsync(It.IsAny<int>(), false))
+            .ReturnsAsync(new JobRatingDetailsDtoNz());
+        _rateJobServiceMock.SetupSequence(r => r.GetJobRateNzAsync(It.IsAny<JobRatingDetailsDtoNz>()))
+            .ReturnsAsync(75m)
+            .ReturnsAsync(25m);
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
+
+        // Assert
+        await using (var context = CreateContext())
+        {
+            var pickupJob = await context.TucJobs.FindAsync(pickupJobId);
+            var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId);
+
+            // 75/(75+25) * 200 = 150, last child = 200 - 150 = 50
+            pickupJob!.UcjbAmount.Should().Be(150m);
+            deliveryJob!.UcjbAmount.Should().Be(50m);
+        }
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_ReRate_LastChildAbsorbsRoundingDifference()
+    {
+        // Arrange
+        await using (var context = CreateContext())
+        {
+            var job = CreateTestJob(1, "JOB-001");
+            job.UcjbAmount = 100m;
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync();
+        }
+
+        _tenantInfoServiceMock.Setup(t => t.IsUsTenant()).Returns(true);
+        _jobRepositoryMock.Setup(r => r.GetJobDetailsForRatingAsync(It.IsAny<int>()))
+            .ReturnsAsync(new JobRatingDetailsDto());
+        // Rates that cause rounding: 1/3 and 2/3
+        _rateJobServiceMock.SetupSequence(r => r.GetJobRateUsAsync(It.IsAny<JobRatingDetailsDto>()))
+            .ReturnsAsync(10m)
+            .ReturnsAsync(20m);
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
+
+        // Assert
+        await using (var context = CreateContext())
+        {
+            var pickupJob = await context.TucJobs.FindAsync(pickupJobId);
+            var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId);
+
+            // 10/30 * 100 = 33.33 (rounded), last child = 100 - 33.33 = 66.67
+            pickupJob!.UcjbAmount.Should().Be(33.33m);
+            deliveryJob!.UcjbAmount.Should().Be(66.67m);
+            (pickupJob.UcjbAmount!.Value + deliveryJob.UcjbAmount!.Value).Should().Be(100m);
+        }
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_ReRate_AllRatesZero_DistributesEvenly()
+    {
+        // Arrange
+        await using (var context = CreateContext())
+        {
+            var job = CreateTestJob(1, "JOB-001");
+            job.UcjbAmount = 100m;
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync();
+        }
+
+        _tenantInfoServiceMock.Setup(t => t.IsUsTenant()).Returns(true);
+        _jobRepositoryMock.Setup(r => r.GetJobDetailsForRatingAsync(It.IsAny<int>()))
+            .ReturnsAsync(new JobRatingDetailsDto());
+        _rateJobServiceMock.Setup(r => r.GetJobRateUsAsync(It.IsAny<JobRatingDetailsDto>()))
+            .ReturnsAsync(0m);
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
+
+        // Assert
+        await using (var context = CreateContext())
+        {
+            var pickupJob = await context.TucJobs.FindAsync(pickupJobId);
+            var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId);
+
+            // Even distribution: 100/2 = 50 each, last child absorbs remainder
+            pickupJob!.UcjbAmount.Should().Be(50m);
+            deliveryJob!.UcjbAmount.Should().Be(50m);
+        }
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_ReRate_ChildRatingFailure_UsesZeroForFailedChild()
+    {
+        // Arrange
+        await using (var context = CreateContext())
+        {
+            var job = CreateTestJob(1, "JOB-001");
+            job.UcjbAmount = 100m;
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync();
+        }
+
+        _tenantInfoServiceMock.Setup(t => t.IsUsTenant()).Returns(true);
+        _jobRepositoryMock.Setup(r => r.GetJobDetailsForRatingAsync(It.IsAny<int>()))
+            .ReturnsAsync(new JobRatingDetailsDto());
+        // First child rating throws, second succeeds
+        _rateJobServiceMock.SetupSequence(r => r.GetJobRateUsAsync(It.IsAny<JobRatingDetailsDto>()))
+            .ThrowsAsync(new InvalidOperationException("Rating service unavailable"))
+            .ReturnsAsync(50m);
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        var (pickupJobId, deliveryJobId) = await service.SplitJobAsync(1, "TestUser", meetingPoint);
+
+        // Assert
+        await using (var context = CreateContext())
+        {
+            var pickupJob = await context.TucJobs.FindAsync(pickupJobId);
+            var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId);
+
+            // First child rate = 0 (failed), second = 50. Total = 50.
+            // First: 0/50 * 100 = 0. Last child: 100 - 0 = 100.
+            pickupJob!.UcjbAmount.Should().Be(0m);
+            deliveryJob!.UcjbAmount.Should().Be(100m);
+        }
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_ReRate_ParentAmountZero_SkipsReRating()
+    {
+        // Arrange
+        await using (var context = CreateContext())
+        {
+            var job = CreateTestJob(1, "JOB-001");
+            job.UcjbAmount = 0m;
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        await service.SplitJobAsync(1, "TestUser", meetingPoint);
+
+        // Assert - rating services should never be called
+        _rateJobServiceMock.Verify(r => r.GetJobRateUsAsync(It.IsAny<JobRatingDetailsDto>()), Times.Never);
+        _rateJobServiceMock.Verify(r => r.GetJobRateNzAsync(It.IsAny<JobRatingDetailsDtoNz>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_ReRate_ParentAmountNull_SkipsReRating()
+    {
+        // Arrange
+        await using (var context = CreateContext())
+        {
+            var job = CreateTestJob(1, "JOB-001");
+            job.UcjbAmount = null;
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService();
+        var meetingPoint = CreateTestMeetingPointAddress();
+
+        // Act
+        await service.SplitJobAsync(1, "TestUser", meetingPoint);
+
+        // Assert - rating services should never be called
+        _rateJobServiceMock.Verify(r => r.GetJobRateUsAsync(It.IsAny<JobRatingDetailsDto>()), Times.Never);
+        _rateJobServiceMock.Verify(r => r.GetJobRateNzAsync(It.IsAny<JobRatingDetailsDtoNz>()), Times.Never);
     }
 
     #endregion

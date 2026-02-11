@@ -230,11 +230,6 @@ class JobContextMenuService implements angular.IServiceProvider {
     async voidJobAction($event: MouseEvent, job: IDispatchJob, onRefresh: () => void) {
         if (!job) return;
 
-        if(job.isArchived) {
-            this.toastrService.showWarningToast("Archived jobs cannot be voided.");
-            return;
-        }
-
         try {
             const result = await this.voidJobConfirmationDialogService.showVoidConfirmationDialog($event, job);
 

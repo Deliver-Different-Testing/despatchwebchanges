@@ -64,8 +64,8 @@ public class BaseJobRepositoryTests : IDisposable
         public new Task<bool> IsJobArchived(int jobId)
             => base.IsJobArchived(jobId);
 
-        public new Task<List<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived)
-            => base.GetRelatedJobsMultiSelectListAsync(jobId, isArchived);
+        public new Task<List<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived, bool isBulkJob = false)
+            => base.GetRelatedJobsMultiSelectListAsync(jobId, isArchived, isBulkJob);
 
         public new Task<int?> GetJobParentIdAsync(int jobId)
             => base.GetJobParentIdAsync(jobId);
@@ -158,6 +158,8 @@ public class BaseJobRepositoryTests : IDisposable
         result.Should().Contain(j => j.Id == parentId && j.Selected);
         result.Should().Contain(j => j.Id == childId1 && !j.Selected);
         result.Should().Contain(j => j.Id == childId2 && !j.Selected);
+        result.Should().OnlyContain(j => j.IsBulkJob == false);
+        result.Should().OnlyContain(j => j.IsArchived == false);
     }
 
     [Fact]
@@ -204,6 +206,7 @@ public class BaseJobRepositoryTests : IDisposable
 
         // Assert
         result.Should().HaveCount(2);
+        result.Should().OnlyContain(j => j.IsArchived == true);
     }
 
     [Fact]
@@ -223,6 +226,94 @@ public class BaseJobRepositoryTests : IDisposable
         result.Should().ContainSingle();
         result.First().Id.Should().Be(jobId);
         result.First().Selected.Should().BeTrue();
+    }
+
+    #endregion
+
+    #region GetRelatedJobsMultiSelectListAsync Bulk Job Tests
+
+    [Fact]
+    public async Task GetRelatedJobsMultiSelectListAsync_WithBulkParentAndChildren_ReturnsAllRelated()
+    {
+        // Arrange
+        const int parentId = 200;
+        const int childId1 = 201;
+        const int childId2 = 202;
+
+        _context.TblBulkJobs.AddRange(
+            CreateBulkJob(parentId, "BULK-PARENT"),
+            CreateBulkJobWithParent(childId1, "BULK-CHILD1", parentId),
+            CreateBulkJobWithParent(childId2, "BULK-CHILD2", parentId)
+        );
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetRelatedJobsMultiSelectListAsync(parentId, isArchived: false, isBulkJob: true);
+
+        // Assert
+        result.Should().HaveCount(3);
+        result.Should().Contain(j => j.Id == parentId && j.Selected);
+        result.Should().Contain(j => j.Id == childId1 && !j.Selected);
+        result.Should().Contain(j => j.Id == childId2 && !j.Selected);
+        result.Should().OnlyContain(j => j.IsBulkJob == true);
+    }
+
+    [Fact]
+    public async Task GetRelatedJobsMultiSelectListAsync_WithBulkChild_MarksChildAsSelected()
+    {
+        // Arrange
+        const int parentId = 200;
+        const int childId = 201;
+
+        _context.TblBulkJobs.AddRange(
+            CreateBulkJob(parentId, "BULK-PARENT"),
+            CreateBulkJobWithParent(childId, "BULK-CHILD", parentId)
+        );
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetRelatedJobsMultiSelectListAsync(childId, isArchived: false, isBulkJob: true);
+
+        // Assert
+        result.Should().HaveCount(2);
+        result.Should().Contain(j => j.Id == childId && j.Selected);
+        result.Should().Contain(j => j.Id == parentId && !j.Selected);
+    }
+
+    [Fact]
+    public async Task GetRelatedJobsMultiSelectListAsync_WithSingleBulkJob_ReturnsSingleItem()
+    {
+        // Arrange
+        const int jobId = 200;
+        _context.TblBulkJobs.Add(CreateBulkJob(jobId, "BULK-SINGLE"));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetRelatedJobsMultiSelectListAsync(jobId, isArchived: false, isBulkJob: true);
+
+        // Assert
+        result.Should().ContainSingle();
+        result.First().Id.Should().Be(jobId);
+        result.First().Selected.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task GetRelatedJobsMultiSelectListAsync_WithNonExistentBulkJob_ReturnsEmptyList()
+    {
+        // Arrange
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetRelatedJobsMultiSelectListAsync(999, isArchived: false, isBulkJob: true);
+
+        // Assert
+        result.Should().BeEmpty();
     }
 
     #endregion
@@ -395,6 +486,16 @@ public class BaseJobRepositoryTests : IDisposable
         UcjbId = id,
         UcjbNumber = jobNumber,
         ParentId = parentId
+    };
+
+    private static TblBulkJob CreateBulkJob(int id, string jobNumber) => new()
+    {
+        BulkJobId = id, JobNumber = jobNumber
+    };
+
+    private static TblBulkJob CreateBulkJobWithParent(int id, string jobNumber, int parentId) => new()
+    {
+        BulkJobId = id, JobNumber = jobNumber, BulkParentId = parentId
     };
 
     #endregion

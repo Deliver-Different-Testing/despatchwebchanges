@@ -84,6 +84,20 @@ describe('jobApi integration', () => {
 
             expect(result).toHaveLength(0);
         });
+        it('sends isBulkJob parameter for bulk jobs', async () => {
+            let capturedUrl = '';
+
+            server.use(
+                http.get('*/job/GetRelatedJobsMultiSelectList', ({ request }) => {
+                    capturedUrl = request.url;
+                    return HttpResponse.json(mockRelatedJobs);
+                })
+            );
+
+            await jobApi.getRelatedJobsMultiSelectList(789, false, true);
+
+            expect(capturedUrl).toContain('isBulkJob=true');
+        });
     });
 
     describe('voidJob', () => {
