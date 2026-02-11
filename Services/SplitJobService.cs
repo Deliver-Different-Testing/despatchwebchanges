@@ -12,8 +12,8 @@ using Serilog;
 namespace DespatchWeb.Services;
 
 /// <summary>
-/// Service for splitting jobs into pickup and delivery child jobs.
-/// Replaces the stored procedure DES_stpJob_SplitJob with C# implementation.
+/// Service for splitting a job into a pickup leg (the existing job, updated in-place)
+/// and a delivery child job (created via the CreateMinimalTucJob stored procedure).
 /// </summary>
 public class SplitJobService(
     IDbContextFactory<DespatchContext> contextFactory,
@@ -25,7 +25,6 @@ public class SplitJobService(
     private const string ChildSystemName = "SplitChild";
     private const int HandOffLeaveType = 23;
     private const int PrivateResidenceDeliverTo = 1;
-    private const int AcknowledgedStatus = 12;
 
     /// <inheritdoc />
     public async Task<(int PickupJobId, int DeliveryJobId)> SplitJobAsync(
@@ -34,11 +33,12 @@ public class SplitJobService(
         AddressViewModel meetingPointAddress)
     {
         var currentTenantTime = tenantInfoService.GetCurrentTenantTime();
+        var staffId = tenantInfoService.GetStaffId();
 
         await using var context = await contextFactory.CreateDbContextAsync();
         await using var transaction = await context.Database.BeginTransactionAsync();
 
-        (int PickupJobId, int DeliveryJobId) result;
+        int deliveryJobId;
 
         try
         {
@@ -47,9 +47,6 @@ public class SplitJobService(
 
             // Get relationship type IDs
             var (parentRelTypeId, childRelTypeId) = await GetRelationshipTypeIdsAsync(context);
-
-            // Get parent job courier ID from settings
-            var parentJobCourierId = await GetParentJobCourierIdAsync(context);
 
             // Load the job with related data
             var job = await context.TucJobs
@@ -67,60 +64,104 @@ public class SplitJobService(
             // Validate and get a valid speed ID
             var validSpeedId = await GetValidSpeedIdAsync(context, job.UcjbSpeed);
 
-            // Generate child job numbers using letter suffixes
-            var (pickupJobNumber, deliveryJobNumber) = await GenerateChildJobNumbersAsync(context, job);
-
-            // Capture original courier ID before modifying parent
-            var originalCourierId = job.UcjbCourierId;
+            // Generate delivery child job number (single suffix)
+            var deliveryJobNumber = await GenerateChildJobNumberAsync(context, job);
 
             // Determine root parent ID - preserve existing if job is already a child
             var rootParentId = job.RootParentId ?? job.UcjbId;
 
-            // Update parent job (only set parent IDs if not already set)
+            // Capture original destination data before modifying the parent
+            var originalDeliveryAddress = new AddressViewModel(
+                job.DeliveryAddressLine1, job.DeliveryAddressLine2,
+                job.DeliveryAddressLine3, job.DeliveryAddressLine4,
+                job.DeliveryAddressLine5, job.DeliveryAddressLine6,
+                job.DeliveryAddressLine7, job.DeliveryAddressLine8)
+            {
+                Latitude = job.DeliveryLatitude,
+                Longitude = job.DeliveryLongitude
+            };
+            var originalDeliverToContact = job.DeliverToContact;
+            var originalDeliverToPhone = job.DeliverToPhone;
+
+            // --- Update parent job to become pickup leg ---
             job.JobRelationshipTypeId = parentRelTypeId;
-            job.UcjbCourierId = parentJobCourierId;
+            // Keep courier — parent IS the pickup leg
             if (!job.ParentId.HasValue || job.ParentId == job.UcjbId) job.ParentId = jobId;
             job.RootParentId ??= jobId;
             job.InformationParentId ??= job.RootParentId;
 
-            // Create pickup job (leg 1: From → Meeting Point)
-            var pickupJob = CreatePickupJob(job, pickupJobNumber, validSpeedId, childRelTypeId,
-                meetingPointAddress);
-            pickupJob.UcjbCourierId = originalCourierId; // Pickup job keeps original courier
-            context.TucJobs.Add(pickupJob);
-
-            // Create delivery job (leg 2: Meeting Point → Final Destination)
-            var deliveryJob = CreateDeliveryJob(job, deliveryJobNumber, validSpeedId, childRelTypeId,
-                meetingPointAddress);
-            context.TucJobs.Add(deliveryJob);
+            // Change destination to meeting point
+            job.UcjbTo = null;
+            job.UcjbToAddr = meetingPointAddress.FullAddress;
+            job.DeliveryAddressLine1 = meetingPointAddress.AddressLine1;
+            job.DeliveryAddressLine2 = meetingPointAddress.AddressLine2;
+            job.DeliveryAddressLine3 = meetingPointAddress.AddressLine3;
+            job.DeliveryAddressLine4 = meetingPointAddress.AddressLine4;
+            job.DeliveryAddressLine5 = meetingPointAddress.AddressLine5;
+            job.DeliveryAddressLine6 = meetingPointAddress.AddressLine6;
+            job.DeliveryAddressLine7 = meetingPointAddress.AddressLine7;
+            job.DeliveryAddressLine8 = meetingPointAddress.AddressLine8;
+            job.DeliveryLatitude = meetingPointAddress.Latitude;
+            job.DeliveryLongitude = meetingPointAddress.Longitude;
+            job.DeliverToLeaveId = HandOffLeaveType;
+            job.DeliverToPrivateBusiness = PrivateResidenceDeliverTo;
+            job.DeliverToContact = null;
+            job.DeliverToPhone = null;
 
             await context.SaveChangesAsync();
 
-            // Update child job relationships after we have their IDs
-            // Child jobs point to the job being split as their ParentId
-            // All children share the same RootParentId
-            pickupJob.ParentId = jobId;
-            pickupJob.RootParentId = rootParentId;
-            pickupJob.InformationParentId = rootParentId;
-            pickupJob.Sequence = 1;
+            // --- Create delivery child via stored procedure ---
+            var speedName = job.UcjbSpeedNavigation?.UcjtName;
+
+            var deliveryInput = new CreateMinimalTucJobInputModel
+            {
+                JobNumber = deliveryJobNumber,
+                FromAddress = meetingPointAddress,
+                ToAddress = originalDeliveryAddress,
+                BookedBy = userName,
+                ClientId = job.UcjbClientId ?? 0,
+                SpeedId = validSpeedId ?? 0,
+                Speed = speedName,
+                Amount = job.UcjbAmount ?? 0m,
+                Reference = job.UcjbClientRefa,
+                ReferenceB = job.UcjbClientRefb,
+                TenantCurrentTime = currentTenantTime,
+                LoggedInContactId = staffId,
+                ToContactName = originalDeliverToContact,
+                ToPhoneNumber = originalDeliverToPhone,
+                OurRef = job.UcjbOurRef,
+                Hold = false,
+                PickUpLatitude = meetingPointAddress.Latitude,
+                PickUpLongitude = meetingPointAddress.Longitude,
+                DeliveryLatitude = originalDeliveryAddress.Latitude,
+                DeliveryLongitude = originalDeliveryAddress.Longitude
+            };
+
+            var spResult = await jobRepository.CreateMinimalTucJobAsync(deliveryInput);
+            if (!spResult.Success || !spResult.JobId.HasValue)
+                throw new InvalidOperationException(
+                    $"Failed to create delivery child job via stored procedure: {spResult.Message}");
+
+            deliveryJobId = spResult.JobId.Value;
+
+            // Load the delivery job created by the SP and set relationships
+            var deliveryJob = await context.TucJobs.FindAsync(deliveryJobId)
+                              ?? throw new InvalidOperationException(
+                                  $"Delivery job {deliveryJobId} not found after stored procedure creation");
 
             deliveryJob.ParentId = jobId;
             deliveryJob.RootParentId = rootParentId;
             deliveryJob.InformationParentId = rootParentId;
-            deliveryJob.Sequence = 2;
-
-            // Set status for pickup job based on whether courier is assigned
-            pickupJob.UcjbStatus = pickupJob.UcjbCourierId.HasValue ? AcknowledgedStatus : job.UcjbStatus;
-
-            pickupJob.UcjbVan = job.UcjbVan;
-            pickupJob.UcjbAttention = job.UcjbAttention;
+            deliveryJob.Sequence = 1;
+            deliveryJob.JobRelationshipTypeId = childRelTypeId;
+            deliveryJob.UcjbCourierId = null;
+            deliveryJob.DisplayInDespatch = false;
             deliveryJob.UcjbVan = job.UcjbVan;
 
             await context.SaveChangesAsync();
 
-            // Create notes for the split jobs
-            var staffId = tenantInfoService.GetStaffId();
-            await CreateSplitJobNotesAsync(context, currentTenantTime, pickupJob.UcjbId, deliveryJob.UcjbId,
+            // Create note for the delivery child
+            await CreateSplitJobNoteAsync(context, currentTenantTime, deliveryJobId,
                 job.UcjbNotes, staffId);
 
             // Update display in dispatch
@@ -128,10 +169,9 @@ public class SplitJobService(
 
             await transaction.CommitAsync();
 
-            Log.Information("Successfully split job {JobId} into pickup {PickupId} and delivery {DeliveryId}",
-                jobId, pickupJob.UcjbId, deliveryJob.UcjbId);
-
-            result = (pickupJob.UcjbId, deliveryJob.UcjbId);
+            Log.Information(
+                "Successfully split job {JobId} — parent is pickup, delivery child {DeliveryId}",
+                jobId, deliveryJobId);
         }
         catch (Exception ex)
         {
@@ -142,7 +182,7 @@ public class SplitJobService(
 
         await PerformPostSplitOperationsAsync(jobId, userName);
 
-        return result;
+        return (jobId, deliveryJobId);
     }
 
     private static async Task<(int ParentRelTypeId, int ChildRelTypeId)> GetRelationshipTypeIdsAsync(
@@ -164,13 +204,6 @@ public class SplitJobService(
 
         return (parentRelType.JobRelationshipTypeId, childRelType.JobRelationshipTypeId);
     }
-
-    private static async Task<int?> GetParentJobCourierIdAsync(DespatchContext context) =>
-        await context.TblSettings
-            .AsNoTracking()
-            .Where(s => s.SettingId == 1)
-            .Select(s => s.ParentJobCourierId)
-            .FirstOrDefaultAsync();
 
     private static async Task<int?> GetValidSpeedIdAsync(DespatchContext context, int? speedId)
     {
@@ -217,9 +250,9 @@ public class SplitJobService(
     }
 
     /// <summary>
-    /// Generates child job numbers using letter suffixes based on total split count from root job.
+    /// Generates a single child job number using a letter suffix based on total split count from root job.
     /// </summary>
-    private static async Task<(string PickupJobNumber, string DeliveryJobNumber)> GenerateChildJobNumbersAsync(
+    private static async Task<string> GenerateChildJobNumberAsync(
         DespatchContext context,
         TucJob job)
     {
@@ -242,174 +275,11 @@ public class SplitJobService(
             .AsNoTracking()
             .CountAsync(j => j.RootParentId == rootParentId && j.UcjbId != rootParentId);
 
-        // Generate letter suffixes for the two new jobs
-        var pickupSuffix = GetLetterSuffix(existingChildCount);
-        var deliverySuffix = GetLetterSuffix(existingChildCount + 1);
+        // Generate single letter suffix for the delivery child
+        var suffix = GetLetterSuffix(existingChildCount);
 
-        return ($"{mainJobNumber}{pickupSuffix}", $"{mainJobNumber}{deliverySuffix}");
+        return $"{mainJobNumber}{suffix}";
     }
-
-    private static TucJob CreatePickupJob(
-        TucJob parentJob,
-        string jobNumber,
-        int? speedId,
-        int childRelTypeId,
-        AddressViewModel meetingPointAddress) =>
-        new()
-        {
-            UcjbNumber = jobNumber,
-            UcjbDate = parentJob.UcjbDate,
-            UcjbTime = parentJob.UcjbTime,
-            UcjbType = parentJob.UcjbType,
-            UcjbClientId = parentJob.UcjbClientId,
-            UcjbContact = parentJob.UcjbContact,
-            UcjbChargeType = parentJob.UcjbChargeType,
-            UcjbAmount = parentJob.UcjbAmount,
-            UcjbSpeed = speedId,
-            UcjbFrom = parentJob.UcjbFrom,
-            UcjbFromAddr = parentJob.UcjbFromAddr,
-            UcjbTo = null,
-            UcjbToAddr = meetingPointAddress.FullAddress,
-            UcjbSize = parentJob.UcjbSize,
-            UcjbQty = parentJob.UcjbQty,
-            UcjbCbd = parentJob.UcjbCbd,
-            UcjbWeight = parentJob.UcjbWeight,
-            UcjbStatus = parentJob.UcjbStatus,
-            UcjbCourierId = parentJob.UcjbCourierId,
-            UcjbClientRefa = parentJob.UcjbClientRefa,
-            UcjbClientRefb = parentJob.UcjbClientRefb,
-            UcjbOurRef = parentJob.UcjbOurRef,
-            UcjbOpId = parentJob.UcjbOpId,
-            UcjbReturn = parentJob.UcjbReturn,
-            UcjbPickUpFrom = parentJob.UcjbPickUpFrom,
-            ClientNotes = parentJob.ClientNotes,
-            UcjbContactPhone = parentJob.UcjbContactPhone,
-            ContactId = parentJob.ContactId,
-            DeliverToPrivateBusiness = PrivateResidenceDeliverTo,
-            DeliverToLeaveId = HandOffLeaveType,
-            ProofOfDelivery = parentJob.ProofOfDelivery,
-            ProofOfDeliveryEmail = parentJob.ProofOfDeliveryEmail,
-            ProofOfDeliveryMobile = parentJob.ProofOfDeliveryMobile,
-            AcceptedJobTypeId = parentJob.AcceptedJobTypeId,
-            DesiredJobTypeId = parentJob.DesiredJobTypeId,
-            Direct = parentJob.Direct,
-            JobRelationshipTypeId = childRelTypeId,
-            PickupFromContact = parentJob.PickupFromContact,
-            PickupFromPhone = parentJob.PickupFromPhone,
-            DeliverToContact = null,
-            DeliverToPhone = null,
-            DisplayInDespatch = false,
-            ShopId = parentJob.ShopId,
-            ShopRef1 = parentJob.ShopRef1,
-            ShopRef2 = parentJob.ShopRef2,
-            ShopRef3 = parentJob.ShopRef3,
-            ShopRef4 = parentJob.ShopRef4,
-            ShopRef5 = parentJob.ShopRef5,
-            CourierPercentageOverride = parentJob.CourierPercentageOverride,
-            // Copy pickup address fields from parent
-            PickupAddressLine1 = parentJob.PickupAddressLine1,
-            PickupAddressLine2 = parentJob.PickupAddressLine2,
-            PickupAddressLine3 = parentJob.PickupAddressLine3,
-            PickupAddressLine4 = parentJob.PickupAddressLine4,
-            PickupAddressLine5 = parentJob.PickupAddressLine5,
-            PickupAddressLine6 = parentJob.PickupAddressLine6,
-            PickupAddressLine7 = parentJob.PickupAddressLine7,
-            PickupAddressLine8 = parentJob.PickupAddressLine8,
-            PickUpLatitude = parentJob.PickUpLatitude,
-            PickUpLongitude = parentJob.PickUpLongitude,
-            // Delivery address is the meeting point
-            DeliveryAddressLine1 = meetingPointAddress.AddressLine1,
-            DeliveryAddressLine2 = meetingPointAddress.AddressLine2,
-            DeliveryAddressLine3 = meetingPointAddress.AddressLine3,
-            DeliveryAddressLine4 = meetingPointAddress.AddressLine4,
-            DeliveryAddressLine5 = meetingPointAddress.AddressLine5,
-            DeliveryAddressLine6 = meetingPointAddress.AddressLine6,
-            DeliveryAddressLine7 = meetingPointAddress.AddressLine7,
-            DeliveryAddressLine8 = meetingPointAddress.AddressLine8,
-            DeliveryLatitude = meetingPointAddress.Latitude,
-            DeliveryLongitude = meetingPointAddress.Longitude
-        };
-
-    private static TucJob CreateDeliveryJob(
-        TucJob parentJob,
-        string jobNumber,
-        int? speedId,
-        int childRelTypeId,
-        AddressViewModel meetingPointAddress) =>
-        new()
-        {
-            UcjbNumber = jobNumber,
-            UcjbDate = parentJob.UcjbDate,
-            UcjbTime = parentJob.UcjbTime,
-            UcjbType = parentJob.UcjbType,
-            UcjbClientId = parentJob.UcjbClientId,
-            UcjbContact = parentJob.UcjbContact,
-            UcjbChargeType = parentJob.UcjbChargeType,
-            UcjbAmount = parentJob.UcjbAmount,
-            UcjbSpeed = speedId,
-            UcjbFrom = null,
-            UcjbFromAddr = meetingPointAddress.FullAddress,
-            UcjbTo = parentJob.UcjbTo,
-            UcjbToAddr = parentJob.UcjbToAddr,
-            UcjbSize = parentJob.UcjbSize,
-            UcjbQty = parentJob.UcjbQty,
-            UcjbCbd = parentJob.UcjbCbd,
-            UcjbWeight = parentJob.UcjbWeight,
-            UcjbStatus = parentJob.UcjbStatus,
-            UcjbCourierId = null,
-            UcjbClientRefa = parentJob.UcjbClientRefa,
-            UcjbClientRefb = parentJob.UcjbClientRefb,
-            UcjbOurRef = parentJob.UcjbOurRef,
-            UcjbOpId = parentJob.UcjbOpId,
-            UcjbReturn = parentJob.UcjbReturn,
-            UcjbPickUpFrom = parentJob.UcjbPickUpFrom,
-            ClientNotes = parentJob.ClientNotes,
-            UcjbContactPhone = parentJob.UcjbContactPhone,
-            ContactId = parentJob.ContactId,
-            DeliverToPrivateBusiness = parentJob.DeliverToPrivateBusiness,
-            DeliverToLeaveId = parentJob.DeliverToLeaveId,
-            ProofOfDelivery = parentJob.ProofOfDelivery,
-            ProofOfDeliveryEmail = parentJob.ProofOfDeliveryEmail,
-            ProofOfDeliveryMobile = parentJob.ProofOfDeliveryMobile,
-            AcceptedJobTypeId = parentJob.AcceptedJobTypeId,
-            DesiredJobTypeId = parentJob.DesiredJobTypeId,
-            Direct = parentJob.Direct,
-            JobRelationshipTypeId = childRelTypeId,
-            PickupFromContact = null,
-            PickupFromPhone = null,
-            DeliverToContact = parentJob.DeliverToContact,
-            DeliverToPhone = parentJob.DeliverToPhone,
-            DisplayInDespatch = false,
-            ShopId = parentJob.ShopId,
-            ShopRef1 = parentJob.ShopRef1,
-            ShopRef2 = parentJob.ShopRef2,
-            ShopRef3 = parentJob.ShopRef3,
-            ShopRef4 = parentJob.ShopRef4,
-            ShopRef5 = parentJob.ShopRef5,
-            CourierPercentageOverride = parentJob.CourierPercentageOverride,
-            // Pickup address is the meeting point
-            PickupAddressLine1 = meetingPointAddress.AddressLine1,
-            PickupAddressLine2 = meetingPointAddress.AddressLine2,
-            PickupAddressLine3 = meetingPointAddress.AddressLine3,
-            PickupAddressLine4 = meetingPointAddress.AddressLine4,
-            PickupAddressLine5 = meetingPointAddress.AddressLine5,
-            PickupAddressLine6 = meetingPointAddress.AddressLine6,
-            PickupAddressLine7 = meetingPointAddress.AddressLine7,
-            PickupAddressLine8 = meetingPointAddress.AddressLine8,
-            PickUpLatitude = meetingPointAddress.Latitude,
-            PickUpLongitude = meetingPointAddress.Longitude,
-            // Copy delivery address fields from parent
-            DeliveryAddressLine1 = parentJob.DeliveryAddressLine1,
-            DeliveryAddressLine2 = parentJob.DeliveryAddressLine2,
-            DeliveryAddressLine3 = parentJob.DeliveryAddressLine3,
-            DeliveryAddressLine4 = parentJob.DeliveryAddressLine4,
-            DeliveryAddressLine5 = parentJob.DeliveryAddressLine5,
-            DeliveryAddressLine6 = parentJob.DeliveryAddressLine6,
-            DeliveryAddressLine7 = parentJob.DeliveryAddressLine7,
-            DeliveryAddressLine8 = parentJob.DeliveryAddressLine8,
-            DeliveryLatitude = parentJob.DeliveryLatitude,
-            DeliveryLongitude = parentJob.DeliveryLongitude
-        };
 
     private async Task ReRateSplitJobsAsync(DespatchContext context, int parentJobId)
     {
@@ -437,85 +307,85 @@ public class SplitJobService(
 
             var rootParentId = parentJob.RootParentId ?? parentJobId;
 
-            // Get non-void child jobs under RootParentID (excluding root parent), ordered by Sequence
-            var childJobIds = await context.TucJobs
+            // Get all non-void jobs under RootParentID (including root parent), ordered by Sequence
+            var jobIdsToRate = await context.TucJobs
                 .AsNoTracking()
-                .Where(j => j.RootParentId == rootParentId && j.UcjbId != rootParentId && !j.UcjbVoid)
+                .Where(j => j.RootParentId == rootParentId && !j.UcjbVoid)
                 .OrderBy(j => j.Sequence)
                 .Select(j => j.UcjbId)
                 .ToListAsync();
 
-            if (childJobIds.Count == 0)
+            if (jobIdsToRate.Count == 0)
             {
-                Log.Warning("No non-void child jobs found for parent {ParentJobId}. Skipping re-rate.", parentJobId);
+                Log.Warning("No non-void jobs found for parent {ParentJobId}. Skipping re-rate.", parentJobId);
                 return;
             }
 
-            // Rate each child job independently
+            // Rate each job independently
             var isUs = tenantInfoService.IsUsTenant();
-            var childRates = new List<(int JobId, decimal Rate)>();
+            var jobRates = new List<(int JobId, decimal Rate)>();
 
-            foreach (var childJobId in childJobIds)
+            foreach (var id in jobIdsToRate)
             {
                 var rate = 0m;
                 try
                 {
                     if (isUs)
                     {
-                        var details = await jobRepository.GetJobDetailsForRatingAsync(childJobId);
+                        var details = await jobRepository.GetJobDetailsForRatingAsync(id);
                         rate = await rateJobService.GetJobRateUsAsync(details);
                     }
                     else
                     {
-                        var details = await jobRepository.GetJobDetailsForRatingNzAsync(childJobId, false);
+                        var details = await jobRepository.GetJobDetailsForRatingNzAsync(id, false);
                         rate = await rateJobService.GetJobRateNzAsync(details);
                     }
                 }
                 catch (Exception ex)
                 {
-                    Log.Warning(ex, "Failed to rate child job {ChildJobId}. Using rate 0.", childJobId);
+                    Log.Warning(ex, "Failed to rate job {JobId}. Using rate 0.", id);
                 }
 
-                childRates.Add((childJobId, rate));
+                jobRates.Add((id, rate));
             }
 
-            // Sum all child rates
-            var totalChildRate = childRates.Sum(c => c.Rate);
+            // Sum all rates
+            var totalRate = jobRates.Sum(c => c.Rate);
 
             // Distribute parent amount proportionally based on calculated rates
             var runningTotal = 0m;
-            for (var i = 0; i < childRates.Count; i++)
+            for (var i = 0; i < jobRates.Count; i++)
             {
-                decimal childAmount;
-                if (i == childRates.Count - 1)
+                decimal jobAmount;
+                if (i == jobRates.Count - 1)
                 {
-                    // Last child absorbs rounding difference to ensure exact balance
-                    childAmount = parentAmount - runningTotal;
+                    // Last job absorbs rounding difference to ensure exact balance
+                    jobAmount = parentAmount - runningTotal;
                 }
-                else if (totalChildRate == 0m)
+                else if (totalRate == 0m)
                 {
                     // All rates are 0: distribute evenly
-                    childAmount = Math.Round(parentAmount / childRates.Count, 2);
+                    jobAmount = Math.Round(parentAmount / jobRates.Count, 2);
                 }
                 else
                 {
-                    var percentage = childRates[i].Rate / totalChildRate;
-                    childAmount = Math.Round(percentage * parentAmount, 2);
+                    var percentage = jobRates[i].Rate / totalRate;
+                    jobAmount = Math.Round(percentage * parentAmount, 2);
                 }
 
-                runningTotal += childAmount;
+                runningTotal += jobAmount;
 
-                var jobId = childRates[i].JobId;
+                var id = jobRates[i].JobId;
                 await context.TucJobs
-                    .Where(j => j.UcjbId == jobId)
+                    .Where(j => j.UcjbId == id)
                     .ExecuteUpdateAsync(j => j
-                        .SetProperty(x => x.UcjbAmount, childAmount)
+                        .SetProperty(x => x.UcjbAmount, jobAmount)
                         .SetProperty(x => x.RatedManually, false));
             }
 
             Log.Information(
                 "Successfully re-rated {Count} split jobs for parent {ParentJobId}. Parent amount: {ParentAmount}",
-                childRates.Count, parentJobId, parentAmount);
+                jobRates.Count, parentJobId, parentAmount);
         }
         catch (Exception ex)
         {
@@ -564,35 +434,25 @@ public class SplitJobService(
         }
     }
 
-    private static async Task CreateSplitJobNotesAsync(
+    private static async Task CreateSplitJobNoteAsync(
         DespatchContext context,
         DateTime currentTenantTime,
-        int pickupJobId,
         int deliveryJobId,
         string parentNotes,
         int? staffId)
     {
         var parentNotesText = string.IsNullOrWhiteSpace(parentNotes) ? string.Empty : $"  {parentNotes}";
 
-        var pickupNote = new TucNote
-        {
-            JobId = pickupJobId,
-            NoteTypeId = (int)NoteType.InternalNote,
-            NoteText = $"SPLIT Part 1 of 2{parentNotesText}",
-            CreatedBy = staffId,
-            CreatedDate = currentTenantTime
-        };
-
         var deliveryNote = new TucNote
         {
             JobId = deliveryJobId,
             NoteTypeId = (int)NoteType.InternalNote,
-            NoteText = $"SPLIT Part 2 of 2{parentNotesText}",
+            NoteText = $"SPLIT delivery leg.{parentNotesText}",
             CreatedBy = staffId,
             CreatedDate = currentTenantTime
         };
 
-        await context.TucNotes.AddRangeAsync(pickupNote, deliveryNote);
+        await context.TucNotes.AddAsync(deliveryNote);
         await context.SaveChangesAsync();
     }
 }

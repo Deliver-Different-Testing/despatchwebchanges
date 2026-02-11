@@ -423,7 +423,7 @@ public class FlightStatsService(
             // Requested departure is in the future, use it
             effectiveStartTime = departureDateTime.Value.DateTime;
         else
-            // No departure specified or it's in the past, use current time
+            // No departure specified, or it's in the past, use current time
             effectiveStartTime = currentTenantTime;
 
         return effectiveStartTime.AddMinutes(flightBuffer);

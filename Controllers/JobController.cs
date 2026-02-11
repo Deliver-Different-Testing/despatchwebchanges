@@ -1859,7 +1859,7 @@ public class JobController(
     {
         try
         {
-            // Permission check: user must have modify prices permission
+            // Permission check: user must have modified prices permission
             if (!await pricingPermissionService.CanModifyPricesAsync())
                 return StatusCode(StatusCodes.Status403Forbidden, "You do not have permission to modify job prices");
 
@@ -1915,7 +1915,7 @@ public class JobController(
     {
         try
         {
-            // Permission check: user must have recalculate permission
+            // Permission check: user must have recalculated permission
             if (!await pricingPermissionService.CanUsePricingModeAsync("recalculate"))
                 return StatusCode(StatusCodes.Status403Forbidden, "You do not have permission to recalculate job prices");
 
