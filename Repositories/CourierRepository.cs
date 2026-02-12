@@ -589,12 +589,14 @@ public class CourierRepository(
             Log.Information("Wave 2 complete: {PolygonCount} polygon mappings, {JobCount} jobs",
                 allValidCourierGpsIds.Count, allJobs.Count);
 
-            // Process polygon mappings
+            // Process polygon mappings - use appropriate ID based on tenant
+            var isUsTenant = infoService.IsUsTenant();
+
             var polygonChannelsByClearListArea = allValidCourierGpsIds
                 .GroupBy(x => x.ClearListAreaId)
                 .ToDictionary(
                     g => g.Key,
-                    g => g.Select(x => new { x.PolygonId, x.ChannelId }).ToList()
+                    g => g.Select(x => new { MatchingId = isUsTenant ? x.ZipPolygonId : x.PolygonId, x.ChannelId }).ToList()
                 );
 
             // Apply display orders to courier data
@@ -608,8 +610,8 @@ public class CourierRepository(
 
             // Group couriers by GPS polygon ID for area filtering
             var couriersByPolygon = allCourierData
-                .Where(c => c.PolygonId.HasValue)
-                .GroupBy(c => c.PolygonId.Value)
+                .Where(c => isUsTenant ? c.ZipPolygonId.HasValue : c.PolygonId.HasValue)
+                .GroupBy(c => isUsTenant ? c.ZipPolygonId!.Value : c.PolygonId!.Value)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
             // Process job counts
@@ -627,44 +629,77 @@ public class CourierRepository(
             // ===================================================================
             // WAVE 3: Queries depending on Wave 2 results - PARALLEL
             // ===================================================================
-            var allSuburbIds = allJobs
-                .Where(j => j.ToSuburbId.HasValue)
-                .Select(j => j.ToSuburbId.Value)
-                .Distinct()
-                .ToHashSet();
-
-            var suburbMappingsTask = GetSuburbMappingsAsync(allSuburbIds);
             var areaRemainingTask = GetTotalRemainingForAllAreasAsync(areaFilterDict);
 
-            await Task.WhenAll(suburbMappingsTask, areaRemainingTask);
+            Dictionary<int, List<SuburbClearListAreaDto>> suburbLookup = [];
+            Dictionary<(decimal, decimal), List<SuburbClearListAreaDto>> coordinateLookup = [];
 
-            var suburbLookup = suburbMappingsTask.Result;
+            if (isUsTenant)
+            {
+                var allCoordinates = allJobs
+                    .Where(j => j.DeliveryLatitude.HasValue && j.DeliveryLongitude.HasValue)
+                    .Select(j => (j.DeliveryLatitude!.Value, j.DeliveryLongitude!.Value))
+                    .ToHashSet();
+
+                var coordinateMappingsTask = GetCoordinateMappingsAsync(allCoordinates);
+                await Task.WhenAll(coordinateMappingsTask, areaRemainingTask);
+                coordinateLookup = coordinateMappingsTask.Result;
+
+                Log.Information("Wave 3 complete (US): {CoordinateCount} coordinate mappings, {AreaCount} area remaining counts",
+                    coordinateLookup.Count, areaRemainingTask.Result.Count);
+            }
+            else
+            {
+                var allSuburbIds = allJobs
+                    .Where(j => j.ToSuburbId.HasValue)
+                    .Select(j => j.ToSuburbId.Value)
+                    .Distinct()
+                    .ToHashSet();
+
+                var suburbMappingsTask = GetSuburbMappingsAsync(allSuburbIds);
+                await Task.WhenAll(suburbMappingsTask, areaRemainingTask);
+                suburbLookup = suburbMappingsTask.Result;
+
+                Log.Information("Wave 3 complete (NZ): {SuburbCount} suburb mappings, {AreaCount} area remaining counts",
+                    suburbLookup.Count, areaRemainingTask.Result.Count);
+            }
+
             var areaRemainingCounts = areaRemainingTask.Result;
-
-            Log.Information("Wave 3 complete: {SuburbCount} suburb mappings, {AreaCount} area remaining counts",
-                suburbLookup.Count, areaRemainingCounts.Count);
 
             // ===================================================================
             // IN-MEMORY PROCESSING: Build clear lists for each area
             // ===================================================================
-            var columnDefinitions = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            Dictionary<string, int> columnDefinitions;
+            if (isUsTenant)
             {
-                { "Central", 1 }, { "Other", 1 },
-                { "West Mid", 2 }, { "Shallow West", 2 }, { "Deep West", 2 },
-                { "East Mid", 3 }, { "Shallow Shore", 3 }, { "Deep Shore", 3 },
-                { "Mangere", 4 }, { "Deep South", 4 }, { "Deep East", 4 }
-            };
-
-            var areaDisplayOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                // US: sort by database AreaOrder, distribute round-robin across 4 columns
+                clearLists = clearLists.OrderBy(cl => cl.AreaOrder).ToList();
+                columnDefinitions = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                for (var i = 0; i < clearLists.Count; i++)
+                    columnDefinitions[clearLists[i].AreaName] = (i % 4) + 1;
+            }
+            else
             {
-                { "Central", 1 }, { "Other", 2 }, { "West Mid", 3 }, { "Shallow West", 4 },
-                { "Deep West", 5 }, { "East Mid", 6 }, { "Shallow Shore", 7 }, { "Deep Shore", 8 },
-                { "Mangere", 9 }, { "Deep South", 10 }, { "Deep East", 11 }
-            };
+                // NZ: hardcoded column definitions and display order
+                columnDefinitions = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                {
+                    { "Central", 1 }, { "Other", 1 },
+                    { "West Mid", 2 }, { "Shallow West", 2 }, { "Deep West", 2 },
+                    { "East Mid", 3 }, { "Shallow Shore", 3 }, { "Deep Shore", 3 },
+                    { "Mangere", 4 }, { "Deep South", 4 }, { "Deep East", 4 }
+                };
 
-            clearLists = clearLists
-                .OrderBy(cl => areaDisplayOrder.TryGetValue(cl.AreaName, out var order) ? order : 999)
-                .ToList();
+                var areaDisplayOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                {
+                    { "Central", 1 }, { "Other", 2 }, { "West Mid", 3 }, { "Shallow West", 4 },
+                    { "Deep West", 5 }, { "East Mid", 6 }, { "Shallow Shore", 7 }, { "Deep Shore", 8 },
+                    { "Mangere", 9 }, { "Deep South", 10 }, { "Deep East", 11 }
+                };
+
+                clearLists = clearLists
+                    .OrderBy(cl => areaDisplayOrder.TryGetValue(cl.AreaName, out var order) ? order : 999)
+                    .ToList();
+            }
 
             var areas = new List<AreaClearList>();
 
@@ -678,8 +713,8 @@ public class CourierRepository(
                     // For each polygon-channel pair in this clear list area
                     foreach (var polygonChannel in validPolygonChannels)
                     {
-                        if (polygonChannel.PolygonId == null ||
-                            !couriersByPolygon.TryGetValue(polygonChannel.PolygonId.Value, out var couriersWithPolygon))
+                        if (polygonChannel.MatchingId == null ||
+                            !couriersByPolygon.TryGetValue(polygonChannel.MatchingId.Value, out var couriersWithPolygon))
                             continue;
 
                         // Filter to only couriers whose channel matches the area's channel
@@ -702,6 +737,8 @@ public class CourierRepository(
                     areaCouriers,
                     jobsByCourier,
                     suburbLookup,
+                    coordinateLookup,
+                    isUsTenant,
                     currentDate
                 );
 
@@ -790,6 +827,8 @@ public class CourierRepository(
         List<CourierClearListDto> areaCouriers,
         Dictionary<int, List<CourierJobSuburbDto>> jobsByCourier,
         Dictionary<int, List<SuburbClearListAreaDto>> suburbLookup,
+        Dictionary<(decimal, decimal), List<SuburbClearListAreaDto>> coordinateLookup,
+        bool isUsTenant,
         DateTime currentDate)
     {
         var clearListResults = new List<ClearListResult>();
@@ -804,8 +843,22 @@ public class CourierRepository(
                 var jobsByArea = courierJobs
                     .GroupBy(job =>
                     {
-                        if (!job.ToSuburbId.HasValue ||
-                            !suburbLookup.TryGetValue(job.ToSuburbId.Value, out var areaOptions))
+                        List<SuburbClearListAreaDto> areaOptions = null;
+
+                        if (isUsTenant)
+                        {
+                            if (job.DeliveryLatitude.HasValue && job.DeliveryLongitude.HasValue)
+                                coordinateLookup.TryGetValue(
+                                    (job.DeliveryLatitude.Value, job.DeliveryLongitude.Value),
+                                    out areaOptions);
+                        }
+                        else
+                        {
+                            if (job.ToSuburbId.HasValue)
+                                suburbLookup.TryGetValue(job.ToSuburbId.Value, out areaOptions);
+                        }
+
+                        if (areaOptions == null)
                             return "O";
 
                         var matchingSameChannel = areaOptions
@@ -937,6 +990,7 @@ public class CourierRepository(
                 CourierGpsid = x.Courier.CourierGpsid,
                 GpsCreated = x.Gps != null ? x.Gps.Created : null,
                 PolygonId = x.Gps != null ? x.Gps.PolygonId : null,
+                ZipPolygonId = x.Gps != null ? x.Gps.ZipPolygonId : null,
                 JobCount = 0
             })
             .OrderBy(c => c.Code)
@@ -1027,7 +1081,9 @@ public class CourierRepository(
             .Select(job => new CourierJobSuburbDto
             {
                 CourierId = job.UcjbCourierId.Value,
-                ToSuburbId = job.UcjbTo
+                ToSuburbId = job.UcjbTo,
+                DeliveryLatitude = job.DeliveryLatitude,
+                DeliveryLongitude = job.DeliveryLongitude
             })
             .TagWith("GetClearLists - Wave 2: All Jobs")
             .ToListAsync();
@@ -1069,6 +1125,54 @@ public class CourierRepository(
         return suburbClearListAreas
             .GroupBy(sca => sca.SuburbId)
             .ToDictionary(g => g.Key, g => g.ToList());
+    }
+
+    /// <summary>
+    /// Query 6b (US): Map delivery coordinates → ZipPolygon → ClearListArea.
+    /// </summary>
+    private async Task<Dictionary<(decimal, decimal), List<SuburbClearListAreaDto>>>
+        GetCoordinateMappingsAsync(HashSet<(decimal lat, decimal lng)> coordinates)
+    {
+        if (coordinates.Count == 0)
+            return [];
+
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var latitudes = coordinates.Select(c => c.lat).Distinct().ToList();
+
+        var results = await context.ZipPolygons
+            .AsNoTracking()
+            .Where(zp => zp.Latitude.HasValue && zp.Longitude.HasValue &&
+                         latitudes.Contains(zp.Latitude.Value))
+            .Join(context.TblClearListAreaPolygons.AsNoTracking(),
+                zp => zp.ZipPolygonId,
+                cap => cap.ZipPolygonId,
+                (zp, cap) => new { zp.Latitude, zp.Longitude, cap.ClearListAreaId })
+            .Join(context.TblClearListAreas.AsNoTracking(),
+                x => x.ClearListAreaId,
+                cla => cla.ClearListAreaId,
+                (x, cla) => new
+                {
+                    Lat = x.Latitude!.Value,
+                    Lng = x.Longitude!.Value,
+                    cla.ClearListAreaId,
+                    cla.Code,
+                    cla.ChannelId
+                })
+            .TagWith("GetClearLists - Wave 3: Coordinate Mappings (US)")
+            .ToListAsync();
+
+        return results
+            .Where(r => coordinates.Contains((r.Lat, r.Lng)))
+            .GroupBy(r => (r.Lat, r.Lng))
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(r => new SuburbClearListAreaDto
+                {
+                    SuburbId = 0,
+                    ClearListAreaId = r.ClearListAreaId,
+                    Code = r.Code,
+                    ChannelId = r.ChannelId
+                }).ToList());
     }
 
     private async Task<Dictionary<string, int>> GetTotalRemainingForAllAreasAsync(
