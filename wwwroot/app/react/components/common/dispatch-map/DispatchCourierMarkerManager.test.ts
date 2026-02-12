@@ -367,16 +367,16 @@ describe('DispatchCourierMarkerManager', () => {
     });
 
     describe('Display Text Generation', () => {
-        it('includes courier code and job count', () => {
+        it('includes courier first name and job count', () => {
             const couriers = [createMockCourier({ code: 'JD', courierName: 'John Doe', totalJobs: 3 })];
 
             manager.updateMarkers(couriers);
 
             const iconCalls = mockH.map.Icon.mock.calls;
-            const hasCodeAndJobs = iconCalls.some(
-                (call: any[]) => call[0] && call[0].includes('JD 3')
+            const hasFirstNameAndJobs = iconCalls.some(
+                (call: any[]) => call[0] && call[0].includes('John 3')
             );
-            expect(hasCodeAndJobs).toBe(true);
+            expect(hasFirstNameAndJobs).toBe(true);
         });
 
         it('includes total jobs count', () => {
@@ -400,6 +400,46 @@ describe('DispatchCourierMarkerManager', () => {
             );
             expect(hasOverdueCount).toBe(true);
         });
+
+        it('uses first name from courierName, not code', () => {
+            const couriers = [createMockCourier({ code: 'AB', courierName: 'Alice Brown', totalJobs: 2 })];
+
+            manager.updateMarkers(couriers);
+
+            const iconCalls = mockH.map.Icon.mock.calls;
+            const hasFirstName = iconCalls.some(
+                (call: any[]) => call[0] && call[0].includes('Alice 2')
+            );
+            const hasCode = iconCalls.some(
+                (call: any[]) => call[0] && call[0].includes('AB 2')
+            );
+            expect(hasFirstName).toBe(true);
+            expect(hasCode).toBe(false);
+        });
+
+        it('shows first name with overdue format', () => {
+            const couriers = [createMockCourier({ code: 'AB', courierName: 'Alice Brown', totalJobs: 3, overDueJobs: 1 })];
+
+            manager.updateMarkers(couriers);
+
+            const iconCalls = mockH.map.Icon.mock.calls;
+            const hasFirstNameOverdue = iconCalls.some(
+                (call: any[]) => call[0] && call[0].includes('Alice 3/1')
+            );
+            expect(hasFirstNameOverdue).toBe(true);
+        });
+
+        it('handles single-word courierName', () => {
+            const couriers = [createMockCourier({ courierName: 'Madonna', totalJobs: 4 })];
+
+            manager.updateMarkers(couriers);
+
+            const iconCalls = mockH.map.Icon.mock.calls;
+            const hasSingleName = iconCalls.some(
+                (call: any[]) => call[0] && call[0].includes('Madonna 4')
+            );
+            expect(hasSingleName).toBe(true);
+        });
     });
 
     describe('Large View Mode', () => {
@@ -415,17 +455,33 @@ describe('DispatchCourierMarkerManager', () => {
             expect(hasLargeFlagColor).toBe(true);
         });
 
-        it('shows only courier code in large view', () => {
+        it('shows courier first name in large view', () => {
             const couriers = [createMockCourier({ code: 'JD', courierName: 'John Doe' })];
 
             manager.updateMarkers(couriers, false, true);
 
             const iconCalls = mockH.map.Icon.mock.calls;
-            // Large view should have code but different format than normal
-            const hasCode = iconCalls.some(
-                (call: any[]) => call[0] && call[0].includes('>JD</text>')
+            // Large view should show first name extracted from courierName
+            const hasFirstName = iconCalls.some(
+                (call: any[]) => call[0] && call[0].includes('>John</text>')
             );
-            expect(hasCode).toBe(true);
+            expect(hasFirstName).toBe(true);
+        });
+
+        it('uses first name not code in large view', () => {
+            const couriers = [createMockCourier({ code: 'AB', courierName: 'Alice Brown' })];
+
+            manager.updateMarkers(couriers, false, true);
+
+            const iconCalls = mockH.map.Icon.mock.calls;
+            const hasFirstName = iconCalls.some(
+                (call: any[]) => call[0] && call[0].includes('>Alice</text>')
+            );
+            const hasCode = iconCalls.some(
+                (call: any[]) => call[0] && call[0].includes('>AB</text>')
+            );
+            expect(hasFirstName).toBe(true);
+            expect(hasCode).toBe(false);
         });
     });
 
