@@ -162,6 +162,7 @@ public partial class DespatchContext
                         {
                             ClearListAreaId = cap.ClearListAreaId,
                             PolygonId = cap.PolygonId,
+                            ZipPolygonId = cap.ZipPolygonId,
                             ChannelId = cla.ChannelId
                         }));
 

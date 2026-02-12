@@ -12,7 +12,8 @@ public class CourierClearListDto
     public string UccrVehicle { get; set; }
     public int? CourierGpsid { get; set; }
     public DateTime? GpsCreated { get; set; }
-    public int? PolygonId { get; set; } 
+    public int? PolygonId { get; set; }
+    public int? ZipPolygonId { get; set; }
     public int? DisplayOrder { get; set; }
     public DateTime? OrderTime { get; set; }
     public string Name { get; set; }
@@ -25,6 +26,8 @@ public class CourierJobSuburbDto
 {
     public int CourierId { get; set; }
     public int? ToSuburbId { get; set; }
+    public decimal? DeliveryLatitude { get; set; }
+    public decimal? DeliveryLongitude { get; set; }
 }
 
 public class SuburbClearListAreaDto
@@ -39,5 +42,6 @@ public class PolygonChannelMapping
 {
     public int ClearListAreaId { get; set; }
     public int? PolygonId { get; set; }
+    public int? ZipPolygonId { get; set; }
     public int? ChannelId { get; set; }
 }
