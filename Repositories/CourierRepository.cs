@@ -194,6 +194,7 @@ public class CourierRepository(
                 {
                     c.UccrId,
                     c.UccrName,
+                    c.UccrSurname,
                     Latitude = c.CourierGps.Latitude ?? 0,
                     Longitude = c.CourierGps.Longitude ?? 0,
                     ChannelId = c.UccrChannelId ?? 0,
@@ -245,7 +246,7 @@ public class CourierRepository(
                 return new AvailableCourierPosition
                 {
                     CourierId = c.UccrId,
-                    CourierName = c.UccrName,
+                    CourierName = c.UccrName + " " + c.UccrSurname,
                     Latitude = c.Latitude,
                     Longitude = c.Longitude,
                     ChannelId = c.ChannelId,
@@ -291,6 +292,7 @@ public class CourierRepository(
                 {
                     c.UccrId,
                     c.UccrName,
+                    c.UccrSurname,
                     Latitude = c.CourierGps.Latitude ?? 0,
                     Longitude = c.CourierGps.Longitude ?? 0,
                     ChannelId = c.UccrChannelId ?? 0,
@@ -343,7 +345,7 @@ public class CourierRepository(
                 return new AvailableCourierPosition
                 {
                     CourierId = c.UccrId,
-                    CourierName = c.UccrName,
+                    CourierName = c.UccrName + " " + c.UccrSurname,
                     Latitude = c.Latitude,
                     Longitude = c.Longitude,
                     ChannelId = c.ChannelId,

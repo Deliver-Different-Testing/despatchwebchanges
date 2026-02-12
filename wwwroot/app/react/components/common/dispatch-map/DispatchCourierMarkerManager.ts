@@ -244,7 +244,7 @@ export class DispatchCourierMarkerManager {
         }
 
         const svgMarkup = largeView
-            ? this.createLargeFlagSvg(courier.code)
+            ? this.createLargeFlagSvg(courier.courierName.split(' ')[0])
             : this.createFlagSvg(displayText, courier);
 
         const icon = new H.map.Icon(svgMarkup, {
@@ -267,10 +267,11 @@ export class DispatchCourierMarkerManager {
      * Get display text for courier
      */
     private getDisplayText(courier: IAvailableCourierPosition): string {
+        const firstName = courier.courierName.split(' ')[0];
         if (courier.overDueJobs > 0) {
-            return `${courier.code} ${courier.totalJobs}/${courier.overDueJobs}`;
+            return `${firstName} ${courier.totalJobs}/${courier.overDueJobs}`;
         }
-        return `${courier.code} ${courier.totalJobs}`;
+        return `${firstName} ${courier.totalJobs}`;
     }
 
     /**
