@@ -1715,6 +1715,7 @@ class HomeController extends BaseController {
 
         this.driverLocationsLoading = false;
         this.updateDriverLocationsDisplay();
+        this.applyScope();
     }
 
     async getDriverLocationsData(): Promise<void> {
