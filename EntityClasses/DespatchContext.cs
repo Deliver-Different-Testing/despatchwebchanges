@@ -1298,6 +1298,7 @@ public partial class DespatchContext : DbContext
                 {
                     tb.HasTrigger("tblBulkJob_Insert");
                     tb.HasTrigger("tblBulkJob_Update");
+                    tb.HasTrigger("trg_TblBulkJob_Notes_Update");
                 });
 
             entity.HasIndex(e => e.BookDate, "DespatchWebSearch2");
