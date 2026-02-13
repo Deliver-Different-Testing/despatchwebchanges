@@ -194,4 +194,6 @@ public interface IJobRepository
     Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(List<int> jobIds);
     Task<CreateMinimalTucJobResponse> CreateMinimalTucJobAsync(CreateMinimalTucJobInputModel data,
         CancellationToken cancellationToken = default);
+
+    Task<Suggestion> GetSpeedSuggestionBySpeedIdAsync(int speedId);
 }

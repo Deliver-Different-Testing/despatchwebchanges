@@ -2747,9 +2747,8 @@ public partial class JobRepository(
     /// Checks if a client has any active items available for a specific speed.
     /// </summary>
     public async Task<bool> HasClientItemsAvailableAsync(int clientId,
-        int speedId)
-    {
-        return await Context
+        int speedId) =>
+        await Context
             .TblClientAvailableSpeeds.Where(cas =>
                 cas.ClientId == clientId && cas.SpeedId == speedId
             )
@@ -2758,7 +2757,6 @@ public partial class JobRepository(
                     .Select(casi => casi.ClientItem)
             )
             .AnyAsync();
-    }
 
     /// <summary>
     /// Retrieves paginated client items available for a specific speed, with selection state from a job.
@@ -4287,9 +4285,7 @@ public partial class JobRepository(
         // If the parsed time has only a time component (date is MinValue or Year 1),
         // combine with tenant's current date
         if (parsedTime.Date == DateTime.MinValue.Date || parsedTime.Year == 1)
-        {
             return tenantNow.Date.Add(parsedTime.TimeOfDay);
-        }
 
         return parsedTime;
     }
@@ -4542,7 +4538,6 @@ public partial class JobRepository(
                 cubicList: data.CubicList,
                 weightList: data.WeightList,
                 barcodeList: data.BarcodeList,
-                keepJobNumber: data.KeepJobNumber,
                 returnValue: returnValueParam, // OUTPUT parameter
                 cancellationToken: cancellationToken
             );
@@ -4578,7 +4573,7 @@ public partial class JobRepository(
         }
     }
 
-    private async Task<Suggestion> GetSpeedSuggestionBySpeedIdAsync(int speedId) =>
+    public async Task<Suggestion> GetSpeedSuggestionBySpeedIdAsync(int speedId) =>
         await Context.TucJobTypes
             .AsNoTracking()
             .Where(s => s.UcjtId == speedId)

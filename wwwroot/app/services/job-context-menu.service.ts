@@ -54,7 +54,7 @@ class JobContextMenuService implements angular.IServiceProvider {
     /**
      * Public method to split a job - can be called directly from controllers
      */
-    async splitJob($event: MouseEvent, job: IDispatchJob, onRefresh?: () => void): Promise<void> {
+    async splitJob($event: MouseEvent, job: IDispatchJob, onRefresh?: () => void | Promise<void>): Promise<void> {
         await this.splitJobAction($event, job, onRefresh || (() => {}));
     }
 
@@ -491,7 +491,7 @@ class JobContextMenuService implements angular.IServiceProvider {
     private async splitJobAction(
         $event: MouseEvent,
         job: IDispatchJob,
-        onRefresh: () => void
+        onRefresh: () => void | Promise<void>
     ) {
         if (!job) return;
 
@@ -559,7 +559,7 @@ class JobContextMenuService implements angular.IServiceProvider {
             console.log("Job splitting complete!");
 
             if (onRefresh) {
-                onRefresh();
+                await onRefresh();
             }
         } catch (error) {
             if (error) {

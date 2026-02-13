@@ -355,3 +355,4 @@ healthchecksdb
 /logs-insights-results.csv
 /.claude/settings.local.json
 .jest-cache
+nul
