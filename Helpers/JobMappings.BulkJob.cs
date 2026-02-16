@@ -131,7 +131,18 @@ public static partial class JobMappings
         Items = j.TblBulkJobItems.Count,
 
         FromContactName = j.PickupFromContact ?? Defaults.NotApplicable,
-        FromContactNumber = j.PickupFromPhone ?? Defaults.NotSpecified,
+        FromContactNumber =
+            (j.PickupFromPhone != null && j.PickupFromPhone != "")
+                ? j.PickupFromPhone
+                : (j.Client != null && j.Client.UcclPhone != null && j.Client.UcclPhone != "")
+                    ? j.Client.UcclPhone
+                    : null,
+        FromContactNumberSource =
+            (j.PickupFromPhone != null && j.PickupFromPhone != "")
+                ? "Job"
+                : (j.Client != null && j.Client.UcclPhone != null && j.Client.UcclPhone != "")
+                    ? "Company"
+                    : null,
 
         // Speed and job type information
         Speed = j.SpeedNavigation != null ? j.SpeedNavigation.ShortName : null,

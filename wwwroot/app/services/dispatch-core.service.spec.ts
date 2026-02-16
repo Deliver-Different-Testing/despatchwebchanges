@@ -669,7 +669,66 @@ describe('DispatchCoreService', () => {
     });
 
     // ---------------------------------------------------------------------------
-    // 7. Service provider pattern
+    // 7. Driver locations / clear lists
+    // ---------------------------------------------------------------------------
+
+    describe('Driver locations', () => {
+
+        describe('getDriverLocations', () => {
+            it('should call GET courier with despatchViewIds param', async () => {
+                const http = createMockHttp({ areas: [], columns: [] });
+                const despatchViewIds = [1, 2, 3];
+
+                await http.get('courier', { params: { despatchViewIds } });
+
+                expect(http.get).toHaveBeenCalledWith('courier', {
+                    params: { despatchViewIds: [1, 2, 3] },
+                });
+            });
+
+            it('should include startDate and endDate params when dateFilterData is provided', async () => {
+                const http = createMockHttp({ areas: [], columns: [] });
+                const despatchViewIds = [1];
+                const startDate = '2024-01-14T00:00:00+13:00';
+                const endDate = '2024-01-16T00:00:00+13:00';
+
+                await http.get('courier', {
+                    params: { despatchViewIds, startDate, endDate },
+                });
+
+                expect(http.get).toHaveBeenCalledWith('courier', {
+                    params: {
+                        despatchViewIds: [1],
+                        startDate: '2024-01-14T00:00:00+13:00',
+                        endDate: '2024-01-16T00:00:00+13:00',
+                    },
+                });
+            });
+
+            it('should not include startDate/endDate when dateFilterData is undefined', async () => {
+                const http = createMockHttp({ areas: [], columns: [] });
+                const despatchViewIds = [1, 2];
+
+                await http.get('courier', { params: { despatchViewIds } });
+
+                const passedParams = http.get.mock.calls[0][1].params;
+                expect(passedParams).not.toHaveProperty('startDate');
+                expect(passedParams).not.toHaveProperty('endDate');
+            });
+
+            it('should return the response data', async () => {
+                const mockData = { areas: [{ id: 1, name: 'Central' }], columns: [] };
+                const http = createMockHttp(mockData);
+
+                const result = await http.get('courier', { params: { despatchViewIds: [1] } });
+
+                expect(result.data).toEqual(mockData);
+            });
+        });
+    });
+
+    // ---------------------------------------------------------------------------
+    // 8. Service provider pattern
     // ---------------------------------------------------------------------------
 
     describe('Service provider pattern', () => {
@@ -685,7 +744,7 @@ describe('DispatchCoreService', () => {
     });
 
     // ---------------------------------------------------------------------------
-    // 8. isUsCustomer flag derived from APP_CONFIG
+    // 9. isUsCustomer flag derived from APP_CONFIG
     // ---------------------------------------------------------------------------
 
     describe('APP_CONFIG integration', () => {
@@ -705,7 +764,7 @@ describe('DispatchCoreService', () => {
     });
 
     // ---------------------------------------------------------------------------
-    // 9. Error handling
+    // 10. Error handling
     // ---------------------------------------------------------------------------
 
     describe('Error handling', () => {
@@ -731,7 +790,7 @@ describe('DispatchCoreService', () => {
     });
 
     // ---------------------------------------------------------------------------
-    // 10. downloadFile client-side validation
+    // 11. downloadFile client-side validation
     // ---------------------------------------------------------------------------
 
     describe('downloadFile validation', () => {

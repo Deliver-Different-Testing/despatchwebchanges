@@ -44,6 +44,7 @@ import {
 import {JobEventData} from "../react/interfaces";
 import {IDeliveryJourney, IDeliveryJourneyDto} from "../react/components/common/task-history/TaskHistory.interfaces";
 import {formatDateForApiWithTzs} from "../functions/formatDates";
+import IDateFilterData from "../interfaces/date-filter-data.interface";
 import IInterCourierData from "../components/dialogs/inter-courier-charge-dialog/interfaces/IInterCourierData";
 import {Is3PhotoInfo} from "../interfaces/aws.interfaces";
 import dayjs, {Dayjs} from "dayjs";
@@ -370,16 +371,21 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
     }
 
-    async getDriverLocations(selectedViews: DfrntPageViewModel[]): Promise<IClearListViewModel> {
+    async getDriverLocations(
+        selectedViews: DfrntPageViewModel[],
+        dateFilterData?: IDateFilterData
+    ): Promise<IClearListViewModel> {
         const filteredViews = selectedViews.filter((view) => view.selected);
         const despatchViewIds = filteredViews.map(view => view.id);
 
+        const params: Record<string, any> = { despatchViewIds };
+        if (dateFilterData) {
+            params.startDate = formatDateForApiWithTzs(dateFilterData.startDate);
+            params.endDate = formatDateForApiWithTzs(dateFilterData.endDate);
+        }
+
         const response = await this.$http.get<IClearListViewModel>(
-            `courier`, {
-                params: {
-                    despatchViewIds,
-                }
-            }
+            `courier`, { params }
         );
         return response.data;
     }

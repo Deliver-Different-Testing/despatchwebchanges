@@ -131,6 +131,7 @@ export interface IJob {
     completedTime?: Dayjs;
     fromContactName: string;
     fromContactNumber: string;
+    fromContactNumberSource?: string;
     ratedManually?: boolean;
     sizeId?: number;
     oneOff?: boolean;
@@ -318,6 +319,7 @@ export interface IJobDto {
     completedTime?: string;
     fromContactName: string;
     fromContactNumber: string;
+    fromContactNumberSource?: string;
     ratedManually?: boolean;
     sizeId?: number;
     oneOff?: boolean;

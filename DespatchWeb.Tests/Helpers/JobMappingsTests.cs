@@ -1211,6 +1211,7 @@ public class JobMappingsTests
         // Assert
         result.FromContactName.Should().Be("Pickup Person");
         result.FromContactNumber.Should().Be("09-111-2222");
+        result.FromContactNumberSource.Should().Be("Job");
         result.DeliverToContact.Should().Be("Delivery Person");
         result.ToContactPhone.Should().Be("09-333-4444");
         result.LoggedInContactName.Should().Be("Admin User");
@@ -2206,6 +2207,171 @@ public class JobMappingsTests
         // Assert
         result.Hour.Should().Be(12);
         result.Offset.Should().Be(TimeSpan.Zero);
+    }
+
+    #endregion
+
+    #region FromContactNumber Fallback Chain Tests (JobMappingCore)
+
+    [Fact]
+    public void JobMappingCore_FromContactNumber_UsesJobPhone_WhenSet()
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PickupFromPhone = "09-123-4567",
+            Contact = new TucClientContact { UcctDirectDial = "09-111-1111", UcctMobile = "021-222-2222" },
+            UcjbClient = new TucClient { UcclPhone = "09-333-3333" },
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert - Job phone takes priority
+        result.FromContactNumber.Should().Be("09-123-4567");
+        result.FromContactNumberSource.Should().Be("Job");
+    }
+
+    [Fact]
+    public void JobMappingCore_FromContactNumber_FallsBackToDirectLine()
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PickupFromPhone = null,
+            Contact = new TucClientContact { UcctDirectDial = "09-111-1111", UcctMobile = "021-222-2222" },
+            UcjbClient = new TucClient { UcclPhone = "09-333-3333" },
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert
+        result.FromContactNumber.Should().Be("09-111-1111");
+        result.FromContactNumberSource.Should().Be("Direct Line");
+    }
+
+    [Fact]
+    public void JobMappingCore_FromContactNumber_FallsBackToMobile()
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PickupFromPhone = null,
+            Contact = new TucClientContact { UcctDirectDial = "", UcctMobile = "021-222-2222" },
+            UcjbClient = new TucClient { UcclPhone = "09-333-3333" },
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert
+        result.FromContactNumber.Should().Be("021-222-2222");
+        result.FromContactNumberSource.Should().Be("Mobile");
+    }
+
+    [Fact]
+    public void JobMappingCore_FromContactNumber_FallsBackToCompanyPhone()
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PickupFromPhone = null,
+            Contact = null,
+            UcjbClient = new TucClient { UcclPhone = "09-333-3333" },
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert
+        result.FromContactNumber.Should().Be("09-333-3333");
+        result.FromContactNumberSource.Should().Be("Company");
+    }
+
+    [Fact]
+    public void JobMappingCore_FromContactNumber_NullWhenNothingAvailable()
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PickupFromPhone = null,
+            Contact = null,
+            UcjbClient = null,
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert
+        result.FromContactNumber.Should().BeNull();
+        result.FromContactNumberSource.Should().BeNull();
+    }
+
+    [Fact]
+    public void JobMappingCore_FromContactNumber_EmptyStringTreatedAsNull()
+    {
+        // Arrange - Empty string should fall through to next level
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PickupFromPhone = "",
+            Contact = new TucClientContact { UcctDirectDial = "09-111-1111" },
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(false).Compile();
+        var result = mapping(job);
+
+        // Assert - Should skip empty job phone and use direct line
+        result.FromContactNumber.Should().Be("09-111-1111");
+        result.FromContactNumberSource.Should().Be("Direct Line");
     }
 
     #endregion

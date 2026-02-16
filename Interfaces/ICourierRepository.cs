@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
@@ -23,7 +24,10 @@ public interface ICourierRepository
 
     Task<List<ActiveCouriersViewModel>> AllActiveCouriersAsync();
 
-    Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds);
+    Task<ClearListViewModel> GetClearListsAsync(
+        List<int> despatchViewIds,
+        DateTimeOffset? startDate = null,
+        DateTimeOffset? endDate = null);
 
     Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(
         int clearListAreaId,

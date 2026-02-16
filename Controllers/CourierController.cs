@@ -19,14 +19,17 @@ public class CourierController(
     ITaskRepository taskRepository
 ) : Controller
 {
-    public async Task<IActionResult> Index([FromQuery] List<int> despatchViewIds)
+    public async Task<IActionResult> Index(
+        [FromQuery] List<int> despatchViewIds,
+        [FromQuery] DateTimeOffset? startDate = null,
+        [FromQuery] DateTimeOffset? endDate = null)
     {
         try
         {
             if (despatchViewIds == null || despatchViewIds.Count == 0)
                 despatchViewIds = [49];
 
-            var result = await courierRepository.GetClearListsAsync(despatchViewIds);
+            var result = await courierRepository.GetClearListsAsync(despatchViewIds, startDate, endDate);
 
             return Json(result);
         }

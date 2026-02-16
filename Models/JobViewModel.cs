@@ -57,6 +57,7 @@ public class JobViewModel : DispatchJobViewModel
     public DateTimeOffset? CompletedTime { get; set; }
     public string FromContactName { get; set; }
     public string FromContactNumber { get; set; }
+    public string FromContactNumberSource { get; set; }
 
 
     public string ScheduleName { get; set; }
