@@ -545,7 +545,10 @@ public class CourierRepository(
         return results;
     }
 
-    public async Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds)
+    public async Task<ClearListViewModel> GetClearListsAsync(
+        List<int> despatchViewIds,
+        DateTimeOffset? startDate = null,
+        DateTimeOffset? endDate = null)
     {
         if (despatchViewIds.Count == 0) return new ClearListViewModel();
 
@@ -553,7 +556,10 @@ public class CourierRepository(
         {
             var currentDate = infoService.GetCurrentTenantTime();
             var currentDateOnly = currentDate.Date;
-            var nextDay = currentDateOnly.AddDays(1);
+
+            // Use provided date range or default to today
+            var jobStartDate = startDate?.DateTime ?? currentDateOnly;
+            var jobEndDate = endDate?.DateTime ?? currentDateOnly.AddDays(1);
 
             // ===================================================================
             // WAVE 1: Independent queries (Clear Lists + Courier Data) - PARALLEL
@@ -579,7 +585,7 @@ public class CourierRepository(
             var polygonMappingsTask = GetPolygonMappingsAsync(clearListAreaIds);
             var areaFiltersTask = GetAreaFiltersAsync(clearLists);
             var displayOrdersTask = GetDisplayOrdersAsync(courierIds);
-            var jobsTask = GetAllJobsAsync(courierIds, nextDay);
+            var jobsTask = GetAllJobsAsync(courierIds, jobStartDate, jobEndDate);
 
             await Task.WhenAll(polygonMappingsTask, areaFiltersTask, displayOrdersTask, jobsTask);
 
@@ -1068,7 +1074,8 @@ public class CourierRepository(
     /// <summary>
     /// Query 5: Get all jobs for couriers.
     /// </summary>
-    private async Task<List<CourierJobSuburbDto>> GetAllJobsAsync(List<int> courierIds, DateTime nextDay)
+    private async Task<List<CourierJobSuburbDto>> GetAllJobsAsync(
+        List<int> courierIds, DateTime startDate, DateTime endDate)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
         var courierIdSet = courierIds.ToHashSet();
@@ -1077,7 +1084,8 @@ public class CourierRepository(
             .AsNoTracking()
             .Where(job => !job.UcjbJobDone &&
                           !job.UcjbVoid &&
-                          job.UcjbDate < nextDay &&
+                          job.UcjbDate >= startDate &&
+                          job.UcjbDate < endDate &&
                           job.UcjbCourierId.HasValue &&
                           courierIdSet.Contains(job.UcjbCourierId.Value))
             .Select(job => new CourierJobSuburbDto

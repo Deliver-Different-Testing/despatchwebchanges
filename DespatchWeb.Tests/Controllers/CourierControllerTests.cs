@@ -228,6 +228,95 @@ public class CourierControllerTests
 
     #endregion
 
+    #region Index (GetClearLists) Tests
+
+    [Fact]
+    public async Task Index_WithNoDates_PassesNullDatesToRepository()
+    {
+        // Arrange
+        var despatchViewIds = new List<int> { 1, 2 };
+        var expectedResult = new ClearListViewModel();
+
+        _courierRepositoryMock.Setup(x => x.GetClearListsAsync(despatchViewIds, null, null))
+            .ReturnsAsync(expectedResult);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.Index(despatchViewIds);
+
+        // Assert
+        _courierRepositoryMock.Verify(
+            x => x.GetClearListsAsync(despatchViewIds, null, null), Times.Once);
+        result.Should().BeOfType<JsonResult>();
+    }
+
+    [Fact]
+    public async Task Index_WithDateRange_PassesDatesToRepository()
+    {
+        // Arrange
+        var despatchViewIds = new List<int> { 1 };
+        var startDate = new DateTimeOffset(2024, 1, 14, 0, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2024, 1, 16, 0, 0, 0, TimeSpan.Zero);
+        var expectedResult = new ClearListViewModel();
+
+        _courierRepositoryMock.Setup(x => x.GetClearListsAsync(despatchViewIds, startDate, endDate))
+            .ReturnsAsync(expectedResult);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.Index(despatchViewIds, startDate, endDate);
+
+        // Assert
+        _courierRepositoryMock.Verify(
+            x => x.GetClearListsAsync(despatchViewIds, startDate, endDate), Times.Once);
+        result.Should().BeOfType<JsonResult>();
+    }
+
+    [Fact]
+    public async Task Index_WithNullDespatchViewIds_DefaultsToFallbackId()
+    {
+        // Arrange
+        var expectedResult = new ClearListViewModel();
+        var defaultIds = new List<int> { 49 };
+
+        _courierRepositoryMock.Setup(x => x.GetClearListsAsync(defaultIds, null, null))
+            .ReturnsAsync(expectedResult);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.Index(null!, null, null);
+
+        // Assert
+        _courierRepositoryMock.Verify(
+            x => x.GetClearListsAsync(defaultIds, null, null), Times.Once);
+        result.Should().BeOfType<JsonResult>();
+    }
+
+    [Fact]
+    public async Task Index_RepositoryThrowsException_Returns500()
+    {
+        // Arrange
+        var despatchViewIds = new List<int> { 1 };
+
+        _courierRepositoryMock.Setup(x => x.GetClearListsAsync(despatchViewIds, null, null))
+            .ThrowsAsync(new Exception("Database error"));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.Index(despatchViewIds);
+
+        // Assert
+        result.Should().BeOfType<ObjectResult>();
+        var objectResult = (ObjectResult)result;
+        objectResult.StatusCode.Should().Be(500);
+    }
+
+    #endregion
+
     #region Integration-like Tests
 
     [Fact]

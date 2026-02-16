@@ -260,6 +260,10 @@
                                             <span class="material-symbols-outlined">call</span>
                                         </div>
                                         <h3 class="contact-label">Phone Number</h3>
+                                        <span class="phone-source-badge"
+                                              ng-if="ctrl.job.fromContactNumberSource">
+                                            {{ctrl.job.fromContactNumberSource}}
+                                        </span>
                                     </div>
                                     <p class="contact-value" ng-class="{'empty': !ctrl.job.fromContactNumber}">
                                         {{ctrl.job.fromContactNumber}}
@@ -1263,7 +1267,13 @@
                                     phone_callback
                                 </md-icon>
                                 <div class="md-list-item-text">
-                                    <h3>Phone</h3>
+                                    <h3>
+                                        Phone
+                                        <span class="phone-source-badge"
+                                              ng-if="ctrl.job.fromContactNumberSource">
+                                            {{ctrl.job.fromContactNumberSource}}
+                                        </span>
+                                    </h3>
                                     <p>{{ctrl.job.fromContactNumber || '-'}}</p>
                                 </div>
 

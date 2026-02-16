@@ -1,6 +1,7 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
@@ -278,6 +279,93 @@ public class CourierRepositoryTests : IDisposable
         // Verify column assignment based on area names
         var allAreasInColumns = result.Columns.SelectMany(c => c.Areas).ToList();
         allAreasInColumns.Should().HaveCount(result.Areas.Count);
+    }
+
+    #endregion
+
+    #region GetClearListsAsync - Date Range Filter Tests
+
+    [Fact]
+    public async Task GetClearListsAsync_WithNoDateParams_ReturnsValidResult()
+    {
+        // Arrange - tenant time is 2024-01-15 10:00:00, jobs exist across multiple dates
+        await SetupClearListWithJobsAcrossDates();
+        var repository = CreateRepository();
+
+        // Act - no startDate/endDate provided (defaults to today)
+        var result = await repository.GetClearListsAsync([1]);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Areas.Should().HaveCount(1);
+        result.Areas[0].Name.Should().Be("Central");
+    }
+
+    [Fact]
+    public async Task GetClearListsAsync_WithCustomDateRange_ReturnsValidResult()
+    {
+        // Arrange
+        await SetupClearListWithJobsAcrossDates();
+        var repository = CreateRepository();
+
+        // Act - request jobs from Jan 14 to Jan 16
+        var startDate = new DateTimeOffset(2024, 1, 14, 0, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2024, 1, 16, 0, 0, 0, TimeSpan.Zero);
+        var result = await repository.GetClearListsAsync([1], startDate, endDate);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Areas.Should().HaveCount(1);
+        result.Areas[0].Name.Should().Be("Central");
+    }
+
+    [Fact]
+    public async Task GetClearListsAsync_WithFutureDateRange_ReturnsValidResult()
+    {
+        // Arrange
+        await SetupClearListWithJobsAcrossDates();
+        var repository = CreateRepository();
+
+        // Act - request jobs from Jan 16 onward (past all test data)
+        var startDate = new DateTimeOffset(2024, 1, 16, 0, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2024, 1, 17, 0, 0, 0, TimeSpan.Zero);
+        var result = await repository.GetClearListsAsync([1], startDate, endDate);
+
+        // Assert - still returns the area structure even with no matching jobs
+        result.Should().NotBeNull();
+        result.Areas.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task GetClearListsAsync_WithStartDateOnly_ReturnsValidResult()
+    {
+        // Arrange
+        await SetupClearListWithJobsAcrossDates();
+        var repository = CreateRepository();
+
+        // Act - provide only startDate (endDate defaults to tomorrow: 2024-01-16)
+        var startDate = new DateTimeOffset(2024, 1, 14, 0, 0, 0, TimeSpan.Zero);
+        var result = await repository.GetClearListsAsync([1], startDate);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Areas.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task GetClearListsAsync_WithEndDateOnly_ReturnsValidResult()
+    {
+        // Arrange
+        await SetupClearListWithJobsAcrossDates();
+        var repository = CreateRepository();
+
+        // Act - provide only endDate (startDate defaults to today: 2024-01-15)
+        var endDate = new DateTimeOffset(2024, 1, 16, 0, 0, 0, TimeSpan.Zero);
+        var result = await repository.GetClearListsAsync([1], endDate: endDate);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Areas.Should().HaveCount(1);
     }
 
     #endregion
@@ -724,6 +812,97 @@ public class CourierRepositoryTests : IDisposable
             new DespatchViewZoneGroup { DespatchViewZoneGroupId = 4, DespatchViewId = 4, ZoneGroupId = 4, CreatedDate = DateTime.Now, CreatedBy = "Test", LastModifiedDate = DateTime.Now, LastModifiedBy = "Test" }
         };
         context.DespatchViewZoneGroups.AddRange(links);
+
+        await context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Sets up a clear list area with a single courier that has jobs on two different dates
+    /// (2024-01-14 and 2024-01-15). The tenant time is mocked to 2024-01-15 10:00:00.
+    /// </summary>
+    private async Task SetupClearListWithJobsAcrossDates()
+    {
+        await SetupBasicClearListData();
+
+        await using var context = CreateContext();
+
+        // Fleet
+        context.TucCourierFleets.Add(new TucCourierFleet
+        {
+            UccfId = 1,
+            UccfName = "Standard Fleet",
+            DisplayOnClearlistsDespatch = true,
+            Created = DateTime.Now,
+            CreatedBy = "Test",
+            LastModified = DateTime.Now,
+            LastModifiedBy = "Test"
+        });
+
+        // Login record
+        context.TblCourierLogInOuts.Add(new TblCourierLogInOut
+        {
+            CourierLogInOutId = 1,
+            CourierId = 1,
+            LogInTime = new DateTime(2024, 1, 15, 8, 0, 0),
+            LogOutTime = null,
+            Created = DateTime.Now,
+            CreatedBy = "Test",
+            LastModified = DateTime.Now,
+            LastModifiedBy = "Test"
+        });
+
+        // Clear list area order
+        context.TblClearListAreaOrders.Add(new TblClearListAreaOrder
+        {
+            ClearListAreaOrderId = 1,
+            CourierId = 1,
+            ClearListAreaId = 1,
+            Status = 1,
+            OrderTime = DateTime.Now,
+            Created = DateTime.Now,
+            CreatedBy = "Test",
+            LastModified = DateTime.Now,
+            LastModifiedBy = "Test"
+        });
+
+        // Courier
+        context.TucCouriers.Add(new TucCourier
+        {
+            UccrId = 1,
+            Code = "C001",
+            UccrName = "John",
+            UccrSurname = "Doe",
+            Active = true,
+            CourierFleetId = 1,
+            CourierLogInOutId = 1,
+            UccrChannelId = 1,
+            Created = DateTime.Now,
+            CreatedBy = "Test",
+            LastModified = DateTime.Now,
+            LastModifiedBy = "Test"
+        });
+
+        // Job on yesterday (2024-01-14)
+        context.TucJobs.Add(new TucJob
+        {
+            UcjbId = 1,
+            UcjbNumber = "JOB001",
+            UcjbCourierId = 1,
+            UcjbDate = new DateTime(2024, 1, 14),
+            UcjbJobDone = false,
+            UcjbVoid = false
+        });
+
+        // Job on today (2024-01-15)
+        context.TucJobs.Add(new TucJob
+        {
+            UcjbId = 2,
+            UcjbNumber = "JOB002",
+            UcjbCourierId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbJobDone = false,
+            UcjbVoid = false
+        });
 
         await context.SaveChangesAsync();
     }

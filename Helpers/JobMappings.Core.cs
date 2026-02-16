@@ -184,7 +184,26 @@ public static partial class JobMappings
         PickupFrom = j.UcjbPickUpFrom,
         Notify = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName : null,
         FromContactName = j.PickupFromContact,
-        FromContactNumber = j.PickupFromPhone ?? Defaults.NotSpecified,
+        FromContactNumber =
+            (j.PickupFromPhone != null && j.PickupFromPhone != "")
+                ? j.PickupFromPhone
+                : (j.Contact != null && j.Contact.UcctDirectDial != null && j.Contact.UcctDirectDial != "")
+                    ? j.Contact.UcctDirectDial
+                    : (j.Contact != null && j.Contact.UcctMobile != null && j.Contact.UcctMobile != "")
+                        ? j.Contact.UcctMobile
+                        : (j.UcjbClient != null && j.UcjbClient.UcclPhone != null && j.UcjbClient.UcclPhone != "")
+                            ? j.UcjbClient.UcclPhone
+                            : null,
+        FromContactNumberSource =
+            (j.PickupFromPhone != null && j.PickupFromPhone != "")
+                ? "Job"
+                : (j.Contact != null && j.Contact.UcctDirectDial != null && j.Contact.UcctDirectDial != "")
+                    ? "Direct Line"
+                    : (j.Contact != null && j.Contact.UcctMobile != null && j.Contact.UcctMobile != "")
+                        ? "Mobile"
+                        : (j.UcjbClient != null && j.UcjbClient.UcclPhone != null && j.UcjbClient.UcclPhone != "")
+                            ? "Company"
+                            : null,
 
         // Speed and job type information
         Speed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : null,

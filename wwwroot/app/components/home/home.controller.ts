@@ -1741,7 +1741,10 @@ class HomeController extends BaseController {
             }
 
             console.log('Fetching driver locations for views:', this.selectedViews);
-            this.driverLocations = await this.DispatchData.getDriverLocations(this.selectedViews);
+            this.driverLocations = await this.DispatchData.getDriverLocations(
+                this.selectedViews,
+                this.dateFilterData
+            );
             console.log('Driver locations received:', this.driverLocations);
             this.updateDriverLocationsDisplay();
         } catch (error: any) {
@@ -2191,7 +2194,10 @@ class HomeController extends BaseController {
         this.dateFilterData = dateFilterData;
 
         this.saveDateFilterToStorage();
-        await this.getData();
+        await Promise.all([
+            this.getData(),
+            this.fetchDriverLocations()
+        ]);
     }
 
     private saveDateFilterToStorage(): void {
