@@ -370,6 +370,94 @@ public class CourierRepositoryTests : IDisposable
 
     #endregion
 
+    #region GetClearListsAsync - Display Order Adjustment with Date Filter Tests
+
+    [Fact]
+    public async Task GetClearListsAsync_CourierWithJobsOutsideDateFilter_MovesFromBottomToMiddle()
+    {
+        // Arrange - courier has Status=5 (orange/has jobs) but jobs are only on Jan 20
+        // Date filter is Jan 15 (today) so jobs are excluded
+        await SetupClearListWithCourierAndPolygon(courierStatus: 5, jobDate: new DateTime(2024, 1, 20));
+        var repository = CreateRepository();
+
+        // Act - default date filter (today = Jan 15)
+        var result = await repository.GetClearListsAsync([1]);
+
+        // Assert - courier should move from Bottom (5) to Middle (3) since no jobs match filter
+        result.Areas.Should().HaveCount(1);
+        result.Areas[0].Bottom.Should().BeEmpty("courier has no jobs in date range so should not be in Bottom/orange");
+        result.Areas[0].Middle.Should().ContainSingle("courier should move to Middle/purple when jobs are filtered out");
+    }
+
+    [Fact]
+    public async Task GetClearListsAsync_CourierWithJobsInsideDateFilter_StaysInBottom()
+    {
+        // Arrange - courier has Status=5 (orange/has jobs) and jobs are on Jan 15 (today)
+        await SetupClearListWithCourierAndPolygon(courierStatus: 5, jobDate: new DateTime(2024, 1, 15));
+        var repository = CreateRepository();
+
+        // Act - default date filter (today = Jan 15)
+        var result = await repository.GetClearListsAsync([1]);
+
+        // Assert - courier should stay in Bottom (5) since jobs match filter
+        result.Areas.Should().HaveCount(1);
+        result.Areas[0].Bottom.Should().ContainSingle("courier has jobs in date range so should remain in Bottom/orange");
+        result.Areas[0].Middle.Should().BeEmpty("courier should not be in Middle when they have jobs");
+    }
+
+    [Fact]
+    public async Task GetClearListsAsync_DispatchedCourierWithNoJobsInFilter_MovesToMiddle()
+    {
+        // Arrange - courier has Status=1 (blue/dispatched) but jobs are only on Jan 20
+        await SetupClearListWithCourierAndPolygon(courierStatus: 1, jobDate: new DateTime(2024, 1, 20));
+        var repository = CreateRepository();
+
+        // Act - default date filter (today = Jan 15)
+        var result = await repository.GetClearListsAsync([1]);
+
+        // Assert - courier should move from Top (1) to Middle (3)
+        result.Areas.Should().HaveCount(1);
+        result.Areas[0].Top.Should().BeEmpty("courier has no jobs in date range so should not be in Top/blue");
+        result.Areas[0].Middle.Should().ContainSingle("courier should move to Middle/purple when jobs are filtered out");
+    }
+
+    [Fact]
+    public async Task GetClearListsAsync_CourierAlreadyInMiddle_StaysInMiddle()
+    {
+        // Arrange - courier has Status=3 (purple/no jobs) and no jobs
+        await SetupClearListWithCourierAndPolygon(courierStatus: 3, jobDate: null);
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetClearListsAsync([1]);
+
+        // Assert - courier should remain in Middle (3)
+        result.Areas.Should().HaveCount(1);
+        result.Areas[0].Middle.Should().ContainSingle("courier with no jobs should stay in Middle/purple");
+        result.Areas[0].Top.Should().BeEmpty();
+        result.Areas[0].Bottom.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetClearListsAsync_DateFilterIncludesJobs_CourierStaysInOriginalSection()
+    {
+        // Arrange - courier has Status=5 and jobs on Jan 20
+        await SetupClearListWithCourierAndPolygon(courierStatus: 5, jobDate: new DateTime(2024, 1, 20));
+        var repository = CreateRepository();
+
+        // Act - widen date filter to include the job date
+        var startDate = new DateTimeOffset(2024, 1, 19, 0, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2024, 1, 21, 0, 0, 0, TimeSpan.Zero);
+        var result = await repository.GetClearListsAsync([1], startDate, endDate);
+
+        // Assert - courier should stay in Bottom (5) since jobs are within filter
+        result.Areas.Should().HaveCount(1);
+        result.Areas[0].Bottom.Should().ContainSingle("courier has jobs in widened date range so should remain in Bottom/orange");
+        result.Areas[0].Middle.Should().BeEmpty("courier should not move to Middle when date filter includes their jobs");
+    }
+
+    #endregion
+
     #region Helper Methods - Data Setup
 
     private async Task SetupBasicClearListData()
@@ -812,6 +900,114 @@ public class CourierRepositoryTests : IDisposable
             new DespatchViewZoneGroup { DespatchViewZoneGroupId = 4, DespatchViewId = 4, ZoneGroupId = 4, CreatedDate = DateTime.Now, CreatedBy = "Test", LastModifiedDate = DateTime.Now, LastModifiedBy = "Test" }
         };
         context.DespatchViewZoneGroups.AddRange(links);
+
+        await context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Sets up a clear list area with a single courier that has GPS polygon matching,
+    /// so the courier appears in the area's sections. Used for testing display order adjustment.
+    /// </summary>
+    /// <param name="courierStatus">The TblClearListAreaOrder.Status (1=top/blue, 3=middle/purple, 5=bottom/orange)</param>
+    /// <param name="jobDate">The date for the courier's job, or null for no jobs</param>
+    private async Task SetupClearListWithCourierAndPolygon(int courierStatus, DateTime? jobDate)
+    {
+        await SetupBasicClearListData();
+
+        await using var context = CreateContext();
+
+        // Fleet
+        context.TucCourierFleets.Add(new TucCourierFleet
+        {
+            UccfId = 1,
+            UccfName = "Standard Fleet",
+            DisplayOnClearlistsDespatch = true,
+            Created = DateTime.Now,
+            CreatedBy = "Test",
+            LastModified = DateTime.Now,
+            LastModifiedBy = "Test"
+        });
+
+        // GPS record with PolygonId=100 matching the area polygon
+        context.TblCourierGps.Add(new TblCourierGp
+        {
+            CourierGpsid = 1,
+            CourierId = 1,
+            PolygonId = 100,
+            Created = new DateTime(2024, 1, 15, 9, 0, 0),
+            RawData = "test"
+        });
+
+        // Polygon mapping: ClearListArea 1 → Polygon 100
+        context.TblClearListAreaPolygons.Add(new TblClearListAreaPolygon
+        {
+            ClearListAreaPolygonId = 1,
+            ClearListAreaId = 1,
+            PolygonId = 100,
+            Created = DateTime.Now,
+            CreatedBy = "Test",
+            LastModified = DateTime.Now,
+            LastModifiedBy = "Test"
+        });
+
+        // Login record (logged in today)
+        context.TblCourierLogInOuts.Add(new TblCourierLogInOut
+        {
+            CourierLogInOutId = 1,
+            CourierId = 1,
+            LogInTime = new DateTime(2024, 1, 15, 8, 0, 0),
+            LogOutTime = null,
+            Created = DateTime.Now,
+            CreatedBy = "Test",
+            LastModified = DateTime.Now,
+            LastModifiedBy = "Test"
+        });
+
+        // Clear list area order with the specified status
+        context.TblClearListAreaOrders.Add(new TblClearListAreaOrder
+        {
+            ClearListAreaOrderId = 1,
+            CourierId = 1,
+            ClearListAreaId = 1,
+            Status = courierStatus,
+            OrderTime = DateTime.Now,
+            Created = DateTime.Now,
+            CreatedBy = "Test",
+            LastModified = DateTime.Now,
+            LastModifiedBy = "Test"
+        });
+
+        // Courier with GPS reference
+        context.TucCouriers.Add(new TucCourier
+        {
+            UccrId = 1,
+            Code = "C001",
+            UccrName = "John",
+            UccrSurname = "Doe",
+            Active = true,
+            CourierFleetId = 1,
+            CourierLogInOutId = 1,
+            CourierGpsid = 1,
+            UccrChannelId = 1,
+            Created = DateTime.Now,
+            CreatedBy = "Test",
+            LastModified = DateTime.Now,
+            LastModifiedBy = "Test"
+        });
+
+        // Job on the specified date (if any)
+        if (jobDate.HasValue)
+        {
+            context.TucJobs.Add(new TucJob
+            {
+                UcjbId = 1,
+                UcjbNumber = "JOB001",
+                UcjbCourierId = 1,
+                UcjbDate = jobDate.Value,
+                UcjbJobDone = false,
+                UcjbVoid = false
+            });
+        }
 
         await context.SaveChangesAsync();
     }
