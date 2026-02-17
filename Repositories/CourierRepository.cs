@@ -628,7 +628,13 @@ public class CourierRepository(
                 .ToDictionary(g => g.Key, g => g.Count());
 
             foreach (var courier in allCourierData)
+            {
                 courier.JobCount = jobCountsByCourier.GetValueOrDefault(courier.UccrId, 0);
+
+                // If a courier has no jobs in the filtered range, move them to the "no jobs" section (3/purple)
+                if (courier.JobCount == 0 && courier.DisplayOrder is 1 or 5)
+                    courier.DisplayOrder = 3;
+            }
 
             var jobsByCourier = allJobs
                 .GroupBy(j => j.CourierId)
