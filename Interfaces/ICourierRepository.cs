@@ -60,4 +60,11 @@ public interface ICourierRepository
 
     Task<List<DriverWorkOverviewViewModel>> GetDriverWorkOverviewAsync();
     Task ResetClearListAreaOrderAsync(int courierId);
+
+    /* Driver Management Dashboard - Export (no pagination) */
+    Task<List<TodayActiveDriversViewModel>> GetTodayActiveDriversForExportAsync(TodayActiveDriversFilterRequest request);
+    Task<List<CourierComplianceViewModel>> GetCourierComplianceForExportAsync(CourierComplianceFilterRequest request);
+    Task<List<AfterHoursCourierScheduleViewModel>> GetAfterHoursScheduleForExportAsync(CourierAfterHoursFilterRequest request);
+    Task<List<CourierEmailViewModel>> GetCourierEmailsForExportAsync(PaginatedRequest request);
+    Task<List<CourierDailyEarningsViewModel>> GetCourierDailyEarningsForExportAsync(PaginatedRequest request);
 }

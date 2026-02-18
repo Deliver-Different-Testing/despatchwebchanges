@@ -15,7 +15,8 @@ type EntryPointName =
     | 'jobSearch'
     | 'megaMap'
     | 'taskDashboardReact'
-    | 'driverManagement'
+    | 'driverManagementReact'
+    | 'composeEmailDialogReact'
     | 'courierMap'
     | 'dateRangeDialogReact'
     | 'priceBreakdownDialogReact'
@@ -53,7 +54,8 @@ const entryPoints: EntryPoints = {
     jobSearch: path.join(rootDir, "wwwroot/app/components/jobSearch/jobSearch.module.ts"),
     megaMap: path.join(rootDir, "wwwroot/app/components/mega-map/mega-map.module.ts"),
     taskDashboardReact: path.join(rootDir, "wwwroot/app/react/pages/task-dashboard/task-dashboard-react.module.tsx"),
-    driverManagement: path.join(rootDir, "wwwroot/app/components/driver-management-dashboard/driver-management.module.ts"),
+    driverManagementReact: path.join(rootDir, "wwwroot/app/react/pages/driver-management/driver-management-react.module.tsx"),
+    composeEmailDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/compose-email-dialog/compose-email-dialog-react.module.tsx"),
     courierMap: path.join(rootDir, "wwwroot/app/components/courier-map/courier-map.module.ts"),
     dateRangeDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/date-range-dialog/date-range-dialog-react.module.tsx"),
     priceBreakdownDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/price-breakdown-dialog/price-breakdown-dialog-react.module.tsx"),

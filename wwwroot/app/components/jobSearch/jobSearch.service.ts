@@ -32,6 +32,7 @@ class JobSearchService implements angular.IServiceProvider {
         job?: string,
         sortColumn?: string,
         sortDirection?: string,
+        jobId?: number,
     ): Promise<IJobSearchResult> {
         const response = await this.$http.get<IJobSearchResultDto>(
             `/Job/PODSearch`, {
@@ -41,6 +42,7 @@ class JobSearchService implements angular.IServiceProvider {
                     speedIds,
                     wild,
                     job,
+                    jobId,
                     page,
                     pageSize,
                     fromDate: formatDateForApiWithTzs(fromDate),
@@ -64,7 +66,8 @@ class JobSearchService implements angular.IServiceProvider {
         clientIds?: number[],
         speedIds?: number[],
         wild?: string,
-        job?: string
+        job?: string,
+        jobId?: number,
     ): string {
         const params = new URLSearchParams();
         params.append('fromDate', formatDateForApiWithTzs(fromDate));
@@ -80,6 +83,7 @@ class JobSearchService implements angular.IServiceProvider {
         }
         if (wild) params.append('wild', wild);
         if (job) params.append('job', job);
+        if (jobId) params.append('jobId', jobId.toString());
         return `/Job/PodSearchDownload?${params.toString()}`;
     }
 

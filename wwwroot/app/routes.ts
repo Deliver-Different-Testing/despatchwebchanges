@@ -491,28 +491,65 @@ class RouterConfig {
     private configureDriverManagementState(): this {
         this.$stateProvider.state("driverManagement", {
             url: "/driverManagement",
+            template: `
+                <md-content class="md-dense" style="height: 100%;">
+                    <react-app-shell title="Driver Management"></react-app-shell>
+                    <div id="react-driver-management" style="height: calc(100vh - 64px);"></div>
+                </md-content>
+            `,
             resolve: {
                 manifest: ['$http', async ($http: angular.IHttpService) => {
                     try {
                         const response = await $http.get<Record<string, string>>('dist/manifest.json');
                         return response.data;
                     } catch {
-                        console.warn('[ROUTES] Failed to load manifest for taskDashboard state, using fallback names');
+                        console.warn('[ROUTES] Failed to load manifest for driverManagement state, using fallback names');
                         return {
-                            'driverManagement.js': 'driverManagement.js',
-                            'driverManagement.css': 'driverManagement.css'
+                            'vendor-react.js': 'vendor-react.js',
+                            'driverManagementReact.js': 'driverManagementReact.js',
+                            'composeEmailDialogReact.js': 'composeEmailDialogReact.js',
+                            'editAfterhoursDialogReact.js': 'editAfterhoursDialogReact.js'
                         };
                     }
                 }],
-                loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                loadModule: ['$ocLazyLoad', 'manifest', async ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
                     const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
-                    return $ocLazyLoad.load([
-                        getAssetPath('driverManagement.js'),
-                        getAssetPath('driverManagement.css')
-                    ]);
+                    await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
+                    await $ocLazyLoad.load(getAssetPath('composeEmailDialogReact.js'));
+                    await $ocLazyLoad.load(getAssetPath('editAfterhoursDialogReact.js'));
+                    return $ocLazyLoad.load(getAssetPath('driverManagementReact.js'));
                 }]
             },
-            component: "driverManagementComponent",
+            controller: ['$scope', 'toastrService', 'APP_CONFIG',
+                function (
+                    $scope: angular.IScope,
+                    toastrService: {
+                        showSuccessToast: (m: string) => void;
+                        showWarningToast: (m: string) => void;
+                        showErrorToast: (m: string) => void;
+                        showInfoToast: (m: string) => void
+                    },
+                    appConfig: { US_Customer: boolean }
+                ) {
+                    const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
+                        switch (type) {
+                            case 'success': toastrService.showSuccessToast(message); break;
+                            case 'warning': toastrService.showWarningToast(message); break;
+                            case 'error': toastrService.showErrorToast(message); break;
+                            case 'info': toastrService.showInfoToast(message); break;
+                        }
+                    };
+
+                    (window as any).ReactDriverManagement.mount('react-driver-management', {
+                        showToast,
+                        isUsCustomer: appConfig.US_Customer,
+                    });
+
+                    $scope.$on('$destroy', () => {
+                        (window as any).ReactDriverManagement.unmount();
+                    });
+                }
+            ],
         });
         return this;
     }

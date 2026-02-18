@@ -29,7 +29,8 @@ public interface IJobRepository
         string job,
         DateTime fromDate,
         DateTime toDate,
-        List<int> clientIds
+        List<int> clientIds,
+        int? jobId = null
     );
 
     Task<List<PerformanceSpendReportModel>> GetClientJobsReportDataAsync(ClientJobsReportRequest request);

@@ -48,3 +48,21 @@ export {
     useUpdateTaskTime,
     useReassignTask,
 } from './useTasksApi';
+
+// Driver Management API hooks
+export {
+    useDriverSearch,
+    useCourierDetails,
+    useFleetOptions,
+    useTodayActiveDrivers,
+    useComplianceList,
+    useAfterHoursSchedule,
+    useDriverEmails,
+    useDriverEarnings,
+    useCreateAfterHoursSchedule,
+    useUpdateAfterHoursSchedule,
+    useDeleteAfterHoursSchedule,
+    useSendComplianceReminder,
+    useSendBulkComplianceReminders,
+    useSendEmailToCouriers,
+} from './useDriverManagementApi';

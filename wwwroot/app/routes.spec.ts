@@ -287,7 +287,8 @@ describe('RouterConfig', () => {
         it('should configure driverManagement state', () => {
             const state = registeredStates.get('driverManagement');
             expect(state.url).toBe('/driverManagement');
-            expect(state.component).toBe('driverManagementComponent');
+            // driverManagement now uses a React shell template
+            expect(state.template).toContain('react-app-shell');
         });
 
         it('should configure courierMap state', () => {

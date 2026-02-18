@@ -110,6 +110,16 @@
         </md-chips>
     </div>
 
+    <!-- Job ID Search -->
+    <div class="criteria-group">
+        <label class="group-label">Job ID</label>
+        <input type="number"
+               class="search-input"
+               ng-model="ctrl.searchCriteria.jobId"
+               ng-keyup="$event.keyCode === 13 && ctrl.refreshAllData()"
+               placeholder="Enter job ID">
+    </div>
+
     <!-- Text Search -->
     <div class="criteria-group">
         <label class="group-label">Job Number</label>

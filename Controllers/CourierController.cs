@@ -16,7 +16,8 @@ namespace DespatchWeb.Controllers;
 public class CourierController(
     ICourierRepository courierRepository,
     ITenantInfoService infoService,
-    ITaskRepository taskRepository
+    ITaskRepository taskRepository,
+    ICourierReportService courierReportService
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -418,4 +419,93 @@ public class CourierController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
+
+    #region Driver Management CSV Exports
+
+    [HttpPost]
+    public async Task<IActionResult> ExportTodayActiveDriversCsv([FromBody] TodayActiveDriversFilterRequest request)
+    {
+        try
+        {
+            var (fileBytes, fileName) = await courierReportService.GenerateTodayActiveDriversCsvAsync(request);
+            return File(fileBytes, "text/csv", fileName);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(ExportTodayActiveDriversCsv)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ExportComplianceCsv([FromBody] CourierComplianceFilterRequest request)
+    {
+        try
+        {
+            var (fileBytes, fileName) = await courierReportService.GenerateComplianceCsvAsync(request);
+            return File(fileBytes, "text/csv", fileName);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(ExportComplianceCsv)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ExportAfterHoursScheduleCsv([FromBody] CourierAfterHoursFilterRequest request)
+    {
+        try
+        {
+            var (fileBytes, fileName) = await courierReportService.GenerateAfterHoursScheduleCsvAsync(request);
+            return File(fileBytes, "text/csv", fileName);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(ExportAfterHoursScheduleCsv)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ExportDriverEmailsCsv([FromBody] PaginatedRequest request)
+    {
+        try
+        {
+            var (fileBytes, fileName) = await courierReportService.GenerateDriverEmailsCsvAsync(request);
+            return File(fileBytes, "text/csv", fileName);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(ExportDriverEmailsCsv)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ExportDriverEarningsCsv([FromBody] PaginatedRequest request)
+    {
+        try
+        {
+            var (fileBytes, fileName) = await courierReportService.GenerateDriverEarningsCsvAsync(request);
+            return File(fileBytes, "text/csv", fileName);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(ExportDriverEarningsCsv)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    #endregion
 }

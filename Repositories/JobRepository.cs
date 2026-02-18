@@ -404,6 +404,7 @@ public partial class JobRepository(
                         (j.UcjbCourierId.HasValue && data.CourierIds.Contains(j.UcjbCourierId.Value)))
                     && (!data.SpeedSet || (j.UcjbSpeed.HasValue && data.SpeedIds.Contains(j.UcjbSpeed.Value)))
                     && (!data.JobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
+                    && (!data.JobIdSet || j.UcjbId == data.JobId)
                 );
 
             var archivedJobsQuery = archivedJobsContext.TucJobArchives
@@ -417,6 +418,7 @@ public partial class JobRepository(
                         (j.UcjbCourierId.HasValue && data.CourierIds.Contains(j.UcjbCourierId.Value)))
                     && (!data.SpeedSet || (j.UcjbSpeed.HasValue && data.SpeedIds.Contains(j.UcjbSpeed.Value)))
                     && (!data.JobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
+                    && (!data.JobIdSet || j.UcjbId == data.JobId)
                 );
 
             if (data.WildSet)
@@ -778,7 +780,8 @@ public partial class JobRepository(
         {
             try
             {
-                dynamic parentJob = dbDataDict.TryGetValue(x.Key, out var activeParent) ? activeParent
+                dynamic parentJob = dbDataDict.TryGetValue(x.Key, out var activeParent)
+                    ? activeParent
                     : dbDataArchiveDict[x.Key];
 
                 var childJobs = x.Where(j => j.UcjbId != parentJob.UcjbId).ToList();
@@ -995,6 +998,7 @@ public partial class JobRepository(
     /// <param name="fromDate">Start date filter.</param>
     /// <param name="toDate">End date filter.</param>
     /// <param name="clientIds">Optional filter by client IDs.</param>
+    /// <param name="jobId"></param>
     /// <returns>List of job models formatted for download export.</returns>
     public async Task<List<JobDownloadModel>> PodSearchDownloadAsync(
         List<int> courierIds,
@@ -1003,7 +1007,8 @@ public partial class JobRepository(
         string job,
         DateTime fromDate,
         DateTime toDate,
-        List<int> clientIds
+        List<int> clientIds,
+        int? jobId = null
     )
     {
         // Use same date handling as PodSearchAsync - strip time component
@@ -1017,6 +1022,7 @@ public partial class JobRepository(
         var courierSet = courierIds is { Count: > 0 };
         var speedSet = speedIds is { Count: > 0 };
         var jobSet = !string.IsNullOrEmpty(job);
+        var jobIdSet = jobId.HasValue;
         var wildSet = !string.IsNullOrEmpty(wild);
 
         // Use separate contexts for parallel queries (same pattern as PodSearchAsync)
@@ -1038,6 +1044,7 @@ public partial class JobRepository(
                 && (!courierSet || (j.UcjbCourierId.HasValue && courierIds.Contains(j.UcjbCourierId.Value)))
                 && (!speedSet || (j.UcjbSpeed.HasValue && speedIds.Contains(j.UcjbSpeed.Value)))
                 && (!jobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
+                && (!jobIdSet || j.UcjbId == jobId)
             );
 
         // Build archived jobs query with SAME filters as PodSearchAsync
@@ -1052,6 +1059,7 @@ public partial class JobRepository(
                 && (!courierSet || (j.UcjbCourierId.HasValue && courierIds.Contains(j.UcjbCourierId.Value)))
                 && (!speedSet || (j.UcjbSpeed.HasValue && speedIds.Contains(j.UcjbSpeed.Value)))
                 && (!jobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
+                && (!jobIdSet || j.UcjbId == jobId)
             );
 
         // Apply SAME wildcard search as PodSearchAsync
@@ -1186,11 +1194,11 @@ public partial class JobRepository(
                 .AsNoTracking()
                 .AsSplitQuery()
                 .Where(j => j.UcjbDate >= startDate
-                              && j.UcjbDate <= endDate
-                              && (j.JobRelationshipType == null || j.JobRelationshipType.DisplayStatement == true)
-                              && clientIds.Contains(j.UcjbClientId ?? 0)
-                              && j.UcjbVoid == false
-                              && j.UcjbJobDone == true)
+                            && j.UcjbDate <= endDate
+                            && (j.JobRelationshipType == null || j.JobRelationshipType.DisplayStatement == true)
+                            && clientIds.Contains(j.UcjbClientId ?? 0)
+                            && j.UcjbVoid == false
+                            && j.UcjbJobDone == true)
                 .OrderBy(j => j.SpeedNavigation == null ? 100 :
                     j.SpeedNavigation.UcjtDescription == "15 Minute" ? 1 :
                     j.SpeedNavigation.UcjtDescription == "30 Minute" ? 2 :
@@ -1233,7 +1241,7 @@ public partial class JobRepository(
                     LateDelivery = j.UcjbLateDel == 1,
                     ClientLegalName = j.UcjbClient != null ? j.UcjbClient.UcclLegalName : null,
                     Speed = j.SpeedNavigation != null ? j.SpeedNavigation.UcjtName : null,
-                    AcceptedSpeed = j.AcceptedJobType != null ? j.AcceptedJobType.UcjtName  : null,
+                    AcceptedSpeed = j.AcceptedJobType != null ? j.AcceptedJobType.UcjtName : null,
                     Notes = j.UcjbNotes,
                     Amount = j.UcjbAmount,
                     RefA = j.UcjbClientRefa,
@@ -1900,38 +1908,6 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Checks if a job can be split.
-    /// A job can be split if it has no flights assigned .
-    /// Child jobs can now be split.
-    /// </summary>
-    /// <param name="jobId">The job ID to check.</param>
-    /// <returns>True if the job can be split, false otherwise.</returns>
-    public async Task<bool> CanJobBeSplitAsync(int jobId)
-    {
-        var job = await Context.TucJobs
-            .AsNoTracking()
-            .Include(j => j.TucJobNationwides)
-            .FirstOrDefaultAsync(j => j.UcjbId == jobId);
-
-        if (job == null) return false;
-
-        // Only restriction: cannot split jobs with flights assigned
-        return job.TucJobNationwides.Count == 0;
-    }
-
-    /// <summary>
-    /// Gets all child job IDs for a split parent job.
-    /// </summary>
-    /// <param name="parentJobId">The parent job ID.</param>
-    /// <returns>List of child job IDs.</returns>
-    public async Task<List<int>> GetSplitJobChildrenAsync(int parentJobId) =>
-        await Context.TucJobs
-            .AsNoTracking()
-            .Where(j => j.ParentId == parentJobId)
-            .Select(j => j.UcjbId)
-            .ToListAsync();
-
-    /// <summary>
     /// Retrieves all available job speeds/types.
     /// </summary>
     public async Task<List<Suggestion>> GetSpeedsAsync() =>
@@ -2164,7 +2140,9 @@ public partial class JobRepository(
             // Validate job was found (effectiveJobId of 0 indicates job not found)
             if (effectiveJobId == 0)
             {
-                var jobIdentifier = isPrebook ? $"PrebookJobId {viewModel.PrebookJobId}" : $"ChildJobId {viewModel.ChildJobId}";
+                var jobIdentifier = isPrebook
+                    ? $"PrebookJobId {viewModel.PrebookJobId}"
+                    : $"ChildJobId {viewModel.ChildJobId}";
                 throw new InvalidOperationException($"Job not found: {jobIdentifier}");
             }
 
@@ -2848,18 +2826,18 @@ public partial class JobRepository(
                   SET HasBeenRead = @p0, ReadTimestamp = @p1, ReadByStaffId = @p2
                   WHERE JobId IN (
                   """ + parameterPlaceholders + """
-                  );
+                                                );
 
-                  -- Insert new tracker records only for jobs that exist in tucJob and don't have a tracker yet
-                  -- Uses NOT EXISTS to prevent PK violation race condition
-                  INSERT INTO tucJobReadTracker (JobId, HasBeenRead, ReadByStaffId, ReadTimestamp)
-                  SELECT j.UcjbId, @p0, @p2, @p1
-                  FROM tucJob j
-                  WHERE j.UcjbId IN (
-                  """ + parameterPlaceholders + """
-                  )
-                    AND NOT EXISTS (SELECT 1 FROM tucJobReadTracker t WHERE t.JobId = j.UcjbId);
-                  """;
+                                                -- Insert new tracker records only for jobs that exist in tucJob and don't have a tracker yet
+                                                -- Uses NOT EXISTS to prevent PK violation race condition
+                                                INSERT INTO tucJobReadTracker (JobId, HasBeenRead, ReadByStaffId, ReadTimestamp)
+                                                SELECT j.UcjbId, @p0, @p2, @p1
+                                                FROM tucJob j
+                                                WHERE j.UcjbId IN (
+                                                """ + parameterPlaceholders + """
+                                                                              )
+                                                                                AND NOT EXISTS (SELECT 1 FROM tucJobReadTracker t WHERE t.JobId = j.UcjbId);
+                                                                              """;
         await Context.Database.ExecuteSqlRawAsync(sql, parameters.ToArray());
     }
 
@@ -3053,6 +3031,7 @@ public partial class JobRepository(
 
         return await archivedJobQuery.AsNoTracking().FirstOrDefaultAsync();
     }
+
     /// <summary>
     /// Determines if a job has a parent (is a child job in a split or family).
     /// </summary>
@@ -3519,7 +3498,8 @@ public partial class JobRepository(
             .AsSplitQuery()
             .AsNoTracking()
             .Include(s => s.Grouping)
-            .FirstOrDefaultAsync(x => x.UcjtId == speedId) ?? throw new KeyNotFoundException($"Job type with ID {speedId} not found");
+            .FirstOrDefaultAsync(x => x.UcjtId == speedId) ??
+        throw new KeyNotFoundException($"Job type with ID {speedId} not found");
 
     /// <summary>
     /// Retrieves aggregate statistics for the overview page (active, completed, inactive counts).
@@ -3889,6 +3869,186 @@ public partial class JobRepository(
             throw;
         }
     }
+
+
+    public async Task<CreateMinimalTucJobResponse> CreateMinimalTucJobAsync(CreateMinimalTucJobInputModel data,
+        CancellationToken cancellationToken = default)
+    {
+        // Output parameters
+        var jobIdParam = new OutputParameter<int?>();
+        var messageParam = new OutputParameter<string>();
+        var returnValueParam = new OutputParameter<int>();
+
+        try
+        {
+            await Context.Procedures.DD_stpJob_InsertExceleratorAsync(
+                bookedBy: data.BookedBy,
+                fromAddress: data.FromAddress?.FullAddress,
+                fromStreet: data.FromAddress != null
+                    ? (data.FromAddress.AddressLine3 + " " + data.FromAddress.AddressLine4).Trim()
+                    : null,
+                fromBuilding: data.FromAddress?.AddressLine2,
+                fromCompany: data.FromAddress?.AddressLine1,
+                fromCity: data.FromAddress?.AddressLine5,
+                fromState: data.FromAddress?.AddressLine6,
+                fromZipCode: data.FromAddress != null ? SafeParseZipCode(data.FromAddress.AddressLine7) : null,
+                speed: data.Speed,
+                speedID: data.SpeedId,
+                toAddress: data.ToAddress?.FullAddress,
+                toStreet: data.ToAddress != null
+                    ? (data.ToAddress.AddressLine3 + " " + data.ToAddress.AddressLine4).Trim()
+                    : null,
+                toBuilding: data.ToAddress?.AddressLine2,
+                toCompany: data.ToAddress?.AddressLine1,
+                toCity: data.ToAddress?.AddressLine5,
+                toState: data.ToAddress?.AddressLine6,
+                toZipCode: data.ToAddress != null ? SafeParseZipCode(data.ToAddress.AddressLine7) : null,
+                toAddressType: data.ToAddressType,
+                referenceA: data.Reference,
+                referenceB: data.ReferenceB,
+                vehicleSizeID: data.VehicleSizeId,
+                totalWeight: null,
+                totalDistance: null,
+                @return: null,
+                courierNotes: data.Notes,
+                clientNotes: data.Notes,
+                pickupNotes: data.PickupNotes,
+                deliveryNotes: data.DeliveryNotes,
+                fromContactName: data.FromContactName,
+                fromPhoneNumber: data.FromPhoneNumber,
+                toContactName: data.ToContactName,
+                toPhoneNumber: data.ToPhoneNumber,
+                type: data.Type,
+                pickUpFrom: null,
+                quantity: null,
+                leaveNotHome: null,
+                jobNotificationType: data.JobNotificationType,
+                jobNotificationEmail: data.JobNotificationEmail,
+                jobNotificationMobile: data.JobNotificationMobile,
+                toAddressCode: data.ToAddressCode,
+                fromAddressCode: data.FromAddressCode,
+                clientID: data.ClientId,
+                time: data.TenantCurrentTime,
+                hold: data.Hold,
+                fixedAmount: data.Amount,
+                jobID: jobIdParam, // OUTPUT parameter
+                agentAmount: data.AgentAmount,
+                agentCourierID: data.AgentCourierId,
+                fuelSurchargeAmount: data.FuelSurchargeAmount,
+                ourRef: data.OurRef,
+                message: messageParam, // OUTPUT parameter
+                pickUpLatitude: SafeDecimalToString(data.PickUpLatitude),
+                pickUpLongitude: SafeDecimalToString(data.PickUpLongitude),
+                deliveryLatitude: SafeDecimalToString(data.DeliveryLatitude),
+                deliveryLongitude: SafeDecimalToString(data.DeliveryLongitude),
+                pickup: null,
+                dropoff: null,
+                privateRes: data.PrivateRes,
+                truckStartTime: data.TruckStartTime,
+                truckHours: null,
+                jobNumber: data.JobNumber,
+                storageState: null,
+                deliveryState: null,
+                sourceId: (int)JobSource.DespatchWeb,
+                totalPallets: data.TotalPallets,
+                extraStopOffs: null,
+                dryIceWeight: data.DryIceWeight,
+                cubic: data.Cubic,
+                waitTime: null,
+                dGClass: data.DgClass,
+                dGDocs: data.DgClass.HasValue,
+                loggedInContactId: data.LoggedInContactId,
+                additionalServiceIds: data.AdditionalServiceIds,
+                deliverByDateTime: data.DeliverByDateTime,
+                pickupTimeZone: data.PickupTimeZone,
+                deliverByTimeZone: data.DeliverByTimeZone,
+                recurringName: data.RecurringName,
+                recurringDays: data.RecurringDays,
+                recurringFrequency: data.RecurringFrequency,
+                recurringHoliday: null,
+                recurringInitialDays: data.RecurringInitialDays,
+                tenantCurrentTime: data.TenantCurrentTime,
+                dimensionsType: null,
+                cubicList: data.CubicList,
+                weightList: data.WeightList,
+                barcodeList: data.BarcodeList,
+                returnValue: returnValueParam, // OUTPUT parameter
+                cancellationToken: cancellationToken
+            );
+
+            var success = returnValueParam.Value == 0 || jobIdParam.Value.HasValue;
+            return new CreateMinimalTucJobResponse
+            {
+                Success = success,
+                JobId = jobIdParam.Value,
+                Message = messageParam.Value
+            };
+
+            // Helper method to safely convert decimal to string
+            string SafeDecimalToString(decimal? value) => value?.ToString();
+
+            int? SafeParseZipCode(string zipCode)
+            {
+                if (string.IsNullOrWhiteSpace(zipCode) || !int.TryParse(zipCode, out var result))
+                    return null;
+                return result;
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository),
+                    nameof(CreateMinimalTucJobAsync)));
+            return new CreateMinimalTucJobResponse
+            {
+                Success = false,
+                Message = ex.Message
+            };
+        }
+    }
+
+    public async Task<Suggestion> GetSpeedSuggestionBySpeedIdAsync(int speedId) =>
+        await Context.TucJobTypes
+            .AsNoTracking()
+            .Where(s => s.UcjtId == speedId)
+            .Select(s => new Suggestion
+            {
+                Id = s.UcjtId,
+                Text = s.UcjtName
+            })
+            .FirstOrDefaultAsync();
+
+    /// <summary>
+    /// Checks if a job can be split.
+    /// A job can be split if it has no flights assigned .
+    /// Child jobs can now be split.
+    /// </summary>
+    /// <param name="jobId">The job ID to check.</param>
+    /// <returns>True if the job can be split, false otherwise.</returns>
+    public async Task<bool> CanJobBeSplitAsync(int jobId)
+    {
+        var job = await Context.TucJobs
+            .AsNoTracking()
+            .Include(j => j.TucJobNationwides)
+            .FirstOrDefaultAsync(j => j.UcjbId == jobId);
+
+        if (job == null) return false;
+
+        // Only restriction: cannot split jobs with flights assigned
+        return job.TucJobNationwides.Count == 0;
+    }
+
+    /// <summary>
+    /// Gets all child job IDs for a split parent job.
+    /// </summary>
+    /// <param name="parentJobId">The parent job ID.</param>
+    /// <returns>List of child job IDs.</returns>
+    public async Task<List<int>> GetSplitJobChildrenAsync(int parentJobId) =>
+        await Context.TucJobs
+            .AsNoTracking()
+            .Where(j => j.ParentId == parentJobId)
+            .Select(j => j.UcjbId)
+            .ToListAsync();
 
     private static PerformanceSpendReportModel MapToPerformanceSpendReportModel(ClientJobsReportRow row)
     {
@@ -4436,154 +4596,6 @@ public partial class JobRepository(
         await CreateNewRecurringJobNote(prebookJobId, note, false);
     }
 
-
-    public async Task<CreateMinimalTucJobResponse> CreateMinimalTucJobAsync(CreateMinimalTucJobInputModel data,
-        CancellationToken cancellationToken = default)
-    {
-        // Output parameters
-        var jobIdParam = new OutputParameter<int?>();
-        var messageParam = new OutputParameter<string>();
-        var returnValueParam = new OutputParameter<int>();
-
-        try
-        {
-            await Context.Procedures.DD_stpJob_InsertExceleratorAsync(
-                bookedBy: data.BookedBy,
-                fromAddress: data.FromAddress?.FullAddress,
-                fromStreet: data.FromAddress != null
-                    ? (data.FromAddress.AddressLine3 + " " + data.FromAddress.AddressLine4).Trim()
-                    : null,
-                fromBuilding: data.FromAddress?.AddressLine2,
-                fromCompany: data.FromAddress?.AddressLine1,
-                fromCity: data.FromAddress?.AddressLine5,
-                fromState: data.FromAddress?.AddressLine6,
-                fromZipCode: data.FromAddress != null ? SafeParseZipCode(data.FromAddress.AddressLine7) : null,
-                speed: data.Speed,
-                speedID: data.SpeedId,
-                toAddress: data.ToAddress?.FullAddress,
-                toStreet: data.ToAddress != null
-                    ? (data.ToAddress.AddressLine3 + " " + data.ToAddress.AddressLine4).Trim()
-                    : null,
-                toBuilding: data.ToAddress?.AddressLine2,
-                toCompany: data.ToAddress?.AddressLine1,
-                toCity: data.ToAddress?.AddressLine5,
-                toState: data.ToAddress?.AddressLine6,
-                toZipCode: data.ToAddress != null ? SafeParseZipCode(data.ToAddress.AddressLine7) : null,
-                toAddressType: data.ToAddressType,
-                referenceA: data.Reference,
-                referenceB: data.ReferenceB,
-                vehicleSizeID: data.VehicleSizeId,
-                totalWeight: null,
-                totalDistance: null,
-                @return: null,
-                courierNotes: data.Notes,
-                clientNotes: data.Notes,
-                pickupNotes: data.PickupNotes,
-                deliveryNotes: data.DeliveryNotes,
-                fromContactName: data.FromContactName,
-                fromPhoneNumber: data.FromPhoneNumber,
-                toContactName: data.ToContactName,
-                toPhoneNumber: data.ToPhoneNumber,
-                type: data.Type,
-                pickUpFrom: null,
-                quantity: null,
-                leaveNotHome: null,
-                jobNotificationType: data.JobNotificationType,
-                jobNotificationEmail: data.JobNotificationEmail,
-                jobNotificationMobile: data.JobNotificationMobile,
-                toAddressCode: data.ToAddressCode,
-                fromAddressCode: data.FromAddressCode,
-                clientID: data.ClientId,
-                time: data.TenantCurrentTime,
-                hold: data.Hold,
-                fixedAmount: data.Amount,
-                jobID: jobIdParam, // OUTPUT parameter
-                agentAmount: data.AgentAmount,
-                agentCourierID: data.AgentCourierId,
-                fuelSurchargeAmount: data.FuelSurchargeAmount,
-                ourRef: data.OurRef,
-                message: messageParam, // OUTPUT parameter
-                pickUpLatitude: SafeDecimalToString(data.PickUpLatitude),
-                pickUpLongitude: SafeDecimalToString(data.PickUpLongitude),
-                deliveryLatitude: SafeDecimalToString(data.DeliveryLatitude),
-                deliveryLongitude: SafeDecimalToString(data.DeliveryLongitude),
-                pickup: null,
-                dropoff: null,
-                privateRes: data.PrivateRes,
-                truckStartTime: data.TruckStartTime,
-                truckHours: null,
-                jobNumber: data.JobNumber,
-                storageState: null,
-                deliveryState: null,
-                sourceId: (int)JobSource.DespatchWeb,
-                totalPallets: data.TotalPallets,
-                extraStopOffs: null,
-                dryIceWeight: data.DryIceWeight,
-                cubic: data.Cubic,
-                waitTime: null,
-                dGClass: data.DgClass,
-                dGDocs: data.DgClass.HasValue,
-                loggedInContactId: data.LoggedInContactId,
-                additionalServiceIds: data.AdditionalServiceIds,
-                deliverByDateTime: data.DeliverByDateTime,
-                pickupTimeZone: data.PickupTimeZone,
-                deliverByTimeZone: data.DeliverByTimeZone,
-                recurringName: data.RecurringName,
-                recurringDays: data.RecurringDays,
-                recurringFrequency: data.RecurringFrequency,
-                recurringHoliday: null,
-                recurringInitialDays: data.RecurringInitialDays,
-                tenantCurrentTime: data.TenantCurrentTime,
-                dimensionsType: null,
-                cubicList: data.CubicList,
-                weightList: data.WeightList,
-                barcodeList: data.BarcodeList,
-                returnValue: returnValueParam, // OUTPUT parameter
-                cancellationToken: cancellationToken
-            );
-
-            var success = returnValueParam.Value == 0 || jobIdParam.Value.HasValue;
-            return new CreateMinimalTucJobResponse
-            {
-                Success = success,
-                JobId = jobIdParam.Value,
-                Message = messageParam.Value
-            };
-
-            // Helper method to safely convert decimal to string
-            string SafeDecimalToString(decimal? value) => value?.ToString();
-
-            int? SafeParseZipCode(string zipCode)
-            {
-                if (string.IsNullOrWhiteSpace(zipCode) || !int.TryParse(zipCode, out var result))
-                    return null;
-                return result;
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository),
-                    nameof(CreateMinimalTucJobAsync)));
-            return new CreateMinimalTucJobResponse
-            {
-                Success = false,
-                Message = ex.Message
-            };
-        }
-    }
-
-    public async Task<Suggestion> GetSpeedSuggestionBySpeedIdAsync(int speedId) =>
-        await Context.TucJobTypes
-            .AsNoTracking()
-            .Where(s => s.UcjtId == speedId)
-            .Select(s => new Suggestion
-            {
-                Id = s.UcjtId,
-                Text = s.UcjtName
-            })
-            .FirstOrDefaultAsync();
-
     private async Task<Suggestion> GetDefaultSpeedType() => await Context.TucJobTypes
         .AsNoTracking()
         .Select(t => new Suggestion
@@ -4938,7 +4950,8 @@ public partial class JobRepository(
     public new async Task<bool> IsJobArchived(int jobId)
         => await base.IsJobArchived(jobId);
 
-    public new async Task<List<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived, bool isBulkJob = false)
+    public new async Task<List<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived,
+        bool isBulkJob = false)
         => await base.GetRelatedJobsMultiSelectListAsync(jobId, isArchived, isBulkJob);
 
     public new async Task<int?> GetJobParentIdAsync(int jobId)

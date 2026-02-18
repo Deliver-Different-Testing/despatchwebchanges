@@ -25,18 +25,6 @@ import {
     IDeliveryJourney,
     IDeliveryJourneyDto
 } from "../react/components/common/task-history/TaskHistory.interfaces";
-import {
-    ITodayActiveDrivers,
-    ITodayActiveDriversDto
-} from "../components/driver-management-dashboard/interfaces/ITodayActiveDrivers";
-import {
-    IAfterHoursCourierSchedule,
-    IAfterHoursCourierScheduleDto
-} from "../components/driver-management-dashboard/interfaces/IAfterHoursCourierSchedule";
-import {
-    ICourierCompliance,
-    ICourierComplianceDto
-} from "../components/driver-management-dashboard/interfaces/ICourierCompliance";
 import {IOpenJobResponse, IOpenJobResponseDto} from "../components/overview/overview.interfaces";
 import {timezoneShortFilter} from "../filters";
 
@@ -193,28 +181,6 @@ export function transformDeliveryJourneyDTO(dto: IDeliveryJourneyDto): IDelivery
     }
 }
 
-export function transformTodayActiveDriversDTO(dto: ITodayActiveDriversDto): ITodayActiveDrivers {
-    return {
-        ...dto,
-        loginTime: formatDateFromApi(dto.loginTime),
-        logoutTime: dto.logoutTime ? formatDateFromApi(dto.logoutTime) : undefined,
-    }
-}
-
-export function transformAfterHoursScheduleDto(dto: IAfterHoursCourierScheduleDto): IAfterHoursCourierSchedule {
-    return {
-        ...dto,
-        startTime: dto.startTime ? formatDateFromApi(dto.startTime) : undefined,
-        endTime: dto.endTime ? formatDateFromApi(dto.endTime) : undefined,
-    }
-}
-
-export function transformCourierComplianceDto(dto: ICourierComplianceDto): ICourierCompliance {
-    return {
-        ...dto,
-        expiryDate: dto.expiryDate ? formatDateFromApi(dto.expiryDate) : undefined,
-    }
-}
 
 export function transformOpenJobResponseDto(dto: IOpenJobResponseDto): IOpenJobResponse {
     return {
