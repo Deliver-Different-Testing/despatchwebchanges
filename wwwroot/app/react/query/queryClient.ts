@@ -115,6 +115,24 @@ export const queryKeys = {
         eventTypes: ['tasks', 'eventTypes'] as const,
         deliveryJourney: (jobId: number) => ['tasks', 'deliveryJourney', jobId] as const,
     },
+    driverManagement: {
+        all: ['driverManagement'] as const,
+        searchCouriers: (searchTerm: string) =>
+            ['driverManagement', 'searchCouriers', searchTerm] as const,
+        courierDetails: (courierId: number) =>
+            ['driverManagement', 'courierDetails', courierId] as const,
+        fleetOptions: ['driverManagement', 'fleetOptions'] as const,
+        todayActive: (query: unknown, filters: unknown) =>
+            ['driverManagement', 'todayActive', query, filters] as const,
+        compliance: (query: unknown, filters: unknown) =>
+            ['driverManagement', 'compliance', query, filters] as const,
+        afterHours: (query: unknown, filters: unknown) =>
+            ['driverManagement', 'afterHours', query, filters] as const,
+        driverEmails: (query: unknown) =>
+            ['driverManagement', 'driverEmails', query] as const,
+        earnings: (query: unknown) =>
+            ['driverManagement', 'earnings', query] as const,
+    },
 } as const;
 
 export default queryClient;

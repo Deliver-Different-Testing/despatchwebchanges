@@ -9,6 +9,7 @@ public class PodSearchDownloadRequest
     public List<int> ClientIds { get; set; }
     public List<int> SpeedIds { get; set; }
     public string Wild { get; set; }
+    public int? JobId { get; set; }
     public string Job { get; set; }
     public DateTimeOffset FromDate { get; set; }
     public DateTimeOffset ToDate { get; set; }
@@ -17,5 +18,6 @@ public class PodSearchDownloadRequest
     public bool CourierSet => CourierIds != null && CourierIds.Count != 0;
     public bool SpeedSet => SpeedIds != null && SpeedIds.Count != 0;
     public bool WildSet => !string.IsNullOrWhiteSpace(Wild);
+    public bool JobIdSet => JobId.HasValue;
     public bool JobSet => !string.IsNullOrWhiteSpace(Job);
 }

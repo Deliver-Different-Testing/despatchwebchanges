@@ -14,3 +14,4 @@ export * from './notes';
 export * from './agent';
 export * from './event';
 export * from './tasks';
+export * from './driverManagement';

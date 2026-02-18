@@ -1949,6 +1949,14 @@ public class CourierRepository(
             };
         }
 
+        query = request.OrderBy?.ToLower() switch
+        {
+            "name" => request.SortDescending
+                ? query.OrderByDescending(c => c.UccrName).ThenByDescending(c => c.UccrSurname)
+                : query.OrderBy(c => c.UccrName).ThenBy(c => c.UccrSurname),
+            _ => query.OrderBy(c => c.UccrName).ThenBy(c => c.UccrSurname)
+        };
+
         var couriers = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -2067,6 +2075,23 @@ public class CourierRepository(
             };
         }).ToList();
 
+        courierDailyEarnings = request.OrderBy?.ToLower() switch
+        {
+            "hourslogged" => request.SortDescending
+                ? courierDailyEarnings.OrderByDescending(x => x.HoursLogged).ToList()
+                : courierDailyEarnings.OrderBy(x => x.HoursLogged).ToList(),
+            "deliveries" => request.SortDescending
+                ? courierDailyEarnings.OrderByDescending(x => x.Deliveries).ToList()
+                : courierDailyEarnings.OrderBy(x => x.Deliveries).ToList(),
+            "earnings" => request.SortDescending
+                ? courierDailyEarnings.OrderByDescending(x => x.Earnings).ToList()
+                : courierDailyEarnings.OrderBy(x => x.Earnings).ToList(),
+            "hourlyrate" => request.SortDescending
+                ? courierDailyEarnings.OrderByDescending(x => x.HourlyRate).ToList()
+                : courierDailyEarnings.OrderBy(x => x.HourlyRate).ToList(),
+            _ => courierDailyEarnings
+        };
+
         return new CourierDailyEarningsPaginatedResponse
         {
             Items = courierDailyEarnings,
@@ -2108,11 +2133,28 @@ public class CourierRepository(
         var totalCount = await query.CountAsync();
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
+        query = request.OrderBy?.ToLower() switch
+        {
+            "code" => request.SortDescending
+                ? query.OrderByDescending(c => c.Code)
+                : query.OrderBy(c => c.Code),
+            "email" => request.SortDescending
+                ? query.OrderByDescending(c => c.UccrEmail)
+                : query.OrderBy(c => c.UccrEmail),
+            "phone" => request.SortDescending
+                ? query.OrderByDescending(c => c.UccrMobile)
+                : query.OrderBy(c => c.UccrMobile),
+            "fleet" => request.SortDescending
+                ? query.OrderByDescending(c => c.CourierFleet.UccfName)
+                : query.OrderBy(c => c.CourierFleet.UccfName),
+            _ => request.SortDescending
+                ? query.OrderByDescending(c => c.UccrName).ThenByDescending(c => c.UccrSurname)
+                : query.OrderBy(c => c.UccrName).ThenBy(c => c.UccrSurname)
+        };
+
         var courierEmails = await query
             .AsSplitQuery()
             .AsNoTracking()
-            .OrderBy(c => c.UccrName)
-            .ThenBy(c => c.UccrSurname)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(c => new CourierEmailViewModel
@@ -2400,4 +2442,359 @@ public class CourierRepository(
             _ => vehicleType // Return original if no match
         };
     }
+
+    #region Driver Management Export Methods
+
+    public async Task<List<TodayActiveDriversViewModel>> GetTodayActiveDriversForExportAsync(
+        TodayActiveDriversFilterRequest request)
+    {
+        var today = infoService.GetCurrentTenantTime();
+        var tenantTimeZone = infoService.GetTenantTimeZone();
+
+        var query = Context.TucCouriers
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Where(c => c.CourierLogInOut != null &&
+                        c.CourierLogInOut.LogInTime.Date == today.Date);
+
+        if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+        {
+            var searchPattern = $"%{request.SearchTerm}%";
+            query = query.Where(c =>
+                EF.Functions.Like(c.Code, searchPattern) ||
+                EF.Functions.Like(c.UccrName, searchPattern) ||
+                EF.Functions.Like(c.UccrSurname, searchPattern) ||
+                EF.Functions.Like(c.UccrMobile, searchPattern) ||
+                EF.Functions.Like(c.PersonalMobile, searchPattern) ||
+                EF.Functions.Like(c.VehiclePlateNnumber, searchPattern) ||
+                EF.Functions.Like(c.UccrVehicleModel, searchPattern) ||
+                EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern)
+            );
+        }
+
+        if (request.Fleet != 0)
+            query = query.Where(c => c.CourierFleetId == request.Fleet);
+
+        if (!string.IsNullOrWhiteSpace(request.Status))
+        {
+            query = request.Status.ToLower() switch
+            {
+                "active" => query.Where(c => c.CourierLogInOut.LogOutTime == null),
+                "inactive" => query.Where(c => c.CourierLogInOut.LogOutTime != null),
+                _ => query
+            };
+        }
+
+        var couriers = await query
+            .OrderBy(c => c.UccrName).ThenBy(c => c.UccrSurname)
+            .Select(c => new
+            {
+                c.UccrId,
+                c.Code,
+                CourierName = c.UccrName + " " + c.UccrSurname,
+                Fleet = c.CourierFleet != null ? c.CourierFleet.UccfName : "Not Available",
+                c.CourierLogInOut.LogInTime,
+                c.CourierLogInOut.LogOutTime,
+                Status = c.CourierLogInOut.LogOutTime == null ? "Active" : "Inactive"
+            })
+            .TagWith("GetTodayActiveDriversForExport")
+            .ToListAsync();
+
+        if (couriers.Count == 0) return [];
+
+        var courierIds = couriers.Select(c => c.UccrId).ToList();
+
+        var deliveryCounts = await Context.TucJobs
+            .AsNoTracking()
+            .Where(j => j.UcjbCourierId.HasValue &&
+                        courierIds.Contains(j.UcjbCourierId.Value) &&
+                        j.UcjbDate.Date == today.Date)
+            .GroupBy(j => j.UcjbCourierId.Value)
+            .Select(g => new { CourierId = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        var deliveryCountDict = deliveryCounts.ToDictionary(x => x.CourierId, x => x.Count);
+
+        return couriers.Select(c => new TodayActiveDriversViewModel
+        {
+            CourierId = c.UccrId,
+            Code = c.Code,
+            Name = c.CourierName,
+            Fleet = c.Fleet,
+            LoginTime = TimeZoneHelper.SetDateTimeWithTimeZone(c.LogInTime, tenantTimeZone),
+            LogoutTime = c.LogOutTime.HasValue
+                ? TimeZoneHelper.SetDateTimeWithTimeZone(c.LogOutTime.Value, tenantTimeZone)
+                : null,
+            Duration = CourierActiveDuration(c.LogInTime, c.LogOutTime ?? today),
+            Deliveries = deliveryCountDict.GetValueOrDefault(c.UccrId, 0),
+            Status = c.Status
+        }).ToList();
+    }
+
+    public async Task<List<CourierComplianceViewModel>> GetCourierComplianceForExportAsync(
+        CourierComplianceFilterRequest request)
+    {
+        var now = infoService.GetCurrentTenantTime();
+        var tenantTimezone = infoService.GetTenantTimeZone();
+        var expiringThreshold = now.AddDays(30);
+
+        var query = Context.TucCouriers.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+        {
+            var searchPattern = $"%{request.SearchTerm}%";
+            query = query.Where(c =>
+                EF.Functions.Like(c.Code, searchPattern) ||
+                EF.Functions.Like(c.UccrName, searchPattern) ||
+                EF.Functions.Like(c.UccrSurname, searchPattern) ||
+                EF.Functions.Like(c.UccrMobile, searchPattern) ||
+                EF.Functions.Like(c.PersonalMobile, searchPattern) ||
+                EF.Functions.Like(c.VehiclePlateNnumber, searchPattern) ||
+                EF.Functions.Like(c.UccrVehicleModel, searchPattern) ||
+                EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern)
+            );
+        }
+
+        if (request.Fleet != 0)
+            query = query.Where(c => c.CourierFleetId == request.Fleet);
+
+        if (!string.IsNullOrWhiteSpace(request.Type))
+        {
+            query = request.Type.ToLower() switch
+            {
+                "drivers_license" => query.Where(c => c.DriversLicenseExpiry.HasValue),
+                "dg_endorsement" => query.Where(c => c.UccrDangerousGoods == 1 && c.DglicenseExpiry.HasValue),
+                _ => query
+            };
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Status))
+        {
+            query = request.Status.ToLower() switch
+            {
+                "expired" => query.Where(c => c.DriversLicenseExpiry.HasValue && c.DriversLicenseExpiry.Value < now),
+                "expiring" => query.Where(c =>
+                    c.DriversLicenseExpiry.HasValue && c.DriversLicenseExpiry.Value >= now &&
+                    c.DriversLicenseExpiry.Value <= expiringThreshold),
+                "valid" => query.Where(c =>
+                    !c.DriversLicenseExpiry.HasValue || c.DriversLicenseExpiry.Value > expiringThreshold),
+                _ => query
+            };
+        }
+
+        var items = await query
+            .AsNoTracking()
+            .OrderBy(c => c.Code)
+            .Select(c => new CourierComplianceViewModel
+            {
+                Code = c.Code,
+                Name = c.UccrName + " " + c.UccrSurname,
+                ComplianceType = c.UccrDangerousGoods == 1 ? "Dangerous Goods" : "Driver's License",
+                ItemNumber = c.UccrDangerousGoods == 1 ? "DG-" + c.Code : "DL-" + c.Code,
+                ExpiryDate = c.UccrDangerousGoods == 1 ? c.DglicenseExpiry : c.DriversLicenseExpiry,
+                Status = GetComplianceStatus(now,
+                    c.UccrDangerousGoods == 1 ? c.DglicenseExpiry : c.DriversLicenseExpiry),
+                DaysUntilExpiry = CalculateDaysUntilExpiry(now,
+                    c.UccrDangerousGoods == 1 ? c.DglicenseExpiry : c.DriversLicenseExpiry)
+            })
+            .TagWith("GetCourierComplianceForExport")
+            .ToListAsync();
+
+        foreach (var compliance in items)
+            compliance.ExpiryDate = compliance.ExpiryDate.HasValue
+                ? TimeZoneHelper.SetDateTimeWithTimeZone(compliance.ExpiryDate.Value, tenantTimezone)
+                : null;
+
+        return items;
+    }
+
+    public async Task<List<AfterHoursCourierScheduleViewModel>> GetAfterHoursScheduleForExportAsync(
+        CourierAfterHoursFilterRequest request)
+    {
+        var tenantTimezone = infoService.GetTenantTimeZone();
+
+        var query = Context.TblAfterhoursCouriers
+            .Where(c => c.Courier != null)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+        {
+            var searchPattern = $"%{request.SearchTerm}%";
+            query = query.Where(c =>
+                EF.Functions.Like(c.Courier.UccrName, searchPattern) ||
+                EF.Functions.Like(c.Courier.Code, searchPattern) ||
+                EF.Functions.Like(c.Courier.UccrSurname, searchPattern) ||
+                EF.Functions.Like(c.Courier.VehiclePlateNnumber, searchPattern) ||
+                EF.Functions.Like(c.Courier.UccrMobile, searchPattern) ||
+                EF.Functions.Like(c.Courier.PersonalMobile, searchPattern) ||
+                EF.Functions.Like(c.Courier.UccrEmail, searchPattern) ||
+                EF.Functions.Like(c.Courier.UccrVehicleModel, searchPattern)
+            );
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Day)
+            && !request.Day.Equals("all", StringComparison.CurrentCultureIgnoreCase))
+        {
+            var dayValue = GetDayOfWeekAsInt(request.Day);
+            if (dayValue != 0) query = query.Where(c => c.WeekDay == dayValue);
+        }
+
+        var groupedData = await query
+            .AsNoTracking()
+            .GroupBy(c => new
+            {
+                c.CourierId,
+                CourierName = c.Courier.UccrName + " " + c.Courier.UccrSurname,
+                c.Courier.Code,
+                c.StartTime,
+                c.EndTime
+            })
+            .Select(g => new
+            {
+                g.Key.CourierId,
+                g.Key.CourierName,
+                CourierCode = g.Key.Code,
+                g.Key.StartTime,
+                g.Key.EndTime,
+                Days = g.Select(x => x.WeekDay).ToList(),
+                AfterHoursScheduleIds = g.Select(x => x.Id).ToList()
+            })
+            .OrderBy(c => c.CourierName)
+            .TagWith("GetAfterHoursScheduleForExport")
+            .ToListAsync();
+
+        return groupedData.Select(c => new AfterHoursCourierScheduleViewModel
+        {
+            AfterHoursScheduleId = c.AfterHoursScheduleIds.FirstOrDefault(),
+            CourierId = c.CourierId,
+            CourierName = c.CourierName,
+            CourierCode = c.CourierCode,
+            Days = c.Days.Select(DayOfWeekHelper.SqlIntToDayName)
+                .OrderBy(day =>
+                    Array.IndexOf(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], day))
+                .ToList(),
+            StartTime = TimeZoneHelper.SetDateTimeWithTimeZone(c.StartTime, tenantTimezone),
+            EndTime = TimeZoneHelper.SetDateTimeWithTimeZone(c.EndTime, tenantTimezone),
+            Duration = CalculateDuration(c.StartTime, c.EndTime)
+        }).ToList();
+    }
+
+    public async Task<List<CourierEmailViewModel>> GetCourierEmailsForExportAsync(PaginatedRequest request)
+    {
+        var query = Context.TucCouriers
+            .Where(c => c.UccrEmail != null);
+
+        if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+        {
+            var searchPattern = $"%{request.SearchTerm}%";
+            query = query.Where(c =>
+                EF.Functions.Like(c.Code, searchPattern) ||
+                EF.Functions.Like(c.UccrName, searchPattern) ||
+                EF.Functions.Like(c.UccrSurname, searchPattern) ||
+                EF.Functions.Like(c.UccrMobile, searchPattern) ||
+                EF.Functions.Like(c.PersonalMobile, searchPattern) ||
+                EF.Functions.Like(c.VehiclePlateNnumber, searchPattern) ||
+                EF.Functions.Like(c.UccrVehicleModel, searchPattern) ||
+                EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern)
+            );
+        }
+
+        return await query
+            .AsSplitQuery()
+            .AsNoTracking()
+            .OrderBy(c => c.UccrName)
+            .ThenBy(c => c.UccrSurname)
+            .Select(c => new CourierEmailViewModel
+            {
+                CourierId = c.UccrId,
+                Code = c.Code,
+                Name = c.UccrName + " " + c.UccrSurname,
+                Email = c.UccrEmail,
+                Phone = c.UccrMobile,
+                Fleet = c.CourierFleet != null ? c.CourierFleet.UccfName : "Not Available"
+            })
+            .TagWith("GetCourierEmailsForExport")
+            .ToListAsync();
+    }
+
+    public async Task<List<CourierDailyEarningsViewModel>> GetCourierDailyEarningsForExportAsync(
+        PaginatedRequest request)
+    {
+        var now = infoService.GetCurrentTenantTime();
+
+        var query = Context.TucCouriers
+            .Where(c => c.CourierLogInOut != null &&
+                        c.CourierLogInOut.LogInTime.Date == now.Date);
+
+        if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+        {
+            var searchPattern = $"%{request.SearchTerm}%";
+            query = query.Where(c =>
+                EF.Functions.Like(c.Code, searchPattern) ||
+                EF.Functions.Like(c.UccrName, searchPattern) ||
+                EF.Functions.Like(c.UccrSurname, searchPattern) ||
+                EF.Functions.Like(c.UccrMobile, searchPattern) ||
+                EF.Functions.Like(c.PersonalMobile, searchPattern) ||
+                EF.Functions.Like(c.VehiclePlateNnumber, searchPattern) ||
+                EF.Functions.Like(c.UccrVehicleModel, searchPattern) ||
+                EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern)
+            );
+        }
+
+        var couriers = await query
+            .OrderBy(c => c.UccrName).ThenBy(c => c.UccrSurname)
+            .Select(c => new
+            {
+                c.UccrId,
+                CourierName = c.UccrName + " " + c.UccrSurname,
+                c.CourierLogInOut.LogInTime,
+                c.CourierLogInOut.LogOutTime
+            })
+            .TagWith("GetCourierDailyEarningsForExport")
+            .ToListAsync();
+
+        if (couriers.Count == 0) return [];
+
+        var courierIds = couriers.Select(c => c.UccrId).ToList();
+
+        var earningsData = await Context.TucJobs
+            .AsNoTracking()
+            .Where(j => j.UcjbCourierId.HasValue &&
+                        courierIds.Contains(j.UcjbCourierId.Value) &&
+                        j.UcjbDate.Date == now.Date)
+            .GroupBy(j => j.UcjbCourierId.Value)
+            .Select(g => new
+            {
+                CourierId = g.Key,
+                Deliveries = g.Count(),
+                Earnings = g.Sum(j => j.CourierPayment) ?? 0
+            })
+            .ToListAsync();
+
+        var earningsDict = earningsData.ToDictionary(x => x.CourierId);
+
+        return couriers.Select(c =>
+        {
+            var hoursLogged = (int)((c.LogOutTime ?? now) - c.LogInTime).TotalMinutes;
+            var hasEarnings = earningsDict.TryGetValue(c.UccrId, out var earnings);
+            var deliveries = hasEarnings ? earnings.Deliveries : 0;
+            var totalEarnings = hasEarnings ? earnings.Earnings : 0;
+
+            var hourlyRate = hoursLogged > 0 && totalEarnings > 0
+                ? totalEarnings / (hoursLogged / 60.0m)
+                : 0;
+
+            return new CourierDailyEarningsViewModel
+            {
+                CourierId = c.UccrId,
+                Name = c.CourierName,
+                HoursLogged = hoursLogged,
+                Deliveries = deliveries,
+                Earnings = totalEarnings,
+                HourlyRate = hourlyRate
+            };
+        }).ToList();
+    }
+
+    #endregion
 }

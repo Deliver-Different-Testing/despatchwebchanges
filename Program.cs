@@ -150,6 +150,7 @@ builder.Services.AddScoped<IMessageHelperService, MessageHelperService>();
 builder.Services.AddScoped<IAddAgentRecoveryJobService, AddAgentRecoveryJobService>();
 builder.Services.AddScoped<IAddressLookupService, AddressLookupService>();
 builder.Services.AddScoped<IJobReportService, JobReportService>();
+builder.Services.AddScoped<ICourierReportService, CourierReportService>();
 builder.Services.AddScoped<IJobPhotoService, JobPhotoService>();
 builder.Services.AddScoped<IClearListEnvelopeService, ClearListEnvelopeService>();
 builder.Services.AddScoped<IDispatchJobService, DispatchJobService>();

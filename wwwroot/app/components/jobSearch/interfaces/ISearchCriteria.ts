@@ -12,6 +12,7 @@ interface ISearchCriteria {
     includeClosed: boolean;
     wild?: string;
     job?: string;
+    jobId?: number;
 }
 
 export default ISearchCriteria;

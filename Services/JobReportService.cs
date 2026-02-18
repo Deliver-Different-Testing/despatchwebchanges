@@ -47,7 +47,8 @@ public class JobReportService(
             request.Job ?? string.Empty,
             request.FromDate.DateTime.ResetTimeToStartOfDay(),
             request.ToDate.DateTime.ResetTimeToEndOfDay(),
-            request.ClientIds
+            request.ClientIds,
+            request.JobId
         );
 
         var csvBytes = await GeneratePodSearchCsvAsync(data);

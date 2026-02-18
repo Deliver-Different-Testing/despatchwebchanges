@@ -877,7 +877,8 @@ class JobSearchController extends BaseController {
             this.getClientIds(),
             this.getSpeedIds(),
             this.searchCriteria.wild,
-            this.searchCriteria.job
+            this.searchCriteria.job,
+            this.searchCriteria.jobId,
         );
 
         // Open in new window to trigger browser's native download
@@ -1183,6 +1184,7 @@ class JobSearchController extends BaseController {
                 this.searchCriteria.job,
                 this.currentSortColumn,
                 this.currentSortDirection,
+                this.searchCriteria.jobId,
             );
         } catch (error) {
             console.error('Error loading jobs:', error);

@@ -1,6 +1,7 @@
 using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Response;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -12,18 +13,54 @@ namespace DespatchWeb.Tests.Controllers;
 /// </summary>
 public class CourierControllerTests
 {
+    #region Integration-like Tests
+
+    [Fact]
+    public async Task AllActiveSearch_MultipleCouriersReturned_ReturnsAllInCorrectOrder()
+    {
+        // Arrange
+        const string searchTerm = "courier";
+        var expectedCouriers = new List<Suggestion>
+        {
+            new() { Id = 1, Text = "001 (Courier Alpha)" },
+            new() { Id = 2, Text = "002 (Courier Beta)" },
+            new() { Id = 3, Text = "003 (Courier Charlie)" }
+        };
+
+        _courierRepositoryMock.Setup(x => x.AllActiveCouriersAsync(searchTerm, false, true))
+            .ReturnsAsync(expectedCouriers);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.AllActiveSearch(searchTerm, dgOnly: false, loggedInOnly: true);
+
+        // Assert
+        result.Should().BeOfType<JsonResult>();
+        var jsonResult = (JsonResult)result;
+        var couriers = jsonResult.Value as List<Suggestion>;
+        couriers.Should().HaveCount(3);
+        couriers[0].Text.Should().Contain("Alpha");
+        couriers[1].Text.Should().Contain("Beta");
+        couriers[2].Text.Should().Contain("Charlie");
+    }
+
+    #endregion
+
     #region Setup
 
     private readonly Mock<ICourierRepository> _courierRepositoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<ITaskRepository> _taskRepositoryMock = new();
+    private readonly Mock<ICourierReportService> _courierReportServiceMock = new();
 
     private CourierController CreateController()
     {
         return new CourierController(
             _courierRepositoryMock.Object,
             _tenantInfoServiceMock.Object,
-            _taskRepositoryMock.Object);
+            _taskRepositoryMock.Object,
+            _courierReportServiceMock.Object);
     }
 
     #endregion
@@ -317,36 +354,432 @@ public class CourierControllerTests
 
     #endregion
 
-    #region Integration-like Tests
+    #region Export CSV Endpoint Tests
 
     [Fact]
-    public async Task AllActiveSearch_MultipleCouriersReturned_ReturnsAllInCorrectOrder()
+    public async Task ExportTodayActiveDriversCsv_Success_ReturnsFileResult()
     {
         // Arrange
-        const string searchTerm = "courier";
-        var expectedCouriers = new List<Suggestion>
-        {
-            new() { Id = 1, Text = "001 (Courier Alpha)" },
-            new() { Id = 2, Text = "002 (Courier Beta)" },
-            new() { Id = 3, Text = "003 (Courier Charlie)" }
-        };
+        var csvBytes = "Code,Name\nC001,John"u8.ToArray();
+        var fileName = "today-active-drivers-2026-02-18-1430.csv";
 
-        _courierRepositoryMock.Setup(x => x.AllActiveCouriersAsync(searchTerm, false, true))
-            .ReturnsAsync(expectedCouriers);
+        _courierReportServiceMock
+            .Setup(x => x.GenerateTodayActiveDriversCsvAsync(It.IsAny<TodayActiveDriversFilterRequest>()))
+            .ReturnsAsync((csvBytes, fileName));
 
         var controller = CreateController();
 
         // Act
-        var result = await controller.AllActiveSearch(searchTerm, dgOnly: false, loggedInOnly: true);
+        var result = await controller.ExportTodayActiveDriversCsv(new TodayActiveDriversFilterRequest());
+
+        // Assert
+        result.Should().BeOfType<FileContentResult>();
+        var fileResult = (FileContentResult)result;
+        fileResult.ContentType.Should().Be("text/csv");
+        fileResult.FileDownloadName.Should().Be(fileName);
+        fileResult.FileContents.Should().BeEquivalentTo(csvBytes);
+    }
+
+    [Fact]
+    public async Task ExportTodayActiveDriversCsv_ServiceThrows_Returns500()
+    {
+        // Arrange
+        _courierReportServiceMock
+            .Setup(x => x.GenerateTodayActiveDriversCsvAsync(It.IsAny<TodayActiveDriversFilterRequest>()))
+            .ThrowsAsync(new Exception("Export failed"));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.ExportTodayActiveDriversCsv(new TodayActiveDriversFilterRequest());
+
+        // Assert
+        result.Should().BeOfType<ObjectResult>();
+        var objectResult = (ObjectResult)result;
+        objectResult.StatusCode.Should().Be(500);
+    }
+
+    [Fact]
+    public async Task ExportComplianceCsv_Success_ReturnsFileResult()
+    {
+        // Arrange
+        var csvBytes = "Code,Name\nC001,John"u8.ToArray();
+        var fileName = "driver-compliance-2026-02-18-1430.csv";
+
+        _courierReportServiceMock.Setup(x => x.GenerateComplianceCsvAsync(It.IsAny<CourierComplianceFilterRequest>()))
+            .ReturnsAsync((csvBytes, fileName));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.ExportComplianceCsv(new CourierComplianceFilterRequest());
+
+        // Assert
+        result.Should().BeOfType<FileContentResult>();
+        var fileResult = (FileContentResult)result;
+        fileResult.ContentType.Should().Be("text/csv");
+        fileResult.FileDownloadName.Should().Be(fileName);
+    }
+
+    [Fact]
+    public async Task ExportComplianceCsv_ServiceThrows_Returns500()
+    {
+        // Arrange
+        _courierReportServiceMock.Setup(x => x.GenerateComplianceCsvAsync(It.IsAny<CourierComplianceFilterRequest>()))
+            .ThrowsAsync(new Exception("Export failed"));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.ExportComplianceCsv(new CourierComplianceFilterRequest());
+
+        // Assert
+        result.Should().BeOfType<ObjectResult>();
+        ((ObjectResult)result).StatusCode.Should().Be(500);
+    }
+
+    [Fact]
+    public async Task ExportAfterHoursScheduleCsv_Success_ReturnsFileResult()
+    {
+        // Arrange
+        var csvBytes = "Driver Name,Driver Code\nJohn,C001"u8.ToArray();
+        var fileName = "after-hours-schedule-2026-02-18-1430.csv";
+
+        _courierReportServiceMock
+            .Setup(x => x.GenerateAfterHoursScheduleCsvAsync(It.IsAny<CourierAfterHoursFilterRequest>()))
+            .ReturnsAsync((csvBytes, fileName));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.ExportAfterHoursScheduleCsv(new CourierAfterHoursFilterRequest());
+
+        // Assert
+        result.Should().BeOfType<FileContentResult>();
+        var fileResult = (FileContentResult)result;
+        fileResult.ContentType.Should().Be("text/csv");
+        fileResult.FileDownloadName.Should().Be(fileName);
+    }
+
+    [Fact]
+    public async Task ExportAfterHoursScheduleCsv_ServiceThrows_Returns500()
+    {
+        // Arrange
+        _courierReportServiceMock
+            .Setup(x => x.GenerateAfterHoursScheduleCsvAsync(It.IsAny<CourierAfterHoursFilterRequest>()))
+            .ThrowsAsync(new Exception("Export failed"));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.ExportAfterHoursScheduleCsv(new CourierAfterHoursFilterRequest());
+
+        // Assert
+        result.Should().BeOfType<ObjectResult>();
+        ((ObjectResult)result).StatusCode.Should().Be(500);
+    }
+
+    [Fact]
+    public async Task ExportDriverEmailsCsv_Success_ReturnsFileResult()
+    {
+        // Arrange
+        var csvBytes = "Code,Name,Email\nC001,John,john@test.com"u8.ToArray();
+        var fileName = "driver-emails-2026-02-18-1430.csv";
+
+        _courierReportServiceMock.Setup(x => x.GenerateDriverEmailsCsvAsync(It.IsAny<PaginatedRequest>()))
+            .ReturnsAsync((csvBytes, fileName));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.ExportDriverEmailsCsv(new PaginatedRequest());
+
+        // Assert
+        result.Should().BeOfType<FileContentResult>();
+        var fileResult = (FileContentResult)result;
+        fileResult.ContentType.Should().Be("text/csv");
+        fileResult.FileDownloadName.Should().Be(fileName);
+    }
+
+    [Fact]
+    public async Task ExportDriverEmailsCsv_ServiceThrows_Returns500()
+    {
+        // Arrange
+        _courierReportServiceMock.Setup(x => x.GenerateDriverEmailsCsvAsync(It.IsAny<PaginatedRequest>()))
+            .ThrowsAsync(new Exception("Export failed"));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.ExportDriverEmailsCsv(new PaginatedRequest());
+
+        // Assert
+        result.Should().BeOfType<ObjectResult>();
+        ((ObjectResult)result).StatusCode.Should().Be(500);
+    }
+
+    [Fact]
+    public async Task ExportDriverEarningsCsv_Success_ReturnsFileResult()
+    {
+        // Arrange
+        var csvBytes = "Name,Earnings\nJohn,250.75"u8.ToArray();
+        var fileName = "driver-earnings-2026-02-18-1430.csv";
+
+        _courierReportServiceMock.Setup(x => x.GenerateDriverEarningsCsvAsync(It.IsAny<PaginatedRequest>()))
+            .ReturnsAsync((csvBytes, fileName));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.ExportDriverEarningsCsv(new PaginatedRequest());
+
+        // Assert
+        result.Should().BeOfType<FileContentResult>();
+        var fileResult = (FileContentResult)result;
+        fileResult.ContentType.Should().Be("text/csv");
+        fileResult.FileDownloadName.Should().Be(fileName);
+    }
+
+    [Fact]
+    public async Task ExportDriverEarningsCsv_ServiceThrows_Returns500()
+    {
+        // Arrange
+        _courierReportServiceMock.Setup(x => x.GenerateDriverEarningsCsvAsync(It.IsAny<PaginatedRequest>()))
+            .ThrowsAsync(new Exception("Export failed"));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.ExportDriverEarningsCsv(new PaginatedRequest());
+
+        // Assert
+        result.Should().BeOfType<ObjectResult>();
+        ((ObjectResult)result).StatusCode.Should().Be(500);
+    }
+
+    [Fact]
+    public async Task ExportTodayActiveDriversCsv_PassesRequestToService()
+    {
+        // Arrange
+        var request = new TodayActiveDriversFilterRequest { SearchTerm = "test", Status = "active" };
+        var csvBytes = Array.Empty<byte>();
+
+        _courierReportServiceMock.Setup(x => x.GenerateTodayActiveDriversCsvAsync(request))
+            .ReturnsAsync((csvBytes, "test.csv"));
+
+        var controller = CreateController();
+
+        // Act
+        await controller.ExportTodayActiveDriversCsv(request);
+
+        // Assert
+        _courierReportServiceMock.Verify(x => x.GenerateTodayActiveDriversCsvAsync(request), Times.Once);
+    }
+
+    #endregion
+
+    #region GetAllCourierEmails Tests
+
+    [Fact]
+    public async Task GetAllCourierEmails_ValidRequest_ReturnsJsonResult()
+    {
+        // Arrange
+        var request = new PaginatedRequest { Page = 1, PageSize = 10 };
+        var expectedResponse = new PaginatedResponse<CourierEmailViewModel>
+        {
+            Items = new List<CourierEmailViewModel>
+            {
+                new() { CourierId = 1, Code = "C01", Name = "Alice", Email = "a@test.com" }
+            },
+            Total = 1, Page = 1, Pages = 1
+        };
+
+        _courierRepositoryMock.Setup(x => x.GetCourierEmailsAsync(request))
+            .ReturnsAsync(expectedResponse);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.GetAllCourierEmails(request);
 
         // Assert
         result.Should().BeOfType<JsonResult>();
         var jsonResult = (JsonResult)result;
-        var couriers = jsonResult.Value as List<Suggestion>;
-        couriers.Should().HaveCount(3);
-        couriers[0].Text.Should().Contain("Alpha");
-        couriers[1].Text.Should().Contain("Beta");
-        couriers[2].Text.Should().Contain("Charlie");
+        jsonResult.Value.Should().Be(expectedResponse);
+    }
+
+    [Fact]
+    public async Task GetAllCourierEmails_NullRequest_Returns500()
+    {
+        // Arrange
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.GetAllCourierEmails(null!);
+
+        // Assert
+        result.Should().BeOfType<ObjectResult>();
+        ((ObjectResult)result).StatusCode.Should().Be(500);
+    }
+
+    [Fact]
+    public async Task GetAllCourierEmails_RepositoryThrows_Returns500()
+    {
+        // Arrange
+        var request = new PaginatedRequest { Page = 1, PageSize = 10 };
+        _courierRepositoryMock.Setup(x => x.GetCourierEmailsAsync(request))
+            .ThrowsAsync(new Exception("Database error"));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.GetAllCourierEmails(request);
+
+        // Assert
+        result.Should().BeOfType<ObjectResult>();
+        ((ObjectResult)result).StatusCode.Should().Be(500);
+    }
+
+    [Fact]
+    public async Task GetAllCourierEmails_PassesOrderByToRepository()
+    {
+        // Arrange
+        var request = new PaginatedRequest { Page = 1, PageSize = 10, OrderBy = "code" };
+        _courierRepositoryMock.Setup(x => x.GetCourierEmailsAsync(It.IsAny<PaginatedRequest>()))
+            .ReturnsAsync(new PaginatedResponse<CourierEmailViewModel>());
+
+        var controller = CreateController();
+
+        // Act
+        await controller.GetAllCourierEmails(request);
+
+        // Assert
+        _courierRepositoryMock.Verify(
+            x => x.GetCourierEmailsAsync(It.Is<PaginatedRequest>(r => r.OrderBy == "code")),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllCourierEmails_PassesSortDescendingToRepository()
+    {
+        // Arrange
+        var request = new PaginatedRequest { Page = 1, PageSize = 10, OrderBy = "name", SortDescending = true };
+        _courierRepositoryMock.Setup(x => x.GetCourierEmailsAsync(It.IsAny<PaginatedRequest>()))
+            .ReturnsAsync(new PaginatedResponse<CourierEmailViewModel>());
+
+        var controller = CreateController();
+
+        // Act
+        await controller.GetAllCourierEmails(request);
+
+        // Assert
+        _courierRepositoryMock.Verify(
+            x => x.GetCourierEmailsAsync(It.Is<PaginatedRequest>(r => r.SortDescending == true)),
+            Times.Once);
+    }
+
+    #endregion
+
+    #region GetCourierDailyEarnings Tests
+
+    [Fact]
+    public async Task GetCourierDailyEarnings_ValidRequest_ReturnsJsonResult()
+    {
+        // Arrange
+        var request = new PaginatedRequest { Page = 1, PageSize = 10 };
+        var expectedResponse = new CourierDailyEarningsPaginatedResponse
+        {
+            Items = new List<CourierDailyEarningsViewModel>
+            {
+                new() { CourierId = 1, Name = "Alice", Deliveries = 5, Earnings = 100m }
+            },
+            Total = 1, Page = 1, Pages = 1,
+            TotalEarningsToday = 100m, AverageHourlyRate = 25m,
+            TotalActiveDrivers = 1, TotalDeliveriesToday = 5
+        };
+
+        _courierRepositoryMock.Setup(x => x.GetCourierDailyEarningsAsync(request))
+            .ReturnsAsync(expectedResponse);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.GetCourierDailyEarnings(request);
+
+        // Assert
+        result.Should().BeOfType<JsonResult>();
+        var jsonResult = (JsonResult)result;
+        jsonResult.Value.Should().Be(expectedResponse);
+    }
+
+    [Fact]
+    public async Task GetCourierDailyEarnings_NullRequest_Returns500()
+    {
+        // Arrange
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.GetCourierDailyEarnings(null!);
+
+        // Assert
+        result.Should().BeOfType<ObjectResult>();
+        ((ObjectResult)result).StatusCode.Should().Be(500);
+    }
+
+    [Fact]
+    public async Task GetCourierDailyEarnings_RepositoryThrows_Returns500()
+    {
+        // Arrange
+        var request = new PaginatedRequest { Page = 1, PageSize = 10 };
+        _courierRepositoryMock.Setup(x => x.GetCourierDailyEarningsAsync(request))
+            .ThrowsAsync(new Exception("Database error"));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.GetCourierDailyEarnings(request);
+
+        // Assert
+        result.Should().BeOfType<ObjectResult>();
+        ((ObjectResult)result).StatusCode.Should().Be(500);
+    }
+
+    [Fact]
+    public async Task GetCourierDailyEarnings_PassesOrderByToRepository()
+    {
+        // Arrange
+        var request = new PaginatedRequest { Page = 1, PageSize = 10, OrderBy = "earnings" };
+        _courierRepositoryMock.Setup(x => x.GetCourierDailyEarningsAsync(It.IsAny<PaginatedRequest>()))
+            .ReturnsAsync(new CourierDailyEarningsPaginatedResponse());
+
+        var controller = CreateController();
+
+        // Act
+        await controller.GetCourierDailyEarnings(request);
+
+        // Assert
+        _courierRepositoryMock.Verify(
+            x => x.GetCourierDailyEarningsAsync(It.Is<PaginatedRequest>(r => r.OrderBy == "earnings")),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task GetCourierDailyEarnings_PassesSortDescendingToRepository()
+    {
+        // Arrange
+        var request = new PaginatedRequest { Page = 1, PageSize = 10, OrderBy = "hourlyrate", SortDescending = true };
+        _courierRepositoryMock.Setup(x => x.GetCourierDailyEarningsAsync(It.IsAny<PaginatedRequest>()))
+            .ReturnsAsync(new CourierDailyEarningsPaginatedResponse());
+
+        var controller = CreateController();
+
+        // Act
+        await controller.GetCourierDailyEarnings(request);
+
+        // Assert
+        _courierRepositoryMock.Verify(
+            x => x.GetCourierDailyEarningsAsync(It.Is<PaginatedRequest>(r => r.SortDescending == true)),
+            Times.Once);
     }
 
     #endregion
