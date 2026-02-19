@@ -30,7 +30,7 @@ import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interfa
 import {openAddEventDialog} from "../../react/components/dialogs/add-event-dialog";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 import JobContextMenuService from "../../services/job-context-menu.service";
-import {ExtendedTask, ITask} from "../task-dashboard/task-dashboard.interfaces";
+import {ExtendedTask, ITask} from "../../interfaces/task.interfaces";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
 import {JobProperty} from "../../enums/job-property.enum";
 import FlightDetailsDialogService from "../dialogs/flight-details-dialog/flight-details-dialog.service";
@@ -48,7 +48,7 @@ import {openAgentInfoDialog} from "../../react/components/dialogs/agent-info-dia
 import dayjs, {Dayjs} from "dayjs";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import {ContactID, TimeZone} from "../../contants";
-import {StatusFilter} from "../task-dashboard/enums/status-filter";
+import {StatusFilter} from "../../enums/status-filter.enum";
 import TasksService from "../../services/tasks.service";
 import JobListType from "../common/job-list/enums/jobListType";
 import RecoveryAgentManagementService

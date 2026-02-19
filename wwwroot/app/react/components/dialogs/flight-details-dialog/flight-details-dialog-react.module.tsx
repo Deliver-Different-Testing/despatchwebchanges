@@ -11,6 +11,7 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 
 import { FlightDetailsDialog } from './FlightDetailsDialog';
 import { getTheme } from '../../../theme/muiTheme';
+import { ReactQueryProvider } from '../../../query';
 import { FlightData } from './types';
 import { IFlightViewModel } from '../../../../components/Nationwide/nationwide.interfaces';
 import angular from 'angular';
@@ -101,16 +102,18 @@ class FlightDetailsDialogManager {
         const currentTheme = getTheme();
 
         this.dialogRoot.render(
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                {this.dialogState.flight && (
-                    <FlightDetailsDialog
-                        open={this.dialogState.open}
-                        flight={this.dialogState.flight}
-                        onClose={handleClose}
-                    />
-                )}
-            </ThemeProvider>
+            <ReactQueryProvider>
+                <ThemeProvider theme={currentTheme}>
+                    <CssBaseline />
+                    {this.dialogState.flight && (
+                        <FlightDetailsDialog
+                            open={this.dialogState.open}
+                            flight={this.dialogState.flight}
+                            onClose={handleClose}
+                        />
+                    )}
+                </ThemeProvider>
+            </ReactQueryProvider>
         );
     }
 

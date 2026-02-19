@@ -2,9 +2,9 @@ import {
     ExtendedTask,
     TaskTableFiltersRequest,
     ITask
-} from "../components/task-dashboard/task-dashboard.interfaces";
+} from "../interfaces/task.interfaces";
 import {ISuggestion} from "../interfaces/job.interface";
-import {StatusFilter} from "../components/task-dashboard/enums/status-filter";
+import {StatusFilter} from "../enums/status-filter.enum";
 import {AppPage} from "../enums/app-pages.enum";
 import {ContactID} from "../contants";
 import DispatchCoreService from "./dispatch-core.service";

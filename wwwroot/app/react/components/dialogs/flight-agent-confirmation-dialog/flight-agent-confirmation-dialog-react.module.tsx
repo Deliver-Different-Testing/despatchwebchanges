@@ -16,6 +16,7 @@ import duration from 'dayjs/plugin/duration';
 
 import { FlightAgentConfirmationDialog } from './FlightAgentConfirmationDialog';
 import { getTheme } from '../../../theme/muiTheme';
+import { ReactQueryProvider } from '../../../query';
 import { getIanaTimezone, formatDateForApi, getTenantTimezone } from '../../../utils/dateUtils';
 import { nationwideApi } from '../../../services/nationwideApi';
 import angular from 'angular';
@@ -122,25 +123,27 @@ class FlightAgentConfirmationDialogManager {
         const tz = getIanaTimezone(getTenantTimezone());
 
         this.dialogRoot.render(
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <FlightAgentConfirmationDialog
-                    open={this.dialogState.open}
-                    mode={this.dialogState.mode}
-                    jobId={this.dialogState.jobId}
-                    jobNumber={this.dialogState.jobNumber}
-                    flight={this.dialogState.flight}
-                    agent={this.dialogState.agent}
-                    existingAwb={this.dialogState.existingAwb}
-                    dgClass={this.dialogState.dgClass}
-                    stopJobCount={this.dialogState.stopJobCount}
-                    timezone={tz}
-                    onClose={handleClose}
-                    onConfirm={handleConfirm}
-                    onCalculateCargoTimes={handleCalculateCargoTimes}
-                    showToast={handleShowToast}
-                />
-            </ThemeProvider>
+            <ReactQueryProvider>
+                <ThemeProvider theme={currentTheme}>
+                    <CssBaseline />
+                    <FlightAgentConfirmationDialog
+                        open={this.dialogState.open}
+                        mode={this.dialogState.mode}
+                        jobId={this.dialogState.jobId}
+                        jobNumber={this.dialogState.jobNumber}
+                        flight={this.dialogState.flight}
+                        agent={this.dialogState.agent}
+                        existingAwb={this.dialogState.existingAwb}
+                        dgClass={this.dialogState.dgClass}
+                        stopJobCount={this.dialogState.stopJobCount}
+                        timezone={tz}
+                        onClose={handleClose}
+                        onConfirm={handleConfirm}
+                        onCalculateCargoTimes={handleCalculateCargoTimes}
+                        showToast={handleShowToast}
+                    />
+                </ThemeProvider>
+            </ReactQueryProvider>
         );
     }
 

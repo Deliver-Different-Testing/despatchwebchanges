@@ -10,6 +10,7 @@ import {createRoot, Root} from 'react-dom/client';
 import {ThemeProvider, CssBaseline} from '@mui/material';
 import {PriceBreakdownDialog, PriceBreakdown} from './PriceBreakdownDialog';
 import {getTheme} from '../../../theme/muiTheme';
+import {ReactQueryProvider} from '../../../query';
 import {pricingBreakdownApi} from '../../../services/pricingBreakdownApi';
 import angular from 'angular';
 
@@ -81,21 +82,23 @@ function renderDialog(): void {
     const currentTheme = getTheme();
 
     dialogRoot.render(
-        <ThemeProvider theme={currentTheme}>
-            <CssBaseline />
-            <PriceBreakdownDialog
-                open={dialogState.open}
-                priceBreakdowns={dialogState.priceBreakdowns}
-                jobId={dialogState.jobId}
-                isPrebook={dialogState.isPrebook}
-                isArchived={dialogState.isArchived}
-                onClose={handleClose}
-                onSave={handleSave}
-                onAddItem={handleAddItem}
-                onUpdateItem={handleUpdateItem}
-                onDeleteItem={handleDeleteItem}
-            />
-        </ThemeProvider>
+        <ReactQueryProvider>
+            <ThemeProvider theme={currentTheme}>
+                <CssBaseline />
+                <PriceBreakdownDialog
+                    open={dialogState.open}
+                    priceBreakdowns={dialogState.priceBreakdowns}
+                    jobId={dialogState.jobId}
+                    isPrebook={dialogState.isPrebook}
+                    isArchived={dialogState.isArchived}
+                    onClose={handleClose}
+                    onSave={handleSave}
+                    onAddItem={handleAddItem}
+                    onUpdateItem={handleUpdateItem}
+                    onDeleteItem={handleDeleteItem}
+                />
+            </ThemeProvider>
+        </ReactQueryProvider>
     );
 }
 

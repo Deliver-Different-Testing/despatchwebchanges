@@ -16,6 +16,7 @@ import {
     RefreshOption,
 } from './DashboardSettingsDialog';
 import {getTheme} from '../../../theme/muiTheme';
+import {ReactQueryProvider} from '../../../query';
 import angular from 'angular';
 
 // State management for the dialog
@@ -98,19 +99,21 @@ function renderDialog(): void {
     const currentTheme = getTheme();
 
     dialogRoot.render(
-        <ThemeProvider theme={currentTheme}>
-            <CssBaseline />
-            <DashboardSettingsDialog
-                open={dialogState.open}
-                config={dialogState.config}
-                boxes={dialogState.boxes}
-                selectedRefreshInterval={dialogState.selectedRefreshInterval}
-                selectedDriverLocationRefreshInterval={dialogState.selectedDriverLocationRefreshInterval}
-                refreshOptions={dialogState.refreshOptions}
-                onClose={handleClose}
-                onSave={handleSave}
-            />
-        </ThemeProvider>
+        <ReactQueryProvider>
+            <ThemeProvider theme={currentTheme}>
+                <CssBaseline />
+                <DashboardSettingsDialog
+                    open={dialogState.open}
+                    config={dialogState.config}
+                    boxes={dialogState.boxes}
+                    selectedRefreshInterval={dialogState.selectedRefreshInterval}
+                    selectedDriverLocationRefreshInterval={dialogState.selectedDriverLocationRefreshInterval}
+                    refreshOptions={dialogState.refreshOptions}
+                    onClose={handleClose}
+                    onSave={handleSave}
+                />
+            </ThemeProvider>
+        </ReactQueryProvider>
     );
 }
 

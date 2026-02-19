@@ -12,6 +12,7 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import { BulkPriceUploadDialog } from './BulkPriceUploadDialog';
 import { OpenBulkPriceUploadDialogOptions, PricingMode, BulkPricePreviewResponse } from './types';
 import { getTheme } from '../../../theme/muiTheme';
+import { ReactQueryProvider } from '../../../query';
 import { bulkPriceApi } from '../../../services/bulkPriceApi';
 
 interface ToastService {
@@ -77,15 +78,17 @@ class BulkPriceUploadDialogManager {
         const currentTheme = getTheme();
 
         this.dialogRoot.render(
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <BulkPriceUploadDialog
-                    open={this.dialogState.open}
-                    onClose={handleClose}
-                    onSubmit={handleSubmit}
-                    showToast={handleShowToast}
-                />
-            </ThemeProvider>
+            <ReactQueryProvider>
+                <ThemeProvider theme={currentTheme}>
+                    <CssBaseline />
+                    <BulkPriceUploadDialog
+                        open={this.dialogState.open}
+                        onClose={handleClose}
+                        onSubmit={handleSubmit}
+                        showToast={handleShowToast}
+                    />
+                </ThemeProvider>
+            </ReactQueryProvider>
         );
     }
 

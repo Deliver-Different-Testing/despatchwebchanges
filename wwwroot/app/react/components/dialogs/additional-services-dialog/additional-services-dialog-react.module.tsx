@@ -12,6 +12,7 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import { AdditionalServicesDialog } from './AdditionalServicesDialog';
 import { AdditionalService, AdditionalServicesJob, OpenAdditionalServicesDialogOptions } from './types';
 import { getTheme } from '../../../theme/muiTheme';
+import { ReactQueryProvider } from '../../../query';
 import { additionalServicesApi } from '../../../services/additionalServicesApi';
 
 interface ToastService {
@@ -108,18 +109,20 @@ class AdditionalServicesDialogManager {
         const currentTheme = getTheme();
 
         this.dialogRoot.render(
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <AdditionalServicesDialog
-                    open={this.dialogState.open}
-                    job={this.dialogState.job}
-                    onClose={handleClose}
-                    onSubmit={handleSubmit}
-                    onLoadServices={handleLoadServices}
-                    onCalculateTotal={handleCalculateTotal}
-                    showToast={handleShowToast}
-                />
-            </ThemeProvider>
+            <ReactQueryProvider>
+                <ThemeProvider theme={currentTheme}>
+                    <CssBaseline />
+                    <AdditionalServicesDialog
+                        open={this.dialogState.open}
+                        job={this.dialogState.job}
+                        onClose={handleClose}
+                        onSubmit={handleSubmit}
+                        onLoadServices={handleLoadServices}
+                        onCalculateTotal={handleCalculateTotal}
+                        showToast={handleShowToast}
+                    />
+                </ThemeProvider>
+            </ReactQueryProvider>
         );
     }
 

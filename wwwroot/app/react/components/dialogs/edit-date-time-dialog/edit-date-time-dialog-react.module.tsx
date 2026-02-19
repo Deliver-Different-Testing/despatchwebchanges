@@ -12,6 +12,7 @@ import dayjs, { Dayjs } from 'dayjs';
 
 import { EditDateTimeDialog } from './EditDateTimeDialog';
 import { getTheme } from '../../../theme/muiTheme';
+import { ReactQueryProvider } from '../../../query';
 import { EditDateTimeDialogResult, EditDateTimeDialogOptions } from './types';
 import angular from 'angular';
 
@@ -100,22 +101,24 @@ class EditDateTimeDialogManager {
         const currentTheme = getTheme();
 
         this.dialogRoot.render(
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <EditDateTimeDialog
-                    open={this.dialogState.open}
-                    title={this.dialogState.title}
-                    fieldName={this.dialogState.fieldName}
-                    dateTime={this.dialogState.dateTime}
-                    defaultTimeZone={this.dialogState.defaultTimeZone}
-                    showDate={this.dialogState.showDate}
-                    showTime={this.dialogState.showTime}
-                    isUSCustomer={this.dialogState.isUSCustomer}
-                    onClose={handleClose}
-                    onSubmit={handleSubmit}
-                    showToast={this.toastService.showToast}
-                />
-            </ThemeProvider>
+            <ReactQueryProvider>
+                <ThemeProvider theme={currentTheme}>
+                    <CssBaseline />
+                    <EditDateTimeDialog
+                        open={this.dialogState.open}
+                        title={this.dialogState.title}
+                        fieldName={this.dialogState.fieldName}
+                        dateTime={this.dialogState.dateTime}
+                        defaultTimeZone={this.dialogState.defaultTimeZone}
+                        showDate={this.dialogState.showDate}
+                        showTime={this.dialogState.showTime}
+                        isUSCustomer={this.dialogState.isUSCustomer}
+                        onClose={handleClose}
+                        onSubmit={handleSubmit}
+                        showToast={this.toastService.showToast}
+                    />
+                </ThemeProvider>
+            </ReactQueryProvider>
         );
     }
 

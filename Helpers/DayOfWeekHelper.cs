@@ -12,15 +12,15 @@ public static class DayOfWeekHelper
     /// <param name="dayOfWeek">The day name (e.g., "Monday", "Sunday")</param>
     /// <returns>Integer value 1-7 where Sunday=1, Monday=2, ..., Saturday=7. Returns 0 for invalid input.</returns>
     public static int DayNameToSqlInt(string dayOfWeek) =>
-        dayOfWeek switch
+        dayOfWeek?.ToLowerInvariant() switch
         {
-            "Sunday" => 1,
-            "Monday" => 2,
-            "Tuesday" => 3,
-            "Wednesday" => 4,
-            "Thursday" => 5,
-            "Friday" => 6,
-            "Saturday" => 7,
+            "sunday" => 1,
+            "monday" => 2,
+            "tuesday" => 3,
+            "wednesday" => 4,
+            "thursday" => 5,
+            "friday" => 6,
+            "saturday" => 7,
             _ => 0
         };
 

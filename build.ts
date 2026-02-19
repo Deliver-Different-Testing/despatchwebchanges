@@ -13,7 +13,7 @@ type EntryPointName =
     | 'nationwide'
     | 'overview'
     | 'jobSearch'
-    | 'megaMap'
+
     | 'taskDashboardReact'
     | 'driverManagementReact'
     | 'composeEmailDialogReact'
@@ -52,7 +52,7 @@ const entryPoints: EntryPoints = {
     nationwide: path.join(rootDir, "wwwroot/app/components/Nationwide/nationwide.module.ts"),
     overview: path.join(rootDir, "wwwroot/app/components/overview/overview.module.ts"),
     jobSearch: path.join(rootDir, "wwwroot/app/components/jobSearch/jobSearch.module.ts"),
-    megaMap: path.join(rootDir, "wwwroot/app/components/mega-map/mega-map.module.ts"),
+
     taskDashboardReact: path.join(rootDir, "wwwroot/app/react/pages/task-dashboard/task-dashboard-react.module.tsx"),
     driverManagementReact: path.join(rootDir, "wwwroot/app/react/pages/driver-management/driver-management-react.module.tsx"),
     composeEmailDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/compose-email-dialog/compose-email-dialog-react.module.tsx"),
