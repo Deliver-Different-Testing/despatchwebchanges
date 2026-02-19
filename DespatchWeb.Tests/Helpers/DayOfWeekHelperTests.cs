@@ -5,22 +5,22 @@ namespace DespatchWeb.Tests.Helpers;
 
 /// <summary>
 /// Unit tests for DayOfWeekHelper - tests day of week conversion functionality.
-/// Verifies that conversions follow SQL Server DATEPART(WEEKDAY) convention:
-/// Sunday=1, Monday=2, Tuesday=3, Wednesday=4, Thursday=5, Friday=6, Saturday=7
+/// Verifies that conversions follow ISO 8601 weekday convention:
+/// Monday=1, Tuesday=2, Wednesday=3, Thursday=4, Friday=5, Saturday=6, Sunday=7
 /// </summary>
 public class DayOfWeekHelperTests
 {
     #region DayNameToSqlInt Tests
 
     [Theory]
-    [InlineData("Sunday", 1)]
-    [InlineData("Monday", 2)]
-    [InlineData("Tuesday", 3)]
-    [InlineData("Wednesday", 4)]
-    [InlineData("Thursday", 5)]
-    [InlineData("Friday", 6)]
-    [InlineData("Saturday", 7)]
-    public void DayNameToSqlInt_ValidDayName_ReturnsCorrectSqlValue(string dayName, int expectedValue)
+    [InlineData("Monday", 1)]
+    [InlineData("Tuesday", 2)]
+    [InlineData("Wednesday", 3)]
+    [InlineData("Thursday", 4)]
+    [InlineData("Friday", 5)]
+    [InlineData("Saturday", 6)]
+    [InlineData("Sunday", 7)]
+    public void DayNameToSqlInt_ValidDayName_ReturnsCorrectIsoValue(string dayName, int expectedValue)
     {
         // Act
         var result = DayOfWeekHelper.DayNameToSqlInt(dayName);
@@ -30,12 +30,12 @@ public class DayOfWeekHelperTests
     }
 
     [Theory]
-    [InlineData("monday", 2)]
-    [InlineData("SUNDAY", 1)]
-    [InlineData("MONDAY", 2)]
-    [InlineData("tuesday", 3)]
-    [InlineData("sUnDaY", 1)]
-    public void DayNameToSqlInt_CaseInsensitive_ReturnsCorrectSqlValue(string dayName, int expectedValue)
+    [InlineData("monday", 1)]
+    [InlineData("SUNDAY", 7)]
+    [InlineData("MONDAY", 1)]
+    [InlineData("tuesday", 2)]
+    [InlineData("sUnDaY", 7)]
+    public void DayNameToSqlInt_CaseInsensitive_ReturnsCorrectIsoValue(string dayName, int expectedValue)
     {
         // Act
         var result = DayOfWeekHelper.DayNameToSqlInt(dayName);
@@ -69,20 +69,20 @@ public class DayOfWeekHelperTests
     }
 
     [Fact]
-    public void DayNameToSqlInt_Sunday_ReturnsOne_MatchesSqlServerConvention()
+    public void DayNameToSqlInt_Monday_ReturnsOne_MatchesIsoConvention()
     {
-        // This test explicitly verifies the SQL Server DATEPART(WEEKDAY) convention
-        // where Sunday is the first day of the week (value 1)
-        var result = DayOfWeekHelper.DayNameToSqlInt("Sunday");
+        // This test explicitly verifies the ISO 8601 weekday convention
+        // where Monday is the first day of the week (value 1)
+        var result = DayOfWeekHelper.DayNameToSqlInt("Monday");
 
-        result.Should().Be(1, "SQL Server DATEPART(WEEKDAY) returns 1 for Sunday by default");
+        result.Should().Be(1, "ISO 8601 defines Monday as the first day of the week (value 1)");
     }
 
     [Fact]
     public void DayNameToSqlInt_AllDays_AreSequential()
     {
-        // Verify that days are sequential from 1-7
-        var days = new[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
+        // Verify that days are sequential from 1-7 (Monday through Sunday per ISO 8601)
+        var days = new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
 
         for (var i = 0; i < days.Length; i++)
         {
@@ -96,17 +96,17 @@ public class DayOfWeekHelperTests
     #region SqlIntToDayName Tests
 
     [Theory]
-    [InlineData(1, "Sunday")]
-    [InlineData(2, "Monday")]
-    [InlineData(3, "Tuesday")]
-    [InlineData(4, "Wednesday")]
-    [InlineData(5, "Thursday")]
-    [InlineData(6, "Friday")]
-    [InlineData(7, "Saturday")]
-    public void SqlIntToDayName_ValidSqlValue_ReturnsCorrectDayName(int sqlValue, string expectedDayName)
+    [InlineData(1, "Monday")]
+    [InlineData(2, "Tuesday")]
+    [InlineData(3, "Wednesday")]
+    [InlineData(4, "Thursday")]
+    [InlineData(5, "Friday")]
+    [InlineData(6, "Saturday")]
+    [InlineData(7, "Sunday")]
+    public void SqlIntToDayName_ValidIsoValue_ReturnsCorrectDayName(int isoValue, string expectedDayName)
     {
         // Act
-        var result = DayOfWeekHelper.SqlIntToDayName(sqlValue);
+        var result = DayOfWeekHelper.SqlIntToDayName(isoValue);
 
         // Assert
         result.Should().Be(expectedDayName);
@@ -117,23 +117,23 @@ public class DayOfWeekHelperTests
     [InlineData(-1)]
     [InlineData(8)]
     [InlineData(100)]
-    public void SqlIntToDayName_InvalidSqlValue_ReturnsUnknown(int invalidSqlValue)
+    public void SqlIntToDayName_InvalidValue_ReturnsUnknown(int invalidValue)
     {
         // Act
-        var result = DayOfWeekHelper.SqlIntToDayName(invalidSqlValue);
+        var result = DayOfWeekHelper.SqlIntToDayName(invalidValue);
 
         // Assert
         result.Should().Be("Unknown");
     }
 
     [Fact]
-    public void SqlIntToDayName_One_ReturnsSunday_MatchesSqlServerConvention()
+    public void SqlIntToDayName_One_ReturnsMonday_MatchesIsoConvention()
     {
-        // This test explicitly verifies the SQL Server DATEPART(WEEKDAY) convention
-        // where 1 represents Sunday
+        // This test explicitly verifies the ISO 8601 weekday convention
+        // where 1 represents Monday
         var result = DayOfWeekHelper.SqlIntToDayName(1);
 
-        result.Should().Be("Sunday", "SQL Server DATEPART(WEEKDAY) value 1 represents Sunday by default");
+        result.Should().Be("Monday", "ISO 8601 weekday value 1 represents Monday");
     }
 
     #endregion
@@ -166,39 +166,39 @@ public class DayOfWeekHelperTests
     [InlineData(5)]
     [InlineData(6)]
     [InlineData(7)]
-    public void RoundTrip_SqlIntToDayNameAndBack_ReturnsSameSqlInt(int originalSqlInt)
+    public void RoundTrip_IntToDayNameAndBack_ReturnsSameInt(int originalInt)
     {
         // Act
-        var dayName = DayOfWeekHelper.SqlIntToDayName(originalSqlInt);
-        var resultSqlInt = DayOfWeekHelper.DayNameToSqlInt(dayName);
+        var dayName = DayOfWeekHelper.SqlIntToDayName(originalInt);
+        var resultInt = DayOfWeekHelper.DayNameToSqlInt(dayName);
 
         // Assert
-        resultSqlInt.Should().Be(originalSqlInt);
+        resultInt.Should().Be(originalInt);
     }
 
     #endregion
 
-    #region SQL Server Convention Documentation Tests
+    #region ISO 8601 Convention Documentation Tests
 
     [Fact]
-    public void SqlServerConvention_WeekStartsOnSunday()
+    public void IsoConvention_WeekStartsOnMonday()
     {
-        // SQL Server DATEPART(WEEKDAY) by default uses SET DATEFIRST 7 (US convention)
-        // This means Sunday = 1, Monday = 2, ..., Saturday = 7
+        // ISO 8601 defines Monday as the first day of the week
+        // Monday = 1, Tuesday = 2, ..., Sunday = 7
 
-        DayOfWeekHelper.DayNameToSqlInt("Sunday").Should().Be(1, "Week starts on Sunday in SQL Server default");
-        DayOfWeekHelper.DayNameToSqlInt("Saturday").Should().Be(7, "Week ends on Saturday in SQL Server default");
+        DayOfWeekHelper.DayNameToSqlInt("Monday").Should().Be(1, "Week starts on Monday in ISO 8601");
+        DayOfWeekHelper.DayNameToSqlInt("Sunday").Should().Be(7, "Week ends on Sunday in ISO 8601");
     }
 
     [Fact]
-    public void SqlServerConvention_WeekdaysAreSequential()
+    public void IsoConvention_WeekdaysAreSequential()
     {
-        // Verify Monday-Friday are sequential (2-6)
-        DayOfWeekHelper.DayNameToSqlInt("Monday").Should().Be(2);
-        DayOfWeekHelper.DayNameToSqlInt("Tuesday").Should().Be(3);
-        DayOfWeekHelper.DayNameToSqlInt("Wednesday").Should().Be(4);
-        DayOfWeekHelper.DayNameToSqlInt("Thursday").Should().Be(5);
-        DayOfWeekHelper.DayNameToSqlInt("Friday").Should().Be(6);
+        // Verify Monday-Friday are sequential (1-5)
+        DayOfWeekHelper.DayNameToSqlInt("Monday").Should().Be(1);
+        DayOfWeekHelper.DayNameToSqlInt("Tuesday").Should().Be(2);
+        DayOfWeekHelper.DayNameToSqlInt("Wednesday").Should().Be(3);
+        DayOfWeekHelper.DayNameToSqlInt("Thursday").Should().Be(4);
+        DayOfWeekHelper.DayNameToSqlInt("Friday").Should().Be(5);
     }
 
     #endregion
