@@ -8,11 +8,10 @@
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
 import {CssBaseline, ThemeProvider} from '@mui/material';
-import {QueryClientProvider} from '@tanstack/react-query';
 import {TaskDashboardPage} from './TaskDashboardPage';
 import {getTheme} from '../../theme/muiTheme';
 import {MountTaskDashboardConfig, LayoutActions} from './TaskDashboardPage.interfaces';
-import {queryClient} from '../../query';
+import {ReactQueryProvider} from '../../query';
 import angular from 'angular';
 
 let taskDashboardRoot: Root | null = null;
@@ -65,7 +64,7 @@ export function mountTaskDashboardPage(
     const currentTheme = getTheme();
 
     taskDashboardRoot.render(
-        <QueryClientProvider client={queryClient}>
+        <ReactQueryProvider>
             <ThemeProvider theme={currentTheme}>
                 <CssBaseline />
                 <TaskDashboardPage
@@ -78,7 +77,7 @@ export function mountTaskDashboardPage(
                     onLayoutActionsChange={config.onLayoutActionsChange}
                 />
             </ThemeProvider>
-        </QueryClientProvider>
+        </ReactQueryProvider>
     );
 
     console.log('[TaskDashboardReact] Task dashboard page rendered');

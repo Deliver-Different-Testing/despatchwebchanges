@@ -8,10 +8,9 @@
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import { CssBaseline, ThemeProvider } from '@mui/material';
-import { QueryClientProvider } from '@tanstack/react-query';
 import { CourierMapPage } from './CourierMapPage';
 import { getTheme } from '../../theme/muiTheme';
-import { queryClient } from '../../query/queryClient';
+import { ReactQueryProvider } from '../../query';
 import angular from 'angular';
 
 /**
@@ -65,7 +64,7 @@ class CourierMapReactController implements angular.IController {
             : this.appConfig?.NZ_Coordinates_Center ?? { lat: -41.2865, lng: 174.7762 };
 
         this.root.render(
-            <QueryClientProvider client={queryClient}>
+            <ReactQueryProvider>
                 <ThemeProvider theme={currentTheme}>
                     <CssBaseline />
                     <CourierMapPage
@@ -74,7 +73,7 @@ class CourierMapReactController implements angular.IController {
                         apiKey={this.apiKey}
                     />
                 </ThemeProvider>
-            </QueryClientProvider>
+            </ReactQueryProvider>
         );
     }
 }

@@ -12,6 +12,7 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import { MessagingDialog } from './MessagingDialog';
 import { OpenMessagingDialogOptions, ToastService } from './types';
 import { getTheme } from '../../../theme/muiTheme';
+import { ReactQueryProvider } from '../../../query';
 
 // Get current staff info from global variables
 declare const ContactID: number;
@@ -71,17 +72,19 @@ class MessagingDialogManager {
         const timeZone = typeof TimeZone !== 'undefined' ? TimeZone : 'UTC';
 
         this.dialogRoot.render(
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <MessagingDialog
-                    open={this.dialogState.open}
-                    onClose={handleClose}
-                    showToast={handleShowToast}
-                    currentStaffId={currentStaffId}
-                    currentStaffName={currentStaffName}
-                    timeZone={timeZone}
-                />
-            </ThemeProvider>
+            <ReactQueryProvider>
+                <ThemeProvider theme={currentTheme}>
+                    <CssBaseline />
+                    <MessagingDialog
+                        open={this.dialogState.open}
+                        onClose={handleClose}
+                        showToast={handleShowToast}
+                        currentStaffId={currentStaffId}
+                        currentStaffName={currentStaffName}
+                        timeZone={timeZone}
+                    />
+                </ThemeProvider>
+            </ReactQueryProvider>
         );
     }
 

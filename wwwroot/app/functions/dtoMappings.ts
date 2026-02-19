@@ -20,7 +20,7 @@ import {
     formatShortDate,
     formatShortDateTime
 } from "./formatDates";
-import {ITask, ITaskDto} from "../components/task-dashboard/task-dashboard.interfaces";
+import {ITask, ITaskDto} from "../interfaces/task.interfaces";
 import {
     IDeliveryJourney,
     IDeliveryJourneyDto

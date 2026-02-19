@@ -10,6 +10,7 @@ import {createRoot, Root} from 'react-dom/client';
 import {ThemeProvider, CssBaseline} from '@mui/material';
 import {DateRangeDialog, DateRange} from './DateRangeDialog';
 import {getTheme} from '../../../theme/muiTheme';
+import {ReactQueryProvider} from '../../../query';
 import angular from 'angular';
 
 // State management for the dialog
@@ -47,15 +48,17 @@ function renderDialog(): void {
     const currentTheme = getTheme();
 
     dialogRoot.render(
-        <ThemeProvider theme={currentTheme}>
-            <CssBaseline />
-            <DateRangeDialog
-                open={dialogState.open}
-                initialRange={dialogState.initialRange}
-                onClose={handleClose}
-                onApply={handleApply}
-            />
-        </ThemeProvider>
+        <ReactQueryProvider>
+            <ThemeProvider theme={currentTheme}>
+                <CssBaseline />
+                <DateRangeDialog
+                    open={dialogState.open}
+                    initialRange={dialogState.initialRange}
+                    onClose={handleClose}
+                    onApply={handleApply}
+                />
+            </ThemeProvider>
+        </ReactQueryProvider>
     );
 }
 

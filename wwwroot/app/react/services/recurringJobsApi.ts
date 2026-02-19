@@ -5,8 +5,7 @@
  * Used by the React Recurring Jobs page.
  */
 
-import axios from 'axios';
-import {apiClient} from './apiClient';
+import {apiClient, downloadBlob} from './apiClient';
 import {
     PaginatedRecurringJobsResponse,
     PaginatedRecurringJobsResponseDto,
@@ -51,36 +50,8 @@ export const recurringJobsApi = {
      * @param query - Query parameters to filter exported jobs
      */
     exportToCsv: async (query: RecurringJobQuery): Promise<void> => {
-        const response = await axios.post('job/RecurringJobsExportCsv', query, {
-            responseType: 'blob',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            withCredentials: true,
-        });
-
-        // Extract filename from content-disposition header if available
-        const contentDisposition = response.headers['content-disposition'];
-        let filename = `recurring-jobs-${query.active ? 'active' : 'inactive'}.csv`;
-        if (contentDisposition) {
-            const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-            if (filenameMatch && filenameMatch[1]) {
-                filename = filenameMatch[1].replace(/['"]/g, '');
-            }
-        }
-
-        // Create blob and trigger download
-        const blob = new Blob([response.data]);
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        const response = await apiClient.postForBlob('job/RecurringJobsExportCsv', query);
+        downloadBlob(response, `recurring-jobs-${query.active ? 'active' : 'inactive'}.csv`);
     },
 };
 

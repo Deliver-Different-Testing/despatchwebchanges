@@ -35,7 +35,7 @@ import {
 } from "../interfaces/courier.interface";
 import {IEventGroupViewModel} from "../interfaces/event-group-view-model.interface";
 import {DfrntPageViewModel,} from "../interfaces/dfrnt-page-view-model.interface";
-import {ITask, ITaskDto, TaskTableFiltersRequest,} from "../components/task-dashboard/task-dashboard.interfaces";
+import {ITask, ITaskDto, TaskTableFiltersRequest,} from "../interfaces/task.interfaces";
 import {JobProperty} from "../enums/job-property.enum";
 import {
     IAllocateJobsToCourierRequest,

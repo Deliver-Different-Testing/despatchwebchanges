@@ -209,7 +209,16 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
     }, [onAddStop]);
 
     return (
-        <Box sx={{height: '100%', display: 'flex', flexDirection: 'column', gap: 2}}>
+        <Box sx={{
+            height: '100%', display: 'flex', flexDirection: 'column', gap: 2,
+            bgcolor: '#f5f7fa',
+            '& .MuiCard-root': {
+                borderRadius: '12px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {boxShadow: '0 4px 12px rgba(0,0,0,0.15)'},
+            },
+        }}>
             {/* Filters Card */}
             <Card sx={{flexShrink: 0, borderRadius: 1, overflow: 'hidden'}}>
                 <Toolbar

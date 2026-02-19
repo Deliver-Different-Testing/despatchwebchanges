@@ -23,7 +23,7 @@ class RouterConfig {
             .configureJobSearchState()
             .configurePrebooksState()
             .configureOverviewState()
-            // .configureMegaMapState() // Hidden temporarily
+
             .configureTaskDashboardState()
             .configureDriverManagementState()
             .configureCourierMapState()
@@ -285,36 +285,6 @@ class RouterConfig {
         });
         return this;
     }
-
-    // Hidden temporarily
-    // private configureMegaMapState(): this {
-    //     this.$stateProvider.state("megaMap", {
-    //         url: "/megaMap",
-    //         resolve: {
-    //             manifest: ['$http', async ($http: angular.IHttpService) => {
-    //                 try {
-    //                     const response = await $http.get<Record<string, string>>('dist/manifest.json');
-    //                     return response.data;
-    //                 } catch {
-    //                     console.warn('[ROUTES] Failed to load manifest for megaMap state, using fallback names');
-    //                     return {
-    //                         'megaMap.js': 'megaMap.js',
-    //                         'megaMap.css': 'megaMap.css'
-    //                     };
-    //                 }
-    //             }],
-    //             loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
-    //                 const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
-    //                 return $ocLazyLoad.load([
-    //                     getAssetPath('megaMap.js'),
-    //                     getAssetPath('megaMap.css')
-    //                 ]);
-    //             }]
-    //         },
-    //         component: "megaMapComponent",
-    //     });
-    //     return this;
-    // }
 
     private configureTaskDashboardState(): this {
         this.$stateProvider.state("taskDashboard", {
@@ -581,31 +551,44 @@ class RouterConfig {
         return this;
     }
 
+    private buildErrorState(errorType: string, url: string): angular.ui.IState {
+        return {
+            url,
+            template: `<div id="react-error-page-${errorType}" style="height: 100%;"></div>`,
+            resolve: {
+                manifest: ['$http', async ($http: angular.IHttpService) => {
+                    try {
+                        const response = await $http.get<Record<string, string>>('dist/manifest.json');
+                        return response.data;
+                    } catch {
+                        return { 'vendor-react.js': 'vendor-react.js', 'errorPageReact.js': 'errorPageReact.js' };
+                    }
+                }],
+                loadModule: ['$ocLazyLoad', 'manifest', async ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                    const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
+                    await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
+                    return $ocLazyLoad.load(getAssetPath('errorPageReact.js'));
+                }]
+            },
+            controller: ['$scope', '$state', function ($scope: angular.IScope, $state: angular.ui.IStateService) {
+                const containerId = `react-error-page-${errorType}`;
+                (window as any).ReactErrorPage.mount(containerId, {
+                    errorType,
+                    onGoHome: () => $state.go('home'),
+                    onGoBack: () => window.history.back(),
+                });
+                $scope.$on('$destroy', () => {
+                    (window as any).ReactErrorPage.unmount();
+                });
+            }]
+        };
+    }
+
     private configureErrorStates(): this {
-        // 404 Not Found
-        this.$stateProvider.state("notFound", {
-            url: "/not-found",
-            template: '<react-error-page error-type="notFound"></react-error-page>'
-        });
-
-        // General Error
-        this.$stateProvider.state("error", {
-            url: "/error",
-            template: '<react-error-page error-type="error"></react-error-page>'
-        });
-
-        // Access Denied
-        this.$stateProvider.state("forbidden", {
-            url: "/forbidden",
-            template: '<react-error-page error-type="forbidden"></react-error-page>'
-        });
-
-        // Server Error
-        this.$stateProvider.state("serverError", {
-            url: "/server-error",
-            template: '<react-error-page error-type="serverError"></react-error-page>'
-        });
-
+        this.$stateProvider.state("notFound", this.buildErrorState("notFound", "/not-found"));
+        this.$stateProvider.state("error", this.buildErrorState("error", "/error"));
+        this.$stateProvider.state("forbidden", this.buildErrorState("forbidden", "/forbidden"));
+        this.$stateProvider.state("serverError", this.buildErrorState("serverError", "/server-error"));
         return this;
     }
 }

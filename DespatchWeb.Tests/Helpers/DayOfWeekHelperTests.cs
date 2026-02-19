@@ -30,10 +30,23 @@ public class DayOfWeekHelperTests
     }
 
     [Theory]
+    [InlineData("monday", 2)]
+    [InlineData("SUNDAY", 1)]
+    [InlineData("MONDAY", 2)]
+    [InlineData("tuesday", 3)]
+    [InlineData("sUnDaY", 1)]
+    public void DayNameToSqlInt_CaseInsensitive_ReturnsCorrectSqlValue(string dayName, int expectedValue)
+    {
+        // Act
+        var result = DayOfWeekHelper.DayNameToSqlInt(dayName);
+
+        // Assert
+        result.Should().Be(expectedValue);
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData("InvalidDay")]
-    [InlineData("monday")] // Case-sensitive
-    [InlineData("SUNDAY")] // Case-sensitive
     [InlineData("Mon")]
     [InlineData("Sun")]
     public void DayNameToSqlInt_InvalidDayName_ReturnsZero(string invalidDayName)

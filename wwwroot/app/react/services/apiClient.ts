@@ -139,6 +139,21 @@ class ApiClient {
         const response = await this.instance.post<T>(url, formData, config);
         return response.data;
     }
+
+    async postForBlob(
+        url: string,
+        data?: unknown,
+        options?: RequestOptions
+    ): Promise<{ data: Blob; headers: Record<string, unknown> }> {
+        const config: AxiosRequestConfig = {
+            params: options?.params,
+            signal: options?.signal,
+            timeout: options?.timeout,
+            responseType: 'blob',
+        };
+        const response = await this.instance.post(url, data, config);
+        return { data: response.data, headers: response.headers as Record<string, unknown> };
+    }
 }
 
 // Singleton instance - lazy initialized on first access
@@ -156,6 +171,31 @@ export const apiClient = {
         getInstance().delete<T>(url, options),
     postFormData: <T>(url: string, formData: FormData, options?: RequestOptions) =>
         getInstance().postFormData<T>(url, formData, options),
+    postForBlob: (url: string, data?: unknown, options?: RequestOptions) =>
+        getInstance().postForBlob(url, data, options),
 };
+
+/** Download a blob response as a file */
+export function downloadBlob(
+    response: { data: Blob; headers: Record<string, unknown> },
+    fallbackFilename: string
+): void {
+    const contentDisposition = response.headers['content-disposition'] as string | undefined;
+    let filename = fallbackFilename;
+    if (contentDisposition) {
+        const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (match?.[1]) filename = match[1].replace(/['"]/g, '');
+    }
+    const blob = new Blob([response.data]);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
 
 export default ApiClient;

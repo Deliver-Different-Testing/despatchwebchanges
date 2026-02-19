@@ -33,7 +33,6 @@ import AddressLookupService from "./services/address-lookup.service";
 import dayjs from "dayjs";
 import 'dayjs/locale/en';
 import 'dayjs/locale/en-nz';
-import reactErrorPageDirective from "./components/error-page/react-error-page.directive";
 import TablePaginationComponent from "./components/common/table-pagination/table-pagination.component";
 import TruckCourierStatusDialogController
     from "./components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.controller";
@@ -223,7 +222,6 @@ app.component("flightAgentDataTableReact", FlightAgentDataTableReactComponent);
 
 // Directives
 app.directive("reactAppShell", reactAppShellDirective);
-app.directive("reactErrorPage", reactErrorPageDirective);
 
 // Dialogs
 app.controller("EditParcelDimensionsDialogController", EditParcelDimensionsDialogController);

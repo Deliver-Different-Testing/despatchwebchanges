@@ -18,7 +18,7 @@ import {IDriverWorkOverview, IPotentialCouriers, ITruckCourierStatus} from "../.
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import BaseController from "../base-controller";
-import {ExtendedTask, ITask} from "../task-dashboard/task-dashboard.interfaces";
+import {ExtendedTask, ITask} from "../../interfaces/task.interfaces";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 import {EditAddressDialogService} from "../dialogs/edit-address-dialog/edit-address-dialog.service";
 import {AppPage} from "../../enums/app-pages.enum";
@@ -40,7 +40,7 @@ import JobAddStopService from "../../services/job-add-stop.service";
 import getJobTableRowClass from "../../functions/getJobTableRowClass";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import timezone from 'dayjs/plugin/timezone';
-import {StatusFilter} from "../task-dashboard/enums/status-filter";
+import {StatusFilter} from "../../enums/status-filter.enum";
 import TasksService from "../../services/tasks.service";
 import JobListType from "../common/job-list/enums/jobListType";
 import IContextMenuOption from "../../interfaces/context-menu-option.interface";

@@ -10,6 +10,7 @@ import {createRoot, Root} from 'react-dom/client';
 import {ThemeProvider, CssBaseline} from '@mui/material';
 import {NoteManagementDialog} from './NoteManagementDialog';
 import {getTheme} from '../../../theme/muiTheme';
+import {ReactQueryProvider} from '../../../query';
 import {notesApi} from '../../../services/notesApi';
 import {toastService} from '../../../services/toastService';
 import {JobNote, NoteType, CreateNoteRequest, UpdateNoteRequest} from '../../../interfaces';
@@ -78,20 +79,22 @@ function renderDialog(): void {
     const currentTheme = getTheme();
 
     dialogRoot.render(
-        <ThemeProvider theme={currentTheme}>
-            <CssBaseline />
-            <NoteManagementDialog
-                open={dialogState.open}
-                note={dialogState.note}
-                onClose={handleClose}
-                onSave={handleSave}
-                onLoadNoteTypes={handleLoadNoteTypes}
-                onCreateNote={handleCreateNote}
-                onUpdateNote={handleUpdateNote}
-                onCreateNoteType={handleCreateNoteType}
-                showToast={handleShowToast}
-            />
-        </ThemeProvider>
+        <ReactQueryProvider>
+            <ThemeProvider theme={currentTheme}>
+                <CssBaseline />
+                <NoteManagementDialog
+                    open={dialogState.open}
+                    note={dialogState.note}
+                    onClose={handleClose}
+                    onSave={handleSave}
+                    onLoadNoteTypes={handleLoadNoteTypes}
+                    onCreateNote={handleCreateNote}
+                    onUpdateNote={handleUpdateNote}
+                    onCreateNoteType={handleCreateNoteType}
+                    showToast={handleShowToast}
+                />
+            </ThemeProvider>
+        </ReactQueryProvider>
     );
 }
 

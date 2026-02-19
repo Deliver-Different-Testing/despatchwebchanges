@@ -1,5 +1,4 @@
-import axios from 'axios';
-import {apiClient} from './apiClient';
+import {apiClient, downloadBlob} from './apiClient';
 import {
     PaginatedRequest,
     PaginatedResponse,
@@ -17,31 +16,6 @@ import {
     GroupEmailData,
     CourierDailyEarningsPaginated,
 } from '../interfaces';
-
-function downloadBlob(response: { data: Blob; headers: Record<string, unknown> }, fallbackFilename: string): void {
-    const contentDisposition = response.headers['content-disposition'] as string | undefined;
-    let filename = fallbackFilename;
-    if (contentDisposition) {
-        const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-        if (match?.[1]) filename = match[1].replace(/['"]/g, '');
-    }
-    const blob = new Blob([response.data]);
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-}
-
-const csvPostConfig = {
-    responseType: 'blob' as const,
-    headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
-    withCredentials: true,
-};
 
 export const driverManagementApi = {
     searchAllCouriers(searchTerm: string): Promise<FleetOption[]> {
@@ -140,33 +114,33 @@ export const driverManagementApi = {
     },
 
     async exportTodayActiveDriversCsv(query: PaginatedRequest, filters: TodayActiveDriverFilter): Promise<void> {
-        const response = await axios.post('courier/ExportTodayActiveDriversCsv', {
+        const response = await apiClient.postForBlob('courier/ExportTodayActiveDriversCsv', {
             ...query, ...filters,
-        }, csvPostConfig);
+        });
         downloadBlob(response, 'today-active-drivers.csv');
     },
 
     async exportComplianceCsv(query: PaginatedRequest, filters: ComplianceFilter): Promise<void> {
-        const response = await axios.post('courier/ExportComplianceCsv', {
+        const response = await apiClient.postForBlob('courier/ExportComplianceCsv', {
             ...query, ...filters,
-        }, csvPostConfig);
+        });
         downloadBlob(response, 'driver-compliance.csv');
     },
 
     async exportAfterHoursScheduleCsv(query: PaginatedRequest, filters: AfterHoursFilter): Promise<void> {
-        const response = await axios.post('courier/ExportAfterHoursScheduleCsv', {
+        const response = await apiClient.postForBlob('courier/ExportAfterHoursScheduleCsv', {
             ...query, ...filters,
-        }, csvPostConfig);
+        });
         downloadBlob(response, 'after-hours-schedule.csv');
     },
 
     async exportDriverEmailsCsv(query: PaginatedRequest): Promise<void> {
-        const response = await axios.post('courier/ExportDriverEmailsCsv', query, csvPostConfig);
+        const response = await apiClient.postForBlob('courier/ExportDriverEmailsCsv', query);
         downloadBlob(response, 'driver-emails.csv');
     },
 
     async exportDriverEarningsCsv(query: PaginatedRequest): Promise<void> {
-        const response = await axios.post('courier/ExportDriverEarningsCsv', query, csvPostConfig);
+        const response = await apiClient.postForBlob('courier/ExportDriverEarningsCsv', query);
         downloadBlob(response, 'driver-earnings.csv');
     },
 };

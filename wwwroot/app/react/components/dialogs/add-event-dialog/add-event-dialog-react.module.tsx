@@ -11,6 +11,7 @@ import { createRoot, Root } from 'react-dom/client';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { AddEventDialog, AddEventJob, EventType, JobEventData } from './AddEventDialog';
 import { getTheme } from '../../../theme/muiTheme';
+import { ReactQueryProvider } from '../../../query';
 import { getIanaTimezone, formatDateForApi, getTenantTimezone } from '../../../utils/dateUtils';
 import { EventType as EventTypeEnum } from '../../../../enums/event-type';
 import { JobNoteType } from '../../../../enums/job-note-type.enum';
@@ -145,18 +146,20 @@ class AddEventDialogManager {
         const timezone = getIanaTimezone(getTenantTimezone());
 
         this.dialogRoot.render(
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <AddEventDialog
-                    open={this.dialogState.open}
-                    job={this.dialogState.job}
-                    onClose={handleClose}
-                    onSubmit={handleSubmit}
-                    onLoadEventTypes={handleLoadEventTypes}
-                    showToast={handleShowToast}
-                    timezone={timezone}
-                />
-            </ThemeProvider>
+            <ReactQueryProvider>
+                <ThemeProvider theme={currentTheme}>
+                    <CssBaseline />
+                    <AddEventDialog
+                        open={this.dialogState.open}
+                        job={this.dialogState.job}
+                        onClose={handleClose}
+                        onSubmit={handleSubmit}
+                        onLoadEventTypes={handleLoadEventTypes}
+                        showToast={handleShowToast}
+                        timezone={timezone}
+                    />
+                </ThemeProvider>
+            </ReactQueryProvider>
         );
     }
 

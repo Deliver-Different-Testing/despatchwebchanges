@@ -10,6 +10,7 @@ import {createRoot, Root} from 'react-dom/client';
 import {ThemeProvider, CssBaseline} from '@mui/material';
 import {AutoCompleteDialog, Suggestion} from './AutoCompleteDialog';
 import {getTheme} from '../../../theme/muiTheme';
+import {ReactQueryProvider} from '../../../query';
 import angular from 'angular';
 
 // Result interface for the dialog
@@ -72,21 +73,23 @@ function renderDialog(): void {
     const currentTheme = getTheme();
 
     dialogRoot.render(
-        <ThemeProvider theme={currentTheme}>
-            <CssBaseline />
-            <AutoCompleteDialog
-                open={dialogState.open}
-                title={dialogState.title}
-                placeholder={dialogState.placeholder}
-                itemIcon={dialogState.itemIcon}
-                existingItem={dialogState.existingItem}
-                showRerateOption={dialogState.showRerateOption}
-                minInputLength={dialogState.minInputLength}
-                onClose={handleClose}
-                onSubmit={handleSubmit}
-                onSearch={handleSearch}
-            />
-        </ThemeProvider>
+        <ReactQueryProvider>
+            <ThemeProvider theme={currentTheme}>
+                <CssBaseline />
+                <AutoCompleteDialog
+                    open={dialogState.open}
+                    title={dialogState.title}
+                    placeholder={dialogState.placeholder}
+                    itemIcon={dialogState.itemIcon}
+                    existingItem={dialogState.existingItem}
+                    showRerateOption={dialogState.showRerateOption}
+                    minInputLength={dialogState.minInputLength}
+                    onClose={handleClose}
+                    onSubmit={handleSubmit}
+                    onSearch={handleSearch}
+                />
+            </ThemeProvider>
+        </ReactQueryProvider>
     );
 }
 
