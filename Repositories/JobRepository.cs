@@ -1758,6 +1758,37 @@ public partial class JobRepository(
                     .SetProperty(p => p.Charged, 0)
                     .SetProperty(p => p.CostAmount, 0));
 
+            // Void any linked bulk jobs
+            var linkedBulkJobIds = await Context.TblBulkJobs
+                .Where(b => b.JobId.HasValue && jobsToVoid.Contains(b.JobId.Value) && !b.Void)
+                .Select(b => b.BulkJobId)
+                .TagWith($"VoidJob - Find linked bulk jobs for {jobsToVoid.Count} jobs")
+                .ToListAsync();
+
+            if (linkedBulkJobIds.Count > 0)
+            {
+                var bulkCourierIds = await Context.TblBulkJobs
+                    .AsNoTracking()
+                    .Where(b => linkedBulkJobIds.Contains(b.BulkJobId) && b.CourierId.HasValue)
+                    .Select(b => b.CourierId!.Value)
+                    .Distinct()
+                    .ToListAsync();
+
+                courierIds = courierIds.Union(bulkCourierIds).ToList();
+
+                await Context.TblBulkJobs
+                    .Where(b => linkedBulkJobIds.Contains(b.BulkJobId))
+                    .TagWith($"VoidJob - Void {linkedBulkJobIds.Count} linked bulk jobs")
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(b => b.JobStatus, (int)JobStatus.Void)
+                        .SetProperty(b => b.Void, true)
+                        .SetProperty(b => b.Amount, 0)
+                        .SetProperty(b => b.CourierPayment, 0));
+
+                await CloseAllBulkJobTasksAsync(linkedBulkJobIds);
+                await SaveMultipleBulkNotesAsync(linkedBulkJobIds, data.VoidReason);
+            }
+
             // Update courier statuses
             if (courierIds.Count > 0) await UpdateClearListAreaOrderStatus(courierIds);
 

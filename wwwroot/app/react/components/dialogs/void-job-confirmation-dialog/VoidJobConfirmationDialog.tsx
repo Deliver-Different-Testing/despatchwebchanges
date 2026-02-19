@@ -32,6 +32,7 @@ import {
     Close as CloseIcon,
     Delete as DeleteIcon,
     Warning as WarningIcon,
+    Info as InfoIcon,
 } from '@mui/icons-material';
 import {RelatedJob, VoidJobDialogJob, VoidJobResult} from '../../../interfaces';
 
@@ -292,6 +293,28 @@ export class VoidJobConfirmationDialog extends React.Component<VoidJobConfirmati
                         You are about to void job <strong>#{job.jobNo}</strong>.
                     </Typography>
                 </Paper>
+
+                {/* Linked bulk job info */}
+                {!job.isBulkJob && (
+                    <Paper
+                        elevation={0}
+                        sx={(theme) => ({
+                            p: 2,
+                            mb: 3,
+                            borderRadius: 1,
+                            bgcolor: alpha(theme.palette.info.main, 0.08),
+                            borderLeft: `4px solid ${theme.palette.info.main}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1.5,
+                        })}
+                    >
+                        <InfoIcon sx={(theme) => ({color: theme.palette.info.dark, fontSize: 20})} />
+                        <Typography variant="body2" color="text.primary">
+                            Any linked bulk jobs will also be voided.
+                        </Typography>
+                    </Paper>
+                )}
 
                 {/* Reason Input */}
                 <Box sx={{mb: 3}}>
