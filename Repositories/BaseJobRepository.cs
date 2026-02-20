@@ -418,8 +418,12 @@ public class BaseJobRepository(
         var noteTypeExists = await Context.ConfirmNoteTypeExistsAsync(noteType);
         if (!noteTypeExists) noteType = NoteType.InternalNote;
 
+        var staffId = infoService.GetStaffId();
+        var currentTime = infoService.GetCurrentTenantTime();
+
         var newNotes = bulkJobIds.Select(bulkJobId => new TblBulkJobNote
-                { BulkJobId = bulkJobId, IsImportant = isImportant, NoteText = noteText, NoteTypeId = (int)noteType })
+                { BulkJobId = bulkJobId, IsImportant = isImportant, NoteText = noteText, NoteTypeId = (int)noteType,
+                  CreatedBy = staffId, CreatedDate = currentTime })
             .ToList();
 
         await Context.TblBulkJobNotes.AddRangeAsync(newNotes);
@@ -600,7 +604,9 @@ public class BaseJobRepository(
                 JobBookingId = effectiveJobId,
                 NoteText = noteText,
                 IsImportant = isImportant,
-                NoteTypeId = (int)noteType
+                NoteTypeId = (int)noteType,
+                CreatedBy = infoService.GetStaffId(),
+                CreatedDate = infoService.GetCurrentTenantTime()
             };
             await Context.AddAsync(newNote);
             await Context.SaveChangesAsync();
@@ -621,12 +627,42 @@ public class BaseJobRepository(
     {
         try
         {
+            var staffId = infoService.GetStaffId();
+            var currentTime = infoService.GetCurrentTenantTime();
+
+            // Fetch current state for history before updating
+            var currentNote = await Context.TucNotes
+                .AsNoTracking()
+                .Where(c => c.NoteId == noteId)
+                .Select(c => new { c.NoteText, c.NoteTypeId, c.IsImportant })
+                .FirstOrDefaultAsync();
+
+            if (currentNote != null)
+            {
+                var history = new TucNoteHistory
+                {
+                    NoteId = noteId,
+                    EditedBy = staffId,
+                    EditedAt = DateTime.UtcNow,
+                    OldNoteText = currentNote.NoteText,
+                    NewNoteText = noteText,
+                    OldNoteTypeId = currentNote.NoteTypeId,
+                    NewNoteTypeId = (int)noteType,
+                    OldIsImportant = currentNote.IsImportant,
+                    NewIsImportant = isImportant
+                };
+                await Context.TucNoteHistories.AddAsync(history);
+                await Context.SaveChangesAsync();
+            }
+
             var rowsAffected = await Context.TucNotes
                 .Where(c => c.NoteId == noteId)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(e => e.NoteText, noteText)
                     .SetProperty(e => e.NoteTypeId, (int)noteType)
                     .SetProperty(e => e.IsImportant, isImportant)
+                    .SetProperty(e => e.UpdatedBy, staffId)
+                    .SetProperty(e => e.UpdatedDate, currentTime)
                 );
 
             if (rowsAffected == 0) throw new Exception($"Existing note under {noteId} not found");

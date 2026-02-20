@@ -5,7 +5,7 @@
  * Verifies FormData upload, query parameters, and response handling.
  */
 
-import { server } from '../../__testUtils__/msw/setupIntegration';
+import { server } from '../../__testUtils__/msw/server';
 import { http, HttpResponse } from 'msw';
 import { bulkPriceApi } from '../bulkPriceApi';
 import { mockBulkPricePreviewResponse } from '../../__testUtils__/msw/handlers';

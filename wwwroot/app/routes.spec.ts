@@ -294,7 +294,8 @@ describe('RouterConfig', () => {
         it('should configure courierMap state', () => {
             const state = registeredStates.get('courierMap');
             expect(state.url).toBe('/courierMap');
-            expect(state.component).toBe('courierMapComponent');
+            expect(state.template).toContain('react-app-shell');
+            expect(state.template).toContain('react-courier-map');
         });
     });
 });

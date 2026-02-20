@@ -70,3 +70,36 @@ export interface UpdateNoteRequest {
     jobBookingId?: number;
     bulkJobId?: number;
 }
+
+export interface NoteHistoryDto {
+    noteHistoryId: number;
+    noteId: number;
+    editedBy: number;
+    editedByName: string;
+    editedAt: string;
+    oldNoteText: string;
+    newNoteText: string;
+    oldNoteTypeId?: number;
+    oldNoteTypeName?: string;
+    newNoteTypeId?: number;
+    newNoteTypeName?: string;
+    oldIsImportant?: boolean;
+    newIsImportant?: boolean;
+}
+
+export interface NoteHistoryEntry {
+    noteHistoryId: number;
+    noteId: number;
+    editedBy: number;
+    editedByName: string;
+    editedAt: Dayjs;
+    editedAtStr: string;
+    oldNoteText: string;
+    newNoteText: string;
+    oldNoteTypeId?: number;
+    oldNoteTypeName?: string;
+    newNoteTypeId?: number;
+    newNoteTypeName?: string;
+    oldIsImportant?: boolean;
+    newIsImportant?: boolean;
+}

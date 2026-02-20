@@ -90,6 +90,20 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
         }
     }, []);
 
+    // Handle date-only change (preserves existing time)
+    const handleDateChange = useCallback((newValue: Dayjs | null) => {
+        if (newValue && newValue.isValid()) {
+            setDateTime(prev => prev.year(newValue.year()).month(newValue.month()).date(newValue.date()));
+        }
+    }, []);
+
+    // Handle time-only change (preserves existing date)
+    const handleTimeChange = useCallback((newValue: Dayjs | null) => {
+        if (newValue && newValue.isValid()) {
+            setDateTime(prev => prev.hour(newValue.hour()).minute(newValue.minute()).second(0));
+        }
+    }, []);
+
     // Process the datetime based on mode before submitting
     const processDateTime = useCallback((dt: Dayjs): Dayjs => {
         if (showDate && showTime) {
@@ -252,7 +266,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                                 <>
                                     <DatePicker
                                         value={dateTime}
-                                        onChange={handleDateTimeChange}
+                                        onChange={handleDateChange}
                                         disabled={isLoading}
                                         label="Date"
                                         format="YYYY-MM-DD"
@@ -266,7 +280,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                                     />
                                     <TimePicker
                                         value={dateTime}
-                                        onChange={handleDateTimeChange}
+                                        onChange={handleTimeChange}
                                         disabled={isLoading}
                                         label="Time (24-hour)"
                                         ampm={false}

@@ -19,10 +19,7 @@ public class MessagesControllerTests
 
     private readonly Mock<IMessageRepository> _messageRepositoryMock = new();
 
-    private MessagesController CreateController()
-    {
-        return new MessagesController(_messageRepositoryMock.Object);
-    }
+    private MessagesController CreateController() => new(_messageRepositoryMock.Object);
 
     #endregion
 

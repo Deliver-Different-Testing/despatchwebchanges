@@ -30,6 +30,8 @@ public class RecurringJobRepositoryTests : IDisposable
         _connection = new SqliteConnection("DataSource=:memory:");
         _connection.Open();
 
+        _connection.CreateFunction("getdate", () => DateTime.Now);
+
         // Disable foreign key constraints for testing
         using (var command = _connection.CreateCommand())
         {
@@ -1240,6 +1242,110 @@ public class RecurringJobRepositoryTests : IDisposable
         result.Should().HaveCount(3);
     }
 
+    [Fact]
+    public async Task GetRecurringJobsListAsync_SearchByClientCode_ReturnsMatchingJobs()
+    {
+        // Arrange
+        const string timezone = "New Zealand Standard Time";
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        _context.TucJobBookings.AddRange(
+            CreateJobBookingWithSearchFields(100, clientCode: "ACME01", active: true),
+            CreateJobBookingWithSearchFields(101, clientCode: "GLOBEX", active: true),
+            CreateJobBookingWithSearchFields(102, clientCode: "ACME02", active: true)
+        );
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50, SearchText = "ACME" };
+
+        // Act
+        var result = await repository.GetRecurringJobsListAsync(request);
+
+        // Assert
+        result.Items.Should().HaveCount(2);
+        result.Items.Select(i => i.Id).Should().Contain([100, 102]);
+    }
+
+    [Fact]
+    public async Task GetRecurringJobsListAsync_SearchByContactName_ReturnsMatchingJobs()
+    {
+        // Arrange
+        const string timezone = "New Zealand Standard Time";
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        _context.TucJobBookings.AddRange(
+            CreateJobBookingWithSearchFields(100, pickupContact: "John Smith", active: true),
+            CreateJobBookingWithSearchFields(101, deliverContact: "Jane Smith", active: true),
+            CreateJobBookingWithSearchFields(102, pickupContact: "Bob Jones", active: true)
+        );
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50, SearchText = "Smith" };
+
+        // Act
+        var result = await repository.GetRecurringJobsListAsync(request);
+
+        // Assert
+        result.Items.Should().HaveCount(2);
+        result.Items.Select(i => i.Id).Should().Contain([100, 101]);
+    }
+
+    [Fact]
+    public async Task GetRecurringJobsListAsync_SearchByClientReference_ReturnsMatchingJobs()
+    {
+        // Arrange
+        const string timezone = "New Zealand Standard Time";
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        _context.TucJobBookings.AddRange(
+            CreateJobBookingWithSearchFields(100, clientRefA: "PO-12345", active: true),
+            CreateJobBookingWithSearchFields(101, clientRefB: "INV-12345", active: true),
+            CreateJobBookingWithSearchFields(102, ourRef: "REF-99999", active: true)
+        );
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50, SearchText = "12345" };
+
+        // Act
+        var result = await repository.GetRecurringJobsListAsync(request);
+
+        // Assert
+        result.Items.Should().HaveCount(2);
+        result.Items.Select(i => i.Id).Should().Contain([100, 101]);
+    }
+
+    [Fact]
+    public async Task GetRecurringJobsListAsync_SearchByConnote_ReturnsMatchingJobs()
+    {
+        // Arrange
+        const string timezone = "New Zealand Standard Time";
+        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
+        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        _context.TucJobBookings.AddRange(
+            CreateJobBookingWithSearchFields(100, connote: "CN-ABC-001", active: true),
+            CreateJobBookingWithSearchFields(101, connote: "CN-XYZ-002", active: true),
+            CreateJobBookingWithSearchFields(102, connote: "CN-ABC-003", active: true)
+        );
+        await _context.SaveChangesAsync();
+        var repository = CreateRepository();
+
+        var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50, SearchText = "ABC" };
+
+        // Act
+        var result = await repository.GetRecurringJobsListAsync(request);
+
+        // Assert
+        result.Items.Should().HaveCount(2);
+        result.Items.Select(i => i.Id).Should().Contain([100, 102]);
+    }
+
     #endregion
 
     #region GetRecurringNotesByJobIdAsync Tests
@@ -1469,6 +1575,31 @@ public class RecurringJobRepositoryTests : IDisposable
         UcbkActive = active,
         UcbkOneOff = false,
         UcbkAttention = false
+    };
+
+    private static TucJobBooking CreateJobBookingWithSearchFields(
+        int id,
+        bool active,
+        string? clientCode = null,
+        string? pickupContact = null,
+        string? deliverContact = null,
+        string? clientRefA = null,
+        string? clientRefB = null,
+        string? ourRef = null,
+        string? connote = null) => new()
+    {
+        UcbkId = id,
+        UcbkJobNumber = $"JOB{id}",
+        UcbkActive = active,
+        UcbkOneOff = false,
+        UcbkAttention = false,
+        UcbkClientCode = clientCode,
+        PickupFromContact = pickupContact,
+        DeliverToContact = deliverContact,
+        UcbkClientRefa = clientRefA,
+        UcbkClientRefb = clientRefB,
+        UcbkOurRef = ourRef,
+        Connote = connote
     };
 
     private static AddressViewModel CreateTestAddress(

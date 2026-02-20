@@ -6,13 +6,11 @@
  * and date transformations.
  */
 
-import { server } from '../../__testUtils__/msw/setupIntegration';
+import { server } from '../../__testUtils__/msw/server';
 import { http, HttpResponse } from 'msw';
 import { tasksApi } from '../tasksApi';
 import {
     mockTaskApiResponses,
-    mockStaffSuggestions,
-    mockEventTypeSuggestions,
     mockDeliveryJourneyDtos,
 } from '../../__testUtils__/msw/handlers';
 import dayjs from 'dayjs';

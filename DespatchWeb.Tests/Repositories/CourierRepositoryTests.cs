@@ -1,7 +1,6 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
-using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
@@ -678,7 +677,7 @@ public class CourierRepositoryTests : IDisposable
         await using var context = CreateContext();
 
         // P2P Fleet (CourierFleet.UaAucklandP2P = 6)
-        var p2pFleet = new TucCourierFleet
+        var p2PFleet = new TucCourierFleet
         {
             UccfId = (int)CourierFleet.UaAucklandP2P,
             UccfName = "P2P Fleet",
@@ -688,7 +687,7 @@ public class CourierRepositoryTests : IDisposable
             LastModified = DateTime.Now,
             LastModifiedBy = "Test"
         };
-        context.TucCourierFleets.Add(p2pFleet);
+        context.TucCourierFleets.Add(p2PFleet);
 
         // Clear list area order
         var clearListOrder = new TblClearListAreaOrder

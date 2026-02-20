@@ -1,4 +1,5 @@
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
@@ -25,6 +26,8 @@ public class NoteRepositoryTests : IDisposable
         _connection = new SqliteConnection("DataSource=:memory:");
         _connection.Open();
 
+        _connection.CreateFunction("getdate", () => DateTime.Now);
+
         using (var command = _connection.CreateCommand())
         {
             command.CommandText = "PRAGMA foreign_keys = OFF;";
@@ -44,6 +47,8 @@ public class NoteRepositoryTests : IDisposable
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
         _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
         _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime()).Returns(DateTime.Now);
+        _tenantInfoServiceMock.Setup(x => x.ConvertUtcToTenantTimeZone(It.IsAny<DateTime>()))
+            .Returns((DateTime dt) => new DateTimeOffset(dt, TimeSpan.FromHours(12)));
     }
 
     public void Dispose()
@@ -206,6 +211,87 @@ public class NoteRepositoryTests : IDisposable
         await act.Should().NotThrowAsync();
     }
 
+    [Fact]
+    public async Task DeleteNoteAsync_WithHistory_DeletesHistoryAndNote()
+    {
+        // Arrange
+        const int noteId = 1;
+        const int jobId = 100;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        _context.TucNotes.Add(new TucNote
+        {
+            NoteId = noteId,
+            JobId = jobId,
+            NoteText = "Test note",
+            NoteTypeId = 1,
+            IsImportant = false,
+            CreatedDate = DateTime.Now
+        });
+        _context.TucStaffs.Add(CreateStaff(1, "John", "Doe"));
+        _context.TucNoteHistories.Add(CreateNoteHistory(1, NoteHistorySource.Note, noteId, 1,
+            DateTime.UtcNow, "Old text", "Test note"));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.DeleteNoteAsync(noteId);
+
+        // Assert — use AsNoTracking since ExecuteDeleteAsync bypasses the change tracker
+        var note = await _context.TucNotes.AsNoTracking().FirstOrDefaultAsync(n => n.NoteId == noteId);
+        note.Should().BeNull();
+
+        var history = await _context.TucNoteHistories
+            .Where(h => h.NoteId == noteId)
+            .ToListAsync();
+        history.Should().BeEmpty();
+    }
+
+    #endregion
+
+    #region DeleteBulkNoteAsync Tests
+
+    [Fact]
+    public async Task DeleteBulkNoteAsync_WithHistory_DeletesHistoryAndNote()
+    {
+        // Arrange
+        const int noteId = 1;
+        const int bulkJobId = 100;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
+        _context.TblBulkJobNotes.Add(CreateBulkJobNote(noteId, bulkJobId, "Test bulk note"));
+        _context.TucStaffs.Add(CreateStaff(1, "John", "Doe"));
+        _context.TucNoteHistories.Add(CreateNoteHistory(1, NoteHistorySource.BulkNote, noteId, 1,
+            DateTime.UtcNow, "Old text", "Test bulk note"));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.DeleteBulkNoteAsync(noteId);
+
+        // Assert
+        var note = await _context.TblBulkJobNotes.AsNoTracking().FirstOrDefaultAsync(n => n.NoteId == noteId);
+        note.Should().BeNull();
+
+        var history = await _context.TucNoteHistories
+            .Where(h => h.BulkNoteId == noteId)
+            .ToListAsync();
+        history.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task DeleteBulkNoteAsync_WithNonExistentNote_DoesNotThrow()
+    {
+        // Arrange
+        var repository = CreateRepository();
+
+        // Act & Assert
+        var act = async () => await repository.DeleteBulkNoteAsync(999);
+        await act.Should().NotThrowAsync();
+    }
+
     #endregion
 
     #region IsJobArchived Tests
@@ -255,6 +341,122 @@ public class NoteRepositoryTests : IDisposable
 
         // Assert
         result.Should().BeFalse();
+    }
+
+    #endregion
+
+    #region GetNoteHistoryAsync Tests
+
+    [Fact]
+    public async Task GetNoteHistoryAsync_WithExistingHistory_ReturnsHistoryOrderedByNewest()
+    {
+        // Arrange
+        const int noteId = 1;
+        var oldest = new DateTime(2024, 1, 1, 10, 0, 0);
+        var middle = new DateTime(2024, 6, 15, 14, 0, 0);
+        var newest = new DateTime(2024, 12, 31, 23, 0, 0);
+
+        _context.TucStaffs.Add(CreateStaff(1, "John", "Doe"));
+        _context.TucNoteHistories.AddRange(
+            CreateNoteHistory(1, NoteHistorySource.Note, noteId, 1, middle, "Old middle", "New middle"),
+            CreateNoteHistory(2, NoteHistorySource.Note, noteId, 1, oldest, "Old oldest", "New oldest"),
+            CreateNoteHistory(3, NoteHistorySource.Note, noteId, 1, newest, "Old newest", "New newest")
+        );
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetNoteHistoryAsync(noteId, NoteHistorySource.Note);
+
+        // Assert
+        result.Should().HaveCount(3);
+        result[0].NewNoteText.Should().Be("New newest");
+        result[1].NewNoteText.Should().Be("New middle");
+        result[2].NewNoteText.Should().Be("New oldest");
+    }
+
+    [Fact]
+    public async Task GetNoteHistoryAsync_WithNoHistory_ReturnsEmptyList()
+    {
+        // Arrange
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetNoteHistoryAsync(999, NoteHistorySource.Note);
+
+        // Assert
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetNoteHistoryAsync_FiltersByNoteSource()
+    {
+        // Arrange
+        const int noteId = 1;
+        var timestamp = new DateTime(2024, 6, 15, 10, 0, 0);
+
+        _context.TucStaffs.Add(CreateStaff(1, "John", "Doe"));
+        _context.TucNoteHistories.AddRange(
+            CreateNoteHistory(1, NoteHistorySource.Note, noteId, 1, timestamp, "Old1", "New1"),
+            CreateNoteHistory(2, NoteHistorySource.BulkNote, noteId, 1, timestamp, "Old2", "New2"),
+            CreateNoteHistory(3, NoteHistorySource.Note, noteId, 1, timestamp, "Old3", "New3")
+        );
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetNoteHistoryAsync(noteId, NoteHistorySource.Note);
+
+        // Assert
+        result.Should().HaveCount(2);
+        result.Should().OnlyContain(h => h.NewNoteText == "New1" || h.NewNoteText == "New3");
+    }
+
+    [Fact]
+    public async Task GetNoteHistoryAsync_IncludesNoteTypeNames()
+    {
+        // Arrange
+        const int noteId = 1;
+        _context.TucNoteTypes.AddRange(
+            CreateNoteType(1, "Internal Note"),
+            CreateNoteType(2, "Client Note")
+        );
+        _context.TucStaffs.Add(CreateStaff(1, "John", "Doe"));
+        _context.TucNoteHistories.Add(CreateNoteHistory(1, NoteHistorySource.Note, noteId, 1,
+            new DateTime(2024, 6, 15, 10, 0, 0), "Old text", "New text", oldNoteTypeId: 1, newNoteTypeId: 2));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetNoteHistoryAsync(noteId, NoteHistorySource.Note);
+
+        // Assert
+        result.Should().ContainSingle();
+        result[0].OldNoteTypeName.Should().Be("Internal Note");
+        result[0].NewNoteTypeName.Should().Be("Client Note");
+    }
+
+    [Fact]
+    public async Task GetNoteHistoryAsync_IncludesEditorName()
+    {
+        // Arrange
+        const int noteId = 1;
+        _context.TucStaffs.Add(CreateStaff(1, "Jane", "Smith"));
+        _context.TucNoteHistories.Add(CreateNoteHistory(1, NoteHistorySource.Note, noteId, 1,
+            new DateTime(2024, 6, 15, 10, 0, 0), "Old", "New"));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetNoteHistoryAsync(noteId, NoteHistorySource.Note);
+
+        // Assert
+        result.Should().ContainSingle();
+        result[0].EditedByName.Should().Be("Jane Smith");
     }
 
     #endregion
@@ -326,6 +528,578 @@ public class NoteRepositoryTests : IDisposable
 
     #endregion
 
+    #region GetBulkNoteByIdAsync Tests
+
+    [Fact]
+    public async Task GetBulkNoteByIdAsync_WithExistingNote_ReturnsNote()
+    {
+        // Arrange
+        const int noteId = 1;
+        const int bulkJobId = 100;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
+        _context.TblBulkJobNotes.Add(CreateBulkJobNote(noteId, bulkJobId, "Test note text"));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetBulkNoteByIdAsync(noteId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.NoteId.Should().Be(noteId);
+        result.NoteText.Should().Be("Test note text");
+        result.BulkJobId.Should().Be(bulkJobId);
+        result.NoteTypeId.Should().Be(1);
+        result.IsImportant.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetBulkNoteByIdAsync_WithNonExistentNote_ReturnsNull()
+    {
+        // Arrange
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetBulkNoteByIdAsync(999);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    #endregion
+
+    #region SaveBulkNoteAsync Tests
+
+    [Fact]
+    public async Task SaveBulkNoteAsync_WithNewNote_CreatesNote()
+    {
+        // Arrange
+        const int bulkJobId = 100;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+        var viewModel = new TucNoteViewModel
+        {
+            NoteId = 0,
+            BulkJobId = bulkJobId,
+            NoteText = "Brand new note",
+            NoteTypeId = 1,
+            IsImportant = false
+        };
+
+        // Act
+        await repository.SaveBulkNoteAsync(viewModel);
+
+        // Assert
+        var savedNote = await _context.TblBulkJobNotes.FirstOrDefaultAsync(n => n.NoteText == "Brand new note");
+        savedNote.Should().NotBeNull();
+        savedNote!.BulkJobId.Should().Be(bulkJobId);
+        savedNote.NoteTypeId.Should().Be(1);
+        savedNote.IsImportant.Should().BeFalse();
+        savedNote.CreatedBy.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task SaveBulkNoteAsync_WithExistingNote_UpdatesInPlace()
+    {
+        // Arrange
+        const int noteId = 1;
+        const int bulkJobId = 100;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TucNoteTypes.Add(CreateNoteType(2, "Client Note"));
+        _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
+        _context.TblBulkJobNotes.Add(CreateBulkJobNote(noteId, bulkJobId, "Original text"));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+        var viewModel = new TucNoteViewModel
+        {
+            NoteId = noteId,
+            BulkJobId = bulkJobId,
+            NoteText = "Updated text",
+            NoteTypeId = 2,
+            IsImportant = true
+        };
+
+        // Act
+        await repository.SaveBulkNoteAsync(viewModel);
+
+        // Assert - note is updated, not duplicated
+        var allNotes = await _context.TblBulkJobNotes.Where(n => n.BulkJobId == bulkJobId).ToListAsync();
+        allNotes.Should().ContainSingle();
+
+        var updatedNote = allNotes.First();
+        updatedNote.NoteText.Should().Be("Updated text");
+        updatedNote.NoteTypeId.Should().Be(2);
+        updatedNote.IsImportant.Should().BeTrue();
+        updatedNote.UpdatedBy.Should().Be(1);
+        updatedNote.UpdatedDate.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task SaveBulkNoteAsync_WithExistingNote_RecordsHistory()
+    {
+        // Arrange
+        const int noteId = 1;
+        const int bulkJobId = 100;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TucNoteTypes.Add(CreateNoteType(2, "Client Note"));
+        _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
+        _context.TblBulkJobNotes.Add(CreateBulkJobNote(noteId, bulkJobId, "Original text"));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+        var viewModel = new TucNoteViewModel
+        {
+            NoteId = noteId,
+            BulkJobId = bulkJobId,
+            NoteText = "Updated text",
+            NoteTypeId = 2,
+            IsImportant = true
+        };
+
+        // Act
+        await repository.SaveBulkNoteAsync(viewModel);
+
+        // Assert - history record was created with BulkNoteId set
+        var history = await _context.TucNoteHistories
+            .Where(h => h.BulkNoteId == noteId)
+            .ToListAsync();
+
+        history.Should().ContainSingle();
+        var record = history.First();
+        record.NoteId.Should().BeNull();
+        record.BulkNoteId.Should().Be(noteId);
+        record.ArchiveNoteId.Should().BeNull();
+        record.OldNoteText.Should().Be("Original text");
+        record.NewNoteText.Should().Be("Updated text");
+        record.OldNoteTypeId.Should().Be(1);
+        record.NewNoteTypeId.Should().Be(2);
+        record.OldIsImportant.Should().BeFalse();
+        record.NewIsImportant.Should().BeTrue();
+        record.EditedBy.Should().Be(1);
+        record.EditedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task SaveBulkNoteAsync_WithNewNote_DoesNotRecordHistory()
+    {
+        // Arrange
+        const int bulkJobId = 100;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+        var viewModel = new TucNoteViewModel
+        {
+            NoteId = 0,
+            BulkJobId = bulkJobId,
+            NoteText = "Brand new note",
+            NoteTypeId = 1,
+            IsImportant = false
+        };
+
+        // Act
+        await repository.SaveBulkNoteAsync(viewModel);
+
+        // Assert - no history for new notes
+        var history = await _context.TucNoteHistories.ToListAsync();
+        history.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task SaveBulkNoteAsync_WithInvalidNoteType_DefaultsToInternalNote()
+    {
+        // Arrange
+        const int bulkJobId = 100;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+        var viewModel = new TucNoteViewModel
+        {
+            NoteId = 0,
+            BulkJobId = bulkJobId,
+            NoteText = "Note with invalid type",
+            NoteTypeId = 999,
+            IsImportant = false
+        };
+
+        // Act
+        await repository.SaveBulkNoteAsync(viewModel);
+
+        // Assert
+        var savedNote = await _context.TblBulkJobNotes.FirstOrDefaultAsync(n => n.BulkJobId == bulkJobId);
+        savedNote.Should().NotBeNull();
+        savedNote!.NoteTypeId.Should().Be(1); // Internal Note default
+    }
+
+    [Fact]
+    public async Task SaveBulkNoteAsync_WithNullBulkJobId_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var repository = CreateRepository();
+        var viewModel = new TucNoteViewModel
+        {
+            NoteId = 0,
+            BulkJobId = null,
+            NoteText = "Test note",
+            NoteTypeId = 1
+        };
+
+        // Act & Assert
+        var act = async () => await repository.SaveBulkNoteAsync(viewModel);
+        await act.Should().ThrowAsync<ArgumentNullException>();
+    }
+
+    [Fact]
+    public async Task SaveBulkNoteAsync_WithEmptyNoteText_ThrowsArgumentException()
+    {
+        // Arrange
+        var repository = CreateRepository();
+        var viewModel = new TucNoteViewModel
+        {
+            NoteId = 0,
+            BulkJobId = 100,
+            NoteText = "",
+            NoteTypeId = 1
+        };
+
+        // Act & Assert
+        var act = async () => await repository.SaveBulkNoteAsync(viewModel);
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    #endregion
+
+    #region GetNoteHistoryAsync - BulkNote Source Tests
+
+    [Fact]
+    public async Task GetNoteHistoryAsync_WithBulkNoteSource_ReturnsOnlyBulkNoteHistory()
+    {
+        // Arrange
+        const int noteId = 1;
+        var timestamp = new DateTime(2024, 6, 15, 10, 0, 0);
+
+        _context.TucStaffs.Add(CreateStaff(1, "John", "Doe"));
+        _context.TucNoteHistories.AddRange(
+            CreateNoteHistory(1, NoteHistorySource.Note, noteId, 1, timestamp, "Old1", "New1"),
+            CreateNoteHistory(2, NoteHistorySource.BulkNote, noteId, 1, timestamp, "Old2", "New2"),
+            CreateNoteHistory(3, NoteHistorySource.BulkNote, noteId, 1, timestamp, "Old3", "New3")
+        );
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetNoteHistoryAsync(noteId, NoteHistorySource.BulkNote);
+
+        // Assert
+        result.Should().HaveCount(2);
+        result.Should().OnlyContain(h => h.NewNoteText == "New2" || h.NewNoteText == "New3");
+    }
+
+    #endregion
+
+    #region GetNoteHistoryAsync - Archive Source Tests
+
+    [Fact]
+    public async Task GetNoteHistoryAsync_WithArchiveSource_ReturnsOnlyArchiveHistory()
+    {
+        // Arrange
+        const int noteId = 1;
+        var timestamp = new DateTime(2024, 6, 15, 10, 0, 0);
+
+        _context.TucStaffs.Add(CreateStaff(1, "John", "Doe"));
+        _context.TucNoteHistories.AddRange(
+            CreateNoteHistory(1, NoteHistorySource.Note, noteId, 1, timestamp, "Old1", "New1"),
+            CreateNoteHistory(2, NoteHistorySource.Archive, noteId, 1, timestamp, "Old2", "New2"),
+            CreateNoteHistory(3, NoteHistorySource.BulkNote, noteId, 1, timestamp, "Old3", "New3")
+        );
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetNoteHistoryAsync(noteId, NoteHistorySource.Archive);
+
+        // Assert
+        result.Should().ContainSingle();
+        result[0].NewNoteText.Should().Be("New2");
+    }
+
+    [Fact]
+    public async Task GetNoteHistoryAsync_WithArchiveSource_ReturnsNoteIdFromArchiveNoteId()
+    {
+        // Arrange
+        const int archiveNoteId = 42;
+        _context.TucStaffs.Add(CreateStaff(1, "John", "Doe"));
+        _context.TucNoteHistories.Add(CreateNoteHistory(1, NoteHistorySource.Archive, archiveNoteId, 1,
+            new DateTime(2024, 6, 15, 10, 0, 0), "Old", "New"));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetNoteHistoryAsync(archiveNoteId, NoteHistorySource.Archive);
+
+        // Assert
+        result.Should().ContainSingle();
+        result[0].NoteId.Should().Be(archiveNoteId);
+    }
+
+    #endregion
+
+    #region GetNoteHistoryAsync - NoteId Resolution Tests
+
+    [Fact]
+    public async Task GetNoteHistoryAsync_NoteSource_ReturnsNoteIdFromNoteColumn()
+    {
+        // Arrange
+        const int noteId = 10;
+        _context.TucStaffs.Add(CreateStaff(1, "John", "Doe"));
+        _context.TucNoteHistories.Add(CreateNoteHistory(1, NoteHistorySource.Note, noteId, 1,
+            new DateTime(2024, 6, 15, 10, 0, 0), "Old", "New"));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetNoteHistoryAsync(noteId, NoteHistorySource.Note);
+
+        // Assert
+        result.Should().ContainSingle();
+        result[0].NoteId.Should().Be(noteId);
+    }
+
+    [Fact]
+    public async Task GetNoteHistoryAsync_BulkNoteSource_ReturnsNoteIdFromBulkNoteColumn()
+    {
+        // Arrange
+        const int bulkNoteId = 20;
+        _context.TucStaffs.Add(CreateStaff(1, "John", "Doe"));
+        _context.TucNoteHistories.Add(CreateNoteHistory(1, NoteHistorySource.BulkNote, bulkNoteId, 1,
+            new DateTime(2024, 6, 15, 10, 0, 0), "Old", "New"));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetNoteHistoryAsync(bulkNoteId, NoteHistorySource.BulkNote);
+
+        // Assert
+        result.Should().ContainSingle();
+        result[0].NoteId.Should().Be(bulkNoteId);
+    }
+
+    #endregion
+
+    #region Nullable FK Column Isolation Tests
+
+    [Fact]
+    public async Task SaveBulkNoteAsync_HistoryRow_HasOnlyBulkNoteIdSet()
+    {
+        // Arrange
+        const int noteId = 1;
+        const int bulkJobId = 100;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
+        _context.TblBulkJobNotes.Add(CreateBulkJobNote(noteId, bulkJobId, "Original text"));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+        var viewModel = new TucNoteViewModel
+        {
+            NoteId = noteId,
+            BulkJobId = bulkJobId,
+            NoteText = "Updated",
+            NoteTypeId = 1,
+            IsImportant = false
+        };
+
+        // Act
+        await repository.SaveBulkNoteAsync(viewModel);
+
+        // Assert — exactly one FK column is populated
+        var history = await _context.TucNoteHistories.SingleAsync();
+        history.NoteId.Should().BeNull();
+        history.BulkNoteId.Should().Be(noteId);
+        history.ArchiveNoteId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task DeleteNoteAsync_DoesNotDeleteBulkNoteHistory()
+    {
+        // Arrange
+        const int noteId = 1;
+        const int jobId = 100;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        _context.TucNotes.Add(new TucNote
+        {
+            NoteId = noteId,
+            JobId = jobId,
+            NoteText = "Active note",
+            NoteTypeId = 1,
+            IsImportant = false,
+            CreatedDate = DateTime.Now
+        });
+        _context.TucStaffs.Add(CreateStaff(1, "John", "Doe"));
+
+        // History for the active note (NoteId = 1)
+        _context.TucNoteHistories.Add(CreateNoteHistory(1, NoteHistorySource.Note, noteId, 1,
+            DateTime.UtcNow, "Old", "New"));
+        // History for a bulk note that happens to have BulkNoteId = 1
+        _context.TucNoteHistories.Add(CreateNoteHistory(2, NoteHistorySource.BulkNote, noteId, 1,
+            DateTime.UtcNow, "Bulk old", "Bulk new"));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.DeleteNoteAsync(noteId);
+
+        // Assert — bulk note history is untouched
+        var remaining = await _context.TucNoteHistories.AsNoTracking().ToListAsync();
+        remaining.Should().ContainSingle();
+        remaining[0].BulkNoteId.Should().Be(noteId);
+        remaining[0].NoteId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task DeleteBulkNoteAsync_DoesNotDeleteActiveNoteHistory()
+    {
+        // Arrange
+        const int noteId = 1;
+        const int bulkJobId = 100;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
+        _context.TblBulkJobNotes.Add(CreateBulkJobNote(noteId, bulkJobId, "Bulk note"));
+        _context.TucStaffs.Add(CreateStaff(1, "John", "Doe"));
+
+        // History for the bulk note (BulkNoteId = 1)
+        _context.TucNoteHistories.Add(CreateNoteHistory(1, NoteHistorySource.BulkNote, noteId, 1,
+            DateTime.UtcNow, "Old", "New"));
+        // History for an active note that happens to have NoteId = 1
+        _context.TucNoteHistories.Add(CreateNoteHistory(2, NoteHistorySource.Note, noteId, 1,
+            DateTime.UtcNow, "Active old", "Active new"));
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.DeleteBulkNoteAsync(noteId);
+
+        // Assert — active note history is untouched
+        var remaining = await _context.TucNoteHistories.AsNoTracking().ToListAsync();
+        remaining.Should().ContainSingle();
+        remaining[0].NoteId.Should().Be(noteId);
+        remaining[0].BulkNoteId.Should().BeNull();
+    }
+
+    #endregion
+
+    #region SaveNoteAsync - Active Note History FK Tests
+
+    [Fact]
+    public async Task SaveNoteAsync_ActiveNoteUpdate_RecordsHistoryWithNoteIdOnly()
+    {
+        // Arrange
+        const int noteId = 1;
+        const int jobId = 100;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TucNoteTypes.Add(CreateNoteType(2, "Client Note"));
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        _context.TucNotes.Add(new TucNote
+        {
+            NoteId = noteId,
+            JobId = jobId,
+            NoteText = "Original text",
+            NoteTypeId = 1,
+            IsImportant = false,
+            CreatedDate = DateTime.Now
+        });
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+        var viewModel = new TucNoteViewModel
+        {
+            NoteId = noteId,
+            JobId = jobId,
+            NoteText = "Updated text",
+            NoteTypeId = 2,
+            IsImportant = true
+        };
+
+        // Act
+        await repository.SaveNoteAsync(viewModel);
+
+        // Assert — history row has only NoteId set
+        var history = await _context.TucNoteHistories.SingleAsync();
+        history.NoteId.Should().Be(noteId);
+        history.BulkNoteId.Should().BeNull();
+        history.ArchiveNoteId.Should().BeNull();
+        history.OldNoteText.Should().Be("Original text");
+        history.NewNoteText.Should().Be("Updated text");
+        history.OldNoteTypeId.Should().Be(1);
+        history.NewNoteTypeId.Should().Be(2);
+        history.OldIsImportant.Should().BeFalse();
+        history.NewIsImportant.Should().BeTrue();
+    }
+
+    #endregion
+
+    #region SaveNoteAsync - Archived Note History FK Tests
+
+    [Fact]
+    public async Task SaveNoteAsync_ArchivedNoteUpdate_RecordsHistoryWithArchiveNoteIdOnly()
+    {
+        // Arrange
+        const int noteId = 1;
+        const int jobId = 100;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TucJobArchives.Add(CreateArchivedJob(jobId, "ARCH001"));
+        _context.TucNoteArchives.Add(new TucNoteArchive
+        {
+            NoteId = noteId,
+            JobId = jobId,
+            NoteText = "Archived original",
+            NoteTypeId = 1,
+            IsImportant = false,
+            CreatedDate = DateTime.Now
+        });
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+        var viewModel = new TucNoteViewModel
+        {
+            NoteId = noteId,
+            JobId = jobId,
+            NoteText = "Archived updated",
+            NoteTypeId = 1,
+            IsImportant = true
+        };
+
+        // Act
+        await repository.SaveNoteAsync(viewModel);
+
+        // Assert — history row has only ArchiveNoteId set
+        var history = await _context.TucNoteHistories.SingleAsync();
+        history.NoteId.Should().BeNull();
+        history.BulkNoteId.Should().BeNull();
+        history.ArchiveNoteId.Should().Be(noteId);
+        history.OldNoteText.Should().Be("Archived original");
+        history.NewNoteText.Should().Be("Archived updated");
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private static TucNoteType CreateNoteType(int id, string name) => new()
@@ -374,6 +1148,36 @@ public class NoteRepositoryTests : IDisposable
         IsImportant = false,
         CreatedDate = createdDate,
         UpdatedDate = createdDate
+    };
+
+    private static TucStaff CreateStaff(int id, string firstName, string lastName) => new()
+    {
+        UcstId = id,
+        UcstFirstName = firstName,
+        UcstLastName = lastName,
+        Created = DateTime.Now,
+        CreatedBy = "test",
+        LastModified = DateTime.Now,
+        LastModifiedBy = "test"
+    };
+
+    private static TucNoteHistory CreateNoteHistory(int id, NoteHistorySource source, int noteId, int editedBy,
+        DateTime editedAt, string oldText, string newText,
+        int? oldNoteTypeId = null, int? newNoteTypeId = null,
+        bool? oldIsImportant = null, bool? newIsImportant = null) => new()
+    {
+        NoteHistoryId = id,
+        NoteId = source == NoteHistorySource.Note ? noteId : null,
+        BulkNoteId = source == NoteHistorySource.BulkNote ? noteId : null,
+        ArchiveNoteId = source == NoteHistorySource.Archive ? noteId : null,
+        EditedBy = editedBy,
+        EditedAt = editedAt,
+        OldNoteText = oldText,
+        NewNoteText = newText,
+        OldNoteTypeId = oldNoteTypeId,
+        NewNoteTypeId = newNoteTypeId,
+        OldIsImportant = oldIsImportant,
+        NewIsImportant = newIsImportant
     };
 
     #endregion

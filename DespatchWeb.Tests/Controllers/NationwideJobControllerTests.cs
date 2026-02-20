@@ -20,9 +20,8 @@ public class NationwideJobControllerTests
     private readonly Mock<IClientRepository> _clientRepositoryMock = new();
     private readonly Mock<IAddAgentRecoveryJobService> _recoveryJobServiceMock = new();
 
-    private NationwideJobController CreateController()
-    {
-        return new NationwideJobController(
+    private NationwideJobController CreateController() =>
+        new(
             _repositoryMock.Object,
             _flightServiceMock.Object,
             _clientAccessValidatorMock.Object,
@@ -30,7 +29,6 @@ public class NationwideJobControllerTests
             _flightRateServiceMock.Object,
             _clientRepositoryMock.Object,
             _recoveryJobServiceMock.Object);
-    }
 
     #region GetScheduledFlightOptions Tests
 

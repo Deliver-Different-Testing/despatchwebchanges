@@ -428,7 +428,7 @@ public class FlightStatsServiceTests(ITestOutputHelper testOutputHelper)
                 ItExpr.IsAny<CancellationToken>())
             .Callback<HttpRequestMessage, CancellationToken>((req, _) =>
             {
-                capturedUrls.Add(req.RequestUri?.ToString() ?? "");
+                capturedUrls.Add(req.RequestUri?.ToString() ?? string.Empty);
             })
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
             {
@@ -641,7 +641,7 @@ public class FlightStatsServiceTests(ITestOutputHelper testOutputHelper)
             departureAirportId: 1,
             arrivalAirportId: 2);
 
-        // Assert - URL should use current time (14:00) + buffer (60 min) = 15:00, NOT the past time (08:00)
+        // Assert - URL should use current time (14:00) + buffer (60 min) = 15:00, NOT the pastime (08:00)
         capturedUrl.Should().NotBeNull();
 
         // The URL should contain the time based on currentTenantTime + buffer, not the past departure time

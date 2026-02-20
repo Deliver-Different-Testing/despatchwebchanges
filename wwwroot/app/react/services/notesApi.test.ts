@@ -228,6 +228,69 @@ describe('notesApi', () => {
         });
     });
 
+    describe('getNoteHistory', () => {
+        const mockHistoryDtos = [
+            {
+                noteHistoryId: 1,
+                noteId: 10,
+                editedBy: 1,
+                editedByName: 'John Doe',
+                editedAt: '2024-06-15T10:30:00Z',
+                oldNoteText: 'Original text',
+                newNoteText: 'Updated text',
+                oldNoteTypeId: 1,
+                oldNoteTypeName: 'Internal Note',
+                newNoteTypeId: 2,
+                newNoteTypeName: 'Client Note',
+                oldIsImportant: false,
+                newIsImportant: true,
+            },
+        ];
+
+        it('should call correct endpoint with noteId and noteSource', async () => {
+            mockApiClient.get.mockResolvedValueOnce(mockHistoryDtos);
+
+            await notesApi.getNoteHistory(1, 'Note');
+
+            expect(mockApiClient.get).toHaveBeenCalledWith('note/GetNoteHistory', {noteId: 1, noteSource: 'Note'});
+        });
+
+        it('should use default noteSource of "Note"', async () => {
+            mockApiClient.get.mockResolvedValueOnce(mockHistoryDtos);
+
+            await notesApi.getNoteHistory(1);
+
+            expect(mockApiClient.get).toHaveBeenCalledWith('note/GetNoteHistory', {noteId: 1, noteSource: 'Note'});
+        });
+
+        it('should transform editedAt strings to Dayjs objects', async () => {
+            mockApiClient.get.mockResolvedValueOnce(mockHistoryDtos);
+
+            const result = await notesApi.getNoteHistory(10);
+
+            expect(result[0].editedAt).toBeDefined();
+            expect(dayjs.isDayjs(result[0].editedAt)).toBe(true);
+        });
+
+        it('should add formatted editedAtStr', async () => {
+            mockApiClient.get.mockResolvedValueOnce(mockHistoryDtos);
+
+            const result = await notesApi.getNoteHistory(10);
+
+            expect(result[0].editedAtStr).toBeDefined();
+            expect(typeof result[0].editedAtStr).toBe('string');
+            expect(result[0].editedAtStr.length).toBeGreaterThan(0);
+        });
+
+        it('should return empty array when API returns null', async () => {
+            mockApiClient.get.mockResolvedValueOnce(null);
+
+            const result = await notesApi.getNoteHistory(10);
+
+            expect(result).toEqual([]);
+        });
+    });
+
     describe('createNoteType', () => {
         it('should call correct endpoint with note type', async () => {
             const newNoteType = {text: 'Custom Type', isPublic: true, description: 'A custom note type'};

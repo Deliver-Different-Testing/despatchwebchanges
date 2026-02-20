@@ -28,9 +28,6 @@ import "../lib/ModernizerLocalStorage";
 // React HereMap component
 import {HereMapReactComponent} from "./react/components/common/here-map";
 
-// React CourierMap component
-import {CourierMapReactComponent} from "./react/pages/courier-map";
-
 // React DispatchMap component
 import {DispatchMapReactComponent} from "./react/components/common/dispatch-map";
 
@@ -53,9 +50,6 @@ const app = angular.module("uDispatch", [
 
 // Register React HereMap component
 app.component("hereMapReact", HereMapReactComponent);
-
-// Register React CourierMap component
-app.component("courierMapReact", CourierMapReactComponent);
 
 // Register React DispatchMap component
 app.component("dispatchMapReact", DispatchMapReactComponent);

@@ -6,7 +6,7 @@
  */
 
 import {apiClient} from './apiClient';
-import {CreateNoteRequest, JobNote, JobNoteDto, NoteType, UpdateNoteRequest} from '../interfaces';
+import {CreateNoteRequest, JobNote, JobNoteDto, NoteHistoryDto, NoteHistoryEntry, NoteType, UpdateNoteRequest} from '../interfaces';
 import dayjs from 'dayjs';
 
 /**
@@ -83,6 +83,18 @@ export async function deleteNote(noteId: number): Promise<void> {
 }
 
 /**
+ * Get edit history for a note
+ */
+export async function getNoteHistory(noteId: number, noteSource: string = 'Note'): Promise<NoteHistoryEntry[]> {
+    const history = await apiClient.get<NoteHistoryDto[]>('note/GetNoteHistory', {noteId, noteSource});
+    return history?.map(dto => ({
+        ...dto,
+        editedAt: dayjs(dto.editedAt),
+        editedAtStr: dayjs(dto.editedAt).format('MMM D, YYYY h:mm A'),
+    })) ?? [];
+}
+
+/**
  * Create a new note type
  */
 export async function createNoteType(noteType: NoteType): Promise<void> {
@@ -99,6 +111,7 @@ export const notesApi = {
     updateBulkJobNote,
     deleteNote,
     createNoteType,
+    getNoteHistory,
 };
 
 export default notesApi;

@@ -327,5 +327,7 @@ public partial class TblSetting
 
     public string DirectDebitBankAuthorisationCode { get; set; }
 
+    public DateTime? ClientServiceProcessed { get; set; }
+
     public virtual TucStaff InternetJobStaff { get; set; }
 }

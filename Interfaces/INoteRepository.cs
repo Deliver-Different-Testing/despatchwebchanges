@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using DespatchWeb.Enums;
 using DespatchWeb.Models;
 
 namespace DespatchWeb.Interfaces;
@@ -15,12 +16,13 @@ public interface INoteRepository
 
     // Bulk Job Notes
     Task<List<TucNoteViewModel>> GetBulkJobNotesByBulkJobIdAsync(int bulkJobId);
+    Task<TucNoteViewModel> GetBulkNoteByIdAsync(int noteId);
     Task SaveBulkNoteAsync(TucNoteViewModel viewModel, CancellationToken ct = default);
 
     // Note Types
     Task<List<NoteTypeViewModel>> GetNoteTypesAsync();
     Task AddNewTucNoteTypeAsync(NoteTypeViewModel noteType);
 
-    // Utility (needed by note operations)
-    Task<bool> IsJobArchived(int jobId);
+    // Note History
+    Task<List<NoteHistoryViewModel>> GetNoteHistoryAsync(int noteId, NoteHistorySource source);
 }

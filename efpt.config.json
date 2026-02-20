@@ -351,6 +351,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucNoteHistory]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucNoteType]",
          "ObjectType": 0
       },

@@ -6,10 +6,10 @@
  * and date transformations.
  */
 
-import { server } from '../../__testUtils__/msw/setupIntegration';
+import { server } from '../../__testUtils__/msw/server';
 import { http, HttpResponse } from 'msw';
 import { notesApi } from '../notesApi';
-import { mockJobNoteDtos, mockNoteTypes } from '../../__testUtils__/msw/handlers';
+import { mockJobNoteDtos } from '../../__testUtils__/msw/handlers';
 import dayjs from 'dayjs';
 
 describe('notesApi integration', () => {

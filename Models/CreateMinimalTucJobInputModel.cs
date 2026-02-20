@@ -100,7 +100,7 @@ public class CreateMinimalTucJobInputModel
     
     public int? DgClass { get; set; }
     
-    public string AdditionalServiceIds { get; set; }
+    public int? AccessorialChargeGroupId { get; set; }
 
     public DateTime? DeliverByDateTime { get; set; }
 

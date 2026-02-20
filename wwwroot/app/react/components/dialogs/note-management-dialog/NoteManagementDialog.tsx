@@ -47,6 +47,8 @@ import {
 import {NoteType, CreateNoteRequest, UpdateNoteRequest} from '../../../interfaces';
 import {getTimezoneAbbreviation} from '../../../utils/dateUtils';
 import {NoteManagementDialogProps} from "./types";
+import {useNoteHistory} from '../../../hooks/useNotesApi';
+import {NoteHistory} from './NoteHistory';
 
 const MAX_NOTE_LENGTH = 1000;
 const MAX_DESCRIPTION_LENGTH = 500;
@@ -91,6 +93,14 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
     const formattedTimeZone = useMemo(() => {
         return getTimezoneAbbreviation((window as any).TimeZone || '');
     }, []);
+
+    // Edit history
+    const noteSource = note?.bulkJobId ? 'BulkNote' : 'Note';
+    const {data: noteHistory = [], isLoading: isLoadingHistory} = useNoteHistory(
+        note?.noteId,
+        noteSource,
+        {enabled: open && !isNew}
+    );
 
     // Load note types when dialog opens
     useEffect(() => {
@@ -561,6 +571,13 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                                 </Box>
                             )}
                         </Box>
+
+                        {/* Edit History */}
+                        <NoteHistory
+                            history={noteHistory}
+                            isLoading={isLoadingHistory}
+                            timeZoneAbbr={formattedTimeZone}
+                        />
                     </Paper>
                 )}
             </DialogContent>

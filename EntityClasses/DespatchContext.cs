@@ -193,6 +193,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TucNoteArchive> TucNoteArchives { get; set; }
 
+    public virtual DbSet<TucNoteHistory> TucNoteHistories { get; set; }
+
     public virtual DbSet<TucNoteType> TucNoteTypes { get; set; }
 
     public virtual DbSet<TucSource> TucSources { get; set; }
@@ -1331,6 +1333,9 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CourierId).HasColumnName("CourierID");
             entity.Property(e => e.CourierPayment).HasColumnType("money");
             entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
+            entity.Property(e => e.CreatedTime)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
             entity.Property(e => e.DeliverByTime).HasColumnType("datetime");
             entity.Property(e => e.DeliverByTimeZoneId).HasColumnName("DeliverByTimeZoneID");
             entity.Property(e => e.DeliverToContact).HasMaxLength(100);
@@ -3369,6 +3374,7 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(50);
             entity.Property(e => e.AutomaticUpdateLoading).HasAnnotation("Relational:DefaultConstraintName", "DF_tblSetting_AutomaticUpdateLoading");
             entity.Property(e => e.BurstTheBubbleCourierId).HasColumnName("BurstTheBubbleCourierID");
+            entity.Property(e => e.ClientServiceProcessed).HasPrecision(3);
             entity.Property(e => e.CommunicationFileDirectory)
                 .IsRequired()
                 .HasMaxLength(100);
@@ -5513,6 +5519,9 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CourierPayment).HasColumnType("money");
             entity.Property(e => e.CourierPercentage).HasColumnType("numeric(18, 4)");
             entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
+            entity.Property(e => e.CreatedTime)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
             entity.Property(e => e.CustomJobName).HasMaxLength(255);
             entity.Property(e => e.DeliverByTime).HasColumnType("datetime");
             entity.Property(e => e.DeliverByTimeZoneId).HasColumnName("DeliverByTimeZoneID");
@@ -6039,6 +6048,9 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CourierPayment).HasColumnType("money");
             entity.Property(e => e.CourierPercentage).HasColumnType("numeric(18, 4)");
             entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
+            entity.Property(e => e.CreatedTime)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
             entity.Property(e => e.CustomJobName).HasMaxLength(255);
             entity.Property(e => e.DeliverByTime).HasColumnType("datetime");
             entity.Property(e => e.DeliverByTimeZoneId).HasColumnName("DeliverByTimeZoneID");
@@ -6411,6 +6423,9 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CourierId).HasColumnName("CourierID");
             entity.Property(e => e.CourierPayment).HasColumnType("money");
             entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
+            entity.Property(e => e.CreatedTime)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
             entity.Property(e => e.CustomJobName).HasMaxLength(255);
             entity.Property(e => e.DeliverByTime).HasColumnType("datetime");
             entity.Property(e => e.DeliverByTimeZoneId).HasColumnName("DeliverByTimeZoneID");
@@ -7238,6 +7253,55 @@ public partial class DespatchContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_tucNoteArchive_UpdatedDate")
                 .HasColumnType("datetime");
+        });
+
+        modelBuilder.Entity<TucNoteHistory>(entity =>
+        {
+            entity.HasKey(e => e.NoteHistoryId).HasName("PK__tucNoteH__F3CB5FBA468F64AA");
+
+            entity.ToTable(t => t.HasCheckConstraint("CK_tucNoteHistory_OneNoteId",
+                "(CASE WHEN [NoteId] IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN [BulkNoteId] IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN [ArchiveNoteId] IS NOT NULL THEN 1 ELSE 0 END) = 1"));
+
+            entity.ToTable("tucNoteHistory");
+
+            entity.HasIndex(e => e.ArchiveNoteId, "IX_tucNoteHistory_ArchiveNoteId").HasFilter("([ArchiveNoteId] IS NOT NULL)");
+
+            entity.HasIndex(e => e.BulkNoteId, "IX_tucNoteHistory_BulkNoteId").HasFilter("([BulkNoteId] IS NOT NULL)");
+
+            entity.HasIndex(e => e.NoteId, "IX_tucNoteHistory_NoteId").HasFilter("([NoteId] IS NOT NULL)");
+
+            entity.Property(e => e.EditedAt)
+                .HasDefaultValueSql("(getutcdate())")
+                .HasComment("Timestamp of the edit, stored in UTC")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_tucNoteHistory_EditedAt")
+                .HasColumnType("datetime");
+            entity.Property(e => e.NewNoteText)
+                .IsRequired()
+                .HasMaxLength(1000);
+            entity.Property(e => e.OldNoteText)
+                .IsRequired()
+                .HasMaxLength(1000);
+
+            entity.HasOne(d => d.BulkNote).WithMany(p => p.TucNoteHistories)
+                .HasForeignKey(d => d.BulkNoteId)
+                .HasConstraintName("FK_tucNoteHistory_BulkNote");
+
+            entity.HasOne(d => d.EditedByNavigation).WithMany(p => p.TucNoteHistories)
+                .HasForeignKey(d => d.EditedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_tucNoteHistory_Staff");
+
+            entity.HasOne(d => d.NewNoteType).WithMany(p => p.TucNoteHistoryNewNoteTypes)
+                .HasForeignKey(d => d.NewNoteTypeId)
+                .HasConstraintName("FK_tucNoteHistory_NewNoteType");
+
+            entity.HasOne(d => d.Note).WithMany(p => p.TucNoteHistories)
+                .HasForeignKey(d => d.NoteId)
+                .HasConstraintName("FK_tucNoteHistory_Note");
+
+            entity.HasOne(d => d.OldNoteType).WithMany(p => p.TucNoteHistoryOldNoteTypes)
+                .HasForeignKey(d => d.OldNoteTypeId)
+                .HasConstraintName("FK_tucNoteHistory_OldNoteType");
         });
 
         modelBuilder.Entity<TucNoteType>(entity =>

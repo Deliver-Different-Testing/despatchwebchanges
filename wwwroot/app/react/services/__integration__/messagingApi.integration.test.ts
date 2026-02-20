@@ -5,13 +5,13 @@
  * Verifies correct endpoint URLs, request parameters, and response handling.
  */
 
-import { server } from '../../__testUtils__/msw/setupIntegration';
+import { server } from '../../__testUtils__/msw/server';
 import { http, HttpResponse } from 'msw';
 import { messagingApi } from '../messagingApi';
 import {
     mockChatMessages,
 } from '../../__testUtils__/msw/handlers';
-import { OtherMessagePartyType, MessageDeliveryType } from '../../components/dialogs/messaging-dialog/types';
+import { OtherMessagePartyType, MessageDeliveryType } from '../../components/dialogs/messaging-dialog';
 
 describe('messagingApi integration', () => {
     describe('getRecentList', () => {

@@ -2945,7 +2945,6 @@ public class NationwideJobRepositoryTests : IDisposable
 
         // Create delivery job with FLIGHT grouping instead of AGENT grouping
         var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Flight);
-        var originalTime = deliveryJob.UcjbTime;
         _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
@@ -2975,7 +2974,7 @@ public class NationwideJobRepositoryTests : IDisposable
     }
 
     /// <summary>
-    /// Test Scenario 4: Verify that toAirportId from REQUEST is used when job.ToAirportId is null.
+    /// Test Scenario 4: Verify that toAirportId from REQUEST is used when jobbed.ToAirportId is null.
     /// This tests the OR condition: (job.ToAirportId != null || requestData.ToAirportId != null)
     /// </summary>
     [Fact]

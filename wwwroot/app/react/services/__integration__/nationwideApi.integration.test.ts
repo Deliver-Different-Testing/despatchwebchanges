@@ -6,7 +6,7 @@
  * and date transformations including nested flight segments.
  */
 
-import { server } from '../../__testUtils__/msw/setupIntegration';
+import { server } from '../../__testUtils__/msw/server';
 import { http, HttpResponse } from 'msw';
 import { nationwideApi } from '../nationwideApi';
 import { mockFlightCargoProcessingDto, mockFlightViewModelDtos } from '../../__testUtils__/msw/handlers';

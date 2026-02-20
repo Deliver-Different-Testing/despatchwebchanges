@@ -1,4 +1,5 @@
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
@@ -27,6 +28,8 @@ public class BaseJobRepositoryTests : IDisposable
         _connection = new SqliteConnection("DataSource=:memory:");
         _connection.Open();
 
+        _connection.CreateFunction("getdate", () => DateTime.Now);
+
         using (var command = _connection.CreateCommand())
         {
             command.CommandText = "PRAGMA foreign_keys = OFF;";
@@ -44,6 +47,8 @@ public class BaseJobRepositoryTests : IDisposable
         // Default tenant setup
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
+        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime()).Returns(new DateTime(2024, 6, 15, 10, 0, 0));
     }
 
     public void Dispose()
@@ -72,6 +77,10 @@ public class BaseJobRepositoryTests : IDisposable
 
         public new Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(List<int> jobIds)
             => base.GetJobCurrentAmountsAsync(jobIds);
+
+        public new Task SaveMultipleBulkNotesAsync(List<int> bulkJobIds, string noteText, bool isImportant = false,
+            NoteType noteType = NoteType.InternalNote)
+            => base.SaveMultipleBulkNotesAsync(bulkJobIds, noteText, isImportant, noteType);
     }
 
     private TestableBaseJobRepository CreateRepository() => new(
@@ -445,6 +454,69 @@ public class BaseJobRepositoryTests : IDisposable
         // Assert
         result[100].JobNo.Should().Be("TEST-JOB-123");
         result[100].IsPrebook.Should().BeFalse();
+    }
+
+    #endregion
+
+    #region SaveMultipleBulkNotesAsync Tests
+
+    [Fact]
+    public async Task SaveMultipleBulkNotesAsync_SetsCreatedByAndCreatedDate()
+    {
+        // Arrange
+        const int staffId = 42;
+        var currentTime = new DateTime(2024, 8, 20, 15, 30, 0);
+        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(staffId);
+        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime()).Returns(currentTime);
+
+        _context.TucNoteTypes.Add(new TucNoteType { NoteTypeId = 1, NoteTypeName = "Internal Note", IsActive = true, IsPublic = false, IsSystemDefined = true });
+        _context.TblBulkJobs.AddRange(
+            CreateBulkJob(100, "BULK001"),
+            CreateBulkJob(101, "BULK002"),
+            CreateBulkJob(102, "BULK003")
+        );
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.SaveMultipleBulkNotesAsync([100, 101, 102], "Test bulk note");
+
+        // Assert
+        var notes = await _context.TblBulkJobNotes.ToListAsync();
+        notes.Should().HaveCount(3);
+        notes.Should().OnlyContain(n => n.CreatedBy == staffId);
+        notes.Should().OnlyContain(n => n.CreatedDate == currentTime);
+        notes.Should().OnlyContain(n => n.NoteText == "Test bulk note");
+    }
+
+    [Fact]
+    public async Task SaveMultipleBulkNotesAsync_AllNotesHaveSameCreatorAndTimestamp()
+    {
+        // Arrange
+        _context.TucNoteTypes.Add(new TucNoteType { NoteTypeId = 1, NoteTypeName = "Internal Note", IsActive = true, IsPublic = false, IsSystemDefined = true });
+        _context.TblBulkJobs.AddRange(
+            CreateBulkJob(200, "BULK-A"),
+            CreateBulkJob(201, "BULK-B")
+        );
+        await _context.SaveChangesAsync();
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.SaveMultipleBulkNotesAsync([200, 201], "Batch note", isImportant: true);
+
+        // Assert
+        var notes = await _context.TblBulkJobNotes.ToListAsync();
+        notes.Should().HaveCount(2);
+
+        var distinctCreatedBy = notes.Select(n => n.CreatedBy).Distinct().ToList();
+        distinctCreatedBy.Should().ContainSingle("all notes should have the same creator");
+
+        var distinctCreatedDate = notes.Select(n => n.CreatedDate).Distinct().ToList();
+        distinctCreatedDate.Should().ContainSingle("all notes should have the same timestamp");
+
+        notes.Should().OnlyContain(n => n.IsImportant == true);
     }
 
     #endregion

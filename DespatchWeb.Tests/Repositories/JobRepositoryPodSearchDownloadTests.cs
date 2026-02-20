@@ -27,6 +27,8 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
         _connection = new SqliteConnection("DataSource=:memory:");
         _connection.Open();
 
+        _connection.CreateFunction("getdate", () => DateTime.Now);
+
         // Disable foreign keys for simpler test setup
         using (var command = _connection.CreateCommand())
         {

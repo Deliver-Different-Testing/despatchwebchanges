@@ -127,6 +127,8 @@ public partial class TucStaff
 
     public virtual ICollection<TucNote> TucNoteCreatedByNavigations { get; set; } = new List<TucNote>();
 
+    public virtual ICollection<TucNoteHistory> TucNoteHistories { get; set; } = new List<TucNoteHistory>();
+
     public virtual ICollection<TucNote> TucNoteUpdatedByNavigations { get; set; } = new List<TucNote>();
 
     public virtual TucSuburb UcstSuburb { get; set; }

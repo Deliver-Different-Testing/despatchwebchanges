@@ -233,6 +233,10 @@ public partial class TblBulkJob
 
     public DateTime? LabelPrinted { get; set; }
 
+    public int? AccessorialChargeGroupId { get; set; }
+
+    public DateTime? CreatedTime { get; set; }
+
     public virtual TucClient Client { get; set; }
 
     public virtual TucCourier Courier { get; set; }

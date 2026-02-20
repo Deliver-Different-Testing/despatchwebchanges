@@ -33,5 +33,7 @@ public partial class TblBulkJobNote
 
     public virtual TucNoteType NoteType { get; set; }
 
+    public virtual ICollection<TucNoteHistory> TucNoteHistories { get; set; } = new List<TucNoteHistory>();
+
     public virtual TucStaff UpdatedByNavigation { get; set; }
 }

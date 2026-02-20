@@ -18,6 +18,7 @@ import { splitJobHandlers } from './splitJobHandlers';
 import { agentHandlers } from './agentHandlers';
 import { nationwideHandlers } from './nationwideHandlers';
 import { bulkPriceHandlers } from './bulkPriceHandlers';
+import { driverManagementHandlers } from './driverManagementHandlers';
 
 export const handlers = [
     ...messagingHandlers,
@@ -34,6 +35,7 @@ export const handlers = [
     ...agentHandlers,
     ...nationwideHandlers,
     ...bulkPriceHandlers,
+    ...driverManagementHandlers,
 ];
 
 // Re-export individual handler arrays for selective use
@@ -51,6 +53,7 @@ export { splitJobHandlers } from './splitJobHandlers';
 export { agentHandlers } from './agentHandlers';
 export { nationwideHandlers } from './nationwideHandlers';
 export { bulkPriceHandlers } from './bulkPriceHandlers';
+export { driverManagementHandlers } from './driverManagementHandlers';
 
 // Re-export mock data for test assertions
 export { mockRecentConversations, mockChatMessages, mockQuickResponses, mockContactOptions } from './messagingHandlers';
@@ -66,3 +69,4 @@ export { mockSpeedOptions, mockPaginatedRecurringJobsResponse } from './recurrin
 export { mockAgentInfo } from './agentHandlers';
 export { mockFlightCargoProcessingDto, mockFlightViewModelDtos } from './nationwideHandlers';
 export { mockBulkPricePreviewResponse } from './bulkPriceHandlers';
+export { mockFleetOptions, mockCourierSearchResults, mockCourierDetails, mockTodayActiveDrivers, mockComplianceList, mockAfterHoursSchedule, mockDriverEmails, mockDriverEarnings } from './driverManagementHandlers';
