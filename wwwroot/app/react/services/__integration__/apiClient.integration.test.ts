@@ -5,7 +5,7 @@
  * Verifies headers, error handling, request transformation, and cancellation.
  */
 
-import { server } from '../../__testUtils__/msw/setupIntegration';
+import { server } from '../../__testUtils__/msw/server';
 import { http, HttpResponse, delay } from 'msw';
 import { apiClient } from '../apiClient';
 

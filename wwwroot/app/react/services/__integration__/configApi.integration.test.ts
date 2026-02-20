@@ -5,7 +5,7 @@
  * Uses the existing handler from addressHandlers (config/GetHereMapsKey).
  */
 
-import { server } from '../../__testUtils__/msw/setupIntegration';
+import { server } from '../../__testUtils__/msw/server';
 import { http, HttpResponse } from 'msw';
 import { configApi } from '../configApi';
 

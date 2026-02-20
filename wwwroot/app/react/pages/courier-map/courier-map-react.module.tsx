@@ -1,89 +1,105 @@
 /**
- * CourierMap React Module
+ * Courier Map React Module
  *
- * Entry point for the React-based CourierMapPage component.
- * Provides AngularJS integration via react2angular pattern.
+ * Entry point for the React-based Courier Map page.
+ * Provides functions to mount/unmount the page in an AngularJS context.
  */
 
 import React from 'react';
-import { createRoot, Root } from 'react-dom/client';
-import { CssBaseline, ThemeProvider } from '@mui/material';
-import { CourierMapPage } from './CourierMapPage';
-import { getTheme } from '../../theme/muiTheme';
-import { ReactQueryProvider } from '../../query';
-import angular from 'angular';
+import {createRoot, Root} from 'react-dom/client';
+import {CssBaseline, ThemeProvider} from '@mui/material';
+import {CourierMapPage} from './CourierMapPage';
+import {getTheme} from '../../theme/muiTheme';
+import {ReactQueryProvider} from '../../query';
+
+export interface MountCourierMapConfig {
+    isUsCustomer: boolean;
+    mapCenter: { lat: number; lng: number };
+    apiKey: string | null;
+}
+
+let courierMapRoot: Root | null = null;
+let courierMapContainer: HTMLElement | null = null;
 
 /**
- * AngularJS Component Controller for React CourierMapPage
+ * Mounts the courier map page component into a container element
  */
-class CourierMapReactController implements angular.IController {
-    static $inject = ['$element', '$scope', 'configService', 'APP_CONFIG'];
+export function mountCourierMapPage(
+    containerId: string,
+    config: MountCourierMapConfig
+): void {
+    console.log('[CourierMapReact] Mounting to container:', containerId);
 
-    // Data bindings from AngularJS
-    private root: Root | null = null;
-    private apiKey: string | null = null;
-
-    constructor(
-        private $element: JQLite,
-        private $scope: angular.IScope,
-        private configService: any,
-        private appConfig: any
-    ) {}
-
-    async $onInit(): Promise<void> {
-        this.root = createRoot(this.$element[0]);
-
-        // Fetch HERE Maps API key
-        try {
-            this.apiKey = await this.configService.getHereMapsKey();
-        } catch (error) {
-            console.error('Failed to get HERE Maps API key:', error);
-        }
-
-        this.render();
+    // If there's an existing root for a different container, unmount it first
+    if (courierMapRoot && courierMapContainer && courierMapContainer.id !== containerId) {
+        console.log('[CourierMapReact] Unmounting previous page from:', courierMapContainer.id);
+        courierMapRoot.unmount();
+        courierMapRoot = null;
+        courierMapContainer = null;
     }
 
-    $onChanges(): void {
-        this.render();
+    // Find the container
+    let container = document.getElementById(containerId);
+    if (!container) {
+        console.error('[CourierMapReact] Container not found:', containerId);
+        container = document.createElement('div');
+        container.id = containerId;
+        document.body.appendChild(container);
+        console.log('[CourierMapReact] Created fallback container');
     }
 
-    $onDestroy(): void {
-        if (this.root) {
-            this.root.unmount();
-            this.root = null;
-        }
+    courierMapContainer = container;
+
+    // Create new root if needed
+    if (!courierMapRoot) {
+        console.log('[CourierMapReact] Creating new React root');
+        courierMapRoot = createRoot(container);
     }
 
-    private render(): void {
-        if (!this.root) return;
+    const currentTheme = getTheme();
 
-        const currentTheme = getTheme();
-        const isUsCustomer = this.appConfig?.US_Customer ?? false;
-        const mapCenter = isUsCustomer
-            ? this.appConfig?.US_Coordinates_Center ?? { lat: 39.8097343, lng: -98.5556199 }
-            : this.appConfig?.NZ_Coordinates_Center ?? { lat: -41.2865, lng: 174.7762 };
+    courierMapRoot.render(
+        <ReactQueryProvider>
+            <ThemeProvider theme={currentTheme}>
+                <CssBaseline />
+                <CourierMapPage
+                    isUsCustomer={config.isUsCustomer}
+                    mapCenter={config.mapCenter}
+                    apiKey={config.apiKey}
+                />
+            </ThemeProvider>
+        </ReactQueryProvider>
+    );
 
-        this.root.render(
-            <ReactQueryProvider>
-                <ThemeProvider theme={currentTheme}>
-                    <CssBaseline />
-                    <CourierMapPage
-                        isUsCustomer={isUsCustomer}
-                        mapCenter={mapCenter}
-                        apiKey={this.apiKey}
-                    />
-                </ThemeProvider>
-            </ReactQueryProvider>
-        );
-    }
+    console.log('[CourierMapReact] Courier map page rendered');
 }
 
 /**
- * AngularJS component definition for React CourierMapPage
+ * Unmounts the courier map page
  */
-export const CourierMapReactComponent: angular.IComponentOptions = {
-    controller: CourierMapReactController,
-    bindings: {},
+export function unmountCourierMapPage(): void {
+    console.log('[CourierMapReact] Unmounting courier map page');
+
+    if (courierMapRoot) {
+        courierMapRoot.unmount();
+        courierMapRoot = null;
+    }
+
+    courierMapContainer = null;
+}
+
+// Expose globally for AngularJS access
+(window as any).ReactCourierMap = {
+    mount: mountCourierMapPage,
+    unmount: unmountCourierMapPage,
 };
 
-export default CourierMapReactComponent;
+// Register as AngularJS module (for ocLazyLoad compatibility)
+const courierMapReactModule = (window as any).angular.module(
+    'uDispatch.courierMapReact',
+    []
+);
+
+console.log('[CourierMapReact] Module registered');
+
+export default courierMapReactModule;

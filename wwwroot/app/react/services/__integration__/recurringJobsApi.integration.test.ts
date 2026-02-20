@@ -6,10 +6,10 @@
  * and CSV export functionality.
  */
 
-import { server } from '../../__testUtils__/msw/setupIntegration';
+import { server } from '../../__testUtils__/msw/server';
 import { http, HttpResponse } from 'msw';
 import { recurringJobsApi } from '../recurringJobsApi';
-import { mockPaginatedRecurringJobsResponse, mockSpeedOptions } from '../../__testUtils__/msw/handlers';
+import { mockPaginatedRecurringJobsResponse } from '../../__testUtils__/msw/handlers';
 import type { RecurringJobQuery } from '../../interfaces';
 
 const baseQuery: RecurringJobQuery = {

@@ -527,6 +527,10 @@ class RouterConfig {
     private configureCourierMapState(): this {
         this.$stateProvider.state("courierMap", {
             url: "/courierMap",
+            template: `
+                <react-app-shell title="Courier Map"></react-app-shell>
+                <div id="react-courier-map" style="height: calc(100vh - 64px);"></div>
+            `,
             resolve: {
                 manifest: ['$http', async ($http: angular.IHttpService) => {
                     try {
@@ -535,18 +539,52 @@ class RouterConfig {
                     } catch {
                         console.warn('[ROUTES] Failed to load manifest for courierMap state, using fallback names');
                         return {
-                            'courierMap.js': 'courierMap.js'
+                            'vendor-react.js': 'vendor-react.js',
+                            'courierMapReact.js': 'courierMapReact.js'
                         };
                     }
                 }],
-                loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                loadModule: ['$ocLazyLoad', 'manifest', async ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
                     const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
-                    return $ocLazyLoad.load([
-                        getAssetPath('courierMap.js')
-                    ]);
+                    // Load vendor-react first (React, ReactDOM, React Query)
+                    await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
+                    // Then load the courier map React module + CSS
+                    const files = [getAssetPath('courierMapReact.js')];
+                    const cssFile = manifest['courierMapReact.css'];
+                    if (cssFile) files.push(`dist/${cssFile}`);
+                    return $ocLazyLoad.load(files);
+                }],
+                hereMapsApiKey: ['configService', async (configService: any) => {
+                    try {
+                        return await configService.getHereMapsKey();
+                    } catch (error) {
+                        console.error('[ROUTES] Failed to get HERE Maps API key:', error);
+                        return null;
+                    }
                 }]
             },
-            component: "courierMapComponent",
+            controller: ['$scope', 'APP_CONFIG', 'hereMapsApiKey',
+                function (
+                    $scope: angular.IScope,
+                    appConfig: { US_Customer: boolean; US_Coordinates_Center?: { lat: number; lng: number }; NZ_Coordinates_Center?: { lat: number; lng: number } },
+                    hereMapsApiKey: string | null
+                ) {
+                    const isUsCustomer = appConfig?.US_Customer ?? false;
+                    const mapCenter = isUsCustomer
+                        ? appConfig?.US_Coordinates_Center ?? { lat: 39.8097343, lng: -98.5556199 }
+                        : appConfig?.NZ_Coordinates_Center ?? { lat: -41.2865, lng: 174.7762 };
+
+                    (window as any).ReactCourierMap.mount('react-courier-map', {
+                        isUsCustomer,
+                        mapCenter,
+                        apiKey: hereMapsApiKey,
+                    });
+
+                    $scope.$on('$destroy', () => {
+                        (window as any).ReactCourierMap.unmount();
+                    });
+                }
+            ],
         });
         return this;
     }

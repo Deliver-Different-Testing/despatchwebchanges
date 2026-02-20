@@ -27,84 +27,11 @@ public class RecurringJobRepository(
         RecurringJobQueryRequest request)
     {
         var isUsTenant = _infoService.IsUsTenant();
+        var query = BuildRecurringJobQuery(request, isUsTenant);
 
-        var query = Context.TucJobBookings
-            .Where(j => j.UcbkActive == request.Active && j.UcbkOneOff != true);
-
-        // US tenants: exclude child jobs (only show parent jobs)
-        if (isUsTenant) query = query.Where(j => !j.BookingParentId.HasValue || j.BookingParentId == j.UcbkId);
-
-        if (!string.IsNullOrWhiteSpace(request.SearchText))
-        {
-            var searchPattern = $"%{request.SearchText}%";
-            query = query.Where(j =>
-                EF.Functions.Like(j.UcbkJobNumber, searchPattern) ||
-                EF.Functions.Like(j.CustomJobName, searchPattern) ||
-                EF.Functions.Like(j.Barcode, searchPattern) ||
-                EF.Functions.Like(j.DeliveryAddressLine1, searchPattern) ||
-                EF.Functions.Like(j.DeliveryAddressLine2, searchPattern) ||
-                EF.Functions.Like(j.DeliveryAddressLine3, searchPattern) ||
-                EF.Functions.Like(j.DeliveryAddressLine4, searchPattern) ||
-                EF.Functions.Like(j.DeliveryAddressLine5, searchPattern) ||
-                EF.Functions.Like(j.DeliveryAddressLine6, searchPattern) ||
-                EF.Functions.Like(j.DeliveryAddressLine7, searchPattern) ||
-                EF.Functions.Like(j.DeliveryAddressLine8, searchPattern) ||
-                EF.Functions.Like(j.PickupAddressLine1, searchPattern) ||
-                EF.Functions.Like(j.PickupAddressLine2, searchPattern) ||
-                EF.Functions.Like(j.PickupAddressLine3, searchPattern) ||
-                EF.Functions.Like(j.PickupAddressLine4, searchPattern) ||
-                EF.Functions.Like(j.PickupAddressLine5, searchPattern) ||
-                EF.Functions.Like(j.PickupAddressLine6, searchPattern) ||
-                EF.Functions.Like(j.PickupAddressLine7, searchPattern) ||
-                EF.Functions.Like(j.PickupAddressLine8, searchPattern)
-            );
-        }
-
-        // Apply Speed filter
-        if (request.SpeedId.HasValue)
-            query = query.Where(j => j.UcbkSpeed == request.SpeedId.Value);
-
-        // Apply Courier filter
-        if (request.CourierId.HasValue)
-            query = query.Where(j => j.CourierId == request.CourierId.Value);
-
-        // Apply Days of Week filter (bitwise match - job must run on at least one of the selected days)
-        if (request.DaysOfWeek is > 0)
-            query = query.Where(j => (j.UcbkDaysInt & request.DaysOfWeek.Value) != 0);
-        
         var totalCount = await query.CountAsync();
 
-        var isDescending = request.OrderDirection == "desc";
-        query = request.Order switch
-        {
-            "booked" => isDescending
-                ? query.OrderByDescending(j => j.UcbkDate)
-                    .ThenByDescending(j => j.UcbkTime)
-                : query.OrderBy(j => j.UcbkDate)
-                    .ThenBy(j => j.UcbkTime),
-            "speed" => isDescending
-                ? query.OrderByDescending(j => j.UcbkSpeed)
-                : query.OrderBy(j => j.UcbkSpeed),
-            "client" => isDescending
-                ? query.OrderByDescending(j => j.UcbkClientId)
-                : query.OrderBy(j => j.UcbkClientId),
-            "from" => isDescending
-                ? query.OrderByDescending(j => j.PickupAddressLine6)
-                : query.OrderBy(j => j.PickupAddressLine6),
-            "to" => isDescending
-                ? query.OrderByDescending(j => j.DeliveryAddressLine6)
-                : query.OrderBy(j => j.DeliveryAddressLine6),
-            "courier" => isDescending
-                ? query.OrderByDescending(j => j.CourierId)
-                : query.OrderBy(j => j.CourierId),
-            "customJobName" => isDescending
-                ? query.OrderByDescending(j => j.CustomJobName)
-                : query.OrderBy(j => j.CustomJobName),
-            "nextDueTime" => isDescending
-                ? query.OrderByDescending(j => j.UcbkNextDue)
-                : query.OrderBy(j => j.UcbkNextDue),
-            _ => query
-        };
+        query = ApplyRecurringJobSort(query, request.Order, request.OrderDirection, applyDefaultSort: false);
 
         var items = await query
             .AsSplitQuery()
@@ -623,9 +550,36 @@ public class RecurringJobRepository(
     public async Task<List<PrebookListViewModel>> GetAllRecurringJobsForExportAsync(RecurringJobQueryRequest request)
     {
         var isUsTenant = _infoService.IsUsTenant();
+        var query = BuildRecurringJobQuery(request, isUsTenant);
 
-        var query = Context.TucJobBookings
+        query = ApplyRecurringJobSort(query, request.Order, request.OrderDirection, applyDefaultSort: true);
+
+        // No pagination - get all records for export
+        var items = await query
             .AsNoTracking()
+            .Select(JobMappings.ToPrebookListViewModel)
+            .ToListAsync();
+
+        if (items.Count == 0) return items;
+
+        var tenantTimeZone = _infoService.GetTenantTimeZone();
+        var minValidDate = new DateTimeOffset(1753, 1, 2, 0, 0, 0, TimeSpan.Zero);
+
+        foreach (var item in items)
+        {
+            if (item.Booked > minValidDate)
+                item.Booked = TimeZoneHelper.SetDateTimeWithTimeZone(item.Booked.DateTime, tenantTimeZone);
+
+            if (item.NextDueTime.HasValue && item.NextDueTime.Value > minValidDate)
+                item.NextDueTime = TimeZoneHelper.SetDateTimeWithTimeZone(item.NextDueTime.Value.DateTime, tenantTimeZone);
+        }
+
+        return items;
+    }
+
+    private IQueryable<TucJobBooking> BuildRecurringJobQuery(RecurringJobQueryRequest request, bool isUsTenant)
+    {
+        var query = Context.TucJobBookings
             .Where(j => j.UcbkActive == request.Active && j.UcbkOneOff != true);
 
         // US tenants: exclude child jobs (only show parent jobs)
@@ -635,17 +589,30 @@ public class RecurringJobRepository(
         {
             var searchPattern = $"%{request.SearchText}%";
             query = query.Where(j =>
+                // Job identifiers
                 EF.Functions.Like(j.UcbkJobNumber, searchPattern) ||
                 EF.Functions.Like(j.CustomJobName, searchPattern) ||
                 EF.Functions.Like(j.Barcode, searchPattern) ||
-                EF.Functions.Like(j.DeliveryAddressLine1, searchPattern) ||
-                EF.Functions.Like(j.DeliveryAddressLine2, searchPattern) ||
-                EF.Functions.Like(j.DeliveryAddressLine3, searchPattern) ||
-                EF.Functions.Like(j.DeliveryAddressLine4, searchPattern) ||
-                EF.Functions.Like(j.DeliveryAddressLine5, searchPattern) ||
-                EF.Functions.Like(j.DeliveryAddressLine6, searchPattern) ||
-                EF.Functions.Like(j.DeliveryAddressLine7, searchPattern) ||
-                EF.Functions.Like(j.DeliveryAddressLine8, searchPattern) ||
+                // Client fields
+                EF.Functions.Like(j.UcbkClientCode, searchPattern) ||
+                EF.Functions.Like(j.UcbkClient.UcclName, searchPattern) ||
+                // References
+                EF.Functions.Like(j.UcbkClientRefa, searchPattern) ||
+                EF.Functions.Like(j.UcbkClientRefb, searchPattern) ||
+                EF.Functions.Like(j.UcbkOurRef, searchPattern) ||
+                EF.Functions.Like(j.Connote, searchPattern) ||
+                // Contact fields
+                EF.Functions.Like(j.PickupFromContact, searchPattern) ||
+                EF.Functions.Like(j.DeliverToContact, searchPattern) ||
+                EF.Functions.Like(j.PickupFromPhone, searchPattern) ||
+                EF.Functions.Like(j.DeliverToPhone, searchPattern) ||
+                // Courier
+                EF.Functions.Like(j.Courier.UccrName, searchPattern) ||
+                EF.Functions.Like(j.Courier.Code, searchPattern) ||
+                // Run/Schedule
+                EF.Functions.Like(j.RunName, searchPattern) ||
+                EF.Functions.Like(j.ScheduleName, searchPattern) ||
+                // Pickup address
                 EF.Functions.Like(j.PickupAddressLine1, searchPattern) ||
                 EF.Functions.Like(j.PickupAddressLine2, searchPattern) ||
                 EF.Functions.Like(j.PickupAddressLine3, searchPattern) ||
@@ -653,10 +620,19 @@ public class RecurringJobRepository(
                 EF.Functions.Like(j.PickupAddressLine5, searchPattern) ||
                 EF.Functions.Like(j.PickupAddressLine6, searchPattern) ||
                 EF.Functions.Like(j.PickupAddressLine7, searchPattern) ||
-                EF.Functions.Like(j.PickupAddressLine8, searchPattern)
+                EF.Functions.Like(j.PickupAddressLine8, searchPattern) ||
+                // Delivery address
+                EF.Functions.Like(j.DeliveryAddressLine1, searchPattern) ||
+                EF.Functions.Like(j.DeliveryAddressLine2, searchPattern) ||
+                EF.Functions.Like(j.DeliveryAddressLine3, searchPattern) ||
+                EF.Functions.Like(j.DeliveryAddressLine4, searchPattern) ||
+                EF.Functions.Like(j.DeliveryAddressLine5, searchPattern) ||
+                EF.Functions.Like(j.DeliveryAddressLine6, searchPattern) ||
+                EF.Functions.Like(j.DeliveryAddressLine7, searchPattern) ||
+                EF.Functions.Like(j.DeliveryAddressLine8, searchPattern)
             );
         }
-        
+
         // Apply Speed filter
         if (request.SpeedId.HasValue)
             query = query.Where(j => j.UcbkSpeed == request.SpeedId.Value);
@@ -668,9 +644,18 @@ public class RecurringJobRepository(
         // Apply Days of Week filter (bitwise match - job must run on at least one of the selected days)
         if (request.DaysOfWeek is > 0)
             query = query.Where(j => (j.UcbkDaysInt & request.DaysOfWeek.Value) != 0);
-        
-        var isDescending = request.OrderDirection == "desc";
-        query = request.Order switch
+
+        return query;
+    }
+
+    private static IQueryable<TucJobBooking> ApplyRecurringJobSort(
+        IQueryable<TucJobBooking> query,
+        string order,
+        string direction,
+        bool applyDefaultSort)
+    {
+        var isDescending = direction == "desc";
+        return order switch
         {
             "booked" => isDescending
                 ? query.OrderByDescending(j => j.UcbkDate).ThenByDescending(j => j.UcbkTime)
@@ -696,28 +681,9 @@ public class RecurringJobRepository(
             "nextDueTime" => isDescending
                 ? query.OrderByDescending(j => j.UcbkNextDue)
                 : query.OrderBy(j => j.UcbkNextDue),
-            _ => query.OrderByDescending(j => j.UcbkDate).ThenByDescending(j => j.UcbkTime)
+            _ => applyDefaultSort
+                ? query.OrderByDescending(j => j.UcbkDate).ThenByDescending(j => j.UcbkTime)
+                : query
         };
-
-        // No pagination - get all records for export
-        var items = await query
-            .Select(JobMappings.ToPrebookListViewModel)
-            .ToListAsync();
-
-        if (items.Count == 0) return items;
-
-        var tenantTimeZone = _infoService.GetTenantTimeZone();
-        var minValidDate = new DateTimeOffset(1753, 1, 2, 0, 0, 0, TimeSpan.Zero);
-
-        foreach (var item in items)
-        {
-            if (item.Booked > minValidDate)
-                item.Booked = TimeZoneHelper.SetDateTimeWithTimeZone(item.Booked.DateTime, tenantTimeZone);
-
-            if (item.NextDueTime.HasValue && item.NextDueTime.Value > minValidDate)
-                item.NextDueTime = TimeZoneHelper.SetDateTimeWithTimeZone(item.NextDueTime.Value.DateTime, tenantTimeZone);
-        }
-
-        return items;
     }
 }

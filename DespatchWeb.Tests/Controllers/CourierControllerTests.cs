@@ -324,7 +324,7 @@ public class CourierControllerTests
         var controller = CreateController();
 
         // Act
-        var result = await controller.Index(null!, null, null);
+        var result = await controller.Index(null!);
 
         // Assert
         _courierRepositoryMock.Verify(

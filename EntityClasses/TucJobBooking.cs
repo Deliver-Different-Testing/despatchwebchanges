@@ -374,6 +374,10 @@ public partial class TucJobBooking
 
     public string Connote { get; set; }
 
+    public int? AccessorialChargeGroupId { get; set; }
+
+    public DateTime? CreatedTime { get; set; }
+
     public virtual TucJobBooking BookingParent { get; set; }
 
     public virtual TucCourier Courier { get; set; }

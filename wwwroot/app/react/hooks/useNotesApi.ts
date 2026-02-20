@@ -8,7 +8,7 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from '../query';
 import {notesApi} from '../services/notesApi';
-import {CreateNoteRequest, JobNote, NoteType, UpdateNoteRequest} from '../interfaces';
+import {CreateNoteRequest, JobNote, NoteHistoryEntry, NoteType, UpdateNoteRequest} from '../interfaces';
 
 /**
  * Hook to fetch notes for a job
@@ -229,6 +229,22 @@ export function useDeleteNote() {
                 });
             }
         },
+    });
+}
+
+/**
+ * Hook to fetch edit history for a note
+ */
+export function useNoteHistory(
+    noteId: number | undefined,
+    noteSource: string = 'Note',
+    options?: { enabled?: boolean }
+) {
+    return useQuery<NoteHistoryEntry[], Error>({
+        queryKey: queryKeys.notes.history(noteId ?? 0, noteSource),
+        queryFn: () => notesApi.getNoteHistory(noteId!, noteSource),
+        enabled: !!noteId && (options?.enabled ?? true),
+        staleTime: 30 * 1000,
     });
 }
 

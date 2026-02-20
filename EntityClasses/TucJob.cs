@@ -457,6 +457,12 @@ public partial class TucJob
 
     public string CustomJobName { get; set; }
 
+    public int? ManualArchiveAttempts { get; set; }
+
+    public int? AccessorialChargeGroupId { get; set; }
+
+    public DateTime? CreatedTime { get; set; }
+
     public virtual TucJobType AcceptedJobType { get; set; }
 
     public virtual TucAgent Agent { get; set; }

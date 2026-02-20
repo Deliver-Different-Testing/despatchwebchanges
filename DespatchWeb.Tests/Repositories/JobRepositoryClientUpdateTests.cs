@@ -13,11 +13,9 @@ public class JobRepositoryClientUpdateTests
     /// </summary>
     private class TestJob
     {
-        public int Id { get; init; }
-        public int? ParentId { get; init; }
         public int? ClientId { get; set; }
         public string? ClientCode { get; set; }
-        public List<TestJob> Children { get; set; } = [];
+        public List<TestJob> Children { get; init; } = [];
     }
 
     /// <summary>
@@ -47,14 +45,13 @@ public class JobRepositoryClientUpdateTests
         // Arrange
         var parent = new TestJob
         {
-            Id = 1,
             ClientId = 100,
             ClientCode = "OLD",
             Children =
             [
-                new TestJob { Id = 2, ParentId = 1, ClientId = 100, ClientCode = "OLD" },
-                new TestJob { Id = 3, ParentId = 1, ClientId = 100, ClientCode = "OLD" },
-                new TestJob { Id = 4, ParentId = 1, ClientId = 100, ClientCode = "OLD" }
+                new TestJob { ClientId = 100, ClientCode = "OLD" },
+                new TestJob { ClientId = 100, ClientCode = "OLD" },
+                new TestJob { ClientId = 100, ClientCode = "OLD" }
             ]
         };
 
@@ -79,7 +76,6 @@ public class JobRepositoryClientUpdateTests
         // Arrange
         var parent = new TestJob
         {
-            Id = 1,
             ClientId = 100,
             ClientCode = "OLD",
             Children = []
@@ -99,16 +95,14 @@ public class JobRepositoryClientUpdateTests
         // Arrange - Child job with no children of its own
         var child = new TestJob
         {
-            Id = 2,
-            ParentId = 1,
             ClientId = 100,
             ClientCode = "OLD",
             Children = []
         };
 
         // Sibling jobs (not in the Children collection of the target job)
-        var sibling1 = new TestJob { Id = 3, ParentId = 1, ClientId = 100, ClientCode = "OLD" };
-        var sibling2 = new TestJob { Id = 4, ParentId = 1, ClientId = 100, ClientCode = "OLD" };
+        var sibling1 = new TestJob { ClientId = 100, ClientCode = "OLD" };
+        var sibling2 = new TestJob { ClientId = 100, ClientCode = "OLD" };
 
         // Act
         UpdateJobClient(child, 200, "NEW");
@@ -134,7 +128,6 @@ public class JobRepositoryClientUpdateTests
         // Arrange
         var parent = new TestJob
         {
-            Id = 100,
             ClientId = 1,
             ClientCode = "A",
             Children = []
@@ -145,8 +138,6 @@ public class JobRepositoryClientUpdateTests
         {
             parent.Children.Add(new TestJob
             {
-                Id = i,
-                ParentId = 100,
                 ClientId = 1,
                 ClientCode = "A"
             });
@@ -172,12 +163,11 @@ public class JobRepositoryClientUpdateTests
         // Arrange
         var parent = new TestJob
         {
-            Id = 1,
             ClientId = 100,
             ClientCode = "SAME",
             Children =
             [
-                new TestJob { Id = 2, ParentId = 1, ClientId = 100, ClientCode = "SAME" }
+                new TestJob { ClientId = 100, ClientCode = "SAME" }
             ]
         };
 
@@ -197,14 +187,13 @@ public class JobRepositoryClientUpdateTests
         // Arrange - Children have different clients initially
         var parent = new TestJob
         {
-            Id = 1,
             ClientId = 100,
             ClientCode = "A",
             Children =
             [
-                new TestJob { Id = 2, ParentId = 1, ClientId = 200, ClientCode = "B" },
-                new TestJob { Id = 3, ParentId = 1, ClientId = 300, ClientCode = "C" },
-                new TestJob { Id = 4, ParentId = 1, ClientId = 100, ClientCode = "A" }
+                new TestJob { ClientId = 200, ClientCode = "B" },
+                new TestJob { ClientId = 300, ClientCode = "C" },
+                new TestJob { ClientId = 100, ClientCode = "A" }
             ]
         };
 
@@ -227,12 +216,11 @@ public class JobRepositoryClientUpdateTests
         // Arrange
         var parent = new TestJob
         {
-            Id = 1,
             ClientId = 100,
             ClientCode = "OLD",
             Children =
             [
-                new TestJob { Id = 2, ParentId = 1, ClientId = 100, ClientCode = "OLD" }
+                new TestJob { ClientId = 100, ClientCode = "OLD" }
             ]
         };
 
@@ -256,12 +244,11 @@ public class JobRepositoryClientUpdateTests
         // Arrange
         var parent = new TestJob
         {
-            Id = 1,
             ClientId = 100,
             ClientCode = "OLD",
             Children =
             [
-                new TestJob { Id = 2, ParentId = 1, ClientId = 100, ClientCode = "OLD" }
+                new TestJob { ClientId = 100, ClientCode = "OLD" }
             ]
         };
 

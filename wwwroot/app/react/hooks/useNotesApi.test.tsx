@@ -15,9 +15,10 @@ import {
     useUpdateBulkJobNote,
     useDeleteNote,
     useCreateNoteType,
+    useNoteHistory,
 } from './useNotesApi';
 import {notesApi} from '../services/notesApi';
-import {JobNote, NoteType} from '../interfaces';
+import {JobNote, NoteType, NoteHistoryEntry} from '../interfaces';
 import dayjs from 'dayjs';
 
 // Mock the notesApi
@@ -32,6 +33,7 @@ jest.mock('../services/notesApi', () => ({
         updateBulkJobNote: jest.fn(),
         deleteNote: jest.fn(),
         createNoteType: jest.fn(),
+        getNoteHistory: jest.fn(),
     },
 }));
 
@@ -399,5 +401,66 @@ describe('useCreateNoteType', () => {
         });
 
         expect(mockNotesApi.createNoteType).toHaveBeenCalledWith({text: 'Custom', isPublic: true});
+    });
+});
+
+describe('useNoteHistory', () => {
+    const mockHistory: NoteHistoryEntry[] = [
+        {
+            noteHistoryId: 1,
+            noteId: 10,
+            editedBy: 1,
+            editedByName: 'John Doe',
+            editedAt: dayjs('2024-06-15T10:30:00Z'),
+            editedAtStr: 'Jun 15, 2024 10:30 AM',
+            oldNoteText: 'Original',
+            newNoteText: 'Updated',
+        },
+    ];
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('should fetch note history for a note', async () => {
+        mockNotesApi.getNoteHistory.mockResolvedValueOnce(mockHistory);
+
+        const {result} = renderHook(() => useNoteHistory(10), {wrapper: createWrapper()});
+
+        await waitFor(() => {
+            expect(result.current.isSuccess).toBe(true);
+        });
+
+        expect(mockNotesApi.getNoteHistory).toHaveBeenCalledWith(10, 'Note');
+        expect(result.current.data).toEqual(mockHistory);
+    });
+
+    it('should not fetch when noteId is undefined', async () => {
+        renderHook(() => useNoteHistory(undefined), {wrapper: createWrapper()});
+
+        await waitFor(() => {
+            expect(mockNotesApi.getNoteHistory).not.toHaveBeenCalled();
+        });
+    });
+
+    it('should not fetch when enabled is false', async () => {
+        renderHook(() => useNoteHistory(10, 'Note', {enabled: false}), {wrapper: createWrapper()});
+
+        await waitFor(() => {
+            expect(mockNotesApi.getNoteHistory).not.toHaveBeenCalled();
+        });
+    });
+
+    it('should handle errors', async () => {
+        const error = new Error('Failed to fetch note history');
+        mockNotesApi.getNoteHistory.mockRejectedValueOnce(error);
+
+        const {result} = renderHook(() => useNoteHistory(10), {wrapper: createWrapper()});
+
+        await waitFor(() => {
+            expect(result.current.isError).toBe(true);
+        });
+
+        expect(result.current.error).toEqual(error);
     });
 });

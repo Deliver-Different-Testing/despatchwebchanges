@@ -13,11 +13,10 @@ type EntryPointName =
     | 'nationwide'
     | 'overview'
     | 'jobSearch'
-
     | 'taskDashboardReact'
     | 'driverManagementReact'
     | 'composeEmailDialogReact'
-    | 'courierMap'
+    | 'courierMapReact'
     | 'dateRangeDialogReact'
     | 'priceBreakdownDialogReact'
     | 'dashboardSettingsDialogReact'
@@ -56,7 +55,7 @@ const entryPoints: EntryPoints = {
     taskDashboardReact: path.join(rootDir, "wwwroot/app/react/pages/task-dashboard/task-dashboard-react.module.tsx"),
     driverManagementReact: path.join(rootDir, "wwwroot/app/react/pages/driver-management/driver-management-react.module.tsx"),
     composeEmailDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/compose-email-dialog/compose-email-dialog-react.module.tsx"),
-    courierMap: path.join(rootDir, "wwwroot/app/components/courier-map/courier-map.module.ts"),
+    courierMapReact: path.join(rootDir, "wwwroot/app/react/pages/courier-map/courier-map-react.module.tsx"),
     dateRangeDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/date-range-dialog/date-range-dialog-react.module.tsx"),
     priceBreakdownDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/price-breakdown-dialog/price-breakdown-dialog-react.module.tsx"),
     dashboardSettingsDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/dashboard-settings-dialog/dashboard-settings-dialog-react.module.tsx"),

@@ -94,6 +94,8 @@ export const queryKeys = {
             ['notes', 'job', jobId, isRecurring] as const,
         bulkJob: (bulkJobId: number) =>
             ['notes', 'bulkJob', bulkJobId] as const,
+        history: (noteId: number, noteSource: string) =>
+            ['notes', 'history', noteId, noteSource] as const,
     },
     priceBreakdowns: {
         all: ['priceBreakdowns'] as const,

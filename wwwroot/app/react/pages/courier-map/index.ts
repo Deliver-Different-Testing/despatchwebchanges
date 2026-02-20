@@ -5,7 +5,7 @@
  */
 
 export { CourierMapPage } from './CourierMapPage';
-export { CourierMapReactComponent } from './courier-map-react.module';
+export { mountCourierMapPage, unmountCourierMapPage } from './courier-map-react.module';
 export { useCourierMap } from './useCourierMap';
 export { CourierMarkerManager } from './CourierMarkerManager';
 export { DriversPanel } from './components/DriversPanel';

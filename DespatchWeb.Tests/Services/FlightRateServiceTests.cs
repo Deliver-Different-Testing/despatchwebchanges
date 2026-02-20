@@ -24,7 +24,7 @@ public class FlightRateServiceTests
         var service = CreateService();
 
         _repositoryMock.Setup(x => x.GetFlightRateCalculationDtoAsync(1, "AA", false, null))
-            .ReturnsAsync((FlightRateCalculationDto)null);
+            .ReturnsAsync((FlightRateCalculationDto)null!);
 
         // Act
         var result = await service.GetCarrierFlightRateByJobIdAsync(1, "AA", false, null);

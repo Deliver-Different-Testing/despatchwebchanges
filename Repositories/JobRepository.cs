@@ -3989,7 +3989,7 @@ public partial class JobRepository(
                 dGClass: data.DgClass,
                 dGDocs: data.DgClass.HasValue,
                 loggedInContactId: data.LoggedInContactId,
-                additionalServiceIds: data.AdditionalServiceIds,
+                accessorialChargeGroupId: data.AccessorialChargeGroupId,
                 deliverByDateTime: data.DeliverByDateTime,
                 pickupTimeZone: data.PickupTimeZone,
                 deliverByTimeZone: data.DeliverByTimeZone,

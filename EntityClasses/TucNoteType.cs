@@ -21,5 +21,9 @@ public partial class TucNoteType
 
     public virtual ICollection<TblBulkJobNote> TblBulkJobNotes { get; set; } = new List<TblBulkJobNote>();
 
+    public virtual ICollection<TucNoteHistory> TucNoteHistoryNewNoteTypes { get; set; } = new List<TucNoteHistory>();
+
+    public virtual ICollection<TucNoteHistory> TucNoteHistoryOldNoteTypes { get; set; } = new List<TucNoteHistory>();
+
     public virtual ICollection<TucNote> TucNotes { get; set; } = new List<TucNote>();
 }

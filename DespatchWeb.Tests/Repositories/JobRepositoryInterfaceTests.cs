@@ -26,6 +26,8 @@ public class JobRepositoryInterfaceTests : IDisposable
         _connection = new SqliteConnection("DataSource=:memory:");
         _connection.Open();
 
+        _connection.CreateFunction("getdate", () => DateTime.Now);
+
         using (var command = _connection.CreateCommand())
         {
             command.CommandText = "PRAGMA foreign_keys = OFF;";
