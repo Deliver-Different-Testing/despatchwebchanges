@@ -1,0 +1,163 @@
+#nullable enable
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using DeliverDifferentReporting.Documents;
+using DeliverDifferentReporting.Models;
+using DeliverDifferentReporting.Services;
+using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
+using Microsoft.AspNetCore.Http;
+using QuestPDF.Fluent;
+using QuestPDF.Infrastructure;
+
+namespace DespatchWeb.Services;
+
+public class PodReportService(
+    IHttpContextAccessor httpContextAccessor,
+    ITenantBrandingService tenantBrandingService,
+    IJobRepository jobRepository,
+    IJobPhotoService jobPhotoService
+) : IPodReportService
+{
+    private static bool _questPdfInitialized;
+    private static readonly object InitLock = new();
+
+    public async Task<(byte[] Bytes, string FileName)> GeneratePodReportAsync(int jobId)
+    {
+        EnsureQuestPdfInitialized();
+
+        var tenantId = GetTenantId();
+        var branding = await tenantBrandingService.GetBrandingAsync(tenantId);
+        var job = await jobRepository.GetSingleJobById(jobId)
+                  ?? throw new InvalidOperationException($"Job {jobId} not found");
+
+        // Get S3 photos if the job is completed
+        List<S3PhotoInfo> s3Photos = [];
+        if (job.CompletedTime.HasValue)
+        {
+            var year = job.CompletedTime.Value.Year;
+            var month = job.CompletedTime.Value.Month;
+            s3Photos = await jobPhotoService.GetDeliveryPhotosAsync(jobId, year, month);
+        }
+
+        var podData = MapToPodData(job, s3Photos);
+        var document = new PodDocument(podData, branding);
+
+        using var stream = new MemoryStream();
+        document.GeneratePdf(stream);
+
+        return (stream.ToArray(), $"POD-{job.JobNo}.pdf");
+    }
+
+    private static void EnsureQuestPdfInitialized()
+    {
+        if (_questPdfInitialized) return;
+        lock (InitLock)
+        {
+            if (_questPdfInitialized) return;
+            QuestPDF.Settings.License = LicenseType.Community;
+            _questPdfInitialized = true;
+        }
+    }
+
+    private int GetTenantId()
+    {
+        var user = httpContextAccessor.HttpContext?.User;
+        var tenantClaim = user?.Claims.FirstOrDefault(c => c.Type == "CurrentTenantID")?.Value;
+
+        if (string.IsNullOrEmpty(tenantClaim) || !int.TryParse(tenantClaim, out var tenantId))
+            throw new InvalidOperationException("Unable to determine tenant ID from user claims");
+
+        return tenantId;
+    }
+
+    private static PodData MapToPodData(JobViewModel job, List<S3PhotoInfo> s3Photos)
+    {
+        // Separate signatures from delivery photos
+        var signaturePhotos = s3Photos
+            .Where(p => p.S3Key.Contains("DeliverySignatures/", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        var deliveryPhotos = s3Photos
+            .Where(p => p.S3Key.Contains("DeliveryPhotos/", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        // Get signature bytes from the first signature image
+        byte[]? signatureBytes = null;
+        var firstSignature = signaturePhotos.FirstOrDefault(p => !string.IsNullOrEmpty(p.Data));
+        if (firstSignature != null)
+        {
+            signatureBytes = Convert.FromBase64String(firstSignature.Data);
+        }
+
+        return new PodData
+        {
+            JobNumber = job.JobNo,
+            ClientRefA = job.RefA,
+            ClientRefB = job.RefB,
+            Eta = job.DeliverByTime?.ToString("dd/MM/yyyy HH:mm"),
+            DeliveryStatus = job.StatusName ?? "Delivered",
+            Account = job.ClientName,
+            ServiceType = job.SpeedName,
+            GoodsReady = job.CreatedDate?.DateTime,
+            PickupName = job.From,
+            PickupAddress = job.PickupAddress?.FullAddress,
+            DeliveryName = job.ToAddress,
+            DeliveryAddress = job.DeliveryAddress?.FullAddress,
+            CourierName = job.Courier,
+            CourierVehicle = job.Vehicle?.Text,
+            CourierId = job.CourierData?.CourierNumber,
+            GpsLatitude = job.DeliveryLatitude.HasValue ? (double)job.DeliveryLatitude.Value : null,
+            GpsLongitude = job.DeliveryLongitude.HasValue ? (double)job.DeliveryLongitude.Value : null,
+            PodName = job.PodName,
+            PodDate = job.CompletedTime?.DateTime,
+            PodNotes = job.Notes?.FirstOrDefault()?.NoteText,
+            SignatureImage = signatureBytes,
+            Items = MapItems(job.ParcelDimensions),
+            PhotoCategories = MapPhotoCategories(deliveryPhotos)
+        };
+    }
+
+    private static List<PodItem> MapItems(List<ParcelDimensions>? parcels)
+    {
+        if (parcels == null || parcels.Count == 0)
+            return [];
+
+        return parcels.Select(p => new PodItem
+        {
+            ItemCode = p.ItemId?.ToString(),
+            Barcode = p.Barcode,
+            Description = p.ItemName
+        }).ToList();
+    }
+
+    private static List<PhotoCategory> MapPhotoCategories(List<S3PhotoInfo> photos)
+    {
+        if (photos.Count == 0)
+            return [];
+
+        var podPhotos = photos
+            .Where(p => !string.IsNullOrEmpty(p.Data))
+            .Select(p => new PodPhoto
+            {
+                ImageBytes = Convert.FromBase64String(p.Data),
+                Caption = p.FileName
+            })
+            .ToList();
+
+        if (podPhotos.Count == 0)
+            return [];
+
+        return
+        [
+            new PhotoCategory
+            {
+                Category = "Delivery Photos",
+                Photos = podPhotos
+            }
+        ];
+    }
+}

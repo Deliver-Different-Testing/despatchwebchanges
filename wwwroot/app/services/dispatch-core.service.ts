@@ -1068,6 +1068,10 @@ class DispatchCoreService implements angular.IServiceProvider {
         const response = await this.$http.get<IDriverWorkOverview[]>('courier/GetDriverWorkOverview');
         return response.data;
     }
+
+    getPodReportUrl(jobId: number): string {
+        return `/job/PodReport?jobId=${jobId}`;
+    }
 }
 
 export default DispatchCoreService;

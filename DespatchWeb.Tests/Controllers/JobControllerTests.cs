@@ -33,6 +33,7 @@ public class JobControllerTests
     private readonly Mock<IDeliveryJourneyService> _deliveryJourneyServiceMock = new();
     private readonly Mock<IPricingPermissionService> _pricingPermissionServiceMock = new();
     private readonly Mock<ISplitJobService> _splitJobServiceMock = new();
+    private readonly Mock<IPodReportService> _podReportServiceMock = new();
 
     public JobControllerTests()
     {
@@ -61,7 +62,8 @@ public class JobControllerTests
             _dispatchJobServiceMock.Object,
             _deliveryJourneyServiceMock.Object,
             _pricingPermissionServiceMock.Object,
-            _splitJobServiceMock.Object);
+            _splitJobServiceMock.Object,
+            _podReportServiceMock.Object);
     }
 
     #endregion

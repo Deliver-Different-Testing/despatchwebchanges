@@ -3,6 +3,12 @@ include:
     file: 'ci-template.yml'
     ref: 'main'
 
+# Forward NuGet credentials as Docker build args for Auto-DevOps build
+variables:
+  AUTO_DEVOPS_BUILD_IMAGE_FORWARDED_CI_VARIABLES: "GITLAB_NUGET_USERNAME,GITLAB_NUGET_TOKEN"
+  GITLAB_NUGET_USERNAME: "gitlab-ci-token"
+  GITLAB_NUGET_TOKEN: "${CI_JOB_TOKEN}"
+
 # Only run deploy on protected branches, not on MR pipelines
 deploy-dynamic-pipeline:
   rules:

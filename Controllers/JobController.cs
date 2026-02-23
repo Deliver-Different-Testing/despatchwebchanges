@@ -37,7 +37,8 @@ public class JobController(
     IDispatchJobService dispatchJobService,
     IDeliveryJourneyService deliveryJourneyService,
     IPricingPermissionService pricingPermissionService,
-    ISplitJobService splitJobService
+    ISplitJobService splitJobService,
+    IPodReportService podReportService
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -565,6 +566,20 @@ public class JobController(
             Log.Error(ex, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController),
                     nameof(ClientJobsReportDownload)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
+    public async Task<IActionResult> PodReport(int jobId)
+    {
+        try
+        {
+            var (bytes, fileName) = await podReportService.GeneratePodReportAsync(jobId);
+            return File(bytes, "application/pdf", fileName);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error generating POD report for job {JobId}", jobId);
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }

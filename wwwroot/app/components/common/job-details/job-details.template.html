@@ -85,6 +85,16 @@
             <!-- Spacer -->
             <div flex></div>
 
+            <!-- POD Report Button -->
+            <md-button
+                    ng-if="ctrl.job.done && !ctrl.job.preBook"
+                    class="md-icon-button"
+                    aria-label="POD Report"
+                    ng-click="ctrl.openPodReport()">
+                <md-icon md-font-set="material-symbols-outlined">picture_as_pdf</md-icon>
+                <md-tooltip>POD Report</md-tooltip>
+            </md-button>
+
             <!-- Status Button -->
             <md-button
                     ng-if="::!ctrl.job.preBook"

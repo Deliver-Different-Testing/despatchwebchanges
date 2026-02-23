@@ -6,8 +6,16 @@ RUN apt-get update && apt-get install -y curl
 RUN curl -sL https://deb.nodesource.com/setup_20.x | bash -
 RUN apt-get install -y nodejs
 
+# Copy nuget.config and csproj for restore layer caching
+COPY nuget.config ./
 COPY *.csproj ./
-RUN dotnet restore DespatchWeb.csproj
+
+# Private NuGet feed authentication
+ARG GITLAB_NUGET_USERNAME
+ARG GITLAB_NUGET_TOKEN
+RUN GITLAB_NUGET_USERNAME=${GITLAB_NUGET_USERNAME} \
+    GITLAB_NUGET_TOKEN=${GITLAB_NUGET_TOKEN} \
+    dotnet restore DespatchWeb.csproj
 
 COPY . ./
 RUN npm install

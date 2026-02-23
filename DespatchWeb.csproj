@@ -305,6 +305,9 @@
     <PackageReference Include="TimeZoneConverter" Version="7.2.0" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="DeliverDifferentReporting" Version="1.0.0" />
+  </ItemGroup>
+  <ItemGroup>
     <TypeScriptCompile Include="wwwroot\app\components\base-controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\dayjs-date-picker\dayjs-date-picker.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.interfaces.ts" />

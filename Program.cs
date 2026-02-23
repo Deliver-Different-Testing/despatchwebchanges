@@ -25,6 +25,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
+using DeliverDifferentReporting.Extensions;
 using Serilog;
 using StackExchange.Redis;
 
@@ -157,6 +158,12 @@ builder.Services.AddScoped<IDispatchJobService, DispatchJobService>();
 builder.Services.AddScoped<IDeliveryJourneyService, DeliveryJourneyService>();
 builder.Services.AddScoped<IPricingPermissionService, PricingPermissionService>();
 builder.Services.AddScoped<ISplitJobService, SplitJobService>();
+builder.Services.AddScoped<IPodReportService, PodReportService>();
+
+builder.Services.AddTenantBranding(opts =>
+{
+    opts.BrandingApiBaseUrl = Environment.GetEnvironmentVariable("HubUrl")!;
+});
 
 // Register DespatchContext with a fake connection string
 builder.Services.AddDbContextFactory<DespatchContext>(options =>
