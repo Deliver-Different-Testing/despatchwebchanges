@@ -52,6 +52,30 @@ public class PodReportService(
         return (stream.ToArray(), $"POD-{job.JobNo}.pdf");
     }
 
+    public async Task<(byte[] Bytes, string FileName)> GeneratePodSpreadsheetAsync(int jobId)
+    {
+        var tenantId = GetTenantId();
+        var branding = await tenantBrandingService.GetBrandingAsync(tenantId);
+        var job = await jobRepository.GetSingleJobById(jobId)
+                  ?? throw new InvalidOperationException($"Job {jobId} not found");
+
+        List<S3PhotoInfo> s3Photos = [];
+        if (job.CompletedTime.HasValue)
+        {
+            var year = job.CompletedTime.Value.Year;
+            var month = job.CompletedTime.Value.Month;
+            s3Photos = await jobPhotoService.GetDeliveryPhotosAsync(jobId, year, month);
+        }
+
+        var podData = MapToPodData(job, s3Photos);
+        var spreadsheet = new PodSpreadsheet(podData, branding);
+
+        using var stream = new MemoryStream();
+        spreadsheet.Generate(stream);
+
+        return (stream.ToArray(), $"POD-{job.JobNo}.xlsx");
+    }
+
     private static void EnsureQuestPdfInitialized()
     {
         if (_questPdfInitialized) return;

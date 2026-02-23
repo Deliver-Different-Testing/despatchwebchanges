@@ -85,15 +85,27 @@
             <!-- Spacer -->
             <div flex></div>
 
-            <!-- POD Report Button -->
-            <md-button
-                    ng-if="ctrl.job.done && !ctrl.job.preBook"
-                    class="md-icon-button"
-                    aria-label="POD Report"
-                    ng-click="ctrl.openPodReport()">
-                <md-icon md-font-set="material-symbols-outlined">picture_as_pdf</md-icon>
-                <md-tooltip>POD Report</md-tooltip>
-            </md-button>
+            <!-- POD Report Menu -->
+            <md-menu ng-if="ctrl.job.done && !ctrl.job.preBook">
+                <md-button class="md-icon-button" aria-label="POD Report" ng-click="$mdMenu.open($event)">
+                    <md-icon md-font-set="material-symbols-outlined">description</md-icon>
+                    <md-tooltip>POD Report</md-tooltip>
+                </md-button>
+                <md-menu-content width="3">
+                    <md-menu-item>
+                        <md-button ng-click="ctrl.openPodReport()">
+                            <md-icon md-font-set="material-symbols-outlined">picture_as_pdf</md-icon>
+                            Download as PDF
+                        </md-button>
+                    </md-menu-item>
+                    <md-menu-item>
+                        <md-button ng-click="ctrl.openPodSpreadsheet()">
+                            <md-icon md-font-set="material-symbols-outlined">table_chart</md-icon>
+                            Download as Excel
+                        </md-button>
+                    </md-menu-item>
+                </md-menu-content>
+            </md-menu>
 
             <!-- Status Button -->
             <md-button

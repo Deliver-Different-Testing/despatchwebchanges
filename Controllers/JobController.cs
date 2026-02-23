@@ -584,6 +584,20 @@ public class JobController(
         }
     }
 
+    public async Task<IActionResult> PodSpreadsheet(int jobId)
+    {
+        try
+        {
+            var (bytes, fileName) = await podReportService.GeneratePodSpreadsheetAsync(jobId);
+            return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error generating POD spreadsheet for job {JobId}", jobId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
     [HttpPost]
     public async Task<IActionResult> Upload(IFormFile file)
     {

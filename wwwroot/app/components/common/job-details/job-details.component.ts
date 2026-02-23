@@ -2059,6 +2059,12 @@ class JobDetailController extends BaseController {
         window.open(url, '_blank');
     }
 
+    openPodSpreadsheet(): void {
+        if (!this.job?.id) return;
+        const url = this.DispatchData.getPodSpreadsheetUrl(this.job.id);
+        window.open(url, '_blank');
+    }
+
     async openPodUploadDialog($event: MouseEvent, job: IDispatchJob): Promise<void> {
         await this.jobFileUploadDialogService.openJobFileUploadDialog(
             $event,

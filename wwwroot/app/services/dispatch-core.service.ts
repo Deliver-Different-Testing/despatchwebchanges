@@ -1072,6 +1072,10 @@ class DispatchCoreService implements angular.IServiceProvider {
     getPodReportUrl(jobId: number): string {
         return `/job/PodReport?jobId=${jobId}`;
     }
+
+    getPodSpreadsheetUrl(jobId: number): string {
+        return `/job/PodSpreadsheet?jobId=${jobId}`;
+    }
 }
 
 export default DispatchCoreService;
