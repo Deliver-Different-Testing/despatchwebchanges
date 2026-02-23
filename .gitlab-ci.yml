@@ -11,6 +11,9 @@ variables:
 
 # Only run deploy on protected branches, not on MR pipelines
 deploy-dynamic-pipeline:
+  trigger:
+    forward:
+      yaml_variables: true
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
     - if: $CI_COMMIT_BRANCH == "staging"
