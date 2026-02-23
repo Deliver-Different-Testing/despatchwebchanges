@@ -3,17 +3,15 @@ include:
     file: 'ci-template.yml'
     ref: 'main'
 
-# Forward NuGet credentials as Docker build args for Auto-DevOps build
+# NuGet credentials for parent pipeline jobs (test:backend)
+# NOTE: The child pipeline (Auto-DevOps Docker build) gets these via
+# project-level CI/CD variables set in GitLab > Settings > CI/CD > Variables
 variables:
-  AUTO_DEVOPS_BUILD_IMAGE_FORWARDED_CI_VARIABLES: "GITLAB_NUGET_USERNAME,GITLAB_NUGET_TOKEN"
   GITLAB_NUGET_USERNAME: "gitlab-ci-token"
   GITLAB_NUGET_TOKEN: "${CI_JOB_TOKEN}"
 
 # Only run deploy on protected branches, not on MR pipelines
 deploy-dynamic-pipeline:
-  trigger:
-    forward:
-      yaml_variables: true
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
     - if: $CI_COMMIT_BRANCH == "staging"
