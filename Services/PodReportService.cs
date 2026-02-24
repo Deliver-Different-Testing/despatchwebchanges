@@ -174,7 +174,7 @@ public class PodReportService(
             SendToEmailAddress = email,
             ReplyToEmailAddress = replyTo,
             Subject = subject,
-            UcmmMessage = body,
+            UcmmMessage = body.Replace("\n", "<br>"),
             JobId = jobId,
             HasAttachment = true,
             FileName = fileName,

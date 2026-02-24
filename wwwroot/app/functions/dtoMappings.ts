@@ -120,6 +120,7 @@ function transformJobDTO(dto: IJobDto, isUsCustomer: boolean): IJob {
         _deliverByTimeStr: dto.deliverByTime ? formatShortDateTime(dto.deliverByTime, isUsCustomer) : undefined,
         _dispatchTimeStr: dto.dispatchTime ? formatShortDateTime(dto.dispatchTime, isUsCustomer) : undefined,
         _completedTimeStr: dto.completedTime ? formatShortDateTime(dto.completedTime, isUsCustomer) : undefined,
+        _completedTimeLongStr: dto.completedTime ? formatLongDateTime(dto.completedTime, isUsCustomer) : undefined,
         _followupTimeStr: dto.followupTime ? formatShortDateTime(dto.followupTime, isUsCustomer) : undefined,
         _pickUpTimeZoneStr: dto.pickUpTimeZone ? timezoneShortFilter(dto.pickUpTimeZone.text) : undefined,
         _deliveryTimeZoneStr: dto.deliveryTimeZone ? timezoneShortFilter(dto.deliveryTimeZone.text) : undefined,

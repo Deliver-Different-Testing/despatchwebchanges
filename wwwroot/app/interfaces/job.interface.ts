@@ -197,6 +197,7 @@ export interface IJob {
     _followupTimeStr?: string;
     _bookedStr?: string;
     _completedTimeStr?: string;
+    _completedTimeLongStr?: string;
     _inActiveDateStr?: string;
     _deliverByTimeStr?: string;
     _readTrackerTimeStr?: string;

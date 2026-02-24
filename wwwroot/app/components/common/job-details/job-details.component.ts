@@ -2091,9 +2091,7 @@ class JobDetailController extends BaseController {
 
             const job = this.job;
             const deliveryAddress = job.deliveryAddress?.fullAddress || '';
-            const deliveryDateTime = job.completedTime
-                ? formatLongDateTime(job.completedTime)
-                : '';
+            const deliveryDateTime = job._completedTimeLongStr || '';
             const driverName = job.courierData?.courierName || '';
             const bookingContactEmail = job.bookingContactEmail || '';
             const trackingEmail = job.trackingEmail || '';

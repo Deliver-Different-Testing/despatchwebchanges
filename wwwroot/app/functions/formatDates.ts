@@ -81,6 +81,7 @@ export function formatLongDateTime(date: Date | Dayjs | string, isUsCustomer: bo
         : dayjs(date).format('DD/MMM/YYYY HH:mm');   // 22/09/2025 09:24
 }
 
+
 export function formatLongDate(date: Date | Dayjs | string, isUsCustomer: boolean = true): string {
     return isUsCustomer
         ? dayjs(date).format('MMM/DD/YYYY')  // 09/22/2025 9:24 AM

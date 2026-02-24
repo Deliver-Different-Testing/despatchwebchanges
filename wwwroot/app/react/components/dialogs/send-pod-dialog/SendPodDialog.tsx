@@ -59,10 +59,10 @@ function buildBody(jobData: SendPodJobData): string {
 
 Please find attached the Proof of Delivery (POD) document for the following delivery:
 
-  Booking reference:  ${jobData.jobNo}
-  Delivered to:       ${jobData.deliveryAddress}
-  Delivery date/time: ${jobData.deliveryDateTime}
-  Driver:             ${jobData.driverName}
+Booking reference: ${jobData.jobNo}
+Delivered to: ${jobData.deliveryAddress}
+Delivery date/time: ${jobData.deliveryDateTime}
+Driver: ${jobData.driverName}
 
 If you have any questions regarding this delivery, please don't hesitate to contact us.
 
