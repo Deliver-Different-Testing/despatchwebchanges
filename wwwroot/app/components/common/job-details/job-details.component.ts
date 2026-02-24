@@ -59,6 +59,8 @@ class JobDetailController extends BaseController {
         "jobFileUploadDialogService",
         "voidJobConfirmationDialogService",
         "dispatchJobService",
+        "$ocLazyLoad",
+        "$http",
     ];
 
     private readonly FIELD_VISIBILITY_KEY = `jobDetail_fieldVisibility_${ContactID}`;
@@ -124,6 +126,8 @@ class JobDetailController extends BaseController {
         private jobFileUploadDialogService: JobFileUploadDialogService,
         private voidJobConfirmationDialogService: VoidJobConfirmationDialogService,
         private dispatchJobService: DispatchExecutorService,
+        private $ocLazyLoad: oc.ILazyLoad,
+        private $http: angular.IHttpService,
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
@@ -2063,6 +2067,55 @@ class JobDetailController extends BaseController {
         if (!this.job?.id) return;
         const url = this.DispatchData.getPodSpreadsheetUrl(this.job.id);
         window.open(url, '_blank');
+    }
+
+    async openSendPodDialog(): Promise<void> {
+        if (!this.job?.id) return;
+
+        try {
+            // Lazy-load the React dialog module
+            if (!(window as any).ReactSendPodDialog) {
+                const manifestResponse = await this.$http.get<Record<string, string>>('dist/manifest.json');
+                const manifest = manifestResponse.data;
+                const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
+
+                if (!(window as any).React) {
+                    await this.$ocLazyLoad.load(getAssetPath('vendor-react.js'));
+                }
+
+                await this.$ocLazyLoad.load({
+                    name: 'uDispatch.sendPodDialogReact',
+                    files: [getAssetPath('sendPodDialogReact.js')]
+                });
+            }
+
+            const job = this.job;
+            const deliveryAddress = job.deliveryAddress?.fullAddress || '';
+            const deliveryDateTime = job.completedTime
+                ? formatLongDateTime(job.completedTime)
+                : '';
+            const driverName = job.courierData?.courierName || '';
+            const bookingContactEmail = job.bookingContactEmail || '';
+            const trackingEmail = job.trackingEmail || '';
+
+            const result = await (window as any).ReactSendPodDialog.open({
+                jobId: job.id,
+                jobNo: job.jobNo,
+                clientName: job.clientName,
+                driverName,
+                deliveryAddress,
+                deliveryDateTime,
+                bookingContactEmail: bookingContactEmail || undefined,
+                trackingEmail: trackingEmail || undefined,
+            });
+
+            if (result) {
+                this.toastrService.showSuccessToast('POD report email sent successfully');
+            }
+        } catch (error) {
+            console.error('[JobDetails] Error opening Send POD dialog:', error);
+            this.toastrService.showErrorToast('Failed to open Send POD dialog');
+        }
     }
 
     async openPodUploadDialog($event: MouseEvent, job: IDispatchJob): Promise<void> {

@@ -184,6 +184,7 @@ public static partial class JobMappings
         PickupFrom = j.UcjbPickUpFrom,
         Notify = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName : null,
         FromContactName = j.PickupFromContact,
+        BookingContactEmail = j.Contact != null ? j.Contact.UcctEmail : null,
         FromContactNumber =
             (j.PickupFromPhone != null && j.PickupFromPhone != "")
                 ? j.PickupFromPhone

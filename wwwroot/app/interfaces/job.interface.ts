@@ -81,6 +81,7 @@ export interface IJob {
     trackingMethod?: number;
     trackingMobile: string;
     trackingEmail: string;
+    bookingContactEmail?: string;
     udStatus: string;
     podPhoto: Uint8Array;
     deliverySignature: Uint8Array;
@@ -269,6 +270,7 @@ export interface IJobDto {
     trackingMethod?: number;
     trackingMobile: string;
     trackingEmail: string;
+    bookingContactEmail?: string;
     udStatus: string;
     podPhoto: Uint8Array;
     deliverySignature: Uint8Array;

@@ -58,6 +58,7 @@ public class JobViewModel : DispatchJobViewModel
     public string FromContactName { get; set; }
     public string FromContactNumber { get; set; }
     public string FromContactNumberSource { get; set; }
+    public string BookingContactEmail { get; set; }
 
 
     public string ScheduleName { get; set; }

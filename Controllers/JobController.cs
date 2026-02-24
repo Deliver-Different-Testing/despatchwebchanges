@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -594,6 +595,44 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error generating POD spreadsheet for job {JobId}", jobId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SendPodReport([FromBody] SendPodReportRequest request)
+    {
+        try
+        {
+            if (request.Recipients == null || request.Recipients.Count == 0)
+                return BadRequest("At least one recipient is required.");
+
+            // Flatten any semicolon/comma-separated entries into individual addresses
+            var allRecipients = request.Recipients
+                .SelectMany(r => r.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries))
+                .Select(r => r.Trim())
+                .Where(r => !string.IsNullOrEmpty(r))
+                .Distinct()
+                .ToList();
+
+            if (allRecipients.Count == 0)
+                return BadRequest("No valid recipients provided.");
+
+            var (bytes, fileName) = await podReportService.GeneratePodReportAsync(request.JobId);
+
+            var fromAddress = Environment.GetEnvironmentVariable("FromAddress");
+
+            foreach (var recipient in allRecipients)
+            {
+                var attachment = new Attachment(new MemoryStream(bytes), fileName, "application/pdf");
+                SendEmail(recipient, fromAddress, request.Body, request.Subject, attachment);
+            }
+
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error sending POD report email for job {JobId}", request.JobId);
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
