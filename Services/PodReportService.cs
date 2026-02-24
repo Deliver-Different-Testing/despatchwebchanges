@@ -7,11 +7,14 @@ using System.Threading.Tasks;
 using DeliverDifferentReporting.Documents;
 using DeliverDifferentReporting.Models;
 using DeliverDifferentReporting.Services;
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
+using Serilog;
 
 namespace DespatchWeb.Services;
 
@@ -19,7 +22,8 @@ public class PodReportService(
     IHttpContextAccessor httpContextAccessor,
     ITenantBrandingService tenantBrandingService,
     IJobRepository jobRepository,
-    IJobPhotoService jobPhotoService
+    IJobPhotoService jobPhotoService,
+    IDbContextFactory<DespatchContext> contextFactory
 ) : IPodReportService
 {
     private static bool _questPdfInitialized;
@@ -156,6 +160,34 @@ public class PodReportService(
             Barcode = p.Barcode,
             Description = p.ItemName
         }).ToList();
+    }
+
+    public async Task QueuePodEmailAsync(int jobId, List<string> recipients, string subject, string body)
+    {
+        var (pdfBytes, fileName) = await GeneratePodReportAsync(jobId);
+
+        var replyTo = Environment.GetEnvironmentVariable("ReplyToEmailAddress")
+                      ?? "support@deliverdifferent.com";
+
+        var messages = recipients.Select(email => new TucManualMessage
+        {
+            SendToEmailAddress = email,
+            ReplyToEmailAddress = replyTo,
+            Subject = subject,
+            UcmmMessage = body,
+            JobId = jobId,
+            HasAttachment = true,
+            FileName = fileName,
+            FileType = "application/pdf",
+            FileContent = pdfBytes
+        }).ToList();
+
+        await using var context = await contextFactory.CreateDbContextAsync();
+        await context.TucManualMessages.AddRangeAsync(messages);
+        await context.SaveChangesAsync();
+
+        Log.Information("Queued POD email for job {JobId} to {RecipientCount} recipients: {Recipients}",
+            jobId, recipients.Count, string.Join(", ", recipients));
     }
 
     private static List<PhotoCategory> MapPhotoCategories(List<S3PhotoInfo> photos)
