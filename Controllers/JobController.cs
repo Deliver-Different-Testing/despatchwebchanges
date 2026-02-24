@@ -618,15 +618,50 @@ public class JobController(
             if (allRecipients.Count == 0)
                 return BadRequest("No valid recipients provided.");
 
-            var (bytes, fileName) = await podReportService.GeneratePodReportAsync(request.JobId);
-
-            var fromAddress = Environment.GetEnvironmentVariable("FromAddress");
-
+            // Validate each recipient is a well-formed email address
+            var validRecipients = new List<string>();
             foreach (var recipient in allRecipients)
             {
-                var attachment = new Attachment(new MemoryStream(bytes), fileName, "application/pdf");
-                SendEmail(recipient, fromAddress, request.Body, request.Subject, attachment);
+                if (System.Net.Mail.MailAddress.TryCreate(recipient, out _))
+                {
+                    validRecipients.Add(recipient);
+                }
+                else
+                {
+                    Log.Warning("Skipping invalid email address '{Address}' for job {JobId}", recipient, request.JobId);
+                }
             }
+
+            if (validRecipients.Count == 0)
+                return BadRequest("No valid email addresses provided.");
+
+            var fromAddress = Environment.GetEnvironmentVariable("FromAddress");
+            if (string.IsNullOrWhiteSpace(fromAddress))
+                return StatusCode(500, "Email sending is not configured (missing FromAddress).");
+
+            var (bytes, fileName) = await podReportService.GeneratePodReportAsync(request.JobId);
+
+            var errors = new List<string>();
+            foreach (var recipient in validRecipients)
+            {
+                try
+                {
+                    var attachment = new Attachment(new MemoryStream(bytes), fileName, "application/pdf");
+                    SendEmail(recipient, fromAddress, request.Body, request.Subject, attachment);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Failed to send POD email to '{Recipient}' for job {JobId}", recipient, request.JobId);
+                    errors.Add(recipient);
+                }
+            }
+
+            if (errors.Count == validRecipients.Count)
+                return StatusCode(500, "Failed to send email to all recipients.");
+
+            if (errors.Count > 0)
+                Log.Warning("POD email sent to {Sent}/{Total} recipients for job {JobId}. Failed: {Failed}",
+                    validRecipients.Count - errors.Count, validRecipients.Count, request.JobId, string.Join(", ", errors));
 
             return Ok();
         }
