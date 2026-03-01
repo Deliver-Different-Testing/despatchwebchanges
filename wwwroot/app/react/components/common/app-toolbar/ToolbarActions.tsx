@@ -22,6 +22,7 @@ import {
     Typography,
 } from '@mui/material';
 import {
+    AutoAwesome as AutoAwesomeIcon,
     ClearAll as ClearAllIcon,
     Delete as DeleteIcon,
     GridView as GridViewIcon,
@@ -358,6 +359,21 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                 })}
             </Menu>
         </>
+    );
+};
+
+// AI Assistant Button
+export interface AiAssistantButtonProps {
+    onClick: (event: React.MouseEvent) => void;
+}
+
+export const AiAssistantButton: React.FC<AiAssistantButtonProps> = ({onClick}) => {
+    return (
+        <Tooltip title="AI Assistant">
+            <IconButton color="inherit" onClick={onClick} sx={toolbarIconButtonSx}>
+                <AutoAwesomeIcon sx={{fontSize: 22}}/>
+            </IconButton>
+        </Tooltip>
     );
 };
 

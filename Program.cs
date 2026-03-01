@@ -10,6 +10,7 @@ using Amazon.S3;
 using DespatchWeb;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using DespatchWeb.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -159,6 +160,13 @@ builder.Services.AddScoped<IDeliveryJourneyService, DeliveryJourneyService>();
 builder.Services.AddScoped<IPricingPermissionService, PricingPermissionService>();
 builder.Services.AddScoped<ISplitJobService, SplitJobService>();
 builder.Services.AddScoped<IPodReportService, PodReportService>();
+
+// AI Services
+builder.Services.Configure<AnthropicSettings>(builder.Configuration.GetSection("Anthropic"));
+builder.Services.AddSingleton<IAiClientService, AiClientService>();
+builder.Services.AddSingleton<IAiRateLimiter, AiRateLimiter>();
+builder.Services.AddScoped<IAiAssistantService, AiAssistantService>();
+builder.Services.AddScoped<IAiSummarizationService, AiSummarizationService>();
 
 builder.Services.AddTenantBranding(opts =>
 {

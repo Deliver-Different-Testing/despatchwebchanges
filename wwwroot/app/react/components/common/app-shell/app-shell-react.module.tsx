@@ -18,11 +18,11 @@ import {
     LayoutsMenu,
     DateFilterMenu,
     ActionsMenu,
+    AiAssistantButton,
     View,
     Layout,
     DateFilterData,
 } from '../app-toolbar/ToolbarActions';
-import dayjs from 'dayjs';
 import angular from 'angular';
 
 // Toolbar Actions Configuration
@@ -68,6 +68,10 @@ export interface ToolbarActionsConfig {
     actionsMenu?: {
         onCreateNewJob: (event: React.MouseEvent) => void;
         onInterCourierCharge: (event: React.MouseEvent) => void;
+    };
+    // AI Assistant
+    aiAssistant?: {
+        onClick: (event: React.MouseEvent) => void;
     };
     // Custom children (for any other content)
     customContent?: React.ReactNode;
@@ -117,6 +121,16 @@ function buildToolbarChildren(): React.ReactNode {
                 key="messages"
                 unreadCount={toolbarActions.messages.unreadCount}
                 onClick={toolbarActions.messages.onClick}
+            />
+        );
+    }
+
+    // AI Assistant button
+    if (toolbarActions.aiAssistant) {
+        elements.push(
+            <AiAssistantButton
+                key="aiAssistant"
+                onClick={toolbarActions.aiAssistant.onClick}
             />
         );
     }

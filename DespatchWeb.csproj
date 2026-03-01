@@ -285,6 +285,7 @@
     <None Include="wwwroot\css\udispatch.less" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Anthropic" Version="*" />
     <PackageReference Include="Amazon.AspNetCore.DataProtection.SSM" Version="4.0.1" />
     <PackageReference Include="AspNetCore.HealthChecks.SqlServer" Version="9.0.0" />
     <PackageReference Include="AWSSDK.S3" Version="4.0.18.6" />
