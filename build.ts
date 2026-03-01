@@ -33,7 +33,8 @@ type EntryPointName =
     | 'additionalServicesDialogReact'
     | 'bulkPriceUploadDialogReact'
     | 'messagingDialogReact'
-    | 'sendPodDialogReact';
+    | 'sendPodDialogReact'
+    | 'aiAssistantDialogReact';
 type EntryPoints = Record<EntryPointName, string>;
 
 // Configuration
@@ -74,6 +75,7 @@ const entryPoints: EntryPoints = {
     bulkPriceUploadDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/bulk-price-upload-dialog/bulk-price-upload-dialog-react.module.tsx"),
     messagingDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/messaging-dialog/messaging-dialog-react.module.tsx"),
     sendPodDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/send-pod-dialog/send-pod-dialog-react.module.tsx"),
+    aiAssistantDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/ai-assistant-dialog/ai-assistant-dialog-react.module.tsx"),
 };
 
 // Lazy-load html-minifier-terser only when needed (production builds)
