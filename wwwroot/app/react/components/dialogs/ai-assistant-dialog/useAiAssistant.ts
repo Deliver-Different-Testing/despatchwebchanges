@@ -97,7 +97,7 @@ export function useAiAssistant(): UseAiAssistantReturn {
             );
         } catch (error: unknown) {
             if (error instanceof DOMException && error.name === 'AbortError') {
-                // User cancelled - mark the message as complete with whatever we have
+                // User canceled - mark the message as complete with whatever we have
                 setMessages(prev =>
                     prev.map(m =>
                         m.id === assistantMessageId

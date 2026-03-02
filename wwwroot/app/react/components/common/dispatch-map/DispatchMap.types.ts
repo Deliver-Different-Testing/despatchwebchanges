@@ -6,6 +6,7 @@
 
 import type { IDispatchMapItem } from '../../../../interfaces/job.interface';
 import type { IAvailableCourierPosition } from '../../../../interfaces/courier.interface';
+import React from "react";
 
 // Re-export for convenience
 export type { IDispatchMapItem, IAvailableCourierPosition };

@@ -554,13 +554,13 @@ public class BaseJobRepository(
         try
         {
             ArgumentNullException.ThrowIfNull(job);
-            if (!job.Booked.HasValue) throw new ArgumentNullException(nameof(job.Booked));
+            if (!job.Booked.HasValue) throw new ArgumentException("Booked date is required.", nameof(job));
 
             var jobDateTime = job.Booked.Value;
 
             if (job.SpeedId == economySpeedId)
             {
-                if (!job.Booked.HasValue) throw new ArgumentNullException(nameof(job.Booked));
+                if (!job.Booked.HasValue) throw new ArgumentException("Booked date is required.", nameof(job));
                 if (!ecoDeliveryTime.HasValue) throw new ArgumentNullException(nameof(ecoDeliveryTime));
 
                 var targetDateTime = new DateTime(

@@ -8,9 +8,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
     Box,
-    Button,
     Chip,
-    CircularProgress,
     Dialog,
     DialogContent,
     Divider,
@@ -208,9 +206,7 @@ const EmptyState: React.FC<{ onSelectPrompt: (prompt: string) => void }> = ({ on
 export const AiAssistantDialog: React.FC<AiAssistantDialogProps> = ({
     open,
     onClose,
-    showToast,
-    currentStaffName,
-}) => {
+    showToast}) => {
     const { messages, isLoading, sendMessage, clearConversation, cancelResponse } = useAiAssistant();
     const [inputValue, setInputValue] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -230,7 +226,7 @@ export const AiAssistantDialog: React.FC<AiAssistantDialogProps> = ({
 
     const isConversationFull = messages.length >= MAX_CONVERSATION_MESSAGES;
 
-    const handleSend = useCallback(() => {
+    const handleSend = useCallback(async () => {
         if (!inputValue.trim() || isLoading || isConversationFull) return;
         if (inputValue.trim().length > MAX_MESSAGE_LENGTH) {
             showToast(`Message too long (max ${MAX_MESSAGE_LENGTH} characters)`, 'warning');
@@ -238,14 +234,14 @@ export const AiAssistantDialog: React.FC<AiAssistantDialogProps> = ({
         }
         const value = inputValue;
         setInputValue('');
-        sendMessage(value);
+       await  sendMessage(value);
     }, [inputValue, isLoading, isConversationFull, sendMessage, showToast]);
 
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                handleSend();
+                return handleSend();
             }
         },
         [handleSend]

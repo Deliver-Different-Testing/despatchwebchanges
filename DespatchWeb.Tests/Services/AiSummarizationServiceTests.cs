@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
@@ -19,6 +15,7 @@ public class AiSummarizationServiceTests
     private readonly Mock<ITaskRepository> _taskRepositoryMock = new();
     private readonly Mock<IJobRepository> _jobRepositoryMock = new();
     private readonly Mock<ICourierRepository> _courierRepositoryMock = new();
+    private readonly Mock<ITenantInfoService> _tenantInfoMock = new();
 
     private readonly IOptions<AnthropicSettings> _settings = Options.Create(new AnthropicSettings
     {
@@ -31,6 +28,7 @@ public class AiSummarizationServiceTests
         _taskRepositoryMock.Object,
         _jobRepositoryMock.Object,
         _courierRepositoryMock.Object,
+        _tenantInfoMock.Object,
         _settings);
 
     #region SummarizeJobNotesAsync
@@ -40,7 +38,7 @@ public class AiSummarizationServiceTests
     {
         // Arrange
         _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1))
-            .ReturnsAsync(new List<TucNoteViewModel>());
+            .ReturnsAsync([]);
 
         var service = CreateService();
 
@@ -58,7 +56,7 @@ public class AiSummarizationServiceTests
     {
         // Arrange
         _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1))
-            .ReturnsAsync((List<TucNoteViewModel>)null);
+            .ReturnsAsync((List<TucNoteViewModel>?)null);
 
         var service = CreateService();
 
@@ -122,9 +120,8 @@ public class AiSummarizationServiceTests
     {
         // Arrange
         _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1))
-            .ReturnsAsync(new List<TucNoteViewModel>
-            {
-                new()
+            .ReturnsAsync([
+                new TucNoteViewModel
                 {
                     NoteId = 1,
                     NoteText = "Test note",
@@ -132,7 +129,7 @@ public class AiSummarizationServiceTests
                     CreatedByName = "Admin",
                     CreatedDate = DateTimeOffset.UtcNow
                 }
-            });
+            ]);
 
         _aiClientMock.Setup(x => x.SendMessageAsync(
                 It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
@@ -153,9 +150,8 @@ public class AiSummarizationServiceTests
     {
         // Arrange
         _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1))
-            .ReturnsAsync(new List<TucNoteViewModel>
-            {
-                new()
+            .ReturnsAsync([
+                new TucNoteViewModel
                 {
                     NoteId = 1,
                     NoteText = "Contact driver@test.com for details",
@@ -163,9 +159,9 @@ public class AiSummarizationServiceTests
                     CreatedByName = "Admin",
                     CreatedDate = DateTimeOffset.UtcNow
                 }
-            });
+            ]);
 
-        List<AiMessage> capturedMessages = null;
+        List<AiMessage>? capturedMessages = null;
         _aiClientMock.Setup(x => x.SendMessageAsync(
                 It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
                 It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
@@ -189,9 +185,8 @@ public class AiSummarizationServiceTests
     {
         // Arrange
         _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1))
-            .ReturnsAsync(new List<TucNoteViewModel>
-            {
-                new()
+            .ReturnsAsync([
+                new TucNoteViewModel
                 {
                     NoteId = 1,
                     NoteText = "Test",
@@ -199,9 +194,9 @@ public class AiSummarizationServiceTests
                     CreatedByName = "Admin",
                     CreatedDate = DateTimeOffset.UtcNow
                 }
-            });
+            ]);
 
-        int capturedMaxTokens = 0;
+        var capturedMaxTokens = 0;
         _aiClientMock.Setup(x => x.SendMessageAsync(
                 It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
                 It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
@@ -227,7 +222,7 @@ public class AiSummarizationServiceTests
     {
         // Arrange
         _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync(new List<TaskViewModel>());
+            .ReturnsAsync([]);
 
         var service = CreateService();
 
@@ -282,10 +277,10 @@ public class AiSummarizationServiceTests
     public async Task SummarizeJobEventsAsync_PassesCorrectFilters()
     {
         // Arrange
-        TaskTableFiltersRequest capturedFilters = null;
+        TaskTableFiltersRequest? capturedFilters = null;
         _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
             .Callback<TaskTableFiltersRequest>(f => capturedFilters = f)
-            .ReturnsAsync(new List<TaskViewModel>());
+            .ReturnsAsync([]);
 
         var service = CreateService();
 
@@ -307,7 +302,7 @@ public class AiSummarizationServiceTests
     {
         // Arrange
         _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync(new List<TaskViewModel>());
+            .ReturnsAsync([]);
 
         var service = CreateService();
 
@@ -325,7 +320,7 @@ public class AiSummarizationServiceTests
     {
         // Arrange
         _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync((List<TaskViewModel>)null);
+            .ReturnsAsync((List<TaskViewModel>?)null);
 
         var service = CreateService();
 
@@ -384,10 +379,10 @@ public class AiSummarizationServiceTests
     public async Task SummarizeTaskDashboardAsync_PassesShowCompletedFalse()
     {
         // Arrange
-        TaskTableFiltersRequest capturedFilters = null;
+        TaskTableFiltersRequest? capturedFilters = null;
         _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
             .Callback<TaskTableFiltersRequest>(f => capturedFilters = f)
-            .ReturnsAsync(new List<TaskViewModel>());
+            .ReturnsAsync([]);
 
         var service = CreateService();
 
@@ -421,7 +416,7 @@ public class AiSummarizationServiceTests
         _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
             .ReturnsAsync(tasks);
 
-        List<AiMessage> capturedMessages = null;
+        List<AiMessage>? capturedMessages = null;
         _aiClientMock.Setup(x => x.SendMessageAsync(
                 It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
                 It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
@@ -458,7 +453,7 @@ public class AiSummarizationServiceTests
         _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
             .ReturnsAsync(tasks);
 
-        List<AiMessage> capturedMessages = null;
+        List<AiMessage>? capturedMessages = null;
         _aiClientMock.Setup(x => x.SendMessageAsync(
                 It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
                 It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
@@ -472,8 +467,8 @@ public class AiSummarizationServiceTests
         await service.SummarizeTaskDashboardAsync();
 
         // Assert
-        capturedMessages[0].Content.Should().Contain("[EMAIL]");
-        capturedMessages[0].Content.Should().NotContain("driver@test.com");
+        capturedMessages?[0].Content.Should().Contain("[EMAIL]");
+        capturedMessages?[0].Content.Should().NotContain("driver@test.com");
     }
 
     #endregion
@@ -484,10 +479,10 @@ public class AiSummarizationServiceTests
     public async Task SummarizeJobAsync_NoData_ReturnsDefaultMessage()
     {
         // Arrange
-        _jobRepositoryMock.Setup(x => x.GetSingleJobById(1)).ReturnsAsync((JobViewModel)null);
-        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1)).ReturnsAsync((List<TucNoteViewModel>)null);
+        _jobRepositoryMock.Setup(x => x.GetSingleJobById(1)).ReturnsAsync((JobViewModel?)null);
+        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1)).ReturnsAsync((List<TucNoteViewModel>?)null);
         _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync((List<TaskViewModel>)null);
+            .ReturnsAsync((List<TaskViewModel>?)null);
 
         var service = CreateService();
 
@@ -509,9 +504,9 @@ public class AiSummarizationServiceTests
             From = "Auckland", ToAddress = "Wellington", Courier = "DriverX",
             Booked = new DateTime(2025, 6, 15, 9, 0, 0)
         });
-        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1)).ReturnsAsync(new List<TucNoteViewModel>());
+        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1)).ReturnsAsync([]);
         _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync(new List<TaskViewModel>());
+            .ReturnsAsync([]);
 
         _aiClientMock.Setup(x => x.SendMessageAsync(
                 It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
@@ -541,25 +536,23 @@ public class AiSummarizationServiceTests
             Id = 1, JobNo = "ABC123", Status = "Active", SpeedName = "Same Day",
             From = "Auckland", ToAddress = "Hamilton"
         });
-        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1)).ReturnsAsync(new List<TucNoteViewModel>
-        {
-            new()
+        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1)).ReturnsAsync([
+            new TucNoteViewModel
             {
                 NoteId = 1, NoteText = "Customer called", NoteTypeName = "Internal",
                 CreatedByName = "Admin", CreatedDate = DateTimeOffset.UtcNow
             }
-        });
+        ]);
         _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync(new List<TaskViewModel>
-            {
-                new()
+            .ReturnsAsync([
+                new TaskViewModel
                 {
                     Id = 1, Title = "Late Alert", EventType = "Alert",
                     DueDate = DateTimeOffset.UtcNow, Closed = false
                 }
-            });
+            ]);
 
-        List<AiMessage> capturedMessages = null;
+        List<AiMessage>? capturedMessages = null;
         _aiClientMock.Setup(x => x.SendMessageAsync(
                 It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
                 It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
@@ -573,10 +566,10 @@ public class AiSummarizationServiceTests
         await service.SummarizeJobAsync(1);
 
         // Assert
-        capturedMessages[0].Content.Should().Contain("--- Job Details ---");
-        capturedMessages[0].Content.Should().Contain("--- Notes ---");
-        capturedMessages[0].Content.Should().Contain("--- Events ---");
-        capturedMessages[0].Content.Should().Contain("ABC123");
+        capturedMessages?[0].Content.Should().Contain("--- Job Details ---");
+        capturedMessages?[0].Content.Should().Contain("--- Notes ---");
+        capturedMessages?[0].Content.Should().Contain("--- Events ---");
+        capturedMessages?[0].Content.Should().Contain("ABC123");
     }
 
     [Fact]
@@ -589,11 +582,11 @@ public class AiSummarizationServiceTests
             From = "Contact: driver@test.com, 123 Street",
             ToAddress = "Call 021-555-1234"
         });
-        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1)).ReturnsAsync(new List<TucNoteViewModel>());
+        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1)).ReturnsAsync([]);
         _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync(new List<TaskViewModel>());
+            .ReturnsAsync([]);
 
-        List<AiMessage> capturedMessages = null;
+        List<AiMessage>? capturedMessages = null;
         _aiClientMock.Setup(x => x.SendMessageAsync(
                 It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
                 It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
@@ -607,10 +600,10 @@ public class AiSummarizationServiceTests
         await service.SummarizeJobAsync(1);
 
         // Assert
-        capturedMessages[0].Content.Should().Contain("[EMAIL]");
-        capturedMessages[0].Content.Should().NotContain("driver@test.com");
-        capturedMessages[0].Content.Should().Contain("[PHONE]");
-        capturedMessages[0].Content.Should().NotContain("021-555-1234");
+        capturedMessages?[0].Content.Should().Contain("[EMAIL]");
+        capturedMessages?[0].Content.Should().NotContain("driver@test.com");
+        capturedMessages?[0].Content.Should().Contain("[PHONE]");
+        capturedMessages?[0].Content.Should().NotContain("021-555-1234");
     }
 
     #endregion
@@ -626,7 +619,7 @@ public class AiSummarizationServiceTests
             Active = 15, Inactive = 8, Completed = 42
         });
 
-        List<AiMessage> capturedMessages = null;
+        List<AiMessage>? capturedMessages = null;
         _aiClientMock.Setup(x => x.SendMessageAsync(
                 It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
                 It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
@@ -645,10 +638,10 @@ public class AiSummarizationServiceTests
 
         // Assert
         result.Summary.Should().Contain("15 active");
-        capturedMessages[0].Content.Should().Contain("Active jobs: 15");
-        capturedMessages[0].Content.Should().Contain("Inactive jobs: 8");
-        capturedMessages[0].Content.Should().Contain("Completed jobs: 42");
-        capturedMessages[0].Content.Should().Contain("Total: 65");
+        capturedMessages?[0].Content.Should().Contain("Active jobs: 15");
+        capturedMessages?[0].Content.Should().Contain("Inactive jobs: 8");
+        capturedMessages?[0].Content.Should().Contain("Completed jobs: 42");
+        capturedMessages?[0].Content.Should().Contain("Total: 65");
     }
 
     [Fact]
@@ -683,7 +676,7 @@ public class AiSummarizationServiceTests
     {
         // Arrange
         _courierRepositoryMock.Setup(x => x.GetCourierComplianceForExportAsync(It.IsAny<CourierComplianceFilterRequest>()))
-            .ReturnsAsync(new List<CourierComplianceViewModel>());
+            .ReturnsAsync([]);
 
         var service = CreateService();
 
@@ -700,7 +693,7 @@ public class AiSummarizationServiceTests
     {
         // Arrange
         _courierRepositoryMock.Setup(x => x.GetCourierComplianceForExportAsync(It.IsAny<CourierComplianceFilterRequest>()))
-            .ReturnsAsync((List<CourierComplianceViewModel>)null);
+            .ReturnsAsync((List<CourierComplianceViewModel>?)null);
 
         var service = CreateService();
 
@@ -737,7 +730,7 @@ public class AiSummarizationServiceTests
         _courierRepositoryMock.Setup(x => x.GetCourierComplianceForExportAsync(It.IsAny<CourierComplianceFilterRequest>()))
             .ReturnsAsync(items);
 
-        List<AiMessage> capturedMessages = null;
+        List<AiMessage>? capturedMessages = null;
         _aiClientMock.Setup(x => x.SendMessageAsync(
                 It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
                 It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
@@ -755,10 +748,10 @@ public class AiSummarizationServiceTests
 
         // Assert
         result.Summary.Should().Contain("CRITICAL");
-        capturedMessages[0].Content.Should().Contain("EXPIRED items:");
-        capturedMessages[0].Content.Should().Contain("John Driver (D01)");
-        capturedMessages[0].Content.Should().Contain("Expired: 1");
-        capturedMessages[0].Content.Should().Contain("Expiring within 7 days: 1");
+        capturedMessages?[0].Content.Should().Contain("EXPIRED items:");
+        capturedMessages?[0].Content.Should().Contain("John Driver (D01)");
+        capturedMessages?[0].Content.Should().Contain("Expired: 1");
+        capturedMessages?[0].Content.Should().Contain("Expiring within 7 days: 1");
     }
 
     [Fact]
@@ -766,7 +759,7 @@ public class AiSummarizationServiceTests
     {
         // Arrange
         var items = new List<CourierComplianceViewModel>();
-        for (int i = 0; i < 25; i++)
+        for (var i = 0; i < 25; i++)
         {
             items.Add(new CourierComplianceViewModel
             {
@@ -778,7 +771,7 @@ public class AiSummarizationServiceTests
         _courierRepositoryMock.Setup(x => x.GetCourierComplianceForExportAsync(It.IsAny<CourierComplianceFilterRequest>()))
             .ReturnsAsync(items);
 
-        List<AiMessage> capturedMessages = null;
+        List<AiMessage>? capturedMessages = null;
         _aiClientMock.Setup(x => x.SendMessageAsync(
                 It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
                 It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
@@ -792,7 +785,7 @@ public class AiSummarizationServiceTests
         await service.SummarizeComplianceAsync();
 
         // Assert
-        capturedMessages[0].Content.Should().Contain("... and 5 more");
+        capturedMessages?[0].Content.Should().Contain("... and 5 more");
     }
 
     #endregion
@@ -804,7 +797,7 @@ public class AiSummarizationServiceTests
     {
         // Arrange
         _jobRepositoryMock.Setup(x => x.GetJobForLateCallAsync(1))
-            .ReturnsAsync((Models.Dto.JobLateCallDto)null);
+            .ReturnsAsync((Models.Dto.JobLateCallDto?)null);
 
         var service = CreateService();
 
@@ -829,7 +822,7 @@ public class AiSummarizationServiceTests
                 BookedSpeed = "Express", NotifiedSpeed = "Express"
             });
         _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync(new List<TaskViewModel>());
+            .ReturnsAsync([]);
 
         _aiClientMock.Setup(x => x.SendMessageAsync(
                 It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
@@ -863,9 +856,9 @@ public class AiSummarizationServiceTests
                 BookedSpeed = "Same Day", NotifiedSpeed = "Same Day"
             });
         _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync(new List<TaskViewModel>());
+            .ReturnsAsync([]);
 
-        List<AiMessage> capturedMessages = null;
+        List<AiMessage>? capturedMessages = null;
         _aiClientMock.Setup(x => x.SendMessageAsync(
                 It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
                 It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
@@ -879,9 +872,9 @@ public class AiSummarizationServiceTests
         await service.AnalyzeLateAlertAsync(42);
 
         // Assert
-        capturedMessages[0].Content.Should().Contain("Job #42");
-        capturedMessages[0].Content.Should().Contain("Minutes remaining: 15");
-        capturedMessages[0].Content.Should().Contain("Same Day");
+        capturedMessages?[0].Content.Should().Contain("Job #42");
+        capturedMessages?[0].Content.Should().Contain("Minutes remaining: 15");
+        capturedMessages?[0].Content.Should().Contain("Same Day");
     }
 
     [Fact]
@@ -907,7 +900,7 @@ public class AiSummarizationServiceTests
         _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
             .ReturnsAsync(events);
 
-        List<AiMessage> capturedMessages = null;
+        List<AiMessage>? capturedMessages = null;
         _aiClientMock.Setup(x => x.SendMessageAsync(
                 It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
                 It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
@@ -921,8 +914,8 @@ public class AiSummarizationServiceTests
         await service.AnalyzeLateAlertAsync(1);
 
         // Assert
-        capturedMessages[0].Content.Should().Contain("Recent events:");
-        capturedMessages[0].Content.Should().Contain("Late pickup alert");
+        capturedMessages?[0].Content.Should().Contain("Recent events:");
+        capturedMessages?[0].Content.Should().Contain("Late pickup alert");
     }
 
     #endregion
@@ -933,7 +926,7 @@ public class AiSummarizationServiceTests
     public async Task SuggestCouriersAsync_NullJob_ReturnsDefaultMessage()
     {
         // Arrange
-        _jobRepositoryMock.Setup(x => x.GetSingleJobById(1)).ReturnsAsync((JobViewModel)null);
+        _jobRepositoryMock.Setup(x => x.GetSingleJobById(1)).ReturnsAsync((JobViewModel?)null);
 
         var service = CreateService();
 
@@ -954,9 +947,9 @@ public class AiSummarizationServiceTests
             Id = 1, JobNo = "J1", SpeedName = "Express", From = "A", ToAddress = "B"
         });
         _courierRepositoryMock.Setup(x => x.GetPotentialCouriersAsync(1))
-            .ReturnsAsync(new List<PotentialCouriersViewModel>());
+            .ReturnsAsync([]);
         _courierRepositoryMock.Setup(x => x.GetDriverWorkOverviewAsync())
-            .ReturnsAsync(new List<DriverWorkOverviewViewModel>());
+            .ReturnsAsync([]);
 
         var service = CreateService();
 
@@ -977,17 +970,15 @@ public class AiSummarizationServiceTests
             From = "Auckland CBD", ToAddress = "Hamilton", Weight = 5.5
         });
         _courierRepositoryMock.Setup(x => x.GetPotentialCouriersAsync(1))
-            .ReturnsAsync(new List<PotentialCouriersViewModel>
-            {
-                new() { CourierId = 10, Code = "C10", FirstName = "John", Reason = "Closest driver" },
-                new() { CourierId = 11, Code = "C11", FirstName = "Jane", Reason = "DG certified" }
-            });
+            .ReturnsAsync([
+                new PotentialCouriersViewModel { CourierId = 10, Code = "C10", FirstName = "John", Reason = "Closest driver" },
+                new PotentialCouriersViewModel { CourierId = 11, Code = "C11", FirstName = "Jane", Reason = "DG certified" }
+            ]);
         _courierRepositoryMock.Setup(x => x.GetDriverWorkOverviewAsync())
-            .ReturnsAsync(new List<DriverWorkOverviewViewModel>
-            {
-                new() { CourierId = 10, Name = "John", VehicleType = "Van", JobCount = 3, DriverStatusText = "Active" },
-                new() { CourierId = 11, Name = "Jane", VehicleType = "Car", JobCount = 1, DriverStatusText = "Active" }
-            });
+            .ReturnsAsync([
+                new DriverWorkOverviewViewModel { CourierId = 10, Name = "John", VehicleType = "Van", JobCount = 3, DriverStatusText = "Active" },
+                new DriverWorkOverviewViewModel { CourierId = 11, Name = "Jane", VehicleType = "Car", JobCount = 1, DriverStatusText = "Active" }
+            ]);
 
         _aiClientMock.Setup(x => x.SendMessageAsync(
                 It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
@@ -1019,14 +1010,11 @@ public class AiSummarizationServiceTests
             ToAddress = "20 King St", Weight = 12.0
         });
         _courierRepositoryMock.Setup(x => x.GetPotentialCouriersAsync(1))
-            .ReturnsAsync(new List<PotentialCouriersViewModel>
-            {
-                new() { CourierId = 1, Code = "C1", FirstName = "Test", Reason = "Match" }
-            });
+            .ReturnsAsync([new PotentialCouriersViewModel { CourierId = 1, Code = "C1", FirstName = "Test", Reason = "Match" }]);
         _courierRepositoryMock.Setup(x => x.GetDriverWorkOverviewAsync())
-            .ReturnsAsync(new List<DriverWorkOverviewViewModel>());
+            .ReturnsAsync([]);
 
-        List<AiMessage> capturedMessages = null;
+        List<AiMessage>? capturedMessages = null;
         _aiClientMock.Setup(x => x.SendMessageAsync(
                 It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
                 It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
@@ -1040,11 +1028,11 @@ public class AiSummarizationServiceTests
         await service.SuggestCouriersAsync(1);
 
         // Assert
-        capturedMessages[0].Content.Should().Contain("Job #J200");
-        capturedMessages[0].Content.Should().Contain("Express");
-        capturedMessages[0].Content.Should().Contain("Weight: 12");
-        capturedMessages[0].Content.Should().Contain("[EMAIL]");
-        capturedMessages[0].Content.Should().NotContain("user@email.com");
+        capturedMessages?[0].Content.Should().Contain("Job #J200");
+        capturedMessages?[0].Content.Should().Contain("Express");
+        capturedMessages?[0].Content.Should().Contain("Weight: 12");
+        capturedMessages?[0].Content.Should().Contain("[EMAIL]");
+        capturedMessages?[0].Content.Should().NotContain("user@email.com");
     }
 
     [Fact]
@@ -1056,12 +1044,9 @@ public class AiSummarizationServiceTests
             Id = 1, JobNo = "J1", From = "A", ToAddress = "B"
         });
         _courierRepositoryMock.Setup(x => x.GetPotentialCouriersAsync(1))
-            .ReturnsAsync(new List<PotentialCouriersViewModel>());
+            .ReturnsAsync([]);
         _courierRepositoryMock.Setup(x => x.GetDriverWorkOverviewAsync())
-            .ReturnsAsync(new List<DriverWorkOverviewViewModel>
-            {
-                new() { Name = "Driver1", VehicleType = "Van", JobCount = 2, DriverStatusText = "Active" }
-            });
+            .ReturnsAsync([new DriverWorkOverviewViewModel { Name = "Driver1", VehicleType = "Van", JobCount = 2, DriverStatusText = "Active" }]);
 
         _aiClientMock.Setup(x => x.SendMessageAsync(
                 It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
@@ -1078,6 +1063,265 @@ public class AiSummarizationServiceTests
         _aiClientMock.Verify(x => x.SendMessageAsync(
             It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
             It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    #endregion
+
+    #region Region-Aware Prompts
+
+    [Fact]
+    public async Task SummarizeJobNotesAsync_NzTenant_IncludesNzRegionContext()
+    {
+        // Arrange
+        _tenantInfoMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1))
+            .ReturnsAsync([
+                new TucNoteViewModel
+                {
+                    NoteId = 1, NoteText = "Test", NoteTypeName = "Note",
+                    CreatedByName = "Admin", CreatedDate = DateTimeOffset.UtcNow
+                }
+            ]);
+
+        string? capturedSystemPrompt = null;
+        _aiClientMock.Setup(x => x.SendMessageAsync(
+                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
+                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
+            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>(
+                (sys, _, _, _, _) => capturedSystemPrompt = sys)
+            .ReturnsAsync(new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 });
+
+        var service = CreateService();
+
+        // Act
+        await service.SummarizeJobNotesAsync(1);
+
+        // Assert
+        capturedSystemPrompt.Should().Contain("New Zealand");
+        capturedSystemPrompt.Should().NotContain("US-based");
+    }
+
+    [Fact]
+    public async Task SummarizeJobNotesAsync_UsTenant_IncludesUsRegionContext()
+    {
+        // Arrange
+        _tenantInfoMock.Setup(x => x.IsUsTenant()).Returns(true);
+
+        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1))
+            .ReturnsAsync([
+                new TucNoteViewModel
+                {
+                    NoteId = 1, NoteText = "Test", NoteTypeName = "Note",
+                    CreatedByName = "Admin", CreatedDate = DateTimeOffset.UtcNow
+                }
+            ]);
+
+        string? capturedSystemPrompt = null;
+        _aiClientMock.Setup(x => x.SendMessageAsync(
+                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
+                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
+            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>(
+                (sys, _, _, _, _) => capturedSystemPrompt = sys)
+            .ReturnsAsync(new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 });
+
+        var service = CreateService();
+
+        // Act
+        await service.SummarizeJobNotesAsync(1);
+
+        // Assert
+        capturedSystemPrompt.Should().Contain("US-based");
+        capturedSystemPrompt.Should().NotContain("New Zealand");
+    }
+
+    [Fact]
+    public async Task SummarizeTaskDashboardAsync_UsTenant_UsesUsRegionInPrompt()
+    {
+        // Arrange
+        _tenantInfoMock.Setup(x => x.IsUsTenant()).Returns(true);
+
+        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
+            .ReturnsAsync([
+                new TaskViewModel
+                {
+                    Id = 1, Title = "Test", DueDate = DateTimeOffset.UtcNow,
+                    Closed = false, EventType = "Task", JobNumber = "J1"
+                }
+            ]);
+
+        string? capturedSystemPrompt = null;
+        _aiClientMock.Setup(x => x.SendMessageAsync(
+                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
+                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
+            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>(
+                (sys, _, _, _, _) => capturedSystemPrompt = sys)
+            .ReturnsAsync(new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 });
+
+        var service = CreateService();
+
+        // Act
+        await service.SummarizeTaskDashboardAsync();
+
+        // Assert
+        capturedSystemPrompt.Should().Contain("US-based");
+    }
+
+    [Fact]
+    public async Task SummarizeOperationsAsync_NzTenant_UsesNzRegionInPrompt()
+    {
+        // Arrange
+        _tenantInfoMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        _jobRepositoryMock.Setup(x => x.GetOverviewStatsAsync()).ReturnsAsync(new OverviewStatsViewModel
+        {
+            Active = 5, Inactive = 2, Completed = 10
+        });
+
+        string? capturedSystemPrompt = null;
+        _aiClientMock.Setup(x => x.SendMessageAsync(
+                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
+                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
+            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>(
+                (sys, _, _, _, _) => capturedSystemPrompt = sys)
+            .ReturnsAsync(new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 });
+
+        var service = CreateService();
+
+        // Act
+        await service.SummarizeOperationsAsync();
+
+        // Assert
+        capturedSystemPrompt.Should().Contain("New Zealand");
+    }
+
+    [Fact]
+    public async Task SummarizeJobAsync_PromptsIncludeMarkdownFormattingInstructions()
+    {
+        // Arrange
+        _jobRepositoryMock.Setup(x => x.GetSingleJobById(1)).ReturnsAsync(new JobViewModel
+        {
+            Id = 1, JobNo = "J1", Status = "Active", From = "A", ToAddress = "B"
+        });
+        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1)).ReturnsAsync([]);
+        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
+            .ReturnsAsync([]);
+
+        string? capturedSystemPrompt = null;
+        _aiClientMock.Setup(x => x.SendMessageAsync(
+                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
+                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
+            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>(
+                (sys, _, _, _, _) => capturedSystemPrompt = sys)
+            .ReturnsAsync(new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 });
+
+        var service = CreateService();
+
+        // Act
+        await service.SummarizeJobAsync(1);
+
+        // Assert — verify the new markdown-oriented prompts
+        capturedSystemPrompt.Should().Contain("**bold**");
+        capturedSystemPrompt.Should().Contain("**Status**");
+    }
+
+    [Fact]
+    public async Task SummarizeComplianceAsync_UsTenant_UsesUsRegionInPrompt()
+    {
+        // Arrange
+        _tenantInfoMock.Setup(x => x.IsUsTenant()).Returns(true);
+
+        _courierRepositoryMock.Setup(x => x.GetCourierComplianceForExportAsync(It.IsAny<CourierComplianceFilterRequest>()))
+            .ReturnsAsync([
+                new CourierComplianceViewModel
+                {
+                    Code = "D01", Name = "Driver", ComplianceType = "License",
+                    ExpiryDate = DateTimeOffset.UtcNow.AddDays(-5)
+                }
+            ]);
+
+        string? capturedSystemPrompt = null;
+        _aiClientMock.Setup(x => x.SendMessageAsync(
+                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
+                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
+            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>(
+                (sys, _, _, _, _) => capturedSystemPrompt = sys)
+            .ReturnsAsync(new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 });
+
+        var service = CreateService();
+
+        // Act
+        await service.SummarizeComplianceAsync();
+
+        // Assert
+        capturedSystemPrompt.Should().Contain("US-based");
+    }
+
+    [Fact]
+    public async Task AnalyzeLateAlertAsync_NzTenant_UsesNzRegionInPrompt()
+    {
+        // Arrange
+        _tenantInfoMock.Setup(x => x.IsUsTenant()).Returns(false);
+
+        _jobRepositoryMock.Setup(x => x.GetJobForLateCallAsync(1))
+            .ReturnsAsync(new Models.Dto.JobLateCallDto
+            {
+                Id = 1, MinutesRemaining = 10, PickupTime = 30, DeliveryTime = 60,
+                AlertLatePickup = 5, AlertLateDelivery = 10,
+                JobTime = DateTime.UtcNow, BookedSpeed = "Express", NotifiedSpeed = "Express"
+            });
+        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
+            .ReturnsAsync([]);
+
+        string? capturedSystemPrompt = null;
+        _aiClientMock.Setup(x => x.SendMessageAsync(
+                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
+                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
+            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>(
+                (sys, _, _, _, _) => capturedSystemPrompt = sys)
+            .ReturnsAsync(new AiClientResponse { TextContent = "Analysis", InputTokens = 50, OutputTokens = 10 });
+
+        var service = CreateService();
+
+        // Act
+        await service.AnalyzeLateAlertAsync(1);
+
+        // Assert
+        capturedSystemPrompt.Should().Contain("New Zealand");
+    }
+
+    [Fact]
+    public async Task SuggestCouriersAsync_UsTenant_UsesUsRegionInPrompt()
+    {
+        // Arrange
+        _tenantInfoMock.Setup(x => x.IsUsTenant()).Returns(true);
+
+        _jobRepositoryMock.Setup(x => x.GetSingleJobById(1)).ReturnsAsync(new JobViewModel
+        {
+            Id = 1, JobNo = "J1", From = "NYC", ToAddress = "LA"
+        });
+        _courierRepositoryMock.Setup(x => x.GetPotentialCouriersAsync(1))
+            .ReturnsAsync([new PotentialCouriersViewModel { CourierId = 1, Code = "C1", FirstName = "Test", Reason = "Match" }]);
+        _courierRepositoryMock.Setup(x => x.GetDriverWorkOverviewAsync())
+            .ReturnsAsync([
+                new DriverWorkOverviewViewModel { CourierId = 1, Name = "Test", VehicleType = "Van", JobCount = 2, DriverStatusText = "Active" }
+            ]);
+
+        string? capturedSystemPrompt = null;
+        _aiClientMock.Setup(x => x.SendMessageAsync(
+                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
+                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
+            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>(
+                (sys, _, _, _, _) => capturedSystemPrompt = sys)
+            .ReturnsAsync(new AiClientResponse { TextContent = "Suggestion", InputTokens = 50, OutputTokens = 10 });
+
+        var service = CreateService();
+
+        // Act
+        await service.SuggestCouriersAsync(1);
+
+        // Assert
+        capturedSystemPrompt.Should().Contain("US-based");
     }
 
     #endregion

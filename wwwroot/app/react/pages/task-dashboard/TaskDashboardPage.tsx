@@ -427,7 +427,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
     }, [selectTaskForHistory]);
 
     // Handle calendar task status change
-    const handleCalendarTaskStatusChange = useCallback(async (task: ExtendedTask) => {
+    const handleCalendarTaskStatusChange = useCallback(async (_task: ExtendedTask) => {
         await handleTaskCompletion();
     }, [handleTaskCompletion]);
 

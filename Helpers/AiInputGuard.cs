@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using DespatchWeb.Models.RequestModels;
@@ -60,14 +59,9 @@ public static partial class AiInputGuard
             return true;
 
         // Detect attempts to reveal system prompt
-        if (RevealPromptPattern().IsMatch(lower))
-            return true;
-
-        // Detect roleplay / identity override attempts
-        if (RoleplayPattern().IsMatch(lower))
-            return true;
-
-        return false;
+        return RevealPromptPattern().IsMatch(lower) ||
+               // Detect roleplay / identity override attempts
+               RoleplayPattern().IsMatch(lower);
     }
 
     /// <summary>

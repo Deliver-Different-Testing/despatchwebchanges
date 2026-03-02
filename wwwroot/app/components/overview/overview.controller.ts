@@ -19,18 +19,21 @@ import DispatchCoreService from "../../services/dispatch-core.service";
 import {IDataTableColumn, IDataTableSort} from "../common/data-table/data-table.interfaces";
 import angular from 'angular';
 
-// Type declaration for the React dialog on window
+// Type declarations for React modules on window
 declare global {
     interface Window {
         ReactDateRangeDialog?: {
             open: (initialRange?: { start?: Date; end?: Date }) => Promise<{ start: Date; end: Date } | null>;
+        };
+        ReactAiAssistant?: {
+            renderOperationsInsightsPanel: (container: HTMLElement) => void;
+            unmountSummaryPanel: (container: HTMLElement) => void;
         };
     }
 }
 
 class OverviewController extends BaseController {
     static $inject = [
-        "$mdDialog",
         "$mdSidenav",
         "overviewService",
         "DispatchData",
@@ -38,7 +41,6 @@ class OverviewController extends BaseController {
         "navigationService",
         "overviewFiltersService",
         "mapDialogService",
-        "$document",
         "$scope",
         "$timeout",
         "$interval",
@@ -81,15 +83,7 @@ class OverviewController extends BaseController {
 
     activeTab: number;
 
-    // AI Insights
-    aiInsightsExpanded: boolean = false;
-    aiInsightsLoading: boolean = false;
-    aiInsightsSummary: string | null = null;
-    aiInsightsError: string | null = null;
-    aiInsightsFetched: boolean = false;
-
     constructor(
-        private $mdDialog: angular.material.IDialogService,
         private $mdSidenav: angular.material.ISidenavService,
         private overviewService: OverviewService,
         private DispatchData: DispatchCoreService,
@@ -97,7 +91,6 @@ class OverviewController extends BaseController {
         private navigationService: NavigationService,
         private overviewFiltersService: OverviewFiltersService,
         private mapDialogService: MapDialogService,
-        private $document: angular.IDocumentService,
         $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
@@ -153,6 +146,7 @@ class OverviewController extends BaseController {
         this.loadOverviewCardState();
         this.loadSavedLimit();
         this.initialDataLoad();
+        this.loadAiInsightsReactPanel();
     }
 
     private initTableColumns(): void {
@@ -488,18 +482,18 @@ class OverviewController extends BaseController {
         await this.refreshData();
     }
 
-    onSort(sort: IDataTableSort): void {
+    async onSort(sort: IDataTableSort): Promise<void> {
         this.tableSort = sort;
         this.query.order = sort.direction === 'desc' ? `-${sort.column}` : sort.column;
         this.query.page = 1;
-        this.refreshData();
+        await this.refreshData();
     }
 
-    onPaginate(page: number, limit: number): void {
+    async onPaginate(page: number, limit: number): Promise<void> {
         this.query.page = page;
         this.query.limit = limit;
         this.saveLimit();
-        this.refreshData();
+        await this.refreshData();
     }
 
 
@@ -614,25 +608,33 @@ class OverviewController extends BaseController {
         }
     }
 
-    toggleAiInsights(): void {
-        this.aiInsightsExpanded = !this.aiInsightsExpanded;
-        if (this.aiInsightsExpanded && !this.aiInsightsFetched && !this.aiInsightsLoading) {
-            this.loadAiInsights();
-        }
-    }
-
-    private async loadAiInsights(): Promise<void> {
-        this.aiInsightsLoading = true;
-        this.aiInsightsError = null;
+    private async loadAiInsightsReactPanel(): Promise<void> {
         try {
-            const response = await this.$http.post<{ summary: string }>('/Ai/SummarizeOperations', null);
-            this.aiInsightsSummary = response.data.summary;
-            this.aiInsightsFetched = true;
-        } catch (error: any) {
-            this.aiInsightsError = error?.data || 'Failed to generate AI insights';
-        } finally {
-            this.aiInsightsLoading = false;
-            this.applyScope();
+            // Load the manifest to get hashed filenames
+            const manifestResponse = await this.$http.get<Record<string, string>>('dist/manifest.json');
+            const manifest = manifestResponse.data;
+            const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
+
+            // Load vendor-react first (if not already loaded)
+            if (!(window as any).React) {
+                await this.$ocLazyLoad.load(getAssetPath('vendor-react.js'));
+            }
+
+            // Load the AI assistant React module
+            if (!window.ReactAiAssistant) {
+                await this.$ocLazyLoad.load({
+                    name: 'uDispatch.aiAssistantDialogReact',
+                    files: [getAssetPath('aiAssistantDialogReact.js')]
+                });
+            }
+
+            // Render into the container
+            const container = document.getElementById('ai-operations-insights-container');
+            if (container && window.ReactAiAssistant) {
+                window.ReactAiAssistant.renderOperationsInsightsPanel(container);
+            }
+        } catch (error) {
+            console.error('[Overview] Failed to load AI insights React panel:', error);
         }
     }
 }

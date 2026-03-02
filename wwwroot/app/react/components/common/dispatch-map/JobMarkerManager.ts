@@ -4,14 +4,14 @@
  * Manages job markers (pickup/delivery) on HERE Maps.
  */
 
-import type { IDispatchMapItem, JobMarkerData } from './DispatchMap.types';
+import type {IDispatchMapItem, JobMarkerData} from './DispatchMap.types';
 import {
+    ICON_CACHE_LIMIT,
+    MARKER_BATCH_SIZE,
     MARKER_COLORS,
     MARKER_PIN_PATH,
-    MAX_JOBS_TO_DISPLAY,
-    MARKER_BATCH_SIZE,
     MAX_AUTO_ZOOM,
-    ICON_CACHE_LIMIT,
+    MAX_JOBS_TO_DISPLAY,
 } from './DispatchMap.types';
 
 declare const H: any;
@@ -23,15 +23,13 @@ export class JobMarkerManager {
     private iconCache: Map<string, any> = new Map();
     private onMarkerClick?: (job: IDispatchMapItem) => void;
     private tooltipElement: HTMLDivElement | null = null;
-    private ui: any = null;
 
     constructor(
         map: any,
-        ui?: any,
+        _ui?: any,
         onMarkerClick?: (job: IDispatchMapItem) => void
     ) {
         this.map = map;
-        this.ui = ui;
         this.onMarkerClick = onMarkerClick;
         this.markerGroup = new H.map.Group();
         this.map.addObject(this.markerGroup);
@@ -271,7 +269,7 @@ export class JobMarkerManager {
         const icon = this.getOrCreateIcon(color);
         const point = new H.geo.Point(position.lat, position.lng);
 
-        const marker = new H.map.Marker(point, {
+        return new H.map.Marker(point, {
             icon,
             data: {
                 job,
@@ -280,8 +278,6 @@ export class JobMarkerManager {
                 color, // Store color for hover restore
             },
         });
-
-        return marker;
     }
 
     /**
@@ -296,7 +292,6 @@ export class JobMarkerManager {
 
         const svgMarkup = this.createMarkerSvg(color, isHovered);
         // Scale: normal = 1.5 (36px), hover = 1.8 (43px) - matches Google Maps
-        const size = isHovered ? 43 : 36;
         const anchorX = isHovered ? 21.5 : 18;
         const anchorY = isHovered ? 40 : 33;
 
