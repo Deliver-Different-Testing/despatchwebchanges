@@ -5,6 +5,7 @@ interface ISettingsDialogResult {
     selectedRefreshInterval?: ISuggestion;
     selectedDriverLocationRefreshInterval?: ISuggestion;
     boxes?: Record<string, IBox>;
+    aiEnabled?: boolean;
 }
 
 export default ISettingsDialogResult;

@@ -781,14 +781,16 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                 </CardContent>
             </Card>
 
-            {/* AI Briefing */}
-            <Box sx={{mb: 2, flexShrink: 0}}>
-                <AiSummaryPanel
-                    title="AI Daily Briefing"
-                    fetchSummary={summarizeTaskDashboard}
-                    accentColor="#7c4dff"
-                />
-            </Box>
+            {/* AI Briefing — only show when there are tasks */}
+            {!tasksLoading && tasks.length > 0 && (
+                <Box sx={{mb: 2, flexShrink: 0}}>
+                    <AiSummaryPanel
+                        title="AI Daily Briefing"
+                        fetchSummary={summarizeTaskDashboard}
+                        accentColor="#7c4dff"
+                    />
+                </Box>
+            )}
 
             {/* Main Content - Grid Layout */}
             <Box

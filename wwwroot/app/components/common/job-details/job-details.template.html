@@ -85,12 +85,14 @@
             <!-- Spacer -->
             <div flex></div>
 
-            <!-- AI Full Job Summary Button -->
+            <!-- AI Summary Panel Toggle -->
             <md-button class="md-icon-button"
+                       ng-if="ctrl.aiEnabled"
+                       ng-class="{'md-accent': ctrl.showAiPanel}"
                        aria-label="AI Job Summary"
-                       ng-click="ctrl.summarizeFullJob()">
+                       ng-click="ctrl.toggleAiSummaryPanel()">
                 <md-icon md-font-set="material-symbols-outlined">auto_awesome</md-icon>
-                <md-tooltip>AI Job Summary</md-tooltip>
+                <md-tooltip>{{ ctrl.showAiPanel ? 'Hide AI Summary' : 'AI Job Summary' }}</md-tooltip>
             </md-button>
 
             <!-- POD Report Menu -->
@@ -132,6 +134,12 @@
                 </md-icon>
                 {{ctrl.job.statusName}}
             </md-button>
+        </div>
+
+        <!-- AI Summary Panel Container -->
+        <div id="ai-summary-panel-container"
+             ng-if="ctrl.aiEnabled && ctrl.showAiPanel"
+             style="padding: 12px 16px 0;">
         </div>
 
         <!-- Timing Section -->

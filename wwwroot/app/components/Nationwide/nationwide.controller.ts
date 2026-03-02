@@ -62,6 +62,7 @@ import {transformFlightToDTO} from "../../functions/toDtoMappings";
 import utc from "dayjs/plugin/utc";
 import {HereMapConfig} from "../../interfaces/hereMapCredentials.interfaces";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
+import {setAiEnabled} from "../../functions/aiSettings";
 import ITaskItemConfig from "../../enums/task-item-config";
 import angular from 'angular';
 
@@ -2465,6 +2466,10 @@ class NationwideControl extends BaseController {
             if (result.boxes) {
                 this.boxes = result.boxes;
                 this.saveBoxVisibility();
+            }
+
+            if (result.aiEnabled !== undefined) {
+                setAiEnabled(result.aiEnabled);
             }
 
             this.saveCurrentLayout();

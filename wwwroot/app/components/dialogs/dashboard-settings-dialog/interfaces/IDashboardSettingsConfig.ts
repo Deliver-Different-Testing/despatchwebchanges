@@ -3,6 +3,7 @@
     showRefreshInterval?: boolean;
     showDriverLocationRefresh?: boolean;
     showDashboards?: boolean;
+    showAiToggle?: boolean;
 }
 
 export default IDashboardSettingsConfig;

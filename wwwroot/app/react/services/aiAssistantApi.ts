@@ -5,7 +5,7 @@
  * Supports both standard and streaming (NDJSON) responses.
  */
 
-import { apiClient } from './apiClient';
+import { apiClient, RequestOptions } from './apiClient';
 
 export interface AiChatMessage {
     role: 'user' | 'assistant';
@@ -126,8 +126,8 @@ export function summarizeTaskDashboard(): Promise<AiSummaryResponse> {
 }
 
 /** Combined job summary (notes + events + details) */
-export function summarizeJob(jobId: number): Promise<AiSummaryResponse> {
-    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeJob', null, { params: { jobId } });
+export function summarizeJob(jobId: number, options?: RequestOptions): Promise<AiSummaryResponse> {
+    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeJob', null, { params: { jobId }, ...options });
 }
 
 /** Operations insight summary for overview dashboard */

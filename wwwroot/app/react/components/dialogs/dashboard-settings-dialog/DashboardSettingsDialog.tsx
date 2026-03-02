@@ -28,6 +28,7 @@ import {
     Schedule as ScheduleIcon,
     Dashboard as DashboardIcon,
     Info as InfoIcon,
+    AutoAwesome as AutoAwesomeIcon,
 } from '@mui/icons-material';
 
 // Types that mirror the AngularJS interfaces
@@ -49,12 +50,14 @@ export interface DashboardSettingsConfig {
     showRefreshInterval?: boolean;
     showDriverLocationRefresh?: boolean;
     showDashboards?: boolean;
+    showAiToggle?: boolean;
 }
 
 export interface DashboardSettingsResult {
     selectedRefreshInterval?: RefreshOption;
     selectedDriverLocationRefreshInterval?: RefreshOption;
     boxes?: Record<string, DashboardBox>;
+    aiEnabled?: boolean;
 }
 
 export interface DashboardSettingsDialogProps {
@@ -64,6 +67,7 @@ export interface DashboardSettingsDialogProps {
     selectedRefreshInterval?: RefreshOption;
     selectedDriverLocationRefreshInterval?: RefreshOption;
     refreshOptions: RefreshOption[];
+    aiEnabled?: boolean;
     onClose: () => void;
     onSave: (result: DashboardSettingsResult) => void;
 }
@@ -82,6 +86,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     selectedRefreshInterval: initialRefreshInterval,
     selectedDriverLocationRefreshInterval: initialDriverInterval,
     refreshOptions,
+    aiEnabled: initialAiEnabled,
     onClose,
     onSave,
 }) => {
@@ -91,6 +96,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     const [driverLocationInterval, setDriverLocationInterval] = useState<RefreshOption>(
         initialDriverInterval ?? {id: 0, text: 'Disabled'}
     );
+    const [aiEnabled, setAiEnabled] = useState<boolean>(initialAiEnabled ?? true);
     const [boxes, setBoxes] = useState<Record<string, DashboardBox>>(() => {
         // Deep clone the boxes
         const cloned: Record<string, DashboardBox> = {};
@@ -122,6 +128,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
             selectedRefreshInterval: refreshInterval,
             selectedDriverLocationRefreshInterval: driverLocationInterval,
             boxes,
+            aiEnabled,
         });
     };
 
@@ -300,6 +307,77 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                 )}
 
                 {config.showRefreshInterval && <Divider />}
+
+                {/* AI Features Section */}
+                {config.showAiToggle && (
+                    <Box sx={{p: 3}}>
+                        <Stack direction="row" spacing={1.5} alignItems="center" sx={{mb: 2}}>
+                            <Box
+                                sx={{
+                                    width: 36,
+                                    height: 36,
+                                    borderRadius: 1.5,
+                                    bgcolor: 'rgba(124, 77, 255, 0.1)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                <AutoAwesomeIcon sx={{color: '#7c4dff'}} />
+                            </Box>
+                            <Typography variant="h6" fontWeight={600}>
+                                AI Features
+                            </Typography>
+                        </Stack>
+
+                        <Paper
+                            elevation={0}
+                            onClick={() => setAiEnabled((prev) => !prev)}
+                            sx={(theme) => ({
+                                p: 2,
+                                borderRadius: 2,
+                                border: `1px solid ${theme.palette.divider}`,
+                                bgcolor: 'white',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                '&:hover': {
+                                    borderColor: '#7c4dff',
+                                    bgcolor: 'rgba(124, 77, 255, 0.02)',
+                                },
+                            })}
+                        >
+                            <Stack
+                                direction="row"
+                                alignItems="center"
+                                justifyContent="space-between"
+                            >
+                                <Box>
+                                    <Typography variant="subtitle2" fontWeight={600}>
+                                        AI Summaries & Suggestions
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Show AI-powered job summaries, inline panels, and smart suggestions
+                                    </Typography>
+                                </Box>
+                                <Switch
+                                    checked={aiEnabled}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={() => setAiEnabled((prev) => !prev)}
+                                    sx={{
+                                        '& .MuiSwitch-switchBase.Mui-checked': {
+                                            color: '#7c4dff',
+                                        },
+                                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                            backgroundColor: '#7c4dff',
+                                        },
+                                    }}
+                                />
+                            </Stack>
+                        </Paper>
+                    </Box>
+                )}
+
+                {config.showAiToggle && <Divider />}
 
                 {/* Dashboard Panels Section */}
                 <Box sx={{p: 3}}>

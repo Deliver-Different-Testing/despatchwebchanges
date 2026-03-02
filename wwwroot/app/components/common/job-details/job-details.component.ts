@@ -38,7 +38,11 @@ import PodPhotoType from "../../../enums/podPhotoType";
 import {formatLongDateTime} from "../../../functions/formatDates";
 import {ViewDensity, ViewDensityLabels} from "../../../enums/view-density.enum";
 import DispatchExecutorService from "../../../services/dispatch-executor.service";
+import {isAiEnabled} from "../../../functions/aiSettings";
+import {registerAiPanelDiagnostic} from "./job-details-ai-panel.diagnostic";
 import angular from 'angular';
+
+registerAiPanelDiagnostic();
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -85,6 +89,8 @@ class JobDetailController extends BaseController {
     timeZoneShort: string;
     jobAddressIcon: string = "pin_drop";
     viewDensity: ViewDensity = ViewDensity.Normal;
+    aiEnabled: boolean = false;
+    showAiPanel: boolean = false;
     trackingOptions: ISuggestion[];
 
     jobGroup?: IJobGroup;
@@ -144,6 +150,7 @@ class JobDetailController extends BaseController {
 
     $onInit(): void {
         console.log("$onInit called - jobId:", this.jobId);
+        this.aiEnabled = isAiEnabled();
 
         // Load data in parallel
         const statusListPromise = this.DispatchData.getInternalStatusList();
@@ -197,6 +204,9 @@ class JobDetailController extends BaseController {
     $onDestroy(): void {
         super.$onDestroy();
         console.log("$onDestroy called - cleaning up resources");
+
+        // Clean up AI summary panel
+        this.unmountAiSummaryPanel();
 
         // Clean up delivery photos
         this.formattedPodPhotos?.forEach(photo => {
@@ -321,12 +331,19 @@ class JobDetailController extends BaseController {
 
             this.applyScope();
 
+            // Re-render AI panel if it was already open (e.g. after job refresh)
+            if (this.showAiPanel) {
+                this.renderAiSummaryPanel();
+            }
+
             if (this.job?.completedTime && !this.isRecurringJob) {
                 await this.loadPodPhotos();
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error loading job data:", error);
-            this.toastrService.showErrorToast("Failed to load job details");
+            this.toastrService.showErrorToast(
+                error?.message ? `Failed to load job details: ${error.message}` : "Failed to load job details"
+            );
         } finally {
             this.isLoading = false;
             this.applyScope();
@@ -2074,25 +2091,38 @@ class JobDetailController extends BaseController {
         });
     }
 
-    async summarizeFullJob(): Promise<void> {
-        if (!this.job?.id) return;
+    async toggleAiSummaryPanel(): Promise<void> {
+        this.showAiPanel = !this.showAiPanel;
+        if (this.showAiPanel) {
+            await this.renderAiSummaryPanel();
+        }
+    }
+
+    private async renderAiSummaryPanel(): Promise<void> {
+        if (!this.aiEnabled || !this.job?.id) return;
+
         try {
-            this.toastrService.showInfoToast("Generating AI summary...");
             await this.ensureAiAssistantLoaded();
-            const response = await (window as any).ReactAiAssistant.summarizeJob(this.job.id);
-            if (response?.summary) {
-                await this.$mdDialog.show(
-                    this.$mdDialog.alert()
-                        .title('AI Job Summary')
-                        .htmlContent(`<div style="white-space: pre-line; line-height: 1.6;">${response.summary}</div>`)
-                        .ok('Close')
-                );
-            } else {
-                this.toastrService.showWarningToast("No summary data returned");
+        } catch (err: any) {
+            console.error('Failed to load AI assistant module:', err);
+            return;
+        }
+
+        // Digest may still be pending — use $timeout to ensure container is in the DOM
+        this.registerTimeout(() => {
+            const container = document.getElementById('ai-summary-panel-container');
+            if (!container) {
+                console.warn('[AI Panel] Container element not found in DOM');
+                return;
             }
-        } catch (error: any) {
-            console.error("AI summarize job error:", error);
-            this.toastrService.showErrorToast(error?.message || "Failed to generate AI summary");
+            (window as any).ReactAiAssistant.renderSummaryPanel(container, this.job!.id);
+        }, 0);
+    }
+
+    private unmountAiSummaryPanel(): void {
+        const container = document.getElementById(`ai-summary-panel-container`);
+        if (container && (window as any).ReactAiAssistant?.unmountSummaryPanel) {
+            (window as any).ReactAiAssistant.unmountSummaryPanel(container);
         }
     }
 

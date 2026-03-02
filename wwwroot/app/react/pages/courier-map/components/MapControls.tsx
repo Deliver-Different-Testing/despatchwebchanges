@@ -12,7 +12,7 @@ import styles from '../CourierMapPage.module.css';
 export function MapControls({ onFitAll, onRefresh, isLoading }: MapControlsProps) {
     return (
         <div className={styles.mapControls}>
-            <Tooltip title="Fit all drivers in view" placement="left">
+            <Tooltip title="Fit all drivers in view" placement="right">
                 <button
                     className={styles.mapControlBtn}
                     onClick={onFitAll}
@@ -21,7 +21,7 @@ export function MapControls({ onFitAll, onRefresh, isLoading }: MapControlsProps
                     <span className="material-symbols-outlined">fit_screen</span>
                 </button>
             </Tooltip>
-            <Tooltip title="Refresh locations" placement="left">
+            <Tooltip title="Refresh locations" placement="right">
                 <button
                     className={styles.mapControlBtn}
                     onClick={onRefresh}

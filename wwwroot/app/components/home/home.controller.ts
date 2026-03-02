@@ -51,6 +51,7 @@ import utc from "dayjs/plugin/utc";
 import {getMinsSelectionOptions} from "../../functions/MinsSelectionOptions";
 import DispatchBoxes from "./enums/DispatchBoxes";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
+import {setAiEnabled} from "../../functions/aiSettings";
 import ITaskItemConfig from "../../enums/task-item-config";
 import CurrentWorkLists from "./enums/CurrentWorkLists";
 import angular from "angular";
@@ -2358,6 +2359,10 @@ class HomeController extends BaseController {
             if (result.boxes) {
                 this.boxes = result.boxes;
                 this.saveBoxVisibility();
+            }
+
+            if (result.aiEnabled !== undefined) {
+                setAiEnabled(result.aiEnabled);
             }
 
             this.saveCurrentLayout();

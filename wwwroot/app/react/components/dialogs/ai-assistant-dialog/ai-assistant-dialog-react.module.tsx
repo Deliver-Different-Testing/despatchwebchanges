@@ -10,6 +10,7 @@ import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { AiAssistantDialog } from './AiAssistantDialog';
+import { AiSummaryPanel } from '../../common/ai-summary-panel/AiSummaryPanel';
 import { OpenAiAssistantDialogOptions } from './types';
 import { getTheme } from '../../../theme/muiTheme';
 import { summarizeJobNotes, summarizeJob, analyzeLateAlert, suggestCouriers, AiSummaryResponse } from '../../../services/aiAssistantApi';
@@ -130,6 +131,38 @@ export function suggestCouriersForJob(jobId: number): Promise<AiSummaryResponse>
     return aiAssistantDialogManager.suggestCouriers(jobId);
 }
 
+// --- Summary Panel ---
+
+const panelRoots = new Map<HTMLElement, Root>();
+
+function renderSummaryPanel(container: HTMLElement, jobId: number): void {
+    let root = panelRoots.get(container);
+    if (!root) {
+        root = createRoot(container);
+        panelRoots.set(container, root);
+    }
+
+    const currentTheme = getTheme();
+
+    root.render(
+        <ThemeProvider theme={currentTheme}>
+            <AiSummaryPanel
+                title="AI Job Summary"
+                fetchSummary={(signal) => summarizeJob(jobId, {signal})}
+                autoFetch={true}
+            />
+        </ThemeProvider>
+    );
+}
+
+function unmountSummaryPanel(container: HTMLElement): void {
+    const root = panelRoots.get(container);
+    if (root) {
+        root.unmount();
+        panelRoots.delete(container);
+    }
+}
+
 // Expose to window for AngularJS access
 (window as any).ReactAiAssistant = {
     open: openAiAssistantDialog,
@@ -137,6 +170,8 @@ export function suggestCouriersForJob(jobId: number): Promise<AiSummaryResponse>
     summarizeJob: summarizeFullJobForJob,
     analyzeLateAlert: analyzeLateAlertForJob,
     suggestCouriers: suggestCouriersForJob,
+    renderSummaryPanel,
+    unmountSummaryPanel,
 };
 
 // Create AngularJS module
