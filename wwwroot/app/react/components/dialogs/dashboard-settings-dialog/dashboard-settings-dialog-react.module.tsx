@@ -17,7 +17,6 @@ import {
 } from './DashboardSettingsDialog';
 import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
-import angular from 'angular';
 
 // State management for the dialog
 interface DialogState {
@@ -27,6 +26,7 @@ interface DialogState {
     selectedRefreshInterval?: RefreshOption;
     selectedDriverLocationRefreshInterval?: RefreshOption;
     refreshOptions: RefreshOption[];
+    aiEnabled?: boolean;
     resolve?: (value: DashboardSettingsResult | null) => void;
 }
 
@@ -109,6 +109,7 @@ function renderDialog(): void {
                     selectedRefreshInterval={dialogState.selectedRefreshInterval}
                     selectedDriverLocationRefreshInterval={dialogState.selectedDriverLocationRefreshInterval}
                     refreshOptions={dialogState.refreshOptions}
+                    aiEnabled={dialogState.aiEnabled}
                     onClose={handleClose}
                     onSave={handleSave}
                 />
@@ -142,7 +143,8 @@ export function openDashboardSettingsDialog(
     config: DashboardSettingsConfig,
     boxes: Record<string, DashboardBox>,
     selectedRefreshInterval?: RefreshOption,
-    selectedDriverLocationRefreshInterval?: RefreshOption
+    selectedDriverLocationRefreshInterval?: RefreshOption,
+    aiEnabled?: boolean
 ): Promise<DashboardSettingsResult | null> {
     initializeDialogRoot();
 
@@ -160,6 +162,7 @@ export function openDashboardSettingsDialog(
             selectedRefreshInterval: selectedRefreshInterval ?? {id: 0, text: 'Disabled'},
             selectedDriverLocationRefreshInterval: selectedDriverLocationRefreshInterval ?? {id: 0, text: 'Disabled'},
             refreshOptions,
+            aiEnabled,
             resolve,
         };
         renderDialog();

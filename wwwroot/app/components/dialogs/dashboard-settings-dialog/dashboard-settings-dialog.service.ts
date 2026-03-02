@@ -5,6 +5,7 @@ import IDashboardSettingsConfig from "./interfaces/IDashboardSettingsConfig";
 import ISettingsDialogResult from "./interfaces/IDashboardSettingsDialogResult";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
 import isDefaultLayout from "../../../functions/isDefaultLayout";
+import {isAiEnabled} from "../../../functions/aiSettings";
 import angular from 'angular';
 
 // Type declaration for the React dialog on window
@@ -15,7 +16,8 @@ declare global {
                 config: IDashboardSettingsConfig,
                 boxes: Record<string, IBox>,
                 selectedRefreshInterval?: ISuggestion,
-                selectedDriverLocationRefreshInterval?: ISuggestion
+                selectedDriverLocationRefreshInterval?: ISuggestion,
+                aiEnabled?: boolean
             ) => Promise<ISettingsDialogResult | null>;
         };
     }
@@ -104,7 +106,8 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
                 title,
                 showRefreshInterval: appPage === AppPage.Dispatch || appPage === AppPage.Domestic,
                 showDriverLocationRefresh: appPage === AppPage.Dispatch,
-                showDashboards: canShowDashboards
+                showDashboards: canShowDashboards,
+                showAiToggle: true
             };
 
             if (!selectedRefreshInterval) {
@@ -127,7 +130,8 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
                 config,
                 boxes,
                 selectedRefreshInterval,
-                selectedDriverLocationRefreshInterval
+                selectedDriverLocationRefreshInterval,
+                isAiEnabled()
             );
 
             console.debug('DashboardSettingsDialogService: Dialog closed!');

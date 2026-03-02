@@ -38,9 +38,21 @@ public class AiSummarizationService(
 
     private const string JobSummarySystemPrompt =
         """
-        You are a logistics job summarizer. Create a single coherent chronological narrative combining job details, notes, and events.
-        Include: booking time, key milestones (pickup, delivery, POD), any issues or complaints, staff notes, and open follow-ups.
-        Keep the summary to 3-5 sentences. Use plain language.
+        You are a logistics job summarizer. Produce a structured summary with the most important information first.
+
+        Format your response using these sections (skip any section with no relevant data):
+
+        STATUS: One line — current job status and courier assignment.
+        ISSUES: Bullet points — any problems, complaints, delays, or flags. Most urgent first.
+        ACTIONS: Bullet points — open follow-ups or pending tasks that need attention.
+        TIMELINE: Brief chronological narrative of key milestones (booked, dispatched, picked up, delivered).
+        NOTES: Any other notable staff comments or observations.
+
+        Rules:
+        - Use plain language, no jargon
+        - Keep each section concise (1-3 bullet points max)
+        - If the job is straightforward with no issues, keep the entire summary to 2-3 lines
+        - Start bullet points with a dash (-)
         """;
 
     private const string OperationsSystemPrompt =

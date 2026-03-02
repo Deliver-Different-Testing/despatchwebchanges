@@ -33,6 +33,7 @@ import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import {getIanaTimezone} from "../../functions/formatDates";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
+import {setAiEnabled} from "../../functions/aiSettings";
 import angular from 'angular';
 
 dayjs.extend(utc);
@@ -1214,6 +1215,10 @@ class JobSearchController extends BaseController {
             if (result.boxes) {
                 this.boxes = result.boxes;
                 this.saveBoxVisibility();
+            }
+
+            if (result.aiEnabled !== undefined) {
+                setAiEnabled(result.aiEnabled);
             }
 
             this.saveCurrentLayout();
