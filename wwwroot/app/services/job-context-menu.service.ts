@@ -15,6 +15,7 @@ import VoidJobConfirmationDialogService
 import {EditAddressDialogService} from "../components/dialogs/edit-address-dialog/edit-address-dialog.service";
 import PriceBreakdownDialogService from "../components/dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
 import {JobStatus} from "../enums/job-status.enum";
+import {markdownToSafeHtml} from "../functions/markdownToHtml";
 import angular from 'angular';
 
 class JobContextMenuService implements angular.IServiceProvider {
@@ -756,7 +757,7 @@ class JobContextMenuService implements angular.IServiceProvider {
                 await this.$mdDialog.show(
                     this.$mdDialog.alert()
                         .title(`AI Late Alert Analysis - ${job.jobNo}`)
-                        .htmlContent(`<div style="white-space: pre-line; line-height: 1.6;">${response.summary}</div>`)
+                        .htmlContent(`<div style="line-height: 1.6;">${markdownToSafeHtml(response.summary)}</div>`)
                         .ok('Close')
                 );
             } else {
@@ -778,7 +779,7 @@ class JobContextMenuService implements angular.IServiceProvider {
                 await this.$mdDialog.show(
                     this.$mdDialog.alert()
                         .title(`AI Courier Suggestions - ${job.jobNo}`)
-                        .htmlContent(`<div style="white-space: pre-line; line-height: 1.6;">${response.summary}</div>`)
+                        .htmlContent(`<div style="line-height: 1.6;">${markdownToSafeHtml(response.summary)}</div>`)
                         .ok('Close')
                 );
             } else {

@@ -6,7 +6,7 @@
  */
 
 import { apiClient } from './apiClient';
-import { AdditionalService, PaginatedResponse } from '../components/dialogs/additional-services-dialog/types';
+import { AdditionalService, PaginatedResponse } from '../components/dialogs/additional-services-dialog';
 
 /**
  * Additional Services API Service Class

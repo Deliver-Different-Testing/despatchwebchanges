@@ -115,11 +115,6 @@ export function summarizeJobNotes(jobId: number): Promise<AiSummaryResponse> {
     return apiClient.post<AiSummaryResponse>('/Ai/SummarizeJobNotes', null, { params: { jobId } });
 }
 
-/** Summarize event history for a job */
-export function summarizeJobEvents(jobId: number): Promise<AiSummaryResponse> {
-    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeJobEvents', null, { params: { jobId } });
-}
-
 /** Summarize task dashboard for daily briefing */
 export function summarizeTaskDashboard(): Promise<AiSummaryResponse> {
     return apiClient.post<AiSummaryResponse>('/Ai/SummarizeTaskDashboard');

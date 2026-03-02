@@ -102,7 +102,7 @@ describe('NoData', () => {
     describe('Theme Styling', () => {
         it('renders with NZ customer styling by default', () => {
             const props = createDefaultProps({ showAction: true });
-            const { container } = renderWithProviders(<NoData {...props} />);
+            renderWithProviders(<NoData {...props} />);
 
             const button = screen.getByRole('button');
             // We verify the button exists and has MuiButton class
@@ -111,7 +111,7 @@ describe('NoData', () => {
 
         it('renders with US customer styling when isUsCustomer is true', () => {
             const props = createDefaultProps({ showAction: true, isUsCustomer: true });
-            const { container } = renderWithProviders(<NoData {...props} />);
+            renderWithProviders(<NoData {...props} />);
 
             const button = screen.getByRole('button');
             expect(button).toHaveClass('MuiButton-contained');

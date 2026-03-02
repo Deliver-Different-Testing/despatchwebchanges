@@ -393,19 +393,19 @@ appShellReactModule.service('reactAppShellService', [
     '$rootScope',
     'navigationService',
     'APP_CONFIG',
-    function(
+    (
         $state: angular.ui.IStateService,
         $rootScope: angular.IRootScopeService,
         navigationService: any,
         appConfig: any
-    ) {
+    ) => {
         let stateChangeListener: (() => void) | null = null;
 
         return {
             /**
              * Mount the React App Shell
              */
-            mount: function(containerId: string, title: string) {
+            mount: (containerId: string, title: string) => {
                 const firstName = (window as any).FirstName || 'User';
                 const fullName = (window as any).FullName || 'User';
 
@@ -431,7 +431,7 @@ appShellReactModule.service('reactAppShellService', [
             /**
              * Set toolbar actions from AngularJS controller
              */
-            setToolbarActions: function(actions: ToolbarActionsConfig) {
+            setToolbarActions: (actions: ToolbarActionsConfig) => {
                 setToolbarActions(actions);
             },
 
@@ -443,7 +443,7 @@ appShellReactModule.service('reactAppShellService', [
             /**
              * Update messages badge count
              */
-            updateMessageCount: function(count: number) {
+            updateMessageCount: (count: number) => {
                 if (toolbarActions?.messages) {
                     updateToolbarAction('messages', {unreadCount: count});
                 }
@@ -452,7 +452,7 @@ appShellReactModule.service('reactAppShellService', [
             /**
              * Update views list
              */
-            updateViews: function(views: View[]) {
+            updateViews: (views: View[]) => {
                 if (toolbarActions?.views) {
                     updateToolbarAction('views', {items: views});
                 }
@@ -461,7 +461,7 @@ appShellReactModule.service('reactAppShellService', [
             /**
              * Update layouts list
              */
-            updateLayouts: function(layouts: Layout[], currentName?: string) {
+            updateLayouts: (layouts: Layout[], currentName?: string) => {
                 if (toolbarActions?.layouts) {
                     updateToolbarAction('layouts', {
                         items: layouts,
@@ -476,7 +476,7 @@ appShellReactModule.service('reactAppShellService', [
             /**
              * Unmount and cleanup
              */
-            unmount: function() {
+            unmount: () => {
                 if (stateChangeListener) {
                     stateChangeListener();
                     stateChangeListener = null;

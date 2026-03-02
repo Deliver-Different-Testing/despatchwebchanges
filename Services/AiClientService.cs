@@ -5,7 +5,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Anthropic;
-using Anthropic.Models;
 using Anthropic.Models.Messages;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -17,9 +16,7 @@ public class AiClientService(IOptions<AnthropicSettings> settings) : IAiClientSe
 {
     private readonly AnthropicClient _client = new();
     private readonly AnthropicSettings _settings = settings.Value;
-
-    // AnthropicClient reads ANTHROPIC_API_KEY from environment automatically
-
+    
     public async Task<AiClientResponse> SendMessageAsync(
         string systemPrompt,
         List<AiMessage> messages,
@@ -67,13 +64,8 @@ public class AiClientService(IOptions<AnthropicSettings> settings) : IAiClientSe
 
         await foreach (var rawEvent in _client.Messages.CreateStreaming(messageParams, ct))
         {
-            if (rawEvent.TryPickContentBlockDelta(out var delta))
-            {
-                if (delta.Delta.TryPickText(out var textDelta))
-                {
-                    yield return textDelta.Text;
-                }
-            }
+            if (!rawEvent.TryPickContentBlockDelta(out var delta)) continue;
+            if (delta.Delta.TryPickText(out var textDelta)) yield return textDelta.Text;
         }
     }
 
@@ -115,13 +107,8 @@ public class AiClientService(IOptions<AnthropicSettings> settings) : IAiClientSe
         using var doc = JsonDocument.Parse(inputSchemaJson);
         var result = new Dictionary<string, JsonElement>();
 
-        if (doc.RootElement.TryGetProperty("properties", out var props))
-        {
-            foreach (var prop in props.EnumerateObject())
-            {
-                result[prop.Name] = prop.Value.Clone();
-            }
-        }
+        if (!doc.RootElement.TryGetProperty("properties", out var props)) return result;
+        foreach (var prop in props.EnumerateObject()) result[prop.Name] = prop.Value.Clone();
 
         return result;
     }
@@ -131,9 +118,7 @@ public class AiClientService(IOptions<AnthropicSettings> settings) : IAiClientSe
         using var doc = JsonDocument.Parse(inputSchemaJson);
         if (doc.RootElement.TryGetProperty("required", out var req) &&
             req.ValueKind == JsonValueKind.Array)
-        {
             return req.EnumerateArray().Select(e => e.GetString()).ToArray();
-        }
 
         return [];
     }

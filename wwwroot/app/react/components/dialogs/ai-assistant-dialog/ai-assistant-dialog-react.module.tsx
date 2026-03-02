@@ -13,7 +13,7 @@ import { AiAssistantDialog } from './AiAssistantDialog';
 import { AiSummaryPanel } from '../../common/ai-summary-panel/AiSummaryPanel';
 import { OpenAiAssistantDialogOptions } from './types';
 import { getTheme } from '../../../theme/muiTheme';
-import { summarizeJobNotes, summarizeJob, analyzeLateAlert, suggestCouriers, AiSummaryResponse } from '../../../services/aiAssistantApi';
+import { summarizeJobNotes, summarizeJob, summarizeOperations, analyzeLateAlert, suggestCouriers, AiSummaryResponse } from '../../../services/aiAssistantApi';
 
 // Get current staff info from global variables
 declare const FullName: string;
@@ -155,6 +155,25 @@ function renderSummaryPanel(container: HTMLElement, jobId: number): void {
     );
 }
 
+function renderOperationsInsightsPanel(container: HTMLElement): void {
+    let root = panelRoots.get(container);
+    if (!root) {
+        root = createRoot(container);
+        panelRoots.set(container, root);
+    }
+
+    const currentTheme = getTheme();
+
+    root.render(
+        <ThemeProvider theme={currentTheme}>
+            <AiSummaryPanel
+                title="AI Operations Insights"
+                fetchSummary={() => summarizeOperations()}
+            />
+        </ThemeProvider>
+    );
+}
+
 function unmountSummaryPanel(container: HTMLElement): void {
     const root = panelRoots.get(container);
     if (root) {
@@ -171,6 +190,7 @@ function unmountSummaryPanel(container: HTMLElement): void {
     analyzeLateAlert: analyzeLateAlertForJob,
     suggestCouriers: suggestCouriersForJob,
     renderSummaryPanel,
+    renderOperationsInsightsPanel,
     unmountSummaryPanel,
 };
 

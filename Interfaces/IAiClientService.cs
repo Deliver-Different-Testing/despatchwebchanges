@@ -1,38 +1,36 @@
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using DespatchWeb.Models;
 
 namespace DespatchWeb.Interfaces;
 
 public class AiMessage
 {
-    public string Role { get; set; } // "user" or "assistant"
-    public string Content { get; set; }
+    public string Role { get; init; } // "user" or "assistant"
+    public string Content { get; init; }
 }
 
 public class AiToolDefinition
 {
-    public string Name { get; set; }
-    public string Description { get; set; }
-    public string InputSchemaJson { get; set; }
+    public string Name { get; init; }
+    public string Description { get; init; }
+    public string InputSchemaJson { get; init; }
 }
 
 public class AiToolCall
 {
     public string ToolUseId { get; set; }
-    public string ToolName { get; set; }
-    public string ArgumentsJson { get; set; }
+    public string ToolName { get; init; }
+    public string ArgumentsJson { get; init; }
 }
 
 public class AiClientResponse
 {
     public string TextContent { get; set; }
-    public List<AiToolCall> ToolCalls { get; set; } = new();
+    public List<AiToolCall> ToolCalls { get; init; } = [];
     public bool HasToolUse => ToolCalls.Count > 0;
-    public int InputTokens { get; set; }
-    public int OutputTokens { get; set; }
+    public int InputTokens { get; init; }
+    public int OutputTokens { get; init; }
 }
 
 public interface IAiClientService
@@ -48,5 +46,5 @@ public interface IAiClientService
         string systemPrompt,
         List<AiMessage> messages,
         int maxTokens,
-        [EnumeratorCancellation] CancellationToken ct = default);
+        CancellationToken ct = default);
 }

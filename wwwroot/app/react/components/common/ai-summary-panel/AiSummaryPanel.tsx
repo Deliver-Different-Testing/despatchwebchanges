@@ -14,16 +14,20 @@ import {
     Collapse,
     CircularProgress,
     IconButton,
+    Skeleton,
     Tooltip,
     Typography,
 } from '@mui/material';
 import {
     AutoAwesome as AutoAwesomeIcon,
+    ContentCopy as ContentCopyIcon,
     ExpandLess as ExpandLessIcon,
     ExpandMore as ExpandMoreIcon,
+    Refresh as RefreshIcon,
     Stop as StopIcon,
 } from '@mui/icons-material';
 import {AiSummaryResponse} from '../../../services/aiAssistantApi';
+import {AiMarkdownRenderer} from './AiMarkdownRenderer';
 
 interface AiSummaryPanelProps {
     title: string;
@@ -32,6 +36,17 @@ interface AiSummaryPanelProps {
     autoFetch?: boolean;
     /** Accent color for the header stripe */
     accentColor?: string;
+}
+
+function formatRelativeTime(date: Date): string {
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (seconds < 10) return 'just now';
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
 }
 
 export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
@@ -45,7 +60,20 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
     const [summary, setSummary] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [hasFetched, setHasFetched] = useState(false);
+    const [generatedAt, setGeneratedAt] = useState<Date | null>(null);
+    const [relativeTime, setRelativeTime] = useState<string>('');
+    const [copyTooltip, setCopyTooltip] = useState('Copy to clipboard');
     const abortControllerRef = useRef<AbortController | null>(null);
+
+    // Update relative time every 30 seconds
+    useEffect(() => {
+        if (!generatedAt) return;
+        setRelativeTime(formatRelativeTime(generatedAt));
+        const interval = setInterval(() => {
+            setRelativeTime(formatRelativeTime(generatedAt));
+        }, 30000);
+        return () => clearInterval(interval);
+    }, [generatedAt]);
 
     const loadSummary = useCallback(async () => {
         // Abort any in-flight request
@@ -60,6 +88,7 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
             const response = await fetchSummary(controller.signal);
             setSummary(response.summary);
             setHasFetched(true);
+            setGeneratedAt(new Date());
         } catch (e: any) {
             if (e?.name === 'AbortError' || e?.name === 'CanceledError' || controller.signal.aborted) {
                 return;
@@ -86,6 +115,36 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
             loadSummary();
         }
     }, [expanded, hasFetched, loading, loadSummary]);
+
+    const handleRefresh = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        setSummary(null);
+        setHasFetched(false);
+        setGeneratedAt(null);
+        loadSummary();
+    }, [loadSummary]);
+
+    const handleCopy = useCallback(async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!summary) return;
+        try {
+            await navigator.clipboard.writeText(summary);
+            setCopyTooltip('Copied!');
+            setTimeout(() => setCopyTooltip('Copy to clipboard'), 2000);
+        } catch {
+            // Fallback for older browsers
+            const textarea = document.createElement('textarea');
+            textarea.value = summary;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            setCopyTooltip('Copied!');
+            setTimeout(() => setCopyTooltip('Copy to clipboard'), 2000);
+        }
+    }, [summary]);
 
     // Auto-fetch on mount if requested
     useEffect(() => {
@@ -133,7 +192,15 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
                         {title}
                     </Typography>
                 </Box>
-                <Box display="flex" alignItems="center">
+                <Box display="flex" alignItems="center" gap={0.5}>
+                    {generatedAt && !loading && (
+                        <Typography variant="caption" color="text.disabled" sx={{mr: 0.5}}>
+                            {relativeTime}
+                        </Typography>
+                    )}
+                    {loading && (
+                        <CircularProgress size={16} sx={{mr: 0.5}} />
+                    )}
                     {loading && (
                         <Tooltip title="Stop generating">
                             <IconButton
@@ -142,8 +209,23 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
                                     e.stopPropagation();
                                     handleStop();
                                 }}
+                                sx={{p: 0.5}}
                             >
-                                <StopIcon fontSize="small" />
+                                <StopIcon sx={{fontSize: 18}} />
+                            </IconButton>
+                        </Tooltip>
+                    )}
+                    {summary && !loading && (
+                        <Tooltip title={copyTooltip}>
+                            <IconButton size="small" onClick={handleCopy} sx={{p: 0.5}}>
+                                <ContentCopyIcon sx={{fontSize: 16}} />
+                            </IconButton>
+                        </Tooltip>
+                    )}
+                    {hasFetched && !loading && (
+                        <Tooltip title="Refresh">
+                            <IconButton size="small" onClick={handleRefresh} sx={{p: 0.5}}>
+                                <RefreshIcon sx={{fontSize: 18}} />
                             </IconButton>
                         </Tooltip>
                     )}
@@ -155,11 +237,11 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
             <Collapse in={expanded}>
                 <CardContent sx={{pt: 1, pb: 2, px: 2}}>
                     {loading && !summary && (
-                        <Box display="flex" alignItems="center" gap={1} py={1}>
-                            <CircularProgress size={18} />
-                            <Typography variant="body2" color="text.secondary">
-                                Generating AI summary...
-                            </Typography>
+                        <Box py={1}>
+                            <Skeleton variant="text" width="90%" />
+                            <Skeleton variant="text" width="75%" />
+                            <Skeleton variant="text" width="60%" />
+                            <Skeleton variant="text" width="80%" />
                         </Box>
                     )}
 
@@ -170,16 +252,7 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
                     )}
 
                     {summary && (
-                        <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{
-                                lineHeight: 1.7,
-                                whiteSpace: 'pre-line',
-                            }}
-                        >
-                            {summary}
-                        </Typography>
+                        <AiMarkdownRenderer content={summary} />
                     )}
 
                     {!loading && !error && !summary && (
