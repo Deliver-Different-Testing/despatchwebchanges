@@ -48,7 +48,9 @@ const toHHmm = (time?: string): string | undefined => {
 const fromHHmm = (hhmm?: string): string | undefined => {
     if (!hhmm) return undefined;
     const [h, m] = hhmm.split(':').map(Number);
-    return dayjs().hour(h).minute(m).second(0).toISOString();
+    const hh = String(h).padStart(2, '0');
+    const mm = String(m).padStart(2, '0');
+    return `2000-01-01T${hh}:${mm}:00`;
 };
 
 const columns: DataTableColumn<AfterHoursCourierScheduleItem>[] = [

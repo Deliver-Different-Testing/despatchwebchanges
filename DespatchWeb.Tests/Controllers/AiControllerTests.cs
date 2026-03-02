@@ -286,6 +286,476 @@ public class AiControllerTests
 
     #endregion
 
+    #region SummarizeTaskDashboard
+
+    [Fact]
+    public async Task SummarizeTaskDashboard_AiFeaturesDisabled_Returns503()
+    {
+        _settingsValue.EnableAiFeatures = false;
+        var controller = CreateController();
+
+        var result = await controller.SummarizeTaskDashboard(CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(503);
+    }
+
+    [Fact]
+    public async Task SummarizeTaskDashboard_RateLimited_Returns429()
+    {
+        _rateLimiterMock.Setup(x => x.TryAcquireAsync(It.IsAny<int>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+        var controller = CreateController();
+
+        var result = await controller.SummarizeTaskDashboard(CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(429);
+    }
+
+    [Fact]
+    public async Task SummarizeTaskDashboard_ValidRequest_ReturnsJson()
+    {
+        _summarizationServiceMock.Setup(x => x.SummarizeTaskDashboardAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AiSummaryResponse
+            {
+                Summary = "3 overdue tasks need attention.",
+                Usage = new AiUsageInfo { InputTokens = 150, OutputTokens = 30 }
+            });
+
+        var controller = CreateController();
+
+        var result = await controller.SummarizeTaskDashboard(CancellationToken.None);
+
+        result.Should().BeOfType<JsonResult>();
+    }
+
+    [Fact]
+    public async Task SummarizeTaskDashboard_ValidRequest_RecordsTokenUsage()
+    {
+        _summarizationServiceMock.Setup(x => x.SummarizeTaskDashboardAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AiSummaryResponse
+            {
+                Summary = "Summary",
+                Usage = new AiUsageInfo { InputTokens = 100, OutputTokens = 25 }
+            });
+
+        var controller = CreateController();
+
+        await controller.SummarizeTaskDashboard(CancellationToken.None);
+
+        _rateLimiterMock.Verify(x => x.RecordTokenUsageAsync(1, "Pacific/Auckland", 100, 25), Times.Once);
+    }
+
+    [Fact]
+    public async Task SummarizeTaskDashboard_ServiceThrows_Returns500()
+    {
+        _summarizationServiceMock.Setup(x => x.SummarizeTaskDashboardAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("DB error"));
+
+        var controller = CreateController();
+
+        var result = await controller.SummarizeTaskDashboard(CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(500);
+    }
+
+    [Fact]
+    public async Task SummarizeTaskDashboard_Cancelled_Returns499()
+    {
+        _summarizationServiceMock.Setup(x => x.SummarizeTaskDashboardAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new OperationCanceledException());
+
+        var controller = CreateController();
+
+        var result = await controller.SummarizeTaskDashboard(CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(499);
+    }
+
+    #endregion
+
+    #region SummarizeJob
+
+    [Fact]
+    public async Task SummarizeJob_AiFeaturesDisabled_Returns503()
+    {
+        _settingsValue.EnableAiFeatures = false;
+        var controller = CreateController();
+
+        var result = await controller.SummarizeJob(1, CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(503);
+    }
+
+    [Fact]
+    public async Task SummarizeJob_RateLimited_Returns429()
+    {
+        _rateLimiterMock.Setup(x => x.TryAcquireAsync(It.IsAny<int>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+        var controller = CreateController();
+
+        var result = await controller.SummarizeJob(1, CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(429);
+    }
+
+    [Fact]
+    public async Task SummarizeJob_ValidRequest_ReturnsJson()
+    {
+        _summarizationServiceMock.Setup(x => x.SummarizeJobAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AiSummaryResponse
+            {
+                Summary = "Job picked up on time and delivered.",
+                Usage = new AiUsageInfo { InputTokens = 200, OutputTokens = 35 }
+            });
+
+        var controller = CreateController();
+
+        var result = await controller.SummarizeJob(1, CancellationToken.None);
+
+        result.Should().BeOfType<JsonResult>();
+    }
+
+    [Fact]
+    public async Task SummarizeJob_ServiceThrows_Returns500()
+    {
+        _summarizationServiceMock.Setup(x => x.SummarizeJobAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Error"));
+
+        var controller = CreateController();
+
+        var result = await controller.SummarizeJob(1, CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(500);
+    }
+
+    #endregion
+
+    #region SummarizeOperations
+
+    [Fact]
+    public async Task SummarizeOperations_AiFeaturesDisabled_Returns503()
+    {
+        _settingsValue.EnableAiFeatures = false;
+        var controller = CreateController();
+
+        var result = await controller.SummarizeOperations(CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(503);
+    }
+
+    [Fact]
+    public async Task SummarizeOperations_RateLimited_Returns429()
+    {
+        _rateLimiterMock.Setup(x => x.TryAcquireAsync(It.IsAny<int>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+        var controller = CreateController();
+
+        var result = await controller.SummarizeOperations(CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(429);
+    }
+
+    [Fact]
+    public async Task SummarizeOperations_ValidRequest_ReturnsJson()
+    {
+        _summarizationServiceMock.Setup(x => x.SummarizeOperationsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AiSummaryResponse
+            {
+                Summary = "15 active, 8 inactive.",
+                Usage = new AiUsageInfo { InputTokens = 80, OutputTokens = 20 }
+            });
+
+        var controller = CreateController();
+
+        var result = await controller.SummarizeOperations(CancellationToken.None);
+
+        result.Should().BeOfType<JsonResult>();
+    }
+
+    [Fact]
+    public async Task SummarizeOperations_ValidRequest_RecordsTokenUsage()
+    {
+        _summarizationServiceMock.Setup(x => x.SummarizeOperationsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AiSummaryResponse
+            {
+                Summary = "OK",
+                Usage = new AiUsageInfo { InputTokens = 90, OutputTokens = 15 }
+            });
+
+        var controller = CreateController();
+
+        await controller.SummarizeOperations(CancellationToken.None);
+
+        _rateLimiterMock.Verify(x => x.RecordTokenUsageAsync(1, "Pacific/Auckland", 90, 15), Times.Once);
+    }
+
+    [Fact]
+    public async Task SummarizeOperations_ServiceThrows_Returns500()
+    {
+        _summarizationServiceMock.Setup(x => x.SummarizeOperationsAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Error"));
+
+        var controller = CreateController();
+
+        var result = await controller.SummarizeOperations(CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(500);
+    }
+
+    #endregion
+
+    #region SummarizeCompliance
+
+    [Fact]
+    public async Task SummarizeCompliance_AiFeaturesDisabled_Returns503()
+    {
+        _settingsValue.EnableAiFeatures = false;
+        var controller = CreateController();
+
+        var result = await controller.SummarizeCompliance(CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(503);
+    }
+
+    [Fact]
+    public async Task SummarizeCompliance_RateLimited_Returns429()
+    {
+        _rateLimiterMock.Setup(x => x.TryAcquireAsync(It.IsAny<int>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+        var controller = CreateController();
+
+        var result = await controller.SummarizeCompliance(CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(429);
+    }
+
+    [Fact]
+    public async Task SummarizeCompliance_ValidRequest_ReturnsJson()
+    {
+        _summarizationServiceMock.Setup(x => x.SummarizeComplianceAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AiSummaryResponse
+            {
+                Summary = "3 expired licenses.",
+                Usage = new AiUsageInfo { InputTokens = 120, OutputTokens = 20 }
+            });
+
+        var controller = CreateController();
+
+        var result = await controller.SummarizeCompliance(CancellationToken.None);
+
+        result.Should().BeOfType<JsonResult>();
+    }
+
+    [Fact]
+    public async Task SummarizeCompliance_ServiceThrows_Returns500()
+    {
+        _summarizationServiceMock.Setup(x => x.SummarizeComplianceAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Error"));
+
+        var controller = CreateController();
+
+        var result = await controller.SummarizeCompliance(CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(500);
+    }
+
+    [Fact]
+    public async Task SummarizeCompliance_Cancelled_Returns499()
+    {
+        _summarizationServiceMock.Setup(x => x.SummarizeComplianceAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new OperationCanceledException());
+
+        var controller = CreateController();
+
+        var result = await controller.SummarizeCompliance(CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(499);
+    }
+
+    #endregion
+
+    #region AnalyzeLateAlert
+
+    [Fact]
+    public async Task AnalyzeLateAlert_AiFeaturesDisabled_Returns503()
+    {
+        _settingsValue.EnableAiFeatures = false;
+        var controller = CreateController();
+
+        var result = await controller.AnalyzeLateAlert(1, CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(503);
+    }
+
+    [Fact]
+    public async Task AnalyzeLateAlert_RateLimited_Returns429()
+    {
+        _rateLimiterMock.Setup(x => x.TryAcquireAsync(It.IsAny<int>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+        var controller = CreateController();
+
+        var result = await controller.AnalyzeLateAlert(1, CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(429);
+    }
+
+    [Fact]
+    public async Task AnalyzeLateAlert_ValidRequest_ReturnsJson()
+    {
+        _summarizationServiceMock.Setup(x => x.AnalyzeLateAlertAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AiSummaryResponse
+            {
+                Summary = "Recommend: Monitor the situation.",
+                Usage = new AiUsageInfo { InputTokens = 100, OutputTokens = 20 }
+            });
+
+        var controller = CreateController();
+
+        var result = await controller.AnalyzeLateAlert(1, CancellationToken.None);
+
+        result.Should().BeOfType<JsonResult>();
+    }
+
+    [Fact]
+    public async Task AnalyzeLateAlert_ValidRequest_RecordsTokenUsage()
+    {
+        _summarizationServiceMock.Setup(x => x.AnalyzeLateAlertAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AiSummaryResponse
+            {
+                Summary = "Analysis",
+                Usage = new AiUsageInfo { InputTokens = 110, OutputTokens = 22 }
+            });
+
+        var controller = CreateController();
+
+        await controller.AnalyzeLateAlert(1, CancellationToken.None);
+
+        _rateLimiterMock.Verify(x => x.RecordTokenUsageAsync(1, "Pacific/Auckland", 110, 22), Times.Once);
+    }
+
+    [Fact]
+    public async Task AnalyzeLateAlert_ServiceThrows_Returns500()
+    {
+        _summarizationServiceMock.Setup(x => x.AnalyzeLateAlertAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Error"));
+
+        var controller = CreateController();
+
+        var result = await controller.AnalyzeLateAlert(1, CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(500);
+    }
+
+    #endregion
+
+    #region SuggestCouriers
+
+    [Fact]
+    public async Task SuggestCouriers_AiFeaturesDisabled_Returns503()
+    {
+        _settingsValue.EnableAiFeatures = false;
+        var controller = CreateController();
+
+        var result = await controller.SuggestCouriers(1, CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(503);
+    }
+
+    [Fact]
+    public async Task SuggestCouriers_RateLimited_Returns429()
+    {
+        _rateLimiterMock.Setup(x => x.TryAcquireAsync(It.IsAny<int>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+        var controller = CreateController();
+
+        var result = await controller.SuggestCouriers(1, CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(429);
+    }
+
+    [Fact]
+    public async Task SuggestCouriers_ValidRequest_ReturnsJson()
+    {
+        _summarizationServiceMock.Setup(x => x.SuggestCouriersAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AiSummaryResponse
+            {
+                Summary = "1. John - closest. 2. Jane - lowest load.",
+                Usage = new AiUsageInfo { InputTokens = 200, OutputTokens = 40 }
+            });
+
+        var controller = CreateController();
+
+        var result = await controller.SuggestCouriers(1, CancellationToken.None);
+
+        result.Should().BeOfType<JsonResult>();
+    }
+
+    [Fact]
+    public async Task SuggestCouriers_ValidRequest_RecordsTokenUsage()
+    {
+        _summarizationServiceMock.Setup(x => x.SuggestCouriersAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AiSummaryResponse
+            {
+                Summary = "Suggestions",
+                Usage = new AiUsageInfo { InputTokens = 250, OutputTokens = 45 }
+            });
+
+        var controller = CreateController();
+
+        await controller.SuggestCouriers(1, CancellationToken.None);
+
+        _rateLimiterMock.Verify(x => x.RecordTokenUsageAsync(1, "Pacific/Auckland", 250, 45), Times.Once);
+    }
+
+    [Fact]
+    public async Task SuggestCouriers_ServiceThrows_Returns500()
+    {
+        _summarizationServiceMock.Setup(x => x.SuggestCouriersAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Error"));
+
+        var controller = CreateController();
+
+        var result = await controller.SuggestCouriers(1, CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(500);
+    }
+
+    [Fact]
+    public async Task SuggestCouriers_Cancelled_Returns499()
+    {
+        _summarizationServiceMock.Setup(x => x.SuggestCouriersAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new OperationCanceledException());
+
+        var controller = CreateController();
+
+        var result = await controller.SuggestCouriers(1, CancellationToken.None);
+
+        var statusResult = result as ObjectResult;
+        statusResult!.StatusCode.Should().Be(499);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private static AiChatRequest CreateValidChatRequest()

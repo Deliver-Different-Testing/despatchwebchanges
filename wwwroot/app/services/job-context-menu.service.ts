@@ -21,6 +21,8 @@ class JobContextMenuService implements angular.IServiceProvider {
     static $inject = [
         "$mdDialog",
         "$document",
+        "$http",
+        "$ocLazyLoad",
         "DispatchData",
         "toastrService",
         "eventGroupDialogService",
@@ -35,6 +37,8 @@ class JobContextMenuService implements angular.IServiceProvider {
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private $document: angular.IDocumentService,
+        private $http: angular.IHttpService,
+        private $ocLazyLoad: oc.ILazyLoad,
         private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
         private eventGroupDialogService: EventGroupDialogService,
@@ -116,6 +120,13 @@ class JobContextMenuService implements angular.IServiceProvider {
                 icon: "local_shipping",
                 click: (_$itemScope: any, $event: MouseEvent) =>
                     this.latePickup($event, job, callbacks.onRefresh),
+                hasBottomDivider: false,
+            });
+
+            menuOptions.push({
+                text: "AI Late Alert Analysis",
+                icon: "auto_awesome",
+                click: () => this.showAiLateAlertAnalysis(job),
                 hasBottomDivider: true,
             });
         }
@@ -190,6 +201,14 @@ class JobContextMenuService implements angular.IServiceProvider {
                 hasBottomDivider: true,
             });
         }
+
+        // AI Courier Suggestions
+        menuOptions.push({
+            text: "AI Suggest Couriers",
+            icon: "auto_awesome",
+            click: () => this.showAiCourierSuggestions(job),
+            hasBottomDivider: true,
+        });
 
         // Set First Job
         menuOptions.push({
@@ -707,6 +726,67 @@ class JobContextMenuService implements angular.IServiceProvider {
             if (!error) return; // User cancelled
             console.error("Error sending bulk job to live:", error);
             this.toastrService.showErrorToast("Failed to send bulk job to live");
+        }
+    }
+
+    private async ensureAiAssistantLoaded(): Promise<void> {
+        if ((window as any).ReactAiAssistant) return;
+
+        const manifestResponse = await this.$http.get<Record<string, string>>('dist/manifest.json');
+        const manifest = manifestResponse.data;
+        const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
+
+        if (!(window as any).React) {
+            await this.$ocLazyLoad.load(getAssetPath('vendor-react.js'));
+        }
+
+        await this.$ocLazyLoad.load({
+            name: 'uDispatch.aiAssistantDialogReact',
+            files: [getAssetPath('aiAssistantDialogReact.js')]
+        });
+    }
+
+    private async showAiLateAlertAnalysis(job: IDispatchJob): Promise<void> {
+        if (!job?.id) return;
+        try {
+            this.toastrService.showInfoToast("Analyzing late alert...");
+            await this.ensureAiAssistantLoaded();
+            const response = await (window as any).ReactAiAssistant.analyzeLateAlert(job.id);
+            if (response?.summary) {
+                await this.$mdDialog.show(
+                    this.$mdDialog.alert()
+                        .title(`AI Late Alert Analysis - ${job.jobNo}`)
+                        .htmlContent(`<div style="white-space: pre-line; line-height: 1.6;">${response.summary}</div>`)
+                        .ok('Close')
+                );
+            } else {
+                this.toastrService.showWarningToast("No analysis data returned");
+            }
+        } catch (error: any) {
+            console.error("AI late alert analysis error:", error);
+            this.toastrService.showErrorToast(error?.message || "Failed to analyze late alert");
+        }
+    }
+
+    private async showAiCourierSuggestions(job: IDispatchJob): Promise<void> {
+        if (!job?.id) return;
+        try {
+            this.toastrService.showInfoToast("Getting AI courier suggestions...");
+            await this.ensureAiAssistantLoaded();
+            const response = await (window as any).ReactAiAssistant.suggestCouriers(job.id);
+            if (response?.summary) {
+                await this.$mdDialog.show(
+                    this.$mdDialog.alert()
+                        .title(`AI Courier Suggestions - ${job.jobNo}`)
+                        .htmlContent(`<div style="white-space: pre-line; line-height: 1.6;">${response.summary}</div>`)
+                        .ok('Close')
+                );
+            } else {
+                this.toastrService.showWarningToast("No suggestions data returned");
+            }
+        } catch (error: any) {
+            console.error("AI courier suggestions error:", error);
+            this.toastrService.showErrorToast(error?.message || "Failed to get courier suggestions");
         }
     }
 }

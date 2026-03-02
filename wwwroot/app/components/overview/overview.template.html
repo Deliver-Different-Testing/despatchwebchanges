@@ -243,6 +243,34 @@
                             </div>
                         </div>
 
+                        <!-- AI Operations Insights -->
+                        <md-card class="ai-insights-card" style="margin-bottom: 16px; border-left: 4px solid #7c4dff; border-radius: 8px;">
+                            <div class="ai-insights-header"
+                                 style="display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; cursor: pointer; background: rgba(124, 77, 255, 0.04);"
+                                 ng-click="ctrl.toggleAiInsights()">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <md-icon md-font-set="material-symbols-outlined" style="color: #7c4dff;">auto_awesome</md-icon>
+                                    <span style="font-weight: 600; font-size: 14px;">AI Operations Insights</span>
+                                    <md-progress-circular ng-if="ctrl.aiInsightsLoading" md-mode="indeterminate" md-diameter="18" style="margin-left: 8px;"></md-progress-circular>
+                                </div>
+                                <md-icon md-font-set="material-symbols-outlined">
+                                    {{ctrl.aiInsightsExpanded ? 'expand_less' : 'expand_more'}}
+                                </md-icon>
+                            </div>
+                            <md-card-content ng-if="ctrl.aiInsightsExpanded" style="padding: 8px 16px 16px;">
+                                <div ng-if="ctrl.aiInsightsLoading && !ctrl.aiInsightsSummary" style="display: flex; align-items: center; gap: 8px; padding: 8px 0;">
+                                    <md-progress-circular md-mode="indeterminate" md-diameter="18"></md-progress-circular>
+                                    <span style="color: rgba(0,0,0,0.54); font-size: 14px;">Generating AI summary...</span>
+                                </div>
+                                <div ng-if="ctrl.aiInsightsError" style="color: #f44336; font-size: 14px;">
+                                    {{ctrl.aiInsightsError}}
+                                </div>
+                                <div ng-if="ctrl.aiInsightsSummary" style="white-space: pre-line; line-height: 1.7; color: rgba(0,0,0,0.65); font-size: 14px;">
+                                    {{ctrl.aiInsightsSummary}}
+                                </div>
+                            </md-card-content>
+                        </md-card>
+
                         <!-- Data Table -->
                         <div class="data-table data-table--hover data-table--sticky-header"
                              ng-class="{'data-table--loading': ctrl.isLoading}">

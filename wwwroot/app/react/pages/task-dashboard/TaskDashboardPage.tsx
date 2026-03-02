@@ -81,6 +81,8 @@ import {
     useUpdateTaskTime,
 } from '../../hooks';
 import {tasksApi} from '../../services/tasksApi';
+import {summarizeTaskDashboard} from '../../services/aiAssistantApi';
+import {AiSummaryPanel} from '../../components/common/ai-summary-panel/AiSummaryPanel';
 
 // Local storage keys
 const getViewPreferenceKey = () => {
@@ -778,6 +780,15 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                     </Box>
                 </CardContent>
             </Card>
+
+            {/* AI Briefing */}
+            <Box sx={{mb: 2, flexShrink: 0}}>
+                <AiSummaryPanel
+                    title="AI Daily Briefing"
+                    fetchSummary={summarizeTaskDashboard}
+                    accentColor="#7c4dff"
+                />
+            </Box>
 
             {/* Main Content - Grid Layout */}
             <Box

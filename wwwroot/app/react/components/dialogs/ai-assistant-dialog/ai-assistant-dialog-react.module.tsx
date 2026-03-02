@@ -12,7 +12,7 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import { AiAssistantDialog } from './AiAssistantDialog';
 import { OpenAiAssistantDialogOptions } from './types';
 import { getTheme } from '../../../theme/muiTheme';
-import { summarizeJobNotes, AiSummaryResponse } from '../../../services/aiAssistantApi';
+import { summarizeJobNotes, summarizeJob, analyzeLateAlert, suggestCouriers, AiSummaryResponse } from '../../../services/aiAssistantApi';
 
 // Get current staff info from global variables
 declare const FullName: string;
@@ -94,6 +94,18 @@ class AiAssistantDialogManager {
     async summarizeNotes(jobId: number): Promise<AiSummaryResponse> {
         return summarizeJobNotes(jobId);
     }
+
+    async summarizeFullJob(jobId: number): Promise<AiSummaryResponse> {
+        return summarizeJob(jobId);
+    }
+
+    async analyzeLateAlert(jobId: number): Promise<AiSummaryResponse> {
+        return analyzeLateAlert(jobId);
+    }
+
+    async suggestCouriers(jobId: number): Promise<AiSummaryResponse> {
+        return suggestCouriers(jobId);
+    }
 }
 
 const aiAssistantDialogManager = new AiAssistantDialogManager();
@@ -106,10 +118,25 @@ export function summarizeNotesForJob(jobId: number): Promise<AiSummaryResponse> 
     return aiAssistantDialogManager.summarizeNotes(jobId);
 }
 
+export function summarizeFullJobForJob(jobId: number): Promise<AiSummaryResponse> {
+    return aiAssistantDialogManager.summarizeFullJob(jobId);
+}
+
+export function analyzeLateAlertForJob(jobId: number): Promise<AiSummaryResponse> {
+    return aiAssistantDialogManager.analyzeLateAlert(jobId);
+}
+
+export function suggestCouriersForJob(jobId: number): Promise<AiSummaryResponse> {
+    return aiAssistantDialogManager.suggestCouriers(jobId);
+}
+
 // Expose to window for AngularJS access
 (window as any).ReactAiAssistant = {
     open: openAiAssistantDialog,
     summarizeNotes: summarizeNotesForJob,
+    summarizeJob: summarizeFullJobForJob,
+    analyzeLateAlert: analyzeLateAlertForJob,
+    suggestCouriers: suggestCouriersForJob,
 };
 
 // Create AngularJS module
