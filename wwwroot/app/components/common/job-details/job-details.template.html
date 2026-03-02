@@ -85,6 +85,14 @@
             <!-- Spacer -->
             <div flex></div>
 
+            <!-- AI Full Job Summary Button -->
+            <md-button class="md-icon-button"
+                       aria-label="AI Job Summary"
+                       ng-click="ctrl.summarizeFullJob()">
+                <md-icon md-font-set="material-symbols-outlined">auto_awesome</md-icon>
+                <md-tooltip>AI Job Summary</md-tooltip>
+            </md-button>
+
             <!-- POD Report Menu -->
             <md-menu ng-if="ctrl.job.done && !ctrl.job.preBook">
                 <md-button class="md-icon-button" aria-label="POD Report" ng-click="$mdMenu.open($event)">

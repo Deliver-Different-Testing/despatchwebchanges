@@ -2057,6 +2057,45 @@ class JobDetailController extends BaseController {
         }
     }
 
+    private async ensureAiAssistantLoaded(): Promise<void> {
+        if ((window as any).ReactAiAssistant) return;
+
+        const manifestResponse = await this.$http.get<Record<string, string>>('dist/manifest.json');
+        const manifest = manifestResponse.data;
+        const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
+
+        if (!(window as any).React) {
+            await this.$ocLazyLoad.load(getAssetPath('vendor-react.js'));
+        }
+
+        await this.$ocLazyLoad.load({
+            name: 'uDispatch.aiAssistantDialogReact',
+            files: [getAssetPath('aiAssistantDialogReact.js')]
+        });
+    }
+
+    async summarizeFullJob(): Promise<void> {
+        if (!this.job?.id) return;
+        try {
+            this.toastrService.showInfoToast("Generating AI summary...");
+            await this.ensureAiAssistantLoaded();
+            const response = await (window as any).ReactAiAssistant.summarizeJob(this.job.id);
+            if (response?.summary) {
+                await this.$mdDialog.show(
+                    this.$mdDialog.alert()
+                        .title('AI Job Summary')
+                        .htmlContent(`<div style="white-space: pre-line; line-height: 1.6;">${response.summary}</div>`)
+                        .ok('Close')
+                );
+            } else {
+                this.toastrService.showWarningToast("No summary data returned");
+            }
+        } catch (error: any) {
+            console.error("AI summarize job error:", error);
+            this.toastrService.showErrorToast(error?.message || "Failed to generate AI summary");
+        }
+    }
+
     openPodReport(): void {
         if (!this.job?.id) return;
         const url = this.DispatchData.getPodReportUrl(this.job.id);

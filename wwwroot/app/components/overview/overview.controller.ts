@@ -81,6 +81,13 @@ class OverviewController extends BaseController {
 
     activeTab: number;
 
+    // AI Insights
+    aiInsightsExpanded: boolean = false;
+    aiInsightsLoading: boolean = false;
+    aiInsightsSummary: string | null = null;
+    aiInsightsError: string | null = null;
+    aiInsightsFetched: boolean = false;
+
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private $mdSidenav: angular.material.ISidenavService,
@@ -604,6 +611,28 @@ class OverviewController extends BaseController {
     private saveLimit(): void {
         if (Modernizr.localstorage) {
             localStorage.setItem(this.OverviewJobLimitDisplay, `${this.query.limit}`);
+        }
+    }
+
+    toggleAiInsights(): void {
+        this.aiInsightsExpanded = !this.aiInsightsExpanded;
+        if (this.aiInsightsExpanded && !this.aiInsightsFetched && !this.aiInsightsLoading) {
+            this.loadAiInsights();
+        }
+    }
+
+    private async loadAiInsights(): Promise<void> {
+        this.aiInsightsLoading = true;
+        this.aiInsightsError = null;
+        try {
+            const response = await this.$http.post<{ summary: string }>('/Ai/SummarizeOperations', null);
+            this.aiInsightsSummary = response.data.summary;
+            this.aiInsightsFetched = true;
+        } catch (error: any) {
+            this.aiInsightsError = error?.data || 'Failed to generate AI insights';
+        } finally {
+            this.aiInsightsLoading = false;
+            this.applyScope();
         }
     }
 }

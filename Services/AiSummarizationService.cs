@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,6 +17,8 @@ public class AiSummarizationService(
     IAiClientService aiClient,
     INoteRepository noteRepository,
     ITaskRepository taskRepository,
+    IJobRepository jobRepository,
+    ICourierRepository courierRepository,
     IOptions<AnthropicSettings> settings) : IAiSummarizationService
 {
     private const string SummarizationSystemPrompt =
@@ -25,18 +28,63 @@ public class AiSummarizationService(
         Keep the summary to 2-4 sentences. Use plain language.
         """;
 
+    private const string TaskBriefingSystemPrompt =
+        """
+        You are a dispatch operations briefing assistant. Summarize today's task dashboard for a dispatcher starting their shift.
+        Group tasks by urgency: overdue items first, then due today, then upcoming.
+        Highlight the count of open vs closed tasks, flag any overdue items with job numbers, and suggest a priority order.
+        Keep it concise and actionable (3-5 sentences). Use plain language.
+        """;
+
+    private const string JobSummarySystemPrompt =
+        """
+        You are a logistics job summarizer. Create a single coherent chronological narrative combining job details, notes, and events.
+        Include: booking time, key milestones (pickup, delivery, POD), any issues or complaints, staff notes, and open follow-ups.
+        Keep the summary to 3-5 sentences. Use plain language.
+        """;
+
+    private const string OperationsSystemPrompt =
+        """
+        You are a dispatch operations analyst. Interpret the overview statistics and flag anomalies.
+        Compare active/inactive/completed counts, note if inactive jobs are unusually high, and suggest actions.
+        Include the current time context when assessing whether numbers are normal.
+        Keep it concise and actionable (2-4 sentences). Use plain language.
+        """;
+
+    private const string ComplianceSystemPrompt =
+        """
+        You are a fleet compliance risk analyst. Summarize the compliance status of the driver fleet.
+        Prioritize: expired items first (CRITICAL), then items expiring within 7 days (URGENT), then within 30 days (WARNING).
+        Flag any drivers with multiple expired items. Suggest immediate actions needed.
+        Keep it concise and actionable (3-5 sentences). Use plain language.
+        """;
+
+    private const string LateAlertSystemPrompt =
+        """
+        You are a dispatch late-alert analyst. Analyze a late-flagged job and provide a situation assessment.
+        Include: how late the job is, remaining SLA window, and a recommended action (monitor / contact courier / reassign / escalate).
+        Consider the pickup/delivery times and minutes remaining. Be decisive in your recommendation.
+        Keep it to 2-3 sentences. Use plain language.
+        """;
+
+    private const string CourierSuggestionSystemPrompt =
+        """
+        You are a courier assignment advisor. Given a job's details and available couriers with their workload,
+        rank the top 3-5 best couriers for this job with brief reasoning for each.
+        Consider: current job count (prefer lower), vehicle type match, driver status, and availability.
+        Format as a numbered list with courier name and reasoning. Keep each entry to one sentence.
+        """;
+
     public async Task<AiSummaryResponse> SummarizeJobNotesAsync(int jobId, CancellationToken ct = default)
     {
         var notes = await noteRepository.GetNotesByJobIdAsync(jobId);
 
         if (notes == null || notes.Count == 0)
-        {
             return new AiSummaryResponse
             {
                 Summary = "No notes found for this job.",
                 Usage = new AiUsageInfo()
             };
-        }
 
         var sb = new StringBuilder();
         sb.AppendLine("Summarize the following job notes:");
@@ -76,13 +124,11 @@ public class AiSummarizationService(
         var events = await taskRepository.GetAllTasksAsync(filters);
 
         if (events == null || events.Count == 0)
-        {
             return new AiSummaryResponse
             {
                 Summary = "No events found for this job.",
                 Usage = new AiUsageInfo()
             };
-        }
 
         var sb = new StringBuilder();
         sb.AppendLine("Summarize the following job event history:");
@@ -102,6 +148,277 @@ public class AiSummarizationService(
 
         var response = await aiClient.SendMessageAsync(
             SummarizationSystemPrompt,
+            messages,
+            settings.Value.MaxTokensPerSummary,
+            ct: ct);
+
+        return new AiSummaryResponse
+        {
+            Summary = response.TextContent ?? "Unable to generate summary.",
+            Usage = new AiUsageInfo
+            {
+                InputTokens = response.InputTokens,
+                OutputTokens = response.OutputTokens
+            }
+        };
+    }
+
+    public async Task<AiSummaryResponse> SummarizeTaskDashboardAsync(CancellationToken ct = default)
+    {
+        var filters = new TaskTableFiltersRequest { ShowCompleted = false };
+        var tasks = await taskRepository.GetAllTasksAsync(filters);
+
+        if (tasks == null || tasks.Count == 0)
+            return new AiSummaryResponse
+            {
+                Summary = "No open tasks found. The task dashboard is clear.",
+                Usage = new AiUsageInfo()
+            };
+
+        var now = DateTimeOffset.UtcNow;
+        var sb = new StringBuilder();
+        sb.AppendLine($"Summarize the following task dashboard. Current time: {now:yyyy-MM-dd HH:mm} UTC.");
+        sb.AppendLine($"Total open tasks: {tasks.Count}");
+        sb.AppendLine();
+
+        var overdue = tasks.Where(t => !t.Closed && t.DueDate < now).ToList();
+        var dueToday = tasks.Where(t => !t.Closed && t.DueDate >= now && t.DueDate.Date == now.Date).ToList();
+        var upcoming = tasks.Where(t => !t.Closed && t.DueDate.Date > now.Date).ToList();
+
+        sb.AppendLine($"Overdue: {overdue.Count}, Due today: {dueToday.Count}, Upcoming: {upcoming.Count}");
+        sb.AppendLine();
+
+        foreach (var task in tasks.OrderBy(t => t.DueDate))
+        {
+            var status = task.Closed ? "CLOSED" : (task.DueDate < now ? "OVERDUE" : "OPEN");
+            var sanitized = AiDataSanitizer.Sanitize(task.Description ?? task.Title);
+            var assignee = task.Assignee?.Text ?? "Unassigned";
+            sb.AppendLine($"[{task.DueDate:yyyy-MM-dd HH:mm}] Job #{task.JobNumber} - {task.EventType} - {sanitized} [{status}] Assigned: {assignee}");
+        }
+
+        return await SendSummarizationRequestAsync(TaskBriefingSystemPrompt, sb.ToString(), ct);
+    }
+
+    public async Task<AiSummaryResponse> SummarizeJobAsync(int jobId, CancellationToken ct = default)
+    {
+        var job = await jobRepository.GetSingleJobById(jobId);
+        var notes = await noteRepository.GetNotesByJobIdAsync(jobId);
+        var eventFilters = new TaskTableFiltersRequest { JobId = jobId, ShowCompleted = true };
+        var events = await taskRepository.GetAllTasksAsync(eventFilters);
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"Create a combined chronological summary for Job #{job?.JobNo ?? jobId.ToString()}:");
+        sb.AppendLine();
+
+        if (job != null)
+        {
+            sb.AppendLine("--- Job Details ---");
+            sb.AppendLine($"Job Number: {job.JobNo}");
+            sb.AppendLine($"Status: {job.Status}");
+            sb.AppendLine($"Speed: {job.SpeedName}");
+            if (job.Booked.HasValue) sb.AppendLine($"Booked: {job.Booked:yyyy-MM-dd HH:mm}");
+            if (job.DispatchTime.HasValue) sb.AppendLine($"Dispatched: {job.DispatchTime:yyyy-MM-dd HH:mm}");
+            if (job.PuTime.HasValue) sb.AppendLine($"Picked up: {job.PuTime:yyyy-MM-dd HH:mm}");
+            if (job.CompletedTime.HasValue) sb.AppendLine($"Completed: {job.CompletedTime:yyyy-MM-dd HH:mm}");
+            sb.AppendLine($"From: {AiDataSanitizer.Sanitize(job.From ?? "")}");
+            sb.AppendLine($"To: {AiDataSanitizer.Sanitize(job.ToAddress ?? "")}");
+            if (!string.IsNullOrEmpty(job.Courier)) sb.AppendLine($"Courier: {job.Courier}");
+            sb.AppendLine();
+        }
+
+        if (notes is { Count: > 0 })
+        {
+            sb.AppendLine("--- Notes ---");
+            foreach (var note in notes.OrderBy(n => n.CreatedDate))
+            {
+                var sanitized = AiDataSanitizer.Sanitize(note.NoteText);
+                sb.AppendLine($"[{note.CreatedDate:yyyy-MM-dd HH:mm}] ({note.NoteTypeName}) by {note.CreatedByName}: {sanitized}");
+            }
+            sb.AppendLine();
+        }
+
+        if (events is { Count: > 0 })
+        {
+            sb.AppendLine("--- Events ---");
+            foreach (var evt in events.OrderBy(e => e.DueDate))
+            {
+                var status = evt.Closed ? "CLOSED" : "OPEN";
+                var sanitized = AiDataSanitizer.Sanitize(evt.Description ?? evt.Title);
+                sb.AppendLine($"[{evt.DueDate:yyyy-MM-dd HH:mm}] {evt.EventType} - {sanitized} [{status}]");
+            }
+        }
+
+        if (job == null && (notes == null || notes.Count == 0) && (events == null || events.Count == 0))
+        {
+            return new AiSummaryResponse
+            {
+                Summary = "No data found for this job.",
+                Usage = new AiUsageInfo()
+            };
+        }
+
+        return await SendSummarizationRequestAsync(JobSummarySystemPrompt, sb.ToString(), ct);
+    }
+
+    public async Task<AiSummaryResponse> SummarizeOperationsAsync(CancellationToken ct = default)
+    {
+        var stats = await jobRepository.GetOverviewStatsAsync();
+
+        var now = DateTimeOffset.UtcNow;
+        var sb = new StringBuilder();
+        sb.AppendLine($"Analyze the following dispatch operations overview. Current time: {now:yyyy-MM-dd HH:mm} UTC.");
+        sb.AppendLine();
+        sb.AppendLine($"Active jobs: {stats.Active}");
+        sb.AppendLine($"Inactive jobs: {stats.Inactive}");
+        sb.AppendLine($"Completed jobs: {stats.Completed}");
+        sb.AppendLine($"Total: {stats.Active + stats.Inactive + stats.Completed}");
+
+        return await SendSummarizationRequestAsync(OperationsSystemPrompt, sb.ToString(), ct);
+    }
+
+    public async Task<AiSummaryResponse> SummarizeComplianceAsync(CancellationToken ct = default)
+    {
+        var request = new CourierComplianceFilterRequest();
+        var items = await courierRepository.GetCourierComplianceForExportAsync(request);
+
+        if (items == null || items.Count == 0)
+        {
+            return new AiSummaryResponse
+            {
+                Summary = "No compliance records found.",
+                Usage = new AiUsageInfo()
+            };
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var expired = items.Where(i => i.ExpiryDate.HasValue && i.ExpiryDate.Value < now).ToList();
+        var expiringWeek = items.Where(i => i.ExpiryDate.HasValue && i.ExpiryDate.Value >= now && i.ExpiryDate.Value < now.AddDays(7)).ToList();
+        var expiringMonth = items.Where(i => i.ExpiryDate.HasValue && i.ExpiryDate.Value >= now.AddDays(7) && i.ExpiryDate.Value < now.AddDays(30)).ToList();
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"Analyze the following driver compliance data. Current date: {now:yyyy-MM-dd}.");
+        sb.AppendLine($"Total records: {items.Count}");
+        sb.AppendLine($"Expired: {expired.Count}, Expiring within 7 days: {expiringWeek.Count}, Expiring within 30 days: {expiringMonth.Count}");
+        sb.AppendLine();
+
+        if (expired.Count > 0)
+        {
+            sb.AppendLine("EXPIRED items:");
+            foreach (var item in expired.Take(20))
+            {
+                sb.AppendLine($"  - {item.Name} ({item.Code}): {item.ComplianceType} expired {item.ExpiryDate:yyyy-MM-dd}");
+            }
+            if (expired.Count > 20) sb.AppendLine($"  ... and {expired.Count - 20} more");
+            sb.AppendLine();
+        }
+
+        if (expiringWeek.Count <= 0)
+            return await SendSummarizationRequestAsync(ComplianceSystemPrompt, sb.ToString(), ct);
+        
+        sb.AppendLine("Expiring within 7 DAYS:");
+        foreach (var item in expiringWeek.Take(10))
+            sb.AppendLine($"  - {item.Name} ({item.Code}): {item.ComplianceType} expires {item.ExpiryDate:yyyy-MM-dd}");
+        if (expiringWeek.Count > 10) sb.AppendLine($"  ... and {expiringWeek.Count - 10} more");
+
+        return await SendSummarizationRequestAsync(ComplianceSystemPrompt, sb.ToString(), ct);
+    }
+
+    public async Task<AiSummaryResponse> AnalyzeLateAlertAsync(int jobId, CancellationToken ct = default)
+    {
+        var lateInfo = await jobRepository.GetJobForLateCallAsync(jobId);
+
+        if (lateInfo == null)
+        {
+            return new AiSummaryResponse
+            {
+                Summary = "No late alert data found for this job.",
+                Usage = new AiUsageInfo()
+            };
+        }
+
+        var eventFilters = new TaskTableFiltersRequest { JobId = jobId, ShowCompleted = true };
+        var events = await taskRepository.GetAllTasksAsync(eventFilters);
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"Analyze this late alert for Job #{jobId}:");
+        sb.AppendLine($"Job time: {lateInfo.JobTime:yyyy-MM-dd HH:mm}");
+        sb.AppendLine($"Booked speed: {lateInfo.BookedSpeed}");
+        sb.AppendLine($"Notified speed: {lateInfo.NotifiedSpeed}");
+        sb.AppendLine($"Minutes remaining: {lateInfo.MinutesRemaining}");
+        sb.AppendLine($"Pickup time allowed: {lateInfo.PickupTime} mins");
+        sb.AppendLine($"Delivery time allowed: {lateInfo.DeliveryTime} mins");
+        sb.AppendLine($"Late pickup alert threshold: {lateInfo.AlertLatePickup} mins");
+        sb.AppendLine($"Late delivery alert threshold: {lateInfo.AlertLateDelivery} mins");
+
+        if (events is not { Count: > 0 })
+            return await SendSummarizationRequestAsync(LateAlertSystemPrompt, sb.ToString(), ct);
+        
+        sb.AppendLine();
+        sb.AppendLine("Recent events:");
+        foreach (var evt in events.OrderByDescending(e => e.DueDate).Take(5))
+        {
+            var sanitized = AiDataSanitizer.Sanitize(evt.Description ?? evt.Title);
+            sb.AppendLine($"  [{evt.DueDate:HH:mm}] {evt.EventType} - {sanitized}");
+        }
+
+        return await SendSummarizationRequestAsync(LateAlertSystemPrompt, sb.ToString(), ct);
+    }
+
+    public async Task<AiSummaryResponse> SuggestCouriersAsync(int jobId, CancellationToken ct = default)
+    {
+        var job = await jobRepository.GetSingleJobById(jobId);
+        if (job == null)
+        {
+            return new AiSummaryResponse
+            {
+                Summary = "Job not found.",
+                Usage = new AiUsageInfo()
+            };
+        }
+
+        var potentialCouriers = await courierRepository.GetPotentialCouriersAsync(jobId);
+        var driverOverview = await courierRepository.GetDriverWorkOverviewAsync();
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"Suggest the best couriers for Job #{job.JobNo}:");
+        sb.AppendLine($"Speed: {job.SpeedName}");
+        sb.AppendLine($"Pickup: {AiDataSanitizer.Sanitize(job.From ?? "")}");
+        sb.AppendLine($"Delivery: {AiDataSanitizer.Sanitize(job.ToAddress ?? "")}");
+        if (job.Weight.HasValue) sb.AppendLine($"Weight: {job.Weight}kg");
+        sb.AppendLine();
+
+        if (potentialCouriers is { Count: > 0 })
+        {
+            sb.AppendLine("Potential couriers (from system matching):");
+            foreach (var c in potentialCouriers.Take(10)) sb.AppendLine($"  - {c.FirstName} ({c.Code}): {c.Reason}");
+            sb.AppendLine();
+        }
+
+        if (driverOverview is { Count: > 0 })
+        {
+            sb.AppendLine("Driver workload overview:");
+            foreach (var d in driverOverview.Take(15)) sb.AppendLine($"  - {d.Name}: {d.VehicleType}, {d.JobCount} active jobs, Status: {d.DriverStatusText}");
+        }
+
+        if ((potentialCouriers == null || potentialCouriers.Count == 0) && (driverOverview == null || driverOverview.Count == 0))
+            return new AiSummaryResponse
+            {
+                Summary = "No courier data available for suggestions.",
+                Usage = new AiUsageInfo()
+            };
+
+        return await SendSummarizationRequestAsync(CourierSuggestionSystemPrompt, sb.ToString(), ct);
+    }
+
+    private async Task<AiSummaryResponse> SendSummarizationRequestAsync(string systemPrompt, string userMessage, CancellationToken ct)
+    {
+        var messages = new List<AiMessage>
+        {
+            new() { Role = "user", Content = userMessage }
+        };
+
+        var response = await aiClient.SendMessageAsync(
+            systemPrompt,
             messages,
             settings.Value.MaxTokensPerSummary,
             ct: ct);
