@@ -2,11 +2,11 @@
 
 public class InternalStatus
 {
-    public int Id { get; set; }
+    public int Id { get; init; }
 
-    public string Text { get; set; }
+    public string Text { get; init; }
 
-    public string DefaultSchedule { get; set; }
+    public string DefaultSchedule { get; init; }
 
-    public int? DefaultMins { get; set; }
+    public int? DefaultMins { get; init; }
 }

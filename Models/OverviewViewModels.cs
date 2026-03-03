@@ -4,25 +4,25 @@ namespace DespatchWeb.Models;
 
 public class DeliveryJob
 {
-    public int JobId { get; set; }
-    public string JobName { get; set; }
-    public string Status { get; set; }
-    public int Completion { get; set; }
-    public string Pickup { get; set; }
-    public string Delivery { get; set; }
-    public string Driver { get; set; }
-    public string Region { get; set; }
-    public List<ChildDeliveryJob> ChildJobs { get; set; } = [];
+    public int JobId { get; init; }
+    public string JobName { get; init; }
+    public string Status { get; init; }
+    public int Completion { get; init; }
+    public string Pickup { get; init; }
+    public string Delivery { get; init; }
+    public string Driver { get; init; }
+    public string Region { get; init; }
+    public List<ChildDeliveryJob> ChildJobs { get; init; } = [];
 }
 
 public class ChildDeliveryJob
 {
-    public int JobId { get; set; }
-    public string JobName { get; set; }
-    public string Status { get; set; }
-    public int Completion { get; set; }
-    public string Pickup { get; set; }
-    public string Delivery { get; set; }
-    public string Driver { get; set; }
-    public string Region { get; set; }
+    public int JobId { get; init; }
+    public string JobName { get; init; }
+    public string Status { get; init; }
+    public int Completion { get; init; }
+    public string Pickup { get; init; }
+    public string Delivery { get; init; }
+    public string Driver { get; init; }
+    public string Region { get; init; }
 }

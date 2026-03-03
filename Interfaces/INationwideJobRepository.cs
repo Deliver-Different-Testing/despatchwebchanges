@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
@@ -12,8 +11,6 @@ namespace DespatchWeb.Interfaces;
 
 public interface INationwideJobRepository
 {
-    Task<T> GetByIdAsync<T>(int id) where T : class;
-
     Task<JobSearchResult> NationwideJobListAsync(JobQueryParams queryParams, bool isInternal,
         bool isUsTenant, string clientIds, NationwideWidget windowPane, List<int> selectedViewIds);
 
@@ -31,14 +28,7 @@ public interface INationwideJobRepository
     Task<List<Suggestion>> GetAllAgentOptionsBySearchAsync(string searchTerm);
     Task<List<string>> GetFlightWebhookIdByJobIdAsync(int jobId);
     Task<AgentInfoDialogViewModel> GetAgentInfoForDialogAsync(int agentId);
-    Task<bool> IsHolidayAsync(int clientId, DateTime bookTime);
-    Task<bool> IsAfterHoursAsync(int clientId, DateTime bookTime, bool isHoliday);
-    Task<int?> GetFlightCarrierIdByCodeAsync(string carrierCode);
-    Task<string> GetZoneNameAsync(int carrierId, string state, string city);
-    Task<int?> GetAirFreightRateIdFromZoneComboAsync(int carrierId, string fromZoneName, string toZoneName);
-    Task<List<AirFreightRate>> GetAirFreightRatesAsync(int airFreightRateId);
 
-    Task<ExtraRateResultDto> CalculateExtraRatesAsync(ExtraRateCalculationRequest request);
     Task<string> GetAgentNameAsync(int agentId);
     Task<RecoveryAgentJobViewModel> GetRecoveryAgentDialogDataAsync(int jobId);
     Task<List<Suggestion>> GetAgentOptionsByAirportAsync(int airportId);
@@ -49,17 +39,13 @@ public interface INationwideJobRepository
 
     Task<FlightCargoProcessingModel> CalculateCargoReadyTimeAsync(int jobId, string carrierFsCode,
         DateTime flightArrivalTime);
+
     Task<bool> CanAssignAgentToJobAsync(int agentJobId);
 
     Task<FlightRateCalculationDto> GetFlightRateCalculationDtoAsync(int jobId, string carrierCode, bool extraStopOffs,
         DateTime? bookTime);
 
-    Task<JobTypeFlightRatingDto> GetJobTypeFlightRatingDtoAsync(int speedId);
-    Task<decimal?> GetExtraItemMultiplierByExtraChargeIdAsync(int extraChargeId);
     Task<List<GetAirportsDto>> GetAllActiveAirportsAsync();
-
-    /// <summary>
-    /// Gets carrier flight rates using the DD_stpGetCarrierFlightRate stored procedure.
-    /// </summary>
+    
     Task<List<FlightRateDto>> GetCarrierFlightRatesAsync(FlightRateCalculationDto dto);
 }

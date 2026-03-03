@@ -59,5 +59,4 @@ export interface TaskTableFiltersRequest {
 
 // Backward compatibility aliases
 export type Task = ITask;
-export type TaskDto = ITaskDto;
 export type TaskFiltersRequest = TaskTableFiltersRequest;

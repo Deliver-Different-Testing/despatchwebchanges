@@ -5,7 +5,7 @@ namespace DespatchWeb.Models;
 
 public class FileUploadRequest
 {
-    [FromForm(Name = "jobId")] public int JobId { get; set; }
+    [FromForm(Name = "jobId")] public int JobId { get; init; }
 
-    [FromForm(Name = "file")] public IFormFile File { get; set; }
+    [FromForm(Name = "file")] public IFormFile File { get; init; }
 }

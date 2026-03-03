@@ -3,31 +3,31 @@
 public class ExtraRateCalculationRequest
 {
     // Weight and Dimension Properties
-    public decimal TotalWeight { get; set; }
-    public int Quantity { get; set; }
-    public decimal Cubic { get; set; }
-    public int TotalPallets { get; set; }
+    public decimal TotalWeight { get; init; }
+    public int Quantity { get; init; }
+    public decimal Cubic { get; init; }
+    public int TotalPallets { get; init; }
     
     // Delivery Properties
-    public int ExtraStopOffs { get; set; }
-    public int VehicleSizeId { get; set; }
+    public int ExtraStopOffs { get; init; }
+    public int VehicleSizeId { get; init; }
     
     // Hazardous Materials
-    public bool DangerousGoods { get; set; }
-    public decimal DryIceWeight { get; set; }
+    public bool DangerousGoods { get; init; }
+    public decimal DryIceWeight { get; init; }
     
     // Time-based Properties
-    public int? WaitTime { get; set; }
-    public bool IsHoliday { get; set; }
-    public bool IsAfterHours { get; set; }
+    public int? WaitTime { get; init; }
+    public bool IsHoliday { get; init; }
+    public bool IsAfterHours { get; init; }
     
     // Charge Properties
-    public int? ExtraChargeId { get; set; }
-    public decimal FuelSurcharge { get; set; }
+    public int? ExtraChargeId { get; init; }
+    public decimal FuelSurcharge { get; init; }
     
     // Zone Properties
-    public int? FromZoneCongestionId { get; set; }
-    public int? ToZoneCongestionId { get; set; }
+    public int? FromZoneCongestionId { get; init; }
+    public int? ToZoneCongestionId { get; init; }
     
-    public decimal? Ppd { get; set; }
+    public decimal? Ppd { get; init; }
 }

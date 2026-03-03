@@ -4,11 +4,11 @@ namespace DespatchWeb.Models;
 
 public class ClearListResult
 {
-    public int? CourierId { get; set; }
-    public string Code { get; set; }
-    public int DisplayOrder { get; set; }
-    public string Deliver { get; set; }
-    public DateTime? DisplayOrderDesc { get; set; }
-    public DateTime? DisplayOrderAsc { get; set; }
-    public bool? AutoDespatch { get; set; }
+    public int? CourierId { get; init; }
+    public string Code { get; init; }
+    public int DisplayOrder { get; init; }
+    public string Deliver { get; init; }
+    public DateTime? DisplayOrderDesc { get; init; }
+    public DateTime? DisplayOrderAsc { get; init; }
+    public bool? AutoDespatch { get; init; }
 }

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using DeliverDifferentReporting.Documents;
 using DeliverDifferentReporting.Models;
@@ -27,7 +28,7 @@ public class PodReportService(
 ) : IPodReportService
 {
     private static bool _questPdfInitialized;
-    private static readonly object InitLock = new();
+    private static readonly Lock InitLock = new();
 
     public async Task<(byte[] Bytes, string FileName)> GeneratePodReportAsync(int jobId)
     {
@@ -82,7 +83,8 @@ public class PodReportService(
 
     private static void EnsureQuestPdfInitialized()
     {
-        if (_questPdfInitialized) return;
+        lock (InitLock) if (_questPdfInitialized) return;
+
         lock (InitLock)
         {
             if (_questPdfInitialized) return;
@@ -116,10 +118,7 @@ public class PodReportService(
         // Get signature bytes from the first signature image
         byte[]? signatureBytes = null;
         var firstSignature = signaturePhotos.FirstOrDefault(p => !string.IsNullOrEmpty(p.Data));
-        if (firstSignature != null)
-        {
-            signatureBytes = Convert.FromBase64String(firstSignature.Data);
-        }
+        if (firstSignature != null) signatureBytes = Convert.FromBase64String(firstSignature.Data);
 
         return new PodData
         {

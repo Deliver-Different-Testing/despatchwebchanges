@@ -2,14 +2,14 @@
 
 public class ClearListEnvelopeViewModel
 {
-    public decimal MinimumLatitude { get; set; }
-    public decimal MinimumLongitude { get; set; }
-    public decimal MaximumLatitude { get; set; }
-    public decimal MaximumLongitude { get; set; }
+    public decimal MinimumLatitude { get; init; }
+    public decimal MinimumLongitude { get; init; }
+    public decimal MaximumLatitude { get; init; }
+    public decimal MaximumLongitude { get; init; }
 }
 
 public class EnvelopeCoordinate
 {
-    public decimal Longitude { get; set; }
-    public decimal Latitude { get; set; }
+    public decimal Longitude { get; init; }
+    public decimal Latitude { get; init; }
 }

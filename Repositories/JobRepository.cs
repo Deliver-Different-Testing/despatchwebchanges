@@ -593,15 +593,20 @@ public partial class JobRepository(
     public async Task UpdateManualPriceAsync(List<JobManualPriceModel> data)
     {
         // Normalize all nullable values to 0 at the beginning
-        foreach (var item in data)
+        data = data.Select(item => new JobManualPriceModel
         {
-            item.Amount ??= 0;
-            item.Ppd ??= 0;
-            item.Fuel ??= 0;
-            item.CourierPayment ??= 0;
-            item.CourierFuel ??= 0;
-            item.CourierBonus ??= 0;
-        }
+            Id = item.Id,
+            Amount = item.Amount ?? 0,
+            RawBaseAmount = item.RawBaseAmount,
+            Fuel = item.Fuel ?? 0,
+            Ppd = item.Ppd ?? 0,
+            CourierPayment = item.CourierPayment ?? 0,
+            CourierFuel = item.CourierFuel ?? 0,
+            CourierBonus = item.CourierBonus ?? 0,
+            StatusName = item.StatusName,
+            CourierCode = item.CourierCode,
+            Void = item.Void
+        }).ToList();
 
         // Validation logic remains the same
         if (
@@ -1161,17 +1166,58 @@ public partial class JobRepository(
 
         // Apply timezone conversion to pickup and delivery times for consistent export
         var tenantTimeZone = _infoService.GetTenantTimeZone();
-        foreach (var downloadJob in allJobs)
+        return allJobs.Select(j => new JobDownloadModel
         {
-            if (downloadJob.PickedUpDate.HasValue)
-                downloadJob.PickedUpDate = TimeZoneHelper.SetDateTimeWithTimeZone(
-                    downloadJob.PickedUpDate.Value, tenantTimeZone).DateTime;
-            if (downloadJob.DeliveredDate.HasValue)
-                downloadJob.DeliveredDate = TimeZoneHelper.SetDateTimeWithTimeZone(
-                    downloadJob.DeliveredDate.Value, tenantTimeZone).DateTime;
-        }
-
-        return allJobs;
+            Id = j.Id,
+            ParentId = j.ParentId,
+            JobNumber = j.JobNumber,
+            BookDate = j.BookDate,
+            Amount = j.Amount,
+            Fuel = j.Fuel,
+            Ppd = j.Ppd,
+            CourierPayment = j.CourierPayment,
+            CourierFuel = j.CourierFuel,
+            CourierBonus = j.CourierBonus,
+            Quantity = j.Quantity,
+            Weight = j.Weight,
+            Size = j.Size,
+            PickupAddressLine1 = j.PickupAddressLine1,
+            PickupAddressLine2 = j.PickupAddressLine2,
+            PickupAddressLine3 = j.PickupAddressLine3,
+            PickupAddressLine4 = j.PickupAddressLine4,
+            PickupAddressLine5 = j.PickupAddressLine5,
+            PickupAddressLine6 = j.PickupAddressLine6,
+            PickupAddressLine7 = j.PickupAddressLine7,
+            PickupAddressLine8 = j.PickupAddressLine8,
+            DeliveryAddressLine1 = j.DeliveryAddressLine1,
+            DeliveryAddressLine2 = j.DeliveryAddressLine2,
+            DeliveryAddressLine3 = j.DeliveryAddressLine3,
+            DeliveryAddressLine4 = j.DeliveryAddressLine4,
+            DeliveryAddressLine5 = j.DeliveryAddressLine5,
+            DeliveryAddressLine6 = j.DeliveryAddressLine6,
+            DeliveryAddressLine7 = j.DeliveryAddressLine7,
+            DeliveryAddressLine8 = j.DeliveryAddressLine8,
+            ClientReferenceA = j.ClientReferenceA,
+            ClientReferenceB = j.ClientReferenceB,
+            ClientReferenceC = j.ClientReferenceC,
+            CustomerName = j.CustomerName,
+            PickedUpDate = j.PickedUpDate.HasValue
+                ? TimeZoneHelper.SetDateTimeWithTimeZone(j.PickedUpDate.Value, tenantTimeZone).DateTime
+                : j.PickedUpDate,
+            DeliveredDate = j.DeliveredDate.HasValue
+                ? TimeZoneHelper.SetDateTimeWithTimeZone(j.DeliveredDate.Value, tenantTimeZone).DateTime
+                : j.DeliveredDate,
+            AgentAirlineName = j.AgentAirlineName,
+            AWB = j.AWB,
+            StatusName = j.StatusName,
+            InvoiceNumber = j.InvoiceNumber,
+            InvoiceDate = j.InvoiceDate,
+            IsArchived = j.IsArchived,
+            LoggedInContact = j.LoggedInContact,
+            RawBaseAmount = j.RawBaseAmount,
+            CourierCode = j.CourierCode,
+            Void = j.Void
+        }).ToList();
     }
 
     /// <summary>

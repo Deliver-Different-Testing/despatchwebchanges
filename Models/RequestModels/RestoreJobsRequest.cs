@@ -4,5 +4,5 @@ namespace DespatchWeb.Models.RequestModels;
 
 public class RestoreJobsRequest
 {
-    public List<int> JobIds { get; set; }
+    public List<int> JobIds { get; init; }
 }

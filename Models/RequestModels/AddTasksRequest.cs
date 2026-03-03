@@ -4,6 +4,6 @@ namespace DespatchWeb.Models.RequestModels;
 
 public class AddTasksRequest
 {
-    public int JobId { get; set; }
-    public List<EventGroupViewModel> EventGroupViewModels { get; set; }
+    public int JobId { get; init; }
+    public List<EventGroupViewModel> EventGroupViewModels { get; init; }
 }

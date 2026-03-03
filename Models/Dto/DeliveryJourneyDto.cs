@@ -5,30 +5,30 @@ namespace DespatchWeb.Models.Dto;
 
 public class DeliveryJourneyDto
 {
-    public int EventId { get; set; }
-    public string Description { get; set; }
-    public DateTime? Date { get; set; }
-    public DateTime? Time { get; set; }
-    public bool Closed { get; set; }
-    public string Despatcher { get; set; }
+    public int EventId { get; init; }
+    public string Description { get; init; }
+    public DateTime? Date { get; init; }
+    public DateTime? Time { get; init; }
+    public bool Closed { get; init; }
+    public string Despatcher { get; init; }
     
     // Staff In (Assigned to)
-    public string AssignedToFirstName { get; set; }
-    public string AssignedToLastName { get; set; }
+    public string AssignedToFirstName { get; init; }
+    public string AssignedToLastName { get; init; }
     
     // Staff Out (Completed by)
-    public string CompletedByFirstName { get; set; }
-    public string CompletedByLastName { get; set; }
+    public string CompletedByFirstName { get; init; }
+    public string CompletedByLastName { get; init; }
     
     // Audit trail
-    public List<EventAuditDto> Audits { get; set; }
+    public List<EventAuditDto> Audits { get; init; } = [];
 }
 
 public class EventAuditDto
 {
-    public string ChangeType { get; set; }
-    public string ColumnName { get; set; }
-    public string StaffFirstName { get; set; }
-    public string StaffLastName { get; set; }
-    public DateTime ChangedAt { get; set; }
+    public string ChangeType { get; init; }
+    public string ColumnName { get; init; }
+    public string StaffFirstName { get; init; }
+    public string StaffLastName { get; init; }
+    public DateTime ChangedAt { get; init; }
 }

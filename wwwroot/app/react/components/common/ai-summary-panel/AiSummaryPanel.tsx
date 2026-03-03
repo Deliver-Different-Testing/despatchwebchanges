@@ -23,7 +23,6 @@ import {
     ContentCopy as ContentCopyIcon,
     ExpandLess as ExpandLessIcon,
     ExpandMore as ExpandMoreIcon,
-    Refresh as RefreshIcon,
     Stop as StopIcon,
 } from '@mui/icons-material';
 import {AiSummaryResponse} from '../../../services/aiAssistantApi';
@@ -115,14 +114,6 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
             loadSummary();
         }
     }, [expanded, hasFetched, loading, loadSummary]);
-
-    const handleRefresh = useCallback((e: React.MouseEvent) => {
-        e.stopPropagation();
-        setSummary(null);
-        setHasFetched(false);
-        setGeneratedAt(null);
-        loadSummary();
-    }, [loadSummary]);
 
     const handleCopy = useCallback(async (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -219,13 +210,6 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
                         <Tooltip title={copyTooltip}>
                             <IconButton size="small" onClick={handleCopy} sx={{p: 0.5}}>
                                 <ContentCopyIcon sx={{fontSize: 16}} />
-                            </IconButton>
-                        </Tooltip>
-                    )}
-                    {hasFetched && !loading && (
-                        <Tooltip title="Refresh">
-                            <IconButton size="small" onClick={handleRefresh} sx={{p: 0.5}}>
-                                <RefreshIcon sx={{fontSize: 18}} />
                             </IconButton>
                         </Tooltip>
                     )}

@@ -9,7 +9,6 @@ using Moq.Protected;
 
 // Alias for HereMaps Address which is just called Address in the Models
 using HereMapsAddress = DespatchWeb.Models.Address;
-using HereMapsPosition = DespatchWeb.Models.Position;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -290,8 +289,7 @@ public class AddressLookupServiceTests
             [
                 new HereMapsLocationResult
                 {
-                    Address = new HereMapsAddress { Label = "Nearest Address" },
-                    Position = new HereMapsPosition { Lat = -36.8509, Lng = 174.7645 }
+                    Address = new HereMapsAddress { Label = "Nearest Address" }
                 }
             ]
         };

@@ -82,8 +82,7 @@ public class RateJobServiceTests
     public async Task RateJobNzAsync_NullClientId_ThrowsArgumentNullException()
     {
         var service = CreateService();
-        var jobDetails = CreateValidNzJobDetails();
-        jobDetails.ClientId = null;
+        var jobDetails = CreateValidNzJobDetails(clientId: null);
 
         var act = () => service.RateJobNzAsync(jobDetails);
 
@@ -95,8 +94,7 @@ public class RateJobServiceTests
     public async Task RateJobNzAsync_NullFromId_ThrowsArgumentNullException()
     {
         var service = CreateService();
-        var jobDetails = CreateValidNzJobDetails();
-        jobDetails.FromId = null;
+        var jobDetails = CreateValidNzJobDetails(fromId: null);
 
         var act = () => service.RateJobNzAsync(jobDetails);
 
@@ -108,8 +106,7 @@ public class RateJobServiceTests
     public async Task RateJobNzAsync_NullToId_ThrowsArgumentNullException()
     {
         var service = CreateService();
-        var jobDetails = CreateValidNzJobDetails();
-        jobDetails.ToId = null;
+        var jobDetails = CreateValidNzJobDetails(toId: null);
 
         var act = () => service.RateJobNzAsync(jobDetails);
 
@@ -121,8 +118,7 @@ public class RateJobServiceTests
     public async Task RateJobNzAsync_NullSpeedId_ThrowsArgumentNullException()
     {
         var service = CreateService();
-        var jobDetails = CreateValidNzJobDetails();
-        jobDetails.SpeedId = null;
+        var jobDetails = CreateValidNzJobDetails(speedId: null);
 
         var act = () => service.RateJobNzAsync(jobDetails);
 
@@ -134,8 +130,7 @@ public class RateJobServiceTests
     public async Task RateJobNzAsync_NullSizeId_ThrowsArgumentNullException()
     {
         var service = CreateService();
-        var jobDetails = CreateValidNzJobDetails();
-        jobDetails.SizeId = null;
+        var jobDetails = CreateValidNzJobDetails(sizeId: null);
 
         var act = () => service.RateJobNzAsync(jobDetails);
 
@@ -161,8 +156,7 @@ public class RateJobServiceTests
     public async Task RateJobUsAsync_NullSpeedId_ThrowsArgumentNullException()
     {
         var service = CreateService();
-        var jobDetails = CreateValidUsJobDetails();
-        jobDetails.SpeedId = null;
+        var jobDetails = CreateValidUsJobDetails(speedId: null);
 
         var act = () => service.RateJobUsAsync(jobDetails);
 
@@ -174,8 +168,7 @@ public class RateJobServiceTests
     public async Task RateJobUsAsync_NullClientId_ThrowsArgumentNullException()
     {
         var service = CreateService();
-        var jobDetails = CreateValidUsJobDetails();
-        jobDetails.ClientId = null;
+        var jobDetails = CreateValidUsJobDetails(clientId: null);
 
         var act = () => service.RateJobUsAsync(jobDetails);
 
@@ -187,8 +180,7 @@ public class RateJobServiceTests
     public async Task RateJobUsAsync_NullSizeId_ThrowsArgumentNullException()
     {
         var service = CreateService();
-        var jobDetails = CreateValidUsJobDetails();
-        jobDetails.SizeId = null;
+        var jobDetails = CreateValidUsJobDetails(sizeId: null);
 
         var act = () => service.RateJobUsAsync(jobDetails);
 
@@ -215,10 +207,6 @@ public class RateJobServiceTests
             .Returns(Task.CompletedTask);
 
         var jobDetails = CreateValidUsJobDetails();
-        jobDetails.PickupLat = 40.7128m;
-        jobDetails.PickupLong = -74.0060m;
-        jobDetails.DeliveryLat = 40.7580m;
-        jobDetails.DeliveryLong = -73.9855m;
 
         var service = CreateService(httpClient);
 
@@ -248,11 +236,7 @@ public class RateJobServiceTests
             .Callback<RateJobUsDto>(dto => capturedDto = dto)
             .Returns(Task.CompletedTask);
 
-        var jobDetails = CreateValidUsJobDetails();
-        jobDetails.PickupLat = 0;
-        jobDetails.PickupLong = 0;
-        jobDetails.DeliveryLat = 0;
-        jobDetails.DeliveryLong = 0;
+        var jobDetails = CreateValidUsJobDetails(pickupLat: 0, pickupLong: 0, deliveryLat: 0, deliveryLong: 0);
 
         var service = CreateService();
 
@@ -289,10 +273,6 @@ public class RateJobServiceTests
             .Returns(Task.CompletedTask);
 
         var jobDetails = CreateValidUsJobDetails();
-        jobDetails.PickupLat = 40.7128m;
-        jobDetails.PickupLong = -74.0060m;
-        jobDetails.DeliveryLat = 40.7580m;
-        jobDetails.DeliveryLong = -73.9855m;
 
         var service = CreateService(httpClient);
 
@@ -406,12 +386,7 @@ public class RateJobServiceTests
             .Callback<RateJobUsDto>(dto => capturedDto = dto)
             .Returns(Task.CompletedTask);
 
-        var jobDetails = CreateValidUsJobDetails();
-        jobDetails.SpeedId = 2;
-        jobDetails.PickupLat = 40.7128m;
-        jobDetails.PickupLong = -74.0060m;
-        jobDetails.DeliveryLat = 34.0522m;
-        jobDetails.DeliveryLong = -118.2437m;
+        var jobDetails = CreateValidUsJobDetails(speedId: 2, deliveryLat: 34.0522m, deliveryLong: -118.2437m);
 
         var service = CreateService(httpClient);
 
@@ -454,12 +429,7 @@ public class RateJobServiceTests
             .Callback<RateJobUsDto>(dto => capturedDto = dto)
             .Returns(Task.CompletedTask);
 
-        var jobDetails = CreateValidUsJobDetails();
-        jobDetails.SpeedId = 2;
-        jobDetails.PickupLat = 0;
-        jobDetails.PickupLong = 0;
-        jobDetails.DeliveryLat = 0;
-        jobDetails.DeliveryLong = 0;
+        var jobDetails = CreateValidUsJobDetails(speedId: 2, pickupLat: 0, pickupLong: 0, deliveryLat: 0, deliveryLong: 0);
 
         var service = CreateService();
 
@@ -490,8 +460,7 @@ public class RateJobServiceTests
     public async Task GetJobRateNzAsync_NullClientId_ThrowsArgumentNullException()
     {
         var service = CreateService();
-        var jobDetails = CreateValidNzJobDetails();
-        jobDetails.ClientId = null;
+        var jobDetails = CreateValidNzJobDetails(clientId: null);
 
         var act = () => service.GetJobRateNzAsync(jobDetails);
 
@@ -503,8 +472,7 @@ public class RateJobServiceTests
     public async Task GetJobRateNzAsync_NullFromId_ThrowsArgumentNullException()
     {
         var service = CreateService();
-        var jobDetails = CreateValidNzJobDetails();
-        jobDetails.FromId = null;
+        var jobDetails = CreateValidNzJobDetails(fromId: null);
 
         var act = () => service.GetJobRateNzAsync(jobDetails);
 
@@ -516,8 +484,7 @@ public class RateJobServiceTests
     public async Task GetJobRateNzAsync_NullToId_ThrowsArgumentNullException()
     {
         var service = CreateService();
-        var jobDetails = CreateValidNzJobDetails();
-        jobDetails.ToId = null;
+        var jobDetails = CreateValidNzJobDetails(toId: null);
 
         var act = () => service.GetJobRateNzAsync(jobDetails);
 
@@ -529,8 +496,7 @@ public class RateJobServiceTests
     public async Task GetJobRateNzAsync_NullSpeedId_ThrowsArgumentNullException()
     {
         var service = CreateService();
-        var jobDetails = CreateValidNzJobDetails();
-        jobDetails.SpeedId = null;
+        var jobDetails = CreateValidNzJobDetails(speedId: null);
 
         var act = () => service.GetJobRateNzAsync(jobDetails);
 
@@ -542,8 +508,7 @@ public class RateJobServiceTests
     public async Task GetJobRateNzAsync_NullSizeId_ThrowsArgumentNullException()
     {
         var service = CreateService();
-        var jobDetails = CreateValidNzJobDetails();
-        jobDetails.SizeId = null;
+        var jobDetails = CreateValidNzJobDetails(sizeId: null);
 
         var act = () => service.GetJobRateNzAsync(jobDetails);
 
@@ -569,8 +534,7 @@ public class RateJobServiceTests
     public async Task GetJobRateUsAsync_NullSpeedId_ThrowsArgumentNullException()
     {
         var service = CreateService();
-        var jobDetails = CreateValidUsJobDetails();
-        jobDetails.SpeedId = null;
+        var jobDetails = CreateValidUsJobDetails(speedId: null);
 
         var act = () => service.GetJobRateUsAsync(jobDetails);
 
@@ -582,8 +546,7 @@ public class RateJobServiceTests
     public async Task GetJobRateUsAsync_NullClientId_ThrowsArgumentNullException()
     {
         var service = CreateService();
-        var jobDetails = CreateValidUsJobDetails();
-        jobDetails.ClientId = null;
+        var jobDetails = CreateValidUsJobDetails(clientId: null);
 
         var act = () => service.GetJobRateUsAsync(jobDetails);
 
@@ -595,8 +558,7 @@ public class RateJobServiceTests
     public async Task GetJobRateUsAsync_NullSizeId_ThrowsArgumentNullException()
     {
         var service = CreateService();
-        var jobDetails = CreateValidUsJobDetails();
-        jobDetails.SizeId = null;
+        var jobDetails = CreateValidUsJobDetails(sizeId: null);
 
         var act = () => service.GetJobRateUsAsync(jobDetails);
 
@@ -613,11 +575,7 @@ public class RateJobServiceTests
         _jobRepositoryMock.Setup(x => x.GetJobRateUsAsync(It.IsAny<RateJobUsDto>()))
             .ReturnsAsync(250.75m);
 
-        var jobDetails = CreateValidUsJobDetails();
-        jobDetails.PickupLat = 0;
-        jobDetails.PickupLong = 0;
-        jobDetails.DeliveryLat = 0;
-        jobDetails.DeliveryLong = 0;
+        var jobDetails = CreateValidUsJobDetails(pickupLat: 0, pickupLong: 0, deliveryLat: 0, deliveryLong: 0);
 
         var service = CreateService();
 
@@ -698,10 +656,6 @@ public class RateJobServiceTests
             .Returns(Task.CompletedTask);
 
         var jobDetails = CreateValidUsJobDetails();
-        jobDetails.PickupLat = 40.7128m;
-        jobDetails.PickupLong = -74.0060m;
-        jobDetails.DeliveryLat = 40.7580m;
-        jobDetails.DeliveryLong = -73.9855m;
 
         var service = CreateService(httpClient);
 
@@ -728,10 +682,6 @@ public class RateJobServiceTests
             .Returns(Task.CompletedTask);
 
         var jobDetails = CreateValidUsJobDetails();
-        jobDetails.PickupLat = 40.7128m;
-        jobDetails.PickupLong = -74.0060m;
-        jobDetails.DeliveryLat = 40.7580m;
-        jobDetails.DeliveryLong = -73.9855m;
 
         var service = CreateService(httpClient);
 
@@ -758,10 +708,6 @@ public class RateJobServiceTests
             .Returns(Task.CompletedTask);
 
         var jobDetails = CreateValidUsJobDetails();
-        jobDetails.PickupLat = 40.7128m;
-        jobDetails.PickupLong = -74.0060m;
-        jobDetails.DeliveryLat = 40.7580m;
-        jobDetails.DeliveryLong = -73.9855m;
 
         var service = CreateService(httpClient);
 
@@ -933,10 +879,6 @@ public class RateJobServiceTests
         SetupNonFlightSpeed();
 
         var jobDetails = CreateValidUsJobDetails();
-        jobDetails.PickupLat = 40.7128m;
-        jobDetails.PickupLong = -74.0060m;
-        jobDetails.DeliveryLat = 40.7580m;
-        jobDetails.DeliveryLong = -73.9855m;
 
         var service = CreateService(httpClient);
 
@@ -951,14 +893,15 @@ public class RateJobServiceTests
 
     #region Helper Methods
 
-    private static JobRatingDetailsDtoNz CreateValidNzJobDetails() => new()
+    private static JobRatingDetailsDtoNz CreateValidNzJobDetails(
+        int? clientId = 10, int? fromId = 100, int? toId = 200, int? speedId = 1, int? sizeId = 1) => new()
     {
         JobId = 1,
-        ClientId = 10,
-        FromId = 100,
-        ToId = 200,
-        SpeedId = 1,
-        SizeId = 1,
+        ClientId = clientId,
+        FromId = fromId,
+        ToId = toId,
+        SpeedId = speedId,
+        SizeId = sizeId,
         JobType = JobType.Active,
         PickupLat = -36.8485m,
         PickupLong = 174.7633m,
@@ -968,16 +911,19 @@ public class RateJobServiceTests
         Weight = 5.0
     };
 
-    private static JobRatingDetailsDto CreateValidUsJobDetails() => new()
+    private static JobRatingDetailsDto CreateValidUsJobDetails(
+        int? clientId = 10, int? speedId = 1, int? sizeId = 1,
+        decimal pickupLat = 40.7128m, decimal pickupLong = -74.0060m,
+        decimal deliveryLat = 40.7580m, decimal deliveryLong = -73.9855m) => new()
     {
         JobId = 1,
-        ClientId = 10,
-        SpeedId = 1,
-        SizeId = 1,
-        PickupLat = 40.7128m,
-        PickupLong = -74.0060m,
-        DeliveryLat = 40.7580m,
-        DeliveryLong = -73.9855m,
+        ClientId = clientId,
+        SpeedId = speedId,
+        SizeId = sizeId,
+        PickupLat = pickupLat,
+        PickupLong = pickupLong,
+        DeliveryLat = deliveryLat,
+        DeliveryLong = deliveryLong,
         FromZip = "10001",
         ToZip = "10019",
         Weight = 5.0,

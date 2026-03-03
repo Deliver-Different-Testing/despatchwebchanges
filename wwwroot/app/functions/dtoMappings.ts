@@ -9,8 +9,7 @@ import {
     IJob,
     IJobDto,
     IJobGroup,
-    IJobGroupDto, IJobNote,
-    IJobNoteDto
+    IJobGroupDto
 } from "../interfaces/job.interface";
 import {
     formatDateFromApi, formatInfoLogDateTimeString,

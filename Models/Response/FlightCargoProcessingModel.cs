@@ -4,9 +4,9 @@ namespace DespatchWeb.Models.Response;
 
 public class FlightCargoProcessingModel
 {
-    public DateTime ArrivalTime { get; set; }
-    public int ProcessingTimeMins { get; set; }
-    public DateTimeOffset CargoOpeningTime { get; set; }
-    public DateTimeOffset CargoClosingTime { get; set; }
-    public DateTime? DeliverByTime { get; set; }
+    public DateTime ArrivalTime { get; init; }
+    public int ProcessingTimeMins { get; init; }
+    public DateTimeOffset CargoOpeningTime { get; init; }
+    public DateTimeOffset CargoClosingTime { get; init; }
+    public DateTime? DeliverByTime { get; init; }
 }

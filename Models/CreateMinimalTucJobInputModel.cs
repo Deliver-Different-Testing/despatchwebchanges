@@ -5,120 +5,120 @@ namespace DespatchWeb.Models;
 
 public class CreateMinimalTucJobResponse
 {
-    public bool Success { get; set; }
-    public int? JobId { get; set; }
-    public string Message { get; set; }
+    public bool Success { get; init; }
+    public int? JobId { get; init; }
+    public string Message { get; init; }
 }
 
 public class CreateMinimalTucJobInputModel
 {
-    [Required] public string JobNumber { get; set; }
+    [Required] public string JobNumber { get; init; }
 
-    [Required] public AddressViewModel FromAddress { get; set; }
+    [Required] public AddressViewModel FromAddress { get; init; }
 
-    [Required] public AddressViewModel ToAddress { get; set; }
+    [Required] public AddressViewModel ToAddress { get; init; }
 
-    [Required] public string BookedBy { get; set; }
+    [Required] public string BookedBy { get; init; }
 
-    [Required] public int ClientId { get; set; }
+    [Required] public int ClientId { get; init; }
 
-    public int? AgentCourierId { get; set; }
+    public int? AgentCourierId { get; init; }
     
-    [Required] public int SpeedId { get; set; }
+    [Required] public int SpeedId { get; init; }
 
-    [Required] public decimal Amount { get; set; }
+    [Required] public decimal Amount { get; init; }
 
-    public string Reference { get; set; }
+    public string Reference { get; init; }
 
-    public string ReferenceB { get; set; }
+    public string ReferenceB { get; init; }
 
-    public string Notes { get; set; }
+    public string Notes { get; init; }
 
-    [Required] public DateTime TenantCurrentTime { get; set; }
+    [Required] public DateTime TenantCurrentTime { get; init; }
 
-    [Required] public int LoggedInContactId { get; set; }
+    [Required] public int LoggedInContactId { get; init; }
 
-    public string Speed { get; set; }
+    public string Speed { get; init; }
 
-    public string ToAddressType { get; set; }
+    public string ToAddressType { get; init; }
 
-    public int? VehicleSizeId { get; set; }
+    public int? VehicleSizeId { get; init; }
 
-    public string PickupNotes { get; set; }
+    public string PickupNotes { get; init; }
 
-    public string DeliveryNotes { get; set; }
+    public string DeliveryNotes { get; init; }
 
-    public string FromContactName { get; set; }
+    public string FromContactName { get; init; }
 
-    public string FromPhoneNumber { get; set; }
+    public string FromPhoneNumber { get; init; }
 
-    public string ToContactName { get; set; }
+    public string ToContactName { get; init; }
 
-    public string ToPhoneNumber { get; set; }
+    public string ToPhoneNumber { get; init; }
 
-    public string Type { get; set; }
+    public string Type { get; init; }
 
-    public string JobNotificationType { get; set; }
+    public string JobNotificationType { get; init; }
 
-    public string JobNotificationEmail { get; set; }
+    public string JobNotificationEmail { get; init; }
 
-    public string JobNotificationMobile { get; set; }
+    public string JobNotificationMobile { get; init; }
 
-    public string ToAddressCode { get; set; }
+    public string ToAddressCode { get; init; }
 
-    public string FromAddressCode { get; set; }
+    public string FromAddressCode { get; init; }
 
-    public bool Hold { get; set; } = false;
+    public bool Hold { get; init; } = false;
 
-    public decimal? AgentAmount { get; set; }
+    public decimal? AgentAmount { get; init; }
 
-    public decimal? FuelSurchargeAmount { get; set; }
+    public decimal? FuelSurchargeAmount { get; init; }
 
-    public string OurRef { get; set; }
+    public string OurRef { get; init; }
 
-    public decimal? PickUpLatitude { get; set; }
+    public decimal? PickUpLatitude { get; init; }
 
-    public decimal? PickUpLongitude { get; set; }
+    public decimal? PickUpLongitude { get; init; }
 
-    public decimal? DeliveryLatitude { get; set; }
+    public decimal? DeliveryLatitude { get; init; }
 
-    public decimal? DeliveryLongitude { get; set; }
+    public decimal? DeliveryLongitude { get; init; }
 
-    public DateTime? Pickup { get; set; }
+    public DateTime? Pickup { get; init; }
     
-    public bool? PrivateRes { get; set; }
+    public bool? PrivateRes { get; init; }
 
-    public DateTime? TruckStartTime { get; set; }
-
-
-    public int? TotalPallets { get; set; }
+    public DateTime? TruckStartTime { get; init; }
 
 
-    public decimal? DryIceWeight { get; set; }
+    public int? TotalPallets { get; init; }
 
-    public decimal? Cubic { get; set; }
+
+    public decimal? DryIceWeight { get; init; }
+
+    public decimal? Cubic { get; init; }
     
-    public int? DgClass { get; set; }
+    public int? DgClass { get; init; }
     
-    public int? AccessorialChargeGroupId { get; set; }
+    public int? AccessorialChargeGroupId { get; init; }
 
-    public DateTime? DeliverByDateTime { get; set; }
+    public DateTime? DeliverByDateTime { get; init; }
 
-    public string PickupTimeZone { get; set; }
+    public string PickupTimeZone { get; init; }
 
-    public string DeliverByTimeZone { get; set; }
+    public string DeliverByTimeZone { get; init; }
 
-    public string RecurringDays { get; set; }
+    public string RecurringDays { get; init; }
 
-    public string RecurringFrequency { get; set; }
+    public string RecurringFrequency { get; init; }
     
-    public int? RecurringInitialDays { get; set; }
+    public int? RecurringInitialDays { get; init; }
 
-    public string CubicList { get; set; }
+    public string CubicList { get; init; }
 
-    public string WeightList { get; set; }
+    public string WeightList { get; init; }
 
-    public string BarcodeList { get; set; }
+    public string BarcodeList { get; init; }
     
-    public string RecurringName { get; set; }
+    public string RecurringName { get; init; }
 }

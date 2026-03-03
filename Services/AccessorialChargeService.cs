@@ -33,11 +33,35 @@ public class AccessorialChargeService(
         if (existing == null)
             throw new InvalidOperationException($"JobAccessorialCharge {jobAccessorialChargeId} not found.");
 
-        existing.InputValue = request.InputValue;
-        existing.ItemCount = request.ItemCount;
-        existing.Notes = request.Notes;
+        var updated = new JobAccessorialChargeDto
+        {
+            JobAccessorialChargeId = existing.JobAccessorialChargeId,
+            JobId = existing.JobId,
+            AccessorialChargeId = existing.AccessorialChargeId,
+            Name = existing.Name,
+            ChargeType = existing.ChargeType,
+            UnitTypeId = existing.UnitTypeId,
+            UnitTypeName = existing.UnitTypeName,
+            BaseRate = existing.BaseRate,
+            RatePerUnit = existing.RatePerUnit,
+            PercentageRate = existing.PercentageRate,
+            FreeAllowance = existing.FreeAllowance,
+            FreeAllowanceUnitTypeName = existing.FreeAllowanceUnitTypeName,
+            MinimumQuantity = existing.MinimumQuantity,
+            MinimumCharge = existing.MinimumCharge,
+            MaximumCharge = existing.MaximumCharge,
+            InputValue = request.InputValue,
+            ItemCount = request.ItemCount,
+            Notes = request.Notes,
+            AddedAtStage = existing.AddedAtStage,
+            CreatedBy = existing.CreatedBy,
+            Created = existing.Created,
+            CalculationOrder = existing.CalculationOrder,
+            CalculatedAmount = existing.CalculatedAmount,
+            OverrideAmount = existing.OverrideAmount
+        };
 
-        var calculatedAmount = Recalculate(existing);
+        var calculatedAmount = Recalculate(updated);
 
         var staffInfo = await tenantInfoService.GetStaffInfoAsync();
         var userName = staffInfo?.Text ?? "Unknown";
@@ -51,9 +75,33 @@ public class AccessorialChargeService(
             request.Notes,
             userName);
 
-        existing.CalculatedAmount = calculatedAmount;
-        existing.OverrideAmount = request.OverrideAmount;
-        return existing;
+        return new JobAccessorialChargeDto
+        {
+            JobAccessorialChargeId = updated.JobAccessorialChargeId,
+            JobId = updated.JobId,
+            AccessorialChargeId = updated.AccessorialChargeId,
+            Name = updated.Name,
+            ChargeType = updated.ChargeType,
+            UnitTypeId = updated.UnitTypeId,
+            UnitTypeName = updated.UnitTypeName,
+            BaseRate = updated.BaseRate,
+            RatePerUnit = updated.RatePerUnit,
+            PercentageRate = updated.PercentageRate,
+            FreeAllowance = updated.FreeAllowance,
+            FreeAllowanceUnitTypeName = updated.FreeAllowanceUnitTypeName,
+            MinimumQuantity = updated.MinimumQuantity,
+            MinimumCharge = updated.MinimumCharge,
+            MaximumCharge = updated.MaximumCharge,
+            InputValue = updated.InputValue,
+            ItemCount = updated.ItemCount,
+            Notes = updated.Notes,
+            AddedAtStage = updated.AddedAtStage,
+            CreatedBy = updated.CreatedBy,
+            Created = updated.Created,
+            CalculationOrder = updated.CalculationOrder,
+            CalculatedAmount = calculatedAmount,
+            OverrideAmount = request.OverrideAmount
+        };
     }
 
     public Task DeleteChargeAsync(int jobAccessorialChargeId)

@@ -29,12 +29,12 @@ public class AiControllerTests
             .Returns(Task.CompletedTask);
     }
 
-    private AiController CreateController() => new(
+    private AiController CreateController(AnthropicSettings settings = null) => new(
         _assistantServiceMock.Object,
         _summarizationServiceMock.Object,
         _rateLimiterMock.Object,
         _tenantInfoMock.Object,
-        Options.Create(_settingsValue));
+        Options.Create(settings ?? _settingsValue));
 
     #region Chat
 
@@ -42,8 +42,7 @@ public class AiControllerTests
     public async Task Chat_AiFeaturesDisabled_Returns503()
     {
         // Arrange
-        _settingsValue.EnableAiFeatures = false;
-        var controller = CreateController();
+        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
         var request = CreateValidChatRequest();
 
         // Act
@@ -176,8 +175,7 @@ public class AiControllerTests
     public async Task SummarizeJobNotes_AiFeaturesDisabled_Returns503()
     {
         // Arrange
-        _settingsValue.EnableAiFeatures = false;
-        var controller = CreateController();
+        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
 
         // Act
         var result = await controller.SummarizeJobNotes(1, CancellationToken.None);
@@ -231,8 +229,7 @@ public class AiControllerTests
     public async Task SummarizeJobEvents_AiFeaturesDisabled_Returns503()
     {
         // Arrange
-        _settingsValue.EnableAiFeatures = false;
-        var controller = CreateController();
+        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
 
         // Act
         var result = await controller.SummarizeJobEvents(1, CancellationToken.None);
@@ -286,8 +283,7 @@ public class AiControllerTests
     [Fact]
     public async Task SummarizeTaskDashboard_AiFeaturesDisabled_Returns503()
     {
-        _settingsValue.EnableAiFeatures = false;
-        var controller = CreateController();
+        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
 
         var result = await controller.SummarizeTaskDashboard(CancellationToken.None);
 
@@ -377,8 +373,7 @@ public class AiControllerTests
     [Fact]
     public async Task SummarizeJob_AiFeaturesDisabled_Returns503()
     {
-        _settingsValue.EnableAiFeatures = false;
-        var controller = CreateController();
+        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
 
         var result = await controller.SummarizeJob(1, CancellationToken.None);
 
@@ -437,8 +432,7 @@ public class AiControllerTests
     [Fact]
     public async Task SummarizeOperations_AiFeaturesDisabled_Returns503()
     {
-        _settingsValue.EnableAiFeatures = false;
-        var controller = CreateController();
+        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
 
         var result = await controller.SummarizeOperations(CancellationToken.None);
 
@@ -514,8 +508,7 @@ public class AiControllerTests
     [Fact]
     public async Task SummarizeCompliance_AiFeaturesDisabled_Returns503()
     {
-        _settingsValue.EnableAiFeatures = false;
-        var controller = CreateController();
+        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
 
         var result = await controller.SummarizeCompliance(CancellationToken.None);
 
@@ -588,8 +581,7 @@ public class AiControllerTests
     [Fact]
     public async Task AnalyzeLateAlert_AiFeaturesDisabled_Returns503()
     {
-        _settingsValue.EnableAiFeatures = false;
-        var controller = CreateController();
+        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
 
         var result = await controller.AnalyzeLateAlert(1, CancellationToken.None);
 
@@ -665,8 +657,7 @@ public class AiControllerTests
     [Fact]
     public async Task SuggestCouriers_AiFeaturesDisabled_Returns503()
     {
-        _settingsValue.EnableAiFeatures = false;
-        var controller = CreateController();
+        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
 
         var result = await controller.SuggestCouriers(1, CancellationToken.None);
 
@@ -691,10 +682,14 @@ public class AiControllerTests
     public async Task SuggestCouriers_ValidRequest_ReturnsJson()
     {
         _summarizationServiceMock.Setup(x => x.SuggestCouriersAsync(1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AiSummaryResponse
+            .ReturnsAsync(new AiCourierSuggestionResponse
             {
                 Summary = "1. John - closest. 2. Jane - lowest load.",
-                Usage = new AiUsageInfo { InputTokens = 200, OutputTokens = 40 }
+                Usage = new AiUsageInfo { InputTokens = 200, OutputTokens = 40 },
+                Couriers = [
+                    new SuggestedCourier { CourierId = 10, Code = "C10", FirstName = "John" },
+                    new SuggestedCourier { CourierId = 11, Code = "C11", FirstName = "Jane" }
+                ]
             });
 
         var controller = CreateController();
@@ -708,7 +703,7 @@ public class AiControllerTests
     public async Task SuggestCouriers_ValidRequest_RecordsTokenUsage()
     {
         _summarizationServiceMock.Setup(x => x.SuggestCouriersAsync(1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AiSummaryResponse
+            .ReturnsAsync(new AiCourierSuggestionResponse
             {
                 Summary = "Suggestions",
                 Usage = new AiUsageInfo { InputTokens = 250, OutputTokens = 45 }

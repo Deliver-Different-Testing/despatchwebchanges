@@ -2,10 +2,10 @@
 
 public class CourierEmailViewModel
 {
-    public int CourierId { get; set; }
-    public string Code { get; set; }
-    public string Name { get; set; }
-    public string Email { get; set; }
-    public string Phone { get; set; }
-    public string Fleet { get; set; }
+    public int CourierId { get; init; }
+    public string Code { get; init; }
+    public string Name { get; init; }
+    public string Email { get; init; }
+    public string Phone { get; init; }
+    public string Fleet { get; init; }
 }

@@ -2,9 +2,9 @@
 
 public class PotentialCouriersViewModel
 {
-    public int CourierId { get; set; }
-    public string Code { get; set; }
-    public string Reason { get; set; }
-    public int RuleNumber { get; set; }
-    public string FirstName { get; set; }
+    public int CourierId { get; init; }
+    public string Code { get; init; }
+    public string Reason { get; init; }
+    public int RuleNumber { get; init; }
+    public string FirstName { get; init; }
 }

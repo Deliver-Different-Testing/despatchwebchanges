@@ -4,28 +4,28 @@ namespace DespatchWeb.Models.Accessorial;
 
 public class JobAccessorialChargeDto
 {
-    public int JobAccessorialChargeId { get; set; }
-    public int JobId { get; set; }
-    public int AccessorialChargeId { get; set; }
-    public string Name { get; set; }
-    public string ChargeType { get; set; }
-    public int? UnitTypeId { get; set; }
-    public string UnitTypeName { get; set; }
-    public decimal? BaseRate { get; set; }
-    public decimal? RatePerUnit { get; set; }
-    public decimal? PercentageRate { get; set; }
-    public decimal? FreeAllowance { get; set; }
-    public string FreeAllowanceUnitTypeName { get; set; }
-    public decimal? MinimumQuantity { get; set; }
-    public decimal? MinimumCharge { get; set; }
-    public decimal? MaximumCharge { get; set; }
-    public decimal? InputValue { get; set; }
-    public int ItemCount { get; set; }
-    public decimal? CalculatedAmount { get; set; }
-    public decimal? OverrideAmount { get; set; }
-    public int CalculationOrder { get; set; }
-    public string Notes { get; set; }
-    public string AddedAtStage { get; set; }
-    public string CreatedBy { get; set; }
-    public DateTime? Created { get; set; }
+    public int JobAccessorialChargeId { get; init; }
+    public int JobId { get; init; }
+    public int AccessorialChargeId { get; init; }
+    public string Name { get; init; }
+    public string ChargeType { get; init; }
+    public int? UnitTypeId { get; init; }
+    public string UnitTypeName { get; init; }
+    public decimal? BaseRate { get; init; }
+    public decimal? RatePerUnit { get; init; }
+    public decimal? PercentageRate { get; init; }
+    public decimal? FreeAllowance { get; init; }
+    public string FreeAllowanceUnitTypeName { get; init; }
+    public decimal? MinimumQuantity { get; init; }
+    public decimal? MinimumCharge { get; init; }
+    public decimal? MaximumCharge { get; init; }
+    public decimal? InputValue { get; init; }
+    public int ItemCount { get; init; }
+    public decimal? CalculatedAmount { get; init; }
+    public decimal? OverrideAmount { get; init; }
+    public int CalculationOrder { get; init; }
+    public string Notes { get; init; }
+    public string AddedAtStage { get; init; }
+    public string CreatedBy { get; init; }
+    public DateTime? Created { get; init; }
 }

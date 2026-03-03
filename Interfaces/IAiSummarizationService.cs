@@ -13,5 +13,5 @@ public interface IAiSummarizationService
     Task<AiSummaryResponse> SummarizeOperationsAsync(CancellationToken ct = default);
     Task<AiSummaryResponse> SummarizeComplianceAsync(CancellationToken ct = default);
     Task<AiSummaryResponse> AnalyzeLateAlertAsync(int jobId, CancellationToken ct = default);
-    Task<AiSummaryResponse> SuggestCouriersAsync(int jobId, CancellationToken ct = default);
+    Task<AiCourierSuggestionResponse> SuggestCouriersAsync(int jobId, CancellationToken ct = default);
 }

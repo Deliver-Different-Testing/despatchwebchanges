@@ -2,17 +2,17 @@ namespace DespatchWeb.Models.Response;
 
 public class JobCoordinateModel
 {
-    public int Id { get; set; }
-    public string JobNo { get; set; }
-    public decimal? PickupLatitude { get; set; }
-    public decimal? PickupLongitude { get; set; }
-    public decimal? DeliveryLatitude { get; set; }
-    public decimal? DeliveryLongitude { get; set; }
-    public int? StatusId { get; set; }
-    public string StatusName { get; set; }
-    public int ClientId { get; set; }
-    public string ClientName { get; set; }
-    public string Speed { get; set; }
-    public string FromAddress { get; set; }
-    public string ToAddress { get; set; }
+    public int Id { get; init; }
+    public string JobNo { get; init; }
+    public decimal? PickupLatitude { get; init; }
+    public decimal? PickupLongitude { get; init; }
+    public decimal? DeliveryLatitude { get; init; }
+    public decimal? DeliveryLongitude { get; init; }
+    public int? StatusId { get; init; }
+    public string StatusName { get; init; }
+    public int ClientId { get; init; }
+    public string ClientName { get; init; }
+    public string Speed { get; init; }
+    public string FromAddress { get; init; }
+    public string ToAddress { get; init; }
 }

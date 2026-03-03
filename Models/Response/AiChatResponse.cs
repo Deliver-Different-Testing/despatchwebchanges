@@ -1,26 +1,42 @@
+using System.Collections.Generic;
+
 namespace DespatchWeb.Models.Response;
 
 public class AiChatResponse
 {
-    public string Message { get; set; }
-    public AiUsageInfo Usage { get; set; }
+    public string Message { get; init; }
+    public AiUsageInfo Usage { get; init; }
 }
 
 public class AiChatChunk
 {
-    public string Text { get; set; }
-    public bool IsComplete { get; set; }
-    public AiUsageInfo Usage { get; set; }
+    public string Text { get; init; }
+    public bool IsComplete { get; init; }
+    public AiUsageInfo Usage { get; init; }
 }
 
 public class AiUsageInfo
 {
-    public int InputTokens { get; set; }
-    public int OutputTokens { get; set; }
+    public int InputTokens { get; init; }
+    public int OutputTokens { get; init; }
 }
 
 public class AiSummaryResponse
 {
-    public string Summary { get; set; }
-    public AiUsageInfo Usage { get; set; }
+    public string Summary { get; init; }
+    public AiUsageInfo Usage { get; init; }
+}
+
+public class AiCourierSuggestionResponse
+{
+    public string Summary { get; init; }
+    public AiUsageInfo Usage { get; init; }
+    public List<SuggestedCourier> Couriers { get; init; } = [];
+}
+
+public class SuggestedCourier
+{
+    public int CourierId { get; init; }
+    public string Code { get; init; }
+    public string FirstName { get; init; }
 }

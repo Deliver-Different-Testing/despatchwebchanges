@@ -423,27 +423,32 @@ public class NoteRepository(
             .Distinct()
             .ToList();
 
+        Dictionary<int, string> noteTypes = [];
         if (noteTypeIds.Count > 0)
         {
-            var noteTypes = await Context.TucNoteTypes
+            noteTypes = await Context.TucNoteTypes
                 .AsNoTracking()
                 .Where(nt => noteTypeIds.Contains(nt.NoteTypeId))
                 .ToDictionaryAsync(nt => nt.NoteTypeId, nt => nt.NoteTypeName);
-
-            foreach (var h in history)
-            {
-                if (h.OldNoteTypeId.HasValue && noteTypes.TryGetValue(h.OldNoteTypeId.Value, out var oldName))
-                    h.OldNoteTypeName = oldName;
-                if (h.NewNoteTypeId.HasValue && noteTypes.TryGetValue(h.NewNoteTypeId.Value, out var newName))
-                    h.NewNoteTypeName = newName;
-            }
         }
 
-        // Convert UTC to tenant timezone
-        foreach (var h in history)
-            h.EditedAt = infoService.ConvertUtcToTenantTimeZone(h.EditedAt.DateTime);
-
-        return history;
+        // Join note type names and convert UTC to tenant timezone
+        return history.Select(h => new NoteHistoryViewModel
+        {
+            NoteHistoryId = h.NoteHistoryId,
+            NoteId = h.NoteId,
+            EditedBy = h.EditedBy,
+            EditedByName = h.EditedByName,
+            EditedAt = infoService.ConvertUtcToTenantTimeZone(h.EditedAt.DateTime),
+            OldNoteText = h.OldNoteText,
+            NewNoteText = h.NewNoteText,
+            OldNoteTypeId = h.OldNoteTypeId,
+            OldNoteTypeName = h.OldNoteTypeId.HasValue && noteTypes.TryGetValue(h.OldNoteTypeId.Value, out var oldName) ? oldName : h.OldNoteTypeName,
+            NewNoteTypeId = h.NewNoteTypeId,
+            NewNoteTypeName = h.NewNoteTypeId.HasValue && noteTypes.TryGetValue(h.NewNoteTypeId.Value, out var newName) ? newName : h.NewNoteTypeName,
+            OldIsImportant = h.OldIsImportant,
+            NewIsImportant = h.NewIsImportant
+        }).ToList();
     }
 
     // Query Methods

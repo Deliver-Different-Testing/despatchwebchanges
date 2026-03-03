@@ -4,14 +4,14 @@ namespace DespatchWeb.Models;
 
 public class JobQueryParams
 {
-    public DateTimeOffset? DateCutoff { get; set; }
-    public DateTimeOffset? StartDate { get; set; }
-    public DateTimeOffset? EndDate { get; set; }
-    public bool UseTime { get; set; }
+    public DateTimeOffset? DateCutoff { get; init; }
+    public DateTimeOffset? StartDate { get; init; }
+    public DateTimeOffset? EndDate { get; init; }
+    public bool UseTime { get; init; }
 
-    public int? Page { get; set; }
-    public int? PageSize { get; set; }
+    public int? Page { get; init; }
+    public int? PageSize { get; init; }
 
-    public string SearchText { get; set; }
-    public string StatusFilter { get; set; } // 'needs-dispatch', 'all', 'active', etc.
+    public string SearchText { get; init; }
+    public string StatusFilter { get; init; } // 'needs-dispatch', 'all', 'active', etc.
 }

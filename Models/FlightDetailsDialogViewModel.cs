@@ -2,12 +2,12 @@ namespace DespatchWeb.Models;
 
 public class AirportViewModel
 {
-    public string Code { get; set; }
-    public string Name { get; set; }
-    public string City { get; set; }
-    public string Country { get; set; }
-    public string Timezone { get; set; }
-    public int Elevation { get; set; }
-    public double Latitude { get; set; }
-    public double Longitude { get; set; }
+    public string Code { get; init; }
+    public string Name { get; init; }
+    public string City { get; init; }
+    public string Country { get; init; }
+    public string Timezone { get; init; }
+    public int Elevation { get; init; }
+    public double Latitude { get; init; }
+    public double Longitude { get; init; }
 }

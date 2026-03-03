@@ -6,5 +6,5 @@ public class AgentDto
     public string AgentName { get; init; }
     public string AgentRanking { get; init; }
     public int? AgentVehicleId { get; init; }
-    public string AgentNotes { get; set; }
+    public string AgentNotes { get; init; }
 }

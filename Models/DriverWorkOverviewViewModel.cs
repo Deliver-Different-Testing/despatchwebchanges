@@ -2,9 +2,9 @@
 
 public class DriverWorkOverviewViewModel
 {
-    public int CourierId { get; set; }
-    public string Name { get; set; }
-    public string VehicleType { get; set; }
-    public int JobCount { get; set; }
-    public string DriverStatusText { get; set; }
+    public int CourierId { get; init; }
+    public string Name { get; init; }
+    public string VehicleType { get; init; }
+    public int JobCount { get; init; }
+    public string DriverStatusText { get; init; }
 }

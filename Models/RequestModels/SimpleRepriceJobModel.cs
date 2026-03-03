@@ -2,8 +2,8 @@
 
 public class SimpleRepriceJobModel
 {
-    public int JobId { get; set; }
-    public bool IsPrebook { get; set; }
-    public bool IsBulk { get; set; }
-    public decimal NewPrice { get; set; }
+    public int JobId { get; init; }
+    public bool IsPrebook { get; init; }
+    public bool IsBulk { get; init; }
+    public decimal NewPrice { get; init; }
 }

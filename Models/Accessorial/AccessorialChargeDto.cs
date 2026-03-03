@@ -2,22 +2,22 @@ namespace DespatchWeb.Models.Accessorial;
 
 public class AccessorialChargeDto
 {
-    public int AccessorialChargeId { get; set; }
-    public string Name { get; set; }
-    public string Description { get; set; }
-    public string ChargeType { get; set; }
-    public int? UnitTypeId { get; set; }
-    public string UnitTypeName { get; set; }
-    public decimal? BaseRate { get; set; }
-    public decimal? RatePerUnit { get; set; }
-    public decimal? PercentageRate { get; set; }
-    public decimal? MinimumCharge { get; set; }
-    public decimal? MaximumCharge { get; set; }
-    public decimal? MinimumQuantity { get; set; }
-    public decimal? FreeAllowance { get; set; }
-    public int? FreeAllowanceUnitTypeId { get; set; }
-    public string FreeAllowanceUnitTypeName { get; set; }
-    public string ConditionalNote { get; set; }
-    public int CalculationOrder { get; set; }
-    public bool AlreadyApplied { get; set; }
+    public int AccessorialChargeId { get; init; }
+    public string Name { get; init; }
+    public string Description { get; init; }
+    public string ChargeType { get; init; }
+    public int? UnitTypeId { get; init; }
+    public string UnitTypeName { get; init; }
+    public decimal? BaseRate { get; init; }
+    public decimal? RatePerUnit { get; init; }
+    public decimal? PercentageRate { get; init; }
+    public decimal? MinimumCharge { get; init; }
+    public decimal? MaximumCharge { get; init; }
+    public decimal? MinimumQuantity { get; init; }
+    public decimal? FreeAllowance { get; init; }
+    public int? FreeAllowanceUnitTypeId { get; init; }
+    public string FreeAllowanceUnitTypeName { get; init; }
+    public string ConditionalNote { get; init; }
+    public int CalculationOrder { get; init; }
+    public bool AlreadyApplied { get; init; }
 }

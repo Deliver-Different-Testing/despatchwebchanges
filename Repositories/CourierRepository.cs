@@ -1510,14 +1510,22 @@ public class CourierRepository(
             })
             .ToListAsync();
 
-        foreach (var compliance in couriersCompliance)
-            compliance.ExpiryDate = compliance.ExpiryDate.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(compliance.ExpiryDate.Value, tenantTimezone)
-                : null;
+        var convertedCompliance = couriersCompliance.Select(c => new CourierComplianceViewModel
+        {
+            Code = c.Code,
+            Name = c.Name,
+            ComplianceType = c.ComplianceType,
+            ItemNumber = c.ItemNumber,
+            ExpiryDate = c.ExpiryDate.HasValue
+                ? TimeZoneHelper.SetDateTimeWithTimeZone(c.ExpiryDate.Value, tenantTimezone)
+                : null,
+            Status = c.Status,
+            DaysUntilExpiry = c.DaysUntilExpiry
+        }).ToList();
 
         return new CourierCompliancePaginatedResponse
         {
-            Items = couriersCompliance,
+            Items = convertedCompliance,
             Total = totalCount,
             Page = page,
             Pages = totalPages,
@@ -2600,12 +2608,18 @@ public class CourierRepository(
             .TagWith("GetCourierComplianceForExport")
             .ToListAsync();
 
-        foreach (var compliance in items)
-            compliance.ExpiryDate = compliance.ExpiryDate.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(compliance.ExpiryDate.Value, tenantTimezone)
-                : null;
-
-        return items;
+        return items.Select(c => new CourierComplianceViewModel
+        {
+            Code = c.Code,
+            Name = c.Name,
+            ComplianceType = c.ComplianceType,
+            ItemNumber = c.ItemNumber,
+            ExpiryDate = c.ExpiryDate.HasValue
+                ? TimeZoneHelper.SetDateTimeWithTimeZone(c.ExpiryDate.Value, tenantTimezone)
+                : null,
+            Status = c.Status,
+            DaysUntilExpiry = c.DaysUntilExpiry
+        }).ToList();
     }
 
     public async Task<List<AfterHoursCourierScheduleViewModel>> GetAfterHoursScheduleForExportAsync(

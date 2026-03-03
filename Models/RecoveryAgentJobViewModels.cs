@@ -4,30 +4,30 @@ namespace DespatchWeb.Models;
 
 public class RecoveryAgentJobViewModel
 {
-    public int JobId { get; set; }
-    public string JobNumber { get; set; }
-    public Suggestion AssignedAgent { get; set; }
-    public AddressViewModel PickUpAddress { get; set; }
-    public AddressViewModel DeliveryAddress { get; set; }
-    public string PackageType { get; set; }
-    public string Priority { get; set; }
-    public string LastKnownLocation { get; set; }
-    public string Customer { get; set; }
-    public IEnumerable<RecoveryJobViewModel> RecoveryJobs { get; set; }
+    public int JobId { get; init; }
+    public string JobNumber { get; init; }
+    public Suggestion AssignedAgent { get; init; }
+    public AddressViewModel PickUpAddress { get; init; }
+    public AddressViewModel DeliveryAddress { get; init; }
+    public string PackageType { get; init; }
+    public string Priority { get; init; }
+    public string LastKnownLocation { get; init; }
+    public string Customer { get; init; }
+    public IEnumerable<RecoveryJobViewModel> RecoveryJobs { get; init; }
 }
 
 public class RecoveryJobViewModel
 {
-    public int JobId { get; set; }
-    public Suggestion AssignedAgent { get; set; }
-    public IEnumerable<RecoveryAgentViewModel> RecoveryAgents { get; set; }
+    public int JobId { get; init; }
+    public Suggestion AssignedAgent { get; init; }
+    public IEnumerable<RecoveryAgentViewModel> RecoveryAgents { get; init; }
 }
 
 public class RecoveryAgentViewModel
 {
-    public int RecoveryId { get; set; }
-    public string AgentName { get; set; }
-    public string Airport { get; set; }
-    public bool PrimaryRecoveryAgent { get; set; }
-    public string AssignStatus { get; set; }
+    public int RecoveryId { get; init; }
+    public string AgentName { get; init; }
+    public string Airport { get; init; }
+    public bool PrimaryRecoveryAgent { get; init; }
+    public string AssignStatus { get; init; }
 }

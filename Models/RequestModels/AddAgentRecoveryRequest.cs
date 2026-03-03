@@ -2,9 +2,9 @@
 
 public class AddAgentRecoveryRequest
 {
-    public int JobId { get; set; }
-    public int AgentId { get; set; }
+    public int JobId { get; init; }
+    public int AgentId { get; init; }
     
-    public int AirportId { get; set; }
-    public bool IsPrimaryRecoveryAgent { get; set; }
+    public int AirportId { get; init; }
+    public bool IsPrimaryRecoveryAgent { get; init; }
 }

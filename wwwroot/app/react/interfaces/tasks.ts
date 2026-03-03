@@ -26,10 +26,6 @@ export interface Task {
     _dueTimeString?: string;
 }
 
-export interface ExtendedTask extends Task {
-    dueTimeStr?: string;
-}
-
 export interface TaskFiltersRequest {
     searchText?: string;
     staffId?: number;

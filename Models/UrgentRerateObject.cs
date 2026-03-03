@@ -5,59 +5,59 @@ namespace DespatchWeb.Models;
 
 public class UrgentRerateObject
 {
-    public int SpeedId { get; set; }
-    public int SizeId { get; set; }
-    public UrgentRerateAddressObject From { get; set; }
-    public UrgentRerateAddressObject To { get; set; }
-    public IEnumerable<UrgentPackageObject> Packages { get; set; }
-    public int Weight { get; set; }
-    public int Quantity { get; set; }
-    public bool? IsDangerousGoods { get; set; }
-    public bool? IsPrebook { get; set; }
-    public DateTime? DateTime { get; set; }
-    public bool? Van { get; set; }
-    public bool? Bike { get; set; }
-    public UrgentTruckObject Truck { get; set; }
-    public string OurReference { get; set; }
-    public string ClientReferenceA { get; set; }
-    public string ClientReferenceB { get; set; }
+    public int SpeedId { get; init; }
+    public int SizeId { get; init; }
+    public UrgentRerateAddressObject From { get; init; }
+    public UrgentRerateAddressObject To { get; init; }
+    public IEnumerable<UrgentPackageObject> Packages { get; init; }
+    public int Weight { get; init; }
+    public int Quantity { get; init; }
+    public bool? IsDangerousGoods { get; init; }
+    public bool? IsPrebook { get; init; }
+    public DateTime? DateTime { get; init; }
+    public bool? Van { get; init; }
+    public bool? Bike { get; init; }
+    public UrgentTruckObject Truck { get; init; }
+    public string OurReference { get; init; }
+    public string ClientReferenceA { get; init; }
+    public string ClientReferenceB { get; init; }
 }
 
 public class UrgentRerateAddressObject
 {
-    public string CompanyName { get; set; }
-    public string BuildingName { get; set; }
-    public string StreetAddress { get; set; }
-    public string City { get; set; }
-    public string State { get; set; }
-    public string Suburb { get; set; }
-    public int? SuburbId { get; set; }
-    public string ZipCode { get; set; }
-    public string PostCode { get; set; }
-    public string CountryCode { get; set; }
-    public decimal? Latitude { get; set; }
-    public decimal? Longitude { get; set; }
+    public string CompanyName { get; init; }
+    public string BuildingName { get; init; }
+    public string StreetAddress { get; init; }
+    public string City { get; init; }
+    public string State { get; init; }
+    public string Suburb { get; init; }
+    public int? SuburbId { get; init; }
+    public string ZipCode { get; init; }
+    public string PostCode { get; init; }
+    public string CountryCode { get; init; }
+    public decimal? Latitude { get; init; }
+    public decimal? Longitude { get; init; }
 }
 
 public class UrgentPackageObject
 {
-    public string Name { get; set; }
-    public double? Length { get; set; }
-    public double? Width { get; set; }
-    public double? Height { get; set; }
-    public double Cubic { get; set; }
-    public double Kg { get; set; }
-    public string Type { get; set; }
-    public string PackageCode { get; set; }
-    public int Units { get; set; }
+    public string Name { get; init; }
+    public double? Length { get; init; }
+    public double? Width { get; init; }
+    public double? Height { get; init; }
+    public double Cubic { get; init; }
+    public double Kg { get; init; }
+    public string Type { get; init; }
+    public string PackageCode { get; init; }
+    public int Units { get; init; }
 }
 
 public class UrgentTruckObject
 {
-    public bool? PickupTailLift { get; set; }
-    public bool? DropoffTailLift { get; set; }
-    public bool? PrivateRes { get; set; }
-    public bool? HasDgDocuments { get; set; }
-    public string TruckStartTime { get; set; }
-    public int? TruckHours { get; set; }
+    public bool? PickupTailLift { get; init; }
+    public bool? DropoffTailLift { get; init; }
+    public bool? PrivateRes { get; init; }
+    public bool? HasDgDocuments { get; init; }
+    public string TruckStartTime { get; init; }
+    public int? TruckHours { get; init; }
 }

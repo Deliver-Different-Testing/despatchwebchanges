@@ -2,5 +2,5 @@
 
 public class SaveQuickResponseRequest
 {
-    public string Message { get; set; }
+    public string Message { get; init; }
 }

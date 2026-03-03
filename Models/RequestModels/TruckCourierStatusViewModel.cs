@@ -4,27 +4,23 @@ namespace DespatchWeb.Models.RequestModels;
 
 public class TruckCourierStatusViewModel
 {
-    public int CourierId { get; set; }
+    public int CourierId { get; init; }
 
-    public string CourierCode { get; set; }
+    public string CourierCode { get; init; }
 
-    public string FirstName { get; set; }
+    public string FirstName { get; init; }
 
-    public int? MaxPallets { get; set; }
+    public int? MaxPallets { get; init; }
 
-    public double? MaxPayLoad { get; set; }
+    public double? MaxPayLoad { get; init; }
 
-    public int? CurrentPallets { get; set; }
+    public int? CurrentPallets { get; init; }
 
-    public double? CurrentWeight { get; set; }
+    public double? CurrentWeight { get; init; }
 
-    public double? AvailablePalletCapacity { get; set; }
+    public double? AvailablePalletCapacity { get; init; }
 
-    public double? AvailablePallets { get; set; }
+    public double? AvailablePallets { get; init; }
 
-    public bool IsAtCapacity =>
-        CurrentPallets >= MaxPallets ||
-        CurrentWeight >= MaxPayLoad;
-
-    public DateTime LastUpdated { get; set; }
+    public DateTime LastUpdated { get; init; }
 }

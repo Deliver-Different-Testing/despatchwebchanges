@@ -4,35 +4,35 @@ namespace DespatchWeb.Models.Response;
 
 public class PaginatedResponse<T>
 {
-    public IEnumerable<T> Items { get; set; }
-    public int Total { get; set; }
-    public int Page { get; set; }
-    public int Pages { get; set; }
+    public IEnumerable<T> Items { get; init; }
+    public int Total { get; init; }
+    public int Page { get; init; }
+    public int Pages { get; init; }
 }
 
 public class CourierCompliancePaginatedResponse : PaginatedResponse<CourierComplianceViewModel>
 {
-    public int TotalExpired { get; set; }
-    public int TotalExpiringSoon { get; set; }
-    public int TotalValid { get; set; }
+    public int TotalExpired { get; init; }
+    public int TotalExpiringSoon { get; init; }
+    public int TotalValid { get; init; }
 }
 
 public class CourierAfterHoursPaginatedResponse : PaginatedResponse<AfterHoursCourierScheduleViewModel>
 {
-    public int TotalActiveDrivers { get; set; }
+    public int TotalActiveDrivers { get; init; }
 }
 
 public class TodayActiveDriversPaginatedResponse : PaginatedResponse<TodayActiveDriversViewModel>
 {
-    public int TotalActiveDrivers { get; set; }
-    public int TotalDriversActiveToday { get; set; }
-    public double AverageSessionTime { get; set; }
+    public int TotalActiveDrivers { get; init; }
+    public int TotalDriversActiveToday { get; init; }
+    public double AverageSessionTime { get; init; }
 }
 
 public class CourierDailyEarningsPaginatedResponse : PaginatedResponse<CourierDailyEarningsViewModel>
 {
-    public decimal TotalEarningsToday { get; set; }
-    public decimal AverageHourlyRate { get; set; }
-    public int TotalActiveDrivers { get; set; }
-    public int TotalDeliveriesToday { get; set; }
+    public decimal TotalEarningsToday { get; init; }
+    public decimal AverageHourlyRate { get; init; }
+    public int TotalActiveDrivers { get; init; }
+    public int TotalDeliveriesToday { get; init; }
 }

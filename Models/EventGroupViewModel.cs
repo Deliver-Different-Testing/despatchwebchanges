@@ -4,18 +4,18 @@ namespace DespatchWeb.Models;
 
 public class EventGroupViewModel
 {
-    public int EventTypeGroupTypeGroupId { get; set; }
-    public Suggestion EventType { get; set; }
-    public string Group { get; set; }
+    public int EventTypeGroupTypeGroupId { get; init; }
+    public Suggestion EventType { get; init; }
+    public string Group { get; init; }
 
-    public DateTime Date { get; set; }
+    public DateTime Date { get; init; }
 
-    public int Sequence { get; set; }
+    public int Sequence { get; init; }
 
-    public DateTime? DueTime { get; set; }
+    public DateTime? DueTime { get; init; }
 
-    public Suggestion AssignTo { get; set; }
-    public string Notes { get; set; }
+    public Suggestion AssignTo { get; init; }
+    public string Notes { get; init; }
 
-    public bool Active { get; set; }
+    public bool Active { get; init; }
 }

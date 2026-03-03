@@ -416,7 +416,12 @@ appShellReactModule.service('reactAppShellService', [
                     isUsCustomer: appConfig.US_Customer,
                     currentState: $state.current.name || '',
                     onLogoClick: () => navigationService.openHubUrl(),
-                    onNavigate: (state: string) => $state.go(state),
+                    onNavigate: (state: string) => {
+                        $state.go(state).catch((error: any) => {
+                            if (error?.type === 2 /* RejectType.SUPERSEDED */) return;
+                            console.error(`[AppShellReact] Navigation to '${state}' failed:`, error);
+                        });
+                    },
                 });
 
                 // Listen for state changes to update navigation highlighting

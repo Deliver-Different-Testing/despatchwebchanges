@@ -2,9 +2,9 @@
 
 public class ExsalerateActivity
 {
-    public int SiteOwnerID { get; set; }
-    public string CustomerRefCode { get; set; }
-    public string Subject { get; set; }
-    public string Description { get; set; }
-    public string ActivityType { get; set; }
+    public int SiteOwnerID { get; init; }
+    public string CustomerRefCode { get; init; }
+    public string Subject { get; init; }
+    public string Description { get; init; }
+    public string ActivityType { get; init; }
 }

@@ -5,12 +5,12 @@ namespace DespatchWeb.Models;
 
 public class AfterHoursCourierScheduleViewModel
 {
-    public int AfterHoursScheduleId { get; set; }
-    public int CourierId { get; set; }
-    public string CourierName { get; set; }
-    public string CourierCode { get; set; }
-    public List<string> Days { get; set; } = [];
-    public DateTimeOffset? StartTime { get; set; }
-    public DateTimeOffset? EndTime { get; set; }
-    public string Duration { get; set; }
+    public int AfterHoursScheduleId { get; init; }
+    public int CourierId { get; init; }
+    public string CourierName { get; init; }
+    public string CourierCode { get; init; }
+    public List<string> Days { get; init; } = [];
+    public DateTimeOffset? StartTime { get; init; }
+    public DateTimeOffset? EndTime { get; init; }
+    public string Duration { get; init; }
 }

@@ -2,8 +2,8 @@
 
 public class JobTypeFlightRatingDto
 {
-    public int JobTypeId { get; set; }
-    public string JobTypeName { get; set; }
-    public string Description { get; set; }
-    public int? Mins { get; set; }
+    public int JobTypeId { get; init; }
+    public string JobTypeName { get; init; }
+    public string Description { get; init; }
+    public int? Mins { get; init; }
 }

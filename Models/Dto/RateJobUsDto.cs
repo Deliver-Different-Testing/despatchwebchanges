@@ -4,57 +4,54 @@ namespace DespatchWeb.Models.Dto;
 
 public class RateJobUsDto
 {
-    public int JobId { get; set; }
+    public int JobId { get; init; }
 
-    public int ClientId { get; set; }
+    public int ClientId { get; init; }
 
-    public int Speed { get; set; }
+    public int Speed { get; init; }
 
-    public string FromZip { get; set; }
-    public decimal FromLat { get; set; }
-    public decimal FromLong { get; set; }
+    public string FromZip { get; init; }
+    public decimal FromLat { get; init; }
+    public decimal FromLong { get; init; }
 
-    public string ToZip { get; set; }
-    public decimal ToLat { get; set; }
-    public decimal ToLong { get; set; }
+    public string ToZip { get; init; }
+    public decimal ToLat { get; init; }
+    public decimal ToLong { get; init; }
 
-    public decimal TotalMiles { get; set; }
+    public decimal TotalMiles { get; init; }
 
-    public decimal FromMiles { get; set; }
+    public decimal FromMiles { get; init; }
 
-    public decimal ToMiles { get; set; }
+    public decimal ToMiles { get; init; }
 
-    public int Weight { get; set; }
+    public int Weight { get; init; }
 
-    public DateTime Booked { get; set; }
+    public DateTime Booked { get; init; }
 
-    public int Size { get; set; }
+    public int Size { get; init; }
 
-    public bool DangerousGoods { get; set; }
+    public bool DangerousGoods { get; init; }
 
-    public int TotalPallets { get; set; }
+    public int TotalPallets { get; init; }
 
-    public int ExtraStopOffs { get; set; }
+    public int ExtraStopOffs { get; init; }
 
-    public int DryIceWeight { get; set; }
+    public int DryIceWeight { get; init; }
 
-    public int WaitTime { get; set; }
+    public int WaitTime { get; init; }
 
-    public int? FromAgentId { get; set; }
+    public int? FromAgentId { get; init; }
 
-    public int? FromAirportId { get; set; }
+    public int? FromAirportId { get; init; }
 
-    public int? ToAgentId { get; set; }
+    public int? ToAgentId { get; init; }
 
-    public int? ToAirportId { get; set; }
+    public int? ToAirportId { get; init; }
 
-    public int? Quantity { get; set; }
-    public decimal? Cubic { get; set; }
-    public bool IsPrebook { get; set; }
+    public int? Quantity { get; init; }
+    public decimal? Cubic { get; init; }
+    public bool IsPrebook { get; init; }
     
-    public bool CalculateDimsOncePerJob { get; set; }
-    public decimal? PreviousRate { get; set; }
-
-    public bool IsFromAddressAirport { get; set; }
-    public bool IsToAddressAirport { get; set; }
+    public bool CalculateDimsOncePerJob { get; init; }
+    public decimal? PreviousRate { get; init; }
 }

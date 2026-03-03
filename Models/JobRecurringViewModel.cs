@@ -4,17 +4,17 @@ namespace DespatchWeb.Models;
 
 public class JobRecurringViewModel : JobViewModel
 {
-    public Suggestion InActiveBy { get; set; }
-    public DateTime? InActiveDate { get; set; }
-    public DateTime? FirstDue { get; set; }
-    public DateTime? NextDue { get; set; }
-    public DateTime? LastDone { get; set; }
-    public DateTime? StopDate { get; set; }
-    public DateTime? RestartDate { get; set; }
-    public bool? Active { get; set; }
+    public Suggestion InActiveBy { get; init; }
+    public DateTime? InActiveDate { get; init; }
+    public DateTime? FirstDue { get; init; }
+    public DateTime? NextDue { get; init; }
+    public DateTime? LastDone { get; init; }
+    public DateTime? StopDate { get; init; }
+    public DateTime? RestartDate { get; init; }
+    public bool? Active { get; init; }
 
-    public int DaysOfWeek { get; set; }
-    public int Frequency { get; set; }
+    public int DaysOfWeek { get; init; }
+    public int Frequency { get; init; }
 
-    public int HolidayDeliveryOption { get; set; }
+    public int HolidayDeliveryOption { get; init; }
 }

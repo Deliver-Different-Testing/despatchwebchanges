@@ -30,6 +30,7 @@ import {HereMapReactComponent} from "./react/components/common/here-map";
 
 // React DispatchMap component
 import {DispatchMapReactComponent} from "./react/components/common/dispatch-map";
+import angular from "angular";
 
 // Create the main Angular module
 const app = angular.module("uDispatch", [

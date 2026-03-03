@@ -936,6 +936,7 @@ public class AiSummarizationServiceTests
         // Assert
         result.Summary.Should().Be("Job not found.");
         result.Usage.InputTokens.Should().Be(0);
+        result.Couriers.Should().BeEmpty();
     }
 
     [Fact]
@@ -958,10 +959,11 @@ public class AiSummarizationServiceTests
 
         // Assert
         result.Summary.Should().Be("No courier data available for suggestions.");
+        result.Couriers.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task SuggestCouriersAsync_WithCourierData_ReturnsSummary()
+    public async Task SuggestCouriersAsync_WithCourierData_ReturnsSummaryAndCouriers()
     {
         // Arrange
         _jobRepositoryMock.Setup(x => x.GetSingleJobById(1)).ReturnsAsync(new JobViewModel
@@ -997,6 +999,12 @@ public class AiSummarizationServiceTests
         // Assert
         result.Summary.Should().Contain("Jane");
         result.Usage.InputTokens.Should().Be(250);
+        result.Couriers.Should().HaveCount(2);
+        result.Couriers[0].CourierId.Should().Be(10);
+        result.Couriers[0].Code.Should().Be("C10");
+        result.Couriers[0].FirstName.Should().Be("John");
+        result.Couriers[1].CourierId.Should().Be(11);
+        result.Couriers[1].FirstName.Should().Be("Jane");
     }
 
     [Fact]
@@ -1036,7 +1044,7 @@ public class AiSummarizationServiceTests
     }
 
     [Fact]
-    public async Task SuggestCouriersAsync_WithOnlyDriverOverview_StillCallsAi()
+    public async Task SuggestCouriersAsync_WithOnlyDriverOverview_StillCallsAiButEmptyCouriers()
     {
         // Arrange
         _jobRepositoryMock.Setup(x => x.GetSingleJobById(1)).ReturnsAsync(new JobViewModel
@@ -1060,6 +1068,7 @@ public class AiSummarizationServiceTests
 
         // Assert
         result.Summary.Should().Be("Driver1 recommended.");
+        result.Couriers.Should().BeEmpty();
         _aiClientMock.Verify(x => x.SendMessageAsync(
             It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
             It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()), Times.Once);

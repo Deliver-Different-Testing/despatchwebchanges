@@ -4,21 +4,21 @@ namespace DespatchWeb.Models;
 
 public class TaskViewModel
 {
-    public int Id { get; set; }
+    public int Id { get; init; }
 
-    public string Title { get; set; }
+    public string Title { get; init; }
 
-    public string Description { get; set; }
+    public string Description { get; init; }
 
-    public DateTimeOffset DueDate { get; set; }
+    public DateTimeOffset DueDate { get; init; }
 
-    public bool Closed { get; set; }
+    public bool Closed { get; init; }
     
-    public Suggestion Assignee { get; set; }
+    public Suggestion Assignee { get; init; }
 
-    public string EventType { get; set; }
+    public string EventType { get; init; }
 
-    public int JobId { get; set; }
+    public int JobId { get; init; }
     
-    public string JobNumber { get; set; }
+    public string JobNumber { get; init; }
 }

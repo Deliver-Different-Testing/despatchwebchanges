@@ -582,22 +582,24 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
                 var fileName = response.Metadata["FileName"] ?? Path.GetFileName(s3Object.Key);
                 var contentType = response.Headers.ContentType ?? DetermineContentType(Path.GetExtension(fileName));
             
+                // Only load data for images, not for PDFs or other files
+                string data = null;
+                if (contentType.StartsWith("image/"))
+                {
+                    using var memoryStream = new MemoryStream();
+                    await response.ResponseStream.CopyToAsync(memoryStream);
+                    data = Convert.ToBase64String(memoryStream.ToArray());
+                }
+
                 var photoInfo = new S3PhotoInfo
                 {
                     S3Key = s3Object.Key,
                     FileName = fileName,
                     ContentType = contentType,
                     LastModified = s3Object.LastModified,
-                    Size = s3Object.Size
+                    Size = s3Object.Size,
+                    Data = data
                 };
-
-                // Only load data for images, not for PDFs or other files
-                if (contentType.StartsWith("image/"))
-                {
-                    using var memoryStream = new MemoryStream();
-                    await response.ResponseStream.CopyToAsync(memoryStream);
-                    photoInfo.Data = Convert.ToBase64String(memoryStream.ToArray());
-                }
 
                 photoInfos.Add(photoInfo);
             }

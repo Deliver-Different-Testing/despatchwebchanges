@@ -4,33 +4,31 @@ namespace DespatchWeb.Models.Response;
 
 public class OverviewDeliveryMapResponse
 {
-    public Coordinates Center { get; set; }
-    public int Zoom { get; set; }
-    public OverviewJobLocation Job { get; set; }
+    public Coordinates Center { get; init; }
+    public int Zoom { get; init; }
+    public OverviewJobLocation Job { get; init; }
 
-    public Coordinates CourierLocation { get; set; }
-
-    public int SelectedJobIndex { get; set; }
+    public int SelectedJobIndex { get; init; }
 }
 
 public class Coordinates
 {
-    public decimal Lat { get; set; }
-    public decimal Lng { get; set; }
+    public decimal Lat { get; init; }
+    public decimal Lng { get; init; }
 }
 
 public class OverviewJobLocation
 {
-    public int Id { get; set; }
-    public Coordinates Pickup { get; set; }
-    public Coordinates Delivery { get; set; }
-    public List<OverviewChildJobLocation> ChildJobs { get; set; }
+    public int Id { get; init; }
+    public Coordinates Pickup { get; init; }
+    public Coordinates Delivery { get; init; }
+    public List<OverviewChildJobLocation> ChildJobs { get; init; }
 }
 
 public class OverviewChildJobLocation
 {
-    public int Id { get; set; }
-    public Coordinates Pickup { get; set; }
-    public Coordinates Delivery { get; set; }
-    public bool Flight { get; set; }
+    public int Id { get; init; }
+    public Coordinates Pickup { get; init; }
+    public Coordinates Delivery { get; init; }
+    public bool Flight { get; init; }
 }
