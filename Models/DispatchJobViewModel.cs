@@ -106,4 +106,8 @@ public class DispatchJobViewModel
     public Suggestion DeliveryTimeZone { get; set; }
     public bool AllowSplit { get; set; }
     public string CustomJobName { get; set; }
+    public int? AccessorialChargeGroupId { get; set; }
+    public decimal? Amount { get; set; }
+    public double? Weight { get; set; }
+    public short? Quantity { get; set; }
 }

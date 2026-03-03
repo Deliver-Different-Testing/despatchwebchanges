@@ -28,7 +28,7 @@ import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-fi
 import JobDataType from "./enums/JobDataType";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {openAddEventDialog} from "../../react/components/dialogs/add-event-dialog";
-import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
+import AccessorialChargesDialogService from "../dialogs/accessorial-charges-dialog/accessorial-charges-dialog.service";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {ExtendedTask, ITask} from "../../interfaces/task.interfaces";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
@@ -80,7 +80,7 @@ class NationwideControl extends BaseController {
         'APP_CONFIG',
         'dispatchJobService',
         'jobFileUploadDialogService',
-        'additionalServicesDialogService',
+        'accessorialChargesDialogService',
         'jobContextMenuService',
         'flightDetailsDialogService',
         'navigationService',
@@ -234,7 +234,7 @@ class NationwideControl extends BaseController {
         private appConfig: IAppConfig,
         private dispatchJobService: DispatchExecutorService,
         private jobFileUploadDialogService: JobFileUploadDialogService,
-        private additionalServicesDialogService: AdditionalServicesDialogService,
+        private accessorialChargesDialogService: AccessorialChargesDialogService,
         private jobContextMenuService: JobContextMenuService,
         private flightDetailsDialogService: FlightDetailsDialogService,
         private navigationService: NavigationService,
@@ -1575,8 +1575,8 @@ class NationwideControl extends BaseController {
         await this.jobFileUploadDialogService.openJobFileUploadDialog($event, job);
     }
 
-    async showAdditionalServicesMenu($event: MouseEvent, job: IDispatchJob) {
-        await this.additionalServicesDialogService.showAdditionalServicesDialog($event, job);
+    async showAccessorialChargesMenu($event: MouseEvent, job: IDispatchJob): Promise<void> {
+        await this.accessorialChargesDialogService.showAccessorialChargesDialog($event, job);
     }
 
     async getData(): Promise<void> {

@@ -1,6 +1,6 @@
 ﻿import JobSearchComponent from "./jobSearch.controller";
 import JobSearchService from "./jobSearch.service";
-import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
+import AccessorialChargesDialogService from "../dialogs/accessorial-charges-dialog/accessorial-charges-dialog.service";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {TaskHistoryReactComponent} from "../../react/components/common/task-history/task-history-react.module";
@@ -40,7 +40,7 @@ jobSearchModule
 // Services
 jobSearchModule
     .service("uCSData", JobSearchService)
-    .service("additionalServicesDialogService", AdditionalServicesDialogService)
+    .service("accessorialChargesDialogService", AccessorialChargesDialogService)
     .service("dispatchJobService", DispatchExecutorService)
     .service("jobContextMenuService", JobContextMenuService)
     .service("jobHighlightService", JobHighlightService)

@@ -5,7 +5,7 @@ import FlightAgentConfirmationDialogService
     from "../dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.service";
 import JobsListComponent from "../common/job-list/job-list.component";
 import TasksService from "../../services/tasks.service";
-import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
+import AccessorialChargesDialogService from "../dialogs/accessorial-charges-dialog/accessorial-charges-dialog.service";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
 import {
     FeatureInDevelopmentDialogService
@@ -42,7 +42,7 @@ nationwideModule
     .service("tasksService", TasksService)
     .service("flightDetailsDialogService", FlightDetailsDialogService)
     .service("flightAgentConfirmationDialogService", FlightAgentConfirmationDialogService)
-    .service("additionalServicesDialogService", AdditionalServicesDialogService)
+    .service("accessorialChargesDialogService", AccessorialChargesDialogService)
     .service("dispatchJobService", DispatchExecutorService)
     .service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService)
     .service("jobContextMenuService", JobContextMenuService)

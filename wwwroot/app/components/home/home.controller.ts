@@ -19,7 +19,7 @@ import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import BaseController from "../base-controller";
 import {ExtendedTask, ITask} from "../../interfaces/task.interfaces";
-import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
+import AccessorialChargesDialogService from "../dialogs/accessorial-charges-dialog/accessorial-charges-dialog.service";
 import {EditAddressDialogService} from "../dialogs/edit-address-dialog/edit-address-dialog.service";
 import {AppPage} from "../../enums/app-pages.enum";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
@@ -69,7 +69,7 @@ class HomeController extends BaseController {
         'APP_CONFIG',
         '$mdSidenav',
         '$stateParams',
-        'additionalServicesDialogService',
+        'accessorialChargesDialogService',
         'editAddressDialogService',
         'jobFileUploadDialogService',
         'interCourierChargeDialogService',
@@ -205,7 +205,7 @@ class HomeController extends BaseController {
         private APP_CONFIG: IAppConfig,
         private $mdSidenav: angular.material.ISidenavService,
         private $stateParams: angular.ui.IStateParamsService,
-        private additionalServicesDialog: AdditionalServicesDialogService,
+        private accessorialChargesDialog: AccessorialChargesDialogService,
         private editAddressDialog: EditAddressDialogService,
         private jobFileUploadDialog: JobFileUploadDialogService,
         private interCourierChargeDialog: InterCourierChargeDialogService,
@@ -1795,8 +1795,8 @@ class HomeController extends BaseController {
         await this.jobFileUploadDialog.openJobFileUploadDialog($event, job);
     }
 
-    async showAdditionalServicesMenu($event: MouseEvent, job: IDispatchJob): Promise<void> {
-        await this.additionalServicesDialog.showAdditionalServicesDialog($event, job);
+    async showAccessorialChargesMenu($event: MouseEvent, job: IDispatchJob): Promise<void> {
+        await this.accessorialChargesDialog.showAccessorialChargesDialog($event, job);
     }
 
     async loadSupports(filterType: string = this.supportsFilter): Promise<void> {

@@ -1,7 +1,7 @@
 ﻿import HomeComponent from "./home.controller";
 import JobsListComponent from "../common/job-list/job-list.component";
 import TasksService from "../../services/tasks.service";
-import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
+import AccessorialChargesDialogService from "../dialogs/accessorial-charges-dialog/accessorial-charges-dialog.service";
 import InterCourierChargeDialogService
     from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
 import InterCourierChargeDialogController
@@ -43,7 +43,7 @@ homeModule
 // Register services
 homeModule
     .service("tasksService", TasksService)
-    .service("additionalServicesDialogService", AdditionalServicesDialogService)
+    .service("accessorialChargesDialogService", AccessorialChargesDialogService)
     .service("interCourierChargeDialogService", InterCourierChargeDialogService)
     .service("dispatchJobService", DispatchExecutorService)
     .service("jobContextMenuService", JobContextMenuService)

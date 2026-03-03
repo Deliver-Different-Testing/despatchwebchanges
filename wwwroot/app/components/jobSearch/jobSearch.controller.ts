@@ -22,7 +22,7 @@ import ISearchCriteria from "./interfaces/ISearchCriteria";
 import dayjs, {Dayjs} from "dayjs";
 import JobListType from "../common/job-list/enums/jobListType";
 import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
-import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
+import AccessorialChargesDialogService from "../dialogs/accessorial-charges-dialog/accessorial-charges-dialog.service";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import BulkPriceUploadDialogService from "../dialogs/bulk-price-upload-dialog/bulk-price-upload-dialog.service";
 import IScanDetailResult from "./interfaces/IScanDetailResult";
@@ -52,7 +52,7 @@ class JobSearchController extends BaseController {
         "navigationService",
         "messagingDialogService",
         "createJobDialogService",
-        "additionalServicesDialogService",
+        "accessorialChargesDialogService",
         "jobFileUploadDialogService",
         "bulkPriceUploadDialogService",
         'interCourierChargeDialogService',
@@ -118,7 +118,7 @@ class JobSearchController extends BaseController {
         private navigationService: NavigationService,
         private messagingDialogService: MessagingDialogService,
         private createJobDialogService: CreateJobDialogService,
-        private additionalServicesDialogService: AdditionalServicesDialogService,
+        private accessorialChargesDialogService: AccessorialChargesDialogService,
         private jobFileUploadDialogService: JobFileUploadDialogService,
         private bulkPriceUploadDialogService: BulkPriceUploadDialogService,
         private interCourierChargeDialogService: InterCourierChargeDialogService,
@@ -628,25 +628,8 @@ class JobSearchController extends BaseController {
         }
     }
 
-    async showAdditionalServicesMenu($event: MouseEvent, job: IDispatchJob) {
-        try {
-            if (!job.clientId || !job.speedId) return;
-            const isClientItemsAvailable = await this.DispatchData.hasClientItemsAvailable(job.clientId, job.speedId);
-
-            if (!isClientItemsAvailable) {
-                await this.$mdDialog.show(this.$mdDialog.alert()
-                    .clickOutsideToClose(true)
-                    .title('No Additional Services')
-                    .targetEvent($event)
-                    .textContent('No additional services has been set up for this client. Please add a service through Admin Manager and try again.')
-                    .ok('OK'));
-                return;
-            }
-
-            await this.additionalServicesDialogService.showAdditionalServicesDialog($event, job);
-        } catch (error) {
-            console.error('Error in showAdditionalServicesMenu:', error);
-        }
+    async showAccessorialChargesMenu($event: MouseEvent, job: IDispatchJob): Promise<void> {
+        await this.accessorialChargesDialogService.showAccessorialChargesDialog($event, job);
     }
 
     async openFileAttachmentDialog($event: MouseEvent, job: IDispatchJob) {

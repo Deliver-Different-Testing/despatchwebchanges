@@ -11,7 +11,7 @@ import { courierHandlers } from './courierHandlers';
 import { taskHandlers } from './taskHandlers';
 import { noteHandlers } from './noteHandlers';
 import { eventHandlers } from './eventHandlers';
-import { additionalServicesHandlers } from './additionalServicesHandlers';
+import { accessorialChargesHandlers } from './accessorialChargesHandlers';
 import { pricingBreakdownHandlers } from './pricingBreakdownHandlers';
 import { recurringJobsHandlers } from './recurringJobsHandlers';
 import { splitJobHandlers } from './splitJobHandlers';
@@ -28,7 +28,7 @@ export const handlers = [
     ...taskHandlers,
     ...noteHandlers,
     ...eventHandlers,
-    ...additionalServicesHandlers,
+    ...accessorialChargesHandlers,
     ...pricingBreakdownHandlers,
     ...recurringJobsHandlers,
     ...splitJobHandlers,
@@ -46,7 +46,7 @@ export { courierHandlers } from './courierHandlers';
 export { taskHandlers } from './taskHandlers';
 export { noteHandlers } from './noteHandlers';
 export { eventHandlers } from './eventHandlers';
-export { additionalServicesHandlers } from './additionalServicesHandlers';
+export { accessorialChargesHandlers } from './accessorialChargesHandlers';
 export { pricingBreakdownHandlers } from './pricingBreakdownHandlers';
 export { recurringJobsHandlers } from './recurringJobsHandlers';
 export { splitJobHandlers } from './splitJobHandlers';
@@ -63,7 +63,7 @@ export { mockCourierSuggestions, mockCourierLocations, mockClearListEnvelope, mo
 export { mockTaskApiResponses, mockStaffSuggestions, mockEventTypeSuggestions, mockDeliveryJourneyDtos } from './taskHandlers';
 export { mockJobNoteDtos, mockNoteTypes } from './noteHandlers';
 export { mockDispatchJobDetail } from './eventHandlers';
-export { mockAdditionalServices } from './additionalServicesHandlers';
+export { mockAvailableCharges, mockAppliedCharges, mockJobAmount } from './accessorialChargesHandlers';
 export { mockPriceBreakdowns } from './pricingBreakdownHandlers';
 export { mockSpeedOptions, mockPaginatedRecurringJobsResponse } from './recurringJobsHandlers';
 export { mockAgentInfo } from './agentHandlers';
