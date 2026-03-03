@@ -151,6 +151,10 @@ public static partial class JobMappings
             DeliveryTimeZone = j.DeliverByTimeZone != null
                 ? new Suggestion { Id = j.DeliverByTimeZone.Id, Text = j.DeliverByTimeZone.Name }
                 : null,
+            AccessorialChargeGroupId = j.AccessorialChargeGroupId,
+            Amount = j.UcjbAmount,
+            Weight = j.UcjbWeight,
+            Quantity = j.UcjbQty,
         };
 
     public static Expression<Func<TucJob, DispatchJobViewModel>> PodSearchMapping(bool isUsCustomer) =>

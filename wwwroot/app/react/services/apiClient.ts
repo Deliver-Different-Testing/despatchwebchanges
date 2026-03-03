@@ -106,6 +106,7 @@ class ApiClient {
         options?: RequestOptions
     ): Promise<T> {
         const config: AxiosRequestConfig = {
+            params: options?.params,
             signal: options?.signal,
             timeout: options?.timeout,
         };

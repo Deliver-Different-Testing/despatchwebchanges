@@ -188,7 +188,8 @@ export interface IJob {
     barcode?: string;
     isFlightAssigned: boolean;
     isAgentAssigned: boolean;
-    
+    accessorialChargeGroupId?: number;
+
     // Private variables
     _createdDateStr?: string;
     _startTimeStr?: string;
@@ -791,8 +792,14 @@ export interface IDispatchJob {
     deliveryTimeZone: ISuggestion;
     
     
+    accessorialChargeGroupId?: number;
+
     // Children (from backend grouping)
     children?: IDispatchJob[];
+
+    amount?: number;
+    weight?: number;
+    quantity?: number;
 
     // Private
     _isExpanded?: boolean;

@@ -98,14 +98,11 @@
                                                     pin_drop
                                                 </md-icon>
                                             </md-button>
-                                            <md-button
-                                                    class="md-fab md-raised md-mini"
-                                                    ng-click="ctrl.showAdditionalServicesMenu($event, ctrl.currentJob)">
-                                                <md-tooltip md-direction="bottom">Additional Services
-                                                </md-tooltip>
-                                                <md-icon md-font-set="material-symbols-outlined">
-                                                    add_shopping_cart
-                                                </md-icon>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-if="ctrl.currentJob && ctrl.currentJob.accessorialChargeGroupId"
+                                                       ng-click="ctrl.showAccessorialChargesMenu($event, ctrl.currentJob)">
+                                                <md-tooltip md-direction="bottom">Accessorial Charges</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">receipt_long</md-icon>
                                             </md-button>
                                             <md-button
                                                     class="md-fab md-raised md-mini"

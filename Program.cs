@@ -160,6 +160,8 @@ builder.Services.AddScoped<IDeliveryJourneyService, DeliveryJourneyService>();
 builder.Services.AddScoped<IPricingPermissionService, PricingPermissionService>();
 builder.Services.AddScoped<ISplitJobService, SplitJobService>();
 builder.Services.AddScoped<IPodReportService, PodReportService>();
+builder.Services.AddScoped<IAccessorialChargeRepository, AccessorialChargeRepository>();
+builder.Services.AddScoped<IAccessorialChargeService, AccessorialChargeService>();
 
 // AI Services
 builder.Services.Configure<AnthropicSettings>(builder.Configuration.GetSection("Anthropic"));

@@ -31,6 +31,7 @@ type EntryPointName =
     | 'errorPageReact'
     | 'recurringJobsReact'
     | 'additionalServicesDialogReact'
+    | 'accessorialChargesDialogReact'
     | 'bulkPriceUploadDialogReact'
     | 'messagingDialogReact'
     | 'sendPodDialogReact'
@@ -72,6 +73,7 @@ const entryPoints: EntryPoints = {
     errorPageReact: path.join(rootDir, "wwwroot/app/react/pages/error-page/error-page-react.module.tsx"),
     recurringJobsReact: path.join(rootDir, "wwwroot/app/react/pages/recurring-jobs/recurring-jobs-react.module.tsx"),
     additionalServicesDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/additional-services-dialog/additional-services-dialog-react.module.tsx"),
+    accessorialChargesDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/accessorial-charges-dialog/accessorial-charges-dialog-react.module.tsx"),
     bulkPriceUploadDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/bulk-price-upload-dialog/bulk-price-upload-dialog-react.module.tsx"),
     messagingDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/messaging-dialog/messaging-dialog-react.module.tsx"),
     sendPodDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/send-pod-dialog/send-pod-dialog-react.module.tsx"),
