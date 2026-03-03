@@ -2,8 +2,8 @@ namespace DespatchWeb.Models.Accessorial;
 
 public class JobAccessorialChargeCreateRequest
 {
-    public int AccessorialChargeId { get; set; }
-    public decimal? InputValue { get; set; }
-    public int ItemCount { get; set; } = 1;
-    public string Notes { get; set; }
+    public int AccessorialChargeId { get; init; }
+    public decimal? InputValue { get; init; }
+    public int ItemCount { get; init; } = 1;
+    public string Notes { get; init; }
 }

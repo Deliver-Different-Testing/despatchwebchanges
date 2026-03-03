@@ -78,7 +78,7 @@ export class SideNav extends React.Component<SideNavProps> {
                 id: 'jobSearch',
                 label: 'Job Search',
                 icon: <SearchIcon />,
-                state: 'cs',
+                state: 'jobSearch',
             },
             {
                 id: 'recurringJobs',

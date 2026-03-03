@@ -5,18 +5,18 @@ namespace DespatchWeb.Models.RequestModels;
 
 public class PodSearchRequest
 {
-    public List<int> CourierIds { get; set; }
-    public List<int> ClientIds { get; set; }
-    public List<int> SpeedIds { get; set; }
-    public string Wild { get; set; }
-    public int? JobId { get; set; }
-    public string Job { get; set; }
-    public DateTimeOffset FromDate { get; set; }
-    public DateTimeOffset ToDate { get; set; }
-    public int? Page { get; set; }
-    public int? PageSize { get; set; }
-    public string SortColumn { get; set; }
-    public string SortDirection { get; set; }
+    public List<int> CourierIds { get; init; }
+    public List<int> ClientIds { get; init; }
+    public List<int> SpeedIds { get; init; }
+    public string Wild { get; init; }
+    public int? JobId { get; init; }
+    public string Job { get; init; }
+    public DateTimeOffset FromDate { get; init; }
+    public DateTimeOffset ToDate { get; init; }
+    public int? Page { get; init; }
+    public int? PageSize { get; init; }
+    public string SortColumn { get; init; }
+    public string SortDirection { get; init; }
 
     public bool ClientSet => ClientIds != null && ClientIds.Count != 0;
     public bool CourierSet => CourierIds != null && CourierIds.Count != 0;

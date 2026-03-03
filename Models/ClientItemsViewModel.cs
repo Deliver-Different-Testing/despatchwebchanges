@@ -2,19 +2,19 @@ namespace DespatchWeb.Models;
 
 public class ClientItemsViewModel
 {
-    public int ItemId { get; set; }
+    public int ItemId { get; init; }
 
-    public int ClientId { get; set; }
+    public int ClientId { get; init; }
 
-    public string Name { get; set; }
+    public string Name { get; init; }
 
-    public string Description { get; set; }
+    public string Description { get; init; }
 
-    public bool PerItem { get; set; }
+    public bool PerItem { get; init; }
 
-    public decimal Rate { get; set; }
+    public decimal Rate { get; init; }
 
-    public int? VehicleSizeId { get; set; }
+    public int? VehicleSizeId { get; init; }
 
-    public bool Selected { get; set; }
+    public bool Selected { get; init; }
 }

@@ -4,51 +4,51 @@ namespace DespatchWeb.Models.FlightStats;
 
 public class CreateAlertResponse
 {
-    [JsonPropertyName("request")] public Request Request { get; set; }
+    [JsonPropertyName("request")] public Request Request { get; init; }
     
-    [JsonPropertyName("error")] public ApiError Error { get; set; }
+    [JsonPropertyName("error")] public ApiError Error { get; init; }
 
-    [JsonPropertyName("rule")] public Rule Rule { get; set; }
+    [JsonPropertyName("rule")] public Rule Rule { get; init; }
 
-    [JsonPropertyName("alertCapabilities")] public AlertCapabilities AlertCapabilities { get; set; }
+    [JsonPropertyName("alertCapabilities")] public AlertCapabilities AlertCapabilities { get; init; }
 
-    [JsonPropertyName("appendix")] public Appendix Appendix { get; set; }
+    [JsonPropertyName("appendix")] public Appendix Appendix { get; init; }
 }
 
 public class ApiError
 {
     [JsonPropertyName("errorId")]
-    public string ErrorId { get; set; }
+    public string ErrorId { get; init; }
     
     [JsonPropertyName("errorMessage")]
-    public string ErrorMessage { get; set; }
+    public string ErrorMessage { get; init; }
 }
 
 public class AlertCapabilities
 {
-    [JsonPropertyName("baggage")] public bool Baggage { get; set; }
+    [JsonPropertyName("baggage")] public bool Baggage { get; init; }
 
-    [JsonPropertyName("departureGateChange")] public bool DepartureGateChange { get; set; }
+    [JsonPropertyName("departureGateChange")] public bool DepartureGateChange { get; init; }
 
-    [JsonPropertyName("arrivalGateChange")] public bool ArrivalGateChange { get; set; }
+    [JsonPropertyName("arrivalGateChange")] public bool ArrivalGateChange { get; init; }
 
-    [JsonPropertyName("gateDeparture")] public bool GateDeparture { get; set; }
+    [JsonPropertyName("gateDeparture")] public bool GateDeparture { get; init; }
 
-    [JsonPropertyName("gateArrival")] public bool GateArrival { get; set; }
+    [JsonPropertyName("gateArrival")] public bool GateArrival { get; init; }
 
-    [JsonPropertyName("runwayDeparture")] public bool RunwayDeparture { get; set; }
+    [JsonPropertyName("runwayDeparture")] public bool RunwayDeparture { get; init; }
 
-    [JsonPropertyName("runwayArrival")] public bool RunwayArrival { get; set; }
+    [JsonPropertyName("runwayArrival")] public bool RunwayArrival { get; init; }
 }
 
 public class Rule
 {
-    [JsonPropertyName("id")] public string Id { get; set; }
+    [JsonPropertyName("id")] public string Id { get; init; }
 }
 
 public class RuleEvent
 {
-    [JsonPropertyName("type")] public string Type { get; set; }
+    [JsonPropertyName("type")] public string Type { get; init; }
 
-    [JsonPropertyName("value")] public int? Value { get; set; }
+    [JsonPropertyName("value")] public int? Value { get; init; }
 }

@@ -36,9 +36,18 @@ public class TaskRepository(
             .Select(TaskMapping)
             .ToListAsync();
 
-        foreach (var task in tasks) task.DueDate = TimeZoneHelper.SetDateTimeWithTimeZone(task.DueDate, tenantTimeZone);
-
-        return tasks;
+        return tasks.Select(task => new TaskViewModel
+        {
+            Id = task.Id,
+            Title = task.Title,
+            Description = task.Description,
+            DueDate = TimeZoneHelper.SetDateTimeWithTimeZone(task.DueDate, tenantTimeZone),
+            Closed = task.Closed,
+            Assignee = task.Assignee,
+            EventType = task.EventType,
+            JobId = task.JobId,
+            JobNumber = task.JobNumber
+        }).ToList();
     }
 
     private static IQueryable<TucEvent> ApplyOrdering(IQueryable<TucEvent> query, TaskTableFiltersRequest filters,

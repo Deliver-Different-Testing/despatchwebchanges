@@ -2,8 +2,8 @@
 
 public class GetAirportsDto
 {
-    public int AirportId { get; set; }
-    public int FlightBufferMinutes { get; set; }
-    public string AirportCode { get; set; }
-    public string Timezone { get; set; }
+    public int AirportId { get; init; }
+    public int FlightBufferMinutes { get; init; }
+    public string AirportCode { get; init; }
+    public string Timezone { get; init; }
 }

@@ -2,8 +2,8 @@ namespace DespatchWeb.Models.RequestModels;
 
 public class UpdatePodDetailsRequest
 {
-    public int JobId { get; set; }
-    public int JobStatus { get; set; }
-    public string PodName { get; set; }
-    public string PodTime { get; set; }
+    public int JobId { get; init; }
+    public int JobStatus { get; init; }
+    public string PodName { get; init; }
+    public string PodTime { get; init; }
 }

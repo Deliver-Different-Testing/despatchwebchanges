@@ -4,15 +4,15 @@ namespace DespatchWeb.Models.RequestModels;
 
 public class TaskTableFiltersRequest
 {
-    public int? CourierId { get; set; }
-    public int? EventTypeId { get; set; }
-    public string SearchText { get; set; }
-    public DateTimeOffset? Date { get; set; }
-    public string OrderBy { get; set; }
-    public string OrderDirection { get; set; }
-    public int? StaffId { get; set; }
-    public bool? ShowCompleted { get; set; }
-    public int? JobId { get; set; }
-    public DateTimeOffset? StartDate { get; set; }
-    public DateTimeOffset? EndDate { get; set; }
+    public int? CourierId { get; init; }
+    public int? EventTypeId { get; init; }
+    public string SearchText { get; init; }
+    public DateTimeOffset? Date { get; init; }
+    public string OrderBy { get; init; }
+    public string OrderDirection { get; init; }
+    public int? StaffId { get; init; }
+    public bool? ShowCompleted { get; init; }
+    public int? JobId { get; init; }
+    public DateTimeOffset? StartDate { get; init; }
+    public DateTimeOffset? EndDate { get; init; }
 }

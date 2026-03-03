@@ -207,7 +207,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         menuOptions.push({
             text: "AI Suggest Couriers",
             icon: "auto_awesome",
-            click: () => this.showAiCourierSuggestions(job),
+            click: () => this.showAiCourierSuggestions(job, callbacks),
             hasBottomDivider: true,
         });
 
@@ -769,22 +769,19 @@ class JobContextMenuService implements angular.IServiceProvider {
         }
     }
 
-    private async showAiCourierSuggestions(job: IDispatchJob): Promise<void> {
+    private async showAiCourierSuggestions(job: IDispatchJob, callbacks: any): Promise<void> {
         if (!job?.id) return;
         try {
-            this.toastrService.showInfoToast("Getting AI courier suggestions...");
             await this.ensureAiAssistantLoaded();
-            const response = await (window as any).ReactAiAssistant.suggestCouriers(job.id);
-            if (response?.summary) {
-                await this.$mdDialog.show(
-                    this.$mdDialog.alert()
-                        .title(`AI Courier Suggestions - ${job.jobNo}`)
-                        .htmlContent(`<div style="line-height: 1.6;">${markdownToSafeHtml(response.summary)}</div>`)
-                        .ok('Close')
-                );
-            } else {
-                this.toastrService.showWarningToast("No suggestions data returned");
-            }
+            await (window as any).ReactAiAssistant.showCourierSuggestions(
+                job.id,
+                job.jobNo,
+                async (courierId: number) => {
+                    await this.DispatchData.allocateJobs(courierId, [job.id]);
+                    this.toastrService.showSuccessToast(`Job ${job.jobNo} assigned successfully`);
+                },
+                () => callbacks.onRefresh?.()
+            );
         } catch (error: any) {
             console.error("AI courier suggestions error:", error);
             this.toastrService.showErrorToast(error?.message || "Failed to get courier suggestions");

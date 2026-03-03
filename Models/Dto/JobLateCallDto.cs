@@ -4,14 +4,14 @@ namespace DespatchWeb.Models.Dto;
 
 public class JobLateCallDto
 {
-     public int Id { get; set; }
-        public int ClientId { get; set; }
-        public int MinutesRemaining { get; set; }
-        public int PickupTime { get; set; }
-        public int DeliveryTime { get; set; }
-        public int AlertLatePickup { get; set; }
-        public int AlertLateDelivery { get; set; }
-        public DateTime JobTime { get; set; }
-        public string BookedSpeed { get; set; }
-        public string NotifiedSpeed { get; set; }
+     public int Id { get; init; }
+        public int ClientId { get; init; }
+        public int MinutesRemaining { get; init; }
+        public int PickupTime { get; init; }
+        public int DeliveryTime { get; init; }
+        public int AlertLatePickup { get; init; }
+        public int AlertLateDelivery { get; init; }
+        public DateTime JobTime { get; init; }
+        public string BookedSpeed { get; init; }
+        public string NotifiedSpeed { get; init; }
 }

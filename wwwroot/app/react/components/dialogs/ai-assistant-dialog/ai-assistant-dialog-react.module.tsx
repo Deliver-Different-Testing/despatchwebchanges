@@ -11,9 +11,10 @@ import { createRoot, Root } from 'react-dom/client';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { AiAssistantDialog } from './AiAssistantDialog';
 import { AiSummaryPanel } from '../../common/ai-summary-panel/AiSummaryPanel';
+import { AiCourierSuggestionsDialog } from './AiCourierSuggestionsDialog';
 import { OpenAiAssistantDialogOptions } from './types';
 import { getTheme } from '../../../theme/muiTheme';
-import { summarizeJobNotes, summarizeJob, summarizeOperations, analyzeLateAlert, suggestCouriers, AiSummaryResponse } from '../../../services/aiAssistantApi';
+import { summarizeJobNotes, summarizeJob, summarizeOperations, analyzeLateAlert, suggestCouriers, AiSummaryResponse, AiCourierSuggestionResponse } from '../../../services/aiAssistantApi';
 
 // Get current staff info from global variables
 declare const FullName: string;
@@ -104,8 +105,54 @@ class AiAssistantDialogManager {
         return analyzeLateAlert(jobId);
     }
 
-    async suggestCouriers(jobId: number): Promise<AiSummaryResponse> {
+    async suggestCouriers(jobId: number): Promise<AiCourierSuggestionResponse> {
         return suggestCouriers(jobId);
+    }
+
+    showCourierSuggestions(
+        jobId: number,
+        jobNo: string,
+        onAssign: (courierId: number) => Promise<void>,
+        onRefresh?: () => void
+    ): Promise<void> {
+        return new Promise((resolve) => {
+            const container = document.createElement('div');
+            container.id = 'react-ai-courier-suggestions-root';
+            document.body.appendChild(container);
+            const root = createRoot(container);
+
+            const cleanup = () => {
+                root.unmount();
+                container.remove();
+                resolve();
+            };
+
+            const handleAssign = async (courierId: number) => {
+                await onAssign(courierId);
+                onRefresh?.();
+            };
+
+            const renderDialog = (open: boolean) => {
+                const currentTheme = getTheme();
+                root.render(
+                    <ThemeProvider theme={currentTheme}>
+                        <CssBaseline />
+                        <AiCourierSuggestionsDialog
+                            open={open}
+                            onClose={() => {
+                                renderDialog(false);
+                                setTimeout(cleanup, 300);
+                            }}
+                            jobId={jobId}
+                            jobNo={jobNo}
+                            onAssign={handleAssign}
+                        />
+                    </ThemeProvider>
+                );
+            };
+
+            renderDialog(true);
+        });
     }
 }
 
@@ -127,8 +174,17 @@ export function analyzeLateAlertForJob(jobId: number): Promise<AiSummaryResponse
     return aiAssistantDialogManager.analyzeLateAlert(jobId);
 }
 
-export function suggestCouriersForJob(jobId: number): Promise<AiSummaryResponse> {
+export function suggestCouriersForJob(jobId: number): Promise<AiCourierSuggestionResponse> {
     return aiAssistantDialogManager.suggestCouriers(jobId);
+}
+
+export function showCourierSuggestions(
+    jobId: number,
+    jobNo: string,
+    onAssign: (courierId: number) => Promise<void>,
+    onRefresh?: () => void
+): Promise<void> {
+    return aiAssistantDialogManager.showCourierSuggestions(jobId, jobNo, onAssign, onRefresh);
 }
 
 // --- Summary Panel ---
@@ -189,6 +245,7 @@ function unmountSummaryPanel(container: HTMLElement): void {
     summarizeJob: summarizeFullJobForJob,
     analyzeLateAlert: analyzeLateAlertForJob,
     suggestCouriers: suggestCouriersForJob,
+    showCourierSuggestions,
     renderSummaryPanel,
     renderOperationsInsightsPanel,
     unmountSummaryPanel,

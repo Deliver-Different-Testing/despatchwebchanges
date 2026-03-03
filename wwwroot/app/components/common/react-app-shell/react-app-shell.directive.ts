@@ -262,7 +262,13 @@ function reactAppShellDirective(
                         isUsCustomer: APP_CONFIG.US_Customer,
                         currentState: $state.current.name || '',
                         onLogoClick: () => navigationService.openHubUrl(),
-                        onNavigate: (state: string) => $state.go(state),
+                        onNavigate: (state: string) => {
+                            $state.go(state).catch((error: any) => {
+                                // Ignore superseded transitions (user clicked another link)
+                                if (error?.type === 2 /* RejectType.SUPERSEDED */) return;
+                                console.error(`[ReactAppShellDirective] Navigation to '${state}' failed:`, error);
+                            });
+                        },
                     });
 
                     mounted = true;

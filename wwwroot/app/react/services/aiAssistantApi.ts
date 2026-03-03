@@ -38,6 +38,18 @@ export interface AiSummaryResponse {
     usage: AiUsageInfo;
 }
 
+export interface SuggestedCourier {
+    courierId: number;
+    code: string;
+    firstName: string;
+}
+
+export interface AiCourierSuggestionResponse {
+    summary: string;
+    usage: AiUsageInfo;
+    couriers: SuggestedCourier[];
+}
+
 /** Standard (non-streaming) chat request */
 export function chat(request: AiChatRequest): Promise<AiChatResponse> {
     return apiClient.post<AiChatResponse>('/Ai/Chat', request);
@@ -141,6 +153,6 @@ export function analyzeLateAlert(jobId: number): Promise<AiSummaryResponse> {
 }
 
 /** Get AI-ranked courier suggestions for a job */
-export function suggestCouriers(jobId: number): Promise<AiSummaryResponse> {
-    return apiClient.post<AiSummaryResponse>('/Ai/SuggestCouriers', null, { params: { jobId } });
+export function suggestCouriers(jobId: number): Promise<AiCourierSuggestionResponse> {
+    return apiClient.post<AiCourierSuggestionResponse>('/Ai/SuggestCouriers', null, { params: { jobId } });
 }

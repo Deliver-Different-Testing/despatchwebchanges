@@ -4,14 +4,14 @@ namespace DespatchWeb.Models.MessageModels;
 
 public class RecentMessageViewModel
 {
-    public int OtherPartyId { get; set; }
-    public OtherMessagePartyType OtherPartyType { get; set; }
-    public string OtherPartyName { get; set; }
-    public string OtherPartyInitials { get; set; }
-    public string OtherPartyStatus { get; set; }
-    public int UnreadCount { get; set; }
-    public string LastMessage { get; set; }
-    public DateTime LastMessageTime { get; set; }
+    public int OtherPartyId { get; init; }
+    public OtherMessagePartyType OtherPartyType { get; init; }
+    public string OtherPartyName { get; init; }
+    public string OtherPartyInitials { get; init; }
+    public string OtherPartyStatus { get; init; }
+    public int UnreadCount { get; init; }
+    public string LastMessage { get; init; }
+    public DateTime LastMessageTime { get; init; }
 }
 
 public enum OtherMessagePartyType

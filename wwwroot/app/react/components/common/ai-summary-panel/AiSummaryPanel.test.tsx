@@ -5,7 +5,7 @@
  * - formatRelativeTime helper
  * - Expand/collapse behaviour
  * - Loading skeleton state
- * - Refresh and copy-to-clipboard buttons
+ * - Copy-to-clipboard button
  * - Error display
  * - Abort/stop behaviour
  * - Auto-fetch on mount
@@ -168,40 +168,6 @@ describe('AiSummaryPanel', () => {
 
             await waitFor(() => {
                 expect(screen.getByText('Network timeout')).toBeInTheDocument();
-            });
-        });
-    });
-
-    describe('Refresh button', () => {
-        it('shows refresh button after summary is fetched', async () => {
-            const mockFetch = createMockFetch('Summary');
-            renderWithTheme(
-                <AiSummaryPanel title="Test" fetchSummary={mockFetch} autoFetch />
-            );
-
-            await waitFor(() => {
-                expect(screen.getByTestId('react-markdown')).toBeInTheDocument();
-            });
-
-            expect(screen.getByLabelText('Refresh')).toBeInTheDocument();
-        });
-
-        it('triggers a new fetch when refresh is clicked', async () => {
-            const mockFetch = createMockFetch('Summary');
-            renderWithTheme(
-                <AiSummaryPanel title="Test" fetchSummary={mockFetch} autoFetch />
-            );
-
-            await waitFor(() => {
-                expect(screen.getByTestId('react-markdown')).toBeInTheDocument();
-            });
-
-            // Click refresh
-            fireEvent.click(screen.getByLabelText('Refresh'));
-
-            await waitFor(() => {
-                // Should have been called twice: initial + refresh
-                expect(mockFetch).toHaveBeenCalledTimes(2);
             });
         });
     });

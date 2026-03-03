@@ -4,11 +4,11 @@ namespace DespatchWeb.Models;
 
 public class CourierComplianceViewModel
 {
-    public string Code { get; set; }
-    public string Name { get; set; }
-    public string ComplianceType { get; set; }
-    public string ItemNumber { get; set; }
-    public DateTimeOffset? ExpiryDate { get; set; }
-    public string Status { get; set; }
-    public string DaysUntilExpiry { get; set; }
+    public string Code { get; init; }
+    public string Name { get; init; }
+    public string ComplianceType { get; init; }
+    public string ItemNumber { get; init; }
+    public DateTimeOffset? ExpiryDate { get; init; }
+    public string Status { get; init; }
+    public string DaysUntilExpiry { get; init; }
 }

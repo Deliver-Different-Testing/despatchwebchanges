@@ -48,5 +48,5 @@ internal class ClientJobsReportRow
     public bool? Locked { get; init; }
     public int? ClientId { get; init; }
     public string ClientNote { get; init; }
-    public string AcceptedSpeed { get; set; }
+    public string AcceptedSpeed { get; init; }
 }

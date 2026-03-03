@@ -8,10 +8,10 @@ public class SplitJobRequest
     /// <summary>
     /// The ID of the job to split.
     /// </summary>
-    public int JobId { get; set; }
+    public int JobId { get; init; }
 
     /// <summary>
     /// The meeting point address data including all address lines.
     /// </summary>
-    public required AddressViewModel MeetingPointAddress { get; set; }
+    public required AddressViewModel MeetingPointAddress { get; init; }
 }

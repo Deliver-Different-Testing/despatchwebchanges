@@ -237,14 +237,3 @@ export interface PostalCodeDetailsUspsZipPlus4 {
     };
   };
 }
-
-// Here is the interface for the full request options
-export interface HereMapsLookupOptions {
-  id: string;
-  lang?: string[];
-  politicalView?: string;
-  show?: Array<"countryInfo" | "eMobilityServiceProviders" | "ev" | "phonemes" | "postalCodeDetails" | "streetInfo" | "tripadvisor" | "tz">;
-  showMapReferences?: Array<"adminIds" | "cmVersion" | "links" | "pointAddress" | "segments">;
-  showNavAttributes?: Array<"access" | "functionalClass" | "physical" | "speedLimits">;
-  showRelated?: Array<"MPA" | "parentPA">;
-}

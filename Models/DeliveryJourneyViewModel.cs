@@ -5,11 +5,11 @@ namespace DespatchWeb.Models;
 
 public class DeliveryJourneyViewModel
 {
-    public Guid Id { get; set; }
-    public int JobId { get; set; }
-    public string Title { get; set; }
-    public string Icon { get; set; }
-    public string Description { get; set; }
-    public DateTimeOffset Date { get; set; }
-    public List<string> Tags { get; set; }
+    public Guid Id { get; init; }
+    public int JobId { get; init; }
+    public string Title { get; init; }
+    public string Icon { get; init; }
+    public string Description { get; init; }
+    public DateTimeOffset Date { get; init; }
+    public List<string> Tags { get; init; }
 }

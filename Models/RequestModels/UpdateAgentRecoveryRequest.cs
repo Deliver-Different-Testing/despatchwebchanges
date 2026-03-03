@@ -2,6 +2,6 @@
 
 public class UpdateAgentRecoveryRequest
 {
-    public int RecoveryId { get; set; }
-    public bool IsPrimaryRecoveryAgent { get; set; }
+    public int RecoveryId { get; init; }
+    public bool IsPrimaryRecoveryAgent { get; init; }
 }

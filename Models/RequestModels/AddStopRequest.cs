@@ -2,7 +2,7 @@ namespace DespatchWeb.Models.RequestModels;
 
 public class AddStopRequest
 {
-    public int JobId { get; set; }
-    public EditAddressDialogViewModel PickUpAddress { get; set; }
-    public EditAddressDialogViewModel DeliveryAddress { get; set; }
+    public int JobId { get; init; }
+    public EditAddressDialogViewModel PickUpAddress { get; init; }
+    public EditAddressDialogViewModel DeliveryAddress { get; init; }
 }

@@ -584,16 +584,6 @@ export interface PriceBreakdown {
     isArchived?: boolean;
 }
 
-export interface DfrntEvent {
-    id: number;
-    jobNumber: string;
-    clientCode: string;
-    eventDate: Dayjs;
-    closedDate?: Dayjs;
-    eventType?: string;
-    notes?: string;
-}
-
 export interface ClientItemsViewModel {
     itemId: number;
     clientId: number;
@@ -603,11 +593,6 @@ export interface ClientItemsViewModel {
     rate: number;
     onlyVan: boolean;
     selected: boolean;
-}
-
-export interface INoteType extends ISuggestion {
-    isPublic: boolean;
-    description?: string;
 }
 
 export interface JobCreateViewModelDto {
@@ -985,12 +970,6 @@ export interface IDispatchMapItem {
     deliveryAddress: IAddressViewModel;
     assignedCourier?: ISuggestion;
     statusId?: number; // Job status: 0 = New/Undispatched, 1 = Dispatched, etc.
-}
-
-export interface IDeletePriceComponentRequest {
-    jobId: number;
-    chargeId: number;
-    isArchived?: boolean;
 }
 
 export interface ISimpleRepriceJobModel {

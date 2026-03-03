@@ -4,17 +4,17 @@ namespace DespatchWeb.Models;
 
 public class AgentViewModel
 {
-    public int AgentId { get; set; }
-    public string AgentName { get; set; }
-    public decimal AgentRate { get; set; }
-    public string AgentRanking { get; set; }
-    public string AgentNotes { get; set; }
-    public string AgentPhone { get; set; }
-    public string AgentEmail { get; set; }
+    public int AgentId { get; init; }
+    public string AgentName { get; init; }
+    public decimal AgentRate { get; init; }
+    public string AgentRanking { get; init; }
+    public string AgentNotes { get; init; }
+    public string AgentPhone { get; init; }
+    public string AgentEmail { get; init; }
 }
 
 public class AgentInfoDialogViewModel: AgentViewModel
 {
-    public List<AirportViewModel> Airports { get; set; }
-    public AddressViewModel Address { get; set; }
+    public List<AirportViewModel> Airports { get; init; }
+    public AddressViewModel Address { get; init; }
 }

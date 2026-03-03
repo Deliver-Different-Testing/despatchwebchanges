@@ -2,6 +2,6 @@
 
 public class WebhookEventDto
 {
-    public string EventCode { get; set; }
-    public int? AdditionalParameter { get; set; }
+    public string EventCode { get; init; }
+    public int? AdditionalParameter { get; init; }
 }

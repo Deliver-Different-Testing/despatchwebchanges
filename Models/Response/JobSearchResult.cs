@@ -4,17 +4,17 @@ namespace DespatchWeb.Models.Response;
 
 public class JobSearchResult
 {
-    public List<DispatchJobViewModel> Jobs { get; set; }
-    public int TotalCount { get; set; }
-    public bool HasMore { get; set; }
-    public List<DispatchMapItem> MapItems { get; set; }
+    public List<DispatchJobViewModel> Jobs { get; init; }
+    public int TotalCount { get; init; }
+    public bool HasMore { get; init; }
+    public List<DispatchMapItem> MapItems { get; init; }
 }
 
 public class DispatchMapItem
 {
-    public int JobId { get; set; }
-    public string JobNo { get; set; }
-    public AddressViewModel PickupAddress { get; set; }
-    public AddressViewModel DeliveryAddress { get; set; }
-    public Suggestion AssignedCourier { get; set; }
+    public int JobId { get; init; }
+    public string JobNo { get; init; }
+    public AddressViewModel PickupAddress { get; init; }
+    public AddressViewModel DeliveryAddress { get; init; }
+    public Suggestion AssignedCourier { get; init; }
 }

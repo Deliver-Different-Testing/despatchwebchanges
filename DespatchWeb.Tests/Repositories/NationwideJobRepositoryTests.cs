@@ -1059,9 +1059,8 @@ public class NationwideJobRepositoryTests : IDisposable
 
         await _context.SaveChangesAsync();
 
-        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime);
-        request.PackageReadyTime = packageReadyTime;
-        request.PackageDeliverByTime = packageDeliverByTime;
+        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime,
+            packageReadyTime: packageReadyTime, packageDeliverByTime: packageDeliverByTime);
         var webhookIds = new List<string> { "webhook-123" };
 
         var repository = CreateRepository();
@@ -1569,9 +1568,8 @@ public class NationwideJobRepositoryTests : IDisposable
 
         await _context.SaveChangesAsync();
 
-        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime);
         // Note: NOT setting PackageReadyTime - this should trigger auto-calculation
-        request.PackageReadyTime = null;
+        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime);
         var webhookIds = new List<string> { "webhook-123" };
 
         var repository = CreateRepository();
@@ -1617,8 +1615,8 @@ public class NationwideJobRepositoryTests : IDisposable
 
         await _context.SaveChangesAsync();
 
-        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime);
-        request.PackageReadyTime = customPackageReadyTime; // Explicitly set package ready time
+        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime,
+            packageReadyTime: customPackageReadyTime); // Explicitly set package ready time
         var webhookIds = new List<string> { "webhook-123" };
 
         var repository = CreateRepository();
@@ -1663,8 +1661,7 @@ public class NationwideJobRepositoryTests : IDisposable
 
         await _context.SaveChangesAsync();
 
-        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime);
-        request.PackageReadyTime = null; // Force calculation
+        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime); // PackageReadyTime defaults to null, forcing calculation
         var webhookIds = new List<string> { "webhook-123" };
 
         var repository = CreateRepository();
@@ -1723,7 +1720,6 @@ public class NationwideJobRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime);
-        request.PackageReadyTime = null;
         var webhookIds = new List<string> { "webhook-123" };
 
         var repository = CreateRepository();
@@ -1772,8 +1768,6 @@ public class NationwideJobRepositoryTests : IDisposable
 
         var request = CreateFlightRequestWithMultipleLegs(100, 1, 3,
             departureTime1, arrivalTime1, departureTime2, arrivalTime2);
-        request.ToAirportId = 3;
-        request.PackageReadyTime = null;
         var webhookIds = new List<string> { "webhook-leg1", "webhook-leg2" };
 
         var repository = CreateRepository();
@@ -1839,7 +1833,6 @@ public class NationwideJobRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime);
-        request.PackageReadyTime = null;
         var webhookIds = new List<string> { "webhook-123" };
         var repository = CreateRepository();
 
@@ -2071,8 +2064,8 @@ public class NationwideJobRepositoryTests : IDisposable
 
         await _context.SaveChangesAsync();
 
-        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime);
-        request.PackageDeliverByTime = packageDeliverByTime;
+        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime,
+            packageDeliverByTime: packageDeliverByTime);
         var webhookIds = new List<string> { "webhook-123" };
 
         var repository = CreateRepository();
@@ -2785,13 +2778,17 @@ public class NationwideJobRepositoryTests : IDisposable
 
     private static Models.AssignFlightToJobRequest CreateFlightRequest(
         int jobId, int fromAirportId, int toAirportId,
-        DateTimeOffset departureTime, DateTimeOffset arrivalTime) => new()
+        DateTimeOffset departureTime, DateTimeOffset arrivalTime,
+        DateTimeOffset? packageReadyTime = null,
+        DateTimeOffset? packageDeliverByTime = null) => new()
     {
         JobId = jobId,
         FromAirportId = fromAirportId,
         ToAirportId = toAirportId,
         FlightNumber = "NZ123",
         DepartureDate = departureTime,
+        PackageReadyTime = packageReadyTime,
+        PackageDeliverByTime = packageDeliverByTime,
         FlightSegments =
         [
             new Models.FlightSegmentViewModel
@@ -2820,13 +2817,17 @@ public class NationwideJobRepositoryTests : IDisposable
     private static Models.AssignFlightToJobRequest CreateFlightRequestWithMultipleLegs(
         int jobId, int fromAirportId, int toAirportId,
         DateTimeOffset departureTime1, DateTimeOffset arrivalTime1,
-        DateTimeOffset departureTime2, DateTimeOffset arrivalTime2) => new()
+        DateTimeOffset departureTime2, DateTimeOffset arrivalTime2,
+        DateTimeOffset? packageReadyTime = null,
+        DateTimeOffset? packageDeliverByTime = null) => new()
     {
         JobId = jobId,
         FromAirportId = fromAirportId,
         ToAirportId = toAirportId,
         FlightNumber = "NZ123",
         DepartureDate = departureTime1,
+        PackageReadyTime = packageReadyTime,
+        PackageDeliverByTime = packageDeliverByTime,
         FlightSegments =
         [
             new Models.FlightSegmentViewModel
@@ -2907,8 +2908,8 @@ public class NationwideJobRepositoryTests : IDisposable
 
         await _context.SaveChangesAsync();
 
-        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime);
-        request.PackageReadyTime = packageReadyTime;
+        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime,
+            packageReadyTime: packageReadyTime);
         var webhookIds = new List<string> { "webhook-123" };
 
         var repository = CreateRepository();
@@ -2957,8 +2958,8 @@ public class NationwideJobRepositoryTests : IDisposable
 
         await _context.SaveChangesAsync();
 
-        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime);
-        request.PackageReadyTime = packageReadyTime;
+        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime,
+            packageReadyTime: packageReadyTime);
         var webhookIds = new List<string> { "webhook-123" };
 
         var repository = CreateRepository();
@@ -3005,8 +3006,8 @@ public class NationwideJobRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Create request WITH toAirportId even though job doesn't have it
-        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime);
-        request.PackageReadyTime = packageReadyTime;
+        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime,
+            packageReadyTime: packageReadyTime);
         var webhookIds = new List<string> { "webhook-123" };
 
         var repository = CreateRepository();
@@ -3054,8 +3055,8 @@ public class NationwideJobRepositoryTests : IDisposable
 
         await _context.SaveChangesAsync();
 
-        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime);
-        request.PackageReadyTime = packageReadyTime;
+        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime,
+            packageReadyTime: packageReadyTime);
         var webhookIds = new List<string> { "webhook-123" };
 
         var repository = CreateRepository();
@@ -3102,8 +3103,8 @@ public class NationwideJobRepositoryTests : IDisposable
 
         await _context.SaveChangesAsync();
 
-        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime);
-        request.PackageReadyTime = packageReadyTime;
+        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime,
+            packageReadyTime: packageReadyTime);
         var webhookIds = new List<string> { "webhook-123" };
 
         var repository = CreateRepository();

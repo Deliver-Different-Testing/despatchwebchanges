@@ -7,5 +7,5 @@ public class AnthropicSettings
     public int MaxTokensPerSummary { get; init; } = 1024;
     public int RateLimitPerUserPerMinute { get; init; } = 20;
     public int RateLimitPerTenantPerMinute { get; init; } = 100;
-    public bool EnableAiFeatures { get; set; } = true;
+    public bool EnableAiFeatures { get; init; } = true;
 }

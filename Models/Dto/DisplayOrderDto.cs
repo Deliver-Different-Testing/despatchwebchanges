@@ -4,7 +4,7 @@ namespace DespatchWeb.Models.Dto;
 
 public class DisplayOrderDto
 {
-    public int CourierId { get; set; }
-    public int? Status { get; set; }
-    public DateTime? OrderTime { get; set; }
+    public int CourierId { get; init; }
+    public int? Status { get; init; }
+    public DateTime? OrderTime { get; init; }
 }

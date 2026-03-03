@@ -2,6 +2,6 @@ namespace DespatchWeb.Models.Dto;
 
 public class ExtraRateResultDto
 {
-     public decimal Amount { get; set; }
-        public decimal DriverPay { get; set; }
+    public decimal Amount { get; init; }
+    public decimal DriverPay { get; init; }
 }

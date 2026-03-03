@@ -4,7 +4,7 @@ namespace DespatchWeb.Models.RequestModels;
 
 public class NationwideJobsRequestModel : JobQueryParams
 {
-    public  bool IsInternal { get; set; }
-    public int Cid { get; set; }
-    public List<int> DespatchViewIds { get; set; }
+    public  bool IsInternal { get; init; }
+    public int Cid { get; init; }
+    public List<int> DespatchViewIds { get; init; }
 }

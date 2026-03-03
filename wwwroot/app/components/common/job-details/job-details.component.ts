@@ -2093,8 +2093,14 @@ class JobDetailController extends BaseController {
 
     async toggleAiSummaryPanel(): Promise<void> {
         this.showAiPanel = !this.showAiPanel;
+        // Explicitly trigger digest so ng-if creates/removes the container
+        this.applyScope();
+
         if (this.showAiPanel) {
             await this.renderAiSummaryPanel();
+        } else {
+            // Clean up React root before Angular removes the container from DOM
+            this.unmountAiSummaryPanel();
         }
     }
 
@@ -2105,17 +2111,30 @@ class JobDetailController extends BaseController {
             await this.ensureAiAssistantLoaded();
         } catch (err: any) {
             console.error('Failed to load AI assistant module:', err);
+            this.showAiPanel = false;
+            this.applyScope();
             return;
         }
 
-        // Digest may still be pending — use $timeout to ensure container is in the DOM
+        const jobId = this.job!.id;
+
+        // Use $timeout to ensure Angular has finished rendering the ng-if container
         this.registerTimeout(() => {
             const container = document.getElementById('ai-summary-panel-container');
             if (!container) {
-                console.warn('[AI Panel] Container element not found in DOM');
+                console.warn('[AI Panel] Container element not found in DOM, retrying...');
+                // Retry once after another digest cycle
+                this.registerTimeout(() => {
+                    const retryContainer = document.getElementById('ai-summary-panel-container');
+                    if (!retryContainer) {
+                        console.error('[AI Panel] Container still not found after retry');
+                        return;
+                    }
+                    (window as any).ReactAiAssistant.renderSummaryPanel(retryContainer, jobId);
+                }, 50);
                 return;
             }
-            (window as any).ReactAiAssistant.renderSummaryPanel(container, this.job!.id);
+            (window as any).ReactAiAssistant.renderSummaryPanel(container, jobId);
         }, 0);
     }
 

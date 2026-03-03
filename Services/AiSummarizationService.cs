@@ -411,11 +411,11 @@ public class AiSummarizationService(
         return await SendSummarizationRequestAsync(LateAlertSystemPrompt, sb.ToString(), ct);
     }
 
-    public async Task<AiSummaryResponse> SuggestCouriersAsync(int jobId, CancellationToken ct = default)
+    public async Task<AiCourierSuggestionResponse> SuggestCouriersAsync(int jobId, CancellationToken ct = default)
     {
         var job = await jobRepository.GetSingleJobById(jobId);
         if (job == null)
-            return new AiSummaryResponse
+            return new AiCourierSuggestionResponse
             {
                 Summary = "Job not found.",
                 Usage = new AiUsageInfo()
@@ -446,13 +446,30 @@ public class AiSummarizationService(
         }
 
         if ((potentialCouriers == null || potentialCouriers.Count == 0) && (driverOverview == null || driverOverview.Count == 0))
-            return new AiSummaryResponse
+            return new AiCourierSuggestionResponse
             {
                 Summary = "No courier data available for suggestions.",
                 Usage = new AiUsageInfo()
             };
 
-        return await SendSummarizationRequestAsync(CourierSuggestionSystemPrompt, sb.ToString(), ct);
+        var summaryResult = await SendSummarizationRequestAsync(CourierSuggestionSystemPrompt, sb.ToString(), ct);
+
+        var courierList = (potentialCouriers ?? new List<PotentialCouriersViewModel>())
+            .Take(10)
+            .Select(c => new SuggestedCourier
+            {
+                CourierId = c.CourierId,
+                Code = c.Code,
+                FirstName = c.FirstName
+            })
+            .ToList();
+
+        return new AiCourierSuggestionResponse
+        {
+            Summary = summaryResult.Summary,
+            Usage = summaryResult.Usage,
+            Couriers = courierList
+        };
     }
 
     private async Task<AiSummaryResponse> SendSummarizationRequestAsync(string systemPrompt, string userMessage, CancellationToken ct)

@@ -2,9 +2,9 @@
 
 public class JobEventDto
 {
-    public string UcjbNumber { get; set; }
-    public int? UcjbClientId { get; set; }
-    public string UcjbContact { get; set; }
-    public int? UcjbCourierId { get; set; }
-    public int? UcjbSpeed { get; set; }
+    public string UcjbNumber { get; init; }
+    public int? UcjbClientId { get; init; }
+    public string UcjbContact { get; init; }
+    public int? UcjbCourierId { get; init; }
+    public int? UcjbSpeed { get; init; }
 }

@@ -2,15 +2,15 @@
 
 public class RecurringJobQueryRequest
 {
-    public string Order { get; set; }
-    public string OrderDirection { get; set; }
-    public int Limit { get; set; }
-    public int Page { get; set; }
-    public string SearchText { get; set; }
-    public bool Active { get; set; }
+    public string Order { get; init; }
+    public string OrderDirection { get; init; }
+    public int Limit { get; init; }
+    public int Page { get; init; }
+    public string SearchText { get; init; }
+    public bool Active { get; init; }
 
     // Filters
-    public int? SpeedId { get; set; }
-    public int? CourierId { get; set; }
-    public int? DaysOfWeek { get; set; }
+    public int? SpeedId { get; init; }
+    public int? CourierId { get; init; }
+    public int? DaysOfWeek { get; init; }
 }
