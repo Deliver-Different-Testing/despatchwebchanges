@@ -65,6 +65,20 @@ export async function allocateJobToCourier(courierId: number, jobIds: number[]):
     await apiClient.post('job/Allocate', {courierId, jobIds});
 }
 
+/**
+ * Validate that a job is eligible for a POD swap
+ */
+export async function validateSwapPod(jobNo: string): Promise<boolean> {
+    return apiClient.get<boolean>('Job/ValidateSwapPod', {job: jobNo});
+}
+
+/**
+ * Swap the POD between two jobs
+ */
+export async function swapPod(job1: string, job2: string): Promise<void> {
+    await apiClient.post('Job/SwapPod', {job1, job2});
+}
+
 export const jobApi = {
     getRelatedJobsMultiSelectList,
     voidJob,
@@ -73,6 +87,8 @@ export const jobApi = {
     searchActiveClients,
     getVehicleSizes,
     allocateJobToCourier,
+    validateSwapPod,
+    swapPod,
 };
 
 export default jobApi;

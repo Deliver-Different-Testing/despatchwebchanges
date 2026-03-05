@@ -156,3 +156,9 @@ export function analyzeLateAlert(jobId: number): Promise<AiSummaryResponse> {
 export function suggestCouriers(jobId: number): Promise<AiCourierSuggestionResponse> {
     return apiClient.post<AiCourierSuggestionResponse>('/Ai/SuggestCouriers', null, { params: { jobId } });
 }
+
+/** Check whether AI features are enabled server-side */
+export async function fetchAiEnabled(): Promise<boolean> {
+    const result = await apiClient.get<{ enabled: boolean }>('/Ai/IsEnabled');
+    return result.enabled;
+}

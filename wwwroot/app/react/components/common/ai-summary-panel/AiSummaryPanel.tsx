@@ -11,6 +11,7 @@ import {
     Box,
     Card,
     CardContent,
+    Chip,
     Collapse,
     CircularProgress,
     IconButton,
@@ -182,6 +183,18 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
                     <Typography variant="subtitle2" fontWeight={600} color="text.primary">
                         {title}
                     </Typography>
+                    <Chip
+                        label="BETA"
+                        size="small"
+                        sx={{
+                            height: 18,
+                            fontSize: '0.6rem',
+                            fontWeight: 700,
+                            bgcolor: accentColor,
+                            color: '#fff',
+                            letterSpacing: '0.05em',
+                        }}
+                    />
                 </Box>
                 <Box display="flex" alignItems="center" gap={0.5}>
                     {generatedAt && !loading && (

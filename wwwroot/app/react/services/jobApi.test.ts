@@ -11,6 +11,8 @@ import {
     searchActiveClients,
     getVehicleSizes,
     allocateJobToCourier,
+    validateSwapPod,
+    swapPod,
 } from './jobApi';
 import {apiClient} from './apiClient';
 import {createMockApiError} from '../__testUtils__';
@@ -246,6 +248,47 @@ describe('jobApi', () => {
         });
     });
 
+    describe('validateSwapPod', () => {
+        it('should call apiClient.get with correct URL and job param', async () => {
+            mockApiClient.get.mockResolvedValueOnce(true);
+
+            const result = await validateSwapPod('JOB-002');
+
+            expect(mockApiClient.get).toHaveBeenCalledWith('Job/ValidateSwapPod', {job: 'JOB-002'});
+            expect(result).toBe(true);
+        });
+
+        it('should return false when the job is not eligible', async () => {
+            mockApiClient.get.mockResolvedValueOnce(false);
+
+            const result = await validateSwapPod('INELIGIBLE-JOB');
+
+            expect(result).toBe(false);
+        });
+    });
+
+    describe('swapPod', () => {
+        it('should call apiClient.post with correct URL and body', async () => {
+            mockApiClient.post.mockResolvedValueOnce(undefined);
+
+            await swapPod('JOB-001', 'JOB-002');
+
+            expect(mockApiClient.post).toHaveBeenCalledWith('Job/SwapPod', {
+                job1: 'JOB-001',
+                job2: 'JOB-002',
+            });
+        });
+
+        it('should pass both job numbers in the correct order', async () => {
+            mockApiClient.post.mockResolvedValueOnce(undefined);
+
+            await swapPod('ABC-100', 'XYZ-200');
+
+            const callArgs = mockApiClient.post.mock.calls[0];
+            expect(callArgs[1]).toEqual({job1: 'ABC-100', job2: 'XYZ-200'});
+        });
+    });
+
     describe('Error propagation', () => {
         it.each([
             ['getRelatedJobsMultiSelectList', () => getRelatedJobsMultiSelectList(123, false), mockApiClient.get],
@@ -255,6 +298,8 @@ describe('jobApi', () => {
             ['searchActiveClients', () => searchActiveClients('test'), mockApiClient.get],
             ['getVehicleSizes', () => getVehicleSizes(), mockApiClient.get],
             ['allocateJobToCourier', () => allocateJobToCourier(1, [1]), mockApiClient.post],
+            ['validateSwapPod', () => validateSwapPod('JOB-001'), mockApiClient.get],
+            ['swapPod', () => swapPod('JOB-001', 'JOB-002'), mockApiClient.post],
         ])('%s should propagate errors from apiClient', async (_, apiCall, mockFn) => {
             const error = createMockApiError();
             mockFn.mockRejectedValueOnce(error);
@@ -271,6 +316,8 @@ describe('jobApi', () => {
             expect(jobApi.searchActiveClients).toBe(searchActiveClients);
             expect(jobApi.getVehicleSizes).toBe(getVehicleSizes);
             expect(jobApi.allocateJobToCourier).toBe(allocateJobToCourier);
+            expect(jobApi.validateSwapPod).toBe(validateSwapPod);
+            expect(jobApi.swapPod).toBe(swapPod);
         });
     });
 });

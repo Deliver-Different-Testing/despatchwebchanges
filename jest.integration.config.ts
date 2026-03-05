@@ -43,10 +43,10 @@ const config: JestConfigWithTsJest = {
         '^@mui/x-date-pickers/AdapterDayjs$': '<rootDir>/wwwroot/app/tests/mocks/muiDatePickerMocks.ts',
     },
 
-    // Standard setup files (no need for setupIntegration.ts with jest-fixed-jsdom)
     setupFilesAfterEnv: [
         '<rootDir>/wwwroot/app/tests/setup.ts',
-        '<rootDir>/wwwroot/app/tests/setupReact.ts'
+        '<rootDir>/wwwroot/app/tests/setupReact.ts',
+        '<rootDir>/wwwroot/app/react/__testUtils__/msw/setupIntegration.ts',
     ],
 
     // Performance optimizations

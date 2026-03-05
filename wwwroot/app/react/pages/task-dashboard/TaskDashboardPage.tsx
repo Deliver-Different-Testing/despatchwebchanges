@@ -83,6 +83,7 @@ import {
 import {tasksApi} from '../../services/tasksApi';
 import {summarizeTaskDashboard} from '../../services/aiAssistantApi';
 import {AiSummaryPanel} from '../../components/common/ai-summary-panel/AiSummaryPanel';
+import {isAiEnabled} from '../../../functions/aiSettings';
 
 // Local storage keys
 const getViewPreferenceKey = () => {
@@ -781,8 +782,8 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                 </CardContent>
             </Card>
 
-            {/* AI Briefing — only show when there are tasks */}
-            {!tasksLoading && tasks.length > 0 && (
+            {/* AI Briefing — only show when there are tasks and AI is enabled */}
+            {isAiEnabled() && !tasksLoading && tasks.length > 0 && (
                 <Box sx={{mb: 2, flexShrink: 0}}>
                     <AiSummaryPanel
                         title="AI Daily Briefing"

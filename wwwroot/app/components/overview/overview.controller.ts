@@ -18,6 +18,7 @@ import {IPaginatedResponse} from "../../interfaces/paginated-response.interface"
 import DispatchCoreService from "../../services/dispatch-core.service";
 import {IDataTableColumn, IDataTableSort} from "../common/data-table/data-table.interfaces";
 import angular from 'angular';
+import {isAiEnabled} from '../../functions/aiSettings';
 
 // Type declarations for React modules on window
 declare global {
@@ -609,6 +610,7 @@ class OverviewController extends BaseController {
     }
 
     private async loadAiInsightsReactPanel(): Promise<void> {
+        if (!isAiEnabled()) return;
         try {
             // Load the manifest to get hashed filenames
             const manifestResponse = await this.$http.get<Record<string, string>>('dist/manifest.json');

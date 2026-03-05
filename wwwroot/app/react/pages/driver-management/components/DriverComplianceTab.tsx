@@ -28,6 +28,7 @@ import {ComplianceFilter, CourierCompliance, FleetOption, PaginatedRequest} from
 import {driverManagementApi} from '../../../services/driverManagementApi';
 import {summarizeCompliance} from '../../../services/aiAssistantApi';
 import {AiSummaryPanel} from '../../../components/common/ai-summary-panel/AiSummaryPanel';
+import {isAiEnabled} from '../../../../functions/aiSettings';
 import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, toolbarOutlinedButtonSx, toolbarIconButtonSx, getComplianceTypeColor} from './shared';
 import dayjs from 'dayjs';
 
@@ -158,11 +159,13 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
             </Box>
 
             {/* AI Compliance Risk Summary */}
-            <AiSummaryPanel
-                title="AI Compliance Risk Summary"
-                fetchSummary={summarizeCompliance}
-                accentColor="#e53935"
-            />
+            {isAiEnabled() && (
+                <AiSummaryPanel
+                    title="AI Compliance Risk Summary"
+                    fetchSummary={summarizeCompliance}
+                    accentColor="#e53935"
+                />
+            )}
 
             {/* Filters */}
             <FilterToolbar

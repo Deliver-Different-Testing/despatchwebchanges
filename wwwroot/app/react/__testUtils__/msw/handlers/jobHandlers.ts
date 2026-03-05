@@ -5,7 +5,7 @@
  */
 
 import { http, HttpResponse } from 'msw';
-import type { RelatedJobDto, Suggestion } from '../../../interfaces/job';
+import type { RelatedJobDto, Suggestion } from '../../../interfaces';
 
 // Mock data
 export const mockClientSuggestions: Suggestion[] = [
@@ -144,6 +144,42 @@ export const jobHandlers = [
         const { courierId, jobIds } = body as { courierId?: number; jobIds?: number[] };
         if (typeof courierId !== 'number' || !Array.isArray(jobIds)) {
             return new HttpResponse('Invalid allocation data', { status: 400 });
+        }
+
+        return new HttpResponse(null, { status: 200 });
+    }),
+
+    // Validate a job is eligible for a POD swap
+    http.get('*/Job/ValidateSwapPod', ({ request }) => {
+        const url = new URL(request.url);
+        const job = url.searchParams.get('job');
+
+        if (!job) {
+            return new HttpResponse('Missing job parameter', { status: 400 });
+        }
+
+        // Simulate an ineligible job for testing false responses
+        if (job === 'INELIGIBLE') {
+            return HttpResponse.json(false);
+        }
+
+        return HttpResponse.json(true);
+    }),
+
+    // Swap the POD between two jobs
+    http.post('*/Job/SwapPod', async ({ request }) => {
+        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
+            return new HttpResponse('Missing CSRF header', { status: 400 });
+        }
+
+        const body = await request.json();
+        if (!body || typeof body !== 'object') {
+            return new HttpResponse('Invalid request body', { status: 400 });
+        }
+
+        const { job1, job2 } = body as { job1?: string; job2?: string };
+        if (typeof job1 !== 'string' || typeof job2 !== 'string') {
+            return new HttpResponse('Invalid job numbers', { status: 400 });
         }
 
         return new HttpResponse(null, { status: 200 });

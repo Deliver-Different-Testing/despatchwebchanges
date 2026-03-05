@@ -42,6 +42,8 @@ import MessagingDialogService from "./components/dialogs/messaging-dialog/messag
 import CustomUrlService from "./services/custom-url.service";
 import VoidJobConfirmationDialogService
     from "./components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
+import SwapPodsDialogService
+    from "./components/dialogs/swap-pods-dialog/swap-pods-dialog.service";
 import DayJsDatePickerComponent from "./components/common/dayjs-date-picker/dayjs-date-picker.component";
 import DispatchExecutorService from "./services/dispatch-executor.service";
 import {minutesToTimeFilter} from "./components/Nationwide/filters/minutesToTimeFilter";
@@ -250,7 +252,8 @@ app.service("addressLookupService", AddressLookupService);
 app.service("truckCourierStatusDialogService", TruckCourierStatusDialogService);
 app.service("messagingDialogService", MessagingDialogService);
 app.service('customUrlService', CustomUrlService);
-app.service('voidJobConfirmationDialogService', VoidJobConfirmationDialogService); 
+app.service('voidJobConfirmationDialogService', VoidJobConfirmationDialogService);
+app.service('swapPodsDialogService', SwapPodsDialogService);
 app.service('simplePriceEditDialogService', SimplePriceEditDialogService);
 app.service('bulkPriceUploadDialogService', BulkPriceUploadDialogService);
 app.service('dispatchJobService', DispatchExecutorService);

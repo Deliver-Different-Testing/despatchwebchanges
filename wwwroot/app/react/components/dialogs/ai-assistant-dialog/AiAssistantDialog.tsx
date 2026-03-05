@@ -174,9 +174,23 @@ const EmptyState: React.FC<{ onSelectPrompt: (prompt: string) => void }> = ({ on
         }}
     >
         <AssistantIcon sx={{ fontSize: 48, color: 'info.main', opacity: 0.7 }} />
-        <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 400 }}>
-            Dispatch Assistant
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 400 }}>
+                Dispatch Assistant
+            </Typography>
+            <Chip
+                label="BETA"
+                size="small"
+                sx={{
+                    height: 20,
+                    fontSize: '0.65rem',
+                    fontWeight: 700,
+                    bgcolor: 'info.main',
+                    color: 'info.contrastText',
+                    letterSpacing: '0.05em',
+                }}
+            />
+        </Box>
         <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ maxWidth: 360 }}>
             Ask questions about jobs, couriers, and operations. I can look up data and provide summaries.
         </Typography>
@@ -293,6 +307,18 @@ export const AiAssistantDialog: React.FC<AiAssistantDialogProps> = ({
                 <Typography variant="h6" sx={{ flex: 1, fontSize: '1.05rem', fontWeight: 500 }}>
                     AI Assistant
                 </Typography>
+                <Chip
+                    label="BETA"
+                    size="small"
+                    sx={{
+                        height: 20,
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        bgcolor: 'rgba(255,255,255,0.2)',
+                        color: 'inherit',
+                        letterSpacing: '0.05em',
+                    }}
+                />
                 {messages.length > 0 && (
                     <Tooltip title="Clear conversation">
                         <IconButton

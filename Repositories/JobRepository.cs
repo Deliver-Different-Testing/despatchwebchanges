@@ -3220,8 +3220,10 @@ public partial class JobRepository(
             }
 
             // Update UcjbQty with total parcel count so it syncs to device
+            // For stop jobs, only count items belonging to this specific stop (not sibling stops)
             var totalItemCount = await Context.TucJobItems
-                .Where(i => i.JobId == effectiveJobId)
+                .Where(i => i.JobId == effectiveJobId &&
+                            (childJobId == null || i.ChildJobId == childJobId))
                 .CountAsync();
 
             await Context.TucJobs
@@ -4905,6 +4907,53 @@ public partial class JobRepository(
 
     public new async Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(List<int> jobIds)
         => await base.GetJobCurrentAmountsAsync(jobIds);
+
+    /// <summary>
+    /// Reads the most recent external (non-Staff) qty change from JobDeliveryJourney and applies
+    /// it to TucJob.UcjbQty, then records a Staff journey entry so the apply is auditable.
+    /// </summary>
+    public async Task<bool> ApplyWebQtyUpdateAsync(int jobId)
+    {
+        var pendingChange = await Context.JobDeliveryJourneys
+            .Where(j => j.JobId == jobId &&
+                        j.FieldName == "ucjbQty" &&
+                        j.UpdatedByType != nameof(DeliveryJourneyUpdatedByType.Staff) &&
+                        j.NewValue != null)
+            .OrderByDescending(j => j.UpdatedAt)
+            .FirstOrDefaultAsync();
+
+        if (pendingChange == null) return false;
+        if (!short.TryParse(pendingChange.NewValue, out var newQty)) return false;
+
+        var currentQty = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => j.UcjbQty)
+            .FirstOrDefaultAsync();
+
+        // Guard: qty already matches — update was previously applied
+        if (currentQty == newQty) return false;
+
+        var rowsAffected = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbQty, newQty));
+
+        if (rowsAffected == 0) return false;
+
+        await Context.JobDeliveryJourneys.AddAsync(new JobDeliveryJourney
+        {
+            JobId = jobId,
+            ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+            FieldName = "ucjbQty",
+            OldValue = currentQty.ToString(),
+            NewValue = newQty.ToString(),
+            StaffId = _infoService.GetStaffId(),
+            UpdatedAt = DateTime.UtcNow,
+            UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
+        });
+        await Context.SaveChangesAsync();
+
+        return true;
+    }
 
     #endregion
 }

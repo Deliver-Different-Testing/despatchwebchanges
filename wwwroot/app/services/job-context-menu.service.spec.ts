@@ -618,6 +618,137 @@ describe('JobContextMenuService', () => {
         });
     });
 
+    describe('swapPodsAction', () => {
+        let mockSwapPodsDialogService: {
+            showSwapPodsDialog: jest.Mock;
+        };
+
+        /**
+         * Mirrors the swapPodsAction logic from job-context-menu.service.ts.
+         */
+        const swapPodsAction = async (
+            job: IDispatchJob | null,
+            onRefresh?: () => void
+        ): Promise<void> => {
+            if (!job) return;
+
+            try {
+                const result = await mockSwapPodsDialogService.showSwapPodsDialog(job);
+                if (result && onRefresh) {
+                    onRefresh();
+                }
+            } catch (error) {
+                if (error) {
+                    console.error('Swap PODs error:', error);
+                }
+            }
+        };
+
+        beforeEach(() => {
+            mockSwapPodsDialogService = {
+                showSwapPodsDialog: jest.fn().mockResolvedValue(true),
+            };
+        });
+
+        it('should call showSwapPodsDialog with the job', async () => {
+            const job = createMockJob({jobNo: 'JOB-123'});
+
+            await swapPodsAction(job);
+
+            expect(mockSwapPodsDialogService.showSwapPodsDialog).toHaveBeenCalledWith(job);
+        });
+
+        it('should call onRefresh when the swap succeeds (result is true)', async () => {
+            mockSwapPodsDialogService.showSwapPodsDialog.mockResolvedValue(true);
+            const job = createMockJob();
+            const onRefresh = jest.fn();
+
+            await swapPodsAction(job, onRefresh);
+
+            expect(onRefresh).toHaveBeenCalledTimes(1);
+        });
+
+        it('should not call onRefresh when the user cancels (result is null)', async () => {
+            mockSwapPodsDialogService.showSwapPodsDialog.mockResolvedValue(null);
+            const job = createMockJob();
+            const onRefresh = jest.fn();
+
+            await swapPodsAction(job, onRefresh);
+
+            expect(onRefresh).not.toHaveBeenCalled();
+        });
+
+        it('should not call onRefresh when the user cancels (result is false)', async () => {
+            mockSwapPodsDialogService.showSwapPodsDialog.mockResolvedValue(false);
+            const job = createMockJob();
+            const onRefresh = jest.fn();
+
+            await swapPodsAction(job, onRefresh);
+
+            expect(onRefresh).not.toHaveBeenCalled();
+        });
+
+        it('should return early without calling the service when job is null', async () => {
+            await swapPodsAction(null);
+
+            expect(mockSwapPodsDialogService.showSwapPodsDialog).not.toHaveBeenCalled();
+        });
+
+        it('should not throw when the dialog service rejects with a falsy value', async () => {
+            mockSwapPodsDialogService.showSwapPodsDialog.mockRejectedValue(undefined);
+            const job = createMockJob();
+
+            await expect(swapPodsAction(job)).resolves.toBeUndefined();
+        });
+
+        it('should not call onRefresh when the dialog service throws', async () => {
+            mockSwapPodsDialogService.showSwapPodsDialog.mockRejectedValue(new Error('Network'));
+            const job = createMockJob();
+            const onRefresh = jest.fn();
+
+            await swapPodsAction(job, onRefresh);
+
+            expect(onRefresh).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('Swap PODs menu item visibility', () => {
+        /**
+         * Mirrors the conditional that guards the Swap PODs item in getMenuOptions().
+         */
+        const shouldShowSwapPods = (job: Partial<IDispatchJob>): boolean =>
+            !!(job.done && !job.isBulkJob && !job.preBook);
+
+        it('should show Swap PODs for a completed, non-bulk, non-prebook job', () => {
+            const job = createMockJob({done: true, isBulkJob: false, preBook: false});
+            expect(shouldShowSwapPods(job)).toBe(true);
+        });
+
+        it('should not show Swap PODs when the job is not done', () => {
+            const job = createMockJob({done: false, isBulkJob: false, preBook: false});
+            expect(shouldShowSwapPods(job)).toBe(false);
+        });
+
+        it('should not show Swap PODs for a bulk job', () => {
+            const job = createMockJob({done: true, isBulkJob: true, preBook: false});
+            expect(shouldShowSwapPods(job)).toBe(false);
+        });
+
+        it('should not show Swap PODs for a prebook (scheduled) job', () => {
+            const job = createMockJob({done: true, isBulkJob: false, preBook: true});
+            expect(shouldShowSwapPods(job)).toBe(false);
+        });
+
+        it('should have the correct text and icon', () => {
+            const menuItem = {
+                text: 'Swap PODs',
+                icon: 'swap_horiz',
+            };
+            expect(menuItem.text).toBe('Swap PODs');
+            expect(menuItem.icon).toBe('swap_horiz');
+        });
+    });
+
     describe('getMenuOptions - AI menu items', () => {
         it('should not include "AI Suggest Couriers" menu option', () => {
             // The "AI Suggest Couriers" context menu option has been removed

@@ -3,6 +3,7 @@ import {
     Alert,
     Box,
     Button,
+    Chip,
     CircularProgress,
     Dialog,
     DialogActions,
@@ -116,6 +117,18 @@ export const AiCourierSuggestionsDialog: React.FC<AiCourierSuggestionsDialogProp
                 >
                     AI Courier Suggestions — {jobNo}
                 </Typography>
+                <Chip
+                    label="BETA"
+                    size="small"
+                    sx={{
+                        height: 20,
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        bgcolor: 'rgba(255,255,255,0.2)',
+                        color: 'inherit',
+                        letterSpacing: '0.05em',
+                    }}
+                />
                 <IconButton
                     onClick={onClose}
                     size="small"

@@ -36,7 +36,8 @@ type EntryPointName =
     | 'messagingDialogReact'
     | 'sendPodDialogReact'
     | 'aiAssistantDialogReact'
-    | 'createJobDialogReact';
+    | 'createJobDialogReact'
+    | 'swapPodsDialogReact';
 type EntryPoints = Record<EntryPointName, string>;
 
 // Configuration
@@ -80,6 +81,7 @@ const entryPoints: EntryPoints = {
     sendPodDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/send-pod-dialog/send-pod-dialog-react.module.tsx"),
     aiAssistantDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/ai-assistant-dialog/ai-assistant-dialog-react.module.tsx"),
     createJobDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/create-job-dialog/create-job-dialog-react.module.tsx"),
+    swapPodsDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/swap-pods-dialog/swap-pods-dialog-react.module.tsx"),
 };
 
 // Lazy-load html-minifier-terser only when needed (production builds)

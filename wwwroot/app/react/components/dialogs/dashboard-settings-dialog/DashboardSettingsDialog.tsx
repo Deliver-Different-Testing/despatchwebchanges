@@ -10,6 +10,7 @@ import {
     DialogContent,
     DialogActions,
     Button,
+    Chip,
     IconButton,
     Typography,
     Box,
@@ -354,9 +355,23 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                 justifyContent="space-between"
                             >
                                 <Box>
-                                    <Typography variant="subtitle2" fontWeight={600}>
-                                        AI Summaries & Suggestions
-                                    </Typography>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Typography variant="subtitle2" fontWeight={600}>
+                                            AI Summaries & Suggestions
+                                        </Typography>
+                                        <Chip
+                                            label="BETA"
+                                            size="small"
+                                            sx={{
+                                                height: 18,
+                                                fontSize: '0.6rem',
+                                                fontWeight: 700,
+                                                bgcolor: '#7c4dff',
+                                                color: '#fff',
+                                                letterSpacing: '0.05em',
+                                            }}
+                                        />
+                                    </Box>
                                     <Typography variant="body2" color="text.secondary">
                                         Show AI-powered job summaries, inline panels, and smart suggestions
                                     </Typography>
