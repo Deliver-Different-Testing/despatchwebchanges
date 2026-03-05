@@ -24,6 +24,7 @@ import {
     DateFilterData,
 } from '../app-toolbar/ToolbarActions';
 import angular from 'angular';
+import {isAiEnabled} from '../../../../functions/aiSettings';
 
 // Toolbar Actions Configuration
 export interface ToolbarActionsConfig {
@@ -126,7 +127,7 @@ function buildToolbarChildren(): React.ReactNode {
     }
 
     // AI Assistant button
-    if (toolbarActions.aiAssistant) {
+    if (toolbarActions.aiAssistant && isAiEnabled()) {
         elements.push(
             <AiAssistantButton
                 key="aiAssistant"

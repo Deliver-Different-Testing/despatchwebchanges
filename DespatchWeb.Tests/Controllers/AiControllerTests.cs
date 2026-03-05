@@ -51,6 +51,36 @@ public class AiControllerTests
 
     #endregion
 
+    #region IsEnabled
+
+    [Fact]
+    public void IsEnabled_WhenFeaturesEnabled_ReturnsEnabledTrue()
+    {
+        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = true });
+
+        var result = controller.IsEnabled();
+
+        var json = result as JsonResult;
+        json.Should().NotBeNull();
+        var value = json!.Value as dynamic;
+        ((bool)value!.enabled).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsEnabled_WhenFeaturesDisabled_ReturnsEnabledFalse()
+    {
+        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
+
+        var result = controller.IsEnabled();
+
+        var json = result as JsonResult;
+        json.Should().NotBeNull();
+        var value = json!.Value as dynamic;
+        ((bool)value!.enabled).Should().BeFalse();
+    }
+
+    #endregion
+
     #region Chat
 
     [Fact]

@@ -1,4 +1,5 @@
 import angular from 'angular';
+import { initAiSettings } from '../../../functions/aiSettings';
 /**
  * React App Shell Directive
  *
@@ -273,6 +274,9 @@ function reactAppShellDirective(
 
                     mounted = true;
                     console.log('[ReactAppShellDirective] Mounted successfully');
+
+                    // Fetch server-side AI feature flag so isAiEnabled() reflects it
+                    initAiSettings().catch(() => {/* non-fatal */});
 
                     // Set up toolbar actions
                     updateToolbarActions();

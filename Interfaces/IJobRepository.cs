@@ -155,6 +155,7 @@ public interface IJobRepository
     Task<List<MegaMapResponse>> GetJobsForMegaMapAsync();
     Task UpdatePackagesForJobAsync(int jobId, List<ParcelDimensions> parcels);
     Task UpdatePackagesForBulkJobAsync(int bulkJobId, List<ParcelDimensions> parcels);
+    Task<bool> ApplyWebQtyUpdateAsync(int jobId);
 
     Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(List<int> selectedViewIds);
 

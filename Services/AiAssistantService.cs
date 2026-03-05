@@ -268,10 +268,7 @@ public class AiAssistantService(
     {
         var jobId = args.RootElement.GetProperty("jobId").GetInt32();
         var job = await jobRepository.GetSingleJobById(jobId);
-        if (job == null)
-            return JsonSerializer.Serialize(new { error = $"Job {jobId} not found" });
-
-        return JsonSerializer.Serialize(job, JsonOptions);
+        return job == null ? JsonSerializer.Serialize(new { error = $"Job {jobId} not found" }) : JsonSerializer.Serialize(job, JsonOptions);
     }
 
     private async Task<string> SearchJobsAsync(JsonDocument args, CancellationToken ct)

@@ -369,7 +369,7 @@ export interface AiAssistantButtonProps {
 
 export const AiAssistantButton: React.FC<AiAssistantButtonProps> = ({onClick}) => {
     return (
-        <Tooltip title="AI Assistant">
+        <Tooltip title="AI Assistant (Beta)">
             <IconButton color="inherit" onClick={onClick} sx={toolbarIconButtonSx}>
                 <AutoAwesomeIcon sx={{fontSize: 22}}/>
             </IconButton>

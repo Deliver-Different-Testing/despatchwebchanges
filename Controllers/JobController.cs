@@ -1890,12 +1890,29 @@ public class JobController(
     {
         try
         {
+            // Auto-apply any pending external qty changes before returning the journey
+            await jobRepository.ApplyWebQtyUpdateAsync(jobId);
             var deliveryJourney = await deliveryJourneyService.GetDeliveryJourneyForJobAsync(jobId);
             return Json(deliveryJourney);
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Error retrieving the delivery journey for Job {JobId}", jobId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ApplyWebQtyUpdate(int jobId)
+    {
+        try
+        {
+            var applied = await jobRepository.ApplyWebQtyUpdateAsync(jobId);
+            return applied ? Ok() : NotFound("No pending web qty update found for this job.");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}", ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(ApplyWebQtyUpdate)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }

@@ -12,6 +12,8 @@ import {AppPage} from "../enums/app-pages.enum";
 import {LateEventType} from "../enums/late-event-type.enum";
 import VoidJobConfirmationDialogService
     from "../components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
+import SwapPodsDialogService
+    from "../components/dialogs/swap-pods-dialog/swap-pods-dialog.service";
 import {EditAddressDialogService} from "../components/dialogs/edit-address-dialog/edit-address-dialog.service";
 import PriceBreakdownDialogService from "../components/dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
 import {JobStatus} from "../enums/job-status.enum";
@@ -32,6 +34,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         "voidJobConfirmationDialogService",
         "editAddressDialogService",
         "priceBreakdownDialogService",
+        "swapPodsDialogService",
     ];
 
     private eventGroupsCache: ISuggestion[] = [];
@@ -48,6 +51,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         private voidJobConfirmationDialogService: VoidJobConfirmationDialogService,
         private editAddressDialogService: EditAddressDialogService,
         private priceBreakdownDialogService: PriceBreakdownDialogService,
+        private swapPodsDialogService: SwapPodsDialogService,
     ) {
         console.log("JobContextMenuService initialized");
         this.preloadEventGroups();
@@ -127,7 +131,7 @@ class JobContextMenuService implements angular.IServiceProvider {
 
             if (isAiEnabled()) {
                 menuOptions.push({
-                    text: "AI Late Alert Analysis",
+                    text: "AI Late Alert Analysis (Beta)",
                     icon: "auto_awesome",
                     click: () => this.showAiLateAlertAnalysis(job),
                     hasBottomDivider: true,
@@ -194,6 +198,16 @@ class JobContextMenuService implements angular.IServiceProvider {
             hasBottomDivider: true,
         });
 
+        // Swap PODs — only for completed non-bulk, non-prebook jobs
+        if (job.done && !job.isBulkJob && !job.preBook) {
+            menuOptions.push({
+                text: "Swap PODs",
+                icon: "swap_horiz",
+                click: (_$itemScope: any, $event: MouseEvent) => this.swapPodsAction($event, job, callbacks.onRefresh),
+                hasBottomDivider: true,
+            });
+        }
+
         // Split Job option (if allowed and job has no children)
         const hasChildren = job._groupChildren && job._groupChildren.length > 0;
         if (job.allowSplit && !hasChildren) {
@@ -255,6 +269,21 @@ class JobContextMenuService implements angular.IServiceProvider {
         } catch (error) {
             if (error) {
                 console.error("Job void error:", error);
+            }
+        }
+    }
+
+    async swapPodsAction(_$event: MouseEvent, job: IDispatchJob, onRefresh: () => void) {
+        if (!job) return;
+
+        try {
+            const result = await this.swapPodsDialogService.showSwapPodsDialog(job);
+            if (result && onRefresh) {
+                onRefresh();
+            }
+        } catch (error) {
+            if (error) {
+                console.error("Swap PODs error:", error);
             }
         }
     }
@@ -766,7 +795,7 @@ class JobContextMenuService implements angular.IServiceProvider {
             if (response?.summary) {
                 await this.$mdDialog.show(
                     this.$mdDialog.alert()
-                        .title(`AI Late Alert Analysis - ${job.jobNo}`)
+                        .title(`AI Late Alert Analysis (Beta) - ${job.jobNo}`)
                         .htmlContent(`<div style="line-height: 1.6;">${markdownToSafeHtml(response.summary)}</div>`)
                         .ok('Close')
                 );

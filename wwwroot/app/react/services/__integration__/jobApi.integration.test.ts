@@ -8,7 +8,7 @@
 import { server } from '../../__testUtils__/msw/server';
 import { http, HttpResponse } from 'msw';
 import { jobApi } from '../jobApi';
-import { mockRelatedJobs, mockClientSuggestions, mockVehicleSizes } from '../../__testUtils__/msw/handlers';
+import { mockRelatedJobs, mockClientSuggestions } from '../../__testUtils__/msw/handlers';
 
 describe('jobApi integration', () => {
     describe('getRelatedJobsMultiSelectList', () => {
@@ -423,6 +423,148 @@ describe('jobApi integration', () => {
             await expect(
                 jobApi.allocateJobToCourier(42, [999])
             ).rejects.toMatchObject({ status: 400 });
+        });
+    });
+
+    describe('validateSwapPod', () => {
+        it('returns true for an eligible job', async () => {
+            const result = await jobApi.validateSwapPod('JOB-002');
+
+            expect(result).toBe(true);
+        });
+
+        it('returns false for an ineligible job', async () => {
+            const result = await jobApi.validateSwapPod('INELIGIBLE');
+
+            expect(result).toBe(false);
+        });
+
+        it('sends the job number as the "job" query parameter', async () => {
+            let capturedUrl = '';
+
+            server.use(
+                http.get('*/Job/ValidateSwapPod', ({ request }) => {
+                    capturedUrl = request.url;
+                    return HttpResponse.json(true);
+                })
+            );
+
+            await jobApi.validateSwapPod('JOB-ABC');
+
+            expect(capturedUrl).toContain('job=JOB-ABC');
+        });
+
+        it('handles job not found', async () => {
+            server.use(
+                http.get('*/Job/ValidateSwapPod', () => {
+                    return HttpResponse.json(
+                        { message: 'Job not found' },
+                        { status: 404 }
+                    );
+                })
+            );
+
+            await expect(
+                jobApi.validateSwapPod('MISSING-JOB')
+            ).rejects.toMatchObject({ status: 404 });
+        });
+
+        it('handles server error', async () => {
+            server.use(
+                http.get('*/Job/ValidateSwapPod', () => {
+                    return new HttpResponse('Internal server error', { status: 500 });
+                })
+            );
+
+            await expect(
+                jobApi.validateSwapPod('JOB-001')
+            ).rejects.toMatchObject({ status: 500 });
+        });
+    });
+
+    describe('swapPod', () => {
+        it('sends both job numbers in the request body with CSRF header', async () => {
+            let capturedBody: unknown = null;
+            let capturedCsrfHeader: string | null = null;
+
+            server.use(
+                http.post('*/Job/SwapPod', async ({ request }) => {
+                    capturedCsrfHeader = request.headers.get('X-Requested-With');
+                    capturedBody = await request.json();
+                    return new HttpResponse(null, { status: 200 });
+                })
+            );
+
+            await jobApi.swapPod('JOB-001', 'JOB-002');
+
+            expect(capturedCsrfHeader).toBe('XMLHttpRequest');
+            expect(capturedBody).toMatchObject({ job1: 'JOB-001', job2: 'JOB-002' });
+        });
+
+        it('sends job numbers in the correct order (job1 first, job2 second)', async () => {
+            let capturedBody: unknown = null;
+
+            server.use(
+                http.post('*/Job/SwapPod', async ({ request }) => {
+                    capturedBody = await request.json();
+                    return new HttpResponse(null, { status: 200 });
+                })
+            );
+
+            await jobApi.swapPod('ABC-100', 'XYZ-200');
+
+            expect(capturedBody).toEqual({ job1: 'ABC-100', job2: 'XYZ-200' });
+        });
+
+        it('resolves without a value on success (void return)', async () => {
+            const result = await jobApi.swapPod('JOB-001', 'JOB-002');
+
+            expect(result).toBeUndefined();
+        });
+
+        it('handles a job not found error', async () => {
+            server.use(
+                http.post('*/Job/SwapPod', () => {
+                    return HttpResponse.json(
+                        { message: 'One or both jobs could not be found' },
+                        { status: 404 }
+                    );
+                })
+            );
+
+            await expect(
+                jobApi.swapPod('JOB-001', 'MISSING')
+            ).rejects.toMatchObject({ status: 404 });
+        });
+
+        it('handles a validation error when jobs are ineligible', async () => {
+            server.use(
+                http.post('*/Job/SwapPod', () => {
+                    return HttpResponse.json(
+                        { message: 'Job is not eligible for a POD swap' },
+                        { status: 400 }
+                    );
+                })
+            );
+
+            await expect(
+                jobApi.swapPod('JOB-001', 'JOB-002')
+            ).rejects.toMatchObject({
+                status: 400,
+                message: 'Job is not eligible for a POD swap',
+            });
+        });
+
+        it('handles a server error', async () => {
+            server.use(
+                http.post('*/Job/SwapPod', () => {
+                    return new HttpResponse('Database error', { status: 500 });
+                })
+            );
+
+            await expect(
+                jobApi.swapPod('JOB-001', 'JOB-002')
+            ).rejects.toMatchObject({ status: 500 });
         });
     });
 });
