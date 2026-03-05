@@ -374,7 +374,6 @@ public class BaseJobRepository(
             var isUsCustomer = infoService.IsUsTenant();
             var jobIdsQuery = GetFilteredJobIdsQuery(selectedViewIds, isUsCustomer);
 
-            // Use JOIN instead of Contains
             var jobCoordinates = await (
                     from job in Context.TucJobs
                     join id in jobIdsQuery on job.UcjbId equals id

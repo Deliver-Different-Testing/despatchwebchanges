@@ -732,19 +732,21 @@ export class BulkPriceUploadDialog extends React.Component<
                         value={searchTerm}
                         onChange={this.handleSearchChange}
                         sx={{ flex: 1 }}
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <SearchIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
-                                </InputAdornment>
-                            ),
-                            endAdornment: searchTerm ? (
-                                <InputAdornment position="end">
-                                    <IconButton size="small" onClick={this.handleClearSearch}>
-                                        <CloseIcon sx={{ fontSize: 16 }} />
-                                    </IconButton>
-                                </InputAdornment>
-                            ) : null,
+                        slotProps={{
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: searchTerm ? (
+                                    <InputAdornment position="end">
+                                        <IconButton size="small" onClick={this.handleClearSearch}>
+                                            <CloseIcon sx={{ fontSize: 16 }} />
+                                        </IconButton>
+                                    </InputAdornment>
+                                ) : null,
+                            },
                         }}
                     />
                     <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
@@ -846,14 +848,16 @@ export class BulkPriceUploadDialog extends React.Component<
                 onClose={!isLoading ? onClose : undefined}
                 maxWidth="sm"
                 fullWidth
-                PaperProps={{
-                    elevation: 24,
-                    sx: {
-                        borderRadius: 2,
-                        overflow: 'hidden',
-                        width: 600,
-                        maxWidth: '95vw',
-                        maxHeight: '90vh',
+                slotProps={{
+                    paper: {
+                        elevation: 24,
+                        sx: {
+                            borderRadius: 2,
+                            overflow: 'hidden',
+                            width: 600,
+                            maxWidth: '95vw',
+                            maxHeight: '90vh',
+                        },
                     },
                 }}
             >

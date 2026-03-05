@@ -20,6 +20,7 @@ public class JobRepositoryInterfaceTests : IDisposable
     private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
+    private readonly Mock<ICreateJobService> _createJobServiceMock = new();
 
     public JobRepositoryInterfaceTests()
     {
@@ -56,7 +57,8 @@ public class JobRepositoryInterfaceTests : IDisposable
     private IJobRepository CreateRepository() => new JobRepository(
         _contextFactoryMock.Object,
         _tenantInfoServiceMock.Object,
-        _clearListEnvelopeServiceMock.Object
+        _clearListEnvelopeServiceMock.Object,
+        _createJobServiceMock.Object
     );
 
     #region Interface Contract Tests

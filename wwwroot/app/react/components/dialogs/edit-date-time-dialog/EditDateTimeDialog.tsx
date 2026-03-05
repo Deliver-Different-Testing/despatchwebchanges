@@ -142,7 +142,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
             };
 
             // Await onSubmit in case it returns a promise
-            await Promise.resolve(onSubmit(result));
+            await onSubmit(result);
         } catch (error: any) {
             console.error('Error submitting date/time:', error);
             showToast(error.message || 'Failed to save date/time', 'error');
@@ -204,13 +204,15 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                 maxWidth="sm"
                 fullWidth
                 disableEnforceFocus
-                PaperProps={{
-                    elevation: 24,
-                    sx: {
-                        borderRadius: 2,
-                        overflow: 'hidden',
-                        minWidth: 480,
-                        maxWidth: 600,
+                slotProps={{
+                    paper: {
+                        elevation: 24,
+                        sx: {
+                            borderRadius: 2,
+                            overflow: 'hidden',
+                            minWidth: 480,
+                            maxWidth: 600,
+                        },
                     },
                 }}
             >

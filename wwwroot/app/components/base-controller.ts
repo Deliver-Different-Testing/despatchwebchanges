@@ -65,41 +65,6 @@ class BaseController implements angular.IController {
         this.eventDeregistrations.push(deregister);
     }
     
-    protected watchScope(
-        watchExpression: string | Function | ((scope: angular.IScope) => any),
-        listener: (newValue: any, oldValue: any, scope: angular.IScope) => void,
-        objectEquality: boolean = false,
-        optimizeCollections: boolean = false
-    ): () => void {
-        if (!this.$scopeService) throw new Error("Scope is undefined");
-
-        let optimizedListener = listener;
-
-        if (optimizeCollections && objectEquality) {
-            // Use shallow comparison for collections when possible
-            optimizedListener = (newVal, oldVal, scope) => {
-                if (Array.isArray(newVal) && Array.isArray(oldVal)) {
-                    // Quick array comparison
-                    if (newVal.length !== oldVal.length ||
-                        newVal.some((item, index) => item !== oldVal[index])) {
-                        listener(newVal, oldVal, scope);
-                    }
-                } else {
-                    listener(newVal, oldVal, scope);
-                }
-            };
-        }
-
-        const deregister = this.$scopeService.$watch(
-            watchExpression as any,
-            optimizedListener,
-            objectEquality
-        );
-
-        this.watchers.push(deregister);
-        return deregister;
-    }
-
     protected registerTimeout(
         fn: (...args: any[]) => any,
         delay: number = 0,
@@ -241,22 +206,6 @@ class BaseController implements angular.IController {
         console.log('BaseController destroyed, resources cleaned up');
     }
 
-    protected broadcastEvent(
-        eventName: string,
-        ...args: any[]
-    ): void {
-        if (!this.$scopeService) {
-            console.warn(`Cannot broadcast event "${eventName}": Scope is undefined`);
-            return;
-        }
-
-        try {
-            this.$scopeService.$broadcast(eventName, ...args);
-        } catch (error) {
-            console.error(`Error broadcasting event "${eventName}":`, error);
-        }
-    }
-    
     // Filters
     protected getShortTimeZoneString() {
        const ianaTimeZone = getIanaTimezone(TimeZone)

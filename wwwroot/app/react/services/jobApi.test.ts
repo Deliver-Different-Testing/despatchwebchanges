@@ -2,7 +2,16 @@
  * Job API Service Tests
  */
 
-import {jobApi, getRelatedJobsMultiSelectList, voidJob, voidBulkJob} from './jobApi';
+import {
+    jobApi,
+    getRelatedJobsMultiSelectList,
+    voidJob,
+    voidBulkJob,
+    quickCreateJob,
+    searchActiveClients,
+    getVehicleSizes,
+    allocateJobToCourier,
+} from './jobApi';
 import {apiClient} from './apiClient';
 import {createMockApiError} from '../__testUtils__';
 
@@ -134,11 +143,118 @@ describe('jobApi', () => {
         });
     });
 
+    describe('quickCreateJob', () => {
+        it('should call apiClient.post with correct URL and job data', async () => {
+            const mockJob = {
+                clientId: 10,
+                deliverToContact: 'Jane',
+                podName: 'Pod1',
+                pickUpAddress: {} as any,
+                deliveryAddress: {} as any,
+                date: '2026-03-05T00:00:00-05:00',
+                fromContactName: 'John',
+                refA: 'REF-A',
+                refB: '',
+                deliveryNotes: '',
+                pickupNotes: '',
+                jobNotes: '',
+                van: false,
+                truck: false,
+                pedal: false,
+                attention: false,
+                vanOk: false,
+                reprice: false,
+                void: false,
+                done: false,
+                charge: 50.0,
+                fromLat: 40.7128,
+                fromLong: -74.006,
+                toLat: 34.0522,
+                toLong: -118.2437,
+                speedId: 1,
+                vehicleId: 2,
+            };
+            mockApiClient.post.mockResolvedValueOnce(999);
+
+            const result = await quickCreateJob(mockJob);
+
+            expect(mockApiClient.post).toHaveBeenCalledWith('job/QuickCreateJob', mockJob);
+            expect(result).toBe(999);
+        });
+    });
+
+    describe('searchActiveClients', () => {
+        it('should call apiClient.get with correct URL and search text', async () => {
+            const mockClients = [
+                {id: 1, text: 'Acme Corp'},
+                {id: 2, text: 'Acme Industries'},
+            ];
+            mockApiClient.get.mockResolvedValueOnce(mockClients);
+
+            const result = await searchActiveClients('Acme');
+
+            expect(mockApiClient.get).toHaveBeenCalledWith('home/ActiveClients', {searchText: 'Acme'});
+            expect(result).toEqual(mockClients);
+        });
+
+        it('should return empty array when no clients match', async () => {
+            mockApiClient.get.mockResolvedValueOnce([]);
+
+            const result = await searchActiveClients('NonexistentClient');
+
+            expect(result).toEqual([]);
+        });
+    });
+
+    describe('getVehicleSizes', () => {
+        it('should call apiClient.get with correct URL', async () => {
+            const mockVehicles = [
+                {id: 1, text: 'Car'},
+                {id: 2, text: 'Van'},
+                {id: 3, text: 'Truck'},
+            ];
+            mockApiClient.get.mockResolvedValueOnce(mockVehicles);
+
+            const result = await getVehicleSizes();
+
+            expect(mockApiClient.get).toHaveBeenCalledWith('courier/GetVehicleSizes');
+            expect(result).toEqual(mockVehicles);
+        });
+    });
+
+    describe('allocateJobToCourier', () => {
+        it('should call apiClient.post with correct URL and allocation data', async () => {
+            mockApiClient.post.mockResolvedValueOnce(undefined);
+
+            await allocateJobToCourier(42, [999]);
+
+            expect(mockApiClient.post).toHaveBeenCalledWith('job/Allocate', {
+                courierId: 42,
+                jobIds: [999],
+            });
+        });
+
+        it('should support allocating multiple jobs', async () => {
+            mockApiClient.post.mockResolvedValueOnce(undefined);
+
+            await allocateJobToCourier(42, [100, 101, 102]);
+
+            expect(mockApiClient.post).toHaveBeenCalledWith('job/Allocate', {
+                courierId: 42,
+                jobIds: [100, 101, 102],
+            });
+        });
+    });
+
     describe('Error propagation', () => {
         it.each([
             ['getRelatedJobsMultiSelectList', () => getRelatedJobsMultiSelectList(123, false), mockApiClient.get],
             ['voidJob', () => voidJob({jobId: 123, voidSingleJobOnly: true, voidReason: 'Test'}), mockApiClient.post],
             ['voidBulkJob', () => voidBulkJob({bulkJobId: 456, voidSingleJobOnly: true, voidReason: 'Test'}), mockApiClient.post],
+            ['quickCreateJob', () => quickCreateJob({clientId: 1} as any), mockApiClient.post],
+            ['searchActiveClients', () => searchActiveClients('test'), mockApiClient.get],
+            ['getVehicleSizes', () => getVehicleSizes(), mockApiClient.get],
+            ['allocateJobToCourier', () => allocateJobToCourier(1, [1]), mockApiClient.post],
         ])('%s should propagate errors from apiClient', async (_, apiCall, mockFn) => {
             const error = createMockApiError();
             mockFn.mockRejectedValueOnce(error);
@@ -151,6 +267,10 @@ describe('jobApi', () => {
             expect(jobApi.getRelatedJobsMultiSelectList).toBe(getRelatedJobsMultiSelectList);
             expect(jobApi.voidJob).toBe(voidJob);
             expect(jobApi.voidBulkJob).toBe(voidBulkJob);
+            expect(jobApi.quickCreateJob).toBe(quickCreateJob);
+            expect(jobApi.searchActiveClients).toBe(searchActiveClients);
+            expect(jobApi.getVehicleSizes).toBe(getVehicleSizes);
+            expect(jobApi.allocateJobToCourier).toBe(allocateJobToCourier);
         });
     });
 });

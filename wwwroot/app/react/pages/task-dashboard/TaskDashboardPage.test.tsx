@@ -333,7 +333,7 @@ describe('TaskDashboardPage', () => {
             });
 
             // Find and click the switch
-            const switchElement = screen.getByRole('checkbox');
+            const switchElement = screen.getByRole('switch');
             await user.click(switchElement);
 
             // Filters card should no longer be visible
@@ -351,7 +351,7 @@ describe('TaskDashboardPage', () => {
                 expect(screen.getByText('Filters')).toBeInTheDocument();
             });
 
-            const switchElement = screen.getByRole('checkbox');
+            const switchElement = screen.getByRole('switch');
             await user.click(switchElement);
 
             expect(localStorageMock.setItem).toHaveBeenCalledWith(
@@ -930,7 +930,7 @@ describe('TaskDashboardPage', () => {
                 });
 
                 // Switch to calendar view
-                const switchElement = screen.getByRole('checkbox');
+                const switchElement = screen.getByRole('switch');
                 await user.click(switchElement);
 
                 await waitFor(() => {
@@ -1051,7 +1051,7 @@ describe('TaskDashboardPage', () => {
                 });
 
                 // Switch to calendar view
-                const switchElement = screen.getByRole('checkbox');
+                const switchElement = screen.getByRole('switch');
                 await user.click(switchElement);
 
                 await waitFor(() => {
@@ -1073,7 +1073,7 @@ describe('TaskDashboardPage', () => {
                 });
 
                 // First switch to calendar view
-                const switchElement = screen.getByRole('checkbox');
+                const switchElement = screen.getByRole('switch');
                 await user.click(switchElement);
 
                 await waitFor(() => {

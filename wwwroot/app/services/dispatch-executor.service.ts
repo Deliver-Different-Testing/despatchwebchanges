@@ -235,6 +235,10 @@ class DispatchExecutorService implements angular.IServiceProvider {
     // ============================================
 
     private async executeJobDispatch(courier: ActiveCourierViewModel, jobs: IDispatchJob[]): Promise<void> {
+        // Check for chilled job / non-chilled courier mismatch
+        const shouldProceed = await this.checkChilledJobWarning(jobs, courier);
+        if (!shouldProceed) return;
+
         const {validJobs, errorMessages} = await this.validateJobs(jobs, courier);
 
         if (errorMessages.length > 0) {
@@ -318,6 +322,47 @@ class DispatchExecutorService implements angular.IServiceProvider {
 
     private isDangerousGoodsJob(job: IDispatchJob): boolean {
         return job.dgClass !== null && job.dgClass !== undefined && job.dgClass > 0;
+    }
+
+    private isChilledJob(job: IDispatchJob): boolean {
+        if (!job.vehicle?.text) return false;
+        const vehicleName = job.vehicle.text.toLowerCase();
+        return vehicleName.includes('chilled') || vehicleName.includes('frozen');
+    }
+
+    private isChilledCourier(courier: ActiveCourierViewModel): boolean {
+        if (!courier.vehicleType) return false;
+        const vehicleType = courier.vehicleType.toLowerCase();
+        return vehicleType.includes('chilled') || vehicleType.includes('frozen');
+    }
+
+    private async checkChilledJobWarning(
+        jobs: IDispatchJob[],
+        courier: ActiveCourierViewModel
+    ): Promise<boolean> {
+        const chilledJobs = jobs.filter(j => this.isChilledJob(j));
+        if (chilledJobs.length === 0 || this.isChilledCourier(courier)) {
+            return true;
+        }
+
+        try {
+            const jobNos = chilledJobs.map(j => j.jobNo).join(', ');
+            await this.$mdDialog.show(
+                this.$mdDialog.confirm()
+                    .title('Chilled Job Warning')
+                    .textContent(
+                        `${chilledJobs.length > 1 ? 'Jobs' : 'Job'} ${jobNos} ` +
+                        `require${chilledJobs.length === 1 ? 's' : ''} a chilled/frozen vehicle, ` +
+                        `but courier ${courier.id} has vehicle type "${courier.vehicleType || 'unknown'}". ` +
+                        `Dispatch anyway?`
+                    )
+                    .ok('Dispatch Anyway')
+                    .cancel('Cancel')
+            );
+            return true;
+        } catch {
+            return false;
+        }
     }
 
     private async performJobDispatch(courier: ActiveCourierViewModel, jobs: IDispatchJob[]): Promise<void> {

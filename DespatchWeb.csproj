@@ -5,6 +5,9 @@
   <PropertyGroup Label="Globals">
     <LangVersion>14</LangVersion>
   </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="DespatchWeb.Tests" />
+  </ItemGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <TypeScriptTarget>ES2021</TypeScriptTarget>
   </PropertyGroup>
@@ -285,12 +288,12 @@
     <None Include="wwwroot\css\udispatch.less" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Anthropic" Version="*" />
+    <PackageReference Include="Anthropic" Version="12.8.0" />
     <PackageReference Include="Amazon.AspNetCore.DataProtection.SSM" Version="4.0.1" />
     <PackageReference Include="AspNetCore.HealthChecks.SqlServer" Version="9.0.0" />
-    <PackageReference Include="AWSSDK.S3" Version="4.0.18.6" />
-    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.5.9" />
-    <PackageReference Include="AWSSDK.SSO" Version="4.0.2.13" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.18.7" />
+    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.5.10" />
+    <PackageReference Include="AWSSDK.SSO" Version="4.0.2.14" />
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="ExcelDataReader" Version="3.8.0" />
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.8.0" />
@@ -347,7 +350,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\jobSearch.module.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\jobSearch.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\additional-services-dialog\additional-services-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\create-job-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-address-dialog\edit-address-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.controller.ts" />
@@ -362,7 +364,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\price-breakdown-dialog\price-breakdown-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\select-dialog\select-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\select-dialog\select-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\create-job-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\home\home.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\enums\JobDataType.ts" />

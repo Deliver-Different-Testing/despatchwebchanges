@@ -140,12 +140,14 @@ export class SideNav extends React.Component<SideNavProps> {
             ModalProps={{
                 keepMounted: true,
             }}
-            PaperProps={{
-                onMouseEnter,
-                onMouseLeave,
-                sx: {
-                    width: drawerWidth,
-                    bgcolor: 'background.default',
+            slotProps={{
+                paper: {
+                    onMouseEnter,
+                    onMouseLeave,
+                    sx: {
+                        width: drawerWidth,
+                        bgcolor: 'background.default',
+                    },
                 },
             }}
         >

@@ -237,6 +237,8 @@ public partial class TblBulkJob
 
     public DateTime? CreatedTime { get; set; }
 
+    public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
+
     public virtual TucClient Client { get; set; }
 
     public virtual TucCourier Courier { get; set; }

@@ -192,11 +192,13 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
             onClose={handleClose}
             maxWidth="sm"
             fullWidth
-            PaperProps={{
-                sx: {
-                    borderRadius: '14px',
-                    overflow: 'hidden',
-                    maxHeight: 'calc(100vh - 48px)',
+            slotProps={{
+                paper: {
+                    sx: {
+                        borderRadius: '14px',
+                        overflow: 'hidden',
+                        maxHeight: 'calc(100vh - 48px)',
+                    },
                 },
             }}
         >

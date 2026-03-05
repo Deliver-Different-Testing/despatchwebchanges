@@ -33,5 +33,7 @@ public partial class TblJobLeaveNotHome
 
     public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; } = new List<TblBulkJob>();
 
+    public virtual ICollection<TblJobDefault> TblJobDefaults { get; set; } = new List<TblJobDefault>();
+
     public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
 }

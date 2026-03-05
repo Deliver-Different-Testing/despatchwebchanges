@@ -89,6 +89,8 @@ public partial class TucClientContact
 
     public virtual ICollection<TblClientContact> TblClientContacts { get; set; } = new List<TblClientContact>();
 
+    public virtual ICollection<TblJobDefault> TblJobDefaults { get; set; } = new List<TblJobDefault>();
+
     public virtual ICollection<TucJobBooking> TucJobBookings { get; set; } = new List<TucJobBooking>();
 
     public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();

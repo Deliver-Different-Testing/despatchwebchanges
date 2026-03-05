@@ -10,17 +10,18 @@ namespace DespatchWeb.Tests.Services;
 public class AiAssistantServiceTests
 {
     private readonly Mock<IAiClientService> _aiClientMock = new();
-    private readonly Mock<IJobRepository> _jobRepositoryMock = new();
     private readonly Mock<ICourierRepository> _courierRepositoryMock = new();
+    private readonly Mock<IJobRepository> _jobRepositoryMock = new();
     private readonly Mock<INoteRepository> _noteRepositoryMock = new();
-    private readonly Mock<ITaskRepository> _taskRepositoryMock = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoMock = new();
 
     private readonly IOptions<AnthropicSettings> _settings = Options.Create(new AnthropicSettings
     {
         MaxTokensPerRequest = 4096,
         Model = "claude-sonnet-4-20250514"
     });
+
+    private readonly Mock<ITaskRepository> _taskRepositoryMock = new();
+    private readonly Mock<ITenantInfoService> _tenantInfoMock = new();
 
     public AiAssistantServiceTests()
     {
@@ -39,6 +40,126 @@ public class AiAssistantServiceTests
         _taskRepositoryMock.Object,
         _tenantInfoMock.Object,
         _settings);
+
+    #region ChatAsync - Token Accumulation
+
+    [Fact]
+    public async Task ChatAsync_AccumulatesTokensAcrossIterations()
+    {
+        // Arrange
+        var callCount = 0;
+        _aiClientMock.Setup(x => x.SendMessageAsync(
+                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
+                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() =>
+            {
+                callCount++;
+                if (callCount == 1)
+                {
+                    return new AiClientResponse
+                    {
+                        ToolCalls =
+                        [
+                            new AiToolCall
+                            {
+                                ToolUseId = "t1",
+                                ToolName = "get_overview_stats",
+                                ArgumentsJson = "{}"
+                            }
+                        ],
+                        InputTokens = 100,
+                        OutputTokens = 25
+                    };
+                }
+
+                return new AiClientResponse
+                {
+                    TextContent = "Here are the stats.",
+                    InputTokens = 200,
+                    OutputTokens = 50
+                };
+            });
+
+        _jobRepositoryMock.Setup(x => x.GetOverviewStatsAsync())
+            .ReturnsAsync(new OverviewStatsViewModel());
+
+        var service = CreateService();
+        var messages = new List<AiMessage> { new() { Role = "user", Content = "Show overview" } };
+
+        // Act
+        var result = await service.ChatAsync(messages);
+
+        // Assert
+        result.Usage.InputTokens.Should().Be(300);
+        result.Usage.OutputTokens.Should().Be(75);
+    }
+
+    #endregion
+
+    #region ChatAsync - Data Sanitization
+
+    [Fact]
+    public async Task ChatAsync_SanitizesUserMessages()
+    {
+        // Arrange
+        List<AiMessage>? capturedMessages = null;
+        _aiClientMock.Setup(x => x.SendMessageAsync(
+                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
+                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
+            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((_, msgs, _, _, _) =>
+                capturedMessages = msgs)
+            .ReturnsAsync(new AiClientResponse { TextContent = "OK", InputTokens = 10, OutputTokens = 5 });
+
+        var service = CreateService();
+        var messages = new List<AiMessage>
+        {
+            new() { Role = "user", Content = "Contact john@example.com about job 100" }
+        };
+
+        // Act
+        await service.ChatAsync(messages);
+
+        // Assert
+        capturedMessages.Should().NotBeNull();
+        capturedMessages[0].Content.Should().Contain("[EMAIL]");
+        capturedMessages[0].Content.Should().NotContain("john@example.com");
+    }
+
+    #endregion
+
+    #region ChatAsync - Tool Definitions
+
+    [Fact]
+    public async Task ChatAsync_PassesToolDefinitions()
+    {
+        // Arrange
+        List<AiToolDefinition>? capturedTools = null;
+        _aiClientMock.Setup(x => x.SendMessageAsync(
+                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
+                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
+            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((_, _, _, tools, _) =>
+                capturedTools = tools)
+            .ReturnsAsync(new AiClientResponse { TextContent = "OK", InputTokens = 10, OutputTokens = 5 });
+
+        var service = CreateService();
+        var messages = new List<AiMessage> { new() { Role = "user", Content = "Hi" } };
+
+        // Act
+        await service.ChatAsync(messages);
+
+        // Assert
+        capturedTools.Should().NotBeNull();
+        capturedTools.Should().Contain(t => t.Name == "lookup_job");
+        capturedTools.Should().Contain(t => t.Name == "search_jobs");
+        capturedTools.Should().Contain(t => t.Name == "search_couriers");
+        capturedTools.Should().Contain(t => t.Name == "get_job_notes");
+        capturedTools.Should().Contain(t => t.Name == "get_job_events");
+        capturedTools.Should().Contain(t => t.Name == "get_courier_details");
+        capturedTools.Should().Contain(t => t.Name == "get_overview_stats");
+        capturedTools.Should().Contain(t => t.Name == "get_active_couriers");
+    }
+
+    #endregion
 
     #region ChatAsync - Basic Response
 
@@ -248,73 +369,18 @@ public class AiAssistantServiceTests
 
     #endregion
 
-    #region ChatAsync - Token Accumulation
-
-    [Fact]
-    public async Task ChatAsync_AccumulatesTokensAcrossIterations()
-    {
-        // Arrange
-        var callCount = 0;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() =>
-            {
-                callCount++;
-                if (callCount == 1)
-                {
-                    return new AiClientResponse
-                    {
-                        ToolCalls =
-                        [
-                            new AiToolCall
-                            {
-                                ToolUseId = "t1",
-                                ToolName = "get_overview_stats",
-                                ArgumentsJson = "{}"
-                            }
-                        ],
-                        InputTokens = 100,
-                        OutputTokens = 25
-                    };
-                }
-
-                return new AiClientResponse
-                {
-                    TextContent = "Here are the stats.",
-                    InputTokens = 200,
-                    OutputTokens = 50
-                };
-            });
-
-        _jobRepositoryMock.Setup(x => x.GetOverviewStatsAsync())
-            .ReturnsAsync(new OverviewStatsViewModel());
-
-        var service = CreateService();
-        var messages = new List<AiMessage> { new() { Role = "user", Content = "Show overview" } };
-
-        // Act
-        var result = await service.ChatAsync(messages);
-
-        // Assert
-        result.Usage.InputTokens.Should().Be(300);
-        result.Usage.OutputTokens.Should().Be(75);
-    }
-
-    #endregion
-
     #region ChatAsync - System Prompt
 
     [Fact]
     public async Task ChatAsync_IncludesOperatorContextInSystemPrompt()
     {
         // Arrange
-        string capturedSystemPrompt = null;
+        string? capturedSystemPrompt = null;
         _aiClientMock.Setup(x => x.SendMessageAsync(
                 It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
                 It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>(
-                (system, _, _, _, _) => capturedSystemPrompt = system)
+            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((system, _, _, _, _) =>
+                capturedSystemPrompt = system)
             .ReturnsAsync(new AiClientResponse { TextContent = "OK", InputTokens = 10, OutputTokens = 5 });
 
         var service = CreateService();
@@ -335,12 +401,12 @@ public class AiAssistantServiceTests
         // Arrange
         _tenantInfoMock.Setup(x => x.IsUsTenant()).Returns(true);
 
-        string capturedSystemPrompt = null;
+        string? capturedSystemPrompt = null;
         _aiClientMock.Setup(x => x.SendMessageAsync(
                 It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
                 It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>(
-                (system, _, _, _, _) => capturedSystemPrompt = system)
+            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((system, _, _, _, _) =>
+                capturedSystemPrompt = system)
             .ReturnsAsync(new AiClientResponse { TextContent = "OK", InputTokens = 10, OutputTokens = 5 });
 
         var service = CreateService();
@@ -351,71 +417,6 @@ public class AiAssistantServiceTests
 
         // Assert
         capturedSystemPrompt.Should().Contain("US");
-    }
-
-    #endregion
-
-    #region ChatAsync - Data Sanitization
-
-    [Fact]
-    public async Task ChatAsync_SanitizesUserMessages()
-    {
-        // Arrange
-        List<AiMessage> capturedMessages = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>(
-                (_, msgs, _, _, _) => capturedMessages = msgs)
-            .ReturnsAsync(new AiClientResponse { TextContent = "OK", InputTokens = 10, OutputTokens = 5 });
-
-        var service = CreateService();
-        var messages = new List<AiMessage>
-        {
-            new() { Role = "user", Content = "Contact john@example.com about job 100" }
-        };
-
-        // Act
-        await service.ChatAsync(messages);
-
-        // Assert
-        capturedMessages.Should().NotBeNull();
-        capturedMessages[0].Content.Should().Contain("[EMAIL]");
-        capturedMessages[0].Content.Should().NotContain("john@example.com");
-    }
-
-    #endregion
-
-    #region ChatAsync - Tool Definitions
-
-    [Fact]
-    public async Task ChatAsync_PassesToolDefinitions()
-    {
-        // Arrange
-        List<AiToolDefinition> capturedTools = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>(
-                (_, _, _, tools, _) => capturedTools = tools)
-            .ReturnsAsync(new AiClientResponse { TextContent = "OK", InputTokens = 10, OutputTokens = 5 });
-
-        var service = CreateService();
-        var messages = new List<AiMessage> { new() { Role = "user", Content = "Hi" } };
-
-        // Act
-        await service.ChatAsync(messages);
-
-        // Assert
-        capturedTools.Should().NotBeNull();
-        capturedTools.Should().Contain(t => t.Name == "lookup_job");
-        capturedTools.Should().Contain(t => t.Name == "search_jobs");
-        capturedTools.Should().Contain(t => t.Name == "search_couriers");
-        capturedTools.Should().Contain(t => t.Name == "get_job_notes");
-        capturedTools.Should().Contain(t => t.Name == "get_job_events");
-        capturedTools.Should().Contain(t => t.Name == "get_courier_details");
-        capturedTools.Should().Contain(t => t.Name == "get_overview_stats");
-        capturedTools.Should().Contain(t => t.Name == "get_active_couriers");
     }
 
     #endregion

@@ -96,9 +96,9 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
 
     // Debounce the search
     useEffect(() => {
-        const timer = setTimeout(() => {
+        const timer = setTimeout(async () => {
             if (inputValue && inputValue.length >= minInputLength) {
-                handleSearch(inputValue);
+               await handleSearch(inputValue);
             }
         }, 300);
 
@@ -117,11 +117,13 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
             onClose={onClose}
             maxWidth="sm"
             fullWidth
-            PaperProps={{
-                elevation: 24,
-                sx: {
-                    borderRadius: 3,
-                    overflow: 'hidden',
+            slotProps={{
+                paper: {
+                    elevation: 24,
+                    sx: {
+                        borderRadius: 3,
+                        overflow: 'hidden',
+                    },
                 },
             }}
         >
@@ -210,20 +212,22 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
                                 </Typography>
                             )
                         }
-                        renderInput={(params) => (
+                        renderInput={({InputProps: autoInputProps, ...params}) => (
                             <TextField
                                 {...params}
                                 autoFocus
                                 placeholder={placeholder}
                                 variant="outlined"
-                                InputProps={{
-                                    ...params.InputProps,
-                                    endAdornment: (
-                                        <>
-                                            {loading ? <CircularProgress color="inherit" size={20} /> : null}
-                                            {params.InputProps.endAdornment}
-                                        </>
-                                    ),
+                                slotProps={{
+                                    input: {
+                                        ...autoInputProps,
+                                        endAdornment: (
+                                            <>
+                                                {loading ? <CircularProgress color="inherit" size={20} /> : null}
+                                                {autoInputProps.endAdornment}
+                                            </>
+                                        ),
+                                    },
                                 }}
                             />
                         )}

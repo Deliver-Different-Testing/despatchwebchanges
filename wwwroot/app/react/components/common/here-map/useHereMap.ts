@@ -37,11 +37,11 @@ export function useHereMap({
     const extraRouteLinesRef = useRef<any[]>([]);
 
     // Track previous values for change detection
-    const prevConfigRef = useRef<HereMapConfig | undefined>();
-    const prevCredentialsRef = useRef<HereMapCredentials | undefined>();
-    const prevMapIdRef = useRef<string | undefined>();
-    const prevSelectedJobIndexRef = useRef<number | undefined>();
-    const prevCourierLocationRef = useRef<CourierLocation | undefined>();
+    const prevConfigRef = useRef<HereMapConfig | undefined>(undefined);
+    const prevCredentialsRef = useRef<HereMapCredentials | undefined>(undefined);
+    const prevMapIdRef = useRef<string | undefined>(undefined);
+    const prevSelectedJobIndexRef = useRef<number | undefined>(undefined);
+    const prevCourierLocationRef = useRef<CourierLocation | undefined>(undefined);
 
     /**
      * Initialize the map

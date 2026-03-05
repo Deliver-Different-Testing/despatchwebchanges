@@ -52,19 +52,21 @@ export const SearchField: React.FC<SearchFieldProps> = ({value, onChange, placeh
                 minWidth: 200,
                 '& .MuiOutlinedInput-root': {bgcolor: 'white'},
             }}
-            InputProps={{
-                startAdornment: (
-                    <InputAdornment position="start">
-                        <SearchIcon sx={{color: 'text.secondary', fontSize: 20}} />
-                    </InputAdornment>
-                ),
-                endAdornment: localValue ? (
-                    <InputAdornment position="end">
-                        <IconButton size="small" onClick={handleClear} edge="end">
-                            <ClearIcon sx={{fontSize: 18}} />
-                        </IconButton>
-                    </InputAdornment>
-                ) : null,
+            slotProps={{
+                input: {
+                    startAdornment: (
+                        <InputAdornment position="start">
+                            <SearchIcon sx={{color: 'text.secondary', fontSize: 20}} />
+                        </InputAdornment>
+                    ),
+                    endAdornment: localValue ? (
+                        <InputAdornment position="end">
+                            <IconButton size="small" onClick={handleClear} edge="end">
+                                <ClearIcon sx={{fontSize: 18}} />
+                            </IconButton>
+                        </InputAdornment>
+                    ) : null,
+                },
             }}
         />
     );

@@ -819,12 +819,14 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                             placeholder="Search flights..."
                             value={flightSearchText}
                             onChange={(e) => onFlightSearchChange(e.target.value)}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon sx={{fontSize: 16, color: theme.palette.text.secondary}}/>
-                                    </InputAdornment>
-                                ),
+                            slotProps={{
+                                input: {
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <SearchIcon sx={{fontSize: 16, color: theme.palette.text.secondary}}/>
+                                        </InputAdornment>
+                                    ),
+                                },
                             }}
                             sx={{
                                 '& .MuiOutlinedInput-root': {

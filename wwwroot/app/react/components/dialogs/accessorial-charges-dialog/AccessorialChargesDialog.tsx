@@ -710,9 +710,11 @@ export class AccessorialChargesDialog extends React.Component<
                 onClose={onClose}
                 maxWidth="lg"
                 fullWidth
-                PaperProps={{
-                    elevation: 24,
-                    sx: { borderRadius: 2, overflow: 'hidden', minWidth: 700 },
+                slotProps={{
+                    paper: {
+                        elevation: 24,
+                        sx: { borderRadius: 2, overflow: 'hidden', minWidth: 700 },
+                    },
                 }}
             >
                 {/* Header */}

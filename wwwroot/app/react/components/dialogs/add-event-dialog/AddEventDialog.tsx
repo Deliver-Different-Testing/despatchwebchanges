@@ -199,13 +199,15 @@ export class AddEventDialog extends React.Component<AddEventDialogProps, AddEven
                     onClose={onClose}
                     maxWidth="sm"
                     fullWidth
-                    PaperProps={{
-                        elevation: 24,
-                        sx: {
-                            borderRadius: 2,
-                            overflow: 'hidden',
-                            minWidth: 480,
-                            maxWidth: 560,
+                    slotProps={{
+                        paper: {
+                            elevation: 24,
+                            sx: {
+                                borderRadius: 2,
+                                overflow: 'hidden',
+                                minWidth: 480,
+                                maxWidth: 560,
+                            },
                         },
                     }}
                 >

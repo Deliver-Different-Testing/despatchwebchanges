@@ -465,6 +465,8 @@ public partial class TucJob
 
     public virtual TucJobType AcceptedJobType { get; set; }
 
+    public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
+
     public virtual TucAgent Agent { get; set; }
 
     public virtual TucClientContact Contact { get; set; }
@@ -480,6 +482,8 @@ public partial class TucJob
     public virtual TblAirport FromAirport { get; set; }
 
     public virtual TucJobInternalStatus InternalStatusNavigation { get; set; }
+
+    public virtual ICollection<JobAccessorialCharge> JobAccessorialCharges { get; set; } = new List<JobAccessorialCharge>();
 
     public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneys { get; set; } = new List<JobDeliveryJourney>();
 

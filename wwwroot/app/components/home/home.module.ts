@@ -13,7 +13,6 @@ import {
 import { CurrentWorkAllDriversReactComponent } from "../../react/components/common/current-work-all-drivers";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import JobHighlightService from "../common/job-list/job-highlight.service";
-import {CreateJobDialogController} from "../dialogs/create-job-dialog/create-job-dialog.controller";
 import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 import angular from 'angular';
@@ -52,7 +51,6 @@ homeModule
     .service("createJobDialogService", CreateJobDialogService)
     .service("dashboardSettingsDialogService", DashboardSettingsDialogService);
 homeModule
-    .controller("InterCourierChargeDialog", InterCourierChargeDialogController)
-    .controller("CreateJobDialogController", CreateJobDialogController);
+    .controller("InterCourierChargeDialog", InterCourierChargeDialogController);
 
 export default homeModule;

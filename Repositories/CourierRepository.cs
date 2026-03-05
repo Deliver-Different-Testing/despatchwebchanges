@@ -690,7 +690,7 @@ public class CourierRepository(
                 clearLists = clearLists.OrderBy(cl => cl.AreaOrder).ToList();
                 columnDefinitions = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
                 for (var i = 0; i < clearLists.Count; i++)
-                    columnDefinitions[clearLists[i].AreaName] = (i % 4) + 1;
+                    columnDefinitions[clearLists[i].AreaName] = i % 4 + 1;
             }
             else
             {

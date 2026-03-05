@@ -20,6 +20,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
     private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
+    private readonly Mock<ICreateJobService> _createJobServiceMock = new();
 
     public JobRepositoryPricingBreakdownTests()
     {
@@ -70,7 +71,8 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
     private JobRepository CreateRepository() => new(
         _contextFactoryMock.Object,
         _tenantInfoServiceMock.Object,
-        _clearListEnvelopeServiceMock.Object
+        _clearListEnvelopeServiceMock.Object,
+        _createJobServiceMock.Object
     );
 
     #region GetJobPriceBreakdownAsync Tests

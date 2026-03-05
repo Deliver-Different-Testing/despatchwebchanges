@@ -262,6 +262,12 @@
                                 ng-if="job.fromAirportId || job.toAirportId">
                             {{ ctrl.getFlightIcon(job) }}
                         </md-icon>
+                        <md-icon
+                                class="chilled-icon"
+                                md-font-set="material-symbols-outlined"
+                                ng-if="ctrl.isChilledJob(job)">
+                            ac_unit
+                        </md-icon>
                     </div>
 
                     <!-- Date Column -->
@@ -384,22 +390,29 @@
                                     md-selected-item-change="ctrl.handleDispatchSelection(item, job)"
                                     md-items="item in ctrl.performCourierSearch(job.searchText, job)"
                                     md-item-text="item.text"
-                                    md-min-length="1"
+                                    md-min-length="0"
                                     placeholder="Search Courier..."
                                     ng-blur="ctrl.hideCourierAssignment(job)">
                                 <md-item-template>
-                                    <md-icon
-                                            md-font-set="material-symbols-outlined"
-                                            style="margin-right: 5px;">
-                                        assignment_ind
-                                    </md-icon>
-                                    <span md-highlight-text="ctrl.searchText"
-                                          md-highlight-flags="^i">
-                                        {{item.text}}
+                                    <span class="courier-suggestion-item">
+                                        <md-icon ng-if="item.isAiSuggestion"
+                                                 md-font-set="material-symbols-outlined"
+                                                 class="ai-suggestion-icon">
+                                            auto_awesome
+                                        </md-icon>
+                                        <md-icon ng-if="!item.isAiSuggestion"
+                                                 md-font-set="material-symbols-outlined"
+                                                 style="margin-right: 5px;">
+                                            assignment_ind
+                                        </md-icon>
+                                        <span md-highlight-text="job.searchText"
+                                              md-highlight-flags="gi">
+                                            {{item.text}}
+                                        </span>
                                     </span>
                                 </md-item-template>
                                 <md-not-found>
-                                    No couriers matching "{{ctrl.searchText}}" were found.
+                                    No couriers matching "{{job.searchText}}" were found.
                                 </md-not-found>
                             </md-autocomplete>
                         </div>

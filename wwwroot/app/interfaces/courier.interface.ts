@@ -24,6 +24,7 @@ export interface ActiveCourierViewModel {
     label: string;
     text: string;
     isActive: boolean;
+    vehicleType: string;
 }
 
 export interface ITruckCourierStatus {

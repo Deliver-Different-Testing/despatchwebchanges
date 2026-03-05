@@ -19,7 +19,7 @@ interface UseHereMapOptions {
 }
 
 interface UseHereMapReturn {
-    mapContainerRef: React.RefObject<HTMLDivElement>;
+    mapContainerRef: React.RefObject<HTMLDivElement | null>;
     map: any | null;
     platform: any | null;
     ui: any | null;

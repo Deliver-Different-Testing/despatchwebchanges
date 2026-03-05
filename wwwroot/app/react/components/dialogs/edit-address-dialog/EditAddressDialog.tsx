@@ -41,64 +41,10 @@ import {
     ShipmentDetails,
     HereMapsLocationResult,
     HereMapsLookupResponse,
-    StateInfo,
 } from '../../../interfaces';
 import {useAddressSearch, useHereMapsApiKey} from '../../../hooks';
 import {addressApi} from '../../../services/addressApi';
-
-// US States list
-const US_STATES: StateInfo[] = [
-    {abbreviation: 'AL', name: 'Alabama'},
-    {abbreviation: 'AK', name: 'Alaska'},
-    {abbreviation: 'AZ', name: 'Arizona'},
-    {abbreviation: 'AR', name: 'Arkansas'},
-    {abbreviation: 'CA', name: 'California'},
-    {abbreviation: 'CO', name: 'Colorado'},
-    {abbreviation: 'CT', name: 'Connecticut'},
-    {abbreviation: 'DE', name: 'Delaware'},
-    {abbreviation: 'FL', name: 'Florida'},
-    {abbreviation: 'GA', name: 'Georgia'},
-    {abbreviation: 'HI', name: 'Hawaii'},
-    {abbreviation: 'ID', name: 'Idaho'},
-    {abbreviation: 'IL', name: 'Illinois'},
-    {abbreviation: 'IN', name: 'Indiana'},
-    {abbreviation: 'IA', name: 'Iowa'},
-    {abbreviation: 'KS', name: 'Kansas'},
-    {abbreviation: 'KY', name: 'Kentucky'},
-    {abbreviation: 'LA', name: 'Louisiana'},
-    {abbreviation: 'ME', name: 'Maine'},
-    {abbreviation: 'MD', name: 'Maryland'},
-    {abbreviation: 'MA', name: 'Massachusetts'},
-    {abbreviation: 'MI', name: 'Michigan'},
-    {abbreviation: 'MN', name: 'Minnesota'},
-    {abbreviation: 'MS', name: 'Mississippi'},
-    {abbreviation: 'MO', name: 'Missouri'},
-    {abbreviation: 'MT', name: 'Montana'},
-    {abbreviation: 'NE', name: 'Nebraska'},
-    {abbreviation: 'NV', name: 'Nevada'},
-    {abbreviation: 'NH', name: 'New Hampshire'},
-    {abbreviation: 'NJ', name: 'New Jersey'},
-    {abbreviation: 'NM', name: 'New Mexico'},
-    {abbreviation: 'NY', name: 'New York'},
-    {abbreviation: 'NC', name: 'North Carolina'},
-    {abbreviation: 'ND', name: 'North Dakota'},
-    {abbreviation: 'OH', name: 'Ohio'},
-    {abbreviation: 'OK', name: 'Oklahoma'},
-    {abbreviation: 'OR', name: 'Oregon'},
-    {abbreviation: 'PA', name: 'Pennsylvania'},
-    {abbreviation: 'RI', name: 'Rhode Island'},
-    {abbreviation: 'SC', name: 'South Carolina'},
-    {abbreviation: 'SD', name: 'South Dakota'},
-    {abbreviation: 'TN', name: 'Tennessee'},
-    {abbreviation: 'TX', name: 'Texas'},
-    {abbreviation: 'UT', name: 'Utah'},
-    {abbreviation: 'VT', name: 'Vermont'},
-    {abbreviation: 'VA', name: 'Virginia'},
-    {abbreviation: 'WA', name: 'Washington'},
-    {abbreviation: 'WV', name: 'West Virginia'},
-    {abbreviation: 'WI', name: 'Wisconsin'},
-    {abbreviation: 'WY', name: 'Wyoming'},
-];
+import {US_STATES} from '../../../utils/usStates';
 
 // Default center coordinates (US)
 const DEFAULT_CENTER = {lat: 39.8283, lng: -98.5795};
@@ -595,12 +541,14 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             onClose={onClose}
             maxWidth="md"
             fullWidth
-            PaperProps={{
-                elevation: 24,
-                sx: {
-                    borderRadius: 2,
-                    overflow: 'hidden',
-                    maxWidth: 800,
+            slotProps={{
+                paper: {
+                    elevation: 24,
+                    sx: {
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                        maxWidth: 800,
+                    },
                 },
             }}
         >
@@ -676,21 +624,23 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                         onChange={(_, value) => handleAddressSelect(value)}
                         filterOptions={(x) => x} // Disable client-side filtering
                         isOptionEqualToValue={(option, value) => option.id === value.id}
-                        renderInput={(params) => (
+                        renderInput={({InputProps: autoInputProps, ...params}) => (
                             <TextField
                                 {...params}
                                 label="Search Address"
                                 placeholder="Type at least 3 characters to search..."
-                                InputProps={{
-                                    ...params.InputProps,
-                                    endAdornment: (
-                                        <>
-                                            {(isSearchingAddresses || isLoadingAddress) && (
-                                                <CircularProgress size={20} />
-                                            )}
-                                            {params.InputProps.endAdornment}
-                                        </>
-                                    ),
+                                slotProps={{
+                                    input: {
+                                        ...autoInputProps,
+                                        endAdornment: (
+                                            <>
+                                                {(isSearchingAddresses || isLoadingAddress) && (
+                                                    <CircularProgress size={20} />
+                                                )}
+                                                {autoInputProps.endAdornment}
+                                            </>
+                                        ),
+                                    },
                                 }}
                             />
                         )}

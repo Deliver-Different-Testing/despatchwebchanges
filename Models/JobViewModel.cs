@@ -20,8 +20,6 @@ public class JobViewModel : DispatchJobViewModel
     public string NotifiedName { get; set; }
     public string AcceptedName { get; set; }
 
-    public string ClientName { get; set; }
-
     public string LoggedInContactName { get; set; }
 
     public string DeliverToContact { get; set; }
@@ -35,7 +33,6 @@ public class JobViewModel : DispatchJobViewModel
     public string ToContactPhone { get; set; }
     public int? AcceptedJobTypeId { get; set; }
     public int? NotifiedJobTypeId { get; set; }
-    public double? Weight { get; set; }
     public int Items { get; set; }
     public string RefA { get; set; }
     public string RefB { get; set; }
@@ -47,8 +44,6 @@ public class JobViewModel : DispatchJobViewModel
     public DateTimeOffset? PuTime { get; set; }
 
     public new DateTimeOffset? FollowupTime { get; set; }
-    public int? InternalStatusId { get; set; }
-    public string ConNote { get; set; }
     public List<PalletInfo> PalletInfo { get; set; }
 
     public bool? DgDocumentation { get; set; }
@@ -69,7 +64,6 @@ public class JobViewModel : DispatchJobViewModel
 
     public int? DeliverToLeaveId { get; set; }
 
-    public bool IsArchived { get; set; }
     public DateTimeOffset? DeliverByTime { get; set; }
 
     public List<TucNoteViewModel> Notes { get; set; }
@@ -82,8 +76,6 @@ public class JobViewModel : DispatchJobViewModel
 
     public int? DeliverByWindowMins { get; set; }
 
-    public Suggestion PickUpTimeZone { get; set; }
-    public Suggestion DeliveryTimeZone { get; set; }
     public string HasDgDocsString { get; set; }
     public bool CalculateDimsOncePerJob { get; set; }
 
@@ -92,10 +84,9 @@ public class JobViewModel : DispatchJobViewModel
     public bool TailLiftDo { get; set; }
     public bool DeliverToPrivateRes { get; set; }
     public Suggestion BookingSource { get; set; }
-    
+
     // Flight detail card
     public bool IsFlightAssigned { get; set; }
-    public bool IsAgentAssigned { get; set; }
 }
 
 public class ParcelDimensions

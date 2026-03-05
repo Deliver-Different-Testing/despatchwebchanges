@@ -138,11 +138,13 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
             onClose={onClose}
             maxWidth="sm"
             fullWidth
-            PaperProps={{
-                elevation: 24,
-                sx: {
-                    borderRadius: 3,
-                    overflow: 'hidden',
+            slotProps={{
+                paper: {
+                    elevation: 24,
+                    sx: {
+                        borderRadius: 3,
+                        overflow: 'hidden',
+                    },
                 },
             }}
         >

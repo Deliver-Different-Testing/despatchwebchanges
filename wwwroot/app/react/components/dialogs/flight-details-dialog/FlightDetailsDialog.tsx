@@ -150,14 +150,16 @@ export const FlightDetailsDialog: React.FC<FlightDetailsDialogProps> = ({
             maxWidth="md"
             fullWidth
             fullScreen={isFullscreen}
-            PaperProps={{
-                sx: {
-                    borderRadius: isFullscreen ? 0 : 3,
-                    overflow: 'hidden',
-                    height: isFullscreen ? '100vh' : 680,
-                    maxHeight: isFullscreen ? '100vh' : '95vh',
-                    width: isFullscreen ? '100vw' : 900,
-                    maxWidth: '95vw',
+            slotProps={{
+                paper: {
+                    sx: {
+                        borderRadius: isFullscreen ? 0 : 3,
+                        overflow: 'hidden',
+                        height: isFullscreen ? '100vh' : 680,
+                        maxHeight: isFullscreen ? '100vh' : '95vh',
+                        width: isFullscreen ? '100vw' : 900,
+                        maxWidth: '95vw',
+                    },
                 },
             }}
         >

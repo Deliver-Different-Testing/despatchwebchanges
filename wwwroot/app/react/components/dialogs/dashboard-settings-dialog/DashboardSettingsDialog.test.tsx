@@ -210,7 +210,7 @@ describe('DashboardSettingsDialog', () => {
             const props = createMockProps();
             renderWithTheme(<DashboardSettingsDialog {...props} />);
 
-            const switches = screen.getAllByRole('checkbox');
+            const switches = screen.getAllByRole('switch');
             expect(switches.length).toBeGreaterThanOrEqual(3);
         });
 
@@ -219,7 +219,7 @@ describe('DashboardSettingsDialog', () => {
             renderWithTheme(<DashboardSettingsDialog {...props} />);
 
             // pendingJobs and activeJobs are visible, completedJobs is not
-            const switches = screen.getAllByRole('checkbox');
+            const switches = screen.getAllByRole('switch');
 
             // At least some should be checked
             const checkedSwitches = switches.filter(s => (s as HTMLInputElement).checked);
@@ -234,7 +234,7 @@ describe('DashboardSettingsDialog', () => {
             renderWithTheme(<DashboardSettingsDialog {...props} />);
 
             const pendingJobsRow = screen.getByText('Pending Jobs').closest('div[class*="Paper"]') as HTMLElement;
-            const toggle = within(pendingJobsRow).getByRole('checkbox');
+            const toggle = within(pendingJobsRow).getByRole('switch');
 
             const initialState = (toggle as HTMLInputElement).checked;
             await user.click(toggle);
@@ -249,7 +249,7 @@ describe('DashboardSettingsDialog', () => {
 
             // Find the row with Paper styling
             const pendingJobsRow = screen.getByText('Pending Jobs').closest('div[class*="Paper"]') as HTMLElement;
-            const toggle = within(pendingJobsRow).getByRole('checkbox');
+            const toggle = within(pendingJobsRow).getByRole('switch');
 
             const initialState = (toggle as HTMLInputElement).checked;
             await user.click(pendingJobsRow);

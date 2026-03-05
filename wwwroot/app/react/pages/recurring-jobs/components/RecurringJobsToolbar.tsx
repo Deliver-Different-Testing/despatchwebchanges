@@ -8,15 +8,12 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
     Autocomplete,
     Box,
-    Checkbox,
     CircularProgress,
     FormControl,
     IconButton,
     InputAdornment,
     InputLabel,
-    ListItemText,
     MenuItem,
-    OutlinedInput,
     Select,
     SelectChangeEvent,
     TextField,
@@ -31,7 +28,7 @@ import {
     Refresh as RefreshIcon,
     Search as SearchIcon,
 } from '@mui/icons-material';
-import {CourierSuggestion, DAYS_OF_WEEK_BITS, DayOfWeekKey, SpeedOption} from '../../../interfaces';
+import {CourierSuggestion, DAYS_OF_WEEK_BITS, DayOfWeekKey} from '../../../interfaces';
 import {useCourierSearch, useSpeedList} from '../../../hooks';
 
 export interface RecurringJobsFilters {
@@ -236,23 +233,25 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                             bgcolor: 'white',
                         },
                     }}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon sx={{color: 'text.secondary', fontSize: 20}}/>
-                            </InputAdornment>
-                        ),
-                        endAdornment: localSearchText ? (
-                            <InputAdornment position="end">
-                                <IconButton
-                                    size="small"
-                                    onClick={handleClearSearch}
-                                    edge="end"
-                                >
-                                    <ClearIcon sx={{fontSize: 18}}/>
-                                </IconButton>
-                            </InputAdornment>
-                        ) : null,
+                    slotProps={{
+                        input: {
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon sx={{color: 'text.secondary', fontSize: 20}}/>
+                                </InputAdornment>
+                            ),
+                            endAdornment: localSearchText ? (
+                                <InputAdornment position="end">
+                                    <IconButton
+                                        size="small"
+                                        onClick={handleClearSearch}
+                                        edge="end"
+                                    >
+                                        <ClearIcon sx={{fontSize: 18}}/>
+                                    </IconButton>
+                                </InputAdornment>
+                            ) : null,
+                        },
                     }}
                 />
 
@@ -391,7 +390,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                     loading={isLoadingCouriers}
                     disabled={isLoading}
                     sx={{width: 200}}
-                    renderInput={(params) => (
+                    renderInput={({InputProps: autoInputProps, ...params}) => (
                         <TextField
                             {...params}
                             label="Courier"
@@ -400,14 +399,16 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                                     bgcolor: 'white',
                                 },
                             }}
-                            InputProps={{
-                                ...params.InputProps,
-                                endAdornment: (
-                                    <>
-                                        {isLoadingCouriers ? <CircularProgress color="inherit" size={16}/> : null}
-                                        {params.InputProps.endAdornment}
-                                    </>
-                                ),
+                            slotProps={{
+                                input: {
+                                    ...autoInputProps,
+                                    endAdornment: (
+                                        <>
+                                            {isLoadingCouriers ? <CircularProgress color="inherit" size={16}/> : null}
+                                            {autoInputProps.endAdornment}
+                                        </>
+                                    ),
+                                },
                             }}
                         />
                     )}

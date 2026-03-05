@@ -7,7 +7,6 @@ public class AirportViewModel
     public string City { get; init; }
     public string Country { get; init; }
     public string Timezone { get; init; }
-    public int Elevation { get; init; }
     public double Latitude { get; init; }
     public double Longitude { get; init; }
 }

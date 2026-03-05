@@ -96,6 +96,7 @@ public partial class DespatchContext
                     Name = c.UccrName + " " + c.UccrSurname,
                     DangerousGoods = c.UccrDangerousGoods == 1,
                     DgLicenseExpiry = c.DglicenseExpiry,
+                    VehicleType = c.UccrVehicle,
                     JobCount = 0
                 }));
 
@@ -115,6 +116,7 @@ public partial class DespatchContext
                     CourierId = c.UccrId,
                     DangerousGoods = c.UccrDangerousGoods == 1,
                     DGLicenseExpiry = c.DglicenseExpiry,
+                    VehicleType = c.UccrVehicle,
                     IsActive = c.Active == true && (
                         c.SendJobsViaSms == true ||
                         c.SendAlertSms == true ||
@@ -212,7 +214,7 @@ public partial class DespatchContext
                 .Where(x => x.NoteId == noteId)
                 .Select(NoteMappings.ActiveNoteMap)
                 .FirstOrDefault());
-    
+
     private static readonly Func<DespatchContext, string, Task<bool>> JobNumberExistsAsyncCompiled =
         EF.CompileAsyncQuery((DespatchContext context, string jobNumber) =>
             context.TucJobs.AsNoTracking().Any(j => j.UcjbNumber == jobNumber));
@@ -235,7 +237,7 @@ public partial class DespatchContext
     // Access compiled queries
     public async Task<bool> JobNumberExistsAsync(string jobNumber) =>
         await JobNumberExistsAsyncCompiled(this, jobNumber);
-    
+
     public async Task<TucNoteViewModel> GetActiveNotesByNoteIdAsync(int noteId) =>
         await GetActiveNoteByIdCompiled(this, noteId);
 

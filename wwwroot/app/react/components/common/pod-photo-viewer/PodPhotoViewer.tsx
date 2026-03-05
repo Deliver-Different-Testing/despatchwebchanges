@@ -88,18 +88,18 @@ export const PodPhotoViewer: React.FC<PodPhotoViewerProps> = ({
             onClose={onClose}
             maxWidth={false}
             fullWidth
-            PaperProps={{
-                sx: {
-                    backgroundColor: 'transparent',
-                    boxShadow: 'none',
-                    maxWidth: '100vw',
-                    maxHeight: '100vh',
-                    margin: 0,
-                    width: '100%',
-                    height: '100%',
-                },
-            }}
             slotProps={{
+                paper: {
+                    sx: {
+                        backgroundColor: 'transparent',
+                        boxShadow: 'none',
+                        maxWidth: '100vw',
+                        maxHeight: '100vh',
+                        margin: 0,
+                        width: '100%',
+                        height: '100%',
+                    },
+                },
                 backdrop: {
                     sx: {
                         backgroundColor: 'rgba(0, 0, 0, 0.8)',
